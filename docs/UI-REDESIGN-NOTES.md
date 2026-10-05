@@ -29,7 +29,7 @@ Edition-specific copy uses `.pack` / `.standalone` key suffixes, e.g. `guide.sta
 the code is missing, a `%` could break formatting, the standalone guide mentions FTB, Essential, Create machines, brass or
 KubeJS, or the pack guide loses its Essential, FTB Team, JEI and Create instructions.
 
-**Unchanged on purpose:** packets and `16-pack` / `16-standalone`, registry IDs, NBT, saved campaign data, payment and
+**Unchanged on purpose (visual slice; the later gameplay work bumped the protocol to 17, see ENERGY-AND-SUPPORT.md):** packets and `16-pack` / `16-standalone`, registry IDs, NBT, saved campaign data, payment and
 catalogue logic, raid balance, recipes (the pack and standalone recipe sets are untouched). `Rules`, `WeaponBrowser.layout`
 and `GuideActions` behave exactly as before and their existing tests still pass.
 
@@ -57,3 +57,5 @@ the screenshots are fabricated.
 
 **Correction:** an earlier revision redrew five 16 x 16 component icons. Those models actually use `industrial_atlas.png`, so the
 redraws never appeared in game; they have been reverted.
+
+The energy and support systems were additionally exercised in a real integrated server; see [ENERGY-AND-SUPPORT.md](ENERGY-AND-SUPPORT.md).

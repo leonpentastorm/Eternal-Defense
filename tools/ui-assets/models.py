@@ -94,11 +94,13 @@ def cannon_barrel():
         el((6.8, 10.8, -11), (9.2, 13.2, -10.5), 'ember_core', emit=14),
     ])
 ITEM_DISPLAY = {
-    'gui': {'rotation': [30, 225, 0], 'translation': [0, -1, 0], 'scale': [0.6, 0.6, 0.6]},
-    'ground': {'translation': [0, 3, 0], 'scale': [0.35, 0.35, 0.35]},
-    'fixed': {'rotation': [0, 180, 0], 'scale': [0.5, 0.5, 0.5]},
-    'thirdperson_righthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.35, 0.35, 0.35]},
-    'firstperson_righthand': {'rotation': [0, 45, 0], 'scale': [0.4, 0.4, 0.4]},
+    'gui': {'rotation': [30, 225, 0], 'translation': [0, -1, 0], 'scale': [0.55, 0.55, 0.55]},
+    'ground': {'translation': [0, 3, 0], 'scale': [0.3, 0.3, 0.3]},
+    'fixed': {'rotation': [0, 180, 0], 'scale': [0.4, 0.4, 0.4]},
+    'head': {'translation': [0, 14, 0], 'scale': [0.8, 0.8, 0.8]},
+    'thirdperson_righthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.22, 0.22, 0.22]},
+    'firstperson_righthand': {'rotation': [0, 45, 0], 'translation': [0, 1, 0], 'scale': [0.2, 0.2, 0.2]},
+    'firstperson_lefthand': {'rotation': [0, 225, 0], 'translation': [0, 1, 0], 'scale': [0.2, 0.2, 0.2]},
 }
 def cannon_item():
     m = model(cannon_base()['elements'] + cannon_turret()['elements'] + cannon_barrel()['elements'], display=ITEM_DISPLAY); return m

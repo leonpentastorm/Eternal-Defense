@@ -12,3 +12,4 @@ saves/
 reports/
 .env
 .env.*
+__pycache__/

@@ -11,6 +11,7 @@ final class SupportRules {
     static final int RETURN_CHANNEL_TICKS=60;
     static final int FIRE_RADIUS=8,FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4;
     static final int PARCEL_LIFETIME_TICKS=12000,PARCEL_DROP_HEIGHT=40,SUPPLY_DELAY_TICKS=30;
+    static final double PARCEL_FALL_SPEED=0.22;
     static final int[] GRID={3,4,5,6};
     static final int[] UPGRADE_PLATING={0,16,32,64};
     static int grid(int mk){return GRID[Math.max(1,Math.min(4,mk))-1];}

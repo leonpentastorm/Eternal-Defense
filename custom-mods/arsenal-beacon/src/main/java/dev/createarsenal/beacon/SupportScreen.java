@@ -17,7 +17,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
     @Override protected void init(){
         super.init();clearWidgets();tabs.clear();
         int tw=(W-24)/3;String[] names={"grid","shop","upgrade"};
-        for(int i=0;i<3;i++){int index=i;var b=new Ui.UiButton(leftPos+12+i*tw,topPos+31,tw-2,18,Ui.t("support.tab."+names[i]),Ui.Look.TAB,x->{tab=index;menu.slotsVisible=index==0;});tabs.add(addRenderableWidget(b));}
+        for(int i=0;i<3;i++){int index=i;var b=new Ui.UiButton(leftPos+12+i*tw,topPos+31,tw-2,18,Ui.t("support.tab."+names[i]),Ui.Look.TAB,x->showTab(index));tabs.add(addRenderableWidget(b));}
         addRenderableWidget(new Ui.UiButton(leftPos+W-30,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
         for(int i=0;i<SupportShop.PRODUCTS.size();i++){
             int index=i;var row=new Ui.UiButton(leftPos+12,topPos+58+i*26,W-24,24,Component.empty(),Ui.Look.ROW,b->selected=index);
@@ -27,6 +27,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
         upgradeButton=addRenderableWidget(new Ui.UiButton(leftPos+W-12-140,topPos+H-30,140,20,Ui.t("support.upgrade"),Ui.Look.PRIMARY,b->{}));
         menu.slotsVisible=tab==0;
     }
+    void showTab(int index){tab=index;menu.slotsVisible=index==0;}
     private void paintProduct(GuiGraphics g,Ui.UiButton row,int index){
         var product=SupportShop.PRODUCTS.get(index);var stack=new ItemStack(product.item().get());
         g.renderItem(stack,row.getX()+6,row.getY()+4);
@@ -49,9 +50,10 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
             for(int r=0;r<3;r++)for(int c=0;c<9;c++)Ui.field(g,leftPos+SupportPlatform.INV_LEFT+c*18,topPos+SupportPlatform.INV_TOP+r*18,18,18,false);
             for(int c=0;c<9;c++)Ui.field(g,leftPos+SupportPlatform.INV_LEFT+c*18,topPos+SupportPlatform.INV_TOP+58,18,18,false);
             int cost=menu.cost.get();boolean short_=cost>0&&!minecraft.player.isCreative()&&ArdentEnergy.balance(minecraft.player)<cost;
-            int by=topPos+SupportPlatform.GRID_TOP+n*18+6;
-            g.renderItem(energy,leftPos+SupportPlatform.GRID_LEFT-2,by-3);
-            Ui.wrap(g,font,cost==0?Ui.t("support.cost.empty"):Ui.t("support.cost",cost),leftPos+SupportPlatform.GRID_LEFT+18,by,SupportPlatform.INV_LEFT-SupportPlatform.GRID_LEFT-24,short_?Ui.ORANGE:Ui.CYAN,3);
+            // The estimate sits under the inventory, where there is always room, and turns orange when you cannot afford it.
+            int by=topPos+SupportPlatform.INV_TOP+84;
+            g.renderItem(energy,leftPos+SupportPlatform.INV_LEFT,by-4);
+            Ui.wrap(g,font,cost==0?Ui.t("support.cost.empty"):Ui.t("support.cost",cost),leftPos+SupportPlatform.INV_LEFT+20,by,162-20,short_?Ui.ORANGE:Ui.CYAN,3);
         }else{
             g.renderItem(energy,leftPos+14,topPos+H-30);
             Ui.text(g,font,Ui.t("exchange.balance",ArdentEnergy.balance(minecraft.player)),leftPos+34,topPos+H-26,Ui.CYAN,140);

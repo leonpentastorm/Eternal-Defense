@@ -56,14 +56,20 @@ final class SupportFlares {
             flare.shootFromRotation(player,player.getXRot(),player.getYRot(),0f,1.1f,1f);
             level.addFreshEntity(flare);
             level.playSound(null,player.getX(),player.getY(),player.getZ(),SoundEvents.FIREWORK_ROCKET_LAUNCH,SoundSource.PLAYERS,.8f,1.2f);
-            if(!player.getAbilities().instabuild)stack.shrink(1);
-            return InteractionResultHolder.consume(stack);
+            // paying rebuilt the inventory stacks, so shrink what is held now, not the pre-payment reference
+            ItemStack held=player.getItemInHand(hand);
+            if(!player.getAbilities().instabuild)held.shrink(1);
+            return InteractionResultHolder.consume(held);
         }
         @Override public int getUseDuration(ItemStack s){return kind==SupportCalls.Kind.RETURN?SupportRules.RETURN_CHANNEL_TICKS:0;}
         @Override public UseAnim getUseAnimation(ItemStack s){return kind==SupportCalls.Kind.RETURN?UseAnim.TOOT_HORN:UseAnim.NONE;}
         @Override public ItemStack finishUsingItem(ItemStack stack,Level level,LivingEntity user){
             if(kind==SupportCalls.Kind.RETURN&&!level.isClientSide&&user instanceof ServerPlayer sp){
-                SupportCalls.finishReturn(sp);if(!sp.isCreative())stack.shrink(1);
+                SupportCalls.finishReturn(sp);
+                ItemStack held=sp.getItemInHand(sp.getUsedItemHand());
+                if(!held.is(this))held=stack;
+                if(!sp.isCreative())held.shrink(1);
+                return held;
             }
             return stack;
         }
@@ -103,8 +109,11 @@ final class SupportFlares {
                 if(blasts>=SupportRules.FIRE_BLASTS&&landedTicks>SupportRules.FIRE_INTERVAL_TICKS*SupportRules.FIRE_BLASTS+10)discard();
             }
         }
+        private final double spin=Math.random()*Math.PI*2;
         private void blast(ServerLevel level){
-            double angle=random.nextDouble()*Math.PI*2,r=SupportRules.FIRE_RADIUS*Math.sqrt(random.nextDouble());
+            // first shell on the flare, the rest spread round a ring so the whole area is covered, not left to chance
+            int ring=Math.max(1,SupportRules.FIRE_BLASTS-1);
+            double angle=blasts==0?0:spin+(blasts-1)*Math.PI*2/ring,r=blasts==0?0:SupportRules.FIRE_RADIUS*.65;
             Vec3 point=new Vec3(getX()+Math.cos(angle)*r,getY(),getZ()+Math.sin(angle)*r);
             level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,point.x,point.y+.5,point.z,1,0,0,0,0);
             level.sendParticles(ParticleTypes.FLAME,point.x,point.y+.3,point.z,25,1.2,.4,1.2,.08);

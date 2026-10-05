@@ -8,7 +8,7 @@ Editable Java, assets, recipes and Gradle projects for the three Create Arsenal 
 | `custom-mods/arsenal-gun-guide` | 0.21.0 | Client weapon controls guide and supported gun-jam warning |
 | `custom-mods/arsenal-displays` | 1.1.0 | Eleven weapon stands, racks and glass cases |
 
-Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. Both the curated modpack and standalone editions are included. They share Java and registry IDs, with different release metadata, recipes and guide content.
+Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Both the curated modpack and standalone editions are included. They share Java and registry IDs, with different release metadata, recipes and guide content.
 
 ## Build
 

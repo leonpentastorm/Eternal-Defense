@@ -38,7 +38,7 @@ final class SupportCrate {
         @Override public void tick(){
             super.tick();age++;
             if(falling()){
-                setDeltaMovement(0,-0.13,0);move(MoverType.SELF,getDeltaMovement());
+                setDeltaMovement(0,-SupportRules.PARCEL_FALL_SPEED,0);move(MoverType.SELF,getDeltaMovement());
                 if(onGround()||verticalCollision){
                     setFalling(false);setDeltaMovement(Vec3.ZERO);
                     if(!level().isClientSide)level().playSound(null,getX(),getY(),getZ(),SoundEvents.BARREL_CLOSE,SoundSource.NEUTRAL,1.2f,.7f);

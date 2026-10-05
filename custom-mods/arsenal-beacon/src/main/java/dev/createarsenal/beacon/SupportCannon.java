@@ -48,6 +48,8 @@ final class SupportCannon {
     static final class CannonEntity extends BlockEntity {
         /** Degrees, unwrapped. {@code target} is authoritative (saved and synced); {@code yaw} is what is drawn. */
         float target,yaw,prevYaw;int recoil,fireIn=-1;
+        /** Shots fired since the chunk loaded (not saved); handy for tests and debugging. */
+        int shots;
         CannonEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.CANNON_ENTITY.get(),pos,s);}
         /** Server: face {@code radians} (0 = north, positive counter-clockwise seen from above). */
         void aim(ServerLevel level,double radians){
@@ -61,6 +63,7 @@ final class SupportCannon {
         /** Server: fire once the turret has finished turning. */
         void fire(ServerLevel level){fireIn=Math.max(1,(int)Math.ceil(turnDelay/TURN_DEGREES_PER_TICK)+2);turnDelay=0;}
         void muzzleFlash(ServerLevel level){
+            shots++;
             double rad=Math.toRadians(target);double dx=-Math.sin(rad),dz=-Math.cos(rad);
             double x=worldPosition.getX()+.5+dx*1.1,y=worldPosition.getY()+.8,z=worldPosition.getZ()+.5+dz*1.1;
             level.sendParticles(ParticleTypes.FLAME,x,y,z,10,.1,.1,.1,.06);
