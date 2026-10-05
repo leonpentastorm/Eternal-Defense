@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"16-standalone":"16-pack",s->s.equals(BuildFlavor.STANDALONE?"16-standalone":"16-pack"),s->s.equals(BuildFlavor.STANDALONE?"16-standalone":"16-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"17-standalone":"17-pack",s->s.equals(BuildFlavor.STANDALONE?"17-standalone":"17-pack"),s->s.equals(BuildFlavor.STANDALONE?"17-standalone":"17-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -23,6 +23,13 @@ final class BeaconNetwork {
         static Action decode(FriendlyByteBuf b){return new Action(b.readUtf(64),b.readUtf(64));}
         static void handle(Action p,Supplier<NetworkEvent.Context> ctx){var c=ctx.get();c.enqueueWork(()->{if(c.getSender()!=null)BeaconActions.handle(c.getSender(),p);});c.setPacketHandled(true);}
     }
+    /** Centre-screen popups. Text is built on the client from language keys, so servers send only ids and numbers. */
+    record Announce(String kind,int a,int b,String who,String what){
+        static void encode(Announce p,FriendlyByteBuf buf){buf.writeUtf(p.kind,24);buf.writeVarInt(p.a);buf.writeVarInt(p.b);buf.writeUtf(p.who,64);buf.writeUtf(p.what,48);}
+        static Announce decode(FriendlyByteBuf buf){return new Announce(buf.readUtf(24),buf.readVarInt(),buf.readVarInt(),buf.readUtf(64),buf.readUtf(48));}
+        static void handle(Announce p,Supplier<NetworkEvent.Context> ctx){ctx.get().enqueueWork(()->DistExecutor.unsafeRunWhenOn(Dist.CLIENT,()->()->BeaconPopups.show(p)));ctx.get().setPacketHandled(true);}
+    }
+    static void announce(ServerLevel l,String kind,int a,int b,String who,String what){CHANNEL.send(PacketDistributor.ALL.noArg(),new Announce(kind,a,b,who,what));}
     record Placement(net.minecraft.world.phys.BlockHitResult hit,net.minecraft.world.InteractionHand hand){
         static void encode(Placement p,FriendlyByteBuf b){b.writeBlockHitResult(p.hit);b.writeEnum(p.hand);}
         static Placement decode(FriendlyByteBuf b){return new Placement(b.readBlockHitResult(),b.readEnum(net.minecraft.world.InteractionHand.class));}
@@ -33,6 +40,7 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(0,State.class,State::encode,State::decode,State::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(1,Action.class,Action::encode,Action::decode,Action::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         WeaponPlatform.initNetwork(CHANNEL);
+        CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
     static void action(String action,String token){CHANNEL.sendToServer(new Action(action,token));}

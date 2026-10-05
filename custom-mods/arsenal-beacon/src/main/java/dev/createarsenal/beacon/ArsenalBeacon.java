@@ -245,7 +245,7 @@ public final class ArsenalBeacon {
         switch(d.phase) {
             case "preparation" -> {
                 if(RaidRespite.waitTick(d))break;
-                d.preparationTicks++;
+                d.preparationTicks++;RaidWarnings.tick(l,d);
                 long time=l.getDayTime()%24000;
                 if(d.preparationTicks>=Rules.intervalDays(d.rewardTier)*24000L&&time>=13000&&time<21000&&l.players().stream().anyMatch(p->near(p,d)))begin(l,d);
                 if(clock%1200==0)d.setDirty();
@@ -263,7 +263,7 @@ public final class ArsenalBeacon {
     }
     static void begin(ServerLevel l,CampaignData d) {
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
-        d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
+        RaidWarnings.reset();d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
         announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
     }
     private static void scan(ServerLevel l,CampaignData d) {
@@ -275,10 +275,11 @@ public final class ArsenalBeacon {
             BlockState s=l.getBlockState(pos);if(s.isAir())continue;d.snapshot.put(pos.asLong(),s);
             auditBlock(d,pos,s);
         }
-        if(d.scanCursor>=total){d.score=BaseScoring.analyze(d,d.snapshot,BaseScoring.Ledger.get(l).placed).total();d.raidTier=d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,d.score));RaidRespite.started(d);d.phase="raid";HardRaids.start(d);if(d.introRaid)d.hardRaid=false;if(d.hardRaid)announce(l,"HARD RAID #"+d.raidsStarted+"! A boss leads the final wave. Survive for a 50% larger resource cache and bonus medical kits/grenades.");nextWave(l,d);d.setDirty();announce(l,"Base saved. Score "+d.score+", payout tier "+d.raidTier+". Defend the beacon!");}
+        if(d.scanCursor>=total){d.score=BaseScoring.analyze(d,d.snapshot,BaseScoring.Ledger.get(l).placed).total();d.raidTier=d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,d.score));RaidRespite.started(d);d.phase="raid";HardRaids.start(d);if(d.introRaid)d.hardRaid=false;BeaconNetwork.announce(l,"raid_start",d.raidsStarted,d.hardRaid?1:0,"","");if(d.hardRaid)announce(l,"HARD RAID #"+d.raidsStarted+"! A boss leads the final wave. Survive for a 50% larger resource cache and bonus medical kits/grenades.");nextWave(l,d);d.setDirty();announce(l,"Base saved. Score "+d.score+", payout tier "+d.raidTier+". Defend the beacon!");}
     }
     private static void nextWave(ServerLevel l,CampaignData d) {
         d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid);d.spawnCooldown=0;
+        BeaconNetwork.announce(l,"wave",d.wave,Rules.waves(d.raidTier),Integer.toString(d.spawnRemaining),"");
         announce(l,"Wave "+d.wave+" / "+Rules.waves(d.raidTier)+" incoming. "+d.wavePlayers+" defender(s), "+d.spawnRemaining+" attackers"+(d.waveVeteran>0?", veteran reinforcements +"+(d.waveVeteran*10)+"%":"")+".");d.setDirty();
     }
     static void auditBlock(CampaignData d,BlockPos pos,BlockState s){
@@ -315,7 +316,7 @@ public final class ArsenalBeacon {
                 d.victories++;d.rewardTier=d.raidTier;
                 RaidRewards.queue(d,RaidRewards.completion(l,d.rewardTier,d.hardRaid&&d.bossKilled));
                 if(d.introRaid&&!d.introCompleted){RaidRewards.queue(d,java.util.List.of(new ItemStack(GUN_PLATFORM.get())));d.introCompleted=true;d.introRaid=false;announce(l,"Introduction complete! Claim your Weapon Platform at the beacon.");}
-                d.victoryRestoration=true;d.phase="restore";announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
+                BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
             }
             else nextWave(l,d);
             d.setDirty();
@@ -401,7 +402,7 @@ public final class ArsenalBeacon {
     }
     private static void fail(ServerLevel l,CampaignData d,String reason) {
         d.health=Math.max(0,d.health-d.maximumHealth()/5);d.victoryRestoration=false;d.phase="restore";d.preparationTicks=0;d.spawnRemaining=0;
-        for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();
+        BeaconNetwork.announce(l,"defeat",0,0,"","");for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();
         // Keep all machine journals until restoration succeeds, even if a chunk is unloaded.
         // Empty wall entries are deliberately not repaired after a failed defense.
         d.damage.entrySet().removeIf(e->e.getValue().entity()==null);d.setDirty();announce(l,reason);

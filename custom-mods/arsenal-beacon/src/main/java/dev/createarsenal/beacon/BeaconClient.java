@@ -407,34 +407,31 @@ public final class BeaconClient {
 
     static final class GuideScreen extends PanelScreen {
         static final String[] IDS=GuideText.IDS;
-        final Screen parent;int page,scroll;boolean detail;
-        private RichText cached;private int cachedPage=-1,cachedWidth;private boolean cachedDetail;private String cachedLanguage="";
+        final Screen parent;int page,scroll;
+        private RichText cached;private int cachedPage=-1,cachedWidth;private String cachedLanguage="";
         private int navWidth,textX,textWidth,textTop,textBottom;
-        private Ui.UiButton detailButton;
+        private final List<Ui.UiButton> nav=new ArrayList<>();
         GuideScreen(Screen parent){super(Ui.t("guide.title"));this.parent=parent;}
         @Override Component subtitle(){return Ui.edition("guide.subtitle");}
         static String raw(String id,String part,boolean standalone){return GuideText.raw(id,part,standalone,key->Ui.has(key)?Ui.plain(key):null);}
-        private boolean hasDetail(){return !raw(IDS[page],"detail",BuildFlavor.STANDALONE).isEmpty();}
-        private String pageText(){
-            String text=raw(IDS[page],"body",BuildFlavor.STANDALONE);
-            if(detail&&hasDetail())text+="\n\n# "+Ui.plain("guide.more")+"\n"+raw(IDS[page],"detail",BuildFlavor.STANDALONE);
-            return ControlHints.guide(text);
-        }
+        private String pageText(){return ControlHints.guide(GuideText.page(IDS[page],BuildFlavor.STANDALONE,key->Ui.has(key)?Ui.plain(key):null));}
         private RichText text(){
             String language=Minecraft.getInstance().getLanguageManager().getSelected();
-            if(cached==null||cachedPage!=page||cachedWidth!=textWidth||cachedDetail!=detail||!cachedLanguage.equals(language)){cached=RichText.layout(font,pageText(),textWidth-10,Ui.BRASS);cachedPage=page;cachedWidth=textWidth;cachedDetail=detail;cachedLanguage=language;}
+            if(cached==null||cachedPage!=page||cachedWidth!=textWidth||!cachedLanguage.equals(language)){cached=RichText.layout(font,pageText(),textWidth-10,Ui.BRASS);cachedPage=page;cachedWidth=textWidth;cachedLanguage=language;}
             return cached;
         }
-        private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;detail=false;cached=null;if(detailButton!=null)detailButton.visible=hasDetail();}
+        /** Back/Next, arrow keys and the list all end up here, and the list highlight follows in render(). */
+        private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;cached=null;}
         @Override protected void init(){
-            super.init();navWidth=pw>=460?138:0;textX=left+14+(navWidth>0?navWidth+8:0);textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
+            super.init();nav.clear();
+            int rows=IDS.length,avail=ph-40-56;
+            navWidth=pw>=460&&(avail+4)/rows>=14?138:0;
+            textX=left+14+(navWidth>0?navWidth+8:0);textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
             closeButton();
             if(navWidth>0){
-                int rows=IDS.length,step=Math.min(21,(textBottom-textTop+4)/rows);
-                for(int i=0;i<rows;i++){int index=i;var b=button(Component.literal((i+1)+"  ").append(Ui.t("guide."+IDS[i]+".title")),left+14,textTop-6+i*step,navWidth,step-2,Ui.Look.ROW,x->go(index));b.selected=i==page;}
+                int step=Math.min(21,(textBottom-textTop+4)/rows);
+                for(int i=0;i<rows;i++){int index=i;var b=button(Component.literal((i+1)+"  ").append(Ui.t("guide."+IDS[i]+".title")),left+14,textTop-6+i*step,navWidth,step-2,Ui.Look.ROW,x->go(index));nav.add(b);}
             }
-            detailButton=button(Ui.t("guide.show_detail"),left+pw-14-130,top+34,130,18,Ui.Look.NORMAL,b->{detail=!detail;scroll=0;cached=null;});
-            detailButton.visible=hasDetail();
             int y=top+ph-30;
             button(Ui.t("back"),left+14,y,80,Ui.Look.NORMAL,b->go(page-1));
             button(Ui.t("done"),left+pw/2-35,y,70,Ui.Look.PRIMARY,b->onClose());
@@ -457,11 +454,12 @@ public final class BeaconClient {
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             panel(g);
             scroll=Math.min(scroll,maxScroll());
+            for(int i=0;i<nav.size();i++)nav.get(i).selected=i==page;
             if(navWidth>0)Ui.inset(g,left+12,textTop-8,navWidth+4,textBottom-textTop+10);
             boolean more=text().height>textBottom-textTop&&scroll<maxScroll();
-            Ui.text(g,font,more?Ui.t("guide.page_more",page+1,IDS.length):Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-140);
-            Ui.text(g,font,Ui.t("guide."+IDS[page]+".title"),textX,top+44,Ui.INK,textWidth-140);
-            detailButton.setMessage(detail?Ui.t("guide.hide_detail"):Ui.t("guide.show_detail"));detailButton.selected=detail;
+            Ui.text(g,font,more?Ui.t("guide.page_more",page+1,IDS.length):Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-12);
+            Ui.text(g,font,Ui.t("guide."+IDS[page]+".title"),textX,top+44,Ui.INK,textWidth-12);
+            if(navWidth==0){int px=left+pw-14-Ui.pipsWidth(IDS.length);Ui.pips(g,px,top+37,page+1,IDS.length,Ui.CYAN);}
             var text=text();
             g.enableScissor(textX,textTop,textX+textWidth,textBottom);text.draw(g,font,textX+2,textTop+2,scroll,textTop,textBottom);g.disableScissor();
             if(text.height>textBottom-textTop){
