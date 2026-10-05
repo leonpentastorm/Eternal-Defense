@@ -1,4 +1,26 @@
 {
   "key.arsenal_gun_guide.toggle": "Open / hide gun controls guide",
-  "key.categories.arsenal_gun_guide": "Create Arsenal Gun Guide"
+  "key.categories.arsenal_gun_guide": "Create Arsenal Gun Guide",
+  "gui.arsenal_gun_guide.title": "Weapon controls",
+  "gui.arsenal_gun_guide.title.jammed": "Controls | JAMMED",
+  "gui.arsenal_gun_guide.hide": "Hide",
+  "gui.arsenal_gun_guide.unbound": "Unbound",
+  "gui.arsenal_gun_guide.bind": "Bind in Controls",
+  "gui.arsenal_gun_guide.jam": "JAM",
+  "gui.arsenal_gun_guide.clear_jam": "[%s] Clear jam",
+  "gui.arsenal_gun_guide.conflict": "! Key shared by two actions",
+  "gui.arsenal_gun_guide.action.shoot": "Fire",
+  "gui.arsenal_gun_guide.action.aim": "Aim",
+  "gui.arsenal_gun_guide.action.reload": "Reload",
+  "gui.arsenal_gun_guide.action.fire_select": "Fire mode",
+  "gui.arsenal_gun_guide.action.melee": "Melee",
+  "gui.arsenal_gun_guide.action.inspect": "Inspect",
+  "gui.arsenal_gun_guide.action.refit": "Attachments",
+  "gui.arsenal_gun_guide.action.crawl": "Prone",
+  "gui.arsenal_gun_guide.action.interact": "Interact",
+  "gui.arsenal_gun_guide.action.zoom": "Scope zoom",
+  "gui.arsenal_gun_guide.action.open_config": "Gun settings",
+  "gui.arsenal_gun_guide.action.leanleft": "Lean left",
+  "gui.arsenal_gun_guide.action.leanright": "Lean right",
+  "gui.arsenal_gun_guide.action.clear_jam": "Clear jam"
 }

@@ -48,7 +48,8 @@ final class LangKeysTest {
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key);
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key+".note");
         for(String phase:List.of("unplaced","preparation","raid","disabled","restore","snapshot","decommissioning"))needed.add("phase."+phase);
-        needed.addAll(List.of("rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
+        for(String b:List.of("core","logistics","defense","restoration","vertical"))needed.add("upgrade."+b+".now");
+        needed.addAll(List.of("upgrade.reconnaissance.now_on","upgrade.reconnaissance.now_off","rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
         for(int age=0;age<=5;age++)needed.add("age."+age);
         for(String kind:List.of("gun","ammo","attachment","armor")){needed.add("platform.title."+kind);needed.add("platform.subtitle."+kind);needed.add("platform.station."+kind);needed.add("platform.browsing."+kind);}
         for(String type:WeaponBrowser.TYPES)needed.add("type.gun."+type);

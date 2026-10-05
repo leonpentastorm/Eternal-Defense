@@ -46,7 +46,8 @@ final class RaidRewardScreen extends BeaconClient.PanelScreen {
         normalButton.selected=!hard;hardButton.selected=hard;hardButton.accent=Ui.BRASS;
         var row=tiers.size()>tier?tiers.getCompound(tier):new CompoundTag();
         Ui.text(g,font,Ui.t(hard?"rewards.head_hard":"rewards.head_normal",tier),right,top+62,hard?Ui.BRASS:Ui.CYAN,rw);
-        int y=Ui.wrap(g,font,Ui.t("rewards.note",row.getInt("waves")),right,top+75,rw,Ui.MUTED,2);
+        boolean compact=ph<280;
+        int y=Ui.wrap(g,font,Ui.t("rewards.note",row.getInt("waves")),right,top+75,rw,Ui.MUTED,compact?1:2);
         if(tier==currentTier)Ui.text(g,font,Ui.t("rewards.current"),right,y,Ui.BRASS,rw);
         else if(tier>cap)Ui.text(g,font,Ui.t("rewards.capped",cap),right,y,Ui.ORANGE,rw);
         else Ui.text(g,font,Ui.t("rewards.preview"),right,y,Ui.MUTED,rw);
@@ -54,7 +55,7 @@ final class RaidRewardScreen extends BeaconClient.PanelScreen {
         Map<String,Integer> before=new HashMap<>();
         if(tier>0&&tiers.size()>tier-1)for(var entry:tiers.getCompound(tier-1).getList(hard?"hard":"normal",Tag.TAG_COMPOUND)){var n=(CompoundTag)entry;before.merge(key(ItemStack.of(n.getCompound("item"))),n.getInt("count"),Integer::sum);}
         var items=row.getList(hard?"hard":"normal",Tag.TAG_COMPOUND);
-        int listTop=y+14,visible=Math.max(1,(top+ph-52-listTop)/20);scroll=Math.min(scroll,Math.max(0,items.size()-visible));
+        int listTop=y+(compact?12:14),visible=Math.max(1,(top+ph-48-listTop)/20);scroll=Math.min(scroll,Math.max(0,items.size()-visible));
         Ui.inset(g,right-4,listTop-3,rw+4,visible*20+4);
         for(int i=scroll;i<Math.min(items.size(),scroll+visible);i++){
             var n=items.getCompound(i);var item=ItemStack.of(n.getCompound("item"));int iy=listTop+(i-scroll)*20,count=n.getInt("count");
@@ -65,8 +66,8 @@ final class RaidRewardScreen extends BeaconClient.PanelScreen {
             Ui.text(g,font,Ui.t("rewards.line",count,item.getHoverName()),right+23,iy+4,Ui.INK,rw-28-deltaWidth);
             if(delta>0)Ui.right(g,font,delta_,right+rw-4,iy+4,Ui.CYAN);
         }
-        if(items.size()>visible)Ui.text(g,font,Ui.t("rewards.scroll",items.size()),right,top+ph-48,Ui.MUTED,rw);
-        Ui.text(g,font,Ui.t("rewards.interval",row.getInt("interval")),right,top+ph-36,Ui.MUTED,rw);
+        if(items.size()>visible)Ui.text(g,font,Ui.t("rewards.scroll",items.size()),right,top+ph-42,Ui.MUTED,rw);
+        Ui.text(g,font,Ui.t("rewards.interval",row.getInt("interval")),right,top+ph-30,Ui.MUTED,rw-96);
         super.render(g,mx,my,partial);footer(g);var hover=itemAt(mx,my);if(hover!=null)g.renderTooltip(font,hover.item(),mx,my);
     }
     @Override BeaconClient.Hover itemAt(double x,double y){for(var icon:icons)if(Ui.inside(x,y,icon.x(),icon.y(),16,16))return icon;return null;}

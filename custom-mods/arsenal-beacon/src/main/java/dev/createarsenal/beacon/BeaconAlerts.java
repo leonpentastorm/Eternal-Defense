@@ -22,6 +22,10 @@ public final class BeaconAlerts {
     /** Pulsing red banner with hazard edges. The words carry the meaning; flashing only adds urgency. */
     private static void render(GuiGraphics g,int w,int h){
         var mc=Minecraft.getInstance();if(mc.level==null||mc.player==null||mc.options.hideGui||!attacking||System.nanoTime()-received>4_000_000_000L)return;
+        draw(g,w,h);
+    }
+    static void draw(GuiGraphics g,int w,int h){
+        var mc=Minecraft.getInstance();
         var text=Ui.t("alert.attack");float scale=Math.min(1.6f,(w-48f)/mc.font.width(text));
         int textWidth=(int)(mc.font.width(text)*scale),bw=textWidth+40,x=(w-bw)/2,y=Math.min(58,Math.max(8,h/5));
         boolean bright=(System.nanoTime()/400_000_000L)%2==0;

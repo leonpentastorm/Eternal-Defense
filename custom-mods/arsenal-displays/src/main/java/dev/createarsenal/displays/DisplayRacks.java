@@ -110,6 +110,18 @@ public final class DisplayRacks {
     }
     static final class RackItem extends BlockItem {
         RackItem(Block b){super(b,new Item.Properties());}
-        @Override public void appendHoverText(ItemStack s,Level l,List<Component> lines,TooltipFlag flag){super.appendHoverText(s,l,lines,flag);lines.add(Component.literal("Right-click with a gun to display it."));lines.add(Component.literal("Right-click with an empty hand to retrieve it."));}
+        /** Short interaction cues from the language file; the second block describes only what is special about this family. */
+        @Override public void appendHoverText(ItemStack s,Level l,List<Component> lines,TooltipFlag flag){
+            super.appendHoverText(s,l,lines,flag);
+            lines.add(Component.translatable("tooltip.arsenal_displays.insert").withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.translatable("tooltip.arsenal_displays.swap").withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.translatable("tooltip.arsenal_displays.retrieve").withStyle(net.minecraft.ChatFormatting.GRAY));
+            if(getBlock() instanceof Rack rack){
+                if(rack.wall)lines.add(Component.translatable("tooltip.arsenal_displays.wall").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+                if(rack.glass)lines.add(Component.translatable("tooltip.arsenal_displays.glass").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+                if(rack.heavy)lines.add(Component.translatable("tooltip.arsenal_displays.heavy").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+                else if(rack.wide)lines.add(Component.translatable("tooltip.arsenal_displays.wide").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
+            }
+        }
     }
 }

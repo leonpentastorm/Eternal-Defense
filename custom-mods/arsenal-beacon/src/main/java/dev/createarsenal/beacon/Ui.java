@@ -77,6 +77,8 @@ final class Ui {
         g.fill(x,y,x+3,y+h,accent);
     }
     static void inset(GuiGraphics g,int x,int y,int w,int h){g.fill(x,y,x+w,y+h,DEEP);g.fill(x,y,x+w,y+1,SHADOW);g.fill(x,y+h-1,x+w,y+h,SLATE_HI);}
+    /** Frame for a borderless EditBox so text fields match the buttons. */
+    static void field(GuiGraphics g,int x,int y,int w,int h,boolean focused){g.fill(x,y,x+w,y+h,focused?CYAN:EDGE);g.fill(x+1,y+1,x+w-1,y+h-1,DEEP);}
     static void rule(GuiGraphics g,int x,int y,int w){g.fill(x,y,x+w,y+1,EDGE);}
     static void beaconGlyph(GuiGraphics g,int x,int y){
         for(int i=0;i<5;i++){g.fill(x+4-i,y+i,x+5+i,y+i+1,i==4?CYAN_DIM:CYAN);g.fill(x+4-i,y+8-i,x+5+i,y+9-i,i==4?CYAN_DIM:CYAN);}
@@ -118,7 +120,9 @@ final class Ui {
         Look look;boolean selected,warning,locked,on,label=true;int accent=CYAN;Painter painter;
         UiButton(int x,int y,int w,int h,Component label,Look look,OnPress press){super(x,y,w,h,label,press,DEFAULT_NARRATION);this.look=look;}
         UiButton accent(int color){accent=color;return this;}
-        UiButton painter(Painter p){painter=p;label=false;return this;}
+        UiButton painter(Painter p){painter=p;return this;}
+        /** For rows that paint their own content. */
+        UiButton noLabel(){label=false;return this;}
         @Override protected void renderWidget(GuiGraphics g,int mx,int my,float partial){
             Minecraft mc=Minecraft.getInstance();Font font=mc.font;
             boolean hover=isHovered()&&active,pressed=hover&&mc.mouseHandler.isLeftPressed(),focus=isFocused();

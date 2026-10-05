@@ -55,9 +55,12 @@ public final class BeaconClient {
      */
     private static void hud(GuiGraphics g,int w,int h){
         var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null||!current()||!Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))return;
-        var font=mc.font;boolean raid=state.getString("phase").equals("raid"),dead=n("health")<=0;
+        drawHud(g,w,h);
+    }
+    static void drawHud(GuiGraphics g,int w,int h){
+        var mc=Minecraft.getInstance();var font=mc.font;boolean raid=state.getString("phase").equals("raid"),dead=n("health")<=0;
         Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
-        int width=Math.min(Math.max(140,Math.max(font.width(title),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3)),height=48+(raid&&on("hardRaid")?11:0);
+        int width=Math.min(Math.max(140,Math.max(font.width(title),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3)),height=48+(raid&&on("hardRaid")?14:0);
         int x=6,y=Math.max(8,(h-height)/2);
         float fraction=Math.max(0,Math.min(1,n("health")/(float)Math.max(1,n("maximum"))));
         g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
@@ -251,7 +254,7 @@ public final class BeaconClient {
             Ui.text(g,font,Ui.t("overview.formula",n("buildingTier"),n("logistics"),n("nextRaidBonus"),n("raidLimit"),tier),x+10,y+43,Ui.MUTED,w-20);
             y+=62;
             int bottom=top+ph-52;
-            if(bottom-y>=62){
+            if(bottom-y>=68){
                 var parts=state.getCompound("scoreBreakdown");
                 Component status=on("surveyBusy")?Ui.t("overview.survey",n("surveyPercent")):on("surveyIncomplete")?Ui.t("overview.partial"):Ui.t("overview.live");
                 Ui.text(g,font,Ui.t("overview.breakdown"),x+2,y+2,Ui.MUTED,w/3);
@@ -259,12 +262,12 @@ public final class BeaconClient {
                 String[] keys={"structure","palette","details","lighting","furnishings","layout","factory","platforms"};
                 int cell=w/4;
                 for(int i=0;i<keys.length;i++){
-                    int cx=x+(i%4)*cell,cy=y+15+(i/4)*21;
-                    g.fill(cx,cy,cx+cell-3,cy+19,Ui.DEEP);g.fill(cx,cy,cx+2,cy+19,Ui.CYAN_DIM);
-                    Ui.text(g,font,Ui.t("score."+keys[i]),cx+6,cy+2,Ui.MUTED,cell-12);
-                    Ui.text(g,font,Component.literal(Integer.toString(parts.getInt(keys[i]))),cx+6,cy+10,Ui.INK,cell-12);
+                    int cx=x+(i%4)*cell,cy=y+15+(i/4)*24;
+                    g.fill(cx,cy,cx+cell-3,cy+22,Ui.DEEP);g.fill(cx,cy,cx+2,cy+22,Ui.CYAN_DIM);
+                    Ui.text(g,font,Ui.t("score."+keys[i]),cx+7,cy+3,Ui.MUTED,cell-14);
+                    Ui.text(g,font,Component.literal(Integer.toString(parts.getInt(keys[i]))),cx+7,cy+13,Ui.INK,cell-14);
                 }
-                y+=15+42+3;
+                y+=15+48+3;
             }
             if(bottom-y>=10)Ui.text(g,font,on("expansionBlocked")?Ui.t("overview.blocked"):Ui.t("overview.cover"),x+2,y+1,on("expansionBlocked")?Ui.ORANGE:Ui.MUTED,w-4);
             claim.active=on("installed")&&on("near")&&(n("rewards")>0||on("rewardChest"));
@@ -281,7 +284,9 @@ public final class BeaconClient {
                 Ui.pips(g,cx+cw-8-Ui.pipsWidth(max),cy+4,grade,max,complete?Ui.BRASS:Ui.CYAN);
                 int rowY=cy+ch-21;
                 Component effect=complete?completeText(i,grade):nextText(i,grade,max);
-                Ui.wrap(g,font,effect,cx+9,cy+14,cw-16,complete?Ui.MUTED:Ui.INK,Math.max(1,(rowY-(cy+14)-1)/11));
+                int lines=Math.max(1,(rowY-(cy+14)-1)/11),textY=cy+14;
+                if(lines>=3&&!complete){Ui.text(g,font,nowText(i,grade),cx+9,textY,Ui.MUTED,cw-16);textY+=13;lines--;}
+                Ui.wrap(g,font,effect,cx+9,textY,cw-16,complete?Ui.MUTED:Ui.INK,lines);
                 var icon=part(i);g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
                 Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
                 Ui.UiButton b=(Ui.UiButton)upgrades.get(i);
@@ -306,6 +311,16 @@ public final class BeaconClient {
                 default -> Ui.t("upgrade."+BRANCHES[branch]+".next");
             };
         }
+        private static Component nowText(int branch,int grade){
+            return switch(BRANCHES[branch]){
+                case "core" -> Ui.t("upgrade.core.now",grade+1,Rules.radius(grade),Rules.maximumHealth(grade));
+                case "logistics" -> Ui.t("upgrade.logistics.now",grade);
+                case "defense" -> Ui.t("upgrade.defense.now",Rules.defensePercent(grade));
+                case "restoration" -> Ui.t("upgrade.restoration.now",Rules.healingPercent(grade));
+                case "vertical" -> Ui.t("upgrade.vertical.now",Rules.below(grade),Rules.above(grade));
+                default -> Ui.t(grade>0?"upgrade.reconnaissance.now_on":"upgrade.reconnaissance.now_off");
+            };
+        }
         private static Component completeText(int branch,int grade){
             return switch(BRANCHES[branch]){
                 case "core" -> Ui.t("upgrade.core.done",grade+1,Rules.radius(grade),Rules.maximumHealth(grade));
@@ -325,7 +340,7 @@ public final class BeaconClient {
             g.drawString(font,level.getVisualOrderText(),-font.width(level)/2,0,Ui.INK,false);g.pose().popPose();
             Ui.text(g,font,Ui.t("raid.payout",n("prospectiveTier")),x+10,lay.levelY+26,Ui.INK,w-20);
             if(lay.roomy())Ui.wrap(g,font,Ui.t("raid.level_note"),x+10,lay.levelY+38,w-20,Ui.MUTED,2);
-            int by=lay.breakY;int breakH=top+ph-52-by;
+            int by=lay.breakY;int breakH=Math.min(top+ph-52-by,lay.roomy()?84:58);
             Ui.card(g,x,by,w,breakH,Ui.BRASS);
             int pauseDays=(int)Math.ceil(state.getLong("respiteTicks")/24000.0);
             Ui.text(g,font,Ui.t("raid.break_title"),x+10,by+5,Ui.BRASS,w-20);
@@ -362,11 +377,16 @@ public final class BeaconClient {
 
     static final class ConfirmScreen extends PanelScreen {
         final String kind,token;
+        private RichText text;
         ConfirmScreen(String kind,String token){super(Ui.t("confirm.title"));this.kind=kind;this.token=token;}
         private boolean place(){return kind.equals("place");}
         @Override Component subtitle(){return Ui.t("confirm.subtitle");}
         @Override protected void init(){
-            super.init();pw=Math.min(460,width-16);ph=Math.min(300,height-16);left=(width-pw)/2;top=(height-ph)/2;
+            super.init();pw=Math.min(460,width-16);
+            String raw=place()?Ui.plain("confirm.place.body",state.getBoolean("introCompleted")?Ui.plain("confirm.place.intro_done"):Ui.plain("confirm.place.intro_new")):Ui.plain("confirm.remove.body");
+            text=RichText.layout(font,ControlHints.guide(raw),pw-28-10,place()?Ui.CYAN:Ui.RED);
+            // Sized to its copy: a short warning should not float in a tall empty panel.
+            ph=Math.min(height-16,Math.max(150,34+22+8+text.height+10+44));left=(width-pw)/2;top=(height-ph)/2;
             int half=(pw-36)/2;
             // Cancel comes first and is the default focus so Enter never destroys a campaign.
             var cancel=button(Ui.t("confirm.cancel"),left+14,top+ph-34,half,Ui.Look.PRIMARY,b->onClose());
@@ -379,8 +399,6 @@ public final class BeaconClient {
             if(place()){g.fill(x,y,x+w,y+22,Ui.CYAN_FILL);g.fill(x,y+21,x+w,y+22,Ui.CYAN);}
             else Ui.hazard(g,x,y,w,22,0xff2b1214,0xff5c2226);
             Ui.text(g,font,place()?Ui.t("confirm.place.head"):Ui.t("confirm.remove.head"),x+8,y+7,place()?Ui.CYAN:Ui.RED,w-16);
-            String raw=place()?Ui.plain("confirm.place.body",state.getBoolean("introCompleted")?Ui.plain("confirm.place.intro_done"):Ui.plain("confirm.place.intro_new")):Ui.plain("confirm.remove.body");
-            var text=RichText.layout(font,ControlHints.guide(raw),w-10,place()?Ui.CYAN:Ui.RED);
             int top0=y+30,bottom=top+ph-42;
             g.enableScissor(x,top0,x+w,bottom);text.draw(g,font,x+4,top0,0,top0,bottom);g.disableScissor();
             super.render(g,mx,my,partial);footer(g);
@@ -409,7 +427,7 @@ public final class BeaconClient {
         }
         private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;detail=false;cached=null;if(detailButton!=null)detailButton.visible=hasDetail();}
         @Override protected void init(){
-            super.init();navWidth=pw>=420?120:0;textX=left+14+(navWidth>0?navWidth+8:0);textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
+            super.init();navWidth=pw>=460?138:0;textX=left+14+(navWidth>0?navWidth+8:0);textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
             closeButton();
             if(navWidth>0){
                 int rows=IDS.length,step=Math.min(21,(textBottom-textTop+4)/rows);
@@ -440,7 +458,8 @@ public final class BeaconClient {
             panel(g);
             scroll=Math.min(scroll,maxScroll());
             if(navWidth>0)Ui.inset(g,left+12,textTop-8,navWidth+4,textBottom-textTop+10);
-            Ui.text(g,font,Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-140);
+            boolean more=text().height>textBottom-textTop&&scroll<maxScroll();
+            Ui.text(g,font,more?Ui.t("guide.page_more",page+1,IDS.length):Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-140);
             Ui.text(g,font,Ui.t("guide."+IDS[page]+".title"),textX,top+44,Ui.INK,textWidth-140);
             detailButton.setMessage(detail?Ui.t("guide.hide_detail"):Ui.t("guide.show_detail"));detailButton.selected=detail;
             var text=text();
@@ -448,7 +467,6 @@ public final class BeaconClient {
             if(text.height>textBottom-textTop){
                 int track=textBottom-textTop,thumb=Math.max(12,track*track/text.height),ty=textTop+(maxScroll()==0?0:(track-thumb)*scroll/maxScroll());
                 g.fill(textX+textWidth-3,textTop,textX+textWidth,textBottom,Ui.TRACK);g.fill(textX+textWidth-3,ty,textX+textWidth,ty+thumb,Ui.CYAN);
-                if(scroll<maxScroll())Ui.right(g,font,Ui.t("guide.scroll"),textX+textWidth-8,textBottom+3,Ui.MUTED);
             }
             super.render(g,mx,my,partial);
         }

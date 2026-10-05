@@ -10,6 +10,13 @@ final class WeaponBrowserTest {
         }
         assertEquals(2,WeaponBrowser.layout(854,480,true).columns());assertTrue(WeaponBrowser.layout(854,480,true).capacity()>=20);assertEquals(40,WeaponBrowser.layout(1280,720,true).capacity());
     }
+    @Test void theDefaultWindowKeepsRoomForTheListWithMergedFilterRows(){
+        // Minecraft's default 854 x 480 window at GUI scale 2 is 427 x 240 scaled pixels.
+        var gun=WeaponBrowser.layout(427,240,true,false);var armor=WeaponBrowser.layout(427,240,true,true);var ammo=WeaponBrowser.layout(427,240,false,false);
+        assertTrue(gun.compact()&&armor.compact()&&ammo.compact());
+        assertTrue(gun.capacity()>=2&&armor.capacity()>=3&&ammo.capacity()>=3,"gun "+gun.capacity()+" armor "+armor.capacity()+" ammo "+ammo.capacity());
+        assertFalse(WeaponBrowser.layout(1280,720,true,false).compact());
+    }
     @Test void EmptyListsAndUntrustedNavigationCannotOverflow(){assertEquals(0,WeaponBrowser.page(Integer.MAX_VALUE,0,40));assertEquals(0,WeaponBrowser.page(-4,598,12));assertEquals(49,WeaponBrowser.page(Integer.MAX_VALUE,598,12));assertEquals(40,WeaponBrowser.size(Integer.MAX_VALUE));assertEquals(1,WeaponBrowser.size(-10));}
     @Test void typeNamesFollowNativeCategoriesAndInvalidFiltersFallBack(){assertEquals("mg",WeaponBrowser.nativeType("MG"));assertEquals("other",WeaponBrowser.nativeType("unfamiliar_author_type"));assertEquals("all",WeaponBrowser.normalize("bad"));assertEquals("Machine guns",WeaponBrowser.label("mg"));assertEquals("Launchers",WeaponBrowser.label("rpg"));}
 }
