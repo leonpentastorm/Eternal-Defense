@@ -22,7 +22,6 @@ every state in the brief (normal, hover, pressed, selected, disabled, locked, wa
 | Field guide | `BeaconClient.GuideScreen` | Page list, short pages, *Show details* toggle, keyboard paging and scrolling |
 | Gun Guide | `GuideClient` | Key-cap control card, conflict marks, collapsed key-cap badge, JAM alert with triangle and `[key] Clear jam` |
 | Displays | `DisplayRacks.RackItem`, lang | Consistent names (`Gun Stand`, `Wide Wall Gun Rack`, `Glass Gun Case`...), short interaction tooltips from language keys |
-| Icons | `tools/ui-assets/make_icons.py` | Reinforced plating, logistics module, resonance coil, restoration matrix, field guide |
 
 **Text.** All client-originated text is in `assets/arsenal_beacon/lang/en_us.json` (Gun Guide and Displays have their own).
 Edition-specific copy uses `.pack` / `.standalone` key suffixes, e.g. `guide.stations.detail.pack`. The guide shows
@@ -55,3 +54,6 @@ and `GuideActions` behave exactly as before and their existing tests still pass.
 
 The screenshot harness (`QaShots`) was a throwaway class kept out of the repository; it fed hand-made state into the screens, so numbers in
 the screenshots are fabricated.
+
+**Correction:** an earlier revision redrew five 16 x 16 component icons. Those models actually use `industrial_atlas.png`, so the
+redraws never appeared in game; they have been reverted.
