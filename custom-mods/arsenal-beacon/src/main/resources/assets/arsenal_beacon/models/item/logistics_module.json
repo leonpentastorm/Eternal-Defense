@@ -1,0 +1,103 @@
+{
+  "gui_light": "front",
+  "textures": {
+    "particle": "arsenal_beacon:item/industrial_atlas",
+    "sprite": "arsenal_beacon:item/industrial_atlas"
+  },
+  "elements": [
+    {
+      "from": [
+        0.0,
+        0.5641025641025648,
+        7.99
+      ],
+      "to": [
+        16.0,
+        15.435897435897434,
+        8.01
+      ],
+      "faces": {
+        "north": {
+          "texture": "#sprite",
+          "uv": [
+            6.4632489190858555,
+            0.659114315139032,
+            9.546633724521309,
+            5.437693099897014
+          ]
+        },
+        "south": {
+          "texture": "#sprite",
+          "uv": [
+            6.4632489190858555,
+            0.659114315139032,
+            9.546633724521309,
+            5.437693099897014
+          ]
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        25
+      ],
+      "translation": [
+        1.13,
+        3.2,
+        1.13
+      ],
+      "scale": [
+        0.68,
+        0.68,
+        0.68
+      ]
+    },
+    "thirdperson_righthand": {
+      "translation": [
+        0,
+        3,
+        1
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+plugins { id 'java'; id 'net.minecraftforge.gradle' version '6.0.54' }
+version = '1.1.0'
+group = 'dev.createarsenal'
+base { archivesName = 'arsenal-displays' }
+java { toolchain.languageVersion = JavaLanguageVersion.of(17); withSourcesJar() }
+minecraft { mappings channel: 'official', version: '1.20.1' }
+dependencies { minecraft 'net.minecraftforge:forge:1.20.1-47.4.20' }
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('jar', Jar).configure { finalizedBy 'reobfJar' }
+
+// Both flavors share code and registry IDs. Never install the two flavors together.
+tasks.register('standaloneJar', Jar) {
+    archiveClassifier = 'standalone'
+    from(sourceSets.main.output) {
+        exclude 'META-INF/mods.toml', 'arsenal-build.properties'
+    }
+    from('src/standalone/resources')
+    dependsOn tasks.named('classes')
+    finalizedBy 'reobfStandaloneJar'
+}
+reobf { standaloneJar {} }

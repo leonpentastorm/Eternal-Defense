@@ -1,0 +1,10 @@
+maven.minecraftforge.net
+libraries.minecraft.net
+piston-meta.mojang.com
+piston-data.mojang.com
+maven.blamejared.com
+downloads.gradle.org
+services.gradle.org
+resources.download.minecraft.net
+api.modrinth.com
+cdn.modrinth.com

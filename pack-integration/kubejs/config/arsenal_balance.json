@@ -1,0 +1,18 @@
+{
+  "healthMultipliers": [
+    3.0,
+    4.0,
+    6.0,
+    8.0
+  ],
+  "damageMultipliers": [
+    1.1,
+    1.2,
+    1.35,
+    1.5
+  ],
+  "ordinaryHealthCap": 240,
+  "eliteHealthCap": 900,
+  "bossHealthCap": 4000,
+  "description": "World-wide factory milestones. Only hostile mobs; passive mobs and villagers are unchanged. Applied once per entity."
+}

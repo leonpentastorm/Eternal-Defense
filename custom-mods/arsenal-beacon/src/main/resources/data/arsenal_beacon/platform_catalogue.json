@@ -1,0 +1,7730 @@
+{
+  "daffas_arsenal:ammo/500": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "daffas_arsenal:500",
+    "name": "GUNTUR .500 Magnum"
+  },
+  "daffas_arsenal:ammo/acp45": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "daffas_arsenal:acp45",
+    "name": "GUNTUR .45 ACP"
+  },
+  "daffas_arsenal:ammo/daffas_40mm": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "daffas_arsenal:daffas_40mm",
+    "name": "GUNTUR 40mm"
+  },
+  "daffas_arsenal:ammo/daffas_flechette": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "daffas_arsenal:daffas_flechette",
+    "name": "GUNTUR Flechette"
+  },
+  "daffas_arsenal:ammo/elektrikal": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "daffas_arsenal:elektrikal",
+    "name": "Daffa's Phone Battery"
+  },
+  "daffas_arsenal:ammo/water": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "daffas_arsenal:water",
+    "name": "Daffa's Water"
+  },
+  "daffas_arsenal:attachments/knife_skill": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:knife_skill",
+    "name": "HAK Skill"
+  },
+  "daffas_arsenal:attachments/laser_regular": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:laser_regular",
+    "name": "DigiDAW Laser"
+  },
+  "daffas_arsenal:attachments/makten_stock": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:makten_stock",
+    "name": "MAC10 Extended Stock"
+  },
+  "daffas_arsenal:attachments/mgup1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:mgup1",
+    "name": "MG3 Rapid Cycle"
+  },
+  "daffas_arsenal:attachments/mgup2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:mgup2",
+    "name": "MG3 Heavy Buffer"
+  },
+  "daffas_arsenal:attachments/muzzle_silencer_heknah": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:muzzle_silencer_heknah",
+    "name": "Gandeng SI-A Suppressor"
+  },
+  "daffas_arsenal:attachments/reflect_digi_daw": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:reflect_digi_daw",
+    "name": "DigiDAW Mini"
+  },
+  "daffas_arsenal:attachments/reflect_redot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:reflect_redot",
+    "name": "DigiDAW Red Dot"
+  },
+  "daffas_arsenal:attachments/scope_g36": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_g362",
+    "name": "G36 Optic"
+  },
+  "daffas_arsenal:attachments/scope_m2ampon": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_m2ampon",
+    "name": "M2 Aimpoint (Tall)"
+  },
+  "daffas_arsenal:attachments/scope_m2ampon2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_m2ampon2",
+    "name": "M2 Aimpoint (Low)"
+  },
+  "daffas_arsenal:attachments/scope_ssg69": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_ssg69",
+    "name": "SSG69 Scope"
+  },
+  "daffas_arsenal:attachments/scope_wawan2000": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_wawan2000",
+    "name": "Daffa's 8x Scope"
+  },
+  "daffas_arsenal:gun/ak47": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ak47",
+    "name": "AK47"
+  },
+  "daffas_arsenal:gun/aksopmod": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:aksopmod",
+    "name": "AK Tactical"
+  },
+  "daffas_arsenal:gun/apacoba9": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:apacoba9",
+    "name": "APC9"
+  },
+  "daffas_arsenal:gun/apacoba9_sup": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:apacoba9_sup",
+    "name": "APC9 SD"
+  },
+  "daffas_arsenal:gun/auxur": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:auxur",
+    "name": "Steyr ACR"
+  },
+  "daffas_arsenal:gun/g36": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:g36",
+    "name": "MG36"
+  },
+  "daffas_arsenal:gun/g36c": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:g36c",
+    "name": "G36C"
+  },
+  "daffas_arsenal:gun/g36c_commando": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:g36c_commando",
+    "name": "G36C with Foregrip"
+  },
+  "daffas_arsenal:gun/gerosa": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:gerosa",
+    "name": "OTs-14"
+  },
+  "daffas_arsenal:gun/harpa9": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:harpa9",
+    "name": "ARP9"
+  },
+  "daffas_arsenal:gun/hk416": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:hk416",
+    "name": "HK416"
+  },
+  "daffas_arsenal:gun/hk416_sup": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:hk416_sup",
+    "name": "HK416 SD"
+  },
+  "daffas_arsenal:gun/hk417": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:hk417",
+    "name": "HK417"
+  },
+  "daffas_arsenal:gun/hk45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:hk45",
+    "name": "HK45"
+  },
+  "daffas_arsenal:gun/hk45_sup": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:hk45_sup",
+    "name": "HK45 Tactical"
+  },
+  "daffas_arsenal:gun/m79": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:m79",
+    "name": "M79"
+  },
+  "daffas_arsenal:gun/m79sohrt": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:m79sohrt",
+    "name": "M79 (Short)"
+  },
+  "daffas_arsenal:gun/makten_single": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:makten_single",
+    "name": "MAC10"
+  },
+  "daffas_arsenal:gun/makten_single_taktis": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:makten_single_taktis",
+    "name": "MAC10 Tactical"
+  },
+  "daffas_arsenal:gun/mg338": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:mg338",
+    "name": "Machine Gun 338"
+  },
+  "daffas_arsenal:gun/migraine3": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:migraine3",
+    "name": "MG3"
+  },
+  "daffas_arsenal:gun/mp5k": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:mp5k",
+    "name": "MP5K"
+  },
+  "daffas_arsenal:gun/nova": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:nova",
+    "name": "N4"
+  },
+  "daffas_arsenal:gun/nova6": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:nova6",
+    "name": "N6"
+  },
+  "daffas_arsenal:gun/nova9": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:nova9",
+    "name": "N9"
+  },
+  "daffas_arsenal:gun/p99_hak": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:p99_hak",
+    "name": "P99 And HAK"
+  },
+  "daffas_arsenal:gun/p99_nohak": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:p99_nohak",
+    "name": "P99"
+  },
+  "daffas_arsenal:gun/pego": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:pego",
+    "name": "P90"
+  },
+  "daffas_arsenal:gun/pego762": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:pego762",
+    "name": "P762"
+  },
+  "daffas_arsenal:gun/pegomc": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:pegomc",
+    "name": "P90 MC"
+  },
+  "daffas_arsenal:gun/pegont": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:pegont",
+    "name": "P90 TN"
+  },
+  "daffas_arsenal:gun/pegontmc": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:pegontmc",
+    "name": "P90 TN MC"
+  },
+  "daffas_arsenal:gun/rpd": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:rpd",
+    "name": "RPD"
+  },
+  "daffas_arsenal:gun/samula3": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:samula3",
+    "name": "Samula3"
+  },
+  "daffas_arsenal:gun/sg550": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:sg550",
+    "name": "SG550"
+  },
+  "daffas_arsenal:gun/sg552": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:sg552",
+    "name": "SG552"
+  },
+  "daffas_arsenal:gun/sgputer": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:sgputer",
+    "name": "M1887"
+  },
+  "daffas_arsenal:gun/sgputer2": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:sgputer2",
+    "name": "M1887 (Short)"
+  },
+  "daffas_arsenal:gun/sl8": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:sl8",
+    "name": "SL8"
+  },
+  "daffas_arsenal:gun/southeastmomssecretweapon": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:southeastmomssecretweapon",
+    "name": "Red Folding Hanger"
+  },
+  "daffas_arsenal:gun/southeastmomssecretweapon2": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:southeastmomssecretweapon2",
+    "name": "Blue Folding Hanger"
+  },
+  "daffas_arsenal:gun/southeastmomssecretweapon3": {
+    "age": 4,
+    "kind": "gun",
+    "id": "daffas_arsenal:southeastmomssecretweapon3",
+    "name": "Green Folding Hanger"
+  },
+  "daffas_arsenal:gun/spasi15": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:spasi15",
+    "name": "SPAS-15"
+  },
+  "daffas_arsenal:gun/ss1_v2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ss1_v2",
+    "name": "SS1-V2"
+  },
+  "daffas_arsenal:gun/ss1_v5": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ss1_v5",
+    "name": "SS1-R5"
+  },
+  "daffas_arsenal:gun/ss1_v5g": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ss1_v5g",
+    "name": "SS1-V5 Gold"
+  },
+  "daffas_arsenal:gun/ssg69": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ssg69",
+    "name": "SSG69"
+  },
+  "daffas_arsenal:gun/ssg69s": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:ssg69s",
+    "name": "SSG69 S \u00a76(Signature)"
+  },
+  "daffas_arsenal:gun/taurus": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:taurus",
+    "name": "Raging Bull .500"
+  },
+  "daffas_arsenal:gun/taurus2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:taurus2",
+    "name": "Snub Nose .500"
+  },
+  "daffas_arsenal:gun/uji": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:uji",
+    "name": "Dual MAC10"
+  },
+  "daffas_arsenal:gun/wawan2000": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:wawan20002",
+    "name": "WA2000 Type2"
+  },
+  "daffas_arsenal:gun/wawan20002": {
+    "age": 3,
+    "kind": "gun",
+    "id": "daffas_arsenal:wawan2000",
+    "name": "WA2000 Type1"
+  },
+  "daffas_arsenal:gun/welrod": {
+    "age": 2,
+    "kind": "gun",
+    "id": "daffas_arsenal:welrod",
+    "name": "Welrod"
+  },
+  "lradd:ammo/2mm_ec": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "lradd:2mm_ec",
+    "name": "2MM EC"
+  },
+  "lradd:ammo/545x39": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:545x39",
+    "name": "\u00a7e5.45x39mm Bullet"
+  },
+  "lradd:ammo/arrow": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:arrow",
+    "name": "CROSSBOW ARROW"
+  },
+  "lradd:ammo/flintlock_bullet": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:flintlock_bullet",
+    "name": "FLINTLOCK BULLET"
+  },
+  "lradd:ammo/fusion_cell": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:fusion_cell",
+    "name": "FUSION CELL"
+  },
+  "lradd:ammo/m993": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:m993",
+    "name": "M993 BULLET"
+  },
+  "lradd:ammo/nail": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "lradd:nail",
+    "name": "NAILS"
+  },
+  "lradd:attachment/bipod": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:grip_bipod",
+    "name": "X48 Bipod"
+  },
+  "lradd:attachment/c784": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:muzzle_s_c784",
+    "name": "C784 Silencer"
+  },
+  "lradd:attachment/cqr_g2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:grip_cqr_g2",
+    "name": "CQR Front Grip"
+  },
+  "lradd:attachment/holosun": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:scope_holosun",
+    "name": "HS507C X2 Composite Scope"
+  },
+  "lradd:attachment/holosun_reddot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:sight_holosun_reddot",
+    "name": "Holosun Reddot Sight"
+  },
+  "lradd:attachment/nsic": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:nsic_sight",
+    "name": "NSIC SIGHT"
+  },
+  "lradd:attachment/re": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:scope_re",
+    "name": "XC-02 Cross Scope"
+  },
+  "lradd:attachment/romeo1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:sight_romeo1",
+    "name": "Sig Romeo 1 Reddot Sight"
+  },
+  "lradd:attachment/strikefire": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:scope_strikefire2",
+    "name": "Strikefire II Reddot Sight"
+  },
+  "lradd:attachment/vg1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:grip_vg1",
+    "name": "VG1 GRIP"
+  },
+  "lradd:gun/acr": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:acr",
+    "name": "ACR"
+  },
+  "lradd:gun/ash12": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lradd:ash12",
+    "name": "ASH-12"
+  },
+  "lradd:gun/aug": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:aug",
+    "name": "AUG"
+  },
+  "lradd:gun/axmc": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lradd:axmc",
+    "name": "AXMC"
+  },
+  "lradd:gun/bam4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:bam4",
+    "name": "BAM4"
+  },
+  "lradd:gun/famas": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:famas",
+    "name": "FAMAS"
+  },
+  "lradd:gun/gauss_rifle": {
+    "age": 5,
+    "kind": "gun",
+    "id": "lradd:gauss_rifle",
+    "name": "GAUSS RIFLE"
+  },
+  "lradd:gun/m200": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lradd:m200",
+    "name": "M200"
+  },
+  "lradd:gun/m202": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lradd:m202",
+    "name": "M202"
+  },
+  "lradd:gun/mag_7": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:mag7",
+    "name": "MAG 7"
+  },
+  "lradd:gun/malorian": {
+    "age": 5,
+    "kind": "gun",
+    "id": "lradd:malorian",
+    "name": "MALORIAN 3516"
+  },
+  "lradd:gun/mcx": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:mcx",
+    "name": "LVAR"
+  },
+  "lradd:gun/mdr_223": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:mdr_223",
+    "name": "DT MDR 223"
+  },
+  "lradd:gun/mdr_308": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:mdr_308",
+    "name": "DT MDR 308"
+  },
+  "lradd:gun/mg42": {
+    "age": 2,
+    "kind": "gun",
+    "id": "lradd:mg42",
+    "name": "MG42"
+  },
+  "lradd:gun/mk47": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:mk47",
+    "name": "MK47"
+  },
+  "lradd:gun/nailgun": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:nailgun",
+    "name": "NAILGUN"
+  },
+  "lradd:gun/nitro_505": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:nitro_505",
+    "name": "NITRO 505"
+  },
+  "lradd:gun/p250": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:p250",
+    "name": "P250"
+  },
+  "lradd:gun/p90": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:p90",
+    "name": "P90"
+  },
+  "lradd:gun/pp19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:pp19",
+    "name": "PP19"
+  },
+  "lradd:gun/qbz_191": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lradd:qbz191_em",
+    "name": "QBZ191- Electromagnetic Rifles"
+  },
+  "lradd:gun/rfb": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:rfb",
+    "name": "KEL TEC-RFB"
+  },
+  "lradd:gun/sa58": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:sa58",
+    "name": "SA58"
+  },
+  "lradd:gun/sg553": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:sg553",
+    "name": "SG553"
+  },
+  "lradd:gun/smg45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:smg45",
+    "name": "SMG-45"
+  },
+  "lradd:gun/txc": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:txc",
+    "name": "TXC"
+  },
+  "lradd:gun/ultimax100": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:ultimax100",
+    "name": "ULTIMAX 100"
+  },
+  "lradd:gun/xm8": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lradd:xm8",
+    "name": "XM8"
+  },
+  "lrtactical:consumable/ai2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/ai2"
+  },
+  "lrtactical:consumable/amoxycillin": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/amoxycillin"
+  },
+  "lrtactical:consumable/blood_pack": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/blood_pack"
+  },
+  "lrtactical:consumable/carfak": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/carfak"
+  },
+  "lrtactical:consumable/cms": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/cms"
+  },
+  "lrtactical:consumable/condensed_milk": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/condensed_milk"
+  },
+  "lrtactical:consumable/goldenstar": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/goldenstar"
+  },
+  "lrtactical:consumable/ibuprofen": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/ibuprofen"
+  },
+  "lrtactical:consumable/surv12": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/surv12"
+  },
+  "lrtactical:consumable/vaseline": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:consumable/vaseline"
+  },
+  "lrtactical:flash_shield": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:flash_shield"
+  },
+  "lrtactical:melee/baseball_bat": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "lrtactical:melee/baseball_bat"
+  },
+  "lrtactical:melee/dagger": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:melee/dagger"
+  },
+  "lrtactical:melee/karambit": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:melee/karambit"
+  },
+  "lrtactical:throwable/flash_grenade": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:throwable/flash_grenade"
+  },
+  "lrtactical:throwable/m67": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:throwable/m67"
+  },
+  "lrtactical:throwable/molotov": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "lrtactical:throwable/molotov"
+  },
+  "lrtactical:throwable/rgn": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:throwable/rgn"
+  },
+  "lrtactical:throwable/smoke_grenade": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lrtactical:throwable/smoke_grenade"
+  },
+  "tacz:ammo/12g": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "tacz:12g",
+    "name": "12 \u53f7\u53e3\u5f84\u9730\u5f39"
+  },
+  "tacz:ammo/22wmr": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:22wmr",
+    "name": "\u00a7a.22 Winchester Magnum"
+  },
+  "tacz:ammo/308": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:308",
+    "name": ".308 \u6e29\u5f7b\u65af\u7279\u6b65\u67aa\u5f39"
+  },
+  "tacz:ammo/30_06": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:30_06",
+    "name": ".30-06 \u6b65\u67aa\u5f39"
+  },
+  "tacz:ammo/338": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:338",
+    "name": ".338 \u62c9\u666e\u9a6c\u683c\u5357"
+  },
+  "tacz:ammo/357mag": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "tacz:357mag",
+    "name": "\u00a7c.357 Magnum"
+  },
+  "tacz:ammo/40mm": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:40mm",
+    "name": "\u00a7d40mm Grenade"
+  },
+  "tacz:ammo/45acp": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:45acp",
+    "name": ".45 \u624b\u67aa\u5b50\u5f39"
+  },
+  "tacz:ammo/45_70": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "tacz:45_70",
+    "name": "\u00a7c.45-70 Bullet"
+  },
+  "tacz:ammo/46x30": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:46x30",
+    "name": "4.6mm \u7a7f\u7532\u5f39"
+  },
+  "tacz:ammo/500mag": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:500mag",
+    "name": "\u00a7c.500 Magnum"
+  },
+  "tacz:ammo/50ae": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "tacz:50ae",
+    "name": ".50 \u624b\u67aa\u5f39"
+  },
+  "tacz:ammo/50bmg": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:50bmg",
+    "name": ".50 \u673a\u67aa\u5f39"
+  },
+  "tacz:ammo/545x39": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:545x39",
+    "name": "\u00a7e5.45x39mm Bullet"
+  },
+  "tacz:ammo/556x45": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:556x45",
+    "name": "5.56x45mm \u5b50\u5f39"
+  },
+  "tacz:ammo/57x28": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:57x28",
+    "name": "\u00a765.7x28mm AP Bullet"
+  },
+  "tacz:ammo/58x42": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:58x42",
+    "name": "5.8mm \u6b65\u67aa\u5f39"
+  },
+  "tacz:ammo/68x51fury": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:68x51fury",
+    "name": "6.8\u00d751mm \u6b65\u67aa\u5f39"
+  },
+  "tacz:ammo/762x25": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:762x25",
+    "name": "7.62x25mm \u5b50\u5f39"
+  },
+  "tacz:ammo/762x39": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:762x39",
+    "name": "7.62\u00d739mm \u6b65\u67aa\u5f39"
+  },
+  "tacz:ammo/762x54": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:762x54",
+    "name": "7.62x54mm \u673a\u67aa\u5f39"
+  },
+  "tacz:ammo/792x57": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:792x57",
+    "name": "\u00a7b8mm Mauser Bullet"
+  },
+  "tacz:ammo/9mm": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "tacz:9mm",
+    "name": "9mm \u5b50\u5f39"
+  },
+  "tacz:ammo/rpg_rocket": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "tacz:rpg_rocket",
+    "name": "RPG-7 \u706b\u7bad\u5f39"
+  },
+  "tacz:attachments/ammo_mod_fmj": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "tacz:ammo_mod_fmj",
+    "name": "\u00a7eFull Metal Jacket Ammo"
+  },
+  "tacz:attachments/ammo_mod_he": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "tacz:ammo_mod_he",
+    "name": "\u00a7eHigh Explosive Ammo"
+  },
+  "tacz:attachments/ammo_mod_hp": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "tacz:ammo_mod_hp",
+    "name": "\u00a7eHollow-Point Ammo"
+  },
+  "tacz:attachments/ammo_mod_i": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "tacz:ammo_mod_i",
+    "name": "\u00a7eIncendiary Ammo"
+  },
+  "tacz:attachments/ammo_mod_slug": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "tacz:ammo_mod_slug",
+    "name": "\u00a7eShotgun Slug"
+  },
+  "tacz:attachments/bayonet_6h3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:bayonet_6h3",
+    "name": "6H3 Bayonet"
+  },
+  "tacz:attachments/bayonet_m9": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:bayonet_m9",
+    "name": "M9 Bayonet"
+  },
+  "tacz:attachments/deagle_golden_long_barrel": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:deagle_golden_long_barrel",
+    "name": ".357 Golden Deagle Long Barrel"
+  },
+  "tacz:attachments/extended_mag_1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:extended_mag_1",
+    "name": "\u8f7b\u578b\u6269\u5bb9\u5f39\u5323"
+  },
+  "tacz:attachments/extended_mag_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:extended_mag_2",
+    "name": "\u00a79\u4e2d\u578b\u6269\u5bb9\u5f39\u5323"
+  },
+  "tacz:attachments/extended_mag_3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:extended_mag_3",
+    "name": "\u00a75\u91cd\u578b\u6269\u5bb9\u5f39\u5323"
+  },
+  "tacz:attachments/grip_cobra": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_cobra",
+    "name": "SI Grip"
+  },
+  "tacz:attachments/grip_magpul_afg_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_magpul_afg_2",
+    "name": "Talon AFG1 Handstop"
+  },
+  "tacz:attachments/grip_osovets_black": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_osovets_black",
+    "name": "P-2 Grip"
+  },
+  "tacz:attachments/grip_rk0": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_rk0",
+    "name": "RK-0 Grip"
+  },
+  "tacz:attachments/grip_rk1_b25u": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_rk1_b25u",
+    "name": "RK-1 B25U Grip"
+  },
+  "tacz:attachments/grip_rk6": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_rk6",
+    "name": "RK-6 Grip"
+  },
+  "tacz:attachments/grip_se_5": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_se_5",
+    "name": "SE-5 Express Grip"
+  },
+  "tacz:attachments/grip_td": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_td",
+    "name": "TD Grip"
+  },
+  "tacz:attachments/grip_vertical_military": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_vertical_military",
+    "name": "Nagoma Military Standard Grip"
+  },
+  "tacz:attachments/grip_vertical_ranger": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_vertical_ranger",
+    "name": "Koch Ranger Heavy Grip"
+  },
+  "tacz:attachments/grip_vertical_talon": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_vertical_talon",
+    "name": "Talon SG2 Grip"
+  },
+  "tacz:attachments/laser_compact": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:laser_compact",
+    "name": "\u00a7aMilitech Compact Laser"
+  },
+  "tacz:attachments/laser_lopro": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:laser_lopro",
+    "name": "\u00a75Lopro Tactical Laser"
+  },
+  "tacz:attachments/laser_nightstick": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:laser_nightstick",
+    "name": "\u00a7aNightstick Compact laser"
+  },
+  "tacz:attachments/laser_peq6": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:laser_peq6",
+    "name": "\u00a76PEQ6 ILLM"
+  },
+  "tacz:attachments/light_extended_mag_1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:light_extended_mag_1",
+    "name": "Light Ammo Extended mag"
+  },
+  "tacz:attachments/light_extended_mag_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:light_extended_mag_2",
+    "name": "\u00a79Light Ammo Extended mag"
+  },
+  "tacz:attachments/light_extended_mag_3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:light_extended_mag_3",
+    "name": "\u00a7dLight Ammo Extended mag"
+  },
+  "tacz:attachments/muzzle_brake_cthulhu": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_cthulhu",
+    "name": "Cthulhu K7 Brake"
+  },
+  "tacz:attachments/muzzle_brake_cyclone_d2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_cyclone_d2",
+    "name": "Cyclone D2 Brake"
+  },
+  "tacz:attachments/muzzle_brake_mastiff_sg": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_mastiff_sg",
+    "name": "Mastiff Shotgun Muzzle Brake"
+  },
+  "tacz:attachments/muzzle_brake_pioneer": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_pioneer",
+    "name": "Pioneer A3 Brake"
+  },
+  "tacz:attachments/muzzle_brake_timeless50": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_timeless50",
+    "name": "\u00a76Timeless .50 Cal Brake"
+  },
+  "tacz:attachments/muzzle_brake_trex": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_brake_trex",
+    "name": "T-Rex Heavy Brake"
+  },
+  "tacz:attachments/muzzle_choke_sg": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_choke_sg",
+    "name": "Shotgun Choke"
+  },
+  "tacz:attachments/muzzle_compensator_trident": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_compensator_trident",
+    "name": "Tempest Trident Compensator"
+  },
+  "tacz:attachments/muzzle_silencer_knight_qd": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_knight_qd",
+    "name": "Knight QD Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_mirage": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_mirage",
+    "name": "Mirage Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_phantom_s1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_phantom_s1",
+    "name": "Phantom S1 Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_ptilopsis": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_ptilopsis",
+    "name": "PO-2 \"Ptilopsis\" Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_sg": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_sg",
+    "name": "12 Gauge Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_ursus": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_ursus",
+    "name": "Ursus Military Standard Silencer"
+  },
+  "tacz:attachments/muzzle_silencer_vulture": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_vulture",
+    "name": "Vulture .50 Cal Suppressor"
+  },
+  "tacz:attachments/muzzle_silencer_wraith": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:muzzle_silencer_wraith",
+    "name": "\u00a76Wraith Silencer"
+  },
+  "tacz:attachments/oem_stock_heavy": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:oem_stock_heavy",
+    "name": "\u539f\u5382\u91cd\u578b\u67aa\u6258"
+  },
+  "tacz:attachments/oem_stock_light": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:oem_stock_light",
+    "name": "\u539f\u5382\u8f7b\u578b\u67aa\u6258"
+  },
+  "tacz:attachments/oem_stock_tactical": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:oem_stock_tactical",
+    "name": "\u539f\u5382\u6218\u672f\u67aa\u6258"
+  },
+  "tacz:attachments/scope_1873_6x": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "tacz:scope_1873_6x",
+    "name": "\u00a75Vintage Springfield Scope"
+  },
+  "tacz:attachments/scope_98k": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "tacz:scope_98k",
+    "name": "\u00a75Mauser 4x Light Sight"
+  },
+  "tacz:attachments/scope_acog_ta31": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_acog_ta31",
+    "name": "\u00a79TA31 2x ACOG"
+  },
+  "tacz:attachments/scope_contender": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_contender",
+    "name": "\u00a79Contender 4x Scope"
+  },
+  "tacz:attachments/scope_elcan_4x": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_elcan_4x",
+    "name": "\u00a75Elcan 4x Scope"
+  },
+  "tacz:attachments/scope_hamr": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_hamr",
+    "name": "\u00a75HAMR 3x Scope"
+  },
+  "tacz:attachments/scope_lpvo_1_6": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_lpvo_1_6",
+    "name": "\u00a75LPVO 1-6x Scope "
+  },
+  "tacz:attachments/scope_mk5hd": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_mk5hd",
+    "name": "\u00a76Mark 5 HD 5-25x Scope"
+  },
+  "tacz:attachments/scope_qmk152": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_qmk152",
+    "name": "\u00a75QMK-152 3x White Light Sight"
+  },
+  "tacz:attachments/scope_retro_2x": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "tacz:scope_retro_2x",
+    "name": "\u00a79Retro 3x Scope"
+  },
+  "tacz:attachments/scope_standard_8x": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_standard_8x",
+    "name": "\u00a76Scout 4-10x Scope"
+  },
+  "tacz:attachments/scope_vudu": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_vudu",
+    "name": "\u00a76Vudu 1-6x Scope"
+  },
+  "tacz:attachments/shotgun_extended_mag_1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:shotgun_extended_mag_1",
+    "name": "Shotgun Ammo Extended Mag"
+  },
+  "tacz:attachments/shotgun_extended_mag_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:shotgun_extended_mag_2",
+    "name": "\u00a79Shotgun Ammo Extended Mag"
+  },
+  "tacz:attachments/shotgun_extended_mag_3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:shotgun_extended_mag_3",
+    "name": "\u00a7dShotgun Ammo Extended Mag"
+  },
+  "tacz:attachments/sight_552": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_552",
+    "name": "\u00a79Militech 552 HCOG"
+  },
+  "tacz:attachments/sight_acro_pistol": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_acro_pistol",
+    "name": "\u00a79Aimpoint ACRO P-1 Sight"
+  },
+  "tacz:attachments/sight_acro_rifle": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_acro_rifle",
+    "name": "\u00a79Aimpoint ACRO P-1 Sight Rised"
+  },
+  "tacz:attachments/sight_coyote": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_coyote",
+    "name": "Coyote Sight"
+  },
+  "tacz:attachments/sight_deltapoint_pistol": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_deltapoint_pistol",
+    "name": "DeltaPoint Sight"
+  },
+  "tacz:attachments/sight_deltapoint_rifle": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_deltapoint_rifle",
+    "name": "DeltaPoint Sight Rised"
+  },
+  "tacz:attachments/sight_exp3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_exp3",
+    "name": "\u00a79EXP3 HCOG"
+  },
+  "tacz:attachments/sight_fastfire_pistol": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_fastfire_pistol",
+    "name": "FastFire Sight"
+  },
+  "tacz:attachments/sight_fastfire_rifle": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_fastfire_rifle",
+    "name": "FastFire Sight Rised"
+  },
+  "tacz:attachments/sight_okp7": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_okp7",
+    "name": "OKP-7 Sight"
+  },
+  "tacz:attachments/sight_pk06_pistol": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_pk06_pistol",
+    "name": "\u00a79PK06 Sight"
+  },
+  "tacz:attachments/sight_pk06_rifle": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_pk06_rifle",
+    "name": "\u00a79PK06 Sight Rised"
+  },
+  "tacz:attachments/sight_rmr_dot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_rmr_dot",
+    "name": "RMR Mini Red Dot"
+  },
+  "tacz:attachments/sight_sro_dot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_sro_dot",
+    "name": "SRO Mini Red Dot"
+  },
+  "tacz:attachments/sight_srs_02": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_srs_02",
+    "name": "Trijicon SRS-02 Reflex Sight"
+  },
+  "tacz:attachments/sight_t1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_t1",
+    "name": "T1 red dot"
+  },
+  "tacz:attachments/sight_t2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_t2",
+    "name": "T2 red dot"
+  },
+  "tacz:attachments/sight_uh1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_uh1",
+    "name": "\u00a79UH-1 HCOG"
+  },
+  "tacz:attachments/sniper_extended_mag_1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sniper_extended_mag_1",
+    "name": "Sniper Ammo Extended mag"
+  },
+  "tacz:attachments/sniper_extended_mag_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sniper_extended_mag_2",
+    "name": "\u00a79Sniper Ammo Extended mag"
+  },
+  "tacz:attachments/sniper_extended_mag_3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sniper_extended_mag_3",
+    "name": "\u00a7dSniper Ammo Extended Mag"
+  },
+  "tacz:attachments/stock_ak12": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_ak12",
+    "name": "AK-12 Regular Stock"
+  },
+  "tacz:attachments/stock_carbon_bone_c5": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_carbon_bone_c5",
+    "name": "Carbon bone C5 Stock"
+  },
+  "tacz:attachments/stock_heavy_spas_12": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_heavy_spas_12",
+    "name": "Franchi Heavy Stock"
+  },
+  "tacz:attachments/stock_hk_slim_line": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_hk_slim_line",
+    "name": "HK Slim Line Stock"
+  },
+  "tacz:attachments/stock_m4ss": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_m4ss",
+    "name": "M4SS Stock"
+  },
+  "tacz:attachments/stock_militech_b5": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_militech_b5",
+    "name": "Militech B5 Stock"
+  },
+  "tacz:attachments/stock_moe": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_moe",
+    "name": "Magpul MOE Stock"
+  },
+  "tacz:attachments/stock_ripstock": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_ripstock",
+    "name": "CMMG RipStock Stock"
+  },
+  "tacz:attachments/stock_sba3": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_sba3",
+    "name": "SBA3 Stock"
+  },
+  "tacz:attachments/stock_tactical_ar": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_tactical_ar",
+    "name": "Magpul CTR stock"
+  },
+  "tacz:attachments/stock_tactical_spas_12": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:stock_tactical_spas_12",
+    "name": "Franchi Tactical Stock"
+  },
+  "tacz:gun/aa12": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:aa12",
+    "name": "AA12 Shotgun"
+  },
+  "tacz:gun/ai_awp": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:ai_awp",
+    "name": "\u7cbe\u5bc6\u56fd\u9645 AWM \u72d9\u51fb\u6b65\u67aa"
+  },
+  "tacz:gun/ak47": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:ak47",
+    "name": "AKM \u7a81\u51fb\u6b65\u67aa"
+  },
+  "tacz:gun/aug": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:aug",
+    "name": "AUG"
+  },
+  "tacz:gun/b93r": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:b93r",
+    "name": "B93R"
+  },
+  "tacz:gun/cz75": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:cz75",
+    "name": "CZ 75"
+  },
+  "tacz:gun/db_long": {
+    "age": 1,
+    "kind": "gun",
+    "id": "tacz:db_long",
+    "name": "DB-4 Ursus"
+  },
+  "tacz:gun/db_short": {
+    "age": 1,
+    "kind": "gun",
+    "id": "tacz:db_short",
+    "name": "DB-2 \u675c\u6797\u4eba"
+  },
+  "tacz:gun/deagle": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:deagle",
+    "name": ".50 \u6c99\u6f20\u4e4b\u9e70"
+  },
+  "tacz:gun/deagle_golden": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:deagle_golden",
+    "name": "Golden Deagle 357"
+  },
+  "tacz:gun/fn_evolys": {
+    "age": 4,
+    "kind": "gun",
+    "id": "tacz:fn_evolys",
+    "name": "FN EVOLYS Machine Gun"
+  },
+  "tacz:gun/fn_fal": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:fn_fal",
+    "name": "FN FAL Battle Rifle"
+  },
+  "tacz:gun/g36k": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:g36k",
+    "name": "G36K"
+  },
+  "tacz:gun/glock_17": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:glock_17",
+    "name": "\u683c\u6d1b\u514b 17 \u624b\u67aa"
+  },
+  "tacz:gun/hk416d": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:hk416d",
+    "name": "HK-416A5"
+  },
+  "tacz:gun/hk_g3": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:hk_g3",
+    "name": "G3 \u6218\u6597\u6b65\u67aa"
+  },
+  "tacz:gun/hk_mk23": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:hk_mk23",
+    "name": "MK23 Offensive Pistol"
+  },
+  "tacz:gun/hk_mp5a5": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:hk_mp5a5",
+    "name": "MP5A5 \u51b2\u950b\u67aa"
+  },
+  "tacz:gun/kar98": {
+    "age": 2,
+    "kind": "gun",
+    "id": "tacz:kar98",
+    "name": "Mauser Kar98k Rifle"
+  },
+  "tacz:gun/lonetrail": {
+    "age": 5,
+    "kind": "gun",
+    "id": "tacz:lonetrail",
+    "name": ".30-06 Lonetrail Hand Cannon"
+  },
+  "tacz:gun/m1014": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m1014",
+    "name": "M1014 Battle Shotgun"
+  },
+  "tacz:gun/m107": {
+    "age": 4,
+    "kind": "gun",
+    "id": "tacz:m107",
+    "name": "M107 Sniper Rifle"
+  },
+  "tacz:gun/m16a1": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m16a1",
+    "name": "M16A1 Service Rifle"
+  },
+  "tacz:gun/m16a4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m16a4",
+    "name": "M16A4 Service Rifle"
+  },
+  "tacz:gun/m1911": {
+    "age": 2,
+    "kind": "gun",
+    "id": "tacz:m1911",
+    "name": "M1911"
+  },
+  "tacz:gun/m249": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m249",
+    "name": "M249 \u673a\u67aa"
+  },
+  "tacz:gun/m320": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m320",
+    "name": "M320 Grenade Launcher"
+  },
+  "tacz:gun/m4a1": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m4a1",
+    "name": "M4A1 \u5361\u5bbe\u67aa"
+  },
+  "tacz:gun/m700": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m700",
+    "name": "M700 Sniper Rifle"
+  },
+  "tacz:gun/m870": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m870",
+    "name": "M870"
+  },
+  "tacz:gun/m95": {
+    "age": 4,
+    "kind": "gun",
+    "id": "tacz:m95",
+    "name": "M95 .50 Cal Antimaterial"
+  },
+  "tacz:gun/m9a4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:m9a4",
+    "name": "M9A4"
+  },
+  "tacz:gun/minigun": {
+    "age": 4,
+    "kind": "gun",
+    "id": "tacz:minigun",
+    "name": "M134 Minigun"
+  },
+  "tacz:gun/mk14": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:mk14",
+    "name": "MK14 EBR"
+  },
+  "tacz:gun/p320": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:p320",
+    "name": "P320"
+  },
+  "tacz:gun/p90": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:p90",
+    "name": "P90 PDW"
+  },
+  "tacz:gun/qbz_191": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:qbz_191",
+    "name": "QBZ-191 Assault Rifle"
+  },
+  "tacz:gun/qbz_95": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:qbz_95",
+    "name": "QBZ-95 \"Longbow\""
+  },
+  "tacz:gun/rhino357": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:rhino357",
+    "name": ".357 Rhino Revolver"
+  },
+  "tacz:gun/rpg7": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:rpg7",
+    "name": "RPG-7 \u706b\u7bad\u7b52"
+  },
+  "tacz:gun/rpk": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:rpk",
+    "name": "RPK"
+  },
+  "tacz:gun/scar_h": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:scar_h",
+    "name": "SCAR-H Battle Rifle"
+  },
+  "tacz:gun/scar_l": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:scar_l",
+    "name": "SCAR-L Assault Rifle"
+  },
+  "tacz:gun/sks_tactical": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:sks_tactical",
+    "name": "Sks Tactical Rifle"
+  },
+  "tacz:gun/spas_12": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:spas_12",
+    "name": "SPAS-12 Multi-purpose Shotgun"
+  },
+  "tacz:gun/spr15hb": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:spr15hb",
+    "name": "SPR-15 HB \"Sagittarius\""
+  },
+  "tacz:gun/springfield1873": {
+    "age": 1,
+    "kind": "gun",
+    "id": "tacz:springfield1873",
+    "name": "Springfield 1873 Trapdoor Rifle"
+  },
+  "tacz:gun/taurus500": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:taurus500",
+    "name": "Taurus \"Raging Hunter\" Hand Cannon"
+  },
+  "tacz:gun/timeless50": {
+    "age": 5,
+    "kind": "gun",
+    "id": "tacz:timeless50",
+    "name": "\u00a76Timeless .50 Z-Type"
+  },
+  "tacz:gun/type_81": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:type_81",
+    "name": "Type 81-1 Service Rifle"
+  },
+  "tacz:gun/ump45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:ump45",
+    "name": "UMP45 SMG"
+  },
+  "tacz:gun/uzi": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:uzi",
+    "name": "\u4e4c\u5179\u51b2\u950b\u67aa"
+  },
+  "tacz:gun/vector45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:vector45",
+    "name": "Vector SMG"
+  },
+  "tacz:misc/blood_strike_1": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "tacz:misc/blood_strike_1"
+  },
+  "mk16:ammo/545x39": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "mk16:545x39",
+    "name": "5.45x39mm Bullet"
+  },
+  "mk16:ammo/602x41": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "mk16:602x41",
+    "name": "\u00a7b6.02x41mm Bullet"
+  },
+  "mk16:attachments/1p87": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:1p87",
+    "name": "1P87 "
+  },
+  "mk16:attachments/553+g43": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "mk16:553+g43"
+  },
+  "mk16:attachments/553+g43f": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "mk16:553+g43f"
+  },
+  "mk16:attachments/553": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:553",
+    "name": "EOTECH 553 "
+  },
+  "mk16:attachments/a3000": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:a3000",
+    "name": "Aimpoint 3000 "
+  },
+  "mk16:attachments/m2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:m2",
+    "name": "aimpoint comp m2"
+  },
+  "mk16:attachments/m2l": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:m2l",
+    "name": "aimpoint comp m2"
+  },
+  "mk16:attachments/sr25s": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:sr25s",
+    "name": "mk16.attachment.sr25s.name"
+  },
+  "mk16:attachments/tape": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:tapeb",
+    "name": "mk16.attachment.tapeb.name"
+  },
+  "mk16:attachments/tapeg": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:tapeg",
+    "name": "mk16.attachment.tapeg.name"
+  },
+  "mk16:guns/308": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:308",
+    "name": "Saiga308"
+  },
+  "mk16:guns/81": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:t81v",
+    "name": "\u00a7dType 81-Viper"
+  },
+  "mk16:guns/95": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:acp",
+    "name": "QBZ95-1 ACP"
+  },
+  "mk16:guns/ak101": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak101",
+    "name": "AK101 "
+  },
+  "mk16:guns/ak102": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak102",
+    "name": "AK102 "
+  },
+  "mk16:guns/ak103": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak103",
+    "name": "AK103 "
+  },
+  "mk16:guns/ak104": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak104",
+    "name": "AK104 "
+  },
+  "mk16:guns/ak105": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak105",
+    "name": "AK105 "
+  },
+  "mk16:guns/ak107": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak107",
+    "name": "\u00a7dAK107 "
+  },
+  "mk16:guns/ak108": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak108",
+    "name": "\u00a7dAK108 "
+  },
+  "mk16:guns/ak109": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak109",
+    "name": "\u00a7dAK109 "
+  },
+  "mk16:guns/ak12": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak12",
+    "name": "AK12M "
+  },
+  "mk16:guns/ak12k": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak12k",
+    "name": "AK12K "
+  },
+  "mk16:guns/ak15": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak15",
+    "name": "AK15 "
+  },
+  "mk16:guns/ak15k": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak15k",
+    "name": "AK15k "
+  },
+  "mk16:guns/ak19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak19",
+    "name": "AK19 "
+  },
+  "mk16:guns/ak200": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak200",
+    "name": "AK200 "
+  },
+  "mk16:guns/ak201": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak201",
+    "name": "AK201 "
+  },
+  "mk16:guns/ak202": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak202",
+    "name": "AK202 "
+  },
+  "mk16:guns/ak203": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak203",
+    "name": "AK203 "
+  },
+  "mk16:guns/ak204": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak204",
+    "name": "AK204 "
+  },
+  "mk16:guns/ak205": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak205",
+    "name": "AK205 "
+  },
+  "mk16:guns/ak22": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak22",
+    "name": "\u00a7dAK22 "
+  },
+  "mk16:guns/ak74": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak74n",
+    "name": "AK74N "
+  },
+  "mk16:guns/ak74m": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak74m",
+    "name": "AK74M "
+  },
+  "mk16:guns/aks74": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:aks74",
+    "name": "AKS74N "
+  },
+  "mk16:guns/aks74u": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:aks74u",
+    "name": "AKS74U"
+  },
+  "mk16:guns/hbar": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:hbar",
+    "name": "M16HBAR"
+  },
+  "mk16:guns/m4urgi": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m4urgi",
+    "name": "M4 URG-I"
+  },
+  "mk16:guns/m4urgi10": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m4urgi10",
+    "name": "M4 URG-I \uff0811.5) "
+  },
+  "mk16:guns/m723": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m723",
+    "name": "COLT M723"
+  },
+  "mk16:guns/m727": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m727",
+    "name": "COLT M727"
+  },
+  "mk16:guns/m727bhd": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m727bhd",
+    "name": "\u00a7dCOLT M727 "
+  },
+  "mk16:guns/m733": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m733",
+    "name": "COLT M733"
+  },
+  "mk16:guns/mod2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:mod2",
+    "name": "M4 SOPMOD2 "
+  },
+  "mk16:guns/ppk20": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ppk20",
+    "name": "mk16.gun.ppk20.name"
+  },
+  "mk16:guns/ro635": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ro635",
+    "name": "COLT RO635"
+  },
+  "mk16:guns/ro991": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ro991",
+    "name": "COLT RO991"
+  },
+  "mk16:guns/rpk16": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:rpk16",
+    "name": "mk16.gun.rpk16.name"
+  },
+  "mk16:guns/sr15": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:sr15",
+    "name": "KAC SR15LPR "
+  },
+  "mk16:guns/sr16": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:sr16",
+    "name": "KAC SR16 "
+  },
+  "mk16:guns/sr25": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:sr25",
+    "name": "KAC SR25"
+  },
+  "mk16:guns/sr25pc": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:sr25pc",
+    "name": "KAC SR25PC "
+  },
+  "mk16:guns/ump9": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ump9",
+    "name": "UMP9"
+  },
+  "mk16:guns/xm177": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:xm177",
+    "name": "XM177(COLT M610/GAU-5/A)"
+  },
+  "bf1:ammo/fuel": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "bf1:fuel",
+    "name": "\u00a76Fuel"
+  },
+  "bf1:attachments/ammo_mod_chauchat": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:ammo_mod_chauchat",
+    "name": "\u00a7eLight Bolt"
+  },
+  "bf1:attachments/bayonet_general": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:bayonet_general",
+    "name": "OEM Bayonet"
+  },
+  "bf1:attachments/grip_light_bipods": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:grip_light_bipods",
+    "name": "OEM Light Bipods"
+  },
+  "bf1:attachments/grip_trench_bipods": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:grip_trench_bipods",
+    "name": "OEM Heavy Bipods"
+  },
+  "bf1:attachments/laser_integrated": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:laser_integrated",
+    "name": "\u00a755mW Built-in Laser"
+  },
+  "bf1:attachments/marksman_scope": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:marksman_scope",
+    "name": "\u00a76PPCo 2.5-4x Scope"
+  },
+  "bf1:attachments/oem_muzzle_choke": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:oem_muzzle_choke",
+    "name": "OEM Choke"
+  },
+  "bf1:attachments/raider_club": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:raider_club",
+    "name": "\u00a76Trench Raider Club"
+  },
+  "bf1:attachments/scope_nvk_nxt": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:scope_nvk_nxt",
+    "name": "\u00a79NVK-NXT 2x Compound Sight"
+  },
+  "bf1:attachments/sight_fusion_holo": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:sight_fusion_holo",
+    "name": "Fusion Holo"
+  },
+  "bf1:attachments/sight_nydar": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:sight_nydar",
+    "name": "Nydar Model 47 Reflex Sight"
+  },
+  "bf1:attachments/sight_okp8": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:sight_okp8",
+    "name": "K8 Holo"
+  },
+  "bf1:attachments/sight_reflector": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:sight_reflector",
+    "name": "RAF Reflector Sight"
+  },
+  "bf1:attachments/sniper_scope": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "bf1:sniper_scope",
+    "name": "\u00a76PPCo 6-10x Scope"
+  },
+  "bf1:gun/chauchat": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:chauchat",
+    "name": "Chauchat"
+  },
+  "bf1:gun/de_lisle": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:de_lisle",
+    "name": "De Lisle Carbine"
+  },
+  "bf1:gun/ef46": {
+    "age": 5,
+    "kind": "gun",
+    "id": "bf1:ef46",
+    "name": "Einstossflammenwerfer 46"
+  },
+  "bf1:gun/ef46_r": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:gun/ef46_r"
+  },
+  "bf1:gun/f_faust": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:f_faust",
+    "name": "Fliegerfaust B"
+  },
+  "bf1:gun/handgun": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:handgun",
+    "name": "'Hand'gun"
+  },
+  "bf1:gun/kolibri": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:kolibri",
+    "name": "Kolibri"
+  },
+  "bf1:gun/lewis": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:lewis",
+    "name": "Lewis Gun"
+  },
+  "bf1:gun/liu": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:liu",
+    "name": "General Liu"
+  },
+  "bf1:gun/m1916": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:m1916",
+    "name": "Selbstlader M1916"
+  },
+  "bf1:gun/m2_2": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:m2_2",
+    "name": "M2 Flamethrower"
+  },
+  "bf1:gun/man_m95": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:man_m95",
+    "name": "Mannlicher M1895"
+  },
+  "bf1:gun/martini": {
+    "age": 1,
+    "kind": "gun",
+    "id": "bf1:martini",
+    "name": "Martini-Henry"
+  },
+  "bf1:gun/mg0815": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:mg0815",
+    "name": "MG08/15"
+  },
+  "bf1:gun/mg42": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:mg42",
+    "name": "MG42"
+  },
+  "bf1:gun/mhgl": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:mhgl",
+    "name": "Martini-Henry Grenade Launcher"
+  },
+  "bf1:gun/model10": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:model10",
+    "name": "Model 10-A"
+  },
+  "bf1:gun/obrez": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:obrez",
+    "name": "Mosin-Nagant Obrez"
+  },
+  "bf1:gun/rorsch_mk4": {
+    "age": 5,
+    "kind": "gun",
+    "id": "bf1:rorsch_mk4",
+    "name": "Rorsch Mk-4"
+  },
+  "bf1:gun/rsc1917": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:rsc1917",
+    "name": "RSC 1917"
+  },
+  "bf1:gun/sjogren": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:sjogren",
+    "name": "Sj\u00f6gren Inertial"
+  },
+  "bf1:gun/smg0818": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:smg0818",
+    "name": "SMG08/18"
+  },
+  "bf1:gun/sw_model3": {
+    "age": 1,
+    "kind": "gun",
+    "id": "bf1:sw_model3",
+    "name": "No. 3 Revolver"
+  },
+  "bf1:gun/syringe": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:syringe",
+    "name": "Medical Syringe"
+  },
+  "bf1:gun/tg1918": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:tg1918",
+    "name": "Tankgewehr M1918"
+  },
+  "bf1:gun/vg15": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:vg15",
+    "name": "Volkssturmgewehr 1-5"
+  },
+  "bf1:gun/vp1915": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:vp1915",
+    "name": "Villar\u00b7Perosa"
+  },
+  "bf1:gun/welrod": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:welrod",
+    "name": "Welrod"
+  },
+  "bf1:gun/wex": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:wex",
+    "name": "Wex Flamethrower"
+  },
+  "bf1:gun/zk383": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:zk383",
+    "name": "ZK-383"
+  },
+  "bf1:melee/sledge_hammer": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "bf1:melee/sledge_hammer"
+  },
+  "qkl:ammo/16mm": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "qkl:16mm",
+    "name": "16.5mm"
+  },
+  "qkl:ammo/gl30": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "qkl:gl30",
+    "name": "30mm GL30B HE"
+  },
+  "qkl:ammo/rb10": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "qkl:rb10",
+    "name": "7.5x52mm RB10"
+  },
+  "qkl:attachment/bayonet_cb11": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:bayonet_cb11",
+    "name": "CB11 Bayonet"
+  },
+  "qkl:attachment/bayonet_fkc1": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "qkl:bayonet_fkc1",
+    "name": "FKC1 Bayonet"
+  },
+  "qkl:attachment/hy88_bayonet": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:hy88_bayonet",
+    "name": "Type 88 Hanyang Bayonet"
+  },
+  "qkl:attachment/m1905_bayonet": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:m1917_bayonet",
+    "name": "M1917 Bayonet"
+  },
+  "qkl:attachment/m1917_bayonet": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:m1917_bayonet",
+    "name": "M1917 Bayonet"
+  },
+  "qkl:attachment/m1925_bayonet": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:m1925_bayonet",
+    "name": "M1925(MU73) Bayonet"
+  },
+  "qkl:attachment/scope_sigk": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:scope_sigk",
+    "name": "x3.5 SIGK H"
+  },
+  "qkl:attachment/scope_sigk2": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:scope_sigk2",
+    "name": "x4 SIGK L"
+  },
+  "qkl:gun/1860": {
+    "age": 1,
+    "kind": "gun",
+    "id": "qkl:1860",
+    "name": "Henry Model 1860"
+  },
+  "qkl:gun/1871": {
+    "age": 1,
+    "kind": "gun",
+    "id": "qkl:1871",
+    "name": "Spencer Model 1865/1871"
+  },
+  "qkl:gun/1912": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:1912",
+    "name": "Steyr Model 1912"
+  },
+  "qkl:gun/1912p16": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:1912p16",
+    "name": "Steyr Model 1912/P16"
+  },
+  "qkl:gun/at50": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:at50",
+    "name": "AT50 Mod.1941"
+  },
+  "qkl:gun/cbr11": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:cbr11",
+    "name": "CBR11/93 Mod.1901"
+  },
+  "qkl:gun/cbr11c": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:cbr11c",
+    "name": "C11"
+  },
+  "qkl:gun/cbr11r": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:cbr11r",
+    "name": "CBR11/93S Mod.1920"
+  },
+  "qkl:gun/cbr11sp": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:cbr11sp",
+    "name": "CBR11/25 Mod.1915"
+  },
+  "qkl:gun/cbr9": {
+    "age": 1,
+    "kind": "gun",
+    "id": "qkl:cbr9",
+    "name": "CBR9 Mod.1875"
+  },
+  "qkl:gun/clf10": {
+    "age": 3,
+    "kind": "gun",
+    "id": "qkl:clf10",
+    "name": "CLF10"
+  },
+  "qkl:gun/csg19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "qkl:csg19",
+    "name": "CSG19"
+  },
+  "qkl:gun/fk15": {
+    "age": 1,
+    "kind": "gun",
+    "id": "qkl:fk15",
+    "name": "FuKa(F-K) Model 15 Flintlock"
+  },
+  "qkl:gun/fk15p": {
+    "age": 1,
+    "kind": "gun",
+    "id": "qkl:fk15p",
+    "name": "FuKa(F-K) Model 15P Flintlock Pistol \u00a7e\u00a7lHandicraft"
+  },
+  "qkl:gun/hy88": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:hy88",
+    "name": "Type 88 Hanyang rifle"
+  },
+  "qkl:gun/lmg31": {
+    "age": 3,
+    "kind": "gun",
+    "id": "qkl:lmg31",
+    "name": "LMG31 Mod.1955"
+  },
+  "qkl:gun/m1897": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:m1897",
+    "name": "Winchester Model 1897"
+  },
+  "qkl:gun/m1903a3": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:m1903a3",
+    "name": "M1903A3 Springfield rifle"
+  },
+  "qkl:gun/m1905": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:m1905",
+    "name": "M1905"
+  },
+  "qkl:gun/mg15": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:mg15",
+    "name": "MG15"
+  },
+  "qkl:gun/mu73": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:mu73",
+    "name": "MU73 (MA) Mod.1942"
+  },
+  "qkl:gun/mu73m": {
+    "age": 3,
+    "kind": "gun",
+    "id": "qkl:mu73m",
+    "name": "MA90 (C)"
+  },
+  "qkl:gun/mua73": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:mua73",
+    "name": "MUA73 (MA) Mod.1942"
+  },
+  "qkl:gun/rmg": {
+    "age": 3,
+    "kind": "gun",
+    "id": "qkl:rmg",
+    "name": "RMG Mod.1970"
+  },
+  "qkl:gun/waltertl": {
+    "age": 2,
+    "kind": "gun",
+    "id": "qkl:waltertl",
+    "name": "Walther Toggle-Locked Semiauto Shotgun"
+  },
+  "create_armorer:ammo/40mmhe": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "create_armorer:40mmhe",
+    "name": "40mm HE"
+  },
+  "create_armorer:ammo/gas_pistol_ammo": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "create_armorer:gas_pistol_ammo",
+    "name": "Pneumatic Pistol Ammo"
+  },
+  "create_armorer:ammo/gernade": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "create_armorer:gernade",
+    "name": "Pneumatic Gernade"
+  },
+  "create_armorer:ammo/rbapb": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "create_armorer:rbapb",
+    "name": "Rimmed Blunt AP Ammo"
+  },
+  "create_armorer:ammo/slap": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "create_armorer:slap",
+    "name": "SLAP Ammo"
+  },
+  "create_armorer:attachments/extended_mag_ca_1": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:extended_mag_ca_1",
+    "name": "Andesite Alloy Magazine"
+  },
+  "create_armorer:attachments/extended_mag_ca_2": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:extended_mag_ca_2",
+    "name": "\u00a79Copper Magazine"
+  },
+  "create_armorer:attachments/extended_mag_ca_3": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:extended_mag_ca_3",
+    "name": "\u00a75Brass Magazine"
+  },
+  "create_armorer:attachments/grip_gantry_shaft": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:grip_gantry_shaft",
+    "name": "Gantry Shaft Grip"
+  },
+  "create_armorer:attachments/grip_shaft": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:grip_shaft",
+    "name": "Shaft Grip"
+  },
+  "create_armorer:attachments/grip_wooden": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "create_armorer:grip_wooden",
+    "name": "Wooden Grip"
+  },
+  "create_armorer:attachments/muzzle_refit_bigger_cylinder": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_bigger_cylinder",
+    "name": "\"Flywheel\" Refit: Bigger Cylinder"
+  },
+  "create_armorer:attachments/muzzle_refit_brass_retractor": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_brass_retractor",
+    "name": "\"Bearing\" Refit: Brass Retractor"
+  },
+  "create_armorer:attachments/muzzle_refit_energy_blade": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_energy_blade",
+    "name": "Atomic Breaker Refit: Energy Blade"
+  },
+  "create_armorer:attachments/muzzle_refit_iron_spike": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_iron_spike",
+    "name": "Wrench Refit: Iron Spike"
+  },
+  "create_armorer:attachments/muzzle_refit_lava_perfusion_bottle": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_lava_perfusion_bottle",
+    "name": "\"Crane\" Refit: Lava Perfusion Bottle"
+  },
+  "create_armorer:attachments/refit_blasting_protocol": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "create_armorer:refit_blasting_protocol",
+    "name": "\"Salamander\" Refit: Blasting Protocol"
+  },
+  "create_armorer:attachments/scope_telephoto": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:scope_telephoto",
+    "name": "Telephoto Scope"
+  },
+  "create_armorer:attachments/sight_medium_distance": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:sight_medium_distance",
+    "name": "Medium Distance Scope"
+  },
+  "create_armorer:attachments/sight_reflex": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:sight_reflex",
+    "name": "Reflex Sight"
+  },
+  "create_armorer:attachments/sight_simple": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "create_armorer:sight_simple",
+    "name": "Simple Mechanical Sight"
+  },
+  "create_armorer:attachments/sight_standard": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "create_armorer:sight_standard",
+    "name": "Standard Scope"
+  },
+  "create_armorer:gun/cannon_40mm_salamander": {
+    "age": 4,
+    "kind": "gun",
+    "id": "create_armorer:cannon_40mm_salamander",
+    "name": "\"Salamander\" Shoulder-fired 40mm Field Gun"
+  },
+  "create_armorer:gun/gl_revolver_devastator": {
+    "age": 4,
+    "kind": "gun",
+    "id": "create_armorer:gl_revolver_devastator",
+    "name": "\"Devastator\" Grenade Launcher"
+  },
+  "create_armorer:gun/mg_platemag_flywheel": {
+    "age": 2,
+    "kind": "gun",
+    "id": "create_armorer:mg_platemag_flywheel",
+    "name": "\"Flywheel\" Mechine Gun"
+  },
+  "create_armorer:gun/pistol_auto_stress": {
+    "age": 3,
+    "kind": "gun",
+    "id": "create_armorer:pistol_auto_stress",
+    "name": "\"Stress\" Auto Pistol"
+  },
+  "create_armorer:gun/pistol_revolver_torque": {
+    "age": 1,
+    "kind": "gun",
+    "id": "create_armorer:pistol_revolver_torque",
+    "name": "\"Torque\" Revolver"
+  },
+  "create_armorer:gun/rifle_assult_crane": {
+    "age": 3,
+    "kind": "gun",
+    "id": "create_armorer:rifle_assult_crane",
+    "name": "\"Crane\" Assult Rifle"
+  },
+  "create_armorer:gun/rifle_assult_roller": {
+    "age": 3,
+    "kind": "gun",
+    "id": "create_armorer:rifle_assult_roller",
+    "name": "\"Roller\" Assult Rifle"
+  },
+  "create_armorer:gun/shotgun_db_stone": {
+    "age": 1,
+    "kind": "gun",
+    "id": "create_armorer:shotgun_db_stone",
+    "name": "\"Stone\" Shotgun"
+  },
+  "create_armorer:gun/shotgun_pump_bearing": {
+    "age": 2,
+    "kind": "gun",
+    "id": "create_armorer:shotgun_pump_bearing",
+    "name": "\"Bearing\" Shotgun"
+  },
+  "create_armorer:gun/smg_auto_crank": {
+    "age": 2,
+    "kind": "gun",
+    "id": "create_armorer:smg_auto_crank",
+    "name": "\"Crank\" SMG"
+  },
+  "create_armorer:gun/sniper_semi_clockwork": {
+    "age": 4,
+    "kind": "gun",
+    "id": "create_armorer:sniper_semi_clockwork",
+    "name": "\"Clockwork\" Sniper"
+  },
+  "create_armorer:gun/sniper_semi_m1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "create_armorer:sniper_semi_m1",
+    "name": "\"Classical M1\" Semi Rifle"
+  },
+  "create_armorer:gun/special_melee_wrench": {
+    "age": 1,
+    "kind": "gun",
+    "id": "create_armorer:special_melee_wrench",
+    "name": "Wrench"
+  },
+  "emxarms:ammo/1045x103": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:1045x103",
+    "name": "\u00a7a103-M Flechette"
+  },
+  "emxarms:ammo/1045x103belt": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:1045x103belt",
+    "name": "\u00a7a103-FL Bullet"
+  },
+  "emxarms:ammo/339x57": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:339x57",
+    "name": "\u00a7a57-M Bullet"
+  },
+  "emxarms:ammo/339x57fmj": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:339x57fmj",
+    "name": "\u00a7a57-FMJ Bullet"
+  },
+  "emxarms:ammo/339x57x": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:339x57x",
+    "name": "\u00a7657-CMAP Bullet"
+  },
+  "emxarms:ammo/402x31": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:402x31",
+    "name": "\u00a7a31-M Bullet"
+  },
+  "emxarms:ammo/402x31fmj": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:402x31fmj",
+    "name": "\u00a7a31-FMJ Bullet"
+  },
+  "emxarms:ammo/402x31rip": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:402x31rip",
+    "name": "\u00a7a31-RIP Bullet"
+  },
+  "emxarms:ammo/410x57ap": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:410x57ap",
+    "name": "\u00a7a57-AP Bullet"
+  },
+  "emxarms:ammo/emx_rem": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:emx_rem",
+    "name": "\u00a76A-grade HS alloy"
+  },
+  "emxarms:ammo/emx_s10": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:emx_s10",
+    "name": "\u00a7aTyphoon-X Railgun Projectile"
+  },
+  "emxarms:ammo/emx_tediore": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:emx_tediore",
+    "name": "\u00a7aTediore Material"
+  },
+  "emxarms:ammo/x16he": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:x16he",
+    "name": "\u00a7aX16-S Bullet"
+  },
+  "emxarms:ammo/x16sg": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "emxarms:x16sg",
+    "name": "\u00a7aX16-C Bullet"
+  },
+  "emxarms:attachments/ammo_h1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_h1",
+    "name": "\u00a7aAdvanced StandardPMAG"
+  },
+  "emxarms:attachments/ammo_h2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_h2",
+    "name": "\u00a7aElite StandardPMAG"
+  },
+  "emxarms:attachments/ammo_h2_if": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_h2_if",
+    "name": "\u00a7aMH-IF Round"
+  },
+  "emxarms:attachments/ammo_h3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_h3",
+    "name": "\u00a7aUltimate StandardPMAG"
+  },
+  "emxarms:attachments/ammo_h3r": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_h3r",
+    "name": "\u00a76Tungsten-core StandardPMAG"
+  },
+  "emxarms:attachments/ammo_l1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l1",
+    "name": "\u00a7aAdvanced LightweightPMAG"
+  },
+  "emxarms:attachments/ammo_l2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l2",
+    "name": "\u00a7aElite LightweightPMAG"
+  },
+  "emxarms:attachments/ammo_l2_hp": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l2_hp",
+    "name": "\u00a7aML-HP Round"
+  },
+  "emxarms:attachments/ammo_l2_if": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l2_if",
+    "name": "\u00a7aML-IF Round"
+  },
+  "emxarms:attachments/ammo_l3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l3",
+    "name": "\u00a7aUltimate LightweightPMAG"
+  },
+  "emxarms:attachments/ammo_l3r": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_l3r",
+    "name": "\u00a76Tungsten-core LightweightPMAG"
+  },
+  "emxarms:attachments/ammo_sgap": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sgap",
+    "name": "\u00a7aMS-AP Slug"
+  },
+  "emxarms:attachments/ammo_sgdb": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sgdb",
+    "name": "\u00a7aMS-DB Slug"
+  },
+  "emxarms:attachments/ammo_sgeb": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sgeb",
+    "name": "\u00a7aMS-EB Slug"
+  },
+  "emxarms:attachments/ammo_sgfs": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sgfs",
+    "name": "\u00a7aMS-FS Slug"
+  },
+  "emxarms:attachments/ammo_sghe": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sghe",
+    "name": "\u00a7aMS-HE Slug"
+  },
+  "emxarms:attachments/ammo_sh1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sh1",
+    "name": "\u00a7aAdvanced Heavy-dutyPMAG"
+  },
+  "emxarms:attachments/ammo_sh2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sh2",
+    "name": "\u00a7aElite Heavy-dutyPMAG"
+  },
+  "emxarms:attachments/ammo_sh2_if": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sh2_if",
+    "name": "\u00a7aSH-IF Round"
+  },
+  "emxarms:attachments/ammo_sh3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sh3",
+    "name": "\u00a7aUltimate Heavy-dutyPMAG"
+  },
+  "emxarms:attachments/ammo_sh3r": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sh3r",
+    "name": "\u00a76Tungsten-core Heavy-dutyPMAG"
+  },
+  "emxarms:attachments/ammo_sreb": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_sreb",
+    "name": "\u00a7aMR-EB Round"
+  },
+  "emxarms:attachments/ammo_srhe": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_srhe",
+    "name": "\u00a7aMR-HE Round"
+  },
+  "emxarms:attachments/ammo_srif": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:ammo_srif",
+    "name": "\u00a7aMR-IF Round"
+  },
+  "emxarms:attachments/bayonet_emx_doom": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:bayonet_emx_doom",
+    "name": "\u00a7a'Ares' super-alloy stock frame"
+  },
+  "emxarms:attachments/bayonet_emx_glowsword": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:bayonet_emx_glowsword",
+    "name": "\u00a7a\u201cGlow\u201d Energy Knife"
+  },
+  "emxarms:attachments/bayonet_emx_lightupgrade": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:bayonet_emx_lightupgrade",
+    "name": "\u00a7a\u201cByte\u201d Combat Light Upgrade"
+  },
+  "emxarms:attachments/bayonet_emx_skyhunter": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:bayonet_emx_skyhunter",
+    "name": "\u00a7aMX-Sky Hunter Bayonet"
+  },
+  "emxarms:attachments/bayonet_emx_skyhunterax": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:bayonet_emx_skyhunterax",
+    "name": "\u00a7a\u201cSkyHunter\u201d Bayonet + Kernel Upgrade"
+  },
+  "emxarms:attachments/emx_lightweight_mag_2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_lightweight_mag_2",
+    "name": "\u00a7aMX-Short Light Mag"
+  },
+  "emxarms:attachments/emx_sfmag_1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_sfmag_1",
+    "name": "\u00a7a\u201cAres-I\u201d Aircraft Magazine"
+  },
+  "emxarms:attachments/emx_sfmag_2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_sfmag_2",
+    "name": "\u00a7a\u201cAres-II\u201d Aircraft Magazine"
+  },
+  "emxarms:attachments/emx_sfmag_3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_sfmag_3",
+    "name": "\u00a7a\u201cAres-III\u201d Aircraft Magazine"
+  },
+  "emxarms:attachments/emx_sfmag_3if": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_sfmag_3if",
+    "name": "\u00a7aSFM-IF Round"
+  },
+  "emxarms:attachments/grip_emx_assert": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_assert",
+    "name": "\u00a7aMX-Assert Horizontal Grip"
+  },
+  "emxarms:attachments/grip_emx_coder": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_coder",
+    "name": "\u00a7aCoder TacticalLaser"
+  },
+  "emxarms:attachments/grip_emx_compiler": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_compiler",
+    "name": "\u00a7aCompiler TrajectorySystem"
+  },
+  "emxarms:attachments/grip_emx_double": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_double",
+    "name": "\u00a7aMX-Double Tactical Laser"
+  },
+  "emxarms:attachments/grip_emx_extends": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_extends",
+    "name": "\u00a7aMX-Extends Vertical Grip"
+  },
+  "emxarms:attachments/grip_emx_extendsex": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_extendsex",
+    "name": "\u00a7aMX-MIX Laser Grip"
+  },
+  "emxarms:attachments/grip_emx_float": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_float",
+    "name": "\u00a7aMX-Float Simple Grip"
+  },
+  "emxarms:attachments/grip_emx_if": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_if",
+    "name": "\u00a7aMX-If Folding Shield"
+  },
+  "emxarms:attachments/grip_emx_maxvalue": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_maxvalue",
+    "name": "\u00a7aMX-MaxValue Laser Grip"
+  },
+  "emxarms:attachments/grip_emx_nested": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_nested",
+    "name": "\u00a7aNested Laser Grip"
+  },
+  "emxarms:attachments/grip_emx_protected": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_protected",
+    "name": "\u00a7aMX-Protected Light Rifle Shield"
+  },
+  "emxarms:attachments/grip_emx_static": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_static",
+    "name": "\u00a7aMX-Static Integrated Protection System"
+  },
+  "emxarms:attachments/grip_emx_synchronized0": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_synchronized0",
+    "name": "\u00a7aMX-Synchronized Bipod"
+  },
+  "emxarms:attachments/grip_emx_synchronized1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_synchronized1",
+    "name": "\u00a7aMX-Synchronized Bipod"
+  },
+  "emxarms:attachments/grip_emx_wireframe": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_wireframe",
+    "name": "\u00a7aWireframe CombinedLaser"
+  },
+  "emxarms:attachments/grip_emx_wireframedb": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_wireframedb",
+    "name": "\u00a7a\u201cDoubleStrike\u201d CombinedLaser"
+  },
+  "emxarms:attachments/grip_emx_wireframeex": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:grip_emx_wireframeex",
+    "name": "\u00a7a\u201cExtension\u00b7MX\u201d CombinedGrip"
+  },
+  "emxarms:attachments/laser_emx_compiler": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:laser_emx_compiler",
+    "name": "emxarms.attachment.laser_emx_compiler.name"
+  },
+  "emxarms:attachments/laser_emx_double": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:laser_emx_double",
+    "name": "emxarms.attachment.laser_emx_double.name"
+  },
+  "emxarms:attachments/muzzle_emx_catch": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_emx_catch",
+    "name": "\u00a7aMX-Catch Core Upgrade"
+  },
+  "emxarms:attachments/muzzle_emx_encapsulation": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_emx_encapsulation",
+    "name": "\u00a7aMX-Encapsulation Kernel Upgrade"
+  },
+  "emxarms:attachments/muzzle_emx_encapsulationse": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_emx_encapsulationse",
+    "name": "\u00a7aMX-Else Suppressor"
+  },
+  "emxarms:attachments/muzzle_emx_throw": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_emx_throw",
+    "name": "\u00a7aMX-Throw Core Upgrade"
+  },
+  "emxarms:attachments/muzzle_sf7b_super6": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_sf7b_super6",
+    "name": "\u00a7aSFM-4B \u201cGhoul\u201d"
+  },
+  "emxarms:attachments/muzzle_sf7b_uac9000": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:muzzle_sf7b_uac9000",
+    "name": "\u00a7aUAC-9000 \u201cHellRazer\u201d"
+  },
+  "emxarms:attachments/sight_emx_anonymous": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_anonymous",
+    "name": "\u00a7aMX-Anonymous VisionScope"
+  },
+  "emxarms:attachments/sight_emx_aps": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_aps",
+    "name": "\u00a7aMX-Actuator Ballistic Calculator"
+  },
+  "emxarms:attachments/sight_emx_aps_zh1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_emx_aps_zh1",
+    "name": "\u00a7b\u201cHeavy-Duty Actuator\u201d Ballistic Calculation System"
+  },
+  "emxarms:attachments/sight_emx_array": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_array",
+    "name": "\u00a7aMX-Array Visual Scope"
+  },
+  "emxarms:attachments/sight_emx_char1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_char1",
+    "name": "\u00a7aMX-CharI Visual Scope"
+  },
+  "emxarms:attachments/sight_emx_char2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_char2",
+    "name": "\u00a7aMX-CharII Visual Scope"
+  },
+  "emxarms:attachments/sight_emx_demo2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_demo2",
+    "name": "\u00a7aMX-DemoII Holographic Sight"
+  },
+  "emxarms:attachments/sight_emx_integer": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_integer",
+    "name": "\u00a7aMX-Integer HolographicSight"
+  },
+  "emxarms:attachments/sight_emx_koei1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_koei1",
+    "name": "\u00a7a\u201cKoei\u201d Bundled Scope"
+  },
+  "emxarms:attachments/sight_emx_laterano": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_laterano",
+    "name": "\u00a7aMX-Laterano Visual Scope"
+  },
+  "emxarms:attachments/sight_emx_return": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_return",
+    "name": "\u00a7aMX-Return Vision Scope"
+  },
+  "emxarms:attachments/sight_emx_tanh": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:sight_emx_tanh",
+    "name": "\u00a7aMX-Tanh Combination Sight"
+  },
+  "emxarms:attachments/sight_mfd": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_mfd",
+    "name": "\u00a7b\u201cAEGIS\u00b7Vanguard\u201d MFD"
+  },
+  "emxarms:attachments/stock_emx_reentrantlock": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:stock_emx_reentrantlock",
+    "name": "\u00a7aMX-Reentrant Lock Core Refit"
+  },
+  "emxarms:attachments/stock_emx_sleep": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:stock_emx_sleep",
+    "name": "\u00a7aMX-Sleep Core Refit"
+  },
+  "emxarms:attachments/stock_emx_yield": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:stock_emx_yield",
+    "name": "\u00a7aMX-Yield Core Refit"
+  },
+  "emxarms:gun/emx_draftsman": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_draftsman",
+    "name": "\u00a7aSAIG-24 \u201cDraftsman\u201d"
+  },
+  "emxarms:gun/emx_enforcer": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_enforcer",
+    "name": "\u00a7aHS-16 \u201cEnforcer\u201d"
+  },
+  "emxarms:gun/emx_expel32": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_expel32",
+    "name": "\u00a7aXSMG-12 \u201cDark Repulser\u201d"
+  },
+  "emxarms:gun/emx_expel32se": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_expel32se",
+    "name": "\u00a7aXSMG-09 \u201cExplainer\u201d"
+  },
+  "emxarms:gun/emx_kund50": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_kund50",
+    "name": "\u00a7aMACH-50 \u201cPolar Hunter\u201d"
+  },
+  "emxarms:gun/emx_kund50ex": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_kund50ex",
+    "name": "\u00a7aMACH-50EX \u201cPolar Explorer\u201d"
+  },
+  "emxarms:gun/emx_mac100": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mac100",
+    "name": "\u00a7aAPS | MACH \u201cFrost Stars\u201d"
+  },
+  "emxarms:gun/emx_mac50": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mac50",
+    "name": "\u00a7aAPS-293 \u201cPrivy Councilor\u201d"
+  },
+  "emxarms:gun/emx_mg57": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mg57",
+    "name": "\u00a7aHCMG-57 \u201cHeavy Cavalry\u201d"
+  },
+  "emxarms:gun/emx_mg90": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mg90",
+    "name": "\u00a7aAPM-130 \u201cDoom\u201d"
+  },
+  "emxarms:gun/emx_mk88": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mk88",
+    "name": "\u00a7aCTRS-192 \u201cImperial Bodyguard\u201d"
+  },
+  "emxarms:gun/emx_mk951l": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mk951l",
+    "name": "\u00a7aCML-951 \u201cLongBow\u201d"
+  },
+  "emxarms:gun/emx_mk951lmg": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mk951lmg",
+    "name": "\u00a7aLCMG-951 \u201cImperial Guard\u201d"
+  },
+  "emxarms:gun/emx_mk951r": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mk951r",
+    "name": "\u00a7aCMR-951 \u201cRed-CrownedCrane\u201d"
+  },
+  "emxarms:gun/emx_pmg90": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_pmg90",
+    "name": "\u00a7aHAER-90 \u201cArtemis\u201d"
+  },
+  "emxarms:gun/emx_pulse": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_pulse",
+    "name": "\u00a7aXSP-31 \u201cPulse\u201d"
+  },
+  "emxarms:gun/emx_pulsex2": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_pulsex2",
+    "name": "\u00a7aXSP-31 \u201cVigilante\u201d"
+  },
+  "emxarms:gun/emx_rivet": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_rivet",
+    "name": "\u00a7aSK-217 \u201cSolid Nail\u201d"
+  },
+  "emxarms:gun/emx_scgraves": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_scgraves",
+    "name": "\u00a7aAssemblyEG \u201crevolutionary\u201d"
+  },
+  "emxarms:gun/emx_sf7b": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_sf7b",
+    "name": "\u00a7aAres SF7B \u201cInferno\u201d"
+  },
+  "emxarms:gun/emx_tknife": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_tknife",
+    "name": "\u00a7aTediorei-II \u201cOperator\u201d"
+  },
+  "emxarms:gun/emx_umx32": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_umx32",
+    "name": "\u00a7aVXM-31 \u201cHidden Blade\u201d"
+  },
+  "emxarms:gun/emx_umx57": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_umx57",
+    "name": "\u00a7aVXM-57 \u201cHunting Knife\u201d"
+  },
+  "emxarms:gun/s10dmd": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:s10dmd",
+    "name": "\u00a7bIdris D10-MD \u201cdestroyer\u201d"
+  },
+  "trisdyna:ammo/emx_b1": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:emx_b1",
+    "name": "\u00a7bS1-LumaCore Battery"
+  },
+  "trisdyna:ammo/emx_b2": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:emx_b2",
+    "name": "\u00a7bS2-UltraFlux Battery"
+  },
+  "trisdyna:ammo/emx_b3": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:emx_b3",
+    "name": "\u00a7bS3-Celestial Battery"
+  },
+  "trisdyna:ammo/emx_b6": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:emx_b6",
+    "name": "\u00a7b\u201cS6-Tianshu\u201d Reactor Core"
+  },
+  "trisdyna:ammo/tris_core": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "trisdyna:tris_core",
+    "name": "\u00a7bRahovart Energy Core"
+  },
+  "trisdyna:attachments/grip_barrier": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:grip_barrier",
+    "name": "\u00a7b\u201cBarrier\u201d Energy Barrier"
+  },
+  "trisdyna:attachments/grip_shimmer": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:grip_shimmer",
+    "name": "\u00a7b\u201cShimmer\u201d Tactical laser"
+  },
+  "trisdyna:attachments/laser_shimmer": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:laser_shimmer",
+    "name": "\u00a7b\u201cShimmer\u201d laser"
+  },
+  "trisdyna:attachments/muzzle_tris1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_tris2",
+    "name": "\u00a7bHigh-Frequency Particle Module"
+  },
+  "trisdyna:attachments/muzzle_tris2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_tris1",
+    "name": "\u00a7bHigh-Energy Particle Module"
+  },
+  "trisdyna:attachments/muzzle_tris_sl1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_tris_sl1",
+    "name": "\u00a7b\u201cPhantom Sound\u201d suppressor"
+  },
+  "trisdyna:attachments/muzzle_tris_sl2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_tris_sl2",
+    "name": "\u00a7b\u201cSound Stealth\u201d suppressor"
+  },
+  "trisdyna:attachments/muzzle_trls_1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_trls_1",
+    "name": "\u00a7bOptical Focusing Module"
+  },
+  "trisdyna:attachments/muzzle_trls_2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_trls_2",
+    "name": "\u00a7bHigh-Energy Module"
+  },
+  "trisdyna:attachments/muzzle_trls_3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:muzzle_trls_3",
+    "name": "\u00a7bStanton Fracturing Module"
+  },
+  "trisdyna:attachments/sf7e_ammo_1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sf7e_ammo_1",
+    "name": "\u00a7bS3-Centurion Power Capacitor"
+  },
+  "trisdyna:attachments/sf7e_ammo_2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sf7e_ammo_2",
+    "name": "\u00a7bARES-Inferno Power Capacitor"
+  },
+  "trisdyna:attachments/sf7e_ammo_3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sf7e_ammo_3",
+    "name": "\u00a7bARES-Ion Power Capacitor"
+  },
+  "trisdyna:attachments/sight_antares": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_antares",
+    "name": "\u00a7b\u201cAntares\u201d Sight"
+  },
+  "trisdyna:attachments/sight_aurora": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_aurora",
+    "name": "\u00a7b\u201cPolarDay\u201d Sight"
+  },
+  "trisdyna:attachments/sight_neutron": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_neutron",
+    "name": "\u00a7b\u201cNeutron\u201d Red Dot Sight"
+  },
+  "trisdyna:attachments/sight_tris_eos": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_tris_eos",
+    "name": "\u00a7b\u201cDemogorgon-Eclipse\u201d Sight"
+  },
+  "trisdyna:attachments/sight_tris_eosl": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:sight_tris_eosl",
+    "name": "\u00a7b\u201cDemogorgon-Nova\u201d Sight"
+  },
+  "trisdyna:attachments/stock_sf7e_he": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_sf7e_he",
+    "name": "\u00a7bARES->MSHE Cannon Core"
+  },
+  "trisdyna:attachments/stock_sf7e_sp": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_sf7e_sp",
+    "name": "\u00a7bARES->DRSP Cannon Core"
+  },
+  "trisdyna:attachments/stock_tris1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_tris1",
+    "name": "\u00a7bTRIS Modular Upgrade"
+  },
+  "trisdyna:attachments/stock_tris2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_tris2",
+    "name": "\u00a7bTRIS Overclocking Upgrade"
+  },
+  "trisdyna:attachments/stock_tris_st1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_tris_st1",
+    "name": "\u00a7bTRIS CHK Replica stock"
+  },
+  "trisdyna:attachments/stock_tris_st2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:stock_tris_st2",
+    "name": "\u00a7bTRIS M4SS Replica stock"
+  },
+  "trisdyna:attachments/trammo_1": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:trammo_1",
+    "name": "\u00a7bTRIS-High-Power Capacitor"
+  },
+  "trisdyna:attachments/trammo_2": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:trammo_2",
+    "name": "\u00a7bTRIS-Series Capacitor"
+  },
+  "trisdyna:attachments/trammo_3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "trisdyna:trammo_3",
+    "name": "\u00a7bTRIS-Burst Capacitor"
+  },
+  "trisdyna:gun/ch104": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:ch104",
+    "name": "\u00a7bCH-104 \u201cComet\u201d"
+  },
+  "trisdyna:gun/cms92": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:cms92",
+    "name": "\u00a7bFTL-XL \u201cWhite dwarf\u201d"
+  },
+  "trisdyna:gun/cms92x": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:cms92x",
+    "name": "\u00a7bFTL-MR \u201cBlack Dwarf\u201d"
+  },
+  "trisdyna:gun/emx_cf007": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:emx_cf007",
+    "name": "\u00a7bCM-117 \u201cCerberus\u201d"
+  },
+  "trisdyna:gun/emx_cf107": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:emx_cf107",
+    "name": "\u00a7bCM-217M \u201cRoaring\u201d"
+  },
+  "trisdyna:gun/fl00": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:fl00",
+    "name": "\u00a7bFL-00 \u201cUniversal Adapter\u201d"
+  },
+  "trisdyna:gun/fl3e": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:fl3e",
+    "name": "\u00a7bFL-3E \u201cGreat Ray\u201d"
+  },
+  "trisdyna:gun/fpc211": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:fpc211",
+    "name": "\u00a7bFPC-211 \u201cThe Marker Nemesis\u201d"
+  },
+  "trisdyna:gun/fs2000": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:fs2000",
+    "name": "\u00a7bFS-2053 \u201cTrigger\u201d"
+  },
+  "trisdyna:gun/iras": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:iras",
+    "name": "\u00a7bIRA-S \u201cGravastar\u201d"
+  },
+  "trisdyna:gun/omerta": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:omerta",
+    "name": "\u00a7bFTS-L \u201cOmert\u00e0\u201d"
+  },
+  "trisdyna:gun/r117_weedy": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:r117_weedy",
+    "name": "\u00a7bFL-117 \u201cGreat Tempest\u201d"
+  },
+  "trisdyna:gun/rc": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:rc",
+    "name": "\u00a7bFire Platform \u201cReverse Collapse\u201d"
+  },
+  "trisdyna:gun/tris_sf7e": {
+    "age": 5,
+    "kind": "gun",
+    "id": "trisdyna:tris_sf7e",
+    "name": "\u00a7bAres SF7E \u201cIon\u201d"
+  },
+  "arsenal_beacon:platform/gun/lrl/ai_awp_asiimov": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ai_awp_asiimov",
+    "name": "AI AWP-ASIIMOV"
+  },
+  "arsenal_beacon:platform/gun/lrl/ak12_blackgold": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ak12_blackgold",
+    "name": "AK12-BLACKGOLD"
+  },
+  "arsenal_beacon:platform/gun/lrl/ak200_power": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ak200_power",
+    "name": "AK200-POWER"
+  },
+  "arsenal_beacon:platform/gun/lrl/ak200_sky": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ak200_sky",
+    "name": "AK200-SKY"
+  },
+  "arsenal_beacon:platform/gun/lrl/ak47_asiimov": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ak47_asiimov",
+    "name": "AK47-ASIIMOV"
+  },
+  "arsenal_beacon:platform/gun/lrl/ak47_supercharged": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ak47_supercharged",
+    "name": "AK47-SUPERCHARGED"
+  },
+  "arsenal_beacon:platform/gun/lrl/ash12_pity": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lrl:ash12_pity",
+    "name": "ASH12-PITY"
+  },
+  "arsenal_beacon:platform/gun/lrl/aug_security": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:aug_security",
+    "name": "AUG-SECURITY"
+  },
+  "arsenal_beacon:platform/gun/lrl/aug_ywzj": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:aug_ywzj",
+    "name": "AUG-YWZJ"
+  },
+  "arsenal_beacon:platform/gun/lrl/db_long_super": {
+    "age": 1,
+    "kind": "gun",
+    "id": "lrl:db_long_super",
+    "name": "DB LONG-SUPER"
+  },
+  "arsenal_beacon:platform/gun/lrl/deagle_conspiracy": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:deagle_conspiracy",
+    "name": "DEAGLE-CONSPIRACY"
+  },
+  "arsenal_beacon:platform/gun/lrl/deagle_pilot": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:deagle_pilot",
+    "name": "DEAGLE-PILOT"
+  },
+  "arsenal_beacon:platform/gun/lrl/glock_17_highbeam": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:glock_17_highbeam",
+    "name": "GLOCK 17-HIGH BEAM"
+  },
+  "arsenal_beacon:platform/gun/lrl/glock_17_silverpurple": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:glock_17_silverpurple",
+    "name": "GLOCK 17-SILVER PURPLE"
+  },
+  "arsenal_beacon:platform/gun/lrl/hk416d_blackice": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:hk416d_blackice",
+    "name": "HK416D-BLACKICE"
+  },
+  "arsenal_beacon:platform/gun/lrl/hk416d_ocean": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:hk416d_ocean",
+    "name": "HK416D-OCEAN"
+  },
+  "arsenal_beacon:platform/gun/lrl/hk416d_security": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:hk416d_security",
+    "name": "HK416D-SECURITY"
+  },
+  "arsenal_beacon:platform/gun/lrl/hk_mp5a5_agent": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:hk_mp5a5_agent",
+    "name": "HK MP5A5-AGENT"
+  },
+  "arsenal_beacon:platform/gun/lrl/hk_mp5a5_cyrex": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:hk_mp5a5_cyrex",
+    "name": "HK MP5A5-CYREX"
+  },
+  "arsenal_beacon:platform/gun/lrl/m16a4_ocean": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m16a4_ocean",
+    "name": "M16A4-OCEAN"
+  },
+  "arsenal_beacon:platform/gun/lrl/m4a1_silverpurple": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m4a1_silverpurple",
+    "name": "M4A1-SILVER PURPLE"
+  },
+  "arsenal_beacon:platform/gun/lrl/m4a1_temukau": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m4a1_temukau",
+    "name": "M4A1-TEMUKAU"
+  },
+  "arsenal_beacon:platform/gun/lrl/m4a1_turbine": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m4a1_turbine",
+    "name": "M4A1-TURBINE"
+  },
+  "arsenal_beacon:platform/gun/lrl/m4a1_zero": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m4a1_zero",
+    "name": "M4A1-ZERO"
+  },
+  "arsenal_beacon:platform/gun/lrl/m700_ocean": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:m700_ocean",
+    "name": "M700-OCEAN"
+  },
+  "arsenal_beacon:platform/gun/lrl/mdr_223_blackice": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:mdr_223_blackice",
+    "name": "MDR-BLACKICE"
+  },
+  "arsenal_beacon:platform/gun/lrl/mdr_223_pity": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:mdr_223_pity",
+    "name": "MDR-PITY"
+  },
+  "arsenal_beacon:platform/gun/lrl/mdr_308_dawn": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:mdr_308_dawn",
+    "name": "MDR-DAWN"
+  },
+  "arsenal_beacon:platform/gun/lrl/mp7_cirrus": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:mp7_cirrus",
+    "name": "MP7-CIRRUS"
+  },
+  "arsenal_beacon:platform/gun/lrl/ngsw_r_pity": {
+    "age": 4,
+    "kind": "gun",
+    "id": "lrl:ngsw_r_pity",
+    "name": "NGSW R-PITY"
+  },
+  "arsenal_beacon:platform/gun/lrl/p320_doctor": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:p320_doctor",
+    "name": "P320-DOCTOR"
+  },
+  "arsenal_beacon:platform/gun/lrl/p90_asiimov": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:p90_asiimov",
+    "name": "P90-ASIIMOV"
+  },
+  "arsenal_beacon:platform/gun/lrl/p90_cold_blooded": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:p90_cold_blooded",
+    "name": "P90-COLDBLOOD"
+  },
+  "arsenal_beacon:platform/gun/lrl/p90_industries": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:p90_industries",
+    "name": "P90-INDUSTRIES"
+  },
+  "arsenal_beacon:platform/gun/lrl/pp19_shark": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:pp19_shark",
+    "name": "PP19-SHARK"
+  },
+  "arsenal_beacon:platform/gun/lrl/qbz191_blackice": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:qbz191_blackice",
+    "name": "QBZ191-BLACKICE"
+  },
+  "arsenal_beacon:platform/gun/lrl/qbz95_arasaka": {
+    "age": 5,
+    "kind": "gun",
+    "id": "lrl:qbz95_arasaka",
+    "name": "QBZ95-ARASAKA"
+  },
+  "arsenal_beacon:platform/gun/lrl/qbz95_piano": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:qbz95_piano",
+    "name": "QBZ95-PIANO"
+  },
+  "arsenal_beacon:platform/gun/lrl/qbz_95_industries": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:qbz_95_industries",
+    "name": "QBZ95-INDUSTRIES"
+  },
+  "arsenal_beacon:platform/gun/lrl/rd704_asiimov": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:rd704_asiimov",
+    "name": "RD704-ASIIMOV"
+  },
+  "arsenal_beacon:platform/gun/lrl/rd704_blackice": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:rd704_blackice",
+    "name": "RD704-BLACKICE"
+  },
+  "arsenal_beacon:platform/gun/lrl/sa58_medic": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:sa58_medic",
+    "name": "SA58-MEDIC"
+  },
+  "arsenal_beacon:platform/gun/lrl/scar_l_ocean": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:scar_l_ocean",
+    "name": "SCAR L-OCEAN"
+  },
+  "arsenal_beacon:platform/gun/lrl/spr_15_medic": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:spr_15_medic",
+    "name": "SPR15-MEDIC"
+  },
+  "arsenal_beacon:platform/gun/lrl/ump45_crimson_foil": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ump45_crimson_foil",
+    "name": "UMP45-CRIMSON FOIL"
+  },
+  "arsenal_beacon:platform/gun/lrl/ump45_hurrican": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:ump45_hurrican",
+    "name": "UMP45-HURRICANE"
+  },
+  "arsenal_beacon:platform/gun/lrl/vector45_silverpurple": {
+    "age": 3,
+    "kind": "gun",
+    "id": "lrl:vector45_silverpurple",
+    "name": "VECTOR45-SILVERPURPLE"
+  },
+  "arsenal_beacon:platform/gun/tacz/taurus943": {
+    "age": 3,
+    "kind": "gun",
+    "id": "tacz:taurus943",
+    "name": ".22 Modle 943 Revolver"
+  },
+  "arsenal_beacon:platform/gun/mk16/ak12_2016": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak12_2016",
+    "name": "AK12 2016 "
+  },
+  "arsenal_beacon:platform/gun/mk16/ak12m1": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:ak12m1",
+    "name": "\u00a7dAK12M1 "
+  },
+  "arsenal_beacon:platform/gun/mk16/m4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "mk16:m4",
+    "name": "mk16.gun.m4.name"
+  },
+  "arsenal_beacon:platform/gun/bf1/lunge_mine": {
+    "age": 2,
+    "kind": "gun",
+    "id": "bf1:lunge_mine",
+    "name": "Lunge Mine"
+  },
+  "arsenal_beacon:platform/gun/emxarms/emx_mac50flux": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_mac50flux",
+    "name": "\u00a7cUnfinished items(EMX)"
+  },
+  "arsenal_beacon:platform/gun/emxarms/emx_nikana": {
+    "age": 5,
+    "kind": "gun",
+    "id": "emxarms:emx_nikana",
+    "name": "\u00a7cUnfinished items(EMX)"
+  },
+  "arsenal_beacon:platform/ammo/bf1/medkit": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "bf1:medkit",
+    "name": "\u00a76Medkit"
+  },
+  "arsenal_beacon:platform/ammo/create_armorer/melee_weapon": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "create_armorer:melee_weapon",
+    "name": "Melee Weapon"
+  },
+  "arsenal_beacon:platform/attachment/daffas_arsenal/muzzle_silencer_bandage": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:muzzle_silencer_bandage",
+    "name": "daffas_arsenal.attachment.muzzle_silencer_bandage.name"
+  },
+  "arsenal_beacon:platform/attachment/daffas_arsenal/scope_auxur": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_auxur",
+    "name": "AUXUR Scope"
+  },
+  "arsenal_beacon:platform/attachment/daffas_arsenal/scope_g36": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "daffas_arsenal:scope_g36",
+    "name": "daffas_arsenal.attachment.scope_g36.name"
+  },
+  "arsenal_beacon:platform/attachment/lradd/grip_minivert": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:grip_minivert",
+    "name": "lradd.attachment.grip_minivert.name"
+  },
+  "arsenal_beacon:platform/attachment/lradd/laser_hs507c": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:laser_hs507c",
+    "name": "lradd.attachment.laser_hs507c.name"
+  },
+  "arsenal_beacon:platform/attachment/lradd/muzzle_191em": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:muzzle_191em",
+    "name": "lradd.attachment.muzzle_191em.name"
+  },
+  "arsenal_beacon:platform/attachment/lradd/muzzle_mk47": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "lradd:muzzle_mk47",
+    "name": "lradd.attachment.muzzle_mk47.name"
+  },
+  "arsenal_beacon:platform/attachment/tacz/grip_cqr": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:grip_cqr",
+    "name": "Hera Arms CQR Grip"
+  },
+  "arsenal_beacon:platform/attachment/tacz/laser_peq15": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:laser_peq15",
+    "name": "tacz.attachment.laser_peq15"
+  },
+  "arsenal_beacon:platform/attachment/tacz/scope_aug_default": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:scope_aug_default",
+    "name": "AUG Builtin Scope"
+  },
+  "arsenal_beacon:platform/attachment/tacz/sight_p90": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "tacz:sight_p90",
+    "name": "tacz.attachment.sight_p90.name"
+  },
+  "arsenal_beacon:platform/attachment/mk16/114514": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:114514",
+    "name": "mk16.attachment.114514.name"
+  },
+  "arsenal_beacon:platform/attachment/mk16/553_g43": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:553_g43",
+    "name": "EOTECH 553+EOTECH G33 "
+  },
+  "arsenal_beacon:platform/attachment/mk16/553_g43f": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:553_g43f",
+    "name": "EOTECH 553+EOTECH G33 "
+  },
+  "arsenal_beacon:platform/attachment/mk16/6x5": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:6x5",
+    "name": "mk16.attachment.6x5.name"
+  },
+  "arsenal_beacon:platform/attachment/mk16/aeg": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:aeg",
+    "name": "mk16.attachment.aeg.name"
+  },
+  "arsenal_beacon:platform/attachment/mk16/phone": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "mk16:phone",
+    "name": "mk16.attachment.phone.name"
+  },
+  "arsenal_beacon:platform/attachment/qkl/m1905_bayonet": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:m1905_bayonet",
+    "name": "M1905 Bayonet"
+  },
+  "arsenal_beacon:platform/attachment/qkl/sl1": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "qkl:sl1",
+    "name": "SL-1 Heavy Silencer (RMG)"
+  },
+  "arsenal_beacon:platform/attachment/create_armorer/muzzle_refit_ap_grenade": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "create_armorer:muzzle_refit_ap_grenade",
+    "name": "\"Devastator\" Refit: AP Projectile"
+  },
+  "arsenal_beacon:platform/attachment/emxarms/emx_heavyweight_mag_3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_heavyweight_mag_3",
+    "name": "\u00a7aMX-Long Heavy Mag"
+  },
+  "arsenal_beacon:platform/attachment/emxarms/emx_sfmag_1he": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "emxarms:emx_sfmag_1he",
+    "name": "\u00a7aSFM-HE Round"
+  },
+  "hamster:ammo/compact_ammo": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "hamster:compact_ammo",
+    "name": "Short Bullet"
+  },
+  "hamster:ammo/flares_ammo": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "hamster:flares_ammo",
+    "name": "Flare Ammunition"
+  },
+  "hamster:ammo/long_ammo": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "hamster:long_ammo",
+    "name": "Long Bullet"
+  },
+  "hamster:ammo/medium_ammo": {
+    "age": 1,
+    "kind": "ammo",
+    "id": "hamster:medium_ammo",
+    "name": "Medium Bullet"
+  },
+  "hamster:attachments/aperture_sight": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:aperture_sight",
+    "name": "Aperture Sight"
+  },
+  "hamster:attachments/deadeye_scope": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:deadeye_scope",
+    "name": "\u201cDeadeye\u201d Scope"
+  },
+  "hamster:attachments/loading_pipe": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:loading_pipe",
+    "name": "Quick Loading Tube"
+  },
+  "hamster:attachments/m9130_bayonet": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "hamster:m9130_bayonet",
+    "name": "Mosin M91/30 Bayonet"
+  },
+  "hamster:attachments/puscope": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:puscope",
+    "name": "PU Scope"
+  },
+  "hamster:attachments/sks_bayonet": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "hamster:sks_bayonet",
+    "name": "SKS Bayonet"
+  },
+  "hamster:attachments/speedloader": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "hamster:speedloader",
+    "name": "Speedloader"
+  },
+  "hamster:attachments/trench_mag": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:trench_mag",
+    "name": "Trench Rifle Magazine"
+  },
+  "hamster:attachments/unertl_scope": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "hamster:unertl_scope",
+    "name": "Unertl 8X Scope"
+  },
+  "hamster:attachments/whip": {
+    "age": 1,
+    "kind": "attachment",
+    "id": "hamster:whip",
+    "name": "hamster.attachment.whip.name"
+  },
+  "hamster:gun/auto5": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:auto5",
+    "name": "Browning Auto-5 Shotgun"
+  },
+  "hamster:gun/berthier": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:berthier",
+    "name": "Berthier M1892 Rifle"
+  },
+  "hamster:gun/colt1873": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:colt1873",
+    "name": "Colt M1873 'Peacemaker'Revolver"
+  },
+  "hamster:gun/colt1873_lb": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:colt1873_lb",
+    "name": "\u00a7e\u201cAngel Eye\u201d"
+  },
+  "hamster:gun/coltm1851": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:coltm1851",
+    "name": "Colt M1851 Conversion Revolver"
+  },
+  "hamster:gun/coltm1851_chain": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:coltm1851_chain",
+    "name": "Colt M1851 Bullet Chain Revolver"
+  },
+  "hamster:gun/coltm1892": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:coltm1892",
+    "name": "Colt M1892 'New Army' Revolver"
+  },
+  "hamster:gun/coltm1892pair": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:coltm1892pair",
+    "name": "Micah's Sidearms"
+  },
+  "hamster:gun/flaregun": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:flaregun",
+    "name": "Webley Flare Gun"
+  },
+  "hamster:gun/gew98": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:gew98",
+    "name": "Gew.98 Rifle"
+  },
+  "hamster:gun/gras1874": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:gras1874",
+    "name": "Gras 1874 Rifle"
+  },
+  "hamster:gun/krag": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:krag",
+    "name": "Krag-J\u00f8rgensen Rifle"
+  },
+  "hamster:gun/lebel1886": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:lebel1886",
+    "name": "Lebel M1886 Rifle"
+  },
+  "hamster:gun/lebel1886_07c": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:lebel1886_07c",
+    "name": "[Special] Lebel 1886/07C Carbine Rifle"
+  },
+  "hamster:gun/luger1906": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:luger1906",
+    "name": "Luger M1906 Rifle"
+  },
+  "hamster:gun/lugerp08": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:lugerp08",
+    "name": "Luger P08 Pistol"
+  },
+  "hamster:gun/lugerp08_artillerie": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:lugerp08_artillerie",
+    "name": "P08 Artillery Carbine"
+  },
+  "hamster:gun/m1879revolver": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:m1879revolver",
+    "name": "M1879 'Empire' Revolver"
+  },
+  "hamster:gun/m1887": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:m1887",
+    "name": "Winchester M1887 Lever-Action Shotgun"
+  },
+  "hamster:gun/m1887_hc": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:m1887_hc",
+    "name": "Winchester M1887 Hand Cannon Shotgun"
+  },
+  "hamster:gun/m1903": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:m1903",
+    "name": "Springfield M1903A1 Rifle"
+  },
+  "hamster:gun/m1garand": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:m1garand",
+    "name": "M1 Garand Rifle"
+  },
+  "hamster:gun/madsen": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:madsen",
+    "name": "Madsen Light Machine Gun"
+  },
+  "hamster:gun/makarov": {
+    "age": 3,
+    "kind": "gun",
+    "id": "hamster:makarov",
+    "name": "Makarov PM Pistol"
+  },
+  "hamster:gun/martinihenry": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:martinihenry",
+    "name": "Martini-Henry Rifle"
+  },
+  "hamster:gun/mg1417": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:mg1417",
+    "name": "hamster.gun.mg1417.name"
+  },
+  "hamster:gun/mosin91": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:mosin91",
+    "name": "Mosin-Nagant M1891"
+  },
+  "hamster:gun/mosin9130": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:mosin9130",
+    "name": "Mosin-Nagant M91/30 Rifle"
+  },
+  "hamster:gun/mp18": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:mp18",
+    "name": "MP18 Submachine Gun"
+  },
+  "hamster:gun/nagantcarbine": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:nagantcarbine",
+    "name": "Nagant M1895 Carbine"
+  },
+  "hamster:gun/nagantm1895": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:nagantm1895",
+    "name": "Nagant M1895 Revolver"
+  },
+  "hamster:gun/one_barrel": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:one_barrel",
+    "name": "Hammer-Action Shotgun"
+  },
+  "hamster:gun/sharps": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:sharps",
+    "name": "Sharps M1874 Sharpshooter Rifle"
+  },
+  "hamster:gun/sks": {
+    "age": 3,
+    "kind": "gun",
+    "id": "hamster:sks",
+    "name": "SKS Semi-Automatic Rifle"
+  },
+  "hamster:gun/smle_mk3": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:smle_mk3",
+    "name": "Lee-Enfield No.1 MKIII Rifle"
+  },
+  "hamster:gun/sw_mk2": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:sw_mk2",
+    "name": "S&W.455 MKII"
+  },
+  "hamster:gun/type99": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:type99",
+    "name": "Type 99 Rifle"
+  },
+  "hamster:gun/uppercut": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:uppercut",
+    "name": "[Special] 'Uppercut' Pistol"
+  },
+  "hamster:gun/webley": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:webley",
+    "name": "Webley Mk.VI Revolver"
+  },
+  "hamster:gun/win1873": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:win1873",
+    "name": "Winchester M1873 Lever-Action Rifle"
+  },
+  "hamster:gun/win1894": {
+    "age": 1,
+    "kind": "gun",
+    "id": "hamster:win1894",
+    "name": "Winchester M1894 Lever-Action Rifle"
+  },
+  "ww:303": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:65a",
+    "name": "6.5x50mm Arisaka round"
+  },
+  "ww:30c": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:30c",
+    "name": ".30 Carbine bullet"
+  },
+  "ww:65a": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:65a",
+    "name": "6.5x50mm Arisaka round"
+  },
+  "ww:763": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:763",
+    "name": ".30 Mauser Automatic"
+  },
+  "ww:765": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:763",
+    "name": ".30 Mauser Automatic"
+  },
+  "ww:77a": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:77a",
+    "name": "7.7x58mm Arisaka round"
+  },
+  "ww:8mm": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:8mm",
+    "name": "8x22mm Nambu"
+  },
+  "ww:anm2": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:anm2",
+    "name": "AN/M2 Stinger"
+  },
+  "ww:avt_40": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:avt_40",
+    "name": "AVT40"
+  },
+  "ww:bayonet_m1884": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:bayonet_m1884",
+    "name": "S84/98 III"
+  },
+  "ww:bayonet_m1930 - Copy": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:bayonet_no4",
+    "name": "No.4 Spike Bayonet"
+  },
+  "ww:bayonet_m1930": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:bayonet_m1930",
+    "name": "M91/30 Bayonet"
+  },
+  "ww:c96": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:c96",
+    "name": "Mauser C96"
+  },
+  "ww:cph": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:cph",
+    "name": "Colt Pocket Hammerless"
+  },
+  "ww:dp28": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:dp28",
+    "name": "Degtyaryov DP28"
+  },
+  "ww:g43": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:g43",
+    "name": "Gewehr 43"
+  },
+  "ww:i37": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:i37",
+    "name": "Ithaca M37"
+  },
+  "ww:kar98k": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:kar98k",
+    "name": "Karabiner 98 Kurz"
+  },
+  "ww:lee": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:lee",
+    "name": "Lee-Enfield Rifle No.4 MkI"
+  },
+  "ww:m1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1",
+    "name": "M1 Carbine"
+  },
+  "ww:m1897": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1897",
+    "name": "Winchester Model 1897 'Trenchgun'"
+  },
+  "ww:m1903": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1903",
+    "name": "M1903 Rifle"
+  },
+  "ww:m1911a1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1911a1",
+    "name": "M1911A1"
+  },
+  "ww:m1912": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1912",
+    "name": "Winchester Model 1912"
+  },
+  "ww:m1918": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1918",
+    "name": "M1918 BAR"
+  },
+  "ww:m1918a1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1918a1",
+    "name": "M1918A1 BAR"
+  },
+  "ww:m1918a2": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1918a2",
+    "name": "M1918A2 BAR"
+  },
+  "ww:m1919": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1919",
+    "name": "Browning M1919A6"
+  },
+  "ww:m1921": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1921",
+    "name": "M21/28 Thomspon"
+  },
+  "ww:m1928a1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1928a1",
+    "name": "M1928A1 Thomspon"
+  },
+  "ww:m1a1": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1a1",
+    "name": "M1A1 Thomspon"
+  },
+  "ww:m1g": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1g",
+    "name": "M1 Garand"
+  },
+  "ww:m1t": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m1t",
+    "name": "M1 Thomspon"
+  },
+  "ww:m2": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m2",
+    "name": "M2 Carbine"
+  },
+  "ww:m28s": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m28s",
+    "name": "M28 Thomspon (S)"
+  },
+  "ww:m2s": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m2s",
+    "name": "Sawn Off M2 Carbine"
+  },
+  "ww:m50": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m50",
+    "name": "M50 Reising"
+  },
+  "ww:m712": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m712",
+    "name": "Schnellfeuer M712"
+  },
+  "ww:m82": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:m82",
+    "name": "M82 Scope"
+  },
+  "ww:m91": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:m91",
+    "name": "Mosin-Nagant M91/30"
+  },
+  "ww:mg34": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mg34",
+    "name": "MG34"
+  },
+  "ww:mg42": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mg42",
+    "name": "MG42"
+  },
+  "ww:mp28": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mp28",
+    "name": "MP28"
+  },
+  "ww:mp34": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mp34",
+    "name": "MP34"
+  },
+  "ww:mp38": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mp38",
+    "name": "MP38"
+  },
+  "ww:mp40": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mp40",
+    "name": "MP40"
+  },
+  "ww:mp41": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:mp41",
+    "name": "Schmeisser MP41"
+  },
+  "ww:no32": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:no32",
+    "name": "No.32 Scope"
+  },
+  "ww:p08": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:p08",
+    "name": "Luger P08"
+  },
+  "ww:p38": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:p38",
+    "name": "Walther P38"
+  },
+  "ww:peyu": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:peyu",
+    "name": "PU 5x Scope"
+  },
+  "ww:pps": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:pps",
+    "name": "PPS43"
+  },
+  "ww:pyu": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:pyu",
+    "name": "PU 3.5x Scope"
+  },
+  "ww:s1100": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:s1100",
+    "name": "Steyr-Solothurn S1-100"
+  },
+  "ww:silence": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:silence",
+    "name": "World War Two era silencer"
+  },
+  "ww:silencep": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:silence",
+    "name": "World War Two era silencer"
+  },
+  "ww:sten": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:sten",
+    "name": "Sten MkII"
+  },
+  "ww:stg44": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:stg44",
+    "name": "Sturmgewehr 44"
+  },
+  "ww:svt_40": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:svt_40",
+    "name": "SVT40"
+  },
+  "ww:t100": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t100",
+    "name": "Type 100/40"
+  },
+  "ww:t100l": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t100l",
+    "name": "Type 100/44"
+  },
+  "ww:t14": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t14",
+    "name": "Nambu Type 14"
+  },
+  "ww:t20": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t20",
+    "name": "T20 Garand"
+  },
+  "ww:t96": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t96",
+    "name": "Type 96 LMG"
+  },
+  "ww:t99": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:t99",
+    "name": "Type 99 LMG"
+  },
+  "ww:tbe": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:tbe",
+    "name": "Type Be"
+  },
+  "ww:type38": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:type38",
+    "name": "Type 38 Rifle"
+  },
+  "ww:type99": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:type99",
+    "name": "Type 99 Rifle"
+  },
+  "ww:zf39": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:zf39",
+    "name": "ZF39 Scope"
+  },
+  "ww:zf4": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:zf4",
+    "name": "ZF4 Scope"
+  },
+  "ronmc:ammo/10mm": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:10mm",
+    "name": "\u00a7a10mm Bullet"
+  },
+  "ronmc:ammo/300blk": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:300blk",
+    "name": "\u00a76.300BLK Bullet"
+  },
+  "ronmc:ammo/65x48": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:65x48",
+    "name": "\u00a7c6.5 Creedmoor"
+  },
+  "ronmc:ammo/68pepperball": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "ronmc:68pepperball",
+    "name": "\u00a79.68 Pepperball"
+  },
+  "ronmc:ammo/762x51": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:762x51",
+    "name": "\u00a7b7.62x51 Bullet"
+  },
+  "ronmc:ammo/bean_bag": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:bean_bag",
+    "name": "\u00a79Bean Bag"
+  },
+  "ronmc:ammo/slug": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:slug",
+    "name": "\u00a79Frangible Slug"
+  },
+  "ronmc:ammo/train_556x45": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:train_556x45",
+    "name": "\u00a7e5.56x45mm Training Bullet"
+  },
+  "ronmc:ammo/train_9mm": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "ronmc:train_9mm",
+    "name": "\u00a7a9mm Training Bullet"
+  },
+  "ronmc:attachments/12ga_brake": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:12ga_brake",
+    "name": "12GA Brake"
+  },
+  "ronmc:attachments/angled_grip": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:angled_grip",
+    "name": "Angled Grip"
+  },
+  "ronmc:attachments/canted": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:canted",
+    "name": "Canted offset sights"
+  },
+  "ronmc:attachments/combat_grip": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:combat_grip",
+    "name": "Combat Grip"
+  },
+  "ronmc:attachments/custom_laser": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:custom_laser",
+    "name": "Custom Laser"
+  },
+  "ronmc:attachments/g36_carry": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:g36_carry",
+    "name": "HS510C / Carryhandle"
+  },
+  "ronmc:attachments/laser_peq15": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:laser_peq15",
+    "name": "PEQ15 Laser"
+  },
+  "ronmc:attachments/laser_pointer": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:laser_pointer",
+    "name": "Laser Pointer"
+  },
+  "ronmc:attachments/m32a1_he": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:m32a1_he",
+    "name": "M32A1 HE (High Explosive)"
+  },
+  "ronmc:attachments/m4_carry": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:m4_carry",
+    "name": "Carry Handle"
+  },
+  "ronmc:attachments/mp5a2_grip": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:mp5a2_grip",
+    "name": "Integrated Flashlight"
+  },
+  "ronmc:attachments/rmr_dot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:rmr_dot",
+    "name": "RMR DOT"
+  },
+  "ronmc:attachments/side_angle_grip": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:side_angle_grip",
+    "name": "Side Angle Grip"
+  },
+  "ronmc:attachments/spread_choke": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:spread_choke",
+    "name": "Spread Choke"
+  },
+  "ronmc:attachments/sro_dot": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:sro_dot",
+    "name": "SRO DOT"
+  },
+  "ronmc:attachments/stock_tactical_tan": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:stock_tactical_tan",
+    "name": "Magpul CTR stock Tan"
+  },
+  "ronmc:gun/357_magnum": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:357_magnum",
+    "name": "357 Magnum"
+  },
+  "ronmc:gun/509": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:509",
+    "name": "509"
+  },
+  "ronmc:gun/57usg": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:57usg",
+    "name": "57 USG"
+  },
+  "ronmc:gun/590m": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:590m",
+    "name": "590M Shotgun"
+  },
+  "ronmc:gun/870cqb": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:870cqb",
+    "name": "870 CQB"
+  },
+  "ronmc:gun/arn": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:arn",
+    "name": "ARN-180"
+  },
+  "ronmc:gun/arwc": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:arwc",
+    "name": "ARWC"
+  },
+  "ronmc:gun/b1301": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:b1301",
+    "name": "B1301"
+  },
+  "ronmc:gun/b92x": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:b92x",
+    "name": "B92X"
+  },
+  "ronmc:gun/beanbag_shot": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:beanbag_shot",
+    "name": "Beanbag Shotgun"
+  },
+  "ronmc:gun/dm4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:dm4",
+    "name": "DM4PDW"
+  },
+  "ronmc:gun/entryman": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:entryman",
+    "name": "\u00a76B1301 \"Entryman\""
+  },
+  "ronmc:gun/f90": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:f90",
+    "name": "F90"
+  },
+  "ronmc:gun/fp9c_g19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:fp9c_g19",
+    "name": "\u00a76FP9C G19"
+  },
+  "ronmc:gun/g36c": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:g36c",
+    "name": "G36C"
+  },
+  "ronmc:gun/g3a3": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:g3a3",
+    "name": "G3A3"
+  },
+  "ronmc:gun/ga416": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:ga416",
+    "name": "GA416"
+  },
+  "ronmc:gun/ga51": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:ga51",
+    "name": "GA51"
+  },
+  "ronmc:gun/glock_18c": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:glock_18c",
+    "name": "G18-C"
+  },
+  "ronmc:gun/glock_19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:glock_19",
+    "name": "G19"
+  },
+  "ronmc:gun/lvar": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:lvar",
+    "name": "LVAR"
+  },
+  "ronmc:gun/m1014": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:m1014",
+    "name": "M1014"
+  },
+  "ronmc:gun/m11": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:m11",
+    "name": "M11 Compact"
+  },
+  "ronmc:gun/m14": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:m14",
+    "name": "M14S-16"
+  },
+  "ronmc:gun/m1911": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ronmc:m1911",
+    "name": "TLE 1911"
+  },
+  "ronmc:gun/m32a1": {
+    "age": 4,
+    "kind": "gun",
+    "id": "ronmc:m32a1",
+    "name": "M32A1 Grenade Launcher"
+  },
+  "ronmc:gun/m45a1": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:m45a1",
+    "name": "M45A1"
+  },
+  "ronmc:gun/mcx": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mcx",
+    "name": "MCX"
+  },
+  "ronmc:gun/mk16": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mk16",
+    "name": "MK16"
+  },
+  "ronmc:gun/mk17": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mk17",
+    "name": "MK17"
+  },
+  "ronmc:gun/mk18": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mk18",
+    "name": "MK18"
+  },
+  "ronmc:gun/mkv": {
+    "age": 4,
+    "kind": "gun",
+    "id": "ronmc:mkv",
+    "name": "MK-V"
+  },
+  "ronmc:gun/mp5a2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp5a2",
+    "name": "MP5A2"
+  },
+  "ronmc:gun/mp5a3": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp5a3",
+    "name": "MP5A3"
+  },
+  "ronmc:gun/mp5sd6": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp5sd6",
+    "name": "MP5SD6"
+  },
+  "ronmc:gun/mp5_10mm": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp5_10mm",
+    "name": "MP5/10mm"
+  },
+  "ronmc:gun/mp7": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp7",
+    "name": "MP7"
+  },
+  "ronmc:gun/mp9": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mp9",
+    "name": "MP9"
+  },
+  "ronmc:gun/mpx": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:mpx",
+    "name": "MPX"
+  },
+  "ronmc:gun/p90": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:p90",
+    "name": "P90"
+  },
+  "ronmc:gun/p99": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:p99",
+    "name": "Walther P99"
+  },
+  "ronmc:gun/raider": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:raider",
+    "name": "Raider x P320"
+  },
+  "ronmc:gun/rtwc": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:rtwc",
+    "name": "RTWC-6.5"
+  },
+  "ronmc:gun/sa58": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:sa58",
+    "name": "SA-58 OSW"
+  },
+  "ronmc:gun/shorty": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:shorty",
+    "name": "Breach Shotgun"
+  },
+  "ronmc:gun/slr": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:slr",
+    "name": "SLR47"
+  },
+  "ronmc:gun/spc": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:spc",
+    "name": "SPC9"
+  },
+  "ronmc:gun/sr16": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:sr16",
+    "name": "SR-16"
+  },
+  "ronmc:gun/sti_2011": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:sti_2011",
+    "name": "S2011-P"
+  },
+  "ronmc:gun/supernova": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:supernova",
+    "name": "Supernova"
+  },
+  "ronmc:gun/train_g19": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:train_g19",
+    "name": "Training G19"
+  },
+  "ronmc:gun/train_mk18": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:train_mk18",
+    "name": "Training MK18"
+  },
+  "ronmc:gun/trpl": {
+    "age": 4,
+    "kind": "gun",
+    "id": "ronmc:trpl",
+    "name": "TRPL"
+  },
+  "ronmc:gun/ump45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:ump45",
+    "name": "UMP45"
+  },
+  "ronmc:gun/ump9": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:ump9",
+    "name": "UMP9"
+  },
+  "ronmc:gun/usp45": {
+    "age": 3,
+    "kind": "gun",
+    "id": "ronmc:usp45",
+    "name": "USP45"
+  },
+  "zeta:ammo/ac7_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:ac7_ammo",
+    "name": "AC-7 Magazine"
+  },
+  "zeta:ammo/arrow_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:arrow_ammo",
+    "name": "\u00a74CB-9 Bolts"
+  },
+  "zeta:ammo/ar_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:ar_ammo",
+    "name": "Universal Rifle Ammunition"
+  },
+  "zeta:ammo/eat411_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:eat411_ammo",
+    "name": "\u00a74'Leveller' Replace Ammo"
+  },
+  "zeta:ammo/flam_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:flam_ammo",
+    "name": "\u00a76Flamethrower Fuel"
+  },
+  "zeta:ammo/gp31_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:gp31_ammo",
+    "name": "GP-31 Grenades"
+  },
+  "zeta:ammo/gr8_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:gr8_ammo",
+    "name": "\u00a74Heavy Anti-Tank Shell"
+  },
+  "zeta:ammo/heavy_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:heavy_ammo",
+    "name": "Heavy Rifle Ammunition"
+  },
+  "zeta:ammo/las_16_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:las_16_ammo",
+    "name": "\u00a7eI.C.E Cooling Unit"
+  },
+  "zeta:ammo/mgx_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:mgx_ammo",
+    "name": "'Bullet Storm' Replace Ammo"
+  },
+  "zeta:ammo/p113_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:p113_ammo",
+    "name": "Universal Pistol Ammunition"
+  },
+  "zeta:ammo/p4_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:p4_ammo",
+    "name": "Single-loading Rifle&Pistol Ammunition"
+  },
+  "zeta:ammo/plas_1_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:plas_1_ammo",
+    "name": "\u00a73Energy Unit"
+  },
+  "zeta:ammo/railgun_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:railgun_ammo",
+    "name": "\u00a73RS-422 APFSDS Shell"
+  },
+  "zeta:ammo/rl77_rocket": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:rl77_rocket",
+    "name": "\u00a74RL-77 Airburst cluster rocket"
+  },
+  "zeta:ammo/s11_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:s11_ammo",
+    "name": "\u00a72Steel Spear"
+  },
+  "zeta:ammo/sg225sp_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:sg225sp_ammo",
+    "name": "Birdshot Magazine"
+  },
+  "zeta:ammo/sg8f_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:sg8f_ammo",
+    "name": "\u00a76Dragon's Breath Cartridge"
+  },
+  "zeta:ammo/sg8s_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:sg8s_ammo",
+    "name": "Rifled Slug/Heavy Buckshot"
+  },
+  "zeta:ammo/sg8_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:sg8_ammo",
+    "name": "Buckshot"
+  },
+  "zeta:ammo/ultimatum_ammo": {
+    "age": 5,
+    "kind": "ammo",
+    "id": "zeta:ultimatum_ammo",
+    "name": "\u00a74Super Grenade"
+  },
+  "zeta:attachment/ap_arrow": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ap_arrow",
+    "name": "Armor-Piercing Bolts"
+  },
+  "zeta:attachment/gr8_f": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:gr8_f",
+    "name": "'Sulfur'Incendiary Shell"
+  },
+  "zeta:attachment/gr8_he": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:gr8_he",
+    "name": "'Protostar'High Explosive Shell"
+  },
+  "zeta:attachment/grip_exp": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:grip_exp",
+    "name": "'Trailblazer'Vertical Grip"
+  },
+  "zeta:attachment/he_arrow": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:he_arrow",
+    "name": "High Explosive Bolts"
+  },
+  "zeta:attachment/ice_bl": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ice_bl",
+    "name": "Balanced Heatsink"
+  },
+  "zeta:attachment/ice_he": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ice_he",
+    "name": "High Efficiency Heatsink"
+  },
+  "zeta:attachment/ice_hl": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ice_hl",
+    "name": "High Capacity Heatsink"
+  },
+  "zeta:attachment/ice_qh": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ice_qh",
+    "name": "\u00a7eOverdrive Radiator"
+  },
+  "zeta:attachment/ice_sf": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:ice_sf",
+    "name": "\u00a7eProtective Radiator"
+  },
+  "zeta:attachment/jet": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:jet",
+    "name": "'Drifting'Bouncing Explosive"
+  },
+  "zeta:attachment/laser_de": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:laser_de",
+    "name": "'Righteous'Tactical Laser"
+  },
+  "zeta:attachment/muzzle_duck": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_duck",
+    "name": "Duckbill Muzzle"
+  },
+  "zeta:attachment/muzzle_focus_lens": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_focus_lens",
+    "name": "\u00a7eFocus Lens"
+  },
+  "zeta:attachment/muzzle_full": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_full",
+    "name": "Full Choke"
+  },
+  "zeta:attachment/muzzle_giant": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_giant",
+    "name": "'Titan'Heavy Muzzle Brake"
+  },
+  "zeta:attachment/muzzle_half": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_half",
+    "name": "Half Choke"
+  },
+  "zeta:attachment/pos_arrow": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:pos_arrow",
+    "name": "Poisonous Targeting Bolts"
+  },
+  "zeta:attachment/scope_apw": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:scope_apw",
+    "name": "Anti Sniper 4-10x Sight"
+  },
+  "zeta:attachment/scope_r6": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:scope_r6",
+    "name": "'Diligent' Scope"
+  },
+  "zeta:attachment/scope_sup": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:scope_sup",
+    "name": "'Supporter'Heavy Weapon Scope"
+  },
+  "zeta:attachment/scythe_aim": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:scythe_aim",
+    "name": "'Prosperity' Scope"
+  },
+  "zeta:attachment/sight_dot": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:sight_dot",
+    "name": "'Democracy'Red Dot Sight"
+  },
+  "zeta:attachment/sight_l": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:sight_l",
+    "name": "'New Era'Red Dot Sight"
+  },
+  "zeta:attachment/sight_pist": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:sight_pist",
+    "name": "'Quick-Draw'Pistol Scope"
+  },
+  "zeta:attachment/sight_plasma": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:sight_plasma",
+    "name": "'Heart of Democracy'Cylindrical Dot Sight"
+  },
+  "zeta:attachment/sight_shotgun": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:sight_shotgun",
+    "name": "'Fortitude'Shotgun Combat Sight"
+  },
+  "zeta:attachment/spear_scope": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:spear_scope",
+    "name": "'Spear'Fire Control System"
+  },
+  "zeta:attachment/stock_sh20": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sh20",
+    "name": "SH-20 Bulletproof Shield"
+  },
+  "zeta:attachment/stock_sup11": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup11",
+    "name": "SUP-11 Viscous Fuel"
+  },
+  "zeta:attachment/stock_sup12": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup12",
+    "name": "SUP-12 Heat-flow Adhesion"
+  },
+  "zeta:attachment/stock_sup13": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup13",
+    "name": "SUP-13 Super Conductor"
+  },
+  "zeta:attachment/stock_sup3": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup3",
+    "name": "SUP-3 Transuranium Propellant"
+  },
+  "zeta:attachment/stock_sup33": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup33",
+    "name": "SUP-33 Eye of Truth"
+  },
+  "zeta:attachment/stock_sup8": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:stock_sup8",
+    "name": "SUP-8 Echo Device"
+  },
+  "zeta:gun/ac7": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ac7",
+    "name": "AC-7 Autocannon"
+  },
+  "zeta:gun/apw1": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:apw1",
+    "name": "APW-1 Anti-Materiel Rifle"
+  },
+  "zeta:gun/ar2": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ar2",
+    "name": "\u00a76AR-2 'Coyote'"
+  },
+  "zeta:gun/ar21": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ar21",
+    "name": "AR/GL-21 'ONE-TWO'"
+  },
+  "zeta:gun/ar32": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ar32",
+    "name": "\u00a73AR-32 'Pacifier'"
+  },
+  "zeta:gun/ar59": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ar59",
+    "name": "AR-59 'Suppressor'"
+  },
+  "zeta:gun/ar61": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ar61",
+    "name": "AR-61 'Tenderizer'"
+  },
+  "zeta:gun/arc12": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:arc12",
+    "name": "\u00a73ARC-12 'Thunderbolt'"
+  },
+  "zeta:gun/arc3": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:arc3",
+    "name": "\u00a73ARC-3 Arc Thrower"
+  },
+  "zeta:gun/br_14": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:br_14",
+    "name": "BR-14 'Adjudicator'"
+  },
+  "zeta:gun/cqc30": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:cqc30",
+    "name": "\u00a73CQC-30 Stun Baton"
+  },
+  "zeta:gun/crossbow": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:crossbow",
+    "name": "\u00a74CB-9 Exploding Crossbow"
+  },
+  "zeta:gun/dbs2": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:dbs2",
+    "name": "DBS-2 'Double Freedom'"
+  },
+  "zeta:gun/eat411": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:eat411",
+    "name": "\u00a74EAT-411 'Leveller'"
+  },
+  "zeta:gun/flam66": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:flam66",
+    "name": "\u00a76FLAM-66 'Torcher'"
+  },
+  "zeta:gun/gl21": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:gl21",
+    "name": "\u00a74GL-21 Grenade Launcher"
+  },
+  "zeta:gun/gl28": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:gl28",
+    "name": "\u00a74GL-28 Belt-Fed Grenade Launcher"
+  },
+  "zeta:gun/gp31": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:gp31",
+    "name": "GP-31 Grenade Pistol"
+  },
+  "zeta:gun/gr8": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:gr8",
+    "name": "\u00a74GR-8 Recoilless Rifle"
+  },
+  "zeta:gun/las12": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las12",
+    "name": "\u00a7eLAS-12 'Sai'"
+  },
+  "zeta:gun/las13": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las13",
+    "name": "\u00a7eLAS-16 'Trident'"
+  },
+  "zeta:gun/las58": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las58",
+    "name": "\u00a7eLAS-58 'Talon'"
+  },
+  "zeta:gun/las98": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las98",
+    "name": "\u00a7eLAS-98 Laser Cannon"
+  },
+  "zeta:gun/las_16": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las_16",
+    "name": "\u00a7eLAS-16 'Sickle'"
+  },
+  "zeta:gun/las_5": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:las_5",
+    "name": "\u00a7eLAS-5 'Scythe'"
+  },
+  "zeta:gun/m1000": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:m1000",
+    "name": "M-1000 'Maxigun'"
+  },
+  "zeta:gun/m105": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:m105",
+    "name": "M-105 'Stalwart'"
+  },
+  "zeta:gun/m206": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:m206",
+    "name": "M-206 Heavy Machinegun"
+  },
+  "zeta:gun/mgx42": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:mgx42",
+    "name": "\u00a73MGX-42 'Bullet Storm'"
+  },
+  "zeta:gun/mp98": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:mp98",
+    "name": "MP-98 'Knight'"
+  },
+  "zeta:gun/p113": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:p113",
+    "name": "P-113 'Verdict'"
+  },
+  "zeta:gun/p35": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:p35",
+    "name": "\u00a7aP-35 'Re-Educator'"
+  },
+  "zeta:gun/p4": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:p4",
+    "name": "P-4 'Senator'"
+  },
+  "zeta:gun/p92": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:p92",
+    "name": "P-92 'Warrant'"
+  },
+  "zeta:gun/plas45": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:plas45",
+    "name": "\u00a73PLAS-45 EPOCH"
+  },
+  "zeta:gun/plas_1": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:plas_1",
+    "name": "\u00a73PLAS-1 'Scorcher'"
+  },
+  "zeta:gun/plas_101": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:plas101",
+    "name": "\u00a73PLAS-101 'Purifier'"
+  },
+  "zeta:gun/quasar": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:quasar",
+    "name": "\u00a7eLAS-99 'Quasar'"
+  },
+  "zeta:gun/r2": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:r2",
+    "name": "R-2 'Amendment'"
+  },
+  "zeta:gun/r4": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:r4",
+    "name": "\u00a76R-4 'Hyena'"
+  },
+  "zeta:gun/r6": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:r6",
+    "name": "R-6 'Deadeye'"
+  },
+  "zeta:gun/r72": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:r72",
+    "name": "R-72 'Censor'"
+  },
+  "zeta:gun/railgun": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:railgun",
+    "name": "\u00a73RS-422 Railgun"
+  },
+  "zeta:gun/rl77": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:rl77",
+    "name": "\u00a74RL-70 Airburst Rocket Launcher"
+  },
+  "zeta:gun/s11": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:s11",
+    "name": "\u00a72S-11 Speargun"
+  },
+  "zeta:gun/sg20": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg20",
+    "name": "\u00a76SG-20 'Halt'"
+  },
+  "zeta:gun/sg225sp": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg225sp",
+    "name": "SG-225SP 'Spray&Pray'"
+  },
+  "zeta:gun/sg451": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg451",
+    "name": "\u00a76SG-451 'Cookout'"
+  },
+  "zeta:gun/sg8": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg8",
+    "name": "SG-8 'Punisher'"
+  },
+  "zeta:gun/sg8p": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg8p",
+    "name": "\u00a73SG-8P Plasma 'Punisher'"
+  },
+  "zeta:gun/sg8s": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg8s",
+    "name": "SG-8S 'Slugger'"
+  },
+  "zeta:gun/sg97": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:sg97",
+    "name": "SG-97 'Sweeper'"
+  },
+  "zeta:gun/smg32": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:smg32",
+    "name": "SMG-32 'Reprimand'"
+  },
+  "zeta:gun/spear": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:spear",
+    "name": "\u00a74FAF-14 'Spear'"
+  },
+  "zeta:gun/ultimatum": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:ultimatum",
+    "name": "\u00a74GP-20 'Ultimatum'"
+  },
+  "zeta:gun/vg70": {
+    "age": 5,
+    "kind": "gun",
+    "id": "zeta:vg70",
+    "name": "\u00a73VG-70 'Variable'"
+  },
+  "msapl:ammo/12ap": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:12ap",
+    "name": "\u00a7612-gauge Specialized Conical Bullets"
+  },
+  "msapl:ammo/25gl": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:25gl",
+    "name": "\u00a7625mm High-velocity Grenade"
+  },
+  "msapl:ammo/300ms": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:300ms",
+    "name": "\u00a76.300MBS Supersonic Rounds"
+  },
+  "msapl:ammo/30scp": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:30scp",
+    "name": "\u00a76.30SCP Rounds"
+  },
+  "msapl:ammo/408": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:408",
+    "name": "\u00a76NEX408 Supersonic Rounds"
+  },
+  "msapl:ammo/50arms": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:50arms",
+    "name": "\u00a76.50 Achilles Rounds"
+  },
+  "msapl:ammo/50ich": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:50ich",
+    "name": "\u00a76.50ICH Rounds"
+  },
+  "msapl:ammo/arrow117": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:arrow117",
+    "name": "\u00a76MS11.7 Carbon Fiber Arrows"
+  },
+  "msapl:ammo/c812": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:c812",
+    "name": "\u00a76R6AP Heavy Penetration Rounds \u00a78& \u00a7912-gauge Specialized Buckshot"
+  },
+  "msapl:ammo/c901": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:c901",
+    "name": "\u00a76CM54 High-speed Hollow Point Bullets \u00a78& \u00a7b.338LAP Armor-Piercing Rounds"
+  },
+  "msapl:ammo/m995": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:m995",
+    "name": "\u00a76MS995 Armor-Piercing Rounds"
+  },
+  "msapl:attachment/ms_mag1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:ms_mag1",
+    "name": "\u00a77\u201cT1-MSAG\u201d Magazine Enhancement Component"
+  },
+  "msapl:attachment/ms_mag2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:ms_mag2",
+    "name": "\u00a7b\u201cT2-Border Sword\u201d Magazine Enhancement Component"
+  },
+  "msapl:attachment/ms_mag3": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:ms_mag3",
+    "name": "\u00a7d\u201cT3-Smith Employee\u201d Magazine Enhancement Component"
+  },
+  "msskin:attachments/stock_ubs_erode": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_ubs_erode",
+    "name": "UBS Mk.I Tactical Stock"
+  },
+  "msskin:gun/af_57f": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:af_57",
+    "name": "AF-57 AUTO \u201cViper\u201d"
+  },
+  "msskin:gun/af_57y": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:af_57",
+    "name": "AF-57 AUTO \u201cViper\u201d"
+  },
+  "msskin:gun/erode_ats15": {
+    "age": 5,
+    "kind": "gun",
+    "id": "erode:ats15_isaac",
+    "name": "\u00a76ATS-15(Mod.I) \u201cRaider\u201d"
+  },
+  "msskin:gun/erode_ats15yx": {
+    "age": 5,
+    "kind": "gun",
+    "id": "erode:ats15_isaac",
+    "name": "\u00a76ATS-15(Mod.I) \u201cRaider\u201d"
+  },
+  "msskin:gun/inf_b": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf",
+    "name": "MS Infinity \u201cinf\u201d"
+  },
+  "msskin:gun/inf_j1": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf",
+    "name": "MS Infinity \u201cinf\u201d"
+  },
+  "msskin:gun/inf_j2": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf",
+    "name": "MS Infinity \u201cinf\u201d"
+  },
+  "msskin:gun/inf_w": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf",
+    "name": "MS Infinity \u201cinf\u201d"
+  },
+  "msskin:gun/inf_xj": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf_xj",
+    "name": "\u00a7cGolden Red Scorpion Twins"
+  },
+  "msskin:gun/lvsa_c_erode": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/lvsa_c_erode_1": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/lvsa_c_erode_2": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/lvsa_c_erode_3": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/lvsa_c_erode_4": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/lvsa_c_erode_5": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "msskin:gun/m109": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "msskin:gun/m109_2": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "msskin:gun/m109_3": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "msskin:gun/m109_4": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "msskin:gun/m109_5": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "msskin:gun/night2011fluxk": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011fluxk",
+    "name": "\u00a7bNighthawk 2011 \u201cKLUONOA\u201d"
+  },
+  "msskin:gun/night2011_1": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011",
+    "name": "Nighthawk 2011"
+  },
+  "msskin:gun/night2011_2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011",
+    "name": "Nighthawk 2011"
+  },
+  "msskin:gun/night2011_3": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011",
+    "name": "Nighthawk 2011"
+  },
+  "msskin:gun/sword_life": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:sword_life",
+    "name": "Luminara \u201cBloom\u201d"
+  },
+  "msskin:gun/trident_dea": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:trident_dea",
+    "name": "Death's Shadow \u201cWither\u201d"
+  },
+  "sfms:ammo/12ap": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:12ap",
+    "name": "\u00a7612-gauge Specialized Conical Bullets"
+  },
+  "sfms:ammo/25gl": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:25gl",
+    "name": "\u00a7625mm High-velocity Grenade"
+  },
+  "sfms:ammo/300ms": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:300ms",
+    "name": "\u00a76.300MBS Supersonic Rounds"
+  },
+  "sfms:ammo/30scp": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:30scp",
+    "name": "\u00a76.30SCP Rounds"
+  },
+  "sfms:ammo/408": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:408",
+    "name": "\u00a76NEX408 Supersonic Rounds"
+  },
+  "sfms:ammo/50arms": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:50arms",
+    "name": "\u00a76.50 Achilles Rounds"
+  },
+  "sfms:ammo/50ich": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:50ich",
+    "name": "\u00a76.50ICH Rounds"
+  },
+  "sfms:ammo/arrow117": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:arrow117",
+    "name": "\u00a76MS11.7 Carbon Fiber Arrows"
+  },
+  "sfms:ammo/c812": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:c812",
+    "name": "\u00a76R6AP Heavy Penetration Rounds \u00a78& \u00a7912-gauge Specialized Buckshot"
+  },
+  "sfms:ammo/c901": {
+    "age": 4,
+    "kind": "ammo",
+    "id": "sfms:c901",
+    "name": "\u00a76CM54 High-speed Hollow Point Bullets \u00a78& \u00a7b.338LAP Armor-Piercing Rounds"
+  },
+  "sfms:ammo/m995": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:m995",
+    "name": "\u00a76MS995 Armor-Piercing Rounds"
+  },
+  "sfms:attachments/gbrs_108_x2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gbrs_108_x2",
+    "name": "ETS108 Sight / X2 Tactical Laser"
+  },
+  "sfms:attachments/gbrs_exp3_x2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gbrs_exp3_x2",
+    "name": "EXP3 Sight / X2 Tactical Laser"
+  },
+  "sfms:attachments/gbrs_har50_x1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gbrs_har50_x1",
+    "name": "HAR50 Sight / X1 Tactical Laser"
+  },
+  "sfms:attachments/gbrs_rmr_msl3": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gbrs_rmr_msl3",
+    "name": "RMR-HD Sight / MSL3 Tactical Laser"
+  },
+  "sfms:attachments/gc_oem": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gc_oem",
+    "name": "\u00a76Gangatel Blademaster Kit"
+  },
+  "sfms:attachments/gen_ap": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gen_ap",
+    "name": "TMAP Armor-Piercing"
+  },
+  "sfms:attachments/gen_he": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gen_he",
+    "name": "TMHE High-Explosive"
+  },
+  "sfms:attachments/gen_hp": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gen_hp",
+    "name": "TMHP Hollow-Point"
+  },
+  "sfms:attachments/gen_if": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gen_if",
+    "name": "TMIF Incendiary"
+  },
+  "sfms:attachments/glst_hp": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:glst_hp",
+    "name": "HGL Pressurized Chamber Assembly"
+  },
+  "sfms:attachments/glst_lp": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:glst_lp",
+    "name": "HGL Low-speed Ejection Assembly"
+  },
+  "sfms:attachments/gl_ap": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gl_ap",
+    "name": "Armor-piercing Grenade"
+  },
+  "sfms:attachments/gl_de": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gl_de",
+    "name": "Fragmentation Grenade"
+  },
+  "sfms:attachments/gl_dem": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gl_dem",
+    "name": "Assault Grenade"
+  },
+  "sfms:attachments/gl_fl": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gl_fl",
+    "name": "Obstacle-clearing Grenade"
+  },
+  "sfms:attachments/gl_he": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gl_he",
+    "name": "High-explosive Grenade"
+  },
+  "sfms:attachments/gm_fl": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gm_fl",
+    "name": "GM-HE Demolition Rocket"
+  },
+  "sfms:attachments/gm_he": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:gm_he",
+    "name": "GM-HE High-explosive Rocket"
+  },
+  "sfms:attachments/grip_ams": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_ams",
+    "name": "AMS Tactical Grip"
+  },
+  "sfms:attachments/grip_amsah": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_amsah",
+    "name": "AMS Tactical Grip"
+  },
+  "sfms:attachments/grip_ats15only": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_ats15only",
+    "name": "ATMS Lightweight Component"
+  },
+  "sfms:attachments/grip_c8tsar": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_c8tsar",
+    "name": "TSAR Rifle Shield"
+  },
+  "sfms:attachments/grip_jszs": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_jszs",
+    "name": "LTS-04 Ultra-light Retainer"
+  },
+  "sfms:attachments/grip_laser_wireframe": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_laser_wireframe",
+    "name": "\u201cTactical Framework\u201d Lower Laser"
+  },
+  "sfms:attachments/grip_laser_wireframedb": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_laser_wireframedb",
+    "name": "RKMS Combined Laser Grip"
+  },
+  "sfms:attachments/grip_miling": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_miling",
+    "name": "\u201cMichelle\u201d Carbon Fiber Retainer"
+  },
+  "sfms:attachments/grip_rk0": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_rk0",
+    "name": "RK-0 MS Vertical Grip"
+  },
+  "sfms:attachments/grip_rk0_ammohud": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_rk0_ammohud",
+    "name": "RK-0 MS Grip"
+  },
+  "sfms:attachments/grip_x1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_x1",
+    "name": "MS-LX1 Tactical Laser \u3010Lower\u3011"
+  },
+  "sfms:attachments/grip_x2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_x2",
+    "name": "MS-LX2 Integrated Laser Pointer \u3010Lower\u3011"
+  },
+  "sfms:attachments/grip_zsxw": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:grip_zsxw",
+    "name": "HRKS Tactical Angled Grip"
+  },
+  "sfms:attachments/laser_ammohud": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_ammohud",
+    "name": "X4HUD Ammo Counter"
+  },
+  "sfms:attachments/laser_ammohud1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_ammohud1",
+    "name": "X4HUD Ammo Counter"
+  },
+  "sfms:attachments/laser_eos": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_eos",
+    "name": "\u201cEOS\u00b7Dawn\u201d Tactical Laser"
+  },
+  "sfms:attachments/laser_msl3": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_msl3",
+    "name": "MSL3 Quick Aim Laser"
+  },
+  "sfms:attachments/laser_x1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_x1",
+    "name": "MS-LX1 Laser"
+  },
+  "sfms:attachments/laser_x2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:laser_x2",
+    "name": "MS-LX2 Laser"
+  },
+  "sfms:attachments/ms_mag4": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:ms_mag4",
+    "name": "\u00a76\u201cT4-Heavy Steel\u201d Magazine Enhancement Component"
+  },
+  "sfms:attachments/muzzle_brake": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_brake",
+    "name": "\u201cRaptor\u201d Lightweight Muzzle Brake"
+  },
+  "sfms:attachments/muzzle_c8": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_c8",
+    "name": "HMS Heavy Extended Barrel"
+  },
+  "sfms:attachments/muzzle_htrs23": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_htrs23",
+    "name": "HTRS .23 Heavy Compensator"
+  },
+  "sfms:attachments/muzzle_htrs41": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_htrs41",
+    "name": "HTRS .41 Heavy Compensator"
+  },
+  "sfms:attachments/muzzle_sl_hvq": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_sl_hvq",
+    "name": "\u201cLead Seal\u201d Heavy Suppressor"
+  },
+  "sfms:attachments/muzzle_sl_knight": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_sl_knight",
+    "name": "\u201cGreen Knight\u201d Tactical Suppressor"
+  },
+  "sfms:attachments/muzzle_sl_sass1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_sl_sass1",
+    "name": "SASS Original Suppressor"
+  },
+  "sfms:attachments/muzzle_sl_sass2": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_sl_sass2",
+    "name": "SASS Original Suppressor (Sand)"
+  },
+  "sfms:attachments/muzzle_vm1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:muzzle_vm1",
+    "name": "VM-1 Lightweight Flash Hider"
+  },
+  "sfms:attachments/oem_stock_heavy": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:oem_stock_heavy",
+    "name": "\u539f\u5382\u91cd\u578b\u67aa\u6258"
+  },
+  "sfms:attachments/oem_stock_light": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:oem_stock_light",
+    "name": "\u539f\u5382\u8f7b\u578b\u67aa\u6258"
+  },
+  "sfms:attachments/oem_stock_tactical": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:oem_stock_tactical",
+    "name": "\u539f\u5382\u6218\u672f\u67aa\u6258"
+  },
+  "sfms:attachments/scope_hamr": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_hamr",
+    "name": "HAMR-AM Combined Sight"
+  },
+  "sfms:attachments/scope_lpvo": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_lpvo",
+    "name": "LPVO-AM Scope"
+  },
+  "sfms:attachments/scope_m202": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_m202",
+    "name": "MASW-AM Sight System"
+  },
+  "sfms:attachments/scope_oeg": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_oeg",
+    "name": "OEGS-AM Scope"
+  },
+  "sfms:attachments/scope_vudu": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_vudu",
+    "name": "Vedal-AM Scope"
+  },
+  "sfms:attachments/scope_xm157": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_xm157",
+    "name": "MSAC Mk.157 FCS"
+  },
+  "sfms:attachments/scope_xm157s1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_xm157s1",
+    "name": "MSAC Mk.157 FCS (Tan)"
+  },
+  "sfms:attachments/sfcb_ap": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sfcb_ap",
+    "name": "FS11.7 Armor-piercing Arrows"
+  },
+  "sfms:attachments/sfcb_fl": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sfcb_fl",
+    "name": "FS11.7 Incendiary Arrows"
+  },
+  "sfms:attachments/sfcb_he": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sfcb_he",
+    "name": "FS11.7 High-explosive Arrows"
+  },
+  "sfms:attachments/sight_ets108": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_ets108",
+    "name": "ETS108 Combat Scope"
+  },
+  "sfms:attachments/sight_ets108s": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_ets108s",
+    "name": "ET-AM108 Combat Scope"
+  },
+  "sfms:attachments/sight_exp3": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_exp3",
+    "name": "EXP-L3 Sight"
+  },
+  "sfms:attachments/sight_quanjin": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_quanjin",
+    "name": "RSCL Panoramic Sight"
+  },
+  "sfms:attachments/sight_rmrhd": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_rmrhd",
+    "name": "MSAM RMR-HD"
+  },
+  "sfms:attachments/sight_rmrhdar": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_rmrhdar",
+    "name": "MSAM RMR-HD"
+  },
+  "sfms:attachments/stock_ebr": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_ebr",
+    "name": "EBR-MS Elite Stock"
+  },
+  "sfms:attachments/stock_ebr1": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_ebr1",
+    "name": "EBR-MS Elite Stock (Sand)"
+  },
+  "sfms:attachments/stock_ms4s": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_ms4s",
+    "name": "MS4S Tactical Stock"
+  },
+  "sfms:attachments/stock_msar": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_msar",
+    "name": "MSAR Tactical Stock"
+  },
+  "sfms:attachments/stock_ubs": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:stock_ubs",
+    "name": "UBS Mk.I Tactical Stock"
+  },
+  "sfms:gun/af_46": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:af_46",
+    "name": "AF-46 AUTO \u201cSwift\u201d"
+  },
+  "sfms:gun/af_57": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:af_57",
+    "name": "AF-57 AUTO \u201cViper\u201d"
+  },
+  "sfms:gun/ar50": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:ar50",
+    "name": "MSR-15 .50 \u201cAchilles\u201d"
+  },
+  "sfms:gun/ats15": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:ats15",
+    "name": "ATS-15(Mod.I) \u201cJudicator\u201d"
+  },
+  "sfms:gun/ats15mod": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:ats15mod",
+    "name": "\u00a76ATS-15(Mod.II) \u201cSin & Punishment\u201d"
+  },
+  "sfms:gun/c8msw": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:c8msw",
+    "name": "\u00a76C8-HMS \u201cExecutor\u201d"
+  },
+  "sfms:gun/cms901": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:cms901",
+    "name": "\u00a76CMS-901 \u201cPurifier\u201d"
+  },
+  "sfms:gun/d50": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:d50",
+    "name": "D-50 Mk.XV \u201cWarhammer\u201d"
+  },
+  "sfms:gun/emergency_baton": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:emergency_baton",
+    "name": "Standard Emergency Baton"
+  },
+  "sfms:gun/felix_12": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:felix_12",
+    "name": "Felix-12 \u201cConstantine\u201d"
+  },
+  "sfms:gun/felix_12dg": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:felix_12dg",
+    "name": "AWAKEN Felix-12 \u201cJohn Wick\u201d"
+  },
+  "sfms:gun/g18": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:g18",
+    "name": "G18 MTX \u201cCobra\u201d"
+  },
+  "sfms:gun/har50": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:har50",
+    "name": "HAR-50 Mk.II \u201cDoom Hammer\u201d"
+  },
+  "sfms:gun/inf": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf",
+    "name": "MS Infinity \u201cinf\u201d"
+  },
+  "sfms:gun/inf_x": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:inf_x",
+    "name": "MS Infinity \u201cEndless Duo\u201d"
+  },
+  "sfms:gun/katana": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:katana",
+    "name": "Gangatel Replica \u201cSavior\u201d"
+  },
+  "sfms:gun/lvsa_c": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:lvsa_c",
+    "name": "LVSA-C \u201cPathfinder\u201d"
+  },
+  "sfms:gun/lvsa_cs": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:lvsa_cs",
+    "name": "LVSA-CS \u201cSentry\u201d"
+  },
+  "sfms:gun/lvsa_c_erode": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode",
+    "name": "ERODE LVSA-C \u201cCrisis Response\u201d"
+  },
+  "sfms:gun/lvsa_c_erode_lmg": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:lvsa_c_erode_lmg",
+    "name": "ERODE LVSA-LMG \u201cGold Tide\u201d"
+  },
+  "sfms:gun/lvsa_hs": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:lvsa_hs",
+    "name": "AWAKEN LVSA-HS \u201cCircuit Sword\u201d"
+  },
+  "sfms:gun/m109": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m109",
+    "name": "Mark109 \u201cImpact Load\u201d"
+  },
+  "sfms:gun/m1887": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m1887",
+    "name": "Module2043 \u201cGravekeeper\u201d"
+  },
+  "sfms:gun/m1887s": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m1887s",
+    "name": "\u00a76Module2042XL \u201cIncinerator\u201d"
+  },
+  "sfms:gun/m200": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m200",
+    "name": "VANT NEX-408 \u201cSilent Owl\u201d"
+  },
+  "sfms:gun/m202": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m202",
+    "name": "MASW-202 \u201cSky Roar\u201d"
+  },
+  "sfms:gun/m4a5": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:m4a5",
+    "name": "MSA5 \u201cOfficer\u201d"
+  },
+  "sfms:gun/m7": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:m7",
+    "name": "Ultra Mark7 \u201cYog-Sothoth\u201d"
+  },
+  "sfms:gun/mgl320": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:mgl320",
+    "name": "HGL-320 \u201cAsh\u201d"
+  },
+  "sfms:gun/mgl40": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:mgl40",
+    "name": "HGL-T40 \u201cDestroyer\u201d"
+  },
+  "sfms:gun/mgl416": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:mgl416",
+    "name": "XM-PA63 \u201cParasitic Grenade\u201d"
+  },
+  "sfms:gun/mpx": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:mpx",
+    "name": "Mobius PDW-X \u201cOwl-Feather\u201d"
+  },
+  "sfms:gun/mpxcb": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:mpxcb",
+    "name": "PDW-X Carbine \u201cLong-Night Heron\u201d"
+  },
+  "sfms:gun/night2011": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011",
+    "name": "Nighthawk 2011"
+  },
+  "sfms:gun/night2011flux": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:night2011flux",
+    "name": "Nighthawk 2011 FLNX"
+  },
+  "sfms:gun/nitro_505": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:nitro_505",
+    "name": "XRT-505 \u201cReverse Flame\u201d"
+  },
+  "sfms:gun/sbr15": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:sbr15",
+    "name": "SPR-15 \u201cWolverine\u201d"
+  },
+  "sfms:gun/super90m2": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:super90m2",
+    "name": "MS Super90 M2 \u201cInfiltrator\u201d"
+  },
+  "sfms:gun/super90m4": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:super90m4",
+    "name": "MS Super90 M4 \u201cArray Breaker\u201d"
+  },
+  "sfms:gun/supersass": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:supersass",
+    "name": "MS Super SAMS \u201cArctic Wolf\u201d"
+  },
+  "sfms:gun/t416": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:t416",
+    "name": "\u00a76T-416 A7 \u201cJustifiable Defense\u201d"
+  },
+  "sfms:gun/tb23": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:tb23",
+    "name": "TB-23 Mk5 \u201cHawk Eye\u201d"
+  },
+  "sfms:gun/tb50": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:tb50",
+    "name": "TB-50 Mk.XV \u201cThunder-Owl\u201d"
+  },
+  "sfms:gun/tcg5": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:tcg5",
+    "name": "Thaum Contender G5"
+  },
+  "sfms:gun/tech635": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:tech635",
+    "name": "TECH-635 \u201cRaven\u201d"
+  },
+  "sfms:gun/tempus90": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:tempus90",
+    "name": "TEMPUS-90 'Night-Owl\u201d"
+  },
+  "sfms:gun/tempus90s": {
+    "age": 3,
+    "kind": "gun",
+    "id": "sfms:tempus90s",
+    "name": "TEMPUS-90SL \u201cPack-Hunter\u201d"
+  },
+  "sfms:gun/umax100": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:umax100",
+    "name": "MAXLMG-100 \u201cZero Leap Whale\u201d"
+  },
+  "arsenal_beacon:expansion/gun/hamster/sw_mk2_41": {
+    "age": 2,
+    "kind": "gun",
+    "id": "hamster:sw_mk2_41",
+    "name": "S&W.455 MKII"
+  },
+  "arsenal_beacon:expansion/gun/erode/ats15mod_isaac": {
+    "age": 5,
+    "kind": "gun",
+    "id": "erode:ats15mod_isaac",
+    "name": "\u00a76ATS-15(Mod.II) \u201cOmni Raider\u201d"
+  },
+  "arsenal_beacon:expansion/gun/erode/sbr15_isaac": {
+    "age": 5,
+    "kind": "gun",
+    "id": "erode:sbr15_isaac",
+    "name": "\u00a76SPR-15 \u201cBadger Hunter\u201d"
+  },
+  "arsenal_beacon:expansion/gun/sfms/s10exodus": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:s10exodus",
+    "name": "\u00a7aIdris E10-EX \u201cExodus\u201d"
+  },
+  "arsenal_beacon:expansion/gun/sfms/s10exodus_red": {
+    "age": 5,
+    "kind": "gun",
+    "id": "sfms:s10exodus_red",
+    "name": "\u00a7cIdris E10-EX \u201cExodus\u00b7paint\u201d"
+  },
+  "arsenal_beacon:expansion/gun/sfms/tcg5ich": {
+    "age": 4,
+    "kind": "gun",
+    "id": "sfms:tcg5ich",
+    "name": "Thaum Contender G5"
+  },
+  "arsenal_beacon:expansion/gun/ww/as44": {
+    "age": 2,
+    "kind": "gun",
+    "id": "ww:as44",
+    "name": "Sudayev AS-44"
+  },
+  "arsenal_beacon:expansion/ammo/sfms/inf": {
+    "age": 3,
+    "kind": "ammo",
+    "id": "sfms:inf",
+    "name": "\u00a7a\u00a7lNo ammo cost."
+  },
+  "arsenal_beacon:expansion/ammo/ww/303": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:303",
+    "name": ".303 British"
+  },
+  "arsenal_beacon:expansion/ammo/ww/765": {
+    "age": 2,
+    "kind": "ammo",
+    "id": "ww:765",
+    "name": "7.65x21mm Parabellum"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/357_snub": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:357_snub",
+    "name": ".357 Snubnose"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/flashlight_1": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:flashlight_1",
+    "name": "RoN Test Flashlight 1"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/flashlight_2": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:flashlight_2",
+    "name": "RoN Test Flashlight 2"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/fp9c_g19": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:fp9c_g19",
+    "name": "ronmc.attachment.fp9c_g19.name"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/tac_laser": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:tac_laser",
+    "name": "RoN Test Laser"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/train_g19": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:train_g19",
+    "name": "ronmc.attachment.train_g19.name"
+  },
+  "arsenal_beacon:expansion/attachment/ronmc/train_mk18": {
+    "age": 3,
+    "kind": "attachment",
+    "id": "ronmc:train_mk18",
+    "name": "ronmc.attachment.train_mk18.name"
+  },
+  "arsenal_beacon:expansion/attachment/zeta/muzzle_resonance_lens": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_resonance_lens",
+    "name": "\u00a74Resonance Lens"
+  },
+  "arsenal_beacon:expansion/attachment/zeta/muzzle_sln": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "zeta:muzzle_sln",
+    "name": "[reacted]"
+  },
+  "arsenal_beacon:expansion/attachment/erode/grip_ats15only_isaac": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "erode:grip_ats15only_isaac",
+    "name": "ATMS Lightweight Rail Component"
+  },
+  "arsenal_beacon:expansion/attachment/erode/sight_ets108s_isaac": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "erode:sight_ets108s_isaac",
+    "name": "ET-AM108 Combat Sight"
+  },
+  "arsenal_beacon:expansion/attachment/erode/sight_ets108_isaac": {
+    "age": 5,
+    "kind": "attachment",
+    "id": "erode:sight_ets108_isaac",
+    "name": "ETS108 Combat Sight"
+  },
+  "arsenal_beacon:expansion/attachment/sfms/scope_har50": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_har50",
+    "name": "\u201cDoom View\u201d HMA Scope"
+  },
+  "arsenal_beacon:expansion/attachment/sfms/scope_mk5hd": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_mk5hd",
+    "name": "Mark5 HD-AM Scope"
+  },
+  "arsenal_beacon:expansion/attachment/sfms/scope_xm157ex": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:scope_xm157ex",
+    "name": "MSAC Mk.157 FCS [Full]"
+  },
+  "arsenal_beacon:expansion/attachment/sfms/sfcb_se": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sfcb_se",
+    "name": "FS11.7 Default Arrows"
+  },
+  "arsenal_beacon:expansion/attachment/sfms/sight_mfd": {
+    "age": 4,
+    "kind": "attachment",
+    "id": "sfms:sight_mfd",
+    "name": "\u00a7bAEGIS MFD"
+  },
+  "arsenal_beacon:expansion/attachment/ww/silencep": {
+    "age": 2,
+    "kind": "attachment",
+    "id": "ww:silencep",
+    "name": "World War Two era pistol silencer"
+  },
+  "msapl:ammo/ms_bottle": {
+    "kind": "ammo",
+    "id": "msapl:ms_bottle",
+    "age": 4,
+    "name": "Empty Bottle"
+  },
+  "arsenal_beacon:expansion/ammo/msapl/ms_crystal": {
+    "kind": "ammo",
+    "id": "msapl:ms_crystal",
+    "age": 4,
+    "name": "Bottled Crystal Dust"
+  },
+  "arsenal_beacon:expansion/ammo/msapl/ms_gunpowder": {
+    "kind": "ammo",
+    "id": "msapl:ms_gunpowder",
+    "age": 4,
+    "name": "Bottled Accelerant"
+  },
+  "ea:ammo/10g": {
+    "kind": "ammo",
+    "id": "ea:10g",
+    "age": 3,
+    "name": "10 Gauge Bullet"
+  },
+  "ea:ammo/10mm": {
+    "kind": "ammo",
+    "id": "ea:10mm",
+    "age": 3,
+    "name": "10mm Bullet"
+  },
+  "ea:ammo/127x108": {
+    "kind": "ammo",
+    "id": "ea:127x108",
+    "age": 4,
+    "name": "12.7x108 Bullet"
+  },
+  "ea:ammo/127x55": {
+    "kind": "ammo",
+    "id": "ea:127x55",
+    "age": 4,
+    "name": "12.7x55 Bullet"
+  },
+  "ea:ammo/145x114": {
+    "kind": "ammo",
+    "id": "ea:145x114",
+    "age": 4,
+    "name": "14.5x114mm Bullet"
+  },
+  "ea:ammo/17hmr": {
+    "kind": "ammo",
+    "id": "ea:17hmr",
+    "age": 3,
+    "name": "17 HMR Bullet"
+  },
+  "ea:ammo/20g": {
+    "kind": "ammo",
+    "id": "ea:20g",
+    "age": 3,
+    "name": "20 Gauge Bullet"
+  },
+  "ea:ammo/20x102": {
+    "kind": "ammo",
+    "id": "ea:20x102",
+    "age": 4,
+    "name": "20x102mm Bullet"
+  },
+  "ea:ammo/22hornet": {
+    "kind": "ammo",
+    "id": "ea:22hornet",
+    "age": 3,
+    "name": "22 Hornet Bullet"
+  },
+  "ea:ammo/22lr": {
+    "kind": "ammo",
+    "id": "ea:22lr",
+    "age": 3,
+    "name": "22LR Bullet"
+  },
+  "ea:ammo/27kolibri": {
+    "kind": "ammo",
+    "id": "ea:27kolibri",
+    "age": 3,
+    "name": "2.7mm Kolibri Bullet"
+  },
+  "ea:ammo/300blk": {
+    "kind": "ammo",
+    "id": "ea:300blk",
+    "age": 3,
+    "name": "300 Blackout Bullet"
+  },
+  "ea:ammo/300winmag": {
+    "kind": "ammo",
+    "id": "ea:300winmag",
+    "age": 3,
+    "name": ".300 Winmag Bullet"
+  },
+  "ea:ammo/3030win": {
+    "kind": "ammo",
+    "id": "ea:3030win",
+    "age": 3,
+    "name": "30-30 Win Bullet"
+  },
+  "arsenal_beacon:expansion/ammo/ea/30mauser": {
+    "kind": "ammo",
+    "id": "ea:30mauser",
+    "age": 3,
+    "name": "30 Mauser Bullet"
+  },
+  "ea:ammo/32acp": {
+    "kind": "ammo",
+    "id": "ea:32acp",
+    "age": 2,
+    "name": "32 ACP Bullet"
+  },
+  "ea:ammo/338arc": {
+    "kind": "ammo",
+    "id": "ea:338arc",
+    "age": 3,
+    "name": ".338 Arc Bullet"
+  },
+  "ea:ammo/338norma": {
+    "kind": "ammo",
+    "id": "ea:338norma",
+    "age": 3,
+    "name": ".338 Norma Magnum Bullet"
+  },
+  "ea:ammo/357sig": {
+    "kind": "ammo",
+    "id": "ea:357sig",
+    "age": 3,
+    "name": ".357 Sig Bullet"
+  },
+  "arsenal_beacon:expansion/ammo/ea/366magnum": {
+    "kind": "ammo",
+    "id": "ea:366magnum",
+    "age": 3,
+    "name": ".366 Magnum Bullet"
+  },
+  "ea:ammo/366tkm": {
+    "kind": "ammo",
+    "id": "ea:366tkm",
+    "age": 3,
+    "name": "366 TKM Bullet"
+  },
+  "ea:ammo/380auto": {
+    "kind": "ammo",
+    "id": "ea:380auto",
+    "age": 3,
+    "name": "380 ACP Bullet"
+  },
+  "ea:ammo/408cheytac": {
+    "kind": "ammo",
+    "id": "ea:408cheytac",
+    "age": 3,
+    "name": ".408 Cheytac Bullet"
+  },
+  "ea:ammo/40sw": {
+    "kind": "ammo",
+    "id": "ea:40sw",
+    "age": 3,
+    "name": "40 S&W Bullet"
+  },
+  "ea:ammo/410bore": {
+    "kind": "ammo",
+    "id": "ea:410bore",
+    "age": 3,
+    "name": ".410 Bore"
+  },
+  "ea:ammo/416barrett": {
+    "kind": "ammo",
+    "id": "ea:416barrett",
+    "age": 3,
+    "name": ".416 Barrett Bullet"
+  },
+  "ea:ammo/44magnum": {
+    "kind": "ammo",
+    "id": "ea:44magnum",
+    "age": 3,
+    "name": ".44 Magnum Bullet"
+  },
+  "ea:ammo/44special": {
+    "kind": "ammo",
+    "id": "ea:44special",
+    "age": 3,
+    "name": ".44 Special Bullet"
+  },
+  "ea:ammo/454casull": {
+    "kind": "ammo",
+    "id": "ea:454casull",
+    "age": 3,
+    "name": ".454 Casull Bullet"
+  },
+  "ea:ammo/458hamr": {
+    "kind": "ammo",
+    "id": "ea:458hamr",
+    "age": 3,
+    "name": ".458 HAM'R Bullet"
+  },
+  "ea:ammo/458socom": {
+    "kind": "ammo",
+    "id": "ea:458socom",
+    "age": 3,
+    "name": ".458 SOCOM Bullet"
+  },
+  "ea:ammo/458winmag": {
+    "kind": "ammo",
+    "id": "ea:458winmag",
+    "age": 3,
+    "name": ".458 Winmag Bullet"
+  },
+  "ea:ammo/4g": {
+    "kind": "ammo",
+    "id": "ea:4g",
+    "age": 3,
+    "name": "4 Gauge Bullet"
+  },
+  "ea:ammo/50beowulf": {
+    "kind": "ammo",
+    "id": "ea:50beowulf",
+    "age": 3,
+    "name": ".50 Beowulf Bullet"
+  },
+  "ea:ammo/50gi": {
+    "kind": "ammo",
+    "id": "ea:50gi",
+    "age": 3,
+    "name": ".50 GI Bullet"
+  },
+  "ea:ammo/556x30": {
+    "kind": "ammo",
+    "id": "ea:556x30",
+    "age": 3,
+    "name": "5.56x30mm Bullet"
+  },
+  "ea:ammo/58x21": {
+    "kind": "ammo",
+    "id": "ea:58x21",
+    "age": 3,
+    "name": "5.8x21mm Bullet"
+  },
+  "ea:ammo/602x41": {
+    "kind": "ammo",
+    "id": "ea:602x41",
+    "age": 3,
+    "name": "6.02x41 Bullet"
+  },
+  "ea:ammo/65creedmoor": {
+    "kind": "ammo",
+    "id": "ea:65creedmoor",
+    "age": 3,
+    "name": "6.5 Creedmoor Bullet"
+  },
+  "ea:ammo/68tvcm": {
+    "kind": "ammo",
+    "id": "ea:68tvcm",
+    "age": 3,
+    "name": "6.8 TVCM Bullet"
+  },
+  "ea:ammo/6arc": {
+    "kind": "ammo",
+    "id": "ea:6arc",
+    "age": 3,
+    "name": "6mm Arc Bullet"
+  },
+  "ea:ammo/75fk": {
+    "kind": "ammo",
+    "id": "ea:75fk",
+    "age": 3,
+    "name": "7.5FK Bullet"
+  },
+  "ea:ammo/792x33": {
+    "kind": "ammo",
+    "id": "ea:792x33",
+    "age": 2,
+    "name": "7.92x33mm Kurz Bullet"
+  },
+  "ea:ammo/86blk": {
+    "kind": "ammo",
+    "id": "ea:86blk",
+    "age": 3,
+    "name": "8.6 Blackout Bullet"
+  },
+  "ea:ammo/950jdj": {
+    "kind": "ammo",
+    "id": "ea:950jdj",
+    "age": 4,
+    "name": ".950 JDJ Bullet"
+  },
+  "ea:ammo/9x18": {
+    "kind": "ammo",
+    "id": "ea:9x18",
+    "age": 3,
+    "name": "9x18mm Makarov Bullet"
+  },
+  "ea:ammo/9x21": {
+    "kind": "ammo",
+    "id": "ea:9x21",
+    "age": 3,
+    "name": "9x21mm Bullet"
+  },
+  "ea:ammo/9x39": {
+    "kind": "ammo",
+    "id": "ea:9x39",
+    "age": 3,
+    "name": "9x39mm Bullet"
+  },
+  "arsenal_beacon:expansion/ammo/ea/792x57": {
+    "kind": "ammo",
+    "id": "ea:792x57",
+    "age": 2,
+    "name": "7.92x57mm Mauser"
+  },
+  "arsenal_beacon:expansion/attachment/ww/bayonet_no4": {
+    "kind": "attachment",
+    "id": "ww:bayonet_no4",
+    "age": 2,
+    "name": "No. 4 Spike Bayonet"
+  }
+}

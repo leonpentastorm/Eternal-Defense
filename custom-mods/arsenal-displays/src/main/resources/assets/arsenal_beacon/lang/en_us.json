@@ -1,0 +1,14 @@
+{
+  "block.arsenal_beacon.display_stand": "Gun Display Stand",
+  "block.arsenal_beacon.display_rack": "Wall Gun Rack",
+  "block.arsenal_beacon.display_stand_wide": "Wide Gun Display Stand",
+  "block.arsenal_beacon.display_rack_wide": "Wide Wall Gun Rack",
+  "block.arsenal_beacon.display_pistol_stand": "Compact Gun Display Stand",
+  "block.arsenal_beacon.display_pistol_rack": "Compact Wall Gun Rack",
+  "block.arsenal_beacon.display_case": "Glass Gun Display Case",
+  "block.arsenal_beacon.display_case_wide": "Wide Glass Gun Display Case",
+  "block.arsenal_beacon.wall_case": "Wall Glass Gun Case",
+  "block.arsenal_beacon.wall_case_wide": "Wide Wall Glass Gun Case",
+  "block.arsenal_beacon.display_heavy": "Heavy Weapon Display Stand",
+  "itemGroup.arsenal_displays": "Arsenal Displays"
+}

@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,part=false": {
+      "model": "arsenal_beacon:block/display_pistol_stand"
+    },
+    "facing=north,part=true": {
+      "model": "arsenal_beacon:block/display_invisible"
+    },
+    "facing=east,part=false": {
+      "model": "arsenal_beacon:block/display_pistol_stand",
+      "y": 90
+    },
+    "facing=east,part=true": {
+      "model": "arsenal_beacon:block/display_invisible",
+      "y": 90
+    },
+    "facing=south,part=false": {
+      "model": "arsenal_beacon:block/display_pistol_stand",
+      "y": 180
+    },
+    "facing=south,part=true": {
+      "model": "arsenal_beacon:block/display_invisible",
+      "y": 180
+    },
+    "facing=west,part=false": {
+      "model": "arsenal_beacon:block/display_pistol_stand",
+      "y": 270
+    },
+    "facing=west,part=true": {
+      "model": "arsenal_beacon:block/display_invisible",
+      "y": 270
+    }
+  }
+}

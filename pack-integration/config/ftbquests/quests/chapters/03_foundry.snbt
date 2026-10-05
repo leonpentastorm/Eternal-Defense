@@ -1,0 +1,9 @@
+{id:"9C7D4E6011D94FB3" filename:"03_foundry" title:"The Hardened Foundry" order_index:3 quests:[{id:"008969278FC3A76B" title:"Heated metallurgy" description:["Heat iron, obsidian and blaze powder in a basin. Four alloy ingots per batch."] icon:"kubejs:hardened_alloy" x:0.0d y:0.0d  tasks:[{id:"9200DC65E421711A" type:"item" item:"kubejs:hardened_alloy" count:1L consume_items:false}]}
+{id:"7B78641BC20D9877" title:"Lava line" description:["Spouts fill your sequenced assembly with lava. Keep the belt and tanks supplied."] icon:"create:spout" x:2.0d y:0.0d dependencies: ["008969278FC3A76B"]
+ tasks:[{id:"BAB3ED3BB3A80757" type:"item" item:"create:spout" count:1L consume_items:false}]}
+{id:"62CEFA26226A39A6" title:"Rifles and snipers" description:["Deploy alloy and precision mechanisms, fill with lava, and press. Two loops supply the Modern and Advanced platform Ages; modern pistols also require the Nether gate."] icon:"kubejs:hardened_receiver" x:4.0d y:0.0d dependencies: ["7B78641BC20D9877"]
+ tasks:[{id:"0CD51AE9ADED3388" type:"item" item:"kubejs:hardened_receiver" count:1L consume_items:false}]}
+{id:"DF96502DDE86B2C0" title:"Heavy industry" description:["Use steam engines to expand production. Factories now supply stronger weapons and heavy ammunition."] icon:"create:steam_engine" x:6.0d y:0.0d dependencies: ["62CEFA26226A39A6"]
+ tasks:[{id:"FFC2C80FA6FC19FE" type:"item" item:"create:steam_engine" count:1L consume_items:false}]}
+{id:"AA734EA7575D8947" title:"Crushing plant" description:["Build a crushing-wheel ore processing line to support your production volume."] icon:"create:crushing_wheel" x:8.0d y:0.0d dependencies: ["DF96502DDE86B2C0"]
+ tasks:[{id:"9F844CB2470A1D0C" type:"item" item:"create:crushing_wheel" count:1L consume_items:false}]}]}

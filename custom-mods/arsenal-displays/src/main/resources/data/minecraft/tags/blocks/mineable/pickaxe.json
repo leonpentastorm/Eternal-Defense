@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "arsenal_beacon:display_stand",
+    "arsenal_beacon:display_rack",
+    "arsenal_beacon:display_stand_wide",
+    "arsenal_beacon:display_rack_wide",
+    "arsenal_beacon:display_pistol_stand",
+    "arsenal_beacon:display_pistol_rack",
+    "arsenal_beacon:display_case",
+    "arsenal_beacon:display_case_wide",
+    "arsenal_beacon:wall_case",
+    "arsenal_beacon:wall_case_wide",
+    "arsenal_beacon:display_heavy"
+  ]
+}

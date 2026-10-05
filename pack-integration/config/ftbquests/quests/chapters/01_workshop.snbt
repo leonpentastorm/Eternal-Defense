@@ -1,0 +1,11 @@
+{id:"C7DB071B6D142C37" filename:"01_workshop" title:"The Workshop" order_index:1 quests:[{id:"2D540E9AA65D9F45" title:"Factory campaign" description:["Build together. Use Essential to invite your friend, then create an FTB Team and invite them for shared quest progress."] icon:"minecraft:crafting_table" x:0.0d y:0.0d  tasks:[{id:"07FFBAD82DB3DFA3" type:"item" item:"minecraft:crafting_table" count:1L consume_items:false}]}
+{id:"0B968728E4D959B9" title:"Turn the wheels" description:["Connect a water wheel with shafts and cogwheels. Factory power starts your arsenal."] icon:"create:water_wheel" x:2.0d y:0.0d dependencies: ["2D540E9AA65D9F45"]
+ tasks:[{id:"029C5C15890C84C3" type:"item" item:"create:water_wheel" count:1L consume_items:false}]}
+{id:"44D25DED04E15E1E" title:"First press" description:["Press ingots into sheets. JEI shows every custom factory recipe."] icon:"create:mechanical_press" x:4.0d y:0.0d dependencies: ["0B968728E4D959B9"]
+ tasks:[{id:"AF61CCA43C7E52CD" type:"item" item:"create:mechanical_press" count:1L consume_items:false}]}
+{id:"87D5A2572B3D287C" title:"Starter firearms" description:["Press an iron sheet into a receiver. Frontier and historical weapons need this part in the Universal Gun Platform. Weapons unlock by their historical or technological era."] icon:"kubejs:pressed_receiver" x:6.0d y:0.0d dependencies: ["44D25DED04E15E1E"]
+ tasks:[{id:"440551D006FA4E0D" type:"item" item:"kubejs:pressed_receiver" count:1L consume_items:false}]}
+{id:"975A0147B7EDB261" title:"Ammunition workshop" description:["Press copper sheets into cases. Mix powder, charcoal and flint into propellant; gun-smith ammo recipes use both."] icon:"kubejs:cartridge_case" x:8.0d y:0.0d dependencies: ["87D5A2572B3D287C"]
+ tasks:[{id:"8F4A0D86C47E3E44" type:"item" item:"kubejs:cartridge_case" count:1L consume_items:false}]}
+{id:"7C6C19F1AC2A8218" title:"Mixing line" description:["A mixer and basin feed your ammunition production. Belts and funnels automate the deliveries."] icon:"create:mechanical_mixer" x:10.0d y:0.0d dependencies: ["975A0147B7EDB261"]
+ tasks:[{id:"C7EA0678E5647A95" type:"item" item:"create:mechanical_mixer" count:1L consume_items:false}]}]}

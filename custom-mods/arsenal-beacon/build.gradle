@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+}
+version = '0.21.0'
+group = 'dev.createarsenal'
+base { archivesName = 'arsenal-beacon' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    runs {
+        gameTestServer {
+            workingDirectory project.file('gametest-run')
+            property 'forge.enabledGameTestNamespaces', 'arsenal_beacon'
+            mods { arsenal_beacon { source sourceSets.main } }
+        }
+        server {
+            workingDirectory project.file('run')
+            args '--nogui'
+            mods { arsenal_beacon { source sourceSets.main } }
+        }
+    }
+}
+repositories { mavenCentral(); maven { url = 'https://maven.blamejared.com' } }
+dependencies {
+    implementation project(":arsenal-displays")
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
+    compileOnly fg.deobf('mezz.jei:jei-1.20.1-common-api:15.62.0.217')
+    compileOnly fg.deobf('mezz.jei:jei-1.20.1-forge-api:15.62.0.217')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('test', Test) { useJUnitPlatform() }
+tasks.named('jar', Jar).configure { finalizedBy 'reobfJar' }
+
+tasks.named('jar', Jar).configure { manifest { attributes('MixinConfigs': 'arsenal_beacon.mixins.json') } }
+
+// Both flavors share code and registry IDs. Never install the two flavors together.
+tasks.register('standaloneJar', Jar) {
+    archiveClassifier = 'standalone'
+    from(sourceSets.main.output) {
+        exclude 'META-INF/mods.toml', 'arsenal-build.properties'
+        exclude 'data/arsenal_beacon/recipes/**'
+    }
+    from('src/standalone/resources')
+    manifest { attributes('MixinConfigs': 'arsenal_beacon.mixins.json') }
+    dependsOn tasks.named('classes')
+    finalizedBy 'reobfStandaloneJar'
+}
+reobf { standaloneJar {} }

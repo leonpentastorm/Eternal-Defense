@@ -1,0 +1,50 @@
+{
+  "packVersion": "0.21.0",
+  "minecraft": "1.20.1",
+  "forge": "47.4.20",
+  "customModVersions": {
+    "arsenal_beacon": "0.21.0",
+    "arsenal_gun_guide": "0.21.0",
+    "arsenal_displays": "1.1.0"
+  },
+  "modJarCount": 320,
+  "dependencyAuditProblems": 0,
+  "unitTestsPassed": {
+    "arsenal-beacon": 21,
+    "arsenal-gun-guide": 7,
+    "arsenal-displays": 0
+  },
+  "productionGameplayTestsPassed": 82,
+  "standaloneBeaconRequiredDependencyTestsPassed": 6,
+  "standaloneBeaconAndDisplaysTestsPassed": 6,
+  "standaloneDisplaysVanillaRecipeTestsPassed": 4,
+  "standaloneUnknownGunWithoutRecipeImportAndAdminOverrides": "passed",
+  "standaloneNoCreateKubeJSJeiClientMenusAndGunHud": "passed",
+  "fullPackArmorMenuCreativeTabAndJei": "passed",
+  "nativeArmorAndSuppliesSeparated": "passed",
+  "ammoCatalogue": {
+    "rawRecipeRows": 787,
+    "uniqueItemDataRows": 774,
+    "duplicatesRemoved": 13,
+    "all600MagazineFamiliesStillCraftable": true,
+    "desertEagleOneLooseAmmoRowAndExactPaidBatch": "passed"
+  },
+  "actualUpdaterDisposableFixture": {
+    "baselineAndArchiveVerificationPassed": true,
+    "verifyOnlyMadeNoChanges": true,
+    "fullFixtureInstallationPassed": true,
+    "allOverrideHashesMatch": true,
+    "allThreeOldCustomJarsBackedUpOutsideMods": true,
+    "savesAndExistingControlsPreserved": true
+  },
+  "authorDownloadsChanged": 0,
+  "allExportsContainArtistBrief": true,
+  "internetEssentialCoopRetested": false,
+  "limitations": [
+    "Standalone automatic Age and prices are heuristics; third-party scripted gun behavior is not fully modeled. Administrator overrides are available.",
+    "Optional third-party broken indexes remain excluded; existing third-party asset/JEI timing warnings are present in the full pack.",
+    "Client render smoke covered armor/creative/JEI in the full pack and weapon/controls/guide/expanded-collapsed gun HUD in the minimal standalone setup.",
+    "The final full-pack render used the same gameplay implementation before a test-only registry line was added. The final JAR passed all 82 gameplay checks and the minimal client smoke.",
+    "No internet co-op, moving Create contraption raid repair, or real launcher/world mutation was performed for this release."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:not",
+          "value": {
+            "type": "forge:mod_loaded",
+            "modid": "arsenal_beacon"
+          }
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shapeless",
+        "ingredients": [
+          {
+            "item": "arsenal_beacon:display_stand"
+          },
+          {
+            "item": "arsenal_beacon:display_stand"
+          },
+          {
+            "item": "minecraft:iron_ingot"
+          }
+        ],
+        "result": {
+          "item": "arsenal_beacon:display_stand_wide",
+          "count": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "sourceRelease": "0.21.0",
+  "minecraft": "1.20.1",
+  "forge": "47.4.20",
+  "java": 17,
+  "gradle": "8.8",
+  "forgeGradle": "6.0.54",
+  "command": "./gradlew --no-daemon build releaseJars",
+  "result": "BUILD SUCCESSFUL",
+  "editions": [
+    "pack",
+    "standalone"
+  ],
+  "sourceMatchesTestedRelease": {
+    "arsenal-beacon": {
+      "identicalFiles": 307
+    },
+    "arsenal-gun-guide": {
+      "identicalFiles": 12
+    },
+    "arsenal-displays": {
+      "identicalFiles": 80
+    }
+  },
+  "unitTests": {
+    "arsenal-beacon": {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "arsenal-gun-guide": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "arsenal-displays": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "artifacts": [
+    {
+      "file": "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar",
+      "sha256": "42c159db24147a0a068cc6d2363a2d740cfcb105054f3435893dbce2000c8eb8"
+    },
+    {
+      "file": "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0.jar",
+      "sha256": "63e20d8aa50fa3e672b6c75e840a69dd2d621c4ef0c533ba22ba8711fb6a5267"
+    },
+    {
+      "file": "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0-standalone.jar",
+      "sha256": "36886c6e96ab984282f70b680c10810a7f8dbe552d1c78c681ec12027be49af2"
+    },
+    {
+      "file": "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0.jar",
+      "sha256": "2454bd753590b88b0b4d919a922b7e34a8db90283596e6deb836df9e63b700d7"
+    },
+    {
+      "file": "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0-sources.jar",
+      "sha256": "e7661f79a488132b44c55420ae2ab4c15cd4bd7099f736723ae40e7e4604e61e"
+    },
+    {
+      "file": "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0-standalone.jar",
+      "sha256": "2ef84b0d648acd474a8731e9e54ae01804630d9aa07aff9e135a6c1db4532bc1"
+    },
+    {
+      "file": "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0.jar",
+      "sha256": "5639aa0f943d0c4a8bf3235d6b81dcb87075b9b27920e156d598f3ed156e3046"
+    }
+  ],
+  "verificationScope": "Portable multi-project build and Java unit tests. Existing Gradle/Forge cache used. Public JEI API dependencies resolved in place of a local launcher JAR. No fresh Claude VM bootstrap or new in-game visual/co-op testing in this handoff."
+}

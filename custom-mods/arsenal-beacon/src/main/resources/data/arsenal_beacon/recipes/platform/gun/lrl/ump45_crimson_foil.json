@@ -1,0 +1,22 @@
+{
+  "type": "tacz:gun_smith_table_crafting",
+  "materials": [
+    {
+      "item": {
+        "item": "minecraft:iron_ingot"
+      },
+      "count": 32
+    },
+    {
+      "item": {
+        "item": "minecraft:copper_ingot"
+      },
+      "count": 8
+    }
+  ],
+  "result": {
+    "type": "gun",
+    "id": "lrl:ump45_crimson_foil",
+    "count": 1
+  }
+}

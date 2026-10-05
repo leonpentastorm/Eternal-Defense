@@ -1,0 +1,9 @@
+plugins { id 'base' }
+tasks.named('build') {
+    dependsOn ':arsenal-beacon:build', ':arsenal-gun-guide:build', ':arsenal-displays:build'
+}
+tasks.register('releaseJars') {
+    group = 'build'
+    description = 'Build all pack and standalone release JARs.'
+    dependsOn 'build', ':arsenal-beacon:standaloneJar', ':arsenal-gun-guide:standaloneJar', ':arsenal-displays:standaloneJar'
+}

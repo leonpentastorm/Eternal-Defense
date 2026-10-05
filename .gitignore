@@ -1,0 +1,14 @@
+**/.gradle/
+**/build/
+**/run/
+**/gametest-run/
+.idea/
+*.iml
+*.log
+dev-runtime/
+instance/
+downloads/
+saves/
+reports/
+.env
+.env.*

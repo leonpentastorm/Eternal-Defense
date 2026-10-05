@@ -1,0 +1,725 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "everycomp:ch/beachparty/palm_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/palm_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/beachparty/square_palm_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/rotten_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/betterarcheology/square_rotten_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/scorched_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/born_in_chaos_v1/square_scorched_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/chorus_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/cataclysm/square_chorus_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/palm_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/crabbersdelight/square_palm_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/chip_wood_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/createdieselgenerators/square_chip_wood_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/nut_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/sepia_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/square_nut_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/garnished/square_sepia_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/acacia_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/birch_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/cherry_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/dark_oak_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/jungle_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/mangrove_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/spruce_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_acacia_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_birch_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_cherry_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_dark_oak_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_jungle_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_mangrove_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/minecraft/square_spruce_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/ancient_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/azalea_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/blossom_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/square_ancient_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/square_azalea_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/quark/square_blossom_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/chorus_nest_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/unusualend/square_chorus_nest_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_diamond_bordered_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_horizontal_lined_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_large_diamond_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_line_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_ornate_bared_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/dark_cherry_woven_glass_pane",
+      "required": false
+    },
+    {
+      "id": "everycomp:ch/vinery/square_dark_cherry_glass_pane",
+      "required": false
+    }
+  ]
+}

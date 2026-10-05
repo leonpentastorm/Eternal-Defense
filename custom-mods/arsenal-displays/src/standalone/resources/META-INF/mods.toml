@@ -1,0 +1,33 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT (code); All Rights Reserved (artwork)"
+[[mods]]
+modId="arsenal_displays"
+version="1.1.0"
+displayName="Arsenal Displays"
+description="Eleven gun stands, wall racks and glass cases for TaCZ. Vanilla recipes, full weapon persistence, and static furniture rendering."
+[[dependencies.arsenal_displays]]
+modId="forge"
+mandatory=true
+versionRange="[47.4.0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.arsenal_displays]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.arsenal_displays]]
+modId="tacz"
+mandatory=true
+versionRange="[1.1.8,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.arsenal_displays]]
+modId="arsenal_beacon"
+mandatory=false
+versionRange="[0.21.0,)"
+ordering="AFTER"
+side="BOTH"

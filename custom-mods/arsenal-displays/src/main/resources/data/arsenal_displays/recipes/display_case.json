@@ -1,0 +1,39 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:not",
+          "value": {
+            "type": "forge:mod_loaded",
+            "modid": "arsenal_beacon"
+          }
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "pattern": [
+          "GGG",
+          "G G",
+          "IPI"
+        ],
+        "key": {
+          "I": {
+            "item": "minecraft:iron_ingot"
+          },
+          "P": {
+            "tag": "minecraft:planks"
+          },
+          "G": {
+            "item": "minecraft:glass"
+          }
+        },
+        "result": {
+          "item": "arsenal_beacon:display_case",
+          "count": 1
+        }
+      }
+    }
+  ]
+}

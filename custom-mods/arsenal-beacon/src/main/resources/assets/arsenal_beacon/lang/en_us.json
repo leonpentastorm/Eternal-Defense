@@ -1,0 +1,14 @@
+{
+  "block.arsenal_beacon.defense_beacon": "Defense Beacon",
+  "item.arsenal_beacon.beacon_controller": "Beacon Recovery Shovel",
+  "item.arsenal_beacon.field_guide": "Create Arsenal Field Guide",
+  "item.arsenal_beacon.reinforced_plating": "Reinforced Beacon Plating",
+  "item.arsenal_beacon.logistics_module": "Beacon Logistics Module",
+  "item.arsenal_beacon.resonance_coil": "Beacon Resonance Coil",
+  "item.arsenal_beacon.restoration_matrix": "Beacon Restoration Matrix",
+  "block.arsenal_beacon.gun_platform": "Universal Weapon Platform",
+  "block.arsenal_beacon.ammo_platform": "Universal Ammo Platform",
+  "block.arsenal_beacon.attachment_platform": "Universal Attachment Platform",
+  "item.arsenal_beacon.universal_ammo_coin": "Universal Ammo Coin",
+  "block.arsenal_beacon.armor_platform": "Universal Armor Platform"
+}

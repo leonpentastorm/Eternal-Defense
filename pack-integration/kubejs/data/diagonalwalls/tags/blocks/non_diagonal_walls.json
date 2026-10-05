@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "create_connected:wrapped_copycat_wall",
+      "required": false
+    }
+  ]
+}

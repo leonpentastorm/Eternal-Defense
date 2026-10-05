@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories { gradlePluginPortal(); maven { url = 'https://maven.minecraftforge.net/' } }
+}
+rootProject.name = 'eternal-defense'
+include ':arsenal-beacon', ':arsenal-gun-guide', ':arsenal-displays'
+project(':arsenal-beacon').projectDir = file('custom-mods/arsenal-beacon')
+project(':arsenal-gun-guide').projectDir = file('custom-mods/arsenal-gun-guide')
+project(':arsenal-displays').projectDir = file('custom-mods/arsenal-displays')

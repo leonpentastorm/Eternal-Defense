@@ -1,0 +1,35 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+[[mods]]
+modId="arsenal_gun_guide"
+version="0.21.0"
+displayName="Create Arsenal: Gun Guide"
+displayTest="IGNORE_SERVER_VERSION"
+description="Live gun controls and a crosshair jam warning. Client HUD; no gameplay or networking changes."
+[[dependencies.arsenal_gun_guide]]
+modId="forge"
+mandatory=true
+versionRange="[47.4.0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.arsenal_gun_guide]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.arsenal_gun_guide]]
+modId="tacz"
+mandatory=true
+versionRange="[1.1.8,1.2)"
+ordering="AFTER"
+side="CLIENT"
+
+[[dependencies.arsenal_gun_guide]]
+modId="arsenal_beacon"
+mandatory=true
+versionRange="[0.21.0,)"
+ordering="AFTER"
+side="CLIENT"

@@ -1,0 +1,7 @@
+pluginManagement {
+    repositories { gradlePluginPortal(); maven { url = 'https://maven.minecraftforge.net/' } }
+}
+rootProject.name = 'arsenal-beacon'
+
+include ":arsenal-displays"
+project(":arsenal-displays").projectDir = file("../arsenal-displays")

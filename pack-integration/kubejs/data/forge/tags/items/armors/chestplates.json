@@ -1,0 +1,353 @@
+{
+  "replace": true,
+  "values": [
+    {
+      "id": "aether:gravitite_chestplate",
+      "required": false
+    },
+    {
+      "id": "aether:neptune_chestplate",
+      "required": false
+    },
+    {
+      "id": "aether:obsidian_chestplate",
+      "required": false
+    },
+    {
+      "id": "aether:phoenix_chestplate",
+      "required": false
+    },
+    {
+      "id": "aether:valkyrie_chestplate",
+      "required": false
+    },
+    {
+      "id": "aether:zanite_chestplate",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:crocodile_chestplate",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:rocky_chestplate",
+      "required": false
+    },
+    {
+      "id": "alexsmobs:unsettling_kimono",
+      "required": false
+    },
+    {
+      "id": "blue_skies:aquite_chestplate",
+      "required": false
+    },
+    {
+      "id": "blue_skies:charoite_chestplate",
+      "required": false
+    },
+    {
+      "id": "blue_skies:diopside_chestplate",
+      "required": false
+    },
+    {
+      "id": "blue_skies:horizonite_chestplate",
+      "required": false
+    },
+    {
+      "id": "blue_skies:pyrope_chestplate",
+      "required": false
+    },
+    {
+      "id": "blue_skies:shadow_chestplate",
+      "required": false
+    },
+    {
+      "id": "create:cardboard_chestplate",
+      "required": false
+    },
+    {
+      "id": "create:copper_backtank",
+      "required": false
+    },
+    {
+      "id": "create:netherite_backtank",
+      "required": false
+    },
+    {
+      "id": "deep_aether:skyjade_chestplate",
+      "required": false
+    },
+    {
+      "id": "deep_aether:stratus_chestplate",
+      "required": false
+    },
+    {
+      "id": "deeperdarker:resonarium_chestplate",
+      "required": false
+    },
+    {
+      "id": "deeperdarker:warden_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_chestplate_ash",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_chestplate_slate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_shoulderpads",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_shoulderpads_ash",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:beta7_shoulderpads_slate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:killa_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:mashinegunner_ru_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_mg_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_mg_chestplate_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shoulderpads",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shoulderpads_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shturmovik2_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shturmovik2_chestplate_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shturmovik_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_shturmovik_chestplate_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_sqad_leader_backpack",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_sqad_leader_backpack_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_sqad_leader_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_sqad_leader_chestplate_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_ukr_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:nato_ukr_chestplate_woodland",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:razvetchik_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:ru_shoulderpads",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:shturmovik_ru_backpack",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:shturmovik_ru_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:shturmovikv2_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:squad_lider_ru_backpack",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:squad_lider_ru_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:sso_squad_leader_chestplate",
+      "required": false
+    },
+    {
+      "id": "fracturepoint:tagilla_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:acacia_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:azalea_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:birch_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:black_juggernaut_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:cherry_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:dark_oak_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:desert_military_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:hazmat_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:jungle_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:mangrove_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:oak_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:olive_juggernaut_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:riot_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:spruce_ghillie_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:swat_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "marbledsarsenal:winter_military_armor_chestplate",
+      "required": false
+    },
+    {
+      "id": "mcore:steel_chestplate",
+      "required": false
+    },
+    {
+      "id": "mcore:titanium_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:chainmail_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:diamond_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:golden_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:iron_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:leather_chestplate",
+      "required": false
+    },
+    {
+      "id": "minecraft:netherite_chestplate",
+      "required": false
+    },
+    {
+      "id": "mutantmonsters:mutant_skeleton_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:arctic_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:fiery_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:ironwood_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:knightmetal_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:naga_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:phantom_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:steeleaf_chestplate",
+      "required": false
+    },
+    {
+      "id": "twilightforest:yeti_chestplate",
+      "required": false
+    },
+    {
+      "id": "unusualend:warped_chestplate",
+      "required": false
+    }
+  ]
+}

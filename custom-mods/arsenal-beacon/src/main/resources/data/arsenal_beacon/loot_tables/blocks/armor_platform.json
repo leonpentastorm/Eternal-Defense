@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "arsenal_beacon:armor_platform",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "arsenal_beacon:armor_platform",
+              "properties": [
+                "age"
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

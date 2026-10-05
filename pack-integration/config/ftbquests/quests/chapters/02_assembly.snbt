@@ -1,0 +1,9 @@
+{id:"42DE4A6A4249183C" filename:"02_assembly" title:"Brass and Assembly" order_index:2 quests:[{id:"B13B5CD09EAA1E98" title:"Find the heat" description:["Bring home a blaze burner for heated brass production."] icon:"create:blaze_burner" x:0.0d y:0.0d  tasks:[{id:"828773EEF47C0C26" type:"item" item:"create:blaze_burner" count:1L consume_items:false}]}
+{id:"EF5D515AC5EEA50D" title:"Build deployers" description:["Deployers attach brass sheets and cogwheels to your receivers. Route them beneath a press."] icon:"create:deployer" x:2.0d y:0.0d dependencies: ["B13B5CD09EAA1E98"]
+ tasks:[{id:"F355F36B231E75B1" type:"item" item:"create:deployer" count:1L consume_items:false}]}
+{id:"DA88C0410CE6F9A9" title:"Brass arsenal" description:["Run the receiver assembly twice. Supply factory production; Universal Platform Ages control weapon unlocks. Collecting the first part advances shared world threat."] icon:"kubejs:brass_receiver" x:4.0d y:0.0d dependencies: ["EF5D515AC5EEA50D"]
+ tasks:[{id:"6711BC69B3BE20F1" type:"item" item:"kubejs:brass_receiver" count:1L consume_items:false}]}
+{id:"A7EE790272802810" title:"Precision engineering" description:["Automate precision mechanisms. You will need a steady supply for rifle production."] icon:"create:precision_mechanism" x:6.0d y:0.0d dependencies: ["DA88C0410CE6F9A9"]
+ tasks:[{id:"5F162E1035976F70" type:"item" item:"create:precision_mechanism" count:1L consume_items:false}]}
+{id:"47AAD97B2BDFB34F" title:"Rail logistics" description:["Build railway logistics to supply distant outposts and ammunition factories."] icon:"create:track" x:8.0d y:0.0d dependencies: ["A7EE790272802810"]
+ tasks:[{id:"752563169791D97E" type:"item" item:"create:track" count:1L consume_items:false}]}]}
