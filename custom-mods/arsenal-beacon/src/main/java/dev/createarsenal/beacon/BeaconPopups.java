@@ -43,7 +43,7 @@ public final class BeaconPopups {
 
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
     public static final class Registration {
-        @SubscribeEvent public static void register(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_popups",(gui,g,partial,w,h)->render(g,w,h));}
+        @SubscribeEvent public static void popupOverlay(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_popups",(gui,g,partial,w,h)->render(g,w,h));}
     }
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){clear();}
     @SubscribeEvent public static void screen(ScreenEvent.Render.Post e){var mc=Minecraft.getInstance();if(mc.level!=null)render(e.getGuiGraphics(),mc.getWindow().getGuiScaledWidth(),mc.getWindow().getGuiScaledHeight());}

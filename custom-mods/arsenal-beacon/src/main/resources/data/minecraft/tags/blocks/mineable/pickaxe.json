@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "arsenal_beacon:armor_platform"
+    "arsenal_beacon:armor_platform",
+    "arsenal_beacon:exchange_shop",
+    "arsenal_beacon:support_platform",
+    "arsenal_beacon:support_cannon"
   ]
 }

@@ -40,6 +40,10 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(0,State.class,State::encode,State::decode,State::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(1,Action.class,Action::encode,Action::decode,Action::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         WeaponPlatform.initNetwork(CHANNEL);
+        CHANNEL.registerMessage(7,ExchangeShop.Open.class,ExchangeShop.Open::encode,ExchangeShop.Open::decode,ExchangeShop.Open::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8,ExchangeShop.Buy.class,ExchangeShop.Buy::encode,ExchangeShop.Buy::decode,ExchangeShop.Buy::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(9,SupportShop.Buy.class,SupportShop.Buy::encode,SupportShop.Buy::decode,SupportShop.Buy::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(10,SupportShop.Upgrade.class,SupportShop.Upgrade::encode,SupportShop.Upgrade::decode,SupportShop.Upgrade::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
