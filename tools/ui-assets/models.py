@@ -178,8 +178,8 @@ def cannon_item():
     """Inventory form: base and turret as built, plus a short barrel tilted 45 degrees on the hinge (model limits: -16..32)."""
     base = cannon_base()['elements']; turret = cannon_turret()['elements']
     barrel = M()
-    barrel.b((3, 19, 4), (13, 29, 12), 'dark_plate', rot=(-45, 'x', (8, 27.2, 8))); barrel.b((4, 20, -12), (12, 28, 4), 'light_plate', rot=(-45, 'x', (8, 27.2, 8)))
-    barrel.b((3, 19, -16), (13, 29, -12), 'dark_plate', rot=(-45, 'x', (8, 27.2, 8)))
+    barrel.b((3, 19, 4), (13, 29, 12), 'dark_plate', rot=(45, 'x', (8, 27.2, 8))); barrel.b((4, 20, -12), (12, 28, 4), 'light_plate', rot=(45, 'x', (8, 27.2, 8)))
+    barrel.b((3, 19, -16), (13, 29, -12), 'dark_plate', rot=(45, 'x', (8, 27.2, 8)))
     m = M(); m.e = base + turret + barrel.e
     return m.model(display=ITEM_DISPLAY)
 

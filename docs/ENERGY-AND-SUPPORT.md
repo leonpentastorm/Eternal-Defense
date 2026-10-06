@@ -57,19 +57,28 @@ The supply parcel is a real chest: right-click to open it, take what you need, a
 * Server logic: `SupportCalls` (validation, payment, delivery, return), `SupportData` (who owns which platform and cannon), `BaseZone` (zone rules, placement item, shovel relocation), `SupportShop` (purchases, upgrades), `SupportFlares` (items and the thrown flare), `SupportCrate` (parcel chest entity), `SupportCannon`, `SupportPlatform` (block, block entity, menu), `ArdentEnergy`, `ExchangeShop`.
 * Pure, unit-tested rules: `SupportRules` (every number), `SupportCannon.spin` (turret motor), `TextTable`, `RaidWarnings.bucket`, `ArdentEnergy.amount`.
   `SupportTest` also fails if the field guide quotes a number that no longer matches `SupportRules`.
-* Network: protocol version bumped to **17** (clients and servers must match). New messages 6 `Announce`, 7 `Exchange open`, 8 `Exchange buy`, 9 `Support buy`, 10 `Support upgrade`.
+* Network: protocol version bumped to **18** (17 was the first support build) (clients and servers must match). New messages 6 `Announce`, 7 `Exchange open`, 8 `Exchange buy`, 9 `Support buy`, 10 `Support upgrade`.
 * Client: `SupportClient` (renderers, model registration), `SupportScreen`, `ExchangeScreen`, `BeaconPopups`.
 
 ### Art
 
-Items use 64 x 64 painted sprites in the style of `industrial_atlas.png`; placeables are JSON element models over one shared 128 x 128 tile kit
-(`textures/block/support_kit.png`). Regenerate everything with `python3 tools/ui-assets/make_sprites.py` (needs Pillow); previews are in `docs/ui/sprites/`.
-Models: `exchange_shop`, `support_platform_mk1..4` (the pad shows the grid size), `support_cannon` (+ `_turret`, `_barrel`), `support_parcel` (+ `_chute`).
+Items use 64 x 64 painted sprites in the style of `industrial_atlas.png` (the three flares each have their own: cyan, purple and red canisters, drawn in flight and on the ground
+with the same sprite). The Return Flare portal is a 4-frame 16 x 32 sheet (`textures/entity/return_portal.png`) drawn as a 1 x 2 block billboard that always faces the viewer.
+
+Placeables are JSON element models over one shared 512 x 512 tile kit (`textures/block/support_kit.png`) painted in the same palette as `defense_beacon_level4.png`:
+charcoal brushed metal, gold plates, cyan light strips, hazard stripes, tiny screens with real text. Boxes wider than 16 units are cut into pieces so the texel density stays
+at 64 px per block everywhere. Regenerate everything with `python3 tools/ui-assets/make_sprites.py` (needs Pillow); previews are in `docs/ui/sprites/`.
+Models: `exchange_shop`, `support_platform_mk1..4` (the pad shows the grid size, each Mk adds hardware), `support_cannon` (base, 3 x 3 x 2) with `_turret` and `_barrel`
+drawn by a renderer (the turret is drawn 25% larger, the barrel is pitched 50 degrees and slides back along its axis when it fires), `support_parcel` (+ `_chute`).
 
 ## What was tested
 
-See the table in UI-REDESIGN-NOTES.md. Support and energy were exercised end to end in a real Minecraft 1.20.1 integrated server driven from the client:
-drops (credited and uncredited kills), exchange purchases (including overspending and out-of-range), platform registration and the 6-block cannon rule, grid
-pricing, all four shop products, Mk-2 to Mk-4 upgrades with items staying put, supply flare payment, cannon aim, parcel fall and delivery, the underground path,
-refusals without energy, Return Flare, and Fire Support (payment, 6 cannon shots, all test zombies killed, caller unhurt). The run found and fixed one real bug: paying Ardent Energy rebuilt the inventory, so a flare was not consumed in survival. Not tested: multiplayer, other dimensions, TaCZ weapons in the grid,
-and chunk-unload edge cases. Please playtest those.
+Everything below was exercised in a real Minecraft 1.20.1 integrated server driven from the client (screenshots in `docs/ui/screens/support/`), 50 checks, all passing on the final run:
+zone rules (inside, outside, beacon removed), placing and refusing a second platform, cannon and shop, owner-only access, buying all four products (300 energy),
+throwing a supply flare (flare used up, no energy spent, grid emptied, cannon aimed at the flare rather than the player, countdown in chat, 12 s outdoors and about 7 s underground,
+chest opens with exactly the grid contents and folds away when emptied), refusals that keep the flare (empty grid, beacon gone), the Return Flare portal (client and server agree, owner teleported, portal used up),
+Fire Support (red box, every zombie inside died, zombies outside survived, six shots, caller unhurt), and shovel relocation (Mk and contents kept, cannon picked up from any cell).
+Unit tests cover the numbers, the turret motor, the red box and the field guide quoting real values.
+
+Not tested: real multiplayer (the ownership rules are only exercised with a single player and a forged owner id), other dimensions, TaCZ weapons inside a grid on a dedicated run
+(the user tested TaCZ guns and ammo in a supply parcel by hand), and chunk-unload edge cases.

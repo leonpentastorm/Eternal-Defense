@@ -7566,7 +7566,7 @@
         }
       },
       "rotation": {
-        "angle": -45,
+        "angle": 45,
         "axis": "x",
         "origin": [
           8,
@@ -7643,7 +7643,7 @@
         }
       },
       "rotation": {
-        "angle": -45,
+        "angle": 45,
         "axis": "x",
         "origin": [
           8,
@@ -7720,7 +7720,7 @@
         }
       },
       "rotation": {
-        "angle": -45,
+        "angle": 45,
         "axis": "x",
         "origin": [
           8,
