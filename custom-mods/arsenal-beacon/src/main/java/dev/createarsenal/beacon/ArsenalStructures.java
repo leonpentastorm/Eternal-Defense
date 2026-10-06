@@ -29,9 +29,12 @@ final class ArsenalStructures {
     static BlockPos second(BlockPos pos,BlockState state){return pos.relative(state.getValue(FACING).getClockWise());}
     static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(ArsenalBeacon.STRUCTURE_PART.get())?pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z)):pos;}
     static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(ArsenalBeacon.BEACON.get());}
+    /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
+    static boolean big(BlockState state){return state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.BEACON.get())&&state.getValue(MK)==4;}
+    static boolean owns(BlockState owner){return owner.getBlock() instanceof WeaponPlatform.Station||owner.is(ArsenalBeacon.BEACON.get())||owner.is(ArsenalBeacon.SUPPORT_CANNON.get());}
     static List<BlockPos> cells(BlockPos root,BlockState state){
         List<BlockPos> cells=new ArrayList<>();
-        if(state.is(ArsenalBeacon.BEACON.get())&&state.getValue(MK)==4){for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)cells.add(root.offset(x,y,z));}
+        if(big(state)){for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)cells.add(root.offset(x,y,z));}
         else if(state.getBlock() instanceof WeaponPlatform.Station){if(state.getValue(WIDE))cells.add(second(root,state));if(state.getValue(TALL)){cells.add(root.above());if(state.getValue(WIDE))cells.add(second(root,state).above());}}return cells;
     }
     static boolean available(Level level,BlockPos root,BlockState wanted){
@@ -62,21 +65,22 @@ final class ArsenalStructures {
     static VoxelShape full(BlockState state){
         // Collision is a simple installation envelope, independent of decorative mesh detail.
         // Exact unions of dozens of fractional cuboids create enormous voxel grids on every raycast.
+        if(state.is(ArsenalBeacon.SUPPORT_CANNON.get()))return Shapes.create(-1,0,-1,2,2,2);
         if(state.is(ArsenalBeacon.BEACON.get()))return state.getValue(MK)==4?Shapes.create(-1,0,-1,2,2,2):Shapes.block();
         boolean wide=state.getValue(WIDE),tall=state.getValue(TALL);Direction facing=state.getValue(FACING);String key=wide+":"+tall+":"+facing;
         return shapes.computeIfAbsent(key,k->{double height=tall?2:1;if(!wide)return Shapes.create(0,0,0,1,height,1);return switch(facing){case EAST->Shapes.create(0,0,0,1,height,2);case SOUTH->Shapes.create(-1,0,0,1,height,1);case WEST->Shapes.create(0,0,-1,1,height,1);default->Shapes.create(0,0,0,2,height,1);};});
     }
-    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.is(ArsenalBeacon.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
+    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.is(ArsenalBeacon.SUPPORT_CANNON.get())?"cannon":state.is(ArsenalBeacon.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
     public static final class Part extends Block {
         Part(){super(Properties.of().strength(3,6).noOcclusion().dynamicShape());registerDefaultState(stateDefinition.any().setValue(X,1).setValue(Y,0).setValue(Z,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}
         @Override public RenderShape getRenderShape(BlockState state){return RenderShape.INVISIBLE;}
         @Override public PushReaction getPistonPushReaction(BlockState state){return PushReaction.BLOCK;}
-        @Override public VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){var root=anchor(level,pos);var owner=level.getBlockState(root);if(!(owner.getBlock() instanceof WeaponPlatform.Station)&&!owner.is(ArsenalBeacon.BEACON.get()))return Shapes.empty();return cell(owner,state.getValue(X)-1,state.getValue(Y),state.getValue(Z)-1);}
+        @Override public VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){var root=anchor(level,pos);var owner=level.getBlockState(root);if(!owns(owner))return Shapes.empty();return cell(owner,state.getValue(X)-1,state.getValue(Y),state.getValue(Z)-1);}
         @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){var root=anchor(level,pos);var owner=level.getBlockState(root);return owner.use(level,p,hand,new BlockHitResult(hit.getLocation(),hit.getDirection(),root,hit.isInside()));}
-        @Override public void playerWillDestroy(Level level,BlockPos pos,BlockState state,Player p){var root=anchor(level,pos);if(!level.isClientSide&&level.getBlockState(root).getBlock() instanceof WeaponPlatform.Station)level.destroyBlock(root,!p.isCreative(),p);super.playerWillDestroy(level,pos,state,p);}
-        @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){if(!l.isClientSide&&!next.is(this)){var root=pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z));if(l.getBlockState(root).getBlock() instanceof WeaponPlatform.Station)l.scheduleTick(root,l.getBlockState(root).getBlock(),1);}super.onRemove(s,l,pos,next,moving);}
-        @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){var root=anchor(l,pos);if(!l.hasChunkAt(root)){l.scheduleTick(pos,this,20);return;}var owner=l.getBlockState(root);if(!(owner.getBlock() instanceof WeaponPlatform.Station)&&!owner.is(ArsenalBeacon.BEACON.get())||!cells(root,owner).contains(pos))l.setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
+        @Override public void playerWillDestroy(Level level,BlockPos pos,BlockState state,Player p){var root=anchor(level,pos);if(!level.isClientSide&&(level.getBlockState(root).getBlock() instanceof WeaponPlatform.Station||level.getBlockState(root).is(ArsenalBeacon.SUPPORT_CANNON.get())))level.destroyBlock(root,!p.isCreative(),p);super.playerWillDestroy(level,pos,state,p);}
+        @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){if(!l.isClientSide&&!next.is(this)){var root=pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z));if(l.getBlockState(root).getBlock() instanceof WeaponPlatform.Station||l.getBlockState(root).is(ArsenalBeacon.SUPPORT_CANNON.get()))l.scheduleTick(root,l.getBlockState(root).getBlock(),1);}super.onRemove(s,l,pos,next,moving);}
+        @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){var root=anchor(l,pos);if(!l.hasChunkAt(root)){l.scheduleTick(pos,this,20);return;}var owner=l.getBlockState(root);if(!owns(owner)||!cells(root,owner).contains(pos))l.setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
         @Override public void neighborChanged(BlockState s,Level l,BlockPos pos,Block block,BlockPos from,boolean moving){if(!l.isClientSide)l.scheduleTick(pos,this,1);}
     }
 }

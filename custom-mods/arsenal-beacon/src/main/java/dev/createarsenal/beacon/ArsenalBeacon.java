@@ -52,13 +52,13 @@ public final class ArsenalBeacon {
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<WeaponPlatform.StationEntity>> STATION_ENTITY=ENTITIES.register("station",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(WeaponPlatform.StationEntity::new,ArsenalBeacon.GUN_PLATFORM.get(),ArsenalBeacon.AMMO_PLATFORM.get(),ArsenalBeacon.ATTACHMENT_PLATFORM.get(),ArsenalBeacon.ARMOR_PLATFORM.get()).build(null));
     public static final RegistryObject<Item> ARDENT_ENERGY=ITEMS.register("ardent_energy",()->new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
     public static final RegistryObject<Block> EXCHANGE_SHOP=BLOCKS.register("exchange_shop",ExchangeShop.ShopBlock::new);
-    public static final RegistryObject<Item> EXCHANGE_SHOP_ITEM=ITEMS.register("exchange_shop",()->new BlockItem(EXCHANGE_SHOP.get(),new Item.Properties()));
+    public static final RegistryObject<Item> EXCHANGE_SHOP_ITEM=ITEMS.register("exchange_shop",()->new BaseZone.ZoneItem(EXCHANGE_SHOP.get()));
     // ---- base support system -------------------------------------------------------------------------
     static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(ForgeRegistries.MENU_TYPES,ID);
     public static final RegistryObject<Block> SUPPORT_PLATFORM=BLOCKS.register("support_platform",SupportPlatform.PlatformBlock::new);
-    public static final RegistryObject<Item> SUPPORT_PLATFORM_ITEM=ITEMS.register("support_platform",()->new BlockItem(SUPPORT_PLATFORM.get(),new Item.Properties()));
+    public static final RegistryObject<Item> SUPPORT_PLATFORM_ITEM=ITEMS.register("support_platform",()->new SupportPlatform.PlatformItem(SUPPORT_PLATFORM.get()));
     public static final RegistryObject<Block> SUPPORT_CANNON=BLOCKS.register("support_cannon",SupportCannon.CannonBlock::new);
-    public static final RegistryObject<Item> SUPPORT_CANNON_ITEM=ITEMS.register("support_cannon",()->new BlockItem(SUPPORT_CANNON.get(),new Item.Properties()));
+    public static final RegistryObject<Item> SUPPORT_CANNON_ITEM=ITEMS.register("support_cannon",()->new SupportCannon.CannonItem(SUPPORT_CANNON.get()));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportPlatform.PlatformEntity>> SUPPORT_PLATFORM_ENTITY=ENTITIES.register("support_platform",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportPlatform.PlatformEntity::new,SUPPORT_PLATFORM.get()).build(null));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportCannon.CannonEntity>> CANNON_ENTITY=ENTITIES.register("support_cannon",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportCannon.CannonEntity::new,SUPPORT_CANNON.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<SupportPlatform.PlatformMenu>> SUPPORT_MENU=MENUS.register("support_platform",()->net.minecraftforge.common.extensions.IForgeMenuType.create(SupportPlatform.PlatformMenu::client));
@@ -73,7 +73,7 @@ public final class ArsenalBeacon {
     private static RegistryObject<Item> part(String id){return ITEMS.register(id,()->new Item(new Item.Properties()));}
     private static final DeferredRegister<EntityType<?>> OBJECTIVES=DeferredRegister.create(ForgeRegistries.ENTITY_TYPES,ID);
     static final RegistryObject<EntityType<BeaconCombat.Objective>> OBJECTIVE=OBJECTIVES.register("beacon_objective",()->EntityType.Builder.<BeaconCombat.Objective>of(BeaconCombat.Objective::new,MobCategory.MISC).sized(1f,1f).clientTrackingRange(64).build(ID+":beacon_objective"));
-    public static final RegistryObject<EntityType<SupportFlares.FlareEntity>> FLARE=OBJECTIVES.register("support_flare",()->EntityType.Builder.<SupportFlares.FlareEntity>of(SupportFlares.FlareEntity::new,MobCategory.MISC).sized(.25f,.25f).clientTrackingRange(4).updateInterval(10).build(ID+":support_flare"));
+    public static final RegistryObject<EntityType<SupportFlares.FlareEntity>> FLARE=OBJECTIVES.register("support_flare",()->EntityType.Builder.<SupportFlares.FlareEntity>of(SupportFlares.FlareEntity::new,MobCategory.MISC).sized(.25f,.25f).clientTrackingRange(10).updateInterval(5).build(ID+":support_flare"));
     public static final RegistryObject<EntityType<SupportCrate.ParcelEntity>> PARCEL=OBJECTIVES.register("support_parcel",()->EntityType.Builder.<SupportCrate.ParcelEntity>of(SupportCrate.ParcelEntity::new,MobCategory.MISC).sized(.9f,.9f).clientTrackingRange(8).updateInterval(3).build(ID+":support_parcel"));
     private static int clock;
     public ArsenalBeacon() {

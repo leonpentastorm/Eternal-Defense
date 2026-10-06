@@ -21,8 +21,8 @@ mobs with 60+ max health drop two; bosses always drop 12. Tune these in `config/
 
 ### Exchange Shop
 
-A placeable kiosk (3D model, right-click to open). Offers come from **`config/arsenal-beacon-exchange.txt`**, created on first
-use and re-read every time a shop opens:
+A placeable trader's booth (3D model, right-click to open). Like all support gear it only works **inside the zone of a standing Defense Beacon**.
+Offers come from **`config/arsenal-beacon-exchange.txt`**, created on first use and re-read every time a shop opens:
 
 ```
 # item_id [x count] = energy cost
@@ -31,32 +31,31 @@ minecraft:arrow x16 = 20
 ```
 
 Bad lines are skipped and logged. A file with no valid offers falls back to the default coin offer. Purchases are validated on the
-server (distance, price, inventory room) and are free in Creative.
+server (distance, price, inventory room, beacon zone) and are free in Creative.
 
 ## Base support
 
+**Every player builds their own** Support Platform and Support Cannon (one of each per player; only the owner can open them).
+All support gear can only be placed inside the zone of an active Defense Beacon, stops working while the beacon is gone, and is
+moved for free by right-clicking it with the **Beacon Recovery Shovel** (a platform keeps its Mk level and grid contents).
+
 | Piece | What it does |
 | --- | --- |
-| **Support Platform** (craftable) | One per world, Overworld only, the block in front of it must stay clear. Holds the supply grid (3x3 at Mk-1), sells the cannon and flares, and upgrades Mk-1 to Mk-4 (grid 4x4, 5x5, 6x6) for 16 / 32 / 64 Reinforced Beacon Plating. Items already in the grid never move when it grows. |
-| **Support Cannon** (bought at the platform) | Must be within 6 blocks of the platform to count. Turns toward whoever calls support and fires; during Fire Support it fires at every blast. Separate turret and barrel models are drawn by a renderer; the barrel recoils. |
-| **Support Flare** (15) | Throw it anywhere. If you are outdoors and the sky is open above the flare a parcel parachutes down to it; otherwise it appears at your feet. Opening it gives an exact copy of the supply grid as it was when you threw. |
-| **Return Flare** (8) | Hold use for 3 seconds to light; takes you to the front of the platform from anywhere, including other dimensions. |
-| **Fire Support Flare** (40) | After landing it shells the surroundings every 2 seconds for 12 seconds (6 blasts, within 8 blocks). Each blast hurts hostile mobs within 4 blocks for 25 damage; it never hurts players and never breaks blocks. |
+| **Support Platform** (craftable) | Holds the supply grid (3x3 at Mk-1), sells the cannon and flares, upgrades Mk-1 to Mk-4 (grid 4x4, 5x5, 6x6) for 16 / 32 / 64 Reinforced Beacon Plating. The block in front of it must stay clear. Items in the grid never move when it grows. |
+| **Support Cannon** (150 energy at the platform) | A hulking 3 x 3 x 2 gun within 12 blocks of the platform. The turret is heavy: it spins up and brakes slowly (about 5 s for a half turn), then fires. It turns toward the **flare**, never toward the player. |
+| **Support Flare** (30) | Throw it anywhere. The grid is emptied into a chest that arrives 12 s after the flare lands (parachuting in outdoors) or 7 s after (appearing at your feet underground). Chat counts the seconds down. |
+| **Return Flare** (20) | Throw it. A purple 1 x 2 portal that always faces you opens where it lands (30 s, owner only). Step in to arrive in front of the platform. Works from any dimension. |
+| **Fire Support Flare** (100) | A red box marks the area. Six shells land **exactly on the flare**, one every 2 s, each hurting every hostile mob touching the box (25 damage). Never hurts players or blocks. |
 
-Calls cost Ardent Energy on top of the gear: supply drop = 5 + the grid's contents, Return 10, Fire Support 60. Everyone on the server sees
-**"[player] is calling [support]"** and the cannon turns and fires.
+Throwing a flare costs nothing: the Ardent Energy is paid when you buy it. If anything is missing (no platform, no cannon, beacon gone,
+empty grid) you get a chat message and keep the flare. Everyone sees **"[player] is calling [support]"**.
 
-### Supply drop prices
-
-Per item: common 1, uncommon 3, rare 8, epic 20; bulk blocks (stone, dirt, planks, logs, glass, wool...) a tenth of that; a table of
-well-known items (iron 1, gold 2, diamond 6, netherite ingot 16, totem 40, elytra 50, nether star 60...); TaCZ guns 45, attachments 12,
-rounds 0.35. Override anything in **`config/arsenal-beacon-support-costs.txt`** (same line format as the exchange file; `minecraft:arrow x16 = 4` means a
-quarter each). The platform shows the live total before you throw.
+The supply parcel is a real chest: right-click to open it, take what you need, and it folds away once emptied and closed.
 
 ## For developers
 
-* Server logic: `SupportCalls` (validation, payment, delivery, return), `SupportData` (saved world state, including a snapshot of the grid so calls work from anywhere without loading the base), `SupportShop` (purchases, upgrades), `SupportFlares` (items and the thrown flare), `SupportCrate` (parcel entity), `SupportCannon`, `SupportPlatform` (block, block entity, menu), `ArdentEnergy`, `ExchangeShop`.
-* Pure, unit-tested rules: `SupportRules` (every number), `SupportCosts`, `TextTable`, `RaidWarnings.bucket`, `ArdentEnergy.amount`.
+* Server logic: `SupportCalls` (validation, payment, delivery, return), `SupportData` (who owns which platform and cannon), `BaseZone` (zone rules, placement item, shovel relocation), `SupportShop` (purchases, upgrades), `SupportFlares` (items and the thrown flare), `SupportCrate` (parcel chest entity), `SupportCannon`, `SupportPlatform` (block, block entity, menu), `ArdentEnergy`, `ExchangeShop`.
+* Pure, unit-tested rules: `SupportRules` (every number), `SupportCannon.spin` (turret motor), `TextTable`, `RaidWarnings.bucket`, `ArdentEnergy.amount`.
   `SupportTest` also fails if the field guide quotes a number that no longer matches `SupportRules`.
 * Network: protocol version bumped to **17** (clients and servers must match). New messages 6 `Announce`, 7 `Exchange open`, 8 `Exchange buy`, 9 `Support buy`, 10 `Support upgrade`.
 * Client: `SupportClient` (renderers, model registration), `SupportScreen`, `ExchangeScreen`, `BeaconPopups`.

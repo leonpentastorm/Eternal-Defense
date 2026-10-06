@@ -49,11 +49,8 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
             for(int r=0;r<n;r++)for(int c=0;c<n;c++)Ui.field(g,leftPos+SupportPlatform.GRID_LEFT+c*18,topPos+SupportPlatform.GRID_TOP+r*18,18,18,false);
             for(int r=0;r<3;r++)for(int c=0;c<9;c++)Ui.field(g,leftPos+SupportPlatform.INV_LEFT+c*18,topPos+SupportPlatform.INV_TOP+r*18,18,18,false);
             for(int c=0;c<9;c++)Ui.field(g,leftPos+SupportPlatform.INV_LEFT+c*18,topPos+SupportPlatform.INV_TOP+58,18,18,false);
-            int cost=menu.cost.get();boolean short_=cost>0&&!minecraft.player.isCreative()&&ArdentEnergy.balance(minecraft.player)<cost;
-            // The estimate sits under the inventory, where there is always room, and turns orange when you cannot afford it.
-            int by=topPos+SupportPlatform.INV_TOP+84;
-            g.renderItem(energy,leftPos+SupportPlatform.INV_LEFT,by-4);
-            Ui.wrap(g,font,cost==0?Ui.t("support.cost.empty"):Ui.t("support.cost",cost),leftPos+SupportPlatform.INV_LEFT+20,by,162-20,short_?Ui.ORANGE:Ui.CYAN,3);
+            // Everything in the grid is taken by the next Support Flare, so say so where the player is looking.
+            Ui.wrap(g,font,Ui.t("support.grid.note"),leftPos+SupportPlatform.INV_LEFT,topPos+SupportPlatform.INV_TOP+84,162,Ui.CYAN,3);
         }else{
             g.renderItem(energy,leftPos+14,topPos+H-30);
             Ui.text(g,font,Ui.t("exchange.balance",ArdentEnergy.balance(minecraft.player)),leftPos+34,topPos+H-26,Ui.CYAN,140);

@@ -41,7 +41,7 @@ final class SupportShop {
         level.setBlock(pos,state.setValue(SupportPlatform.MK,menu.mk+1),3);
         var be=level.getBlockEntity(pos);
         if(be instanceof SupportPlatform.PlatformEntity platform){
-            platform.gridChanged();
+            platform.setChanged();
             p.closeContainer();
             NetworkHooks.openScreen(p,platform,buf->{buf.writeBlockPos(pos);buf.writeVarInt(menu.mk+1);});
             if(p.containerMenu instanceof SupportPlatform.PlatformMenu next)next.report(UPGRADED);

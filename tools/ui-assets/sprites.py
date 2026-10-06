@@ -67,3 +67,29 @@ def flare(kind):
     outline(im); return im
 
 SPRITES = {'ardent_energy': energy_cell, 'support_flare': lambda: flare('support'), 'return_flare': lambda: flare('return'), 'fire_support_flare': lambda: flare('fire')}
+
+def portal_sheet():
+    """Return Flare portal: four 16 x 32 frames side by side, a spinning violet vortex in a bright rim, drawn 1 block wide and 2 tall."""
+    W, H = 16, 32
+    sheet = new(W * 4, H)
+    for f in range(4):
+        phase = f * math.pi / 2
+        for y in range(H):
+            for x in range(W):
+                u = (x - 7.5) / 7.8; v = (y - 15.5) / 15.8
+                r = math.hypot(u, v)
+                if r > 1.0: continue
+                ang = math.atan2(v * .5, u)
+                if r > .84:                                          # glowing rim
+                    shade = .55 + .45 * (1 - (r - .84) / .16)
+                    c = pick('purple', .62 + .38 * shade * (.7 + .3 * math.sin(ang * 3 + phase)))
+                    if r > .95: c = pick('purple', .25)
+                    sheet.putpixel((f * W + x, y), c[:3] + (255,)); continue
+                swirl = math.sin(ang * 3 + r * 7 - phase * 1.5)       # spiral arms that turn from frame to frame
+                core = max(0, 1 - r * 1.6)
+                val = .28 + .3 * (swirl + 1) / 2 + .5 * core
+                c = pick('purple', min(.999, val))
+                sheet.putpixel((f * W + x, y), c[:3] + (232,))
+        for (sx, sy) in (((1, 6 + f * 3), (14, 20 - f * 3))):
+            sheet.putpixel((f * W + sx, sy), pick('purple', .95))
+    return sheet

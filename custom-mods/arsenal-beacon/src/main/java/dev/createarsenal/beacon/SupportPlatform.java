@@ -35,7 +35,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import java.util.*;
 
-/** The Support Platform: supply grid, shop and Mk upgrades. One per world, in the Overworld, with its front kept clear. */
+/** The Support Platform: supply grid, shop and Mk upgrades. One per player, inside the beacon zone, with its front kept clear. */
 final class SupportPlatform {
     private SupportPlatform(){}
     static final IntegerProperty MK=IntegerProperty.create("mk",1,4);
@@ -43,7 +43,7 @@ final class SupportPlatform {
     static final int GRID_LEFT=12,GRID_TOP=60,INV_LEFT=134,INV_TOP=60;
 
     static final class PlatformBlock extends Block implements EntityBlock {
-        private static final VoxelShape SHAPE=Block.box(0,0,0,16,10,16);
+        private static final VoxelShape SHAPE=Block.box(0,0,0,16,12,16);
         PlatformBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->6).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(MK,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,MK);}
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return SHAPE;}
@@ -53,53 +53,73 @@ final class SupportPlatform {
             if(!level.getBlockState(front).canBeReplaced()&&!level.getBlockState(front).getCollisionShape(level,front).isEmpty()){
                 if(player!=null)player.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.blocked"),true);return null;
             }
-            if(level instanceof ServerLevel server){
-                if(server.dimension()!=Level.OVERWORLD){if(player!=null)player.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.overworld"),true);return null;}
-                var data=SupportData.get(server);
-                if(data.hasPlatform()&&!data.platform.equals(pos)&&server.getBlockState(data.platform).getBlock()==ArsenalBeacon.SUPPORT_PLATFORM.get()){
-                    if(player!=null)player.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.only_one"),true);return null;
-                }
-            }
-            return defaultBlockState().setValue(FACING,d);
+            var tag=c.getItemInHand().getTag();int mk=tag!=null&&tag.contains("Mk")?Math.max(1,Math.min(4,tag.getInt("Mk"))):1;
+            return defaultBlockState().setValue(FACING,d).setValue(MK,mk);
         }
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState s){return new PlatformEntity(pos,s);}
-        @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){
-            super.onPlace(s,l,pos,old,moving);
-            if(l instanceof ServerLevel server){var d=SupportData.get(server);d.platform=pos.immutable();d.facing=s.getValue(FACING);d.mk=s.getValue(MK);d.setDirty();}
+        @Override public void setPlacedBy(Level l,BlockPos pos,BlockState s,net.minecraft.world.entity.LivingEntity who,net.minecraft.world.item.ItemStack stack){
+            super.setPlacedBy(l,pos,s,who,stack);
+            if(l instanceof ServerLevel server&&who instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PlatformEntity be){
+                be.owner=sp.getUUID();be.ownerName=sp.getGameProfile().getName();be.setChanged();
+                SupportData.get(server).setPlatform(sp.getUUID(),pos);
+            }
         }
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
             if(!s.is(next.getBlock())){
-                if(l.getBlockEntity(pos) instanceof PlatformEntity be){Containers.dropContents(l,pos,new SimpleContainer(be.grid.items));}
-                if(l instanceof ServerLevel server){var d=SupportData.get(server);if(pos.equals(d.platform)){d.platform=null;Arrays.fill(d.grid,ItemStack.EMPTY);d.mk=1;d.setDirty();}}
+                if(l.getBlockEntity(pos) instanceof PlatformEntity be){
+                    Containers.dropContents(l,pos,new SimpleContainer(be.grid.items));
+                    if(l instanceof ServerLevel server&&be.owner!=null)SupportData.get(server).clearPlatform(be.owner,pos);
+                }
             }
             super.onRemove(s,l,pos,next,moving);
         }
         @Override public InteractionResult use(BlockState s,Level l,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){
-            if(!l.isClientSide&&p instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PlatformEntity be)
+            if(!l.isClientSide&&p instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PlatformEntity be){
+                if(BaseZone.disabled(l,pos,sp))return InteractionResult.CONSUME;
+                if(be.owner==null||!be.owner.equals(sp.getUUID())){BaseZone.say(sp,be.owner==null?"no_owner":"not_yours",be.ownerName);return InteractionResult.CONSUME;}
                 NetworkHooks.openScreen(sp,be,buf->{buf.writeBlockPos(pos);buf.writeVarInt(s.getValue(MK));});
+            }
             return InteractionResult.sidedSuccess(l.isClientSide);
         }
     }
 
-    static final class PlatformEntity extends BlockEntity implements MenuProvider {
-        final GridContainer grid=new GridContainer(this::gridChanged);
-        PlatformEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.SUPPORT_PLATFORM_ENTITY.get(),pos,s);}
-        void gridChanged(){
-            setChanged();
-            if(level instanceof ServerLevel server&&getBlockPos().equals(SupportData.get(server).platform)){
-                var d=SupportData.get(server);d.mk=getBlockState().getValue(MK);d.facing=getBlockState().getValue(FACING);
-                for(int i=0;i<36;i++)d.grid[i]=grid.items[i].copy();d.setDirty();
-            }
+    /** One Support Platform per player; the front block must stay clear so the Return portal has somewhere to open. */
+    static final class PlatformItem extends BaseZone.ZoneItem {
+        PlatformItem(Block block){super(block);}
+        @Override String extra(BlockPlaceContext c){
+            var p=c.getPlayer();if(!(p instanceof ServerPlayer sp)||!(c.getLevel() instanceof ServerLevel server))return null;
+            var base=SupportData.get(server).of(sp.getUUID());
+            if(base!=null&&base.platform!=null&&server.hasChunkAt(base.platform)&&server.getBlockState(base.platform).is(ArsenalBeacon.SUPPORT_PLATFORM.get()))return "only_one";
+            return null;
         }
-        @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel)gridChanged();}
-        @Override protected void saveAdditional(CompoundTag n){
-            super.saveAdditional(n);var list=new ListTag();
+    }
+
+    static final class PlatformEntity extends BlockEntity implements MenuProvider {
+        final GridContainer grid=new GridContainer(this::setChanged);
+        UUID owner;String ownerName="";
+        PlatformEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.SUPPORT_PLATFORM_ENTITY.get(),pos,s);}
+        int mk(){return getBlockState().getValue(MK);}
+        /** The items in the grid, as a saveable list. */
+        ListTag gridTag(){
+            var list=new ListTag();
             for(int i=0;i<36;i++)if(!grid.items[i].isEmpty()){var c=new CompoundTag();grid.items[i].save(c);c.putInt("Slot",i);list.add(c);}
-            n.put("Grid",list);
+            return list;
+        }
+        /** Everything in the grid that a call will take; the grid is emptied. */
+        List<ItemStack> takeAll(){
+            var out=new ArrayList<ItemStack>();
+            for(int i=0;i<36;i++)if(!grid.items[i].isEmpty()){out.add(grid.items[i]);grid.items[i]=ItemStack.EMPTY;}
+            setChanged();return out;
+        }
+        boolean hasItems(){for(var s:grid.items)if(!s.isEmpty())return true;return false;}
+        @Override protected void saveAdditional(CompoundTag n){
+            super.saveAdditional(n);n.put("Grid",gridTag());
+            if(owner!=null){n.putUUID("Owner",owner);n.putString("OwnerName",ownerName);}
         }
         @Override public void load(CompoundTag n){
             super.load(n);java.util.Arrays.fill(grid.items,ItemStack.EMPTY);
             for(var t:n.getList("Grid",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;int slot=c.getInt("Slot");if(slot>=0&&slot<36)grid.items[slot]=ItemStack.of(c);}
+            if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
         @Override public Component getDisplayName(){return Component.translatable("block.arsenal_beacon.support_platform");}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player p){return new PlatformMenu(id,inv,grid,getBlockPos(),getBlockState().getValue(MK));}
@@ -108,7 +128,7 @@ final class SupportPlatform {
     /** Grid + player inventory. Costs and purchase feedback travel as synced data slots, so no extra packets are needed. */
     static final class PlatformMenu extends AbstractContainerMenu {
         final GridContainer grid;final BlockPos pos;final int mk;
-        final DataSlot cost=DataSlot.standalone(),result=DataSlot.standalone(),serial=DataSlot.standalone();
+        final DataSlot result=DataSlot.standalone(),serial=DataSlot.standalone();
         /** Client only: slots are hidden while the Shop or Upgrade tab is showing. */
         boolean slotsVisible=true;
         final List<Slot> gridSlots=new ArrayList<>();
@@ -118,17 +138,9 @@ final class SupportPlatform {
             for(int r=0;r<n;r++)for(int c=0;c<n;c++){var slot=new Slot(grid,r*6+c,GRID_LEFT+1+c*18,GRID_TOP+1+r*18){@Override public boolean isActive(){return slotsVisible;}};gridSlots.add(slot);addSlot(slot);}
             for(int r=0;r<3;r++)for(int c=0;c<9;c++)addSlot(new Slot(inv,9+r*9+c,INV_LEFT+1+c*18,INV_TOP+1+r*18){@Override public boolean isActive(){return slotsVisible;}});
             for(int c=0;c<9;c++)addSlot(new Slot(inv,c,INV_LEFT+1+c*18,INV_TOP+1+58){@Override public boolean isActive(){return slotsVisible;}});
-            addDataSlot(cost);addDataSlot(result);addDataSlot(serial);
-            if(!inv.player.level().isClientSide)recompute();
+            addDataSlot(result);addDataSlot(serial);
         }
         static PlatformMenu client(int id,Inventory inv,FriendlyByteBuf buf){return new PlatformMenu(id,inv,new GridContainer(null),buf.readBlockPos(),buf.readVarInt());}
-        /** Re-prices the grid; cheap enough to run on every change. */
-        void recompute(){
-            var entries=new ArrayList<SupportCosts.Entry>();
-            for(var slot:gridSlots){var s=slot.getItem();if(!s.isEmpty())entries.add(SupportCalls.entry(s));}
-            cost.set(Math.min(32767,SupportCosts.cost(entries,SupportCalls.overrides())));
-        }
-        @Override public void slotsChanged(Container c){super.slotsChanged(c);recompute();}
         void report(int code){result.set(code);serial.set((serial.get()+1)&0x7fff);}
         @Override public ItemStack quickMoveStack(Player p,int index){
             var slot=slots.get(index);if(slot==null||!slot.hasItem())return ItemStack.EMPTY;
@@ -138,6 +150,6 @@ final class SupportPlatform {
             if(stack.isEmpty())slot.set(ItemStack.EMPTY);else slot.setChanged();
             return copy;
         }
-        @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).getBlock()==ArsenalBeacon.SUPPORT_PLATFORM.get()&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
+        @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).getBlock()==ArsenalBeacon.SUPPORT_PLATFORM.get()&&BaseZone.problem(p.level(),pos)==null&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
     }
 }

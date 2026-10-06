@@ -25,6 +25,7 @@ final class BeaconItems {
         Controller(){super(Tiers.IRON,1.5f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
         @Override public InteractionResult useOn(UseOnContext context) {
             if(context.getPlayer() instanceof ServerPlayer p){
+                if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&BaseZone.relocate(p,server,context.getClickedPos()))return InteractionResult.CONSUME;
                 if(ArsenalStructures.beacon(context.getLevel(),context.getClickedPos()))BeaconActions.requestRemoval(p);
                 else return super.useOn(context);
             }
@@ -35,7 +36,7 @@ final class BeaconItems {
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand),level.isClientSide);
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){
-            text.add(Component.literal("Hold: beacon HUD. Right-click: control panel."));text.add(Component.literal("Use on beacon: remove and reset. Confirmation required."));
+            text.add(Component.literal("Hold: beacon HUD. Right-click: control panel."));text.add(Component.literal("Use on beacon: remove and reset. Confirmation required."));text.add(Component.translatable("tooltip.arsenal_beacon.shovel_relocate"));
         }
     }
     static final class Guide extends Item {

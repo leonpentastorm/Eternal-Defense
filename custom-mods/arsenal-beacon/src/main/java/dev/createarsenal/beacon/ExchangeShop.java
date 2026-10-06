@@ -70,7 +70,7 @@ final class ExchangeShop {
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return SHAPE;}
         @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.NORMAL;}
         @Override public InteractionResult use(BlockState s,Level l,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){
-            if(p instanceof ServerPlayer server)send(server,pos,"");
+            if(p instanceof ServerPlayer server&&!BaseZone.disabled(l,pos,server))send(server,pos,"");
             return InteractionResult.sidedSuccess(l.isClientSide);
         }
     }
@@ -86,7 +86,7 @@ final class ExchangeShop {
         BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->p),new Open(pos,data,message));
     }
     static void buy(ServerPlayer p,BlockPos pos,int index){
-        if(!p.level().hasChunkAt(pos)||p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64||!(p.level().getBlockState(pos).getBlock() instanceof ShopBlock))return;
+        if(!p.level().hasChunkAt(pos)||p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64||!(p.level().getBlockState(pos).getBlock() instanceof ShopBlock)||BaseZone.problem(p.level(),pos)!=null)return;
         var offers=offers();
         if(index<0||index>=offers.size()){send(p,pos,"That offer no longer exists.");return;}
         var offer=offers.get(index);var item=BuiltInRegistries.ITEM.get(new ResourceLocation(offer.id()));
