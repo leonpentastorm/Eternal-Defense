@@ -42,13 +42,43 @@ moved for free by right-clicking it with the **Beacon Recovery Shovel** (a platf
 | Piece | What it does |
 | --- | --- |
 | **Support Platform** (craftable) | Holds the supply grid (3x3 at Mk-1), sells the cannon and flares, upgrades Mk-1 to Mk-4 (grid 4x4, 5x5, 6x6) for 16 / 32 / 64 Reinforced Beacon Plating. The block in front of it must stay clear. Items in the grid never move when it grows. |
-| **Support Cannon** (150 energy at the platform) | A hulking 3 x 3 x 2 gun within 12 blocks of the platform. The turret is heavy: it spins up and brakes slowly (about 5 s for a half turn), then fires. It turns toward the **flare**, never toward the player. |
+| **Support Cannon** (150 energy at the platform) | A hulking 3 x 3 x 2 gun within 12 blocks of the platform. The turret is heavy: it spins up and brakes slowly (about 5 s for a half turn), settles for a second, then fires. It turns toward the **flare**, never toward the player. |
 | **Support Flare** (30) | Throw it anywhere. The grid is emptied into a chest that arrives 12 s after the flare lands (parachuting in outdoors) or 7 s after (appearing at your feet underground). Chat counts the seconds down. |
 | **Return Flare** (20) | Throw it. A purple 1 x 2 portal that always faces you opens where it lands (30 s, owner only). Step in to arrive in front of the platform. Works from any dimension. |
 | **Fire Support Flare** (100) | A red box marks the area. Six shells land **exactly on the flare**, one every 2 s, each hurting every hostile mob touching the box (25 damage). Never hurts players or blocks. |
 
 Throwing a flare costs nothing: the Ardent Energy is paid when you buy it. If anything is missing (no platform, no cannon, beacon gone,
 empty grid) you get a chat message and keep the flare. Everyone sees **"[player] is calling [support]"**.
+
+### The Support Cannon: fire support types and upgrades
+
+Click your cannon to open its menu. **Everything on it is yours alone**: the fire support you choose and the upgrades you buy are stored with *you*,
+not with the flare or the cannon block. A Fire Support Flare handed to you by another player still calls down **your** choice, and the call is announced to everyone
+("Player one just called in NARUKAMI'S FAVOR").
+
+| Fire support | What the shells do |
+| --- | --- |
+| **Explosion Barrage** | The original: 6 shells exploding on the flare, 25 damage to every hostile mob touching the box. |
+| **Arrow Cluster Bomb** | Each shell showers the area with 16 arrows (hostile mobs only). 2 more volleys than the others (8). |
+| **Narukami's Favor** | Lightning strikes every hostile mob in the area (up to 12 per volley). 1 fewer volley (5). |
+| **Bunker Buster** | One huge bomb (radius 7, destroys terrain but never the beacon or support gear, never hurts players). Volley upgrades do not apply. |
+| **Healing Barrage** | Like the barrage, but every shell bursts into Instant Health II and Regeneration for players in the box. |
+| **Curse of Debilitation** | Hostile mobs in the box get Wither II, Poison II, Weakness II, Slowness III, Blindness and Glowing. |
+
+Upgrades are bought with Ardent Energy and stay with you when you pick the cannon up with the shovel:
+
+| Upgrade | Levels and price | Effect |
+| --- | --- | --- |
+| Faster traverse | 60 / 120 / 200 | Turret 40 percent faster per level: a shorter spin time. |
+| Rate of fire | 80 / 160 / 260 | Ticks between shells 40, 33, 26, 20. |
+| More volley | 100 / 200 / 320 | +2 shells per level (not the Bunker Buster). |
+| Damage | 100 / 200 / 320 | +25 percent per level (curse durations too). |
+| Quantum tunneling | 400 | Fire support flares work below ground. Without it a flare that lands underground is handed back. |
+| Slowness field | 250 | A landed fire support flare slows every hostile mob in its whole area. |
+| Lasting portal | 200 | The return portal stays 5 minutes and works twice: home, then back to where it was thrown (a second portal opens at the platform). |
+| Healing aura | 200 | A supply flare heals everyone within 6 blocks, until 30 seconds after the parcel is emptied. |
+
+The cannon is heavy and sounds like it: the traverse gear grinds while it turns, it locks with a clunk, and it only fires after sitting still on target for a second.
 
 The supply parcel is a real chest: right-click to open it, take what you need, and it folds away once emptied and closed.
 
@@ -65,20 +95,22 @@ The supply parcel is a real chest: right-click to open it, take what you need, a
 Items use 64 x 64 painted sprites in the style of `industrial_atlas.png` (the three flares each have their own: cyan, purple and red canisters, drawn in flight and on the ground
 with the same sprite). The Return Flare portal is a 4-frame 16 x 32 sheet (`textures/entity/return_portal.png`) drawn as a 1 x 2 block billboard that always faces the viewer.
 
-Placeables are JSON element models over one shared 512 x 512 tile kit (`textures/block/support_kit.png`) painted in the same palette as `defense_beacon_level4.png`:
-charcoal brushed metal, gold plates, cyan light strips, hazard stripes, tiny screens with real text. Boxes wider than 16 units are cut into pieces so the texel density stays
-at 64 px per block everywhere. Regenerate everything with `python3 tools/ui-assets/make_sprites.py` (needs Pillow); previews are in `docs/ui/sprites/`.
-Models: `exchange_shop`, `support_platform_mk1..4` (the pad shows the grid size, each Mk adds hardware), `support_cannon` (base, 3 x 3 x 2) with `_turret` and `_barrel`
-drawn by a renderer (the turret is drawn 25% larger, the barrel is pitched 50 degrees and slides back along its axis when it fires), `support_parcel` (+ `_chute`).
+The 3D models are hand-made (source in `docs/art/Create-Arsenal-Support-Gear/`, Blockbench files with their textures embedded) and installed with
+`python3 tools/ui-assets/import_support_gear.py`: Exchange Shop and Support Platform Mk-1 to Mk-4 (both two blocks tall, the upper block is an invisible structure part,
+like the benches), the Support Cannon (base, turret and barrel), and the supply parcel. The script also paints the Ardent Energy crystal onto the shop's credit display,
+builds the parachute and the cannon's inventory model. Sprites, loot, recipes and blockstates come from `tools/ui-assets/make_sprites.py`.
+The turret is drawn at the modelled size, the barrel hinges at (8, 27.2, 8) of the turret, is pitched 50 degrees and slides back along its axis when it fires.
 
 ## What was tested
 
-Everything below was exercised in a real Minecraft 1.20.1 integrated server driven from the client (screenshots in `docs/ui/screens/support/`), 50 checks, all passing on the final run:
-zone rules (inside, outside, beacon removed), placing and refusing a second platform, cannon and shop, owner-only access, buying all four products (300 energy),
-throwing a supply flare (flare used up, no energy spent, grid emptied, cannon aimed at the flare rather than the player, countdown in chat, 12 s outdoors and about 7 s underground,
-chest opens with exactly the grid contents and folds away when emptied), refusals that keep the flare (empty grid, beacon gone), the Return Flare portal (client and server agree, owner teleported, portal used up),
-Fire Support (red box, every zombie inside died, zombies outside survived, six shots, caller unhurt), and shovel relocation (Mk and contents kept, cannon picked up from any cell).
-Unit tests cover the numbers, the turret motor, the red box and the field guide quoting real values.
+Everything below was exercised in a real Minecraft 1.20.1 integrated server driven from the client (screenshots in `docs/ui/screens/support/`).
+Round 2 (50 checks) covered zones, ownership, buying, supply drops, the Return portal, Fire Support and shovel relocation. Round 3 (59 checks, all passing) added:
+the two-block-tall platform and shop (upper half is a structure part; breaking it breaks the block), the cannon menu opening on click, buying upgrades (prices, refusals when
+short, maxed levels, the traverse level reaching the turret), the chosen fire support being stored per player, the Quantum Tunneling gate (an underground fire flare is handed back until
+the upgrade is bought), all six fire support types (shell counts 6 / 8 / 5 / 1 / 6 / 6, zombies killed or healed or cursed as described, terrain destroyed only by the Bunker Buster,
+the caller never hurt), the slowness field, the 5 minute two-trip portal (home, then a second portal back to the throw spot), the healing aura (heals, stays while the parcel is full,
+ends 30 seconds after it is emptied), and relocation keeping the upgrades and the traverse level.
+Unit tests cover the upgrade and type rules, the turret motor with and without traverse levels, saving of the choice and levels, and the field guide quoting real values.
 
-Not tested: real multiplayer (the ownership rules are only exercised with a single player and a forged owner id), other dimensions, TaCZ weapons inside a grid on a dedicated run
-(the user tested TaCZ guns and ammo in a supply parcel by hand), and chunk-unload edge cases.
+Not tested: real multiplayer (ownership and the "your flare, your choice" rule are exercised with a single player), other dimensions, TaCZ weapons inside a grid on a dedicated run
+(tested by hand by the pack author), the cannon's grinding sound (audio cannot be checked here), and chunk-unload edge cases.

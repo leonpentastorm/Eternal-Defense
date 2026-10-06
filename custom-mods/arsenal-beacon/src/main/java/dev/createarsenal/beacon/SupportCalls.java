@@ -63,7 +63,12 @@ final class SupportCalls {
         var text=Component.translatable("gui.arsenal_beacon.support.refused."+problem).withStyle(ChatFormatting.RED);
         p.sendSystemMessage(text);p.displayClientMessage(text,true);
     }
-    static void announce(ServerPlayer caller,Kind kind){BeaconNetwork.announce(caller.serverLevel(),"support",0,0,caller.getGameProfile().getName(),kind.id);}
+    static void announce(ServerPlayer caller,Kind kind){announce(caller,kind.id);}
+    /** Everyone sees who is calling what: a centre-screen toast and one chat line (for fire support, the caller's own chosen type). */
+    static void announce(ServerPlayer caller,String what){
+        BeaconNetwork.announce(caller.serverLevel(),"support",0,0,caller.getGameProfile().getName(),what);
+        caller.getServer().getPlayerList().broadcastSystemMessage(Component.translatable("gui.arsenal_beacon.support.called",caller.getDisplayName(),Component.translatable("gui.arsenal_beacon.support.name."+what)).withStyle(ChatFormatting.GOLD),false);
+    }
 
     // ---- supply drops ---------------------------------------------------------------------------------
     /** Takes everything out of the platform's grid and returns it as a saveable list. */
@@ -82,7 +87,7 @@ final class SupportCalls {
         return clear;
     }
     /** A parcel drops from the sky onto the flare when it is outdoors, otherwise it appears at the caller's feet. */
-    static void deliver(ServerLevel level,ServerPlayer caller,Vec3 flare,ListTag contents,boolean outside,int clear){
+    static UUID deliver(ServerLevel level,ServerPlayer caller,Vec3 flare,ListTag contents,boolean outside,int clear){
         var parcel=new SupportCrate.ParcelEntity(ArsenalBeacon.PARCEL.get(),level);
         parcel.setContents(contents);
         if(outside){
@@ -94,7 +99,7 @@ final class SupportCalls {
             level.sendParticles(ParticleTypes.END_ROD,at.x,at.y+.5,at.z,18,.3,.4,.3,.05);
             level.playSound(null,at.x,at.y,at.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.PLAYERS,.8f,1.4f);
         }
-        level.addFreshEntity(parcel);
+        level.addFreshEntity(parcel);return parcel.getUUID();
     }
 
     // ---- return portal -----------------------------------------------------------------------------------
@@ -105,16 +110,28 @@ final class SupportCalls {
         }
         return Vec3.atBottomCenterOf(platform.above());
     }
-    /** The owner stepped into their return portal: send them to the front of their platform. */
-    static boolean finishReturn(ServerPlayer p){
-        String problem=problem(p,Kind.RETURN);if(problem!=null){refuse(p,problem);return false;}
+    /** The owner stepped into their return portal: send them to the front of their platform. Returns where they arrived, or null when refused. */
+    static Vec3 finishReturn(ServerPlayer p){
+        String problem=problem(p,Kind.RETURN);if(problem!=null){refuse(p,problem);return null;}
         var home=p.getServer().overworld();var platform=platform(home,p.getUUID());
         Direction facing=platform.getBlockState().getValue(SupportPlatform.FACING);Vec3 spot=returnSpot(home,platform.getBlockPos(),facing);
+        travel(p,home,spot,facing.toYRot());
+        return spot;
+    }
+    /** Where the portal back to the throw spot opens: a free cell near the platform's front, not the arrival cell itself. */
+    static Vec3 backPortalSpot(ServerLevel home,UUID owner){
+        var platform=platform(home,owner);if(platform==null)return null;
+        Direction f=platform.getBlockState().getValue(SupportPlatform.FACING);BlockPos front=platform.getBlockPos().relative(f);
+        for(BlockPos c:new BlockPos[]{front.relative(f),front.relative(f.getClockWise()),front.relative(f.getCounterClockWise()),front.relative(f,2)}){
+            if(home.getBlockState(c).getCollisionShape(home,c).isEmpty()&&home.getBlockState(c.above()).getCollisionShape(home,c.above()).isEmpty()&&!home.getBlockState(c.below()).getCollisionShape(home,c.below()).isEmpty())return Vec3.atBottomCenterOf(c);
+        }
+        return Vec3.atBottomCenterOf(front);
+    }
+    static void travel(ServerPlayer p,ServerLevel to,Vec3 spot,float yaw){
         var from=p.serverLevel();from.sendParticles(ParticleTypes.PORTAL,p.getX(),p.getY()+1,p.getZ(),40,.4,.8,.4,.2);
-        p.teleportTo(home,spot.x,spot.y,spot.z,facing.toYRot(),0);
-        home.sendParticles(ParticleTypes.PORTAL,spot.x,spot.y+1,spot.z,40,.4,.8,.4,.2);
-        home.playSound(null,spot.x,spot.y,spot.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.PLAYERS,1f,1f);
-        return true;
+        p.teleportTo(to,spot.x,spot.y,spot.z,yaw,0);
+        to.sendParticles(ParticleTypes.PORTAL,spot.x,spot.y+1,spot.z,40,.4,.8,.4,.2);
+        to.playSound(null,spot.x,spot.y,spot.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.PLAYERS,1f,1f);
     }
     /** Gives unused supplies back (used when a supply flare is destroyed before its parcel was sent). */
     static void giveBack(ServerLevel level,UUID owner,Vec3 at,List<ItemStack> items){

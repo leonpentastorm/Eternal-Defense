@@ -48,21 +48,26 @@ final class SupportCannon {
     static final double PIVOT_Y=TURN_Y+(1.7-TURN_Y)*SCALE,REACH=2.5*SCALE;
 
     /** One tick of the turret motor. {@code state} is {yaw, speed}; pure so the server and every client agree and tests can run it. */
-    static void spin(float[] state,float target){
+    static void spin(float[] state,float target){spin(state,target,1f);}
+    static void spin(float[] state,float target,float power){
+        float accel=ACCEL*power,max=MAX_SPEED*power;
         float d=target-state[0],dir=Math.signum(d),dist=Math.abs(d),v=state[1];
-        if(dist<0.05f&&Math.abs(v)<ACCEL*1.5f){state[0]=target;state[1]=0;return;}
+        if(dist<0.05f&&Math.abs(v)<accel*1.5f){state[0]=target;state[1]=0;return;}
         boolean toward=v==0||v*dir>0;
-        float stop=v*v/(2*ACCEL);
-        if(toward&&stop<dist)v+=dir*ACCEL;          // room left: speed up
-        else if(toward)v-=Math.signum(v)*ACCEL;     // must brake now
-        else v+=dir*ACCEL*2;                        // moving away from the target: turn round
-        v=Math.max(-MAX_SPEED,Math.min(MAX_SPEED,v));
+        float stop=v*v/(2*accel);
+        if(toward&&stop<dist)v+=dir*accel;          // room left: speed up
+        else if(toward)v-=Math.signum(v)*accel;     // must brake now
+        else v+=dir*accel*2;                        // moving away from the target: turn round
+        v=Math.max(-max,Math.min(max,v));
         float next=state[0]+v;
         if(Math.signum(target-next)!=dir&&dir!=0){next=target;v=0;}   // arrived
         state[0]=next;state[1]=v;
     }
     /** Ticks the turret needs to turn through {@code degrees} from rest (for tests and timing). */
-    static int turnTicks(float degrees){var s=new float[]{0,0};int n=0;while(n<2000&&(Math.abs(degrees-s[0])>0.01f||s[1]!=0)){spin(s,degrees);n++;}return n;}
+    static int turnTicks(float degrees){return turnTicks(degrees,1f);}
+    static int turnTicks(float degrees,float power){var s=new float[]{0,0};int n=0;while(n<2000&&(Math.abs(degrees-s[0])>0.01f||s[1]!=0)){spin(s,degrees,power);n++;}return n;}
+    /** Ticks the turret must sit still on target before it fires: the barrel settles, locks and the gun chambers a round. */
+    static final int SETTLE_TICKS=20;
 
     static final class CannonBlock extends Block implements EntityBlock {
         CannonBlock(){super(Properties.of().strength(4,8).noOcclusion().dynamicShape().sound(SoundType.METAL));}
@@ -76,7 +81,7 @@ final class SupportCannon {
             super.setPlacedBy(l,pos,s,who,stack);
             if(l instanceof ServerLevel server&&who instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof CannonEntity be){
                 be.owner=sp.getUUID();be.ownerName=sp.getGameProfile().getName();be.setChanged();
-                SupportData.get(server).setCannon(sp.getUUID(),pos);
+                var data=SupportData.get(server);data.setCannon(sp.getUUID(),pos);be.traverse=data.ensure(sp.getUUID()).up[CannonUpgrades.Upgrade.TRAVERSE.ordinal()];
             }
         }
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
@@ -88,13 +93,7 @@ final class SupportCannon {
         }
         @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,RandomSource random){ArsenalStructures.install(l,pos,s);}
         @Override public InteractionResult use(BlockState s,Level l,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){
-            if(!l.isClientSide&&p instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof CannonEntity be){
-                if(BaseZone.disabled(l,pos,sp))return InteractionResult.CONSUME;
-                if(be.owner==null||!be.owner.equals(sp.getUUID())){BaseZone.say(sp,be.owner==null?"no_owner":"not_yours",be.ownerName);return InteractionResult.CONSUME;}
-                var base=SupportData.get((ServerLevel)l).of(sp.getUUID());
-                boolean linked=base!=null&&SupportData.near(base.platform,pos);
-                sp.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.cannon."+(linked?"linked":"unlinked"),SupportRules.CANNON_RANGE),true);
-            }
+            if(!l.isClientSide&&p instanceof ServerPlayer sp)CannonControl.open(sp,pos,"");
             return InteractionResult.sidedSuccess(l.isClientSide);
         }
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l,BlockState s,BlockEntityType<T> type){
@@ -119,6 +118,8 @@ final class SupportCannon {
         UUID owner;String ownerName="";
         /** Degrees, unwrapped. {@code target} is authoritative (saved and synced); {@code yaw} and {@code speed} are the motor state. */
         float target,yaw,prevYaw,speed;int recoil;
+        /** Traverse upgrade level (saved and synced: every client runs the same motor) and server-side ticks spent aimed. */
+        int traverse,settled;
         /** Shots fired since the chunk loaded (not saved); handy for tests and debugging. */
         int shots;
         private final float[] motor=new float[2];
@@ -133,6 +134,9 @@ final class SupportCannon {
         }
         /** True once the barrel points at the target and has stopped moving. */
         boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
+        /** True once the turret has been still on target for {@link #SETTLE_TICKS}: only then does the gun fire. */
+        boolean armed(){return settled>=SETTLE_TICKS;}
+        void setTraverse(int lv){traverse=lv;setChanged();if(level instanceof ServerLevel s)s.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         /** Server: fire now (the caller waits for {@link #ready()}). */
         void fire(ServerLevel level){
             shots++;
@@ -147,23 +151,31 @@ final class SupportCannon {
         }
         void tick(Level level){
             motor[0]=yaw;motor[1]=speed;
-            prevYaw=yaw;spin(motor,target);yaw=motor[0];speed=motor[1];
+            prevYaw=yaw;spin(motor,target,CannonUpgrades.turnSpeed(traverse));yaw=motor[0];speed=motor[1];
             if(level.isClientSide){
                 if(recoil>0)recoil--;
-                else if(Math.abs(speed)>0.3f&&level.getGameTime()%8==0)level.playLocalSound(worldPosition,SoundEvents.PISTON_EXTEND,SoundSource.BLOCKS,.25f,.5f,false);
+                if(Math.abs(speed)>0.2f){
+                    // heavy machinery: a grinding scrape of the traverse gear with the odd clank of a pawl
+                    long t=level.getGameTime();float load=Math.min(1f,Math.abs(speed)/MAX_SPEED);
+                    if(t%7==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.GRINDSTONE_USE,SoundSource.BLOCKS,1.1f,.45f+.25f*load,false);
+                    if(t%23==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.IRON_TRAPDOOR_OPEN,SoundSource.BLOCKS,.7f,.35f,false);
+                }
+            }else{
+                settled=ready()?settled+1:0;
+                if(settled==1&&level instanceof ServerLevel server)server.playSound(null,worldPosition,SoundEvents.ANVIL_LAND,SoundSource.BLOCKS,.7f,.5f);   // the turret locks onto its target
             }
         }
         @Override public boolean triggerEvent(int id,int param){if(id==1){recoil=RECOIL_TICKS;return true;}return super.triggerEvent(id,param);}
         @Override protected void saveAdditional(CompoundTag n){
-            super.saveAdditional(n);n.putFloat("Target",target);n.putFloat("Yaw",yaw);
+            super.saveAdditional(n);n.putFloat("Target",target);n.putFloat("Yaw",yaw);n.putInt("Traverse",traverse);
             if(owner!=null){n.putUUID("Owner",owner);n.putString("OwnerName",ownerName);}
         }
         @Override public void load(CompoundTag n){
-            super.load(n);target=n.getFloat("Target");yaw=prevYaw=n.contains("Yaw")?n.getFloat("Yaw"):target;speed=0;
+            super.load(n);target=n.getFloat("Target");yaw=prevYaw=n.contains("Yaw")?n.getFloat("Yaw"):target;speed=0;traverse=n.getInt("Traverse");
             if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
-        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);return n;}
-        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");if(!synced){synced=true;yaw=prevYaw=target;}}
+        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putInt("Traverse",traverse);return n;}
+        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");traverse=n.getInt("Traverse");if(!synced){synced=true;yaw=prevYaw=target;}}
         private boolean synced;
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
         @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).inflate(4);}

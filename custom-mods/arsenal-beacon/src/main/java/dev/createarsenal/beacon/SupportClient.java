@@ -85,13 +85,14 @@ public final class SupportClient {
             pose.popPose();
             if(kind==SupportCalls.Kind.FIRE&&landed)area(e,partial,pose,buffer);
         }
-        /** The red box: everything inside it is hit by every shell, so it is drawn exactly where the damage is dealt. */
+        /** The area box, drawn exactly where the shells act. Red for the damaging types, green for healing, violet for curses. */
         private void area(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
-            double r=SupportRules.BLAST_RADIUS;
+            double r=e.radius();
             AABB box=new AABB(-r,-0.5,-r,r,r,r);
+            float[] c=switch(e.type()){case HEAL->new float[]{.2f,1f,.35f};case CURSE->new float[]{.7f,.25f,1f};case NARUKAMI->new float[]{1f,.85f,.2f};case ARROW->new float[]{1f,.55f,.15f};default->new float[]{1f,.1f,.1f};};
             float pulse=.5f+.5f*Mth.sin((e.tickCount+partial)*.2f);
-            DebugRenderer.renderFilledBox(pose,buffer,box,1f,.1f,.1f,.10f+.08f*pulse);
-            LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,1f,.25f,.2f,1f);
+            DebugRenderer.renderFilledBox(pose,buffer,box,c[0],c[1],c[2],.10f+.08f*pulse);
+            LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,c[0],Math.min(1f,c[1]+.15f),Math.min(1f,c[2]+.1f),1f);
         }
         private void portal(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             float age=e.tickCount+partial;

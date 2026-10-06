@@ -49,7 +49,11 @@ final class LangKeysTest {
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key+".note");
         for(String phase:List.of("unplaced","preparation","raid","disabled","restore","snapshot","decommissioning"))needed.add("phase."+phase);
         for(String b:List.of("core","logistics","defense","restoration","vertical"))needed.add("upgrade."+b+".now");
-        needed.addAll(List.of("support.name.supply","support.name.return","support.name.fire","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now_on","upgrade.reconnaissance.now_off","rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
+        needed.addAll(List.of("support.name.supply","support.name.return","support.called","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now_on","upgrade.reconnaissance.now_off","rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
+        for(var t:CannonUpgrades.FireType.values()){needed.add("support.name."+t.callId());needed.add("cannon.type."+t.id);needed.add("cannon."+"type."+t.id+".desc");}
+        for(var u:CannonUpgrades.Upgrade.values()){needed.add("cannon.up."+u.id);needed.add("cannon.up."+u.id+".desc");}
+        for(String code:List.of("selected","bought","no_energy","maxed"))needed.add("cannon.msg."+code);
+        for(String key:List.of("linked","unlinked","fire","upgrades","shells","shell","max","title"))needed.add("cannon."+key);
         for(int age=0;age<=5;age++)needed.add("age."+age);
         for(String kind:List.of("gun","ammo","attachment","armor")){needed.add("platform.title."+kind);needed.add("platform.subtitle."+kind);needed.add("platform.station."+kind);needed.add("platform.browsing."+kind);}
         for(String type:WeaponBrowser.TYPES)needed.add("type.gun."+type);
