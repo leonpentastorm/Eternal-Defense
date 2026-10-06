@@ -51,6 +51,8 @@ final class SupportCrate {
             rows=Math.max(1,Math.min(4,(i+8)/9));
         }
         void setFalling(boolean falling){entityData.set(FALLING,falling);}
+        /** While it falls the canopy (about 5 blocks wide and 5 tall) is part of what is drawn, so it must not be culled with the small crate. */
+        @Override public net.minecraft.world.phys.AABB getBoundingBoxForCulling(){return falling()?getBoundingBox().inflate(3,0,3).expandTowards(0,5.5,0):super.getBoundingBoxForCulling();}
         boolean falling(){return entityData.get(FALLING);}
         @Override protected void defineSynchedData(){entityData.define(FALLING,false);}
         @Override public boolean isPickable(){return isAlive();}

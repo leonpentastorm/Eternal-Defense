@@ -20,7 +20,7 @@ final class CannonControl {
     private static SupportCannon.CannonEntity operable(ServerPlayer p,BlockPos pos){
         var level=p.serverLevel();
         if(!level.hasChunkAt(pos)||!level.getBlockState(pos).is(ArsenalBeacon.SUPPORT_CANNON.get()))return null;
-        if(p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>144)return null;
+        if(p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>SupportRules.CANNON_REACH*(double)SupportRules.CANNON_REACH)return null;
         if(!(level.getBlockEntity(pos) instanceof SupportCannon.CannonEntity be))return null;
         if(BaseZone.disabled(level,pos,p))return null;
         if(be.owner==null||!be.owner.equals(p.getUUID())){BaseZone.say(p,be.owner==null?"no_owner":"not_yours",be.ownerName);return null;}
@@ -31,7 +31,7 @@ final class CannonControl {
         var base=SupportData.get(p.serverLevel()).ensure(p.getUUID());
         var data=new CompoundTag();
         data.putInt("energy",ArdentEnergy.balance(p));data.putBoolean("creative",p.isCreative());data.putInt("fire",base.fire);data.putIntArray("up",base.up);
-        data.putBoolean("linked",SupportData.near(base.platform,pos));data.putInt("range",SupportRules.CANNON_RANGE);
+        data.putString("owner",p.getGameProfile().getName());
         BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Open(pos,data,message));
     }
     static void act(ServerPlayer p,BlockPos pos,int kind,int arg){
@@ -39,7 +39,7 @@ final class CannonControl {
         var level=p.serverLevel();var data=SupportData.get(level);var base=data.ensure(p.getUUID());
         if(kind==SELECT){
             if(arg<0||arg>=CannonUpgrades.FireType.values().length)return;
-            base.fire=arg;data.setDirty();open(p,pos,"selected");return;
+            base.fire=arg;data.setDirty();SupportHud.send(p);open(p,pos,"selected");return;
         }
         if(kind==UPGRADE){
             if(arg<0||arg>=CannonUpgrades.Upgrade.values().length)return;

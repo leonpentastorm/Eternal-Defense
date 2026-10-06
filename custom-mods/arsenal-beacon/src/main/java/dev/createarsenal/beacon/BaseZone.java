@@ -33,6 +33,15 @@ final class BaseZone {
         if(!data.inside(pos))return "outside";
         return null;
     }
+    /** True when {@code box} overlaps the protected zone of a standing beacon in this dimension (a Bunker Buster is never allowed to dig there). */
+    static boolean touches(ServerLevel level,net.minecraft.world.phys.AABB box){
+        if(level.dimension()!=Level.OVERWORLD)return false;
+        var data=CampaignData.get(level.getServer().overworld());
+        if(!data.installed())return false;
+        var b=data.beacon;int r=data.radius();
+        var zone=new net.minecraft.world.phys.AABB(b.getX()-r,b.getY()-data.below(),b.getZ()-r,b.getX()+r+1,b.getY()+data.above()+1,b.getZ()+r+1);
+        return zone.intersects(box);
+    }
     /** Message for gear that is placed but whose beacon is gone or too far away. */
     static boolean disabled(Level level,BlockPos pos,Player p){
         String problem=problem(level,pos);

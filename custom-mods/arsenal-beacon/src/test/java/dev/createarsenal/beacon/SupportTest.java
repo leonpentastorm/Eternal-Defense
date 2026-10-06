@@ -44,11 +44,10 @@ final class SupportTest {
     @Test void everyPlayerKeepsTheirOwnBase(){
         var data=new SupportData();UUID a=UUID.randomUUID(),b=UUID.randomUUID();
         data.setPlatform(a,new net.minecraft.core.BlockPos(0,64,0));data.setCannon(a,new net.minecraft.core.BlockPos(8,64,0));data.setPlatform(b,new net.minecraft.core.BlockPos(100,64,0));
-        assertTrue(SupportData.near(data.of(a).platform,data.of(a).cannon));assertNull(data.of(b).cannon);
+        assertNull(data.of(b).cannon);
         var copy=SupportData.load(data.save(new net.minecraft.nbt.CompoundTag()));
         assertEquals(data.of(a).platform,copy.of(a).platform);assertEquals(data.of(b).platform,copy.of(b).platform);
         data.clearPlatform(b,new net.minecraft.core.BlockPos(100,64,0));assertNull(data.of(b),"an empty base is forgotten");
-        assertFalse(SupportData.near(new net.minecraft.core.BlockPos(0,64,0),new net.minecraft.core.BlockPos(SupportRules.CANNON_RANGE+1,64,0)));
     }
     @Test void everyFireTypeHasItsOwnShellCount(){
         var u=CannonUpgrades.class;
@@ -88,13 +87,59 @@ final class SupportTest {
         for(String expected:List.of(SupportRules.SUPPLY_FLARE_PRICE+" energy","Return Flare "+SupportRules.RETURN_FLARE_PRICE,"Fire Support Flare "+SupportRules.FIRE_FLARE_PRICE,"Support Cannon "+SupportRules.CANNON_PRICE,
                 SupportRules.SUPPLY_SECONDS_OUTSIDE+" seconds",SupportRules.SUPPLY_SECONDS_UNDERGROUND+" seconds underground",
                 "Fire Support lasts "+SupportRules.FIRE_BLASTS*SupportRules.FIRE_INTERVAL_TICKS/20+" seconds ("+SupportRules.FIRE_BLASTS+" shells)",
-                SupportRules.FIRE_DAMAGE+" damage","within "+SupportRules.BLAST_RADIUS+" blocks of the flare","within "+SupportRules.CANNON_RANGE+" blocks",
+                SupportRules.FIRE_DAMAGE+" damage","within "+SupportRules.BLAST_RADIUS+" blocks of the flare",
                 "portal stays open for "+SupportRules.PORTAL_LIFETIME_TICKS/20+" seconds",SupportRules.PARCEL_LIFETIME_TICKS/1200+" minutes",
                 SupportRules.UPGRADE_PLATING[1]+", "+SupportRules.UPGRADE_PLATING[2]+" and "+SupportRules.UPGRADE_PLATING[3],
                 "Faster traverse 60, 120 and 200","Rate of fire 80, 160 and 260","More volley 100, 200 and 320","Quantum tunneling "+CannonUpgrades.Upgrade.QUANTUM.price(0),
-                "Slowness field "+CannonUpgrades.Upgrade.SLOW.price(0),"Lasting portal "+CannonUpgrades.Upgrade.PORTAL.price(0),"Healing aura "+CannonUpgrades.Upgrade.AURA.price(0),
+                "Slowness field "+CannonUpgrades.Upgrade.SLOW.price(0),"Lasting portal "+CannonUpgrades.Upgrade.PORTAL.price(0),"Healing aura "+CannonUpgrades.Upgrade.AURA.price(0),"Area of effect 120, 220 and 340","Dimensional link "+CannonUpgrades.Upgrade.DIMENSION.price(0),
+                "anywhere inside the zone","Barrage in process","Cannon preparing","You heard cannon fire roaring","half their maximum health",
                 "adds "+CannonUpgrades.VOLLEY_STEP+" shells","5 minutes","30 seconds after the parcel is emptied"))
             assertTrue(text.contains(expected),"guide does not mention '"+expected+"'");
+    }
+    @Test void areaOfEffectWidensEveryBox(){
+        assertEquals(4.0,CannonUpgrades.radius(CannonUpgrades.FireType.EXPLOSION,0),1e-9);
+        assertEquals(5.5,CannonUpgrades.radius(CannonUpgrades.FireType.EXPLOSION,1),1e-9);
+        assertEquals(8.5,CannonUpgrades.radius(CannonUpgrades.FireType.CURSE,3),1e-9);
+        assertEquals(8.0,CannonUpgrades.radius(CannonUpgrades.FireType.BUNKER,0),1e-9);
+        assertEquals(11.0,CannonUpgrades.radius(CannonUpgrades.FireType.BUNKER,3),1e-9);
+        assertEquals(4.0,CannonUpgrades.radius(CannonUpgrades.FireType.HEAL,-5),1e-9,"a negative level is no level");
+        int[] levels=new int[CannonUpgrades.Upgrade.values().length];levels[CannonUpgrades.Upgrade.AOE.ordinal()]=2;
+        var cfg=CannonUpgrades.Config.of(levels,CannonUpgrades.FireType.ARROW);
+        assertEquals(7.0,cfg.radius(),1e-9);assertEquals(2,cfg.aoe());
+        assertEquals(3,CannonUpgrades.Upgrade.AOE.max());assertEquals(1,CannonUpgrades.Upgrade.DIMENSION.max());
+        assertEquals(10,CannonUpgrades.Upgrade.values().length,"older saves with 8 levels still load");
+        var legacy=new SupportData();var id=UUID.randomUUID();var tag=new net.minecraft.nbt.CompoundTag();var list=new net.minecraft.nbt.ListTag();var c=new net.minecraft.nbt.CompoundTag();
+        c.putUUID("owner",id);c.putIntArray("up",new int[]{1,2,0,0,0,0,0,1});list.add(c);tag.put("bases",list);
+        var loaded=SupportData.load(tag).of(id);assertEquals(2,loaded.up[1]);assertEquals(1,loaded.up[7]);assertEquals(0,loaded.up[8]);assertEquals(0,loaded.up[9]);
+    }
+    @Test void aBunkerBusterBoxIsACubeThatReachesDown(){
+        var c=new net.minecraft.world.phys.Vec3(10,64,-5);
+        var cube=SupportFlares.bunkerBox(c,8);
+        assertEquals(16,cube.getXsize(),1e-9);assertEquals(16,cube.getYsize(),1e-9);assertEquals(16,cube.getZsize(),1e-9);
+        assertEquals(56,cube.minY,1e-9,"it digs 8 blocks below the flare");
+        assertSame(cube.getClass(),SupportFlares.boxFor(CannonUpgrades.FireType.BUNKER,c,8).getClass());
+        assertEquals(cube,SupportFlares.boxFor(CannonUpgrades.FireType.BUNKER,c,8));
+        assertEquals(SupportFlares.blastBox(c,4),SupportFlares.boxFor(CannonUpgrades.FireType.EXPLOSION,c,4));
+        assertEquals(SupportRules.BUNKER_PLAYER_SHARE,0.5f,1e-6,"half of a player's health");
+    }
+    @Test void oneCallAtATimeUsesTheCannon(){
+        var base=new SupportData.Base();UUID first=UUID.randomUUID(),second=UUID.randomUUID();
+        assertTrue(base.hold(first,100,true));
+        assertTrue(base.hold(first,101,true),"the holder refreshes its own hold");
+        assertFalse(base.hold(second,110,false),"a second call waits");
+        assertTrue(base.barrage(110),"and a barrage is what it waits for");
+        assertFalse(base.hold(second,140,false));
+        assertTrue(base.hold(second,142,false),"a holder that stopped refreshing for two seconds loses the cannon");
+        assertFalse(base.barrage(142));
+        base.release(second);assertTrue(base.hold(first,143,true));
+        base.release(second);assertFalse(base.hold(second,144,true),"only the holder can release it");
+    }
+    @Test void theGunNeedsTimeToTurnBeforeAnyCallCanFire(){
+        // a quarter turn at the slowest traverse, plus the settling pause, comes before the delivery time starts
+        int turn=SupportCannon.turnTicks(90)+SupportCannon.SETTLE_TICKS;
+        assertTrue(turn>=60,"turning and settling takes a few seconds: "+turn);
+        assertTrue(SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(3))+SupportCannon.SETTLE_TICKS<turn,"Faster traverse shortens it");
+        assertEquals(240+turn,SupportRules.supplyTicks(true)+turn,"the delivery delay is added on top of the turn");
     }
     private static String guide(String key){
         try(var in=SupportTest.class.getResourceAsStream("/assets/arsenal_beacon/lang/en_us.json")){

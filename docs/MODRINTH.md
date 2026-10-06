@@ -50,15 +50,17 @@ Hostile mobs now drop **Ardent Energy**, a glowing crystal currency. Spend it at
 
 ### Every player gets their own Support Platform and Support Cannon
 
-Build a **Support Platform** inside your beacon zone, buy a hulking **3 × 3 Support Cannon**, and fill the platform's supply grid with whatever you want delivered. Then throw a flare:
+Buy a **Support Platform** (and an **Exchange Shop**) at the Weapon Platform's workshop, place them **anywhere inside your beacon zone**, buy a hulking **3 × 3 Support Cannon** and build your base around it. Every piece carries a brass plate with **your name** on its back. Fill the platform's supply grid with whatever you want delivered. Then throw a flare:
 
-- **Support Flare.** The cannon grinds around to face your flare, fires, and a **supply chest parachutes in** with everything you loaded. A countdown ticks in chat. Underground, it appears at your feet.
+- **Support Flare.** The cannon grinds around to face your flare, fires, and a **supply chest parachutes in** with everything you loaded. A countdown ticks in chat after the shot. Underground, it appears at your feet.
 - **Return Flare.** Throw it and a **purple portal opens where it lands**. Step through and you are standing at your platform. Upgrade it and the portal stays open for five minutes and **takes you back again**.
-- **Fire Support Flare.** A box marks the target. Your cannon shells it, exactly on the flare, every time.
+- **Fire Support Flare.** A glowing box marks the target. Your cannon shells it, exactly on the flare, every time. Throw a second one mid-barrage and the cannon tells you *Barrage in process*: it is next in line.
+
+The cannon is **heavy**: it turns with a grinding of gears and only fires once it has settled onto the flare. Far from your base? Chat keeps you posted: *Cannon preparing…* and *You heard cannon fire roaring*.
 
 ### Six kinds of fire support. Pick yours.
 
-Click your cannon to choose. **Your choice, your character**: even if a friend hands you their flare, you call down *your* support, and the whole server sees it.
+Click your cannon to choose; each type has its own icon, and the one you have chosen is shown in big letters above your hotbar while you hold a Fire Support Flare. **Your choice, your character**: even if a friend hands you their flare, you call down *your* support, and the whole server sees it.
 
 > **Dev just called in NARUKAMI'S FAVOR**
 
@@ -67,13 +69,13 @@ Click your cannon to choose. **Your choice, your character**: even if a friend h
 | **Explosion Barrage** | A classic. Shells land exactly on the flare and flatten everything hostile in the box |
 | **Arrow Cluster Bomb** | A shower of arrows over the whole area, with two extra volleys |
 | **Narukami's Favor** | Lightning on every hostile mob in the area |
-| **Bunker Buster** | One enormous bomb that tears up the terrain (it never touches your base or your friends) |
+| **Bunker Buster** | One enormous bomb that **digs out every block in its box** like butter. The only support that can hurt a player (half their health, armor or not) and it refuses to go off inside your own base |
 | **Healing Barrage** | Explosions that heal your team |
 | **Curse of Debilitation** | The worst debuffs in the game on every enemy in the zone |
 
 ### Upgrade the cannon
 
-Faster traverse · faster fire rate · more volleys · more damage · **Quantum Tunneling** (fire support works underground) · a **slowness field** over the whole target area · a **lasting, two-way return portal** · a **healing aura** around your supply flares.
+Faster traverse · faster fire rate · more volleys · more damage · **Quantum Tunneling** (fire support works underground) · a **slowness field** over the whole target area · a **lasting, two-way return portal** · a **healing aura** around your supply flares · **Area of Effect** (the red box grows with every level) · **Dimensional Link** (call fire support in the Nether, the End and beyond).
 
 ![Screenshot: the support cannon firing](REPLACE_ME)
 
@@ -115,7 +117,7 @@ You do not need to read a wiki. New players get a starter weapon with matching a
 
 **Can I change the exchange offers?** Yes. They live in `config/arsenal-beacon-exchange.txt`, one `item = price` per line. Drop chances live in `arsenal-beacon-common.toml`.
 
-**Can the support cannon hurt me?** No. Players are never damaged by flares, shells, lightning or the Bunker Buster.
+**Can the support cannon hurt me?** Not unless you stand in the box of a Bunker Buster. Flares, shells, lightning and arrows never hurt players; the Bunker Buster takes half your health whatever armor you wear, so keep clear of its red cube.
 
 **Does my support gear move with me?** Yes. Pick it up for free with the Beacon Recovery Shovel and it keeps its upgrades and contents.
 

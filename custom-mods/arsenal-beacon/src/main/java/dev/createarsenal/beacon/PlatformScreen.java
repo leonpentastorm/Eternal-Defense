@@ -115,6 +115,8 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         list.add(managementRow(Ui.plain("platform.manage.buy_ammo"),0,"buyAmmo",0,data.getList("buyAmmo",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.AMMO_PLATFORM.get())));
         list.add(managementRow(Ui.plain("platform.manage.buy_attachment"),0,"buyAttachment",0,data.getList("buyAttachment",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.ATTACHMENT_PLATFORM.get())));
         list.add(managementRow(Ui.plain("platform.manage.buy_armor"),0,"buyArmor",0,data.getList("buyArmor",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.ARMOR_PLATFORM.get())));
+        list.add(managementRow(Ui.plain("platform.manage.buy_support"),0,"buySupport",0,data.getList("buySupport",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get())));
+        list.add(managementRow(Ui.plain("platform.manage.buy_exchange"),0,"buyExchange",0,data.getList("buyExchange",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get())));
         for(var child:data.getList("children",Tag.TAG_COMPOUND)){
             var row=(CompoundTag)child;var pos=net.minecraft.core.BlockPos.of(row.getLong("pos"));String kind=row.getString("kind");
             var entry=managementRow(Ui.has("platform.manage.upgrade."+kind)?Ui.plain("platform.manage.upgrade."+kind):Ui.plain("platform.manage.upgrade_other",kind),row.getInt("age"),"upgradeChild",row.getLong("pos"),row.getList("upgrades",Tag.TAG_COMPOUND),new ItemStack(ArmorPlatform.station(kind).get()));
@@ -184,21 +186,21 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         int sx=left+lw+6,sy=top+layout.listTop(),sh=ph-39-layout.listTop();g.fill(sx,sy,sx+8,sy+sh,Ui.DEEP);
         int thumb=Math.min(sh,Math.max(12,sh/Math.max(1,lastPage()+1))),thumbY=sy+(lastPage()==0?0:(int)((sh-thumb)*(dragging?dragPage:page)/(double)lastPage()));g.fill(sx+1,thumbY,sx+7,thumbY+thumb,dragging?Ui.INK:Ui.CYAN);
         craft.visible=!upgrades;upgrade.visible=upgrades;upgrade.active=false;
-        CompoundTag chosen=chosen();int targetAge=chosen==null?0:chosen.getInt("age");boolean buying=upgrades&&targetAge==0;
+        CompoundTag chosen=chosen();int targetAge=chosen==null?0:chosen.getInt("age");boolean buying=upgrades&&targetAge==0;boolean baseGear=chosen!=null&&(chosen.getString("action").equals("buySupport")||chosen.getString("action").equals("buyExchange"));
         ListTag costs=chosen==null?new ListTag():chosen.getList("costs",Tag.TAG_COMPOUND);
         boolean missing=false;if(!data.getBoolean("creative"))for(var c:costs)if(((CompoundTag)c).getInt("have")<((CompoundTag)c).getInt("count"))missing=true;
         upgrade.setMessage(buying?Ui.t("platform.buy_station"):Ui.t("platform.upgrade_age"));upgrade.active=upgrades&&weapons()&&chosen!=null&&(buying||targetAge<5&&(targetAge!=2||data.getBoolean("netherVisited")));upgrade.warning=missing&&upgrade.active;
         craft.active=!navigating&&chosen!=null&&chosen.getBoolean("unlocked")&&!chosen.getBoolean("invalid");craft.warning=missing&&craft.active;
         if(coins!=null){coins.visible=!upgrades;coins.active=craft.active&&(data.getBoolean("creative")||chosen.getInt("coinCost")<=data.getInt("ammoCoins"));coins.setMessage(data.getBoolean("creative")?Ui.t("platform.buy_free"):chosen==null?Ui.t("platform.buy_coins"):Ui.t("platform.buy_cost",chosen.getInt("coinCost")));coins.warning=chosen!=null&&!data.getBoolean("creative")&&chosen.getInt("coinCost")>data.getInt("ammoCoins")&&craft.active;}
         craft.setMessage(chosen==null?Ui.t("platform.craft"):data.getBoolean("creative")?Ui.t("platform.craft_free"):missing?Ui.t("platform.craft_missing"):data.getString("kind").equals("ammo")?Ui.t("platform.craft_materials"):Ui.t("platform.craft_items",Math.max(1,chosen.getInt("outputCount"))));
-        Component heading=upgrades?!weapons()?Ui.t("platform.heading.manage"):buying?Ui.t("platform.heading.new"):targetAge==5?Ui.t("platform.heading.max"):Ui.t("platform.heading.next",ageName(Math.min(5,targetAge+1))):chosen==null?data.getString("notice").isEmpty()?Ui.t("platform.heading.none"):Component.literal(data.getString("notice")):ItemStack.of(chosen.getCompound("output")).getHoverName();
+        Component heading=upgrades?!weapons()?Ui.t("platform.heading.manage"):buying?baseGear?ItemStack.of(chosen.getCompound("output")).getHoverName():Ui.t("platform.heading.new"):targetAge==5?Ui.t("platform.heading.max"):Ui.t("platform.heading.next",ageName(Math.min(5,targetAge+1))):chosen==null?data.getString("notice").isEmpty()?Ui.t("platform.heading.none"):Component.literal(data.getString("notice")):ItemStack.of(chosen.getCompound("output")).getHoverName();
         boolean compact=ph<280;int costTop=compact?126:144;
         g.enableScissor(right,top+95,right+rw,top+(compact?108:123));
         boolean oneLine=font.width(heading)<=rw&&chosen!=null&&!upgrades;
         if(compact||oneLine)Ui.text(g,font,heading,right,top+96,Ui.CYAN,rw);else Ui.wrap(g,font,heading,right,top+96,rw,Ui.CYAN,2);
         if(oneLine&&!compact&&!chosen.getString("progression").isEmpty()){int era=Math.max(0,Math.min(5,chosen.getInt("age")));Ui.text(g,font,Component.literal(chosen.getString("progression")),right,top+109,AGE_COLORS[chosen.getBoolean("special")?Math.max(7,ageFilter):era],rw);}
         g.disableScissor();
-        Ui.text(g,font,upgrades?(chosen!=null&&!chosen.getString("location").isEmpty()?Component.literal(chosen.getString("location")):Ui.t("platform.within_eight")):data.getBoolean("creative")?Ui.t("platform.creative_free"):Ui.t("platform.materials"),right,top+(compact?112:126),Ui.MUTED,rw);
+        Ui.text(g,font,upgrades?(chosen!=null&&!chosen.getString("location").isEmpty()?Component.literal(chosen.getString("location")):baseGear?Ui.t("platform.base_gear"):Ui.t("platform.within_eight")):data.getBoolean("creative")?Ui.t("platform.creative_free"):Ui.t("platform.materials"),right,top+(compact?112:126),Ui.MUTED,rw);
         boolean locked=!upgrades&&chosen!=null&&!chosen.getBoolean("unlocked");
         if(locked){
             Component unlock=Ui.t("platform.unlock",chosen.getString("requirement"));

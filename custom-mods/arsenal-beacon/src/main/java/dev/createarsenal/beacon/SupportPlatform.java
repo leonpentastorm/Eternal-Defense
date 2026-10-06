@@ -63,6 +63,7 @@ final class SupportPlatform {
             super.setPlacedBy(l,pos,s,who,stack);
             if(l instanceof ServerLevel server&&who instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PlatformEntity be){
                 be.owner=sp.getUUID();be.ownerName=sp.getGameProfile().getName();be.setChanged();
+                l.sendBlockUpdated(pos,s,s,3);
                 SupportData.get(server).setPlatform(sp.getUUID(),pos);
             }
         }
@@ -124,6 +125,11 @@ final class SupportPlatform {
             for(var t:n.getList("Grid",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;int slot=c.getInt("Slot");if(slot>=0&&slot<36)grid.items[slot]=ItemStack.of(c);}
             if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
+        /** The owner's name travels to clients so the plate on the back of the cabinet can show it. */
+        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putString("OwnerName",ownerName==null?"":ownerName);return n;}
+        @Override public void handleUpdateTag(CompoundTag n){ownerName=n.getString("OwnerName");}
+        @Override public void onDataPacket(net.minecraft.network.Connection net,net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
+        @Override public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket(){return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);}
         @Override public Component getDisplayName(){return Component.translatable("block.arsenal_beacon.support_platform");}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player p){return new PlatformMenu(id,inv,grid,getBlockPos(),getBlockState().getValue(MK));}
     }

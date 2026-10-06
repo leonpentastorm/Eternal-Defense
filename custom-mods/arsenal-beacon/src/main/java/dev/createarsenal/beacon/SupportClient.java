@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.debug.DebugRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -34,11 +33,12 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 public final class SupportClient {
     private SupportClient(){}
     static final ResourceLocation TURRET=new ResourceLocation(ArsenalBeacon.ID,"block/support_cannon_turret"),BARREL=new ResourceLocation(ArsenalBeacon.ID,"block/support_cannon_barrel"),
-        PARCEL=new ResourceLocation(ArsenalBeacon.ID,"block/support_parcel"),CHUTE=new ResourceLocation(ArsenalBeacon.ID,"block/support_parcel_chute");
+        PARCEL=new ResourceLocation(ArsenalBeacon.ID,"block/support_parcel");
 
-    @SubscribeEvent public static void supportModels(ModelEvent.RegisterAdditional e){e.register(TURRET);e.register(BARREL);e.register(PARCEL);e.register(CHUTE);}
+    @SubscribeEvent public static void supportModels(ModelEvent.RegisterAdditional e){e.register(TURRET);e.register(BARREL);e.register(PARCEL);}
     @SubscribeEvent public static void supportRenderers(EntityRenderersEvent.RegisterRenderers e){
         e.registerBlockEntityRenderer(ArsenalBeacon.CANNON_ENTITY.get(),CannonRenderer::new);
+        e.registerBlockEntityRenderer(ArsenalBeacon.SUPPORT_PLATFORM_ENTITY.get(),PlatformRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.PARCEL.get(),ParcelRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.FLARE.get(),FlareRenderer::new);
     }
@@ -49,9 +49,64 @@ public final class SupportClient {
         mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),buffer.getBuffer(type),null,baked,1f,1f,1f,light,overlay,ModelData.EMPTY,type);
     }
 
+    // ---- owner nameplates ---------------------------------------------------------------------------------------------------
+    static final ResourceLocation PLATE=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/nameplate.png");
+    /** Names of more than this many letters are split over two lines so they stay readable on a small plate. */
+    static final int PLATE_LINE=9;
+    static java.util.List<String> plateLines(String name){
+        if(name==null||name.isBlank())return java.util.List.of("?");
+        if(name.length()<=PLATE_LINE)return java.util.List.of(name);
+        int cut=name.length()/2;
+        for(int d=0;d<=cut-2;d++){for(int c:new int[]{cut-d,cut+d}){if(c>2&&c<name.length()-2&&(name.charAt(c)=='_'||name.charAt(c)=='-')){return java.util.List.of(name.substring(0,c+(name.charAt(c)=='_'?0:1)).replace("_",""),name.substring(c+1));}}}
+        return java.util.List.of(name.substring(0,cut),name.substring(cut));
+    }
+    /**
+     * A brass-framed plate with the owner's name, standing at {@code (cx, bottom, z)} (block units, in the block's own frame) and
+     * facing +Z. {@code width} is the plate width in blocks; the height follows the number of lines; {@code tilt} leans it back.
+     */
+    static void plate(PoseStack pose,MultiBufferSource buffer,net.minecraft.client.gui.Font font,String name,int light,float cx,float bottom,float z,float width,float tilt){
+        var lines=plateLines(name);int textW=1;for(var l:lines)textW=Math.max(textW,font.width(l));
+        float pad=.035f,s=Math.min(.03f,(width-2*pad)/textW),h=lines.size()*9*s+2*pad;
+        pose.pushPose();pose.translate(cx,bottom,z);pose.mulPose(Axis.XP.rotationDegrees(-tilt));
+        var last=pose.last();var m=last.pose();var n=last.normal();
+        var vc=buffer.getBuffer(RenderType.entityCutout(PLATE));
+        float hw=width/2;
+        quad(vc,m,n,-hw,0,hw,h,0f,light,.25f);                                    // brass frame
+        quad(vc,m,n,-hw+.018f,.018f,hw-.018f,h-.018f,.004f,light,.75f);          // dark face
+        pose.translate(-textW*s/2f,h-pad,.009f);pose.scale(s,-s,s);
+        for(int i=0;i<lines.size();i++){
+            float lw=font.width(lines.get(i));
+            font.drawInBatch(lines.get(i),(textW-lw)/2f,i*9,0xfff1cc78,false,pose.last().pose(),buffer,net.minecraft.client.gui.Font.DisplayMode.NORMAL,0,light);
+        }
+        pose.popPose();
+    }
+    private static void quad(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x0,float y0,float x1,float y1,float z,int light,float u){
+        float v=.5f;
+        for(float[] c:new float[][]{{x0,y0},{x1,y0},{x1,y1},{x0,y1}})
+            vc.vertex(m,c[0],c[1],z).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0f,0f,1f).endVertex();
+    }
+
+    /** The platform's plate on the back of its cabinet. */
+    static final class PlatformRenderer implements BlockEntityRenderer<SupportPlatform.PlatformEntity> {
+        private final net.minecraft.client.gui.Font font;
+        PlatformRenderer(BlockEntityRendererProvider.Context ctx){font=ctx.getFont();}
+        @Override public void render(SupportPlatform.PlatformEntity be,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            if(be.ownerName==null||be.ownerName.isEmpty())return;
+            var facing=be.getBlockState().getValue(SupportPlatform.FACING);
+            pose.pushPose();
+            pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-((facing.toYRot()+180f)%360f)));pose.translate(-.5,0,-.5);
+            plate(pose,buffer,font,be.ownerName,light,.5f,.30f,15.05f/16f,.62f,0f);
+            pose.popPose();
+        }
+    }
+
     static final class CannonRenderer implements BlockEntityRenderer<SupportCannon.CannonEntity> {
-        CannonRenderer(BlockEntityRendererProvider.Context ctx){}
+        private final net.minecraft.client.gui.Font font;
+        CannonRenderer(BlockEntityRendererProvider.Context ctx){font=ctx.getFont();}
         @Override public void render(SupportCannon.CannonEntity be,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            if(be.ownerName!=null&&!be.ownerName.isEmpty()){
+                pose.pushPose();plate(pose,buffer,font,be.ownerName,light,.5f,3.2f/16f,30.4f/16f,1.5f,14f);pose.popPose();
+            }
             float yaw=Mth.lerp(partial,be.prevYaw,be.yaw);
             pose.pushPose();
             float k=(float)SupportCannon.SCALE,turn=(float)SupportCannon.TURN_Y;
@@ -76,7 +131,7 @@ public final class SupportClient {
         FlareRenderer(EntityRendererProvider.Context ctx){super(ctx);items=ctx.getItemRenderer();shadowRadius=0f;}
         @Override public void render(SupportFlares.FlareEntity e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
             var kind=e.kind();boolean landed=e.landed();
-            if(kind==SupportCalls.Kind.RETURN&&landed){portal(e,partial,pose,buffer);return;}
+            if(kind==SupportCalls.Kind.RETURN&&e.open()){portal(e,partial,pose,buffer);return;}
             Item item=switch(kind){case SUPPLY->ArsenalBeacon.SUPPLY_FLARE.get();case RETURN->ArsenalBeacon.RETURN_FLARE.get();case FIRE->ArsenalBeacon.FIRE_FLARE.get();};
             pose.pushPose();
             pose.translate(0,landed?.45:.12,0);pose.scale(1.4f,1.4f,1.4f);
@@ -85,14 +140,16 @@ public final class SupportClient {
             pose.popPose();
             if(kind==SupportCalls.Kind.FIRE&&landed)area(e,partial,pose,buffer);
         }
-        /** The area box, drawn exactly where the shells act. Red for the damaging types, green for healing, violet for curses. */
+        /**
+         * The area box, drawn exactly where the shells act, as edges only: a filled translucent box writes depth and hid everything behind it
+         * (the shop and platform next to a flare vanished). Red for the damaging types, green for healing, violet for curses.
+         */
         private void area(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             double r=e.radius();
-            AABB box=new AABB(-r,-0.5,-r,r,r,r);
+            AABB box=e.type()==CannonUpgrades.FireType.BUNKER?new AABB(-r,-r,-r,r,r,r):new AABB(-r,-0.5,-r,r,r,r);
             float[] c=switch(e.type()){case HEAL->new float[]{.2f,1f,.35f};case CURSE->new float[]{.7f,.25f,1f};case NARUKAMI->new float[]{1f,.85f,.2f};case ARROW->new float[]{1f,.55f,.15f};default->new float[]{1f,.1f,.1f};};
-            float pulse=.5f+.5f*Mth.sin((e.tickCount+partial)*.2f);
-            DebugRenderer.renderFilledBox(pose,buffer,box,c[0],c[1],c[2],.10f+.08f*pulse);
-            LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,c[0],Math.min(1f,c[1]+.15f),Math.min(1f,c[2]+.1f),1f);
+            float pulse=.75f+.25f*Mth.sin((e.tickCount+partial)*.2f);
+            LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,c[0],c[1],c[2],pulse);
         }
         private void portal(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             float age=e.tickCount+partial;
@@ -112,16 +169,70 @@ public final class SupportClient {
         @Override public ResourceLocation getTextureLocation(SupportFlares.FlareEntity e){return TextureAtlas.LOCATION_BLOCKS;}
     }
 
+    /**
+     * The parcel and, while it falls, its parachute: a domed canopy of twelve alternating panels on twelve cords. The canopy is drawn from
+     * vertices so it can be as big as it needs to be (about 5 blocks across) instead of being limited to a block model's size.
+     */
     static final class ParcelRenderer extends EntityRenderer<SupportCrate.ParcelEntity> {
+        static final ResourceLocation CHUTE=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/parachute.png");
+        static final int GORES=12,RINGS=5;
+        /** Canopy size in blocks: half-width at the rim, dome height, and rim height above the top of the crate. */
+        static final float RADIUS=2.5f,DOME=1.6f,RIM=3.6f,CRATE_TOP=14/16f;
         ParcelRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=.4f;}
         @Override public void render(SupportCrate.ParcelEntity e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
             var type=RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS);
-            pose.pushPose();pose.translate(0,0,0);
-            float sway=e.falling()?(float)Math.sin((e.tickCount+partial)*.12)*4f:0f;
-            pose.mulPose(Axis.ZP.rotationDegrees(sway));pose.translate(-.5,0,-.5);
-            draw(pose,buffer,type,PARCEL,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
-            if(e.falling())draw(pose,buffer,type,CHUTE,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
+            pose.pushPose();
+            float age=e.tickCount+partial;
+            float sway=e.falling()?(float)Math.sin(age*.12)*3f:0f;
+            pose.mulPose(Axis.ZP.rotationDegrees(sway));
+            pose.pushPose();pose.translate(-.5,0,-.5);
+            draw(pose,buffer,type,PARCEL,light,OverlayTexture.NO_OVERLAY);
             pose.popPose();
+            if(e.falling())chute(pose,buffer,light,age);
+            pose.popPose();
+        }
+        private void chute(PoseStack pose,MultiBufferSource buffer,int light,float age){
+            pose.pushPose();pose.translate(0,CRATE_TOP,0);
+            var last=pose.last();var m=last.pose();var n=last.normal();
+            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(CHUTE));
+            float breathe=1f+.02f*Mth.sin(age*.15f);
+            // canopy: rings from the rim up to the crown, panels alternating between two colours
+            for(int i=0;i<GORES;i++){
+                float a0=(float)(i*2*Math.PI/GORES),a1=(float)((i+1)*2*Math.PI/GORES);
+                float u0=(i%2==0?0f:1f/3f)+.01f,u1=(i%2==0?1f/3f:2f/3f)-.01f;
+                for(int j=0;j<RINGS;j++){
+                    float p0=(float)(j*Math.PI/2/RINGS),p1=(float)((j+1)*Math.PI/2/RINGS);
+                    float r0=RADIUS*breathe*Mth.cos(p0),r1=RADIUS*breathe*Mth.cos(p1),y0=RIM+DOME*Mth.sin(p0),y1=RIM+DOME*Mth.sin(p1);
+                    float[] v00={Mth.cos(a0)*r0,y0,Mth.sin(a0)*r0},v10={Mth.cos(a1)*r0,y0,Mth.sin(a1)*r0},v11={Mth.cos(a1)*r1,y1,Mth.sin(a1)*r1},v01={Mth.cos(a0)*r1,y1,Mth.sin(a0)*r1};
+                    float nx=Mth.cos((a0+a1)/2)*Mth.cos((p0+p1)/2),ny=Mth.sin((p0+p1)/2),nz=Mth.sin((a0+a1)/2)*Mth.cos((p0+p1)/2);
+                    float vv0=.03f+.94f*(j/(float)RINGS),vv1=.03f+.94f*((j+1)/(float)RINGS);
+                    vert(vc,m,n,v00,u0,vv0,nx,ny,nz,light);vert(vc,m,n,v10,u1,vv0,nx,ny,nz,light);vert(vc,m,n,v11,u1,vv1,nx,ny,nz,light);vert(vc,m,n,v01,u0,vv1,nx,ny,nz,light);
+                }
+                // the cord hangs from the middle of the panel's lower edge down to the crate's top edge
+                float am=(a0+a1)/2;
+                float[] top={Mth.cos(am)*RADIUS*breathe*.99f,RIM,Mth.sin(am)*RADIUS*breathe*.99f};
+                float[] bot={Mth.clamp(Mth.cos(am)*.7f,-.44f,.44f),0f,Mth.clamp(Mth.sin(am)*.7f,-.44f,.44f)};
+                cord(vc,m,n,bot,top,light);
+            }
+            pose.popPose();
+        }
+        private static void vert(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] p,float u,float v,float nx,float ny,float nz,int light){
+            vc.vertex(m,p[0],p[1],p[2]).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,nx,ny,nz).endVertex();
+        }
+        /** A cord: two thin crossed strips so it shows from every side. */
+        private static void cord(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] a,float[] b,int light){
+            float dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],len=Mth.sqrt(dx*dx+dy*dy+dz*dz);if(len<1e-4f)return;
+            dx/=len;dy/=len;dz/=len;
+            float sx=dy*0-dz*1,sy=dz*0-dx*0,sz=dx*1-dy*0;   // dir x up-ish axis
+            float sl=Mth.sqrt(sx*sx+sy*sy+sz*sz);if(sl<1e-4f){sx=1;sy=0;sz=0;sl=1;}
+            sx/=sl;sy/=sl;sz/=sl;
+            float tx=dy*sz-dz*sy,ty=dz*sx-dx*sz,tz=dx*sy-dy*sx;
+            float w=.018f,u=.84f;
+            for(float[] side:new float[][]{{sx,sy,sz},{tx,ty,tz}}){
+                float ox=side[0]*w,oy=side[1]*w,oz=side[2]*w;
+                vert(vc,m,n,new float[]{a[0]-ox,a[1]-oy,a[2]-oz},u,.1f,side[0],side[1],side[2],light);vert(vc,m,n,new float[]{a[0]+ox,a[1]+oy,a[2]+oz},u,.1f,side[0],side[1],side[2],light);
+                vert(vc,m,n,new float[]{b[0]+ox,b[1]+oy,b[2]+oz},u,.9f,side[0],side[1],side[2],light);vert(vc,m,n,new float[]{b[0]-ox,b[1]-oy,b[2]-oz},u,.9f,side[0],side[1],side[2],light);
+            }
         }
         @Override public ResourceLocation getTextureLocation(SupportCrate.ParcelEntity e){return TextureAtlas.LOCATION_BLOCKS;}
     }

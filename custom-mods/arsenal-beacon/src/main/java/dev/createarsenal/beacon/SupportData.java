@@ -16,6 +16,16 @@ final class SupportData extends net.minecraft.world.level.saveddata.SavedData {
         BlockPos platform,cannon;int fire;final int[] up=new int[CannonUpgrades.Upgrade.values().length];
         boolean configured(){if(fire!=0)return true;for(int v:up)if(v!=0)return true;return false;}
         CannonUpgrades.FireType type(){return CannonUpgrades.FireType.of(fire);}
+        /** The one call using this player's cannon right now (not saved: a restarted server starts with the cannon free). */
+        private UUID holder;private long holdUntil;private boolean holderFire;
+        /** Takes the cannon for {@code id} or says no because another call holds it. A holder that stops refreshing for 2 seconds loses it. */
+        boolean hold(UUID id,long now,boolean fire){
+            if(holder==null||holder.equals(id)||now>holdUntil){holder=id;holdUntil=now+40;holderFire=fire;return true;}
+            return false;
+        }
+        void release(UUID id){if(id.equals(holder))holder=null;}
+        /** True while a fire support barrage (not a supply or portal shot) has the cannon. */
+        boolean barrage(long now){return holder!=null&&holderFire&&now<=holdUntil;}
     }
     final Map<UUID,Base> bases=new LinkedHashMap<>();
     static SupportData get(ServerLevel any){
@@ -28,10 +38,6 @@ final class SupportData extends net.minecraft.world.level.saveddata.SavedData {
     void clearPlatform(UUID owner,BlockPos pos){var b=bases.get(owner);if(b!=null&&pos.equals(b.platform)){b.platform=null;prune(owner);setDirty();}}
     void clearCannon(UUID owner,BlockPos pos){var b=bases.get(owner);if(b!=null&&pos.equals(b.cannon)){b.cannon=null;prune(owner);setDirty();}}
     private void prune(UUID owner){var b=bases.get(owner);if(b!=null&&b.platform==null&&b.cannon==null&&!b.configured())bases.remove(owner);}
-    static boolean near(BlockPos platform,BlockPos cannon){
-        double max=SupportRules.CANNON_RANGE*(double)SupportRules.CANNON_RANGE;
-        return platform!=null&&cannon!=null&&platform.distSqr(cannon)<=max;
-    }
     static SupportData load(CompoundTag n){
         var d=new SupportData();
         for(var t:n.getList("bases",Tag.TAG_COMPOUND)){

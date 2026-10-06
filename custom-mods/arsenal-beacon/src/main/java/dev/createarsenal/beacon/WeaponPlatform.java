@@ -101,8 +101,15 @@ public final class WeaponPlatform {
         var output=new ItemStack(item);if(output.isEmpty()||!query.isEmpty()&&!output.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT)))return List.of();
         return List.of(new Entry(new ResourceLocation(ArsenalBeacon.ID,"turret"),null,new Gate(0,"turret","tacz_turrets:turret"),output));
     }
-    static List<Cost> purchaseCosts(String kind){if(BuildFlavor.STANDALONE)return List.of(cost("minecraft:iron_ingot",16),cost("minecraft:copper_ingot",16),cost("minecraft:redstone",8));return List.of(cost("minecraft:iron_ingot",16),cost(kind.equals("ammo")?"minecraft:copper_ingot":"minecraft:gold_ingot",16),cost("create:andesite_alloy",8));}
+    static List<Cost> purchaseCosts(String kind){
+        if(kind.equals("support"))return List.of(cost("minecraft:iron_ingot",20),cost("minecraft:copper_ingot",12),cost("minecraft:redstone",12),cost("minecraft:glass",4));
+        if(kind.equals("exchange"))return List.of(cost("minecraft:iron_ingot",12),cost("minecraft:copper_ingot",20),cost("minecraft:redstone",6),cost("minecraft:glass",4));
+        if(BuildFlavor.STANDALONE)return List.of(cost("minecraft:iron_ingot",16),cost("minecraft:copper_ingot",16),cost("minecraft:redstone",8));return List.of(cost("minecraft:iron_ingot",16),cost(kind.equals("ammo")?"minecraft:copper_ingot":"minecraft:gold_ingot",16),cost("create:andesite_alloy",8));}
     static String purchase(ServerPlayer p,String kind){
+        if(kind.equals("support")||kind.equals("exchange")){
+            ItemStack gear=new ItemStack(kind.equals("support")?ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get():ArsenalBeacon.EXCHANGE_SHOP_ITEM.get());
+            return transact(p,purchaseCosts(kind),gear)?"Purchased "+(kind.equals("support")?"Support Platform":"Exchange Shop")+". Place it inside your Defense Beacon zone.":"Missing materials or inventory space. Nothing consumed.";
+        }
         if(!kind.equals("ammo")&&!kind.equals("attachment")&&!kind.equals("armor"))return "Unknown station.";
         ItemStack output=new ItemStack(ArmorPlatform.station(kind).get());
         return transact(p,purchaseCosts(kind),output)?"Purchased "+kind+" platform. Place within 8 blocks of this weapon table.":"Missing materials or inventory space. Nothing consumed.";
@@ -265,6 +272,8 @@ public final class WeaponPlatform {
         else if(request.action.equals("buyAmmo"))message=station.kind.equals("gun")?purchase(p,"ammo"):"Buy stations at the weapon table.";
         else if(request.action.equals("buyAttachment"))message=station.kind.equals("gun")?purchase(p,"attachment"):"Buy stations at the weapon table.";
         else if(request.action.equals("buyArmor"))message=station.kind.equals("gun")?purchase(p,"armor"):"Buy stations at the weapon table.";
+        else if(request.action.equals("buySupport"))message=station.kind.equals("gun")?purchase(p,"support"):"Buy base gear at the weapon table.";
+        else if(request.action.equals("buyExchange"))message=station.kind.equals("gun")?purchase(p,"exchange"):"Buy base gear at the weapon table.";
         else if(request.action.equals("upgradeChild"))message=manageUpgrade(p,session.pos,BlockPos.of(request.target));
         else if(request.action.equals("craft")){var id=ResourceLocation.tryParse(request.recipe);if(id!=null)message=craft(p,session.pos,id);}
         else if(request.action.equals("buyAmmoCoins")){var id=ResourceLocation.tryParse(request.recipe);if(id!=null)message=AmmoCoins.buy(p,session.pos,id);}
@@ -295,7 +304,7 @@ public final class WeaponPlatform {
         }
         n.put("recipes",recipes);n.put("upgrades",costTags(p,upgrades(age)));
         if(station.kind.equals("gun")){
-            n.put("buyAmmo",costTags(p,purchaseCosts("ammo")));n.put("buyAttachment",costTags(p,purchaseCosts("attachment")));n.put("buyArmor",costTags(p,purchaseCosts("armor")));
+            n.put("buyAmmo",costTags(p,purchaseCosts("ammo")));n.put("buyAttachment",costTags(p,purchaseCosts("attachment")));n.put("buyArmor",costTags(p,purchaseCosts("armor")));n.put("buySupport",costTags(p,purchaseCosts("support")));n.put("buyExchange",costTags(p,purchaseCosts("exchange")));
             ListTag children=new ListTag();for(BlockPos child:PlatformRegistry.get(p.serverLevel()).nearby(p.serverLevel(),pos)){
                 var childState=p.level().getBlockState(child);var childStation=(Station)childState.getBlock();var row=new CompoundTag();row.putLong("pos",child.asLong());row.putString("kind",childStation.kind);row.putInt("age",childState.getValue(AGE));row.put("upgrades",costTags(p,upgrades(childState.getValue(AGE))));children.add(row);
             }n.put("children",children);

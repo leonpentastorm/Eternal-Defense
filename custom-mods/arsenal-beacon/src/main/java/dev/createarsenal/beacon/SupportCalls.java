@@ -39,20 +39,29 @@ final class SupportCalls {
         if(base==null||base.cannon==null||!overworld.isLoaded(base.cannon))return null;
         return overworld.getBlockEntity(base.cannon) instanceof SupportCannon.CannonEntity c?c:null;
     }
+    /** The cannon that can really be seen turning: loaded and ticking in the Overworld. Otherwise calls use the same timing without the visible turret. */
+    static SupportCannon.CannonEntity liveCannon(ServerLevel at,UUID owner){
+        if(at.dimension()!=Level.OVERWORLD)return null;
+        var c=cannon(at,owner);
+        return c!=null&&at.isPositionEntityTicking(c.getBlockPos())?c:null;
+    }
 
     // ---- validation -------------------------------------------------------------------------------
     /** Null when the call may go ahead, otherwise a language key suffix under {@code support.refused.} describing what is wrong. */
     static String problem(ServerPlayer p,Kind kind){
         var overworld=p.getServer().overworld();
-        if(kind!=Kind.RETURN&&p.level().dimension()!=Level.OVERWORLD)return "wrong_dimension";
+        var base=SupportData.get(overworld).of(p.getUUID());
+        if(kind!=Kind.RETURN&&p.level().dimension()!=Level.OVERWORLD){
+            // only fire support can be called in another dimension, and only with the Dimensional Link upgrade
+            if(kind!=Kind.FIRE||base==null||base.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]<=0)return "wrong_dimension";
+        }
         var platform=platform(overworld,p.getUUID());
         if(platform==null)return "no_platform";
         if(BaseZone.problem(overworld,platform.getBlockPos())!=null)return "disabled";
         if(kind!=Kind.RETURN){
-            var base=SupportData.get(overworld).of(p.getUUID());
-            var cannon=cannon(overworld,p.getUUID());
-            if(cannon==null||base.cannon==null)return "no_cannon";
-            if(!SupportData.near(base.platform,base.cannon))return "cannon_far";
+            if(base==null||base.cannon==null)return "no_cannon";
+            overworld.getChunkAt(base.cannon);   // a base far from every player (or a player in another dimension) still has its cannon
+            if(!overworld.getBlockState(base.cannon).is(ArsenalBeacon.SUPPORT_CANNON.get()))return "no_cannon";
             if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
         }
         if(kind==Kind.SUPPLY&&!platform.hasItems())return "empty_grid";
@@ -62,6 +71,23 @@ final class SupportCalls {
     static void refuse(ServerPlayer p,String problem){
         var text=Component.translatable("gui.arsenal_beacon.support.refused."+problem).withStyle(ChatFormatting.RED);
         p.sendSystemMessage(text);p.displayClientMessage(text,true);
+    }
+    /** A short status line (chat and action bar) under {@code support.notice.}; used for what the cannon is doing and for a barrage already under way. */
+    static void notice(ServerPlayer p,String key,ChatFormatting color){
+        if(p==null)return;
+        var text=Component.translatable("gui.arsenal_beacon.support.notice."+key).withStyle(color);
+        p.sendSystemMessage(text);p.displayClientMessage(text,true);
+    }
+    /** One extra grey chat line (no action bar) under {@code support.notice.}. */
+    static void noticeDetail(ServerPlayer p,String key){
+        if(p!=null)p.sendSystemMessage(Component.translatable("gui.arsenal_beacon.support.notice."+key).withStyle(ChatFormatting.GRAY));
+    }
+    /** True when the player is too far from their cannon (or in another dimension) to see or hear it. */
+    static boolean farFromCannon(ServerPlayer p,ServerLevel overworld,BlockPos cannon){
+        if(p==null||cannon==null)return false;
+        if(p.level()!=overworld)return true;
+        double dx=p.getX()-(cannon.getX()+.5),dz=p.getZ()-(cannon.getZ()+.5);
+        return dx*dx+dz*dz>(double)SupportRules.CANNON_HEARING*SupportRules.CANNON_HEARING;
     }
     static void announce(ServerPlayer caller,Kind kind){announce(caller,kind.id);}
     /** Everyone sees who is calling what: a centre-screen toast and one chat line (for fire support, the caller's own chosen type). */

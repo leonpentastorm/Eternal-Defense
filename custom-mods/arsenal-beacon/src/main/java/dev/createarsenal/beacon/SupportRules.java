@@ -5,8 +5,12 @@ final class SupportRules {
     private SupportRules(){}
     // Ardent Energy prices of the gear bought at the Support Platform. Throwing a flare costs nothing.
     static final int CANNON_PRICE=150,SUPPLY_FLARE_PRICE=30,RETURN_FLARE_PRICE=20,FIRE_FLARE_PRICE=100;
-    /** Largest distance (blocks, centre to centre) between a player's platform and cannon for them to work together. */
-    static final int CANNON_RANGE=12;
+    /** How close (blocks) a player must stand to a cannon to work its menu. The cannon and platform themselves can be anywhere inside the beacon zone. */
+    static final int CANNON_REACH=12;
+    /** Players farther than this from their own cannon (or in another dimension) cannot see or hear it, so chat tells them what it is doing. */
+    static final int CANNON_HEARING=48;
+    /** A Bunker Buster takes this share of a player's maximum health, whatever armor they wear. */
+    static final float BUNKER_PLAYER_SHARE=0.5f;
     static final int PORTAL_LIFETIME_TICKS=600;
     /** Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. */
     static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=10;

@@ -2,7 +2,7 @@
 """Installs the hand-made support gear models (docs/art/Create-Arsenal-Support-Gear) into the mod.
 
 Reads the Blockbench files (textures are embedded in them), copies the Minecraft JSON models, puts the Ardent Energy crystal on the green
-credit square of the Exchange Shop, builds the parachute model and the inventory model of the cannon. Re-run after editing the art:
+credit square of the Exchange Shop, builds the shop's split model and the inventory model of the cannon. Re-run after editing the art:
 
     python3 tools/ui-assets/import_support_gear.py
 """
@@ -36,25 +36,23 @@ def shop_crystal(tex):
     tex.paste(screen, box[:2])
     return tex
 
-def chute_texture():
-    im = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
-    for x in range(32):
-        for y in range(32):
-            gore = (x // 8) % 2
-            base = (122, 138, 84) if gore else (226, 214, 168)
-            shade = 1.0 - 0.18 * (y / 32) - (0.35 if x % 8 == 0 else 0)
-            im.putpixel((x, y), tuple(int(c * shade) for c in base) + (255,))
-    return im
+def split_shop(model):
+    """The shop's glass pane must not share a render layer with the shelves behind it.
 
-def chute_model():
-    def box(frm, to, u=(0, 0, 16, 16)):
-        f = {s: {'uv': list(u), 'texture': '#0'} for s in ('north', 'south', 'east', 'west', 'up', 'down')}
-        return {'from': frm, 'to': to, 'faces': f}
-    els = [box([-7, 26, -7], [23, 28, 23], (0, 0, 8, 2)), box([-3, 28, -3], [19, 30, 19], (0, 0, 8, 2)), box([1, 30, 1], [15, 31.5, 15], (0, 0, 8, 2))]
-    for (x, z) in ((-6.5, -6.5), (22.5, -6.5), (-6.5, 22.5), (22.5, 22.5)):      # four rope runs from the harness ring to the canopy edge
-        els.append(box([min(x, 7.8), 13.5, min(z, 7.8)], [max(x, 8.2), 14.0, max(z, 8.2)] if False else [x + 0.5, 26, z + 0.5], (14, 0, 15, 12)))
-    els.append(box([7, 13.5, 7], [9, 26, 9], (14, 0, 15, 12)))
-    return {'textures': {'0': 'arsenal_beacon:block/support_parcel_chute', 'particle': 'arsenal_beacon:block/support_parcel_chute'}, 'elements': els}
+    A model has one render type. With the whole shop translucent, the layer sorts quads by distance, so from some angles the pane was drawn
+    before the crates behind it, wrote its depth first, and hid them. Forge's composite loader draws each child in its own layer: the body
+    in the normal layers and only the pane in the translucent one.
+    """
+    glass = [e for e in model['elements'] if e.get('name') == 'Glass']
+    body = [e for e in model['elements'] if e.get('name') != 'Glass']
+    assert len(glass) == 1 and body, 'expected exactly one Glass element'
+    textures = model['textures']
+    root = {k: v for k, v in model.items() if k not in ('elements', 'render_type')}
+    root.update({'loader': 'forge:composite',
+                 'children': {'body': {'parent': 'arsenal_beacon:block/exchange_shop_body'}, 'glass': {'parent': 'arsenal_beacon:block/exchange_shop_glass'}},
+                 'item_render_order': ['body', 'glass']})
+    child = lambda els, rt: {'credit': 'Create Arsenal - remodel', 'ambientocclusion': False, 'render_type': rt, 'textures': textures, 'elements': els}
+    return root, child(body, 'minecraft:cutout'), child(glass, 'minecraft:translucent')
 
 def cannon_item():
     """Inventory model: base + turret + a shortened barrel tilted 45 degrees at the trunnion (a model may only reach -16..32)."""
@@ -79,12 +77,17 @@ def cannon_item():
 def main():
     for name in MODELS:
         m = json.loads((SRC / f'minecraft-models/block/{name}.json').read_text())
-        dump(ASSETS / f'models/block/{name}.json', m)
+        if name == 'exchange_shop':
+            root, body, glass = split_shop(m)
+            dump(ASSETS / 'models/block/exchange_shop.json', root); dump(ASSETS / 'models/block/exchange_shop_body.json', body); dump(ASSETS / 'models/block/exchange_shop_glass.json', glass)
+        else:
+            dump(ASSETS / f'models/block/{name}.json', m)
         tex = texture_of(name)
         if name == 'exchange_shop': tex = shop_crystal(tex)
         (ASSETS / 'textures/block').mkdir(parents=True, exist_ok=True)
         tex.save(ASSETS / f'textures/block/{name}.png'); print('installed', name, tex.size)
-    chute_texture().save(ASSETS / 'textures/block/support_parcel_chute.png'); dump(ASSETS / 'models/block/support_parcel_chute.json', chute_model())
+    for stale in ('textures/block/support_parcel_chute.png', 'models/block/support_parcel_chute.json'):   # the parachute is drawn from vertices now
+        if (ASSETS / stale).exists(): (ASSETS / stale).unlink()
     dump(ASSETS / 'models/item/support_cannon.json', cannon_item())
     dump(ASSETS / 'models/item/exchange_shop.json', {'parent': 'arsenal_beacon:block/exchange_shop'})
     dump(ASSETS / 'models/item/support_platform.json', {'parent': 'arsenal_beacon:block/support_platform_mk1'})

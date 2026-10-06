@@ -80,7 +80,7 @@ final class SupportCannon {
         @Override public void setPlacedBy(Level l,BlockPos pos,BlockState s,LivingEntity who,ItemStack stack){
             super.setPlacedBy(l,pos,s,who,stack);
             if(l instanceof ServerLevel server&&who instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof CannonEntity be){
-                be.owner=sp.getUUID();be.ownerName=sp.getGameProfile().getName();be.setChanged();
+                be.owner=sp.getUUID();be.ownerName=sp.getGameProfile().getName();be.setChanged();l.sendBlockUpdated(pos,s,s,3);
                 var data=SupportData.get(server);data.setCannon(sp.getUUID(),pos);be.traverse=data.ensure(sp.getUUID()).up[CannonUpgrades.Upgrade.TRAVERSE.ordinal()];
             }
         }
@@ -122,6 +122,8 @@ final class SupportCannon {
         int traverse,settled;
         /** Shots fired since the chunk loaded (not saved); handy for tests and debugging. */
         int shots;
+        /** Client only: how many grinding sounds this cannon has played (tests read it) and the highest turret speed it has shown. */
+        int grinds;float peakSpeed;
         private final float[] motor=new float[2];
         CannonEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.CANNON_ENTITY.get(),pos,s);}
         /** Server: face {@code point}; the turret takes the short way round and needs time to get there. */
@@ -130,12 +132,12 @@ final class SupportCannon {
             float next=(float)Math.toDegrees(radians);
             float diff=next-yaw;diff=((diff%360)+540)%360-180;
             float goal=yaw+diff;
-            if(Math.abs(goal-target)>0.01f){target=goal;setChanged();level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
+            if(Math.abs(goal-target)>0.01f){target=goal;settled=0;setChanged();level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         }
         /** True once the barrel points at the target and has stopped moving. */
         boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
         /** True once the turret has been still on target for {@link #SETTLE_TICKS}: only then does the gun fire. */
-        boolean armed(){return settled>=SETTLE_TICKS;}
+        boolean armed(){return settled>=SETTLE_TICKS&&ready();}
         void setTraverse(int lv){traverse=lv;setChanged();if(level instanceof ServerLevel s)s.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         /** Server: fire now (the caller waits for {@link #ready()}). */
         void fire(ServerLevel level){
@@ -154,10 +156,11 @@ final class SupportCannon {
             prevYaw=yaw;spin(motor,target,CannonUpgrades.turnSpeed(traverse));yaw=motor[0];speed=motor[1];
             if(level.isClientSide){
                 if(recoil>0)recoil--;
+                peakSpeed=Math.max(peakSpeed,Math.abs(speed));
                 if(Math.abs(speed)>0.2f){
                     // heavy machinery: a grinding scrape of the traverse gear with the odd clank of a pawl
                     long t=level.getGameTime();float load=Math.min(1f,Math.abs(speed)/MAX_SPEED);
-                    if(t%7==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.GRINDSTONE_USE,SoundSource.BLOCKS,1.1f,.45f+.25f*load,false);
+                    if(t%7==0){grinds++;level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.GRINDSTONE_USE,SoundSource.BLOCKS,1.1f,.45f+.25f*load,false);}
                     if(t%23==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.IRON_TRAPDOOR_OPEN,SoundSource.BLOCKS,.7f,.35f,false);
                 }
             }else{
@@ -174,8 +177,11 @@ final class SupportCannon {
             super.load(n);target=n.getFloat("Target");yaw=prevYaw=n.contains("Yaw")?n.getFloat("Yaw"):target;speed=0;traverse=n.getInt("Traverse");
             if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
-        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putInt("Traverse",traverse);return n;}
-        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");traverse=n.getInt("Traverse");if(!synced){synced=true;yaw=prevYaw=target;}}
+        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putInt("Traverse",traverse);n.putString("OwnerName",ownerName);return n;}
+        /** Only the very first sync snaps the turret to its heading (a cannon coming into view); after that the motor turns it there. */
+        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");traverse=n.getInt("Traverse");ownerName=n.getString("OwnerName");if(!synced){synced=true;yaw=prevYaw=target;}}
+        /** Block updates arrive as data packets; Forge would hand them to {@link #load}, which restarts the turret at its target, so they go through the same path as the first sync. */
+        @Override public void onDataPacket(net.minecraft.network.Connection net,ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
         private boolean synced;
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
         @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).inflate(4);}

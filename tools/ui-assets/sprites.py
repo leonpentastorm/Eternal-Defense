@@ -93,3 +93,25 @@ def portal_sheet():
         for (sx, sy) in (((1, 6 + f * 3), (14, 20 - f * 3))):
             sheet.putpixel((f * W + sx, sy), pick('purple', .95))
     return sheet
+
+
+def parachute_texture():
+    """Parachute canopy panels and cord (24 x 8: olive panel, sand panel, cord), sampled by the procedural canopy."""
+    im = new(24, 8)
+    olive = [hx(c) for c in ('#3f4a26', '#4d5a2e', '#5d6c38', '#6f8043')]
+    sand = [hx(c) for c in ('#9c7c3e', '#b6944f', '#cfab63', '#e2c47e')]
+    rope = [hx(c) for c in ('#5a4a30', '#7c6842', '#a08a5c', '#c4ad78')]
+    for tile, ramp in enumerate((olive, sand, rope)):
+        for y in range(8):
+            for x in range(8):
+                v = 1 + (1 if (x + y) % 4 == 0 else 0) + (1 if y in (2, 5) else 0)
+                if x in (0, 7): v = 0                     # stitched seam between panels
+                if y == 0 or y == 7: v = max(0, v - 1)      # hem
+                im.putpixel((tile * 8 + x, y), ramp[min(3, v)])
+    return im
+
+def nameplate_texture():
+    """Two flat colours for the owner nameplate: brass frame (left) and dark face (right)."""
+    im = new(2, 1)
+    im.putpixel((0, 0), RAMPS['brass'][3]); im.putpixel((1, 0), hx('#0e1a24'))
+    return im
