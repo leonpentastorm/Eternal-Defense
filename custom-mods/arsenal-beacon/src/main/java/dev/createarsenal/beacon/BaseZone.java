@@ -51,6 +51,8 @@ final class BaseZone {
             if(!c.getLevel().isClientSide){
                 String zone=problem(c.getLevel(),c.getClickedPos());
                 if(zone!=null){say(c.getPlayer(),"zone."+zone);return InteractionResult.FAIL;}
+                var state=getBlock().defaultBlockState();
+                if((ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
                 String extra=extra(c);
                 if(extra!=null){say(c.getPlayer(),extra);return InteractionResult.FAIL;}
             }

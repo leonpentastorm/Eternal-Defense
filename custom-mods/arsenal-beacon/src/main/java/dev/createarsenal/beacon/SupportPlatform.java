@@ -43,10 +43,10 @@ final class SupportPlatform {
     static final int GRID_LEFT=12,GRID_TOP=60,INV_LEFT=134,INV_TOP=60;
 
     static final class PlatformBlock extends Block implements EntityBlock {
-        private static final VoxelShape SHAPE=Block.box(0,0,0,16,12,16);
+        private static final VoxelShape SHAPE=net.minecraft.world.phys.shapes.Shapes.create(0,0,0,1,2,1);
         PlatformBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->6).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(MK,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,MK);}
-        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return SHAPE;}
+        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return ArsenalStructures.cell(s,0,0,0);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){
             Direction d=c.getHorizontalDirection().getOpposite();var level=c.getLevel();BlockPos pos=c.getClickedPos();BlockPos front=pos.relative(d);
             var player=c.getPlayer();
@@ -57,6 +57,8 @@ final class SupportPlatform {
             return defaultBlockState().setValue(FACING,d).setValue(MK,mk);
         }
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState s){return new PlatformEntity(pos,s);}
+        @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){super.onPlace(s,l,pos,old,moving);if(l instanceof ServerLevel)ArsenalStructures.install(l,pos,s);}
+        @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){ArsenalStructures.install(l,pos,s);}
         @Override public void setPlacedBy(Level l,BlockPos pos,BlockState s,net.minecraft.world.entity.LivingEntity who,net.minecraft.world.item.ItemStack stack){
             super.setPlacedBy(l,pos,s,who,stack);
             if(l instanceof ServerLevel server&&who instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PlatformEntity be){
@@ -66,6 +68,7 @@ final class SupportPlatform {
         }
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
             if(!s.is(next.getBlock())){
+                ArsenalStructures.remove(l,pos);
                 if(l.getBlockEntity(pos) instanceof PlatformEntity be){
                     Containers.dropContents(l,pos,new SimpleContainer(be.grid.items));
                     if(l instanceof ServerLevel server&&be.owner!=null)SupportData.get(server).clearPlatform(be.owner,pos);

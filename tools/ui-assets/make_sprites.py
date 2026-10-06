@@ -11,7 +11,6 @@ import json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from artlib import *
 from sprites import SPRITES, portal_sheet
-from kit import build_kit, TILES
 import models
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -31,7 +30,6 @@ def main():
         write(ASSETS / 'models/item' / f'{name}.json', {'parent': 'minecraft:item/generated', 'textures': {'layer0': f'arsenal_beacon:item/{name}'}})
         print('sprite', name)
     portal = ASSETS / 'textures/entity/return_portal.png'; portal.parent.mkdir(parents=True, exist_ok=True); sheet = portal_sheet(); sheet.save(portal); sheet.resize((512, 256), Image.NEAREST).save(PREVIEWS / 'return_portal_512.png')
-    kit = build_kit(); kit.save(ASSETS / 'textures/block/support_kit.png'); kit.resize((1024, 1024), Image.NEAREST).save(PREVIEWS / 'support_kit_512.png')
     for path, data in models.all_files(ASSETS, MOD):
         write(path, data); print('wrote', path.relative_to(ROOT))
 

@@ -410,7 +410,6 @@
   "gui.arsenal_beacon.support.zone.outside": "Place it inside the zone of your Defense Beacon.",
   "gui.arsenal_beacon.support.zone.disabled": "Disabled: its Defense Beacon is gone or too far away.",
   "gui.arsenal_beacon.support.only_one_cannon": "You already have a Support Cannon. Move it with the Beacon Recovery Shovel.",
-  "gui.arsenal_beacon.support.cannon_room": "The cannon needs a free 3 x 3 x 2 space.",
   "gui.arsenal_beacon.support.not_yours": "This belongs to %s.",
   "gui.arsenal_beacon.support.no_owner": "This has no owner. Pick it up with the shovel and place it again.",
   "gui.arsenal_beacon.support.relocated": "Picked up. Place it again anywhere in the beacon zone.",
@@ -420,5 +419,6 @@
   "gui.arsenal_beacon.support.refused.cannon_far": "Your cannon is too far from your platform. Your flare was not used.",
   "gui.arsenal_beacon.support.refused.disabled": "Your support gear is disabled while its Defense Beacon is gone. Your flare was not used.",
   "gui.arsenal_beacon.support.refused.wrong_dimension": "Support only reaches the Overworld. Your flare was not used.",
-  "gui.arsenal_beacon.support.grid.note": "A Support Flare takes everything in this grid. Refill it after each call."
+  "gui.arsenal_beacon.support.grid.note": "A Support Flare takes everything in this grid. Refill it after each call.",
+  "gui.arsenal_beacon.support.no_room": "Not enough free space here for this piece."
 }

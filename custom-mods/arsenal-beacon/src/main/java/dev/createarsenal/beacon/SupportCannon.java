@@ -43,8 +43,8 @@ final class SupportCannon {
     /** Turret kinematics in degrees per tick: slow acceleration and braking give the barrel its weight. */
     static final float ACCEL=0.12f,MAX_SPEED=2.2f;
     /** Barrel geometry shared by the renderer and the muzzle effects: hinge height in blocks, elevation, and reach from hinge to muzzle. */
-    static final double SCALE=1.25,TURN_Y=10/16.0,PITCH_DEGREES=50;
-    /** The turret and barrel are drawn {@link #SCALE} times larger around the turntable: hinge height and hinge-to-muzzle reach in blocks. */
+    static final double SCALE=1.0,TURN_Y=10/16.0,PITCH_DEGREES=50;
+    /** The turret and barrel are drawn {@link #SCALE} times the modelled size around the turntable: hinge height and hinge-to-muzzle reach in blocks. */
     static final double PIVOT_Y=TURN_Y+(1.7-TURN_Y)*SCALE,REACH=2.5*SCALE;
 
     /** One tick of the turret motor. {@code state} is {yaw, speed}; pure so the server and every client agree and tests can run it. */
@@ -111,7 +111,7 @@ final class SupportCannon {
                 var base=SupportData.get(server).of(sp.getUUID());
                 if(base!=null&&base.cannon!=null&&server.hasChunkAt(base.cannon)&&server.getBlockState(base.cannon).is(ArsenalBeacon.SUPPORT_CANNON.get()))return "only_one_cannon";
             }
-            return ArsenalStructures.available(c.getLevel(),c.getClickedPos(),ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState())?null:"cannon_room";
+            return null;
         }
     }
 

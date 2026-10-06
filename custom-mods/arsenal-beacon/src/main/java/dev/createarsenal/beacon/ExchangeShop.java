@@ -63,12 +63,15 @@ final class ExchangeShop {
 
     static final class ShopBlock extends Block {
         static final DirectionProperty FACING=net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING;
-        private static final VoxelShape SHAPE=Block.box(1,0,1,15,16,15);
+        private static final VoxelShape SHAPE=net.minecraft.world.phys.shapes.Shapes.create(0,0,0,1,2,1);
         ShopBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->8).sound(net.minecraft.world.level.block.SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite());}
-        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return SHAPE;}
+        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return ArsenalStructures.cell(s,0,0,0);}
         @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.NORMAL;}
+        @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){super.onPlace(s,l,pos,old,moving);if(l instanceof net.minecraft.server.level.ServerLevel)ArsenalStructures.install(l,pos,s);}
+        @Override public void tick(BlockState s,net.minecraft.server.level.ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){ArsenalStructures.install(l,pos,s);}
+        @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){if(!s.is(next.getBlock()))ArsenalStructures.remove(l,pos);super.onRemove(s,l,pos,next,moving);}
         @Override public InteractionResult use(BlockState s,Level l,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){
             if(p instanceof ServerPlayer server&&!BaseZone.disabled(l,pos,server))send(server,pos,"");
             return InteractionResult.sidedSuccess(l.isClientSide);
