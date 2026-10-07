@@ -22,15 +22,17 @@ public final class MessHallSmoke {
     @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=net.minecraftforge.api.distmarker.Dist.CLIENT)
     public static final class KitchenSmokeClient {
         private static int stage,ticks;
+        private static boolean homeEnhanced(net.minecraft.client.Minecraft mc){return mc.player.hasEffect(MealEffects.HOME.get());}
+        private static int mealEffects(net.minecraft.client.Minecraft mc){int n=0;for(var e:MealRules.Effect.values())if(mc.player.hasEffect(MealEffects.of(e)))n++;return n;}
         @net.minecraftforge.eventbus.api.SubscribeEvent public static void tick(net.minecraftforge.event.TickEvent.ClientTickEvent e){
             if(!Boolean.getBoolean("arsenal.kitchenSmoke")||e.phase!=net.minecraftforge.event.TickEvent.Phase.END)return;var mc=net.minecraft.client.Minecraft.getInstance();if(mc.player==null||mc.level==null)return;
             if(stage==0&&mc.screen instanceof MessHallScreen screen&&MealData.load(screen.getMenu().view.getCompound("Meal"))!=null){if(++ticks==20)com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_SANDWICH_UI_PASS");if(ticks==60){mc.gameMode.handleInventoryButtonClick(screen.getMenu().containerId,1);stage=1;ticks=0;}}
             else if(stage==1&&mc.screen instanceof MessHallScreen screen&&screen.getMenu().view.getBoolean("StewMode")){if(++ticks==20)com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_STEW_UI_PASS");if(ticks==60){mc.gameMode.handleInventoryButtonClick(screen.getMenu().containerId,2);stage=2;ticks=0;}}
             else if(stage==2&&mc.screen instanceof MessHallScreen screen){var pots=screen.getMenu().view.getList("Pots",net.minecraft.nbt.Tag.TAG_COMPOUND);if(!pots.isEmpty()&&pots.getCompound(0).getInt("Servings")==16&&++ticks==40){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_STOCKED_UI_PASS");mc.player.closeContainer();stage=3;ticks=0;}}
             else if(stage==3&&mc.screen==null&&++ticks==20){var pos=new net.minecraft.core.BlockPos(3,100,0);mc.gameMode.useItemOn(mc.player,net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos),net.minecraft.core.Direction.NORTH,pos,false));stage=4;ticks=0;}
-            else if(stage==4&&MealClient.homeEnhanced()&&MealClient.current()!=null&&MealClient.current().bonuses().size()==3&&++ticks==40){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_HOME_HUD_PASS");stage=5;ticks=0;}
-            else if(stage==5&&MealClient.active()&&!MealClient.homeEnhanced()&&++ticks==30){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_FIELD_HUD_PASS");stage=6;ticks=0;}
-            else if(stage==6&&MealClient.homeEnhanced()&&MealClient.fieldRemaining()<MealRules.FIELD_TICKS&&++ticks==30){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_CLIENT_SMOKE_PASS");stage=7;}
+            else if(stage==4&&homeEnhanced(mc)&&mealEffects(mc)==3&&++ticks==40){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_HOME_EFFECTS_PASS");stage=5;ticks=0;}
+            else if(stage==5&&mealEffects(mc)>0&&!homeEnhanced(mc)&&++ticks==30){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_FIELD_EFFECTS_PASS");stage=6;ticks=0;}
+            else if(stage==6&&homeEnhanced(mc)&&mealEffects(mc)>0&&++ticks==30){com.mojang.logging.LogUtils.getLogger().info("MESS_HALL_CLIENT_SMOKE_PASS");stage=7;}
         }
     }
 }

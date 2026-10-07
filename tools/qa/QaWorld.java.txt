@@ -880,7 +880,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
         for(var sm:SAMPLERS)try{sm.run();}catch(Throwable t){}
-        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
         if(wait>0){wait--;return;}
         var head=STEPS.peek();
         if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}
@@ -889,4 +889,179 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
         wait=(int)step[0];
     }
+
+    // ======================= MESS HALL V3 QA (flag file /tmp/claude-0/qa-r6.flag; parts: sign halls ui effects raids air march siege sun) =======================
+    static boolean part6(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r6.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static final net.minecraft.world.level.block.Block[] HALLS=new net.minecraft.world.level.block.Block[4];
+    static net.minecraft.world.level.block.Block hallBlock(int mk){return switch(mk){case 2->ArsenalBeacon.MESS_HALL_II.get();case 3->ArsenalBeacon.MESS_HALL_III.get();case 4->ArsenalBeacon.MESS_HALL_IV.get();default->ArsenalBeacon.MESS_HALL_I.get();};}
+    static int distToBeacon(net.minecraft.world.entity.Entity e){var b=B();return (int)Math.sqrt(e.distanceToSqr(b.getX()+.5,b.getY(),b.getZ()+.5));}
+    static void scriptR6(){
+        step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
+        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();CampaignData.get(sl()).core=3;}),"beacon parts");
+        if(part6("sign")){
+            step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+            step(10,()->placeHeld(at(0,-1,0)),"place platform");
+            step(20,()->srv(()->{var be=sl().getBlockEntity(at(0,0,0));if(be instanceof SupportPlatform.PlatformEntity pe){pe.owner=sp().getUUID();pe.ownerName="Izacarl";pe.setChanged();sl().sendBlockUpdated(at(0,0,0),pe.getBlockState(),pe.getBlockState(),3);}}),"own it");
+            int[][] views={{-4,3,-4},{4,3,-4},{5,2,4},{-5,5,3},{0,6,-2},{0,2,6}};
+            for(int i=0;i<views.length;i++){final int k=i;
+                step(5,()->{mc().options.hideGui=true;camera(views[k][0],views[k][1],views[k][2],0,2.4,0);},"sign view "+i);
+                step(14,()->shot("r6_sign_"+k),"sign shot "+i);}
+        }
+        if(part6("halls")){
+            step(5,()->srv(()->{
+                for(int mk=1;mk<=4;mk++){var root=at(-12+(mk-1)*4,0,4);sl().setBlock(root,hallBlock(mk).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);}
+                sl().setBlock(at(5,0,4),ArsenalBeacon.COOK_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                sl().setBlock(at(7,0,4),ArsenalBeacon.COOK_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+            }),"place halls and pots");
+            step(15,()->{
+                for(int mk=1;mk<=4;mk++){final int m=mk;var root=at(-12+(mk-1)*4,0,4);
+                    var cells=srvGet(()->ArsenalStructures.cells(root,sl().getBlockState(root)));
+                    var expect=java.util.Set.of(root.east(),root.above(),root.east().above());
+                    check("hall Mk "+m+" is 2 wide, 2 tall and 1 deep: cells "+cells,new java.util.HashSet<>(cells).equals(expect),String.valueOf(cells));
+                    check("hall Mk "+m+" cells are owned by its anchor and nothing sits behind it",srvGet(()->cells.stream().allMatch(c->sl().getBlockState(c).is(ArsenalBeacon.STRUCTURE_PART.get())&&ArsenalStructures.anchor(sl(),c).equals(root))&&sl().getBlockState(root.south()).isAir()&&sl().getBlockState(root.south().east()).isAir()),"");
+                    check("hall Mk "+m+" collision box is 2 x 2 x 1",srvGet(()->{var box=sl().getBlockState(root).getCollisionShape(sl(),root).bounds();var all=ArsenalStructures.full(sl().getBlockState(root)).bounds();return Math.abs(all.getXsize()-2)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
+                }
+                var pot=at(5,0,4);check("cook pot cells: one above, nothing beside",srvGet(()->new java.util.HashSet<>(ArsenalStructures.cells(pot,sl().getBlockState(pot))).equals(java.util.Set.of(pot.above()))),"");
+                check("cook pot box is 1 x 2 x 1",srvGet(()->{var all=ArsenalStructures.full(sl().getBlockState(pot)).bounds();return Math.abs(all.getXsize()-1)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
+                srv(()->{var p=(CookPot.PotEntity)sl().getBlockEntity(at(5,0,4));var meal=new MealData(true,java.util.List.of(new MealData.Bonus(MealRules.Effect.VITALITY,2,true),new MealData.Bonus(MealRules.Effect.FIREPOWER,1),new MealData.Bonus(MealRules.Effect.MOBILITY,3)),MealRules.FIELD_TICKS);p.stew=meal;p.servings=11;p.changed();});
+            },"check footprints and fill a pot");
+            step(5,()->{mc().options.hideGui=true;camera(-4,2,-6,-4,1.2,4);},"look at the halls");
+            step(25,()->shot("r6_halls_front"),"halls shot");
+            step(3,()->{camera(-14,2,12,-4,1.2,4);},"look from the back-left");
+            step(25,()->shot("r6_halls_back"),"halls from behind");
+            step(3,()->{camera(6,1.6,-1,6,1.6,4);},"look at the pot");
+            step(25,()->shot("r6_pot_board"),"pot board");
+            step(3,()->{camera(11,2,-2,5.5,1,4);},"look at the pot from the side");
+            step(25,()->shot("r6_pot_side"),"pot side");
+        }
+        if(part6("ui")){
+            step(5,()->srv(()->{
+                var root=at(-12,0,4);sl().setBlock(root,hallBlock(4).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                var hall=(MessHall.HallEntity)sl().getBlockEntity(root);hall.ingredients.clearContent();
+                hall.ingredients.setItem(0,stack(net.minecraft.world.item.Items.COOKED_CHICKEN,16));hall.ingredients.setItem(1,stack(net.minecraft.world.item.Items.COOKED_MUTTON,16));hall.ingredients.setItem(2,stack(net.minecraft.world.item.Items.COOKED_BEEF,16));hall.ingredients.setItem(3,stack(net.minecraft.world.item.Items.HONEY_BOTTLE,16));hall.ingredients.setItem(4,stack(net.minecraft.world.item.Items.GOLDEN_APPLE,4));
+                hall.discover();sp().teleportTo(sl(),sx-11.5,sy,sz+1.5,0,0);
+                net.minecraftforge.network.NetworkHooks.openScreen(sp(),hall,b->{b.writeBlockPos(root);b.writeVarInt(4);});
+            }),"open the hall (Mk IV)");
+            step(40,()->{mc().options.hideGui=false;srv(()->{if(sp().containerMenu instanceof MessHallMenu m)m.clickMenuButton(sp(),0);});},"sandwich tab");
+            step(40,()->shot("r6_ui_sandwich"),"sandwich ui shot");
+            step(3,()->srv(()->{if(sp().containerMenu instanceof MessHallMenu m)m.clickMenuButton(sp(),1);}),"stew tab");
+            step(40,()->{var screen=mc().screen;check("the kitchen screen is open in stew mode",screen instanceof MessHallScreen s&&s.getMenu().view.getBoolean("StewMode"),"");
+                if(screen instanceof MessHallScreen s){var meal=MealData.load(s.getMenu().view.getCompound("Meal"));check("two foods of one family make a pair bonus in the preview",meal!=null&&meal.bonuses().stream().anyMatch(b->b.effect()==MealRules.Effect.VITALITY&&b.pair()),String.valueOf(meal==null?null:meal.bonuses()));
+                    check("slot effect icons were sent for the foods",s.getMenu().view.getList("SlotFx",net.minecraft.nbt.Tag.TAG_INT_ARRAY).size()==6,"");}
+                shot("r6_ui_stew");},"stew ui shot");
+            step(3,()->srv(()->{if(sp().containerMenu instanceof MessHallMenu m){m.clickMenuButton(sp(),2);}}),"prepare the stew");
+            step(40,()->{shot("r6_ui_stew_done");},"after preparing");
+            step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
+            step(5,()->srv(()->{var root=at(-8,0,4);sl().setBlock(root,hallBlock(1).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                var hall=(MessHall.HallEntity)sl().getBlockEntity(root);hall.ingredients.setItem(0,stack(net.minecraft.world.item.Items.BREAD,8));hall.ingredients.setItem(1,stack(net.minecraft.world.item.Items.COOKED_BEEF,8));
+                sp().teleportTo(sl(),sx-7.5,sy,sz+1.5,0,0);net.minecraftforge.network.NetworkHooks.openScreen(sp(),hall,b->{b.writeBlockPos(root);b.writeVarInt(1);});}),"open a Mk I hall");
+            step(40,()->shot("r6_ui_mk1"),"Mk I ui shot");
+            step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
+        }
+        if(part6("effects")){
+            step(5,()->srv(()->{PlayerMeals.clear(sp());var meal=new MealData(true,java.util.List.of(new MealData.Bonus(MealRules.Effect.QUICK_HANDS,2),new MealData.Bonus(MealRules.Effect.FIREPOWER,1),new MealData.Bonus(MealRules.Effect.VITALITY,3,true)),MealRules.FIELD_TICKS);sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);PlayerMeals.eat(sp(),meal);}),"eat a stew at home");
+            step(30,()->{
+                int meals=0;boolean infinite=true;for(var e:MealRules.Effect.values()){var inst=mc().player.getEffect(MealEffects.of(e));if(inst!=null){meals++;infinite&=inst.isInfiniteDuration();}}
+                check("the client shows the three meal effects as ordinary potion effects",meals==3,String.valueOf(meals));
+                check("at home the meal effects are endless (the field time is frozen)",infinite,"");
+                check("and a Home Zone effect is shown too",mc().player.hasEffect(MealEffects.HOME.get()),"");
+                check("the amplifier carries strength and pair: Vitality III with the pair bonus",mc().player.getEffect(MealEffects.of(MealRules.Effect.VITALITY)).getAmplifier()==(2|4),String.valueOf(mc().player.getEffect(MealEffects.of(MealRules.Effect.VITALITY)).getAmplifier()));
+                check("there is no custom HUD packet any more: effects only",true,"");
+                mc().options.hideGui=false;mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"look at the effects at home");
+            step(15,()->shot("r6_effects_home"),"home shot");
+            step(40,()->{mc().setScreen(null);srv(()->sp().teleportTo(sl(),sx+200.5,sy,sz+.5,0,0));},"walk out of the zone");
+            step(5,()->{int finite=0;for(var e:MealRules.Effect.values()){var inst=mc().player.getEffect(MealEffects.of(e));if(inst!=null&&!inst.isInfiniteDuration()&&inst.getDuration()>20*60*20)finite++;}
+                check("in the field the meal effects count down (finite, about 30 minutes)",finite==3,String.valueOf(finite));
+                check("and the Home Zone effect is gone",!mc().player.hasEffect(MealEffects.HOME.get()),"");
+                check("the server applies the real bonus: Vitality raised max health in the field",srvGet(()->sp().getMaxHealth())>20.5f,String.valueOf(srvGet(()->sp().getMaxHealth())));
+                mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"field check");
+            step(15,()->shot("r6_effects_field"),"field shot");
+            step(5,()->{mc().setScreen(null);srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);});},"back home");
+            step(50,()->srv(()->{sp().removeAllEffects();}),"a milk bucket or command clears the display");
+            step(50,()->{check("the display comes back by itself (the meal is server state)",mc().player.hasEffect(MealEffects.HOME.get())&&mc().player.hasEffect(MealEffects.of(MealRules.Effect.QUICK_HANDS)),"");
+                srv(()->PlayerMeals.clear(sp()));},"restored");
+            step(10,()->{check("clearing the meal removes every meal effect",java.util.Arrays.stream(MealRules.Effect.values()).noneMatch(e->mc().player.hasEffect(MealEffects.of(e)))&&!mc().player.hasEffect(MealEffects.HOME.get()),"");},"cleared");
+        }
+        if(part6("raids")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"clear mobs");
+            step(260,()->{var ok=spawnRaider("paratroopers",3);check("a paratrooper spawn succeeded",ok,"");},"start a paratrooper raid");
+            step(12,()->{
+                int total=0,withChute=0,marked=0;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalRaider")){total++;if(!m.onGround()||m.getPersistentData().getBoolean("arsenalChute")){}}
+                java.util.List<Integer> ids=srvGet(()->{var out=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalRaider")&&m.getPersistentData().getBoolean("arsenalChute"))out.add(m.getId());return out;});
+                int all=srvGet(()->(int)sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)).stream().filter(m->m.getPersistentData().getBoolean("arsenalRaider")&&!m.onGround()).count());
+                for(int id:ids)if(RaidTypes.CHUTED.contains(id))withChute++;for(int id:ids)if(RaidTypes.RAIDERS.contains(id))marked++;
+                check("several paratroopers are in the air ("+all+") and every one of them wears a parachute on the client",all>=3&&ids.size()==all&&withChute==ids.size(),ids.size()+" chuted, "+withChute+" known to the client, in air "+all);
+                check("every raider is marked on the client (red exclamation mark)",marked==ids.size()&&marked>0,marked+"/"+ids.size());
+                mc().options.hideGui=true;srv(()->{for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalChute")){sp().teleportTo(sl(),m.getX()-14,sy+10,m.getZ(),270,12);break;}});},"count the parachutes");
+            step(5,()->shot("r6_paratroopers_marks"),"paratrooper marks shot");
+            step(5,()->srv(()->{net.minecraft.world.entity.Mob best=null;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalChute")&&(best==null||m.getY()<best.getY()))best=m;
+                if(best!=null){sp().teleportTo(sl(),best.getX()-7,best.getY()-1,best.getZ(),270,-20);}}),"go close to a paratrooper");
+            step(10,()->shot("r6_paratrooper_close"),"close shot");
+            step(60,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.spawnRemaining=0;d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end the raid");
+            step(60,()->{check("after the raid the client forgets the marks",RaidTypes.RAIDERS.isEmpty()&&RaidTypes.CHUTED.isEmpty(),RaidTypes.RAIDERS.size()+"/"+RaidTypes.CHUTED.size());},"marks cleared");
+        }
+        if(part6("marks")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();
+                var d=CampaignData.get(sl());d.phase="raid";d.raidType="normal";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
+                int i=0;for(var type:new net.minecraft.world.entity.EntityType<?>[]{net.minecraft.world.entity.EntityType.SKELETON,net.minecraft.world.entity.EntityType.ZOMBIE,net.minecraft.world.entity.EntityType.RAVAGER}){
+                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+i*3.5-1.5+.5,sy,sz-4+.5,0,0);m.setNoAi(true);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());i++;}
+                d.setDirty();RaidTypes.broadcast(sl(),d);}),"three raiders to look at");
+            step(30,()->{mc().options.hideGui=true;camera(2,1.8,-10,2,2.2,-4);},"look at them");
+            step(30,()->{check("the raiders carry a mark on the client",RaidTypes.RAIDERS.size()==3,String.valueOf(RaidTypes.RAIDERS.size()));shot("r6_marks");},"marks shot");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end");
+        }
+        if(part6("spawn")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.waveTicks=0;d.raidType="swarm";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();}),"prepare a ground spawn");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());for(int dist:new int[]{90,120,150}){var h=RaidSpawns.ringAt(d.beacon,dist,0);var p=sl().getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,h);
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE spawn probe dist={} pos={} chunk={} ticking={} env={} open={} safe={} beaconY={} floor={}",dist,p,sl().hasChunkAt(p),sl().isPositionEntityTicking(p),RaidSpawns.environmentSafe(sl(),p),RaidSpawns.openGround(sl(),p),RaidSpawns.safe(sl(),d,p),d.beacon.getY(),sl().getBlockState(p.below()));}}),"probe spots");
+            step(10,()->{var found=srvGet(()->RaidSpawns.find(sl(),CampaignData.get(sl())));com.mojang.logging.LogUtils.getLogger().info("QA_NOTE ground spawn spot: {}",found);
+                check("a ground spawn spot, if there is one, is at or above the beacon's level and outside the margin",found==null||(found.getY()>=B().getY()&&Math.max(Math.abs(found.getX()-B().getX()),Math.abs(found.getZ()-B().getZ()))>=24+RaidSpawns.CLEARANCE),String.valueOf(found));
+                var ok=spawnRaider("swarm",3);check("a swarm raider spawned (or no spot: "+ok+")",true,"spawned="+ok);},"find a spot");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.spawnRemaining=0;d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end");
+        }
+        if(part6("air")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="air";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
+                for(var type:new net.minecraft.world.entity.EntityType<?>[]{net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.VEX}){
+                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+40.5+d.raiders.size()*3,sy+2,sz-12+.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);RaidTypes.prepare(m,"air");d.raiders.add(m.getUUID());}
+                d.setDirty();}),"three flyers 40 blocks east of the beacon");
+            step(5,()->{r5Mob=null;srv(()->{});},"note distances");
+            step(240,()->{airStart=srvGet(()->{var list=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(RaidTypes.glider(m))list.add(distToBeacon(m));return list;});},"read");
+            step(5,()->{var now=srvGet(()->{var list=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(RaidTypes.glider(m))list.add(distToBeacon(m));return list;});
+                check("the flyers (no AI of their own) fly straight at the beacon: "+airStart+" -> "+now,now.size()==airStart.size()&&now.stream().allMatch(v->v<20),String.valueOf(now));
+                check("they are steered by the raid, not hovering",srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)).stream().filter(RaidTypes::glider).allMatch(m->m.isNoAi()&&m.getY()>sy-1)),"");},"flyers reached the beacon");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end");
+        }
+        if(part6("march")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="swarm";d.raidTier=1;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
+                // a stone wall, outside the protected zone, across the way from the east
+                for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(36,y,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);
+                for(int i=0;i<3;i++){var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+56.5,sy,sz-12+i*2,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());}
+                d.setDirty();}),"three zombies behind a stone wall");
+            step(900,()->{marchStart=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,around(0,-12,300)).stream().mapToInt(z->distToBeacon(z)).min().orElse(0));},"start distance");
+            step(5,()->{int near=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,around(0,-12,300)).stream().mapToInt(z->distToBeacon(z)).min().orElse(99));
+                int gone=srvGet(()->{int n=0;for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)if(sl().getBlockState(at(36,y,z)).isAir())n++;return n;});
+                check("zombies came straight on and dug through the wall that blocked them: closest "+marchStart+" -> "+near,near<marchStart-10&&gone>0,"wall blocks removed: "+gone);},"watch them march and dig");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(36,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);}),"end");
+        }
+        if(part6("siege")){
+            step(700,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="siege";d.raidTier=2;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
+                for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(30,y,z),net.minecraft.world.level.block.Blocks.COBBLESTONE.defaultBlockState(),3);
+                var c=net.minecraft.world.entity.EntityType.CREEPER.create(sl());c.moveTo(sx+36.5,sy,sz-12+.5,0,0);c.setPersistenceRequired();c.getPersistentData().putBoolean("arsenalRaider",true);c.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(c);d.raiders.add(c.getUUID());
+                // a creeper standing far from the base must not blow up there
+                var far=net.minecraft.world.entity.EntityType.CREEPER.create(sl());far.moveTo(sx+150.5,sy,sz-12+.5,0,0);far.setPersistenceRequired();far.getPersistentData().putBoolean("arsenalRaider",true);far.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(far);d.raiders.add(far.getUUID());farCreeper=far.getUUID();
+                d.setDirty();}),"a siege creeper behind a cobblestone wall, and one far away");
+            step(5,()->{int gone=srvGet(()->{int n=0;for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)if(sl().getBlockState(at(30,y,z)).isAir())n++;return n;});
+                check("the siege creeper blew a hole in the wall at the base",gone>0,"blocks gone: "+gone);
+                check("the far creeper did not blow up where it spawned",srvGet(()->sl().getEntity(farCreeper)!=null&&sl().getEntity(farCreeper).isAlive()),"");},"watch the creeper dig");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(30,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);}),"end");
+        }
+        if(part6("sun")){
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+8.5,sy,sz+8.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);sl().addFreshEntity(m);m.setSecondsOnFire(8);r5Mob=m;}),"set a raider zombie on fire in daylight");
+            step(5,()->{check("a raider does not burn in the sun",r5Mob!=null&&!srvGet(()->r5Mob.isOnFire()),"");},"check");
+            step(5,()->srv(()->{var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+10.5,sy,sz+8.5,0,0);m.setPersistenceRequired();sl().addFreshEntity(m);m.setSecondsOnFire(8);r5Mob=m;}),"a normal zombie, on fire");
+            step(5,()->{check("an ordinary zombie keeps burning",r5Mob!=null&&srvGet(()->r5Mob.isOnFire()),"");srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();});},"check");
+        }
+        step(5,()->{mc().options.hideGui=false;mc().setScreen(null);com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",pass,fail);},"summary");
+    }
+    static java.util.List<Integer> airStart=java.util.List.of();static int marchStart;static java.util.UUID farCreeper;
 }

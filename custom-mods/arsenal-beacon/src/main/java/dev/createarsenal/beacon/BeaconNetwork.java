@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"23-standalone":"23-pack",s->s.equals(BuildFlavor.STANDALONE?"23-standalone":"23-pack"),s->s.equals(BuildFlavor.STANDALONE?"23-standalone":"23-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"24-standalone":"24-pack",s->s.equals(BuildFlavor.STANDALONE?"24-standalone":"24-pack"),s->s.equals(BuildFlavor.STANDALONE?"24-standalone":"24-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -47,8 +47,7 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(11,CannonControl.Open.class,CannonControl.Open::encode,CannonControl.Open::decode,CannonControl.Open::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(12,CannonControl.Act.class,CannonControl.Act::encode,CannonControl.Act::decode,CannonControl.Act::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(13,SupportHud.Sync.class,SupportHud.Sync::encode,SupportHud.Sync::decode,SupportHud.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        CHANNEL.registerMessage(14,RaidTypes.Chute.class,RaidTypes.Chute::encode,RaidTypes.Chute::decode,RaidTypes.Chute::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        CHANNEL.registerMessage(15,PlayerMeals.Sync.class,PlayerMeals.Sync::encode,PlayerMeals.Sync::decode,PlayerMeals.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(14,RaidTypes.Marks.class,RaidTypes.Marks::encode,RaidTypes.Marks::decode,RaidTypes.Marks::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(16,MessHallMenu.Preview.class,MessHallMenu.Preview::encode,MessHallMenu.Preview::decode,MessHallMenu.Preview::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));

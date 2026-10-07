@@ -1,0 +1,10 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/enchanted"
+  },
+  "staple": false,
+  "effects": {
+    "recovery": 3,
+    "fortune": 1
+  }
+}

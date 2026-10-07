@@ -33,8 +33,24 @@ final class MealRulesTest {
         assertArrayEquals(new int[]{1,0,1},MealRules.plan(counts,new int[]{0,0,1},2));
     }
     @Test void firearmTraitsHaveStableIdsAndConservativeDistinctAmounts(){
-        assertEquals(.05,MealRules.Effect.of("firepower").amount);assertEquals(.06,MealRules.Effect.of("quick_hands").amount);
-        assertEquals(.15,MealRules.Effect.of("brawler").amount);assertEquals(.12,MealRules.Effect.of("heavy_hand").amount);assertEquals(.05,MealRules.Effect.of("demolition").amount);
+        assertEquals(.08,MealRules.Effect.of("firepower").amount);assertEquals(.10,MealRules.Effect.of("quick_hands").amount);
+        assertEquals(.20,MealRules.Effect.of("brawler").amount);assertEquals(.15,MealRules.Effect.of("heavy_hand").amount);assertEquals(.10,MealRules.Effect.of("demolition").amount);
         assertNull(MealRules.Effect.of("attack_damage"));
+    }
+    @Test void everyEffectHasAStableIdAndNewEffectsAreAppended(){
+        var ids=new HashSet<String>();for(var e:MealRules.Effect.values()){assertTrue(ids.add(e.id));assertSame(e,MealRules.Effect.of(e.id));assertTrue(e.amount>0);}
+        assertEquals(16,MealRules.Effect.values().length);
+        for(int i=0;i<9;i++)assertEquals(new String[]{"vitality","fortitude","steadiness","mobility","firepower","quick_hands","brawler","heavy_hand","demolition"}[i],MealRules.Effect.values()[i].id,"saved meals keep their effect ids and order");
+    }
+    @Test void pairedFoodsDoubleTheBonusAndSurviveTheVanillaEffectCodec(){
+        var single=new MealData.Bonus(MealRules.Effect.VITALITY,2);var pair=new MealData.Bonus(MealRules.Effect.VITALITY,2,true);
+        assertEquals(single.field()*2,pair.field(),1e-9);assertEquals(single.home()*2,pair.home(),1e-9);assertEquals(single.field()*2,single.home(),1e-9);
+        for(var e:MealRules.Effect.values())for(int strength=1;strength<=3;strength++)for(boolean p:new boolean[]{false,true}){
+            var bonus=new MealData.Bonus(e,strength,p);var back=MealData.Bonus.ofAmplifier(e,bonus.amplifier());assertEquals(bonus,back,"amplifier "+bonus.amplifier()+" of "+e);
+        }
+    }
+    @Test void damageProtectionsNeverReachFullImmunity(){
+        var hearth=new MealData.Bonus(MealRules.Effect.HEARTH,3,true);var springy=new MealData.Bonus(MealRules.Effect.SPRINGY,3,true);
+        assertTrue(hearth.home()<=.8&&springy.home()<=.9);assertTrue(hearth.field()>0&&springy.field()>0);
     }
 }

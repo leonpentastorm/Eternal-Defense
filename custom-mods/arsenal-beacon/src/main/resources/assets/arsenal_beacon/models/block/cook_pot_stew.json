@@ -1,76 +1,35 @@
 {
-  "textures": {
-    "particle": "minecraft:block/brown_mushroom_block",
-    "frame": "minecraft:block/brown_mushroom_block"
-  },
-  "elements": [
-    {
-      "from": [
-        4,
-        10,
-        4
-      ],
-      "to": [
-        28,
-        10.5,
-        12
-      ],
-      "faces": {
-        "north": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        },
-        "south": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        },
-        "east": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        },
-        "west": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        },
-        "up": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        },
-        "down": {
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ],
-          "texture": "#frame"
-        }
-      }
+ "credit": "Create Arsenal - remodel",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "arsenal_beacon:block/cook_pot_stew",
+  "particle": "arsenal_beacon:block/cook_pot_stew"
+ },
+ "elements": [
+  {
+   "name": "Stew_surface",
+   "from": [
+    3.5,
+    12.5,
+    3.5
+   ],
+   "to": [
+    12.5,
+    13.0,
+    12.5
+   ],
+   "faces": {
+    "up": {
+     "uv": [
+      0.25,
+      0.25,
+      9.25,
+      9.25
+     ],
+     "texture": "#0"
     }
-  ]
+   }
+  }
+ ]
 }

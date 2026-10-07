@@ -28,9 +28,9 @@ public final class MessHallGameTests {
         var f=fixture(h,0);var l=f.level;l.removeBlock(f.root,false);
         for(var direction:Direction.Plane.HORIZONTAL){
             for(var block:List.of(ArsenalBeacon.MESS_HALL_I.get(),ArsenalBeacon.MESS_HALL_II.get(),ArsenalBeacon.MESS_HALL_III.get(),ArsenalBeacon.MESS_HALL_IV.get(),ArsenalBeacon.COOK_POT.get())){
-                var state=block.defaultBlockState().setValue(ArsenalStructures.FACING,direction);var cells=ArsenalStructures.cells(f.root,state);h.assertTrue(cells.size()==(block instanceof MessHall.HallBlock?3:1),"Correct horizontal footprint");
+                var state=block.defaultBlockState().setValue(ArsenalStructures.FACING,direction);var cells=ArsenalStructures.cells(f.root,state);h.assertTrue(cells.size()==(block instanceof MessHall.HallBlock?3:1),"Correct footprint: halls 2 wide x 2 tall, pots 2 tall");
                 l.setBlock(cells.get(0),Blocks.OBSIDIAN.defaultBlockState(),3);h.assertTrue(!ArsenalStructures.available(l,f.root,state),"Cannot overwrite an obstruction");l.removeBlock(cells.get(0),false);l.setBlock(f.root,state,3);
-                for(var cell:cells){h.assertTrue(cell.getY()==f.root.getY()&&ArsenalStructures.anchor(l,cell).equals(f.root),"Owned cells resolve the anchor without reserving height");h.assertTrue(!l.getBlockState(cell).getCollisionShape(l,cell).isEmpty(),"Every footprint cell collides");}
+                for(var cell:cells){h.assertTrue(cell.getY()-f.root.getY()<=1&&cell.getY()>=f.root.getY()&&ArsenalStructures.anchor(l,cell).equals(f.root),"Owned cells resolve the anchor within the two-block-tall footprint");h.assertTrue(!l.getBlockState(cell).getCollisionShape(l,cell).isEmpty(),"Every footprint cell collides");}
                 var part=cells.get(0);l.getBlockState(part).getBlock().playerWillDestroy(l,part,l.getBlockState(part),f.player);l.removeBlock(part,false);
                 h.assertTrue(l.getBlockState(f.root).isAir(),"Breaking a part removes the anchor");for(var cell:cells)h.assertTrue(l.getBlockState(cell).isAir(),"No invisible cells remain");
             }

@@ -1,0 +1,9 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/treats"
+  },
+  "staple": false,
+  "effects": {
+    "agility": 1
+  }
+}

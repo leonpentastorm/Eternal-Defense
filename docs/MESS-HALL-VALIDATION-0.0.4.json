@@ -1,0 +1,46 @@
+{
+  "project_version": "0.0.4",
+  "feature": "Mess Hall v3",
+  "branch": "feature/messhall-ver-3",
+  "base": "feature/messhall-ver-2 (0.0.3)",
+  "date": "2026-10-07",
+  "network_protocol": 24,
+  "build": "JDK 17 offline build releaseJars passed, both editions",
+  "unit_tests": { "arsenal-beacon": { "tests": 70, "failures": 0 }, "arsenal-gun-guide": { "tests": 7, "failures": 0 } },
+  "real_client_qa": {
+    "harness": "tools/qa (QaWorld scriptR6), software GL, pack flavor",
+    "checks": "41 passed, 0 failed (plus screenshot-only checks of the sign post from six angles)",
+    "covers": [
+      "hall Mk I-IV footprints 2 wide x 1 deep x 2 tall and collision boxes; pot 1 x 1 x 2",
+      "kitchen screen in sandwich and stew mode, pair bonus preview, slot effect icons",
+      "meal shown as vanilla potion effects: endless at home plus Home Zone, finite in the field, restored after clearing, removed with the meal",
+      "paratroopers: 15 of 15 wear a parachute on the client; every raider carries a mark; marks cleared after the raid",
+      "vexes and phantoms fly straight at the beacon (36-43 blocks to 0-1)",
+      "zombies march straight and dig through a wall; siege creeper digs at the wall near the base, a far one does not explode",
+      "raiders do not burn in daylight, ordinary zombies still do"
+    ],
+    "found_and_fixed_by_it": [
+      "inventory effect list crashed (extension built before the MobEffect subclass fields existed)",
+      "kitchen screen layout overlaps",
+      "NoAI flyers were not moved by vanilla"
+    ]
+  },
+  "real_server_game_tests": {
+    "without_tacz": "MessHallGameTests 5 + MessHallV3GameTests 4 = 9 of 9 passed",
+    "with_tacz_1.1.8-hotfix2": {
+      "firepower_ak_body_hit": { "base": 6.0, "field": 6.48, "home": 6.96 },
+      "brawler_field_ratio": 1.2,
+      "heavy_hand_field_ratio": 1.15,
+      "demolition_m320_radius": { "base": 4.0, "field": 4.4, "home": 4.8 },
+      "quick_hands_ak_reload_ms": { "base": 2602, "field": 2366, "home": 2168 },
+      "note": "one assertion of the unchanged v2 explosion-neutrality test fails only in the dev harness (field name radius differs between dev and production names)"
+    }
+  },
+  "not_verified": [
+    "ground spawns of raids in a normal world",
+    "multiplayer",
+    "standalone edition in a real client",
+    "pack with real Create items",
+    "balance of the sixteen effects and the pair bonus"
+  ]
+}

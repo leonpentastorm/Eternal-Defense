@@ -14,14 +14,14 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import java.util.*;
 
-/** One anchor and horizontal owned cells; decoration never reserves extra vertical space. */
+/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); a pot is 1 x 1 x 2. */
 abstract class KitchenBlock extends Block implements EntityBlock {
     final boolean hall;
     KitchenBlock(boolean hall){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(ArsenalStructures.FACING,Direction.NORTH));}
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(ArsenalStructures.FACING);}
     @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(ArsenalStructures.FACING,c.getHorizontalDirection().getOpposite());}
-    List<BlockPos> cells(BlockPos root,BlockState state){var right=state.getValue(ArsenalStructures.FACING).getClockWise();var back=state.getValue(ArsenalStructures.FACING).getOpposite();return hall?List.of(root.relative(right),root.relative(back),root.relative(right).relative(back)):List.of(root.relative(right));}
-    VoxelShape full(BlockState state){var root=BlockPos.ZERO;int minX=0,minZ=0,maxX=1,maxZ=1;for(var p:cells(root,state)){minX=Math.min(minX,p.getX());minZ=Math.min(minZ,p.getZ());maxX=Math.max(maxX,p.getX()+1);maxZ=Math.max(maxZ,p.getZ()+1);}return Shapes.create(minX,0,minZ,maxX,1,maxZ);}
+    List<BlockPos> cells(BlockPos root,BlockState state){var right=state.getValue(ArsenalStructures.FACING).getClockWise();return hall?List.of(root.relative(right),root.above(),root.relative(right).above()):List.of(root.above());}
+    VoxelShape full(BlockState state){var root=BlockPos.ZERO;int minX=0,minZ=0,maxX=1,maxZ=1,maxY=1;for(var p:cells(root,state)){minX=Math.min(minX,p.getX());minZ=Math.min(minZ,p.getZ());maxX=Math.max(maxX,p.getX()+1);maxZ=Math.max(maxZ,p.getZ()+1);maxY=Math.max(maxY,p.getY()+1);}return Shapes.create(minX,0,minZ,maxX,maxY,maxZ);}
     @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return ArsenalStructures.cell(s,0,0,0);}
     @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.BLOCK;}
     @Override public void onPlace(BlockState s,Level l,BlockPos p,BlockState old,boolean moving){super.onPlace(s,l,p,old,moving);if(!s.is(old.getBlock())&&!l.isClientSide&&!ArsenalStructures.install(l,p,s))l.scheduleTick(p,this,20);}
@@ -43,6 +43,6 @@ abstract class KitchenBlock extends Block implements EntityBlock {
                 if(!ArsenalStructures.available(level,root,s)){BaseZone.say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
             }return super.place(c);
         }
-        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",getBlock() instanceof MessHall.HallBlock?"2 x 2 x 1":"2 x 1 x 1"));}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",getBlock() instanceof MessHall.HallBlock?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
     }
 }

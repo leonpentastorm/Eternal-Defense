@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.3 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.4 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Mess Hall v2 feature preview on `feature/messhall-ver-2`, based on `dev` 0.0.2 |
+| **Status** | Mess Hall v3 feature preview on `feature/messhall-ver-3`, based on `feature/messhall-ver-2` (project 0.0.3) |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.4 | 2026-10-07 | Development | Mess Hall v3: 2 wide x 2 tall x 1 deep halls and 1 x 2 pots with the painted models; meals shown as vanilla potion effects (HUD removed); sixteen effects and every vanilla food; stew pair bonus; juiced kitchen screen; raiders marched straight at the beacon, marked with a red exclamation mark, immune to sunlight, spawned on open surface ground at or above the beacon; flyers steered straight in; siege creepers dig; every paratrooper wears a parachute; protocol 24 |
 | 0.0.3 | 2026-10-07 | Development | Mess Hall v2: 4/7/10/12 stew costs, distinct-type scoring, five scoped TaCZ buffs, cost/effect UI; protocol 23; feature branch only |
 | 0.0.2 | 2026-10-07 | Development | Mess Hall Mk I–IV, ingredient traits, portable rations, communal stew, persistent home-enhanced meals; protocol 22 |
 | 0.0.1 | 2026-10-07 | Claude | First version, covering rounds 1 to 5 |
@@ -80,15 +81,16 @@ One source tree builds both (`/arsenal-build.properties` flavor in the jar). Eve
 * Introduction raid first (always ordinary and gentle), then raids on a sparse night schedule; the player can pick a lower level, call early, or pay to push back.
 * Waves: **3 + tier (capped at 5 extra)**. Every third raid is a **boss raid** (the boss arrives in the last wave; 50 percent larger cache, bonus kits and grenades).
 * Attackers scale with the number of defenders, spawn outside the zone, target doors first and dig through walls; ranged enemies hold distance.
+* **Marching (v3):** raiders walk **straight at the beacon** (no detours around terrain) and only stop to dig when they stop making progress (less than a block in a second). They spawn on **open surface ground at or above the beacon's level** (never in a crevice or below ground; if no such place exists for 30 s the rule relaxes by 4 blocks, after 90 s by 10). Every raider carries a **red exclamation mark** above its head and is **immune to sunlight**.
 * **Victory** restores everything the raid broke (damage journal). **Defeat** leaves it.
 * Warnings: chat one day ahead, then every six hours; popups for raid start, each wave, VICTORY (confetti) and DEFEAT.
 
 ### 5.3 Special raid types (from the fourth raid on, 50 percent chance, also in boss raids)
 | Type | What it asks of the base |
 | --- | --- |
-| **Air raid** | Vexes, phantoms, blazes ignore walls; build anti-air, not thicker walls |
-| **Paratroopers** | Heavies at half count drop from 46 blocks up under red parachutes (slow fall, can be shot, no fall damage if not shot) |
-| **Siege** | Ranged-heavy waves; creepers (30 percent) dig into walls, shooters fire through the holes |
+| **Air raid** | Vexes, phantoms, blazes ignore walls; build anti-air, not thicker walls. Vexes and phantoms are steered straight at the closest defender within 7 blocks, otherwise at the beacon, and hit it on arrival; blazes keep their own ranged attack |
+| **Paratroopers** | Heavies at half count drop from 46 blocks up under red parachutes (slow fall, can be shot, no fall damage if not shot); every one of them wears the parachute |
+| **Siege** | Ranged-heavy waves; creepers (30 percent) dig into walls, shooters fire through the holes. A creeper only blows up when it is stuck at a wall within 24 blocks of the zone (or reaches the beacon), never where it spawns |
 | **They are thousands** | Only zombies and husks, double count, spawning every 8 ticks instead of 20, up to 96 alive; no heavy or ranged |
 
 A won special raid adds **3 + 2 x tier** Ardent Energy. The next raid's type is shown at the end of each raid and in the Overview. Design intent: a type that rewards a counter-build (anti-air, thick walls, killing zones). Special raids start at raid 4 so support is affordable first.
@@ -119,15 +121,15 @@ New players get a starter weapon with ammo, a field guide (pack and standalone t
 ### 5.8 Mess Hall and prepared meals
 **A fortress should have a kitchen feeding the war effort.** A farmer/cook supports the group with portable expedition rations and communal pre-raid meals. Casual cooking is useful; a dedicated cook supports more people without being mandatory.
 
-* **Mess Hall Mk I–IV:** a rotating **2 × 2 × 1** installation, entirely inside the existing beacon zone, with six shared persistent ingredient slots and a physical sandwich output slot. Each tier has distinct functional model resources: improvised wooden spit, copper field station, stone fortified ovens, enclosed iron/green canteen. Initial craft uses vanilla materials in both editions; paid in-place upgrades preserve food and links.
-* **Cook Pot:** **2 × 1 × 1**, hollow pot with a conditional stew surface and an attached live menu board displaying stew, up to three bonuses and remaining servings. State, strengths, remaining servings and hall identity persist in its block entity.
+* **Mess Hall Mk I–IV:** a rotating **2 wide × 1 deep × 2 tall** installation (painted models from the artist package), entirely inside the existing beacon zone, with six shared persistent ingredient slots and a physical sandwich output slot. Each tier has distinct functional model resources: improvised wooden spit, copper field station, stone fortified ovens, enclosed iron/green canteen. Initial craft uses vanilla materials in both editions; paid in-place upgrades preserve food and links.
+* **Cook Pot:** **1 × 1 × 2**, hollow pot with a conditional stew surface and, on a chalkboard in its upper block, a live menu board displaying stew, up to three bonuses and remaining servings. State, strengths, remaining servings and hall identity persist in its block entity.
 * **Two preparation tabs:** Sandwich produces one portable item with **1–2 effects**, stored in NBT, stacking to 16 and edible normally at full hunger. Stew holds **up to 3 effects**, assigned to one selected empty linked pot. Sandwich consumes one staple plus one or two fillings (2–3 distinct types). Stew consumes **4/7/10/12 ingredient units** at Mk I/II/III/IV, spread across stacked inputs, including one of every composition type. Mk I supports up to four ingredient types; later tiers up to six. Container remainders return for every consumed item. Failed preparation consumes nothing, and a full pot cannot be overwritten.
 * **Bowl serving:** interact with a filled pot while holding a normal bowl to eat immediately. The server removes one serving; the bowl remains empty and reusable. Sandwich nutrition is 8 (saturation modifier 0.6); stew nutrition is 10 (0.8).
 * **Tier hooks:** Mk I/II/III/IV link **1/2/3/4 pots** and produce **4/8/12/16 stew servings**. All tiers retain the same effect-slot limits. Higher tiers improve servings per ingredient without multiplying a tiny batch. Next upgrades cost **8/16/32 Reinforced Plating** in the pack or **4/8/14 Ardent Energy** standalone (`Economy`). Creative upgrades are free.
-* **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Chicken/mutton/rabbit/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/fruit/sugar → mobility. Beef → firepower; honey → quick_hands; pork → brawler; golden carrot → heavy_hand; pufferfish → demolition. Weighted effects choose the strongest two/three; overlapping definitions use the maximum per effect per distinct item type. Stack quantity and duplicate slots never increase strength. Strength caps at base × 1.0/1.25/1.5.
-* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. TaCZ bonuses use the same meal state: **Firepower +5% gun damage**, **Quick Hands +6% reload speed**, **Brawler +15% gun bash damage**, **Heavy Hand +12% gun bash knockback**, **Demolition +5% grenade/rocket radius** in the field, doubled at home and scaled by the existing strength levels. Firepower uses native hit events; reload advances the native server clock; bash changes only TaCZ bash arguments; radius changes only TaCZ kinetic projectiles from native `rpg` launcher indexes. Vanilla melee, TNT/creepers and unrelated explosives receive no bonus. Full integration and unsupported types are in `docs/MESS-HALL.md`.
+* **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Chicken/mutton/rabbit/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/fruit/sugar → mobility. Beef → firepower; honey → quick_hands; pork → brawler; golden carrot → heavy_hand; pufferfish → demolition. **Every vanilla food has a trait (v3):** raw meat → might; cookies/pumpkin pie → agility; raw fish → swim; glow berries/suspicious stew → fortune; golden apples → recovery; rotten flesh/spider eye/poisonous potato → hearth; chorus fruit → springy. **Pair bonus:** in a stew, two *different* foods of one family feeding the same effect **double** that effect. Weighted effects choose the strongest two/three; overlapping definitions use the maximum per effect per distinct item type. Stack quantity and duplicate slots never increase strength. Strength caps at base × 1.0/1.25/1.5.
+* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. TaCZ bonuses use the same meal state: **Firepower +8% gun damage**, **Quick Hands +10% reload speed**, **Brawler +20% gun bash damage**, **Heavy Hand +15% gun bash knockback**, **Demolition +10% grenade/rocket radius** (v3 raised them: the v2 values worked in server tests but were too small to notice). New v3 effects: **Might** +8% melee damage, **Agility** +8% attack speed, **Fortune** +1 luck, **Recovery** 1 health per 5 s, **Hearth** 10% less fire/explosion damage, **Springy Step** 12% less fall damage, **Strong Swimmer** +10% swim speed in the field, doubled at home and scaled by the existing strength levels. Firepower uses native hit events; reload advances the native server clock; bash changes only TaCZ bash arguments; radius changes only TaCZ kinetic projectiles from native `rpg` launcher indexes. Vanilla melee, TNT/creepers and unrelated explosives receive no bonus. Full integration and unsupported types are in `docs/MESS-HALL.md`.
 * **Home enhancement:** `BaseZone` determines valid home territory. Meal strength is **2× at home**, and remaining field duration **freezes**. Outside, strength normalizes and the timer resumes. Returning home freezes the existing remainder and never refreshes it. New meals replace the old state and start **30 minutes / 36,000 field ticks**.
-* **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** HUD shows name, field time, all actual effect amounts and HOME ENHANCEMENT / FIELD status. The kitchen shows available/required food units and per-slot consumption tooltips; preview tooltips list field/home effects.
+* **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** A meal is shown with ordinary vanilla potion effects (no custom HUD): one effect per bonus with its current value and time in the inventory list, endless while at home, plus a **Home Zone** effect ("your food buffs double and don't decay"). The kitchen shows available/required food units and per-slot consumption tooltips; preview tooltips list field/home effects.
 * **Linking:** nearby anchors link within **8 blocks in 3D**, respecting tier capacity. Existing valid links are not stolen. Hall UUID + persisted pot reservations prevent same-position replacement and chunk-unload reassignment. Unloaded pots retain reserved capacity. Broken anchors clean loaded links; unloaded partners validate later. Orphaned stew remains stored until the pot reconnects. No general logistics system exists.
 
 Balance is an initial estimate. Final painted art, extended co-op balance and full-pack integration remain playtest work. Exact extension format, lifecycle and ownership rules: `docs/MESS-HALL.md`.
@@ -146,18 +148,18 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 
 ## 7. UI and audio
 * Shared UI kit (`Ui`): consistent panels, tabs, rows, cards, pips; icon-first with plain-language requirements.
-* Meal HUD: top-left card with active meal, remaining field time and a written HOME ENHANCEMENT / FROZEN state. Kitchen uses separate Sandwich/Stew tabs with server previews, pot selection and failure reasons.
+* Meals: shown with ordinary vanilla potion effects (top-right icons, inventory effect list with the current value and time, plus a Home Zone effect); no custom HUD. The kitchen screen has Sandwich/Stew tabs, a tier badge, effect icons under each ingredient, one card per meal effect (strength pips, field value, home value, pair x2), pot meters, a food bar and an animated Prepare button; the server supplies previews, pot selection and failure reasons.
 * HUD: banner above the hotbar showing the chosen fire support while a Fire Support Flare is held; toasts for support calls.
 * Zone: glowing grid and a red target box drawn as edges only (so nothing behind it is hidden). The outline's stale limit is 30 s (the cause of an earlier flicker bug is unproven).
 * Audio: cannon grinding on turning; chat lines "Cannon preparing..." and "You heard cannon fire roaring" for far players. **(TBD: dedicated music and raid stingers.)**
 * Art: hand-made 3D models (shop, platform Mk-1 to Mk-4, cannon, parcel) and painted 64x64 sprites; red parachute canopy drawn procedurally.
 
 ## 8. Technical notes for designers
-* Network protocol **22** (new messages 15: own meal HUD, 16: open kitchen preview, both server → client); bump on any packet change.
+* Network protocol **24** (message 14: raid marks, exclamation marks and parachutes; 16: open kitchen preview; the v2 meal HUD message 15 was removed); bump on any packet change.
 * Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
-* Mob effects are not synced to clients, so special visuals (red parachute) use their own packet.
+* Mob effects and persistent data are not synced to clients, so the raid marks (red exclamation mark, red parachute) use their own idempotent packet sent every second.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.
-* QA: 64 beacon unit tests and 7 gun-guide tests; five original and six v2 opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
+* QA: 67 beacon unit tests and 7 gun-guide tests; five original and six v2 opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
 
 ## 9. Known risks and open questions
 1. Zone outline flicker during cannon fire: fix is a best guess, unconfirmed.

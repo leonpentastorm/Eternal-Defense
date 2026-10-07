@@ -96,7 +96,7 @@ public final class SupportClient {
             pose.pushPose();
             pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-((facing.toYRot()+180f)%360f)));
             // the post, two crossed strips from the top cap of the platform
-            var vc=buffer.getBuffer(RenderType.entityCutout(PLATE));
+            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(PLATE)); // no culling: a flat strip would vanish seen from its back
             pose.pushPose();pose.translate(-.18,1.9,0);pose.mulPose(Axis.ZP.rotationDegrees(-5f));
             for(int side=0;side<2;side++){var last=pose.last();quad(vc,last.pose(),last.normal(),-.035f,0,.035f,.55f,0f,light,.25f);pose.mulPose(Axis.YP.rotationDegrees(90f));}
             pose.popPose();
@@ -132,15 +132,34 @@ public final class SupportClient {
         @Override public boolean shouldRenderOffScreen(SupportCannon.CannonEntity be){return false;}
     }
 
-    /** The red parachute of a paratrooper: any hostile mob floating down under slow falling wears one until it lands. */
+    /** The red parachute of a paratrooper (any raider marked as floating down) and the red exclamation mark above every raider. */
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
     public static final class TrooperChutes {
         static final ResourceLocation RED=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/parachute_red.png");
+        static final ResourceLocation MARK=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/raid_mark.png");
         @SubscribeEvent public static void draw(net.minecraftforge.client.event.RenderLivingEvent.Post<?,?> e){
             var mob=e.getEntity();
-            if(!RaidTypes.CHUTED.contains(mob.getId())||mob.onGround()||!mob.isAlive())return;
-            var pose=e.getPoseStack();pose.pushPose();pose.translate(0,mob.getBbHeight()*.8,0);
-            ParcelRenderer.canopy(pose,e.getMultiBufferSource(),e.getPackedLight(),mob.tickCount+e.getPartialTick(),RED);pose.popPose();
+            if(!mob.isAlive())return;
+            boolean chute=RaidTypes.CHUTED.contains(mob.getId())&&!mob.onGround();
+            if(chute){
+                var pose=e.getPoseStack();pose.pushPose();pose.translate(0,mob.getBbHeight()*.8,0);
+                ParcelRenderer.canopy(pose,e.getMultiBufferSource(),e.getPackedLight(),mob.tickCount+e.getPartialTick(),RED);pose.popPose();
+            }
+            if(RaidTypes.RAIDERS.contains(mob.getId())&&mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition())<=96*96)
+                mark(e.getPoseStack(),e.getMultiBufferSource(),mob,chute?mob.getBbHeight()+3.6f:mob.getBbHeight()+.75f,mob.tickCount+e.getPartialTick(),net.minecraft.client.Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
+        }
+        /** A camera-facing exclamation mark that bobs above the head; it is drawn fully bright and a little larger the farther away the mob is. */
+        static void mark(PoseStack pose,MultiBufferSource buffer,net.minecraft.world.entity.LivingEntity mob,float height,float age,org.joml.Quaternionf camera){
+            double distance=Math.sqrt(mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition()));
+            float size=.5f+(float)Math.min(.9,distance/60.0*.9),bob=(float)Math.sin(age*.2)*.06f;
+            pose.pushPose();pose.translate(0,height+bob,0);pose.mulPose(camera);pose.scale(size,size,size);
+            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(MARK));var last=pose.last();var m=last.pose();var n=last.normal();
+            float h=.5f;int light=15728880;
+            vc.vertex(m,-h,0,0).color(255,255,255,255).uv(0,1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+            vc.vertex(m,h,0,0).color(255,255,255,255).uv(1,1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+            vc.vertex(m,h,1f,0).color(255,255,255,255).uv(1,0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+            vc.vertex(m,-h,1f,0).color(255,255,255,255).uv(0,0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+            pose.popPose();
         }
     }
 

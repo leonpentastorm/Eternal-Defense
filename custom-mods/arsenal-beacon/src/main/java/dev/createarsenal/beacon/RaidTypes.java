@@ -76,21 +76,37 @@ final class RaidTypes {
     }
     /** Gives a mob its parachute: it floats down slowly and takes no fall damage; the effect shows the red canopy on clients. */
     static void parachute(Mob mob){
-        mob.getPersistentData().putBoolean("arsenalChute",true);tell(mob,true);
+        mob.getPersistentData().putBoolean("arsenalChute",true);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,20*90,0,false,false,false));
     }
-    /** Tells every client whether this mob wears its parachute (mob effects are not synced to clients, so a small packet does it). */
-    static void tell(Mob mob,boolean on){BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Chute(mob.getId(),on));}
-    record Chute(int id,boolean on){
-        static void encode(Chute p,net.minecraft.network.FriendlyByteBuf b){b.writeVarInt(p.id);b.writeBoolean(p.on);}
-        static Chute decode(net.minecraft.network.FriendlyByteBuf b){return new Chute(b.readVarInt(),b.readBoolean());}
-        static void handle(Chute p,java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctx){ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{if(p.on)CHUTED.add(p.id);else CHUTED.remove(p.id);}));ctx.get().setPacketHandled(true);}
+    /**
+     * Tells every client which mobs are raiders (they get the red exclamation mark) and which of them float under a parachute.
+     * Mob effects and persistent data are not synced to clients, so a small packet carries the ids. It is idempotent and sent again every second,
+     * so a client that was still loading the mob, or that logged in during the raid, catches up by itself.
+     */
+    record Marks(int[] raiders,int[] chuted) {
+        static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);}
+        static Marks decode(net.minecraft.network.FriendlyByteBuf b){return new Marks(b.readVarIntArray(),b.readVarIntArray());}
+        static void handle(Marks p,java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctx){
+            ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{
+                RAIDERS.clear();CHUTED.clear();for(int id:p.raiders)RAIDERS.add(id);for(int id:p.chuted)CHUTED.add(id);}));ctx.get().setPacketHandled(true);
+        }
     }
-    /** Client: ids of the mobs that are floating down under a red parachute. */
-    static final java.util.Set<Integer> CHUTED=java.util.concurrent.ConcurrentHashMap.newKeySet();
-    /** Things a special raid's mobs need beyond their role: phantoms must not burn in daylight. */
+    /** Client: ids of the raiding mobs, and of those floating down under a red parachute. */
+    static final java.util.Set<Integer> RAIDERS=java.util.concurrent.ConcurrentHashMap.newKeySet(),CHUTED=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static boolean marked;
+    /** Server: send the current marks to everybody (an empty list once after the raid so the marks go away). */
+    static void broadcast(ServerLevel l,CampaignData d){
+        var raiders=new it.unimi.dsi.fastutil.ints.IntArrayList();var chuted=new it.unimi.dsi.fastutil.ints.IntArrayList();
+        if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("arsenalChute"))chuted.add(m.getId());}
+        if(raiders.isEmpty()&&!marked)return;marked=!raiders.isEmpty();
+        BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray()));
+    }
+    /** Flyers that steer themselves straight at their target: vexes and phantoms (their own goals would circle a point near where they spawned). */
+    static boolean glider(Mob mob){return mob instanceof net.minecraft.world.entity.monster.Vex||mob instanceof net.minecraft.world.entity.monster.Phantom;}
+    /** Things a raid's mobs need beyond their role: gliders steer themselves, so their own (circling) AI is off. */
     static void prepare(Mob mob,String type){
-        if(mob instanceof net.minecraft.world.entity.monster.Phantom)mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE,Integer.MAX_VALUE,0,false,false,false));
+        if(glider(mob)){mob.setNoAi(true);mob.setNoGravity(true);}
     }
 
     // ---- announcements ----------------------------------------------------------------------------------------------------------
@@ -108,12 +124,36 @@ final class RaidTypes {
     public static final class Events {
         @SubscribeEvent public void tick(LivingEvent.LivingTickEvent e){
             var mob=e.getEntity();
-            if(mob.level().isClientSide||!mob.getPersistentData().getBoolean("arsenalChute"))return;
-            if(mob.onGround()||mob.isInWater()){mob.getPersistentData().remove("arsenalChute");mob.removeEffect(MobEffects.SLOW_FALLING);if(mob instanceof Mob m)tell(m,false);return;}
-            if(mob.tickCount%40==0&&mob instanceof Mob m)tell(m,true);
+            if(mob.level().isClientSide)return;
+            if(mob instanceof Mob raider&&raider.getPersistentData().getBoolean("arsenalRaider")){sunproof(raider);if(glider(raider))glide(raider);}
+            if(!mob.getPersistentData().getBoolean("arsenalChute"))return;
+            if(mob.onGround()||mob.isInWater()){mob.getPersistentData().remove("arsenalChute");mob.removeEffect(MobEffects.SLOW_FALLING);return;}
             var v=mob.getDeltaMovement();
             if(v.y<-FALL_SPEED)mob.setDeltaMovement(v.x,-FALL_SPEED,v.z);
             mob.fallDistance=0;
+        }
+        /** Raiders do not burn in the sun (zombies, skeletons, phantoms): daylight fire under open sky is put out at once. */
+        static void sunproof(Mob mob){
+            if(mob.isOnFire()&&mob.level().isDay()&&!mob.isInLava()&&mob.level().canSeeSky(mob.blockPosition()))mob.clearFire();
+        }
+        /** A vex or phantom flies straight at the closest defender within reach, otherwise at the beacon's objective, and hits it when it arrives. */
+        static void glide(Mob mob){
+            if(!(mob.level() instanceof ServerLevel l))return;
+            if(!mob.isNoAi()||!mob.isNoGravity()){mob.setNoAi(true);mob.setNoGravity(true);}
+            net.minecraft.world.entity.LivingEntity target=l.getNearestPlayer(mob.getX(),mob.getY(),mob.getZ(),7,net.minecraft.world.entity.EntitySelector.NO_CREATIVE_OR_SPECTATOR);
+            if(target==null)target=BeaconCombat.objective(l);
+            if(target==null||!target.isAlive())return;
+            mob.setTarget(target);
+            var aim=target instanceof net.minecraft.world.entity.player.Player?target.getEyePosition():target.position().add(0,.6,0);
+            var to=aim.subtract(mob.position().add(0,mob.getBbHeight()/2,0));double dist=to.length();
+            double speed=mob instanceof net.minecraft.world.entity.monster.Phantom?.34:.28;
+            // a mob without AI is not moved by vanilla (no travel step), so it is moved here, with block collision (vexes pass through walls)
+            mob.setDeltaMovement(dist>1.0?mob.getDeltaMovement().scale(.55).add(to.scale(speed/dist*.45)):mob.getDeltaMovement().scale(.5));
+            mob.move(net.minecraft.world.entity.MoverType.SELF,mob.getDeltaMovement());
+            float yaw=(float)(net.minecraft.util.Mth.atan2(to.z,to.x)*57.29578)-90f,pitch=(float)-(net.minecraft.util.Mth.atan2(to.y,Math.sqrt(to.x*to.x+to.z*to.z))*57.29578);
+            mob.setYRot(yaw);mob.yBodyRot=yaw;mob.yHeadRot=yaw;mob.setXRot(pitch);
+            double reach=mob.getBbWidth()*.5+target.getBbWidth()*.5+1.6;
+            if(dist<=reach+.6&&mob.tickCount%20==0){mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);mob.doHurtTarget(target);}
         }
     }
 }

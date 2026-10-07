@@ -20,7 +20,7 @@ Paths below are relative to the repository root. Beacon Java classes are under `
 | `RaidRewardScreen.java` | Reward tier information |
 | `BeaconClient.java`, `BeaconAlerts.java` | Raid HUD, attacks and world-space overlays |
 | `MessHallScreen.java`, `MessHallMenu.java` | Server-authoritative Sandwich/Stew tabs, shared ingredients/output, pot selection and paid tier upgrades |
-| `MealClient.java`, `KitchenRenderer.java` | Player meal HUD and live Cook Pot menu board / stew surface |
+| `MealClient.java`, `KitchenRenderer.java`, `MealEffects.java`, `MealEffectClient.java` | Kitchen registration, live Cook Pot menu board / stew surface, and the vanilla potion effects (icons in `textures/mob_effect/`, custom inventory text) that show a meal |
 | `ControlHints.java`, `PlatformKeys.java` | Live key labels and table interaction binding |
 | `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideClient.java` | Expanded control card, collapsed shortcut and JAM indicator |
 | `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideState.java` | Guide visibility and five-second collapse state |
@@ -60,4 +60,4 @@ Base repair journals must never restore spent ammunition, fuel or durability, du
 
 Work on a branch based on the source handoff commit. Keep implementation notes and screenshots with the UI change so the owner can review and playtest it.
 
-Mess Hall v2 (protocol 23): server preview supplies required/available food units and per-slot deductions. Cost and composition hover details show actual field/home effects; the meal HUD lists every effect. New captures: `docs/ui/screens/kitchen-v2/`. Older `kitchen/` captures depict 0.0.2.
+Mess Hall v3 (protocol 24): the meal HUD is gone (potion effects instead). The kitchen screen was redesigned (`MessHallScreen`): tier badge, effect icons under every ingredient (sent as `SlotFx` in the server preview), effect cards with strength pips, field and home values and the x2 pair marker, pot meters, food bar, animated Prepare button. Effect icons: `tools/kitchen/make_effect_icons.py`. Captures: `docs/ui/screens/kitchen-v3/`.

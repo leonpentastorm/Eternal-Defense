@@ -50,6 +50,7 @@ final class BeaconCombat {
     static void attach(Mob mob){
         if(!attached.add(mob))return;
         mob.targetSelector.addGoal(0,new TargetBeacon(mob));
+        if(RaidTypes.glider(mob))return; // vexes and phantoms are steered straight at their target by RaidTypes
         Goal nativeRanged=mob.goalSelector.getAvailableGoals().stream().map(WrappedGoal::getGoal).filter(g->{String name=g.getClass().getName();return name.endsWith(".GunAttackGoal")||name.endsWith("$GuardianAttackGoal")||name.endsWith("$BlazeAttackGoal")||name.endsWith("$GhastShootFireballGoal");}).findFirst().orElse(null);
         if(nativeRanged!=null)mob.goalSelector.addGoal(0,new RangedBeacon(mob,nativeRanged));
         else if(mob instanceof AbstractSkeleton skeleton)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedBowAttackGoal<>(skeleton,1,40,10)));
@@ -78,7 +79,9 @@ final class BeaconCombat {
         // Small intermediate paths keep distant reinforcements within native pathfinding limits.
         if(distance>24){x=mob.getX()+dx/distance*16;z=mob.getZ()+dz/distance*16;
             if(mob.level() instanceof ServerLevel l){var p=net.minecraft.core.BlockPos.containing(x,mob.getY(),z);if(!l.hasChunkAt(p))return false;var surface=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p);y=Math.abs(surface.getY()-mob.getY())<=12?surface.getY():mob.getY();}}
-        return mob.getNavigation().moveTo(x,y,z,speed);
+        if(mob.getNavigation().moveTo(x,y,z,speed)&&!mob.getNavigation().isDone())return true;
+        // No usable path (walls, water, rock): head straight for the spot anyway; RaidBreaching digs when the way is really shut.
+        mob.getMoveControl().setWantedPosition(x,y,z,speed);return true;
     }
     static final class MeleeBeacon extends Goal {
         final Mob mob;int cooldown;
@@ -89,8 +92,10 @@ final class BeaconCombat {
         @Override public void stop(){mob.setAggressive(false);mob.getNavigation().stop();}
         @Override public void tick(){var target=mob.getTarget();if(target==null)return;mob.getLookControl().setLookAt(target,30,30);
             double reach=Math.max(2.2,mob.getBbWidth()+target.getBbWidth());
-            if(mob.distanceToSqr(target)>reach*reach||!mob.hasLineOfSight(target)){if(mob.tickCount%10==0)approach(mob,target.getX(),target.getY(),target.getZ(),1.15);}
-            else{mob.getNavigation().stop();if(--cooldown<=0){cooldown=20;mob.swing(InteractionHand.MAIN_HAND);mob.doHurtTarget(target);}}
+            if(mob.distanceToSqr(target)>reach*reach||!mob.hasLineOfSight(target)){if(mob.tickCount%10==0||mob.getNavigation().isDone())approach(mob,target.getX(),target.getY(),target.getZ(),1.15);}
+            else{mob.getNavigation().stop();if(--cooldown<=0){cooldown=20;
+                if(mob instanceof Creeper creeper)creeper.ignite(); // creepers have no melee attack: they blow up at the beacon
+                else{mob.swing(InteractionHand.MAIN_HAND);mob.doHurtTarget(target);}}}
         }
     }
     static final class RangedBeacon extends Goal {

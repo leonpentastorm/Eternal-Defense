@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated for **Mess Hall v2**, project preview version **0.0.3**. This round is delivered on **`feature/messhall-ver-2`**, based on published `dev` commit `1a839c0` (0.0.2). The owner explicitly requested a feature branch and no push to `dev`; no merge or PR is authorized. The integration branch remains `dev`. Current test build: `dist/Arsenal-MessHall-v2-0.0.3-test.zip`; older round 6 build: `dist/Arsenal-MessHall-Round6-0.0.2-test.zip`.
+Last updated for **Mess Hall v3**, project preview version **0.0.4**. This round is delivered on **`feature/messhall-ver-3`** (based on `feature/messhall-ver-2`, project 0.0.3, which is based on published `dev` commit `1a839c0`, 0.0.2). The owner asked for feature branches and no merge into `dev`; nothing here is merged. Active development branch of the project remains **`dev`**; history note: the work up to 0.0.1 was done on `claude/minecraft-mod-ui-guidebook-ak57k4`.
 The design is described in `docs/GAME-DESIGN-DOCUMENT.md` (keep it updated). Rules and conventions are in `/CLAUDE.md`; this file is the state of the work.
 
 ## What the project is
@@ -13,18 +13,18 @@ Most of the code is dense single-line style; match the surrounding file.
 
 | Area | Files |
 | --- | --- |
-| Campaign and raids | `ArsenalBeacon` (begin, scan, waves, spawn, fail, commands), `CampaignData` (saved state), `RaidBalance`, `RaidSpawns`, `RaidBreaching`, `RaidRewards`, `RaidTypes` (special raids), `HardRaids`, `RaidRespite` |
+| Campaign and raids | `ArsenalBeacon` (begin, scan, waves, spawn, fail, commands), `RaidMarch` (blocked-raider detection), `BeaconCombat` (raider goals, straight marching), `CampaignData` (saved state), `RaidBalance`, `RaidSpawns`, `RaidBreaching`, `RaidRewards`, `RaidTypes` (special raids), `HardRaids`, `RaidRespite` |
 | Money | `Economy` (all prices per edition), `SupportRules` (flare prices, timings), `CannonUpgrades` (upgrade table, fire types), `ArdentEnergy` (drops), `ExchangeShop` (+ `ExchangeScreen`), `StandaloneBalance`, `ArsenalConfig` |
 | Support system | `SupportData` (per-owner bases), `SupportCalls`, `SupportFlares`, `SupportPlatform`, `SupportCannon`/`CannonEntity`/`CannonControl`/`CannonScreen`, `SupportShop`, `BaseZone`, `ReturnZone`, `SupportCrate`, `SupportHud` |
 | Client | `BeaconClient` (screens, zone outline), `SupportClient` (renderers: sign, nameplate, canopy, red parachutes), `BeaconPopups`, `Ui` (UI kit) |
-| Network | `BeaconNetwork` (protocol **23**; new S2C messages 15 meal HUD, 16 open kitchen preview; older messages in `docs/ENERGY-AND-SUPPORT.md`) |
-| Prepared food | `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`; `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
+| Network | `BeaconNetwork` (protocol **24**; message 14 `RaidTypes.Marks` (raid exclamation marks and parachutes), 16 open kitchen preview; the v2 meal HUD message 15 is gone; older messages in `docs/ENERGY-AND-SUPPORT.md`) |
+| Prepared food | `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`, `MealEffects` and `MealEffectClient` (vanilla potion effects that show a meal); `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
 | Art | `tools/ui-assets/*.py` generate sprites and textures; the hand-made 3D models come from `docs/art/` via `import_support_gear.py` |
 
 ## How to build and test
 
 * `./gradlew --no-daemon --offline build releaseJars` (JDK 17); jars land in `custom-mods/*/build/libs/` (`-standalone` jars are the standalone edition).
-* Unit tests: 64 in the beacon module (including six meal-rule tests) and 7 in gun guide. Current v2 validation is listed below; older round 6 results are retained as history.
+* Unit tests: 70 in the beacon module (including nine meal-rule and three raid-behaviour tests) and 7 in gun guide. Current v2 validation is listed below; older round 6 results are retained as history.
 * Managed cloud build: source `/workspace/.eternal-defense/activate.sh` to use retained JDK 17 and Gradle cache before the normal offline build.
 * Kitchen real-server checks: `-Darsenal.messHallTests=true`, `/mess-hall-test` (five tests). Restart fixture: `/mess-hall-fixture seed`, stop/restart the same disposable server, `/mess-hall-fixture check`. Chunk fixture: `/mess-hall-chunks unload`, poll `/mess-hall-chunks check_unloaded`, then `/mess-hall-chunks reload`. Flags are off during normal play.
 * Kitchen v2 native tests: with `-Darsenal.messHallTests=true`, `/mess-hall-v2-test` runs six food/gun/radius/reload/lifecycle comparisons. Its reload case measures actual TaCZ server ammo transfer and completion, using the same AK-47 baseline/home/field.
@@ -32,7 +32,7 @@ Most of the code is dense single-line style; match the surrounding file.
 * **Real-client QA:** `tools/qa/setup-qa.sh` makes a throwaway copy with the scripted harness `QaWorld` (stored as `tools/qa/QaWorld.java.txt` so it never ships), boots a real client with `xvfb-run` and logs `QA_CHECK PASS/FAIL` lines.
   Pick the parts to run with a flag file (`/tmp/claude-0/qa-r5.flag`: `sign reward exchange upgrade hard raids dbg all`); switch edition through the flavor argument. Tips learned the hard way:
   kill leftover client JVMs by PID (`pkill -x java` misses them, and `pgrep -f` in the same command line kills your own shell); never nest the server-read helper; walls in the harness must not cover the shop column.
-  `QaWorld` has rounds 3 to 5 scripts; add a new `scriptR6()` rather than editing old ones.
+  `QaWorld` has rounds 3 to 5 scripts and `scriptR6()` for Mess Hall v3 (flag file `/tmp/claude-0/qa-r6.flag`, parts `sign halls ui effects marks raids air march siege sun`); add a new `scriptR7()` rather than editing old ones. The script has a client run configuration, makes Gun Displays' TaCZ dependency optional and starts with known client options (first launch otherwise stops at the narrator screen); `TACZ_JAR=<path> tools/qa/setup-qa.sh <dir>` puts TaCZ on the classpath so `./gradlew :arsenal-beacon:runGameTestServer` runs the real TaCZ game tests. Run long QA in the background and poll the log.
 
 ## Decisions the owner has made (do not re-litigate)
 
@@ -41,6 +41,23 @@ Most of the code is dense single-line style; match the surrounding file.
 * Raids: special raids from the fourth raid on, 50 percent chance, also in boss raids; the next type is shown at the end of a raid and in the Overview.
 * The beacon itself is the reward chest (no chest block). Bunker Buster never removes obsidian, crying obsidian, bedrock or anything with resistance 1,200 or more.
 * The platform stays two blocks tall; its name sign is render-only (no hitbox); the two blocks in front are a no-build return zone.
+
+## Mess Hall v3 decisions and status
+
+* **Models:** the artist package (`Create-Arsenal-Mess-Hall.zip`) is installed: halls are **2 wide x 1 deep x 2 tall** (anchor, right cell, and both above), the pot **1 x 1 x 2**; front is the serving side. `tools/kitchen/generate_resources.py` no longer rewrites the model geometry (blockstates, item models, recipes, tags and traits are still generated). The menu board text of the pot is drawn by `KitchenRenderer` on the chalkboard of the upper block.
+* **Meal display:** the custom HUD and its packet are removed. A meal is shown with vanilla potion effects, one per bonus (`meal_<id>`, amplifier = strength - 1 + 4 for a pair), endless at home plus a Home Zone effect, finite and counting down in the field. The server (`PlayerMeals.syncEffects`) keeps them in step; the meal is server state, so removing the display only hides it until the next sync. Forge asks for the client extension from inside the `MobEffect` constructor: never read subclass fields there (a real crash found by the real-client QA).
+* **Effects:** 16 (nine from v2 plus Might, Agility, Fortune, Recovery, Hearth, Springy Step, Strong Swimmer); every vanilla food has a trait; a stew doubles an effect when two different foods of the same `family` feed it. **Gun effect values were raised** (Firepower 8%, Quick Hands 10%, Brawler 20%, Heavy Hand 15%, Demolition 10%): the v2 values passed the TaCZ server tests but could not be felt. If the owner still feels nothing, the remaining cause is that TaCZ's reload and bash animations keep their own speed (only the server state finishes earlier); remove the five effects if they cannot be made visible.
+* **Raids:** raiders march straight at the beacon and dig only when `RaidMarch.idle` (under 1 block in a second). The old breach check ran only when `gameTime%40==0` inside a loop that runs when `clock%20==0`; the two counters have an arbitrary offset, so in most worlds it practically never fired (this also kept siege creepers from digging). Raiders carry a red exclamation mark and are sun-proof; spawns are open surface ground at or above the beacon (`RaidSpawns.openGround`, relaxed after 30 s / 90 s); vexes and phantoms are steered straight in by `RaidTypes.glide` (their own AI is off: a mob without AI is not moved by vanilla, so they are moved by hand); the marks packet is idempotent and resent every second (fixes paratroopers without a parachute: the one-shot packet could arrive before the client knew the mob).
+* **Sign post:** the post of the platform sign is drawn without culling (a flat strip vanished when seen from its back).
+
+### V3 validation (this session)
+
+* Unit tests: 70 beacon tests, zero failures (`:arsenal-beacon:test`).
+* Real client (QA harness, pack flavor, software GL): halls and pot footprints, collision boxes, kitchen screen in both modes, pair bonus preview, vanilla effects at home and in the field, effect restore after clearing, raid marks and parachutes on every paratrooper (15 of 15), flyers reaching the beacon, zombies digging through a wall, siege creeper digging at the wall and a far one staying alive, sun immunity. Screenshots in `docs/ui/screens/kitchen-v3/`.
+* Real TaCZ game tests (QA copy, TaCZ 1.1.8-hotfix2 with its mixins remapped, this mod's mixins registered): **Firepower** on an AK-47 body hit 6.0 base, 6.48 in the field, 6.96 at home (+8% / +16%); **Brawler** x1.20 and **Heavy Hand** x1.15 on the native gun bash in the field, ordinary melee unchanged; **Demolition** M320 radius 4.0 base, 4.4 field, 4.8 home, unrelated explosives unchanged (radius stays 4.0); **Quick Hands** AK reload 2602 ms base, 2366 ms field (+10%), 2168 ms home (+20%). So all five gun effects work against real TaCZ; what the owner could not feel is size, and TaCZ keeps its reload and bash animations at their own speed. One assertion of the unchanged v2 launcher test ("vanilla explosions never enter the TaCZ hook") fails only in the development harness: it finds the explosion radius by reflecting on the field name `radius`, which exists on the vanilla class under development names but not under the production names; the radii themselves are correct.
+* Real server game tests without TaCZ: `MessHallGameTests` (5) and `MessHallV3GameTests` (4), 9 of 9 passed, including the new footprints.
+* Not verified: ground spawns of raids in a normal world (the flat QA world fails the existing "thin roof" check of `RaidSpawns.environmentSafe`, so `find` returns nothing there; the new `openGround` rule returned true, and the pure rule `allowedDrop` is unit tested); raid behaviour with real TaCZ soldiers; multiplayer; the standalone edition in a real client (same code, other flavor file); the pack with real Create items; balance of the 16 effects and the 2x pair bonus.
+
 
 ## Mess Hall v2 decisions and status
 
@@ -94,7 +111,7 @@ Recorded checks and JAR hashes: `docs/MESS-HALL-VALIDATION-0.0.3.json`. Screensh
 
 ## Suggested next steps
 
-* Playtest Mess Hall v2 with a cook and two defenders; compare food costs and firearm handling. The owner decides when to merge the feature branch.
+* Playtest Mess Hall v3 with a cook and two defenders: pair bonus values (x2 on top of strength 3 can be strong: Vitality at home reaches +24 health), the effect list, gun effects at their new sizes, and raids (marching, flyers, siege creepers, paratroopers) on a real survival world. The owner decides when to merge the feature branches.
 * Playtest round 6 with a cook and two defenders: stock pots, eat, leave and re-enter home, then raid. Tune `MealRules`, datapack trait weights and `Economy` from that feedback; finish kitchen art separately.
 * Run a real session with the special-raid commands and fix spawn placement for flyers, siege and swarm if needed.
 * When the owner confirms a round, tag the state in `docs/CHANGELOG.md` and build a new `dist/` zip like the earlier ones (`standalone/`, `pack/`, `README.txt`, `SHA512SUMS`).

@@ -17,9 +17,24 @@ final class RaidSpawns {
         double cos=Math.cos(angle),sin=Math.sin(angle);double stretch=distance/Math.max(Math.abs(cos),Math.abs(sin));
         return new BlockPos(origin.getX()+(int)Math.round(cos*stretch),origin.getY(),origin.getZ()+(int)Math.round(sin*stretch));
     }
+    /** How far below the beacon a spawn may be: none at first, then more the longer reinforcements have been waiting for a place. */
+    static int allowedDrop(long waveTicks){return waveTicks>=1800?10:waveTicks>=600?4:0;}
     static boolean safe(ServerLevel l,CampaignData d,BlockPos p){
-        if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+CLEARANCE||!l.hasChunkAt(p)||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p)||Math.abs(p.getY()-d.beacon.getY())>12)return false;
-        return environmentSafe(l,p);
+        if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+CLEARANCE||!l.hasChunkAt(p)||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p))return false;
+        // surface only, at or above the beacon's level
+        if(p.getY()<d.beacon.getY()-allowedDrop(d.waveTicks)||p.getY()>d.beacon.getY()+24)return false;
+        return environmentSafe(l,p)&&openGround(l,p);
+    }
+    /** Not a crevice: the ground around the spot is open and level, so a mob dropped here can walk away in any direction. */
+    static boolean openGround(ServerLevel l,BlockPos p){
+        int open=0;
+        for(int dx=-2;dx<=2;dx++)for(int dz=-2;dz<=2;dz++){
+            var cell=p.offset(dx,0,dz);if(!l.hasChunkAt(cell))return false;
+            boolean free=l.getBlockState(cell).getCollisionShape(l,cell).isEmpty()&&l.getBlockState(cell.above()).getCollisionShape(l,cell.above()).isEmpty()&&l.getBlockState(cell.below()).isSolid();
+            if(free)open++;
+            else if(Math.abs(dx)<=1&&Math.abs(dz)<=1)return false; // the ring around the spot must be walkable
+        }
+        return open>=18;
     }
     static boolean environmentSafe(ServerLevel l,BlockPos p){
         if(p.getY()<l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p.getX(),p.getZ()))return false;
@@ -44,7 +59,7 @@ final class RaidSpawns {
                 probes++;var horizontal=ringAt(d.beacon,distance,offset+sector*Math.PI/6);if(!l.hasChunkAt(horizontal))continue;
                 var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,horizontal);if(safe(l,d,p)){WARNINGS.remove(l);return p;}
             }
-            if(distance==minimum||probes>=120)break;
+            if(distance==minimum||probes>=240)break;
         }
         long now=l.getGameTime();if(d.waveTicks>=600&&now-WARNINGS.getOrDefault(l,now-600)>=600){WARNINGS.put(l,now);l.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal("[Create Arsenal] Reinforcements are waiting for clear, loaded outdoor ground at least 64 blocks beyond the protected boundary. They will not spawn closer or inside buildings."),false);}return null;
     }

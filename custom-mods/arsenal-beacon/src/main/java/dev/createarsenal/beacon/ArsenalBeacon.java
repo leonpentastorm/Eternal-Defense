@@ -85,7 +85,7 @@ public final class ArsenalBeacon {
     public static final RegistryObject<EntityType<SupportCrate.ParcelEntity>> PARCEL=OBJECTIVES.register("support_parcel",()->EntityType.Builder.<SupportCrate.ParcelEntity>of(SupportCrate.ParcelEntity::new,MobCategory.MISC).sized(.9f,.9f).clientTrackingRange(8).updateInterval(3).build(ID+":support_parcel"));
     private static int clock;
     public ArsenalBeacon() {
-        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();MinecraftForge.EVENT_BUS.register(new StandaloneBalance());
+        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();MinecraftForge.EVENT_BUS.register(new StandaloneBalance());
         if(!BuildFlavor.STANDALONE&&Boolean.getBoolean("arsenal.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
@@ -170,7 +170,7 @@ public final class ArsenalBeacon {
         if(e.getOriginal().getPersistentData().getBoolean("arsenalStarterGranted"))e.getEntity().getPersistentData().putBoolean("arsenalStarterGranted",true);
         if(e.getOriginal().getPersistentData().getBoolean("arsenalSupportGranted03"))e.getEntity().getPersistentData().putBoolean("arsenalSupportGranted03",true);
     }
-    @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;BeaconActions.clear();}
+    @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;RaidMarch.forget();BeaconActions.clear();}
     private static final com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack> RAID_TYPE_SUGGEST=(c,b)->{b.suggest("normal");for(String t:RaidTypes.SPECIAL)b.suggest(t);return b.buildFuture();};
     private static boolean raidTypeOk(String t){return t.equals("normal")||RaidTypes.special(t);}
     @SubscribeEvent public void commands(RegisterCommandsEvent event) {
@@ -266,7 +266,7 @@ public final class ArsenalBeacon {
     @SubscribeEvent public void tick(TickEvent.ServerTickEvent event) {
         if(event.phase!=TickEvent.Phase.END)return;
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
-        ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0)SpecialForcesRaids.cleanup(l);BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
+        ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
             BeaconNetwork.syncNearby(l,d);
@@ -339,12 +339,14 @@ public final class ArsenalBeacon {
             mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
             // Real attack goals target the objective; contact alone never damages it.
             BeaconCombat.attach(mob);
+            boolean idle=RaidMarch.idle(mob);
             if(d.raidType.equals("siege")&&mob instanceof net.minecraft.world.entity.monster.Creeper creeper){
-                // siege creepers dig: stuck at a wall, they blow a hole for the shooters behind them
-                if(l.getGameTime()%40==0&&creeper.getTarget()!=null&&BeaconCombat.needsBreach(mob,d))creeper.ignite();
+                // siege creepers dig: stuck at a wall near the base, they blow a hole for the shooters behind them (never far from it)
+                if(idle&&creeper.getTarget()!=null&&Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5))<=d.radius()+RaidMarch.DIG_RANGE&&RaidBreaching.choose(l,d,mob)!=null)creeper.ignite();
                 continue;
             }
-            if(!RaidTypes.flyer(mob)&&l.getGameTime()%40==0&&(mob.horizontalCollision||mob.getNavigation().isDone()||mob.getTarget() instanceof BeaconCombat.Objective&&!mob.hasLineOfSight(mob.getTarget()))&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
+            // Raiders march straight on; only one that stopped making progress digs (vexes pass through walls)
+            if(idle&&!(mob instanceof net.minecraft.world.entity.monster.Vex)&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
             // All hostile breach attempts run through BeaconCombat and the same damage journal.
         }
         if(d.spawnRemaining==0&&d.raiders.isEmpty()){
@@ -378,7 +380,7 @@ public final class ArsenalBeacon {
         mob.getPersistentData().putString("arsenalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
         if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
         mob.setHealth(mob.getMaxHealth());
-        d.raiders.add(mob.getUUID());
+        d.raiders.add(mob.getUUID());RaidTypes.broadcast(l,d);
         return true;
     }
     static void balanceEarly(Mob mob,int tier,int wave) {

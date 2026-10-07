@@ -1,0 +1,9 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/lucky"
+  },
+  "staple": false,
+  "effects": {
+    "fortune": 1
+  }
+}

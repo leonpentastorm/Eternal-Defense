@@ -1,0 +1,9 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/raw_meat"
+  },
+  "staple": false,
+  "effects": {
+    "might": 1
+  }
+}

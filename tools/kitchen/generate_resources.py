@@ -25,42 +25,40 @@ def block(name):
 
 for mk in range(1, 5):
     name = f'mess_hall_mk{mk}'
-    textures = {'frame': ['minecraft:block/spruce_planks', 'minecraft:block/copper_block', 'minecraft:block/polished_andesite', 'minecraft:block/iron_block'][mk - 1], 'top': 'minecraft:block/smooth_stone', 'fire': 'minecraft:block/magma', 'metal': 'minecraft:block/cauldron_side', 'trim': ['minecraft:block/oak_log', 'minecraft:block/stripped_oak_log', 'minecraft:block/stone_bricks', 'minecraft:block/green_concrete'][mk - 1]}
-    elements = [cube([1, 1, 1], [31, 3, 31], 'frame')]
-    for x in (2, 27):
-        for z in (2, 27):
-            elements.append(cube([x, 3, z], [x + 3, 12, z + 3], 'frame'))
-    if mk == 1:
-        elements += [cube([1, 11, 17], [31, 13, 31], 'frame'), cube([5, 3, 4], [24, 5, 12], 'fire'), cube([4, 5, 7], [5, 16, 9], 'trim'), cube([24, 5, 7], [25, 16, 9], 'trim'), cube([4, 13, 7], [25, 14, 9], 'metal'), cube([9, 11, 6], [19, 14, 10], 'trim')]
-    elif mk == 2:
-        elements += [cube([1, 11, 1], [31, 13, 31], 'top'), cube([3, 13, 3], [13, 15, 12], 'metal'), cube([17, 13, 18], [29, 14, 29], 'trim'), cube([2, 13, 29], [30, 16, 31], 'frame')]
-    elif mk == 3:
-        elements += [cube([1, 3, 1], [31, 11, 15], 'trim'), cube([1, 11, 1], [31, 13, 31], 'top'), cube([4, 13, 3], [14, 16, 14], 'metal'), cube([19, 13, 3], [29, 16, 14], 'metal'), cube([3, 5, .9], [12, 9, 2], 'fire')]
-    else:
-        elements += [cube([1, 3, 1], [31, 11, 31], 'trim'), cube([0, 11, 0], [32, 13, 32], 'top'), cube([2, 13, 2], [14, 15, 14], 'metal'), cube([18, 13, 2], [30, 15, 14], 'metal'), cube([2, 13, 21], [30, 16, 30], 'frame'), cube([3, 5, .8], [29, 9, 1.8], 'frame')]
-    model(name, textures, elements)
-    block(name)
+    block(name)  # geometry: artist model (models/block/mess_hall_mkN.json), never regenerated
 
-model('cook_pot', {'frame': 'minecraft:block/cauldron_side', 'trim': 'minecraft:block/spruce_planks', 'inside': 'minecraft:block/cauldron_inner'}, [cube([2, 2, 2], [30, 4, 14], 'frame'), cube([2, 4, 2], [4, 12, 14], 'frame'), cube([28, 4, 2], [30, 12, 14], 'frame'), cube([4, 4, 2], [28, 12, 4], 'frame'), cube([4, 4, 12], [28, 12, 14], 'frame'), cube([4, 4, 4], [28, 5, 12], 'inside'), cube([0, 4, 6], [2, 9, 10], 'frame'), cube([30, 4, 6], [32, 9, 10], 'frame'), cube([15, 1, 14], [17, 16, 16], 'trim'), cube([3, 8, 0], [29, 16, 1], 'trim')])
 block('cook_pot')
-model('cook_pot_stew', {'frame': 'minecraft:block/brown_mushroom_block'}, [cube([4, 10, 4], [28, 10.5, 12], 'frame')])
+# cook_pot_stew geometry: artist model, never regenerated
 # A small bread-and-filling ration model uses vanilla textures until painted item art arrives.
 write(ASSETS / 'models/item/prepared_sandwich.json', {'textures': {'particle': 'minecraft:block/white_terracotta', 'bread': 'minecraft:block/white_terracotta', 'filling': 'minecraft:block/green_terracotta'}, 'elements': [cube([2, 4, 3], [14, 7, 13], 'bread'), cube([2, 7, 3], [14, 9, 13], 'filling'), cube([2, 9, 3], [14, 12, 13], 'bread')], 'display': {'gui': {'rotation': [30, 225, 0], 'scale': [.85, .85, .85]}, 'thirdperson_righthand': {'scale': [.5, .5, .5]}, 'firstperson_righthand': {'rotation': [0, 45, 0], 'scale': [.6, .6, .6]}}})
 
 families = {
+    # Sandwich foundations
     'staples': (['bread', 'baked_potato', 'wheat'], True, {}),
+    # Everyday foods: two different foods of one family in a stew double that family's effect
     'protein': (['cooked_chicken', 'cooked_mutton', 'cooked_rabbit', 'rabbit_stew'], False, {'vitality': 1}),
+    'eggs': (['egg'], False, {'vitality': 1}),
     'fish': (['cooked_cod', 'cooked_salmon'], False, {'mobility': 1}),
     'vegetables': (['carrot', 'potato', 'beetroot', 'beetroot_soup', 'dried_kelp'], False, {'fortitude': 1}),
     'dairy': (['milk_bucket'], False, {'fortitude': 2}),
-    'eggs': (['egg'], False, {'vitality': 1}),
     'mushrooms': (['brown_mushroom', 'red_mushroom', 'mushroom_stew'], False, {'steadiness': 1}),
     'sweet': (['apple', 'sweet_berries', 'melon_slice', 'sugar'], False, {'mobility': 1}),
+    # Gun foods
     'firepower': (['cooked_beef'], False, {'firepower': 1}),
     'quick_hands': (['honey_bottle'], False, {'quick_hands': 1}),
     'brawler': (['cooked_porkchop'], False, {'brawler': 1}),
     'heavy_hand': (['golden_carrot'], False, {'heavy_hand': 1}),
     'demolition': (['pufferfish'], False, {'demolition': 1}),
+    # Round three: the rest of the vanilla food list
+    'raw_meat': (['beef', 'chicken', 'mutton', 'porkchop', 'rabbit'], False, {'might': 1}),
+    'raw_fish': (['cod', 'salmon', 'tropical_fish'], False, {'swim': 1}),
+    'treats': (['cookie', 'pumpkin_pie'], False, {'agility': 1}),
+    'lucky': (['glow_berries'], False, {'fortune': 1}),
+    'mystery': (['suspicious_stew'], False, {'fortune': 2}),
+    'golden': (['golden_apple'], False, {'recovery': 2}),
+    'enchanted': (['enchanted_golden_apple'], False, {'recovery': 3, 'fortune': 1}),
+    'grim': (['rotten_flesh', 'spider_eye', 'poisonous_potato'], False, {'hearth': 1}),
+    'chorus': (['chorus_fruit'], False, {'springy': 2}),
 }
 for name, (items, staple, effects) in families.items():
     write(DATA / f'tags/items/meal/{name}.json', {'replace': False, 'values': ['minecraft:' + i for i in items]})
