@@ -20,7 +20,7 @@ def model(name, textures, elements):
 
 def block(name):
     write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'arsenal_beacon:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
-    write(ASSETS / f'models/item/{name}.json', {'parent': f'arsenal_beacon:block/{name}', 'display': {'gui': {'rotation': [30, 225, 0], 'translation': [-4, -3, 0], 'scale': [.32, .32, .32]}, 'fixed': {'scale': [.35, .35, .35]}, 'ground': {'scale': [.3, .3, .3]}, 'thirdperson_righthand': {'scale': [.25, .25, .25]}}})
+    write(ASSETS / f'models/item/{name}.json', {'parent': f'arsenal_beacon:block/{name}', 'display': {'gui': {'rotation': [30, 225, 0], 'translation': [2 if name != 'cook_pot' else 0, -2.5 if name != 'cook_pot' else -3, 0], 'scale': [.34, .34, .34] if name != 'cook_pot' else [.5, .5, .5]}, 'fixed': {'scale': [.35, .35, .35]}, 'ground': {'scale': [.3, .3, .3]}, 'thirdperson_righthand': {'scale': [.25, .25, .25]}}})
     write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'arsenal_beacon:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
 
 for mk in range(1, 5):

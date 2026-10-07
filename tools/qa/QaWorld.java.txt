@@ -1019,6 +1019,13 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
                 var ok=spawnRaider("swarm",3);check("a swarm raider spawned (or no spot: "+ok+")",true,"spawned="+ok);},"find a spot");
             step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.spawnRemaining=0;d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end");
         }
+        if(part6("items")){
+            step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.MESS_HALL_I.get().asItem(),1));inv().setItem(1,stack(ArsenalBeacon.MESS_HALL_II.get().asItem(),1));inv().setItem(2,stack(ArsenalBeacon.MESS_HALL_III.get().asItem(),1));inv().setItem(3,stack(ArsenalBeacon.MESS_HALL_IV.get().asItem(),1));inv().setItem(4,stack(ArsenalBeacon.COOK_POT.get().asItem(),1));
+                inv().setItem(9,stack(ArsenalBeacon.MESS_HALL_I.get().asItem(),1));inv().setItem(10,stack(ArsenalBeacon.COOK_POT.get().asItem(),1));}),"give the kitchen items");
+            step(20,()->{mc().options.hideGui=false;mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"open the inventory");
+            step(20,()->shot("r6_items"),"item icons");
+            step(5,()->{mc().setScreen(null);},"close");
+        }
         if(part6("air")){
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="air";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
                 for(var type:new net.minecraft.world.entity.EntityType<?>[]{net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.VEX}){
