@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document version** | 0.0.1 |
+| **Document / project version** | 0.0.1 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
 | **Status** | Living document, written from the state of the code at the end of round 5 |
 

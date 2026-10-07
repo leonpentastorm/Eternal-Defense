@@ -2,7 +2,7 @@
 
 Newest first. One entry per delivered round; the detail of each lives in `docs/ENERGY-AND-SUPPORT.md` and the git history.
 
-* **Docs 0.0.1** - Eternal Defense game design document (`docs/GAME-DESIGN-DOCUMENT.md`); update it with every gameplay change.
+* **0.0.1** (first release on `dev`; contains everything below) - Eternal Defense game design document (`docs/GAME-DESIGN-DOCUMENT.md`); update it with every gameplay change.
 * **Round 5 (protocol 21)** - Beacon is the reward chest; Bunker Buster spares obsidian, crying obsidian, bedrock; Ardent Energy about 1 kill in 15; Exchange with Sell and Buy tabs;
   per-edition economy (`Economy`); platform sign above the platform; return zone (no build) and safe return spot; special raids (air, paratroopers, siege, swarm);
   zone outline stale-limit fix (best guess); operator commands `/arsenal next-raid <type>` and `/arsenal test-raid <type>`.
