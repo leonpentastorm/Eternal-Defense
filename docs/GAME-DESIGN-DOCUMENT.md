@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.1 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.2 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Living document, written from the state of the code at the end of round 5 |
+| **Status** | Living document, updated through the Mess Hall development round (round 6) |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.2 | 2026-10-07 | Development | Mess Hall Mk I–IV, ingredient traits, portable rations, communal stew, persistent home-enhanced meals; protocol 22 |
 | 0.0.1 | 2026-10-07 | Claude | First version, covering rounds 1 to 5 |
 
 ---
@@ -26,7 +27,7 @@
 ## 1. Vision
 
 Eternal Defense turns a TaCZ gun-pack world into a **shared base-defense campaign**. Players plant one Defense Beacon, build a base worth defending around it, and survive raids that grow with the base and the team.
-Industry (Create) feeds the war effort; every player also owns a personal support gun that answers their call. The fantasy: *you hold the line, the factory keeps you supplied, and the cannon behind you is yours.*
+Industry (Create) feeds the war effort; farming and a tiered kitchen feed the defenders; every player also owns a personal support gun that answers their call. The fantasy: *you hold the line, the factory keeps you supplied, and the cannon behind you is yours.*
 
 **Pillars**
 1. **The base is the objective.** Lose the beacon and the campaign ends; hold it and everything improves.
@@ -58,7 +59,7 @@ One source tree builds both (`/arsenal-build.properties` flavor in the jar). Eve
 
 ## 4. Core loop
 
-1. **Prepare** (preparation phase, daytime): build, craft, trade, upgrade, set the raid level.
+1. **Prepare** (preparation phase, daytime): build, farm, prepare sandwiches and stock communal stew, craft, trade, upgrade, set the raid level.
 2. **Scan:** when the raid starts, the base is scored and snapshotted.
 3. **Raid:** waves of attackers come from beyond the zone, breach, dig and shoot; the team defends the beacon.
 4. **Resolve:** victory repairs all damage and pays rewards (beacon is the reward chest, plus Ardent Energy); defeat leaves the ruins.
@@ -114,6 +115,22 @@ A workshop with four stations: **Weapons** (search, filter by type and era, craf
 ### 5.7 Field guide and onboarding
 New players get a starter weapon with ammo, a field guide (pack and standalone texts differ via `key.pack` / `key.standalone` suffixes) and the beacon tools. Every screen uses icons and a "How to unlock" line on locked entries. A **Reference** tab holds the exact rules. A test fails if the guide quotes a number that no longer matches the code.
 
+### 5.8 Mess Hall and prepared meals
+**A fortress should have a kitchen feeding the war effort.** A farmer/cook supports the group with portable expedition rations and communal pre-raid meals. Casual cooking is useful; a dedicated cook supports more people without being mandatory.
+
+* **Mess Hall Mk I–IV:** a rotating **2 × 2 × 1** installation, entirely inside the existing beacon zone, with six shared persistent ingredient slots and a physical sandwich output slot. Each tier has distinct functional model resources: improvised wooden spit, copper field station, stone fortified ovens, enclosed iron/green canteen. Initial craft uses vanilla materials in both editions; paid in-place upgrades preserve food and links.
+* **Cook Pot:** **2 × 1 × 1**, hollow pot with a conditional stew surface and an attached live menu board displaying stew, up to three bonuses and remaining servings. State, strengths, remaining servings and hall identity persist in its block entity.
+* **Two preparation tabs:** Sandwich produces one portable item with **1–2 effects**, stored in NBT, stacking to 16 and edible normally at full hunger. Stew holds **up to 3 effects**, assigned to one selected empty linked pot. A batch consumes one item from every occupied ingredient slot; container remainders return to the cook. Failed preparation consumes nothing, and a full pot cannot be overwritten.
+* **Bowl serving:** interact with a filled pot while holding a normal bowl to eat immediately. The server removes one serving; the bowl remains empty and reusable. Sandwich nutrition is 8 (saturation modifier 0.6); stew nutrition is 10 (0.8).
+* **Tier hooks:** Mk I/II/III/IV link **1/2/3/4 pots** and produce **4/8/12/16 stew servings**. All tiers retain the same effect-slot limits. Next upgrades cost **8/16/32 Reinforced Plating** in the pack or **4/8/14 Ardent Energy** standalone (`Economy`). Creative upgrades are free.
+* **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Cooked meat/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/sweets → mobility. Weighted effects choose the strongest two/three; overlapping definitions do not double-score a slot. Strength caps at base × 1.0/1.25/1.5.
+* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. Meals are strategic preparation; no unsupported weapon/reload integration is added.
+* **Home enhancement:** `BaseZone` determines valid home territory. Meal strength is **2× at home**, and remaining field duration **freezes**. Outside, strength normalizes and the timer resumes. Returning home freezes the existing remainder and never refreshes it. New meals replace the old state and start **30 minutes / 36,000 field ticks**.
+* **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** HUD shows name, field time and HOME ENHANCEMENT / FIELD status.
+* **Linking:** nearby anchors link within **8 blocks in 3D**, respecting tier capacity. Existing valid links are not stolen. Hall UUID + persisted pot reservations prevent same-position replacement and chunk-unload reassignment. Unloaded pots retain reserved capacity. Broken anchors clean loaded links; unloaded partners validate later. Orphaned stew remains stored until the pot reconnects. No general logistics system exists.
+
+Balance is an initial estimate. Final painted art, extended co-op balance and full-pack integration remain playtest work. Exact extension format, lifecycle and ownership rules: `docs/MESS-HALL.md`.
+
 ## 6. Economy and pacing targets
 
 Goals the numbers are tuned against:
@@ -128,17 +145,18 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 
 ## 7. UI and audio
 * Shared UI kit (`Ui`): consistent panels, tabs, rows, cards, pips; icon-first with plain-language requirements.
+* Meal HUD: top-left card with active meal, remaining field time and a written HOME ENHANCEMENT / FROZEN state. Kitchen uses separate Sandwich/Stew tabs with server previews, pot selection and failure reasons.
 * HUD: banner above the hotbar showing the chosen fire support while a Fire Support Flare is held; toasts for support calls.
 * Zone: glowing grid and a red target box drawn as edges only (so nothing behind it is hidden). The outline's stale limit is 30 s (the cause of an earlier flicker bug is unproven).
 * Audio: cannon grinding on turning; chat lines "Cannon preparing..." and "You heard cannon fire roaring" for far players. **(TBD: dedicated music and raid stingers.)**
 * Art: hand-made 3D models (shop, platform Mk-1 to Mk-4, cannon, parcel) and painted 64x64 sprites; red parachute canopy drawn procedurally.
 
 ## 8. Technical notes for designers
-* Network protocol **21** (messages 6 to 14); bump on any packet change.
-* Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`.
+* Network protocol **22** (new messages 15: own meal HUD, 16: open kitchen preview, both server → client); bump on any packet change.
+* Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
 * Mob effects are not synced to clients, so special visuals (red parachute) use their own packet.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.
-* QA: 58 unit tests; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
+* QA: 61 beacon unit tests and 7 gun-guide tests; five opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
 
 ## 9. Known risks and open questions
 1. Zone outline flicker during cannon fire: fix is a best guess, unconfirmed.

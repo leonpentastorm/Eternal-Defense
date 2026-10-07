@@ -55,6 +55,14 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Item> EXCHANGE_SHOP_ITEM=ITEMS.register("exchange_shop",()->new BaseZone.ZoneItem(EXCHANGE_SHOP.get()));
     // ---- base support system -------------------------------------------------------------------------
     static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(ForgeRegistries.MENU_TYPES,ID);
+    public static final RegistryObject<Block> MESS_HALL_I=kitchen("mess_hall_mk1",1),MESS_HALL_II=kitchen("mess_hall_mk2",2),MESS_HALL_III=kitchen("mess_hall_mk3",3),MESS_HALL_IV=kitchen("mess_hall_mk4",4);
+    private static RegistryObject<Block> kitchen(String id,int tier){RegistryObject<Block> block=BLOCKS.register(id,()->new MessHall.HallBlock(tier));ITEMS.register(id,()->new KitchenBlock.KitchenItem(block.get()));return block;}
+    public static final RegistryObject<Block> COOK_POT=BLOCKS.register("cook_pot",CookPot.PotBlock::new);
+    public static final RegistryObject<Item> COOK_POT_ITEM=ITEMS.register("cook_pot",()->new KitchenBlock.KitchenItem(COOK_POT.get()));
+    public static final RegistryObject<Item> SANDWICH=ITEMS.register("prepared_sandwich",PreparedSandwich::new);
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MessHall.HallEntity>> MESS_HALL_ENTITY=ENTITIES.register("mess_hall",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MessHall.HallEntity::new,MESS_HALL_I.get(),MESS_HALL_II.get(),MESS_HALL_III.get(),MESS_HALL_IV.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<CookPot.PotEntity>> COOK_POT_ENTITY=ENTITIES.register("cook_pot",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(CookPot.PotEntity::new,COOK_POT.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<MessHallMenu>> MESS_HALL_MENU=MENUS.register("mess_hall",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MessHallMenu::client));
     public static final RegistryObject<Block> SUPPORT_PLATFORM=BLOCKS.register("support_platform",SupportPlatform.PlatformBlock::new);
     public static final RegistryObject<Item> SUPPORT_PLATFORM_ITEM=ITEMS.register("support_platform",()->new SupportPlatform.PlatformItem(SUPPORT_PLATFORM.get()));
     public static final RegistryObject<Block> SUPPORT_CANNON=BLOCKS.register("support_cannon",SupportCannon.CannonBlock::new);
@@ -82,8 +90,11 @@ public final class ArsenalBeacon {
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
+        MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
+        if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
+        if(Boolean.getBoolean("arsenal.kitchenSmoke"))MinecraftForge.EVENT_BUS.register(new MessHallSmoke());
     }
     public static final class DefenseEntity extends BlockEntity {
         public DefenseEntity(BlockPos pos,BlockState state){super(BEACON_ENTITY.get(),pos,state);}

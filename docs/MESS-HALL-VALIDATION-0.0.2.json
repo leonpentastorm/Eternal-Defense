@@ -1,0 +1,92 @@
+{
+  "project_version": "0.0.2",
+  "date": "2026-10-07",
+  "network_protocol": 22,
+  "build": "JDK 17 offline build releaseJars passed (all modules, both editions)",
+  "unit_tests": {
+    "arsenal-beacon": {
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "arsenal-gun-guide": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "unit_execution": "Beacon tests executed after meal code/resource changes; unchanged gun-guide tests remained up-to-date with passing recorded results.",
+  "gameplay": {
+    "with_displays": {
+      "baseline_passed": 6,
+      "mess_hall_passed": 5
+    },
+    "without_displays": {
+      "baseline_passed": 6,
+      "mess_hall_passed": 5
+    },
+    "server_restart": "passed; inputs, hall identity, pot link, three stew effects, 9 servings and 12345 field ticks retained",
+    "chunk_unload_reload": "passed across a hall/pot chunk boundary; no reservation pruning while unloaded",
+    "raid_journal": "passed; repaired anchors preserve spent ingredients and live servings",
+    "deferred_footprint": "passed; retry rebuilds available cells and preserves an obstruction"
+  },
+  "client_smoke": {
+    "runtime": "Actual Minecraft 1.20.1/Forge 47.4.20 client and dedicated server, TaCZ 1.1.8-hotfix2, Xvfb, 1280x720, GUI scale 2",
+    "passed": [
+      "sandwich menu and server preview",
+      "stew menu and pot selection",
+      "real container button preparation",
+      "stocked pot synchronization",
+      "normal bowl block interaction",
+      "home HUD at 30:00 frozen",
+      "field HUD counts down",
+      "re-entry HUD at 29:55 frozen"
+    ],
+    "screenshots": [
+      "docs/ui/screens/kitchen/sandwich.png",
+      "docs/ui/screens/kitchen/stew.png",
+      "docs/ui/screens/kitchen/home.png",
+      "docs/ui/screens/kitchen/field.png",
+      "docs/ui/screens/kitchen/return.png"
+    ],
+    "reviewed": "Menu labels and slots readable; front board shows name, three bonuses and servings; long board text truncates with full information available in chat and menu tooltip."
+  },
+  "source_sha256": "d600fea7e82e735c68d70f0e1245f99db5c252cde2cf8295e4c26677cadb85f3",
+  "jars": {
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar": {
+      "sha512": "76edf35613f171ff000d9a908cd1cce1906fc3ecda6cba5a652efcfeba619b2d37d3258d4c5d662501e2ddd23b31403f823f26dd757057a926367f1296a4f6f6",
+      "bytes": 3486492
+    },
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0.jar": {
+      "sha512": "678f63ca27334d7a89d987f162feb5c41875273c9c088a9cfee485d09fd391adfbffec65fb1b2341bc9a4a12b8136cdc81f15f71e018a001935d07a112694ba2",
+      "bytes": 3535562
+    },
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0-standalone.jar": {
+      "sha512": "a0146403a70dc065038b06dcf2d90beab39ec50fa36da8114dcd1b3262ef9f0c55f27976663e3265474b67296649c475baf1b41f24077ab1df6964d871cf6271",
+      "bytes": 185076
+    },
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0.jar": {
+      "sha512": "a5ddc69c6d1ad05e795a2391b8ae63ebb977b973bbd984e2f5426267bc895e110a4e715846a776aaaba999288dbcbfd43f43efd5ae95a38c4617dc141fef5a87",
+      "bytes": 185066
+    },
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0-standalone.jar": {
+      "sha512": "b545e9e9d52fa07325606e275cf0f1b7109894613a4b34ad1b6d0d7528768d448593776eceec4ff09b25e4247b92489fbfbed2d0929e74263052d04144de13ef",
+      "bytes": 21980
+    },
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0.jar": {
+      "sha512": "9b9756a75ebf7b7f0ddf0bcd947c21280262da2686fcd982764e75b72e8fdec3ae98aace82c491def92bda3319e1db0c70b5935ad825e7830813b3d0340279a1",
+      "bytes": 21974
+    }
+  },
+  "not_tested": [
+    "Two human clients or Essential co-op",
+    "Full Create/KubeJS pack and real factory upgrade payment",
+    "Long co-op farming/raid balance",
+    "Live End or modded-dimension travel",
+    "All GUI scales/localizations and accessibility",
+    "Third-party modded ingredient packs"
+  ],
+  "unfinished_art": "Functional structurally distinct vanilla-texture models and ration model; painted artwork remains."
+}

@@ -32,6 +32,8 @@ final class Economy {
     static final int[] BEACON_ARDENT={4,8,14,22,32};
     static int beaconAmount(int level){return standalone()?BEACON_ARDENT[Math.max(0,Math.min(4,level))]:Rules.upgradeCost(level);}
     static int repairAmount(){return standalone()?6:8;}
+    static final int[] KITCHEN_ARDENT={4,8,14},KITCHEN_PLATING={8,16,32};
+    static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}
 
     // ---- cannon upgrades --------------------------------------------------------------------------------------------------
     /** Pack: the part that pays for each upgrade and how many per level. */

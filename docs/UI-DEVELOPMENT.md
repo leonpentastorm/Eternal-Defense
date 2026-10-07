@@ -19,6 +19,8 @@ Paths below are relative to the repository root. Beacon Java classes are under `
 | `PlatformScreen.java` | Weapon, ammo, attachment and armor catalogue; filters, recipe detail and Workshop |
 | `RaidRewardScreen.java` | Reward tier information |
 | `BeaconClient.java`, `BeaconAlerts.java` | Raid HUD, attacks and world-space overlays |
+| `MessHallScreen.java`, `MessHallMenu.java` | Server-authoritative Sandwich/Stew tabs, shared ingredients/output, pot selection and paid tier upgrades |
+| `MealClient.java`, `KitchenRenderer.java` | Player meal HUD and live Cook Pot menu board / stew surface |
 | `ControlHints.java`, `PlatformKeys.java` | Live key labels and table interaction binding |
 | `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideClient.java` | Expanded control card, collapsed shortcut and JAM indicator |
 | `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideState.java` | Guide visibility and five-second collapse state |
@@ -40,7 +42,7 @@ These screens are drawn with `GuiGraphics` and widgets. There is no existing GUI
 
 ## Gameplay and compatibility boundary
 
-Keep registry IDs, item NBT, saved campaign fields, display inventory persistence and packet schemas stable for a visual-only change. `BeaconNetwork.java` currently uses `16-pack` / `16-standalone`; do not alter packet fields without updating and validating both sides. Server-authoritative crafting, spending, refunds and creative mode should not be reimplemented in screens.
+Keep registry IDs, item NBT, saved campaign fields, display inventory persistence and packet schemas stable for a visual-only change. `BeaconNetwork.java` currently uses `22-pack` / `22-standalone`; do not alter packet fields without updating and validating both sides. Server-authoritative crafting, spending, refunds and creative mode should not be reimplemented in screens.
 
 `AmmoCatalogue.java` deduplicates identical output item and NBT independently of recipe batch size. Preserve magazine family, capacity and meaningful tags; a cosmetic change must not merge different magazines. `InventoryPayment.java` handles complete inventory payment rather than slot-by-slot partial spending.
 

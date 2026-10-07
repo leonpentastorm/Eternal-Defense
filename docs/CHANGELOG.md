@@ -2,6 +2,7 @@
 
 Newest first. One entry per delivered round; the detail of each lives in `docs/ENERGY-AND-SUPPORT.md` and the git history.
 
+* **0.0.2 / Round 6 (protocol 22)** - Mess Hall Mk I–IV (2×2×1), Cook Pot (2×1×1), separate Sandwich/Stew menus, datapack ingredient traits, portable composed sandwiches and persistent communal servings; owned long-duration player meals with 2× home strength and a frozen/resumable field timer; capacity/serving progression, edition-specific kitchen upgrade prices, live pot board and meal HUD. Added targeted unit/server/UI checks and updated GDD, field guide and handoff. Functional models use vanilla textures; painted art and long co-op balance remain playtest work.
 * **0.0.1** (first release on `dev`; contains everything below) - Eternal Defense game design document (`docs/GAME-DESIGN-DOCUMENT.md`); update it with every gameplay change.
 * **Round 5 (protocol 21)** - Beacon is the reward chest; Bunker Buster spares obsidian, crying obsidian, bedrock; Ardent Energy about 1 kill in 15; Exchange with Sell and Buy tabs;
   per-edition economy (`Economy`); platform sign above the platform; return zone (no build) and safe return spot; special raids (air, paratroopers, siege, swarm);

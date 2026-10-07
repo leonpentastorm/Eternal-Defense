@@ -10,6 +10,8 @@ Editable Java, assets, recipes and Gradle projects for the three Create Arsenal 
 
 Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Both the curated modpack and standalone editions are included. They share Java and registry IDs, with different release metadata, recipes and guide content.
 
+Project update **0.0.2** adds [Mess Hall prepared food](docs/MESS-HALL.md): tiered kitchens, portable sandwiches, communal Cook Pots, and persistent meal bonuses that double and freeze their field timer at home. The new network protocol is **22**; clients and servers need matching editions and builds. Functional kitchen art uses vanilla textures pending painted replacements. Project versions (`VERSION`) remain separate from the JAR build versions above.
+
 ## Build
 
 Requires **JDK 17**. Gradle 8.8, ForgeGradle 6.0.54, Minecraft 1.20.1 and Forge 47.4.20 are pinned. The wrapper downloads Gradle; a separate Gradle installation is unnecessary.

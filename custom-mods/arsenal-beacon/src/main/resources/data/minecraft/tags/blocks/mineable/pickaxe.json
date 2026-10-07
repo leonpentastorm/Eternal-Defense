@@ -4,6 +4,11 @@
     "arsenal_beacon:armor_platform",
     "arsenal_beacon:exchange_shop",
     "arsenal_beacon:support_platform",
-    "arsenal_beacon:support_cannon"
+    "arsenal_beacon:support_cannon",
+    "arsenal_beacon:cook_pot",
+    "arsenal_beacon:mess_hall_mk1",
+    "arsenal_beacon:mess_hall_mk2",
+    "arsenal_beacon:mess_hall_mk3",
+    "arsenal_beacon:mess_hall_mk4"
   ]
 }
