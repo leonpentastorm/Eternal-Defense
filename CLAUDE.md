@@ -19,5 +19,5 @@ Read `docs/HANDOFF.md` first: it says where the project stands, how to build and
 
 * `dev` is the development branch: all work goes to `dev` (the old working branch `claude/minecraft-mod-ui-guidebook-ak57k4` is kept as history; do not push to it any more). `main` only receives merges from `dev` when the owner says so.
 * Version scheme: **0.0.x** for every delivered update on `dev` (0.0.1, then 0.0.2, 0.0.3, ...); **0.1.0** only when the owner asks for it; **1.0.0** when `dev` is merged into `main`.
-* Each release: update `VERSION`, the GDD revision history and `docs/CHANGELOG.md`, commit, then tag `vX.Y.Z` on that commit and push the tag.
+* Each release: update `VERSION`, the GDD revision history and `docs/CHANGELOG.md`, commit, then tag `vX.Y.Z` on that commit and try to push the tag (the cloud git proxy refused tag pushes in the first attempt; if it still does, `VERSION` and the changelog are the record).
 * The mod jars still carry their own build versions (0.21.0 and 1.1.0); the project version is the one in `VERSION` and the tags.
