@@ -158,6 +158,8 @@ public final class ArsenalBeacon {
         if(e.getOriginal().getPersistentData().getBoolean("arsenalSupportGranted03"))e.getEntity().getPersistentData().putBoolean("arsenalSupportGranted03",true);
     }
     @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;BeaconActions.clear();}
+    private static final com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack> RAID_TYPE_SUGGEST=(c,b)->{b.suggest("normal");for(String t:RaidTypes.SPECIAL)b.suggest(t);return b.buildFuture();};
+    private static boolean raidTypeOk(String t){return t.equals("normal")||RaidTypes.special(t);}
     @SubscribeEvent public void commands(RegisterCommandsEvent event) {
         // Explicit opt-in for our isolated integration server; normal packs expose no test commands.
         if(Boolean.getBoolean("arsenal.integrationTests")) {
@@ -189,7 +191,9 @@ public final class ArsenalBeacon {
             .then(Commands.literal("claim").executes(c->{claim(c.getSource().getPlayerOrException(),CampaignData.get(c.getSource().getServer().overworld()));return 1;}))
             .then(Commands.literal("upgrade").then(Commands.argument("branch",StringArgumentType.word()).suggests((c,b)->{for(String s:List.of("core","logistics","defense","restoration","reconnaissance","vertical"))b.suggest(s);return b.buildFuture();}).executes(c->upgrade(c.getSource().getPlayerOrException(),StringArgumentType.getString(c,"branch")))))
             .then(Commands.literal("repair").executes(c->repair(c.getSource().getPlayerOrException())))
-            .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})));
+            .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})
+                .then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}if(!d.phase.equals("preparation")){c.getSource().sendFailure(Component.literal("A raid can only be started during preparation."));return 0;}d.nextRaidType=t;d.setDirty();begin(l,d);if(d.introRaid)c.getSource().sendSuccess(()->Component.literal("The introduction raid is always an ordinary raid; finish it first, then run this again."),false);return 1;})))
+            .then(Commands.literal("next-raid").requires(s->s.hasPermission(2)).then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}d.nextRaidType=t;d.setDirty();c.getSource().sendSuccess(()->Component.literal("Next raid: "+RaidTypes.name(t).getString()),true);return 1;}))));
     }
     static int feedback(ServerPlayer p,String text){
         if(BeaconActions.inAction())BeaconNetwork.sendState(p,"","",text);else p.sendSystemMessage(Component.literal(text));return 1;

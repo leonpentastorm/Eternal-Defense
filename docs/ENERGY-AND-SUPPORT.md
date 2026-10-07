@@ -126,6 +126,12 @@ A won special raid adds **3 + 2 x tier** Ardent Energy to the reward.
 | **Siege** | Creepers (30 percent), skeletons, pillagers (from tier 1) and strays (from tier 3). A creeper stuck at a wall ignites there; the explosion goes through the usual damage journal, so everything is restored after the raid, and the shooters fire through the holes. |
 | **They are thousands** | Only zombies and husks, twice the count, spawning every 8 instead of 20 ticks with twice the alive-limit (up to 96). No heavy, ranged or Special Forces mobs. |
 
+### Testing special raids (operators)
+
+* `/arsenal next-raid <normal|air|paratroopers|siege|swarm>` sets what the next raid will be (shown in the Overview).
+* `/arsenal test-raid <type>` sets that type and starts the raid right away (during preparation only). `/arsenal test-raid` alone starts the raid that is already scheduled.
+* The introduction raid is always ordinary, whatever is set; finish it (or `/arsenal test-raid` through it) first.
+
 ## Other round 5 changes
 
 * **The beacon is the reward chest.** Reward Chest in the Overview opens a 54-slot chest menu backed by the campaign data; no block is placed. Overflow stays queued, the contents are saved, and they spill out if the beacon is destroyed.
