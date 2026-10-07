@@ -31,7 +31,7 @@ public final class Rules {
     public static int below(int vertical){return new int[]{3,6,10,13,16}[Math.max(0,Math.min(4,vertical))];}
     public static int above(int vertical){return new int[]{8,16,24,36,48}[Math.max(0,Math.min(4,vertical))];}
     public static boolean showHud(String phase,boolean holdingController,boolean nearby){return nearby&&!phase.equals("unplaced")&&!phase.equals("decommissioning")&&(phase.equals("raid")||holdingController);}
-    public static int upgradeCost(int currentLevel) { return 16 * (1 << Math.min(4, Math.max(0, currentLevel))); }
+    public static int upgradeCost(int currentLevel) { return 8 * (1 << Math.min(4, Math.max(0, currentLevel))); }
     public static int deathPenalty(int deaths, int threshold, int maximumHealth) {
         return deaths > 0 && deaths % threshold == 0 ? maximumHealth / 10 : 0;
     }

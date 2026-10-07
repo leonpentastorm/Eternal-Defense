@@ -10,7 +10,7 @@ Item art follows industrial_atlas.png; placeables are JSON element models over o
 import json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from artlib import *
-from sprites import SPRITES, portal_sheet, parachute_texture, nameplate_texture
+from sprites import SPRITES, portal_sheet, parachute_texture, parachute_red_texture, nameplate_texture
 from fire_icons import ICONS
 import models
 
@@ -36,7 +36,7 @@ def main():
         for px in (32, 16): im.resize((px, px), Image.BOX).save(icons / f'{name}_{px}.png')
         im.resize((256, 256), Image.NEAREST).save(PREVIEWS / f'fire_icon_{name}_256.png'); print('icon', name)
     ent = ASSETS / 'textures/entity'; ent.mkdir(parents=True, exist_ok=True)
-    parachute_texture().save(ent / 'parachute.png'); nameplate_texture().save(ent / 'nameplate.png'); print('parachute + nameplate')
+    parachute_texture().save(ent / 'parachute.png'); parachute_red_texture().save(ent / 'parachute_red.png'); nameplate_texture().save(ent / 'nameplate.png'); print('parachute + nameplate')
     portal = ASSETS / 'textures/entity/return_portal.png'; portal.parent.mkdir(parents=True, exist_ok=True); sheet = portal_sheet(); sheet.save(portal); sheet.resize((512, 256), Image.NEAREST).save(PREVIEWS / 'return_portal_512.png')
     for path, data in models.all_files(ASSETS, MOD):
         write(path, data); print('wrote', path.relative_to(ROOT))

@@ -40,7 +40,11 @@ public final class BeaconClient {
             case "close" -> {if(mc.screen instanceof PanelScreen)mc.setScreen(null);}
         }
     }
-    private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<80&&state.getBoolean("installed");}
+    /** The campaign state is refreshed every second; only a long silence (a lost connection) hides the outlines. A few seconds of server lag, as when the cannon fires, must not. */
+    static final int STALE_TICKS=600;
+    /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
+    private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
+    private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
     private static boolean holding(){var p=Minecraft.getInstance().player;return p!=null&&(p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get()));}
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
@@ -86,13 +90,13 @@ public final class BeaconClient {
     }
     @SubscribeEvent public static void damageOutline(RenderLevelStageEvent event){
         if(event.getStage()!=RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS||!current()||!state.getBoolean("near")||!state.getBoolean("hurtbox"))return;
-        var box=ArsenalStructures.hurtbox(BlockPos.of(state.getLong("beacon")),state.getInt("mk"));var camera=event.getCamera().getPosition();var pose=event.getPoseStack();pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);var buffers=Minecraft.getInstance().renderBuffers().bufferSource();LevelRenderer.renderLineBox(pose,buffers.getBuffer(RenderType.lines()),box.inflate(.003),1f,.12f,.16f,.9f);buffers.endBatch(RenderType.lines());pose.popPose();
+        var box=ArsenalStructures.hurtbox(BlockPos.of(state.getLong("beacon")),state.getInt("mk"));var camera=event.getCamera().getPosition();var pose=event.getPoseStack();pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);var buffers=ZONE_BUFFER;LevelRenderer.renderLineBox(pose,buffers.getBuffer(RenderType.lines()),box.inflate(.003),1f,.12f,.16f,.9f);buffers.endBatch(RenderType.lines());pose.popPose();
     }
     @SubscribeEvent public static void outline(RenderLevelStageEvent e){
         if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS||!current()||!state.getBoolean("near")||!state.getBoolean("outline"))return;
         var mc=Minecraft.getInstance();BlockPos pos=BlockPos.of(state.getLong("beacon"));var camera=e.getCamera().getPosition();
         PoseStack pose=e.getPoseStack();pose.pushPose();pose.translate(pos.getX()-camera.x,pos.getY()-camera.y,pos.getZ()-camera.z);
-        var buffers=mc.renderBuffers().bufferSource();VertexConsumer lines=buffers.getBuffer(RenderType.lines());var transform=pose.last();double r=state.getInt("radius");
+        var buffers=ZONE_BUFFER;VertexConsumer lines=buffers.getBuffer(RenderType.lines());var transform=pose.last();double r=state.getInt("radius");
         // Exact outer block faces: [-radius, radius+1), with an inclusive 65-block height.
         double lo=-r,hi=r+1;int bottom=-state.getInt("below"),ceiling=state.getInt("above")+1;
         for(int y:new int[]{bottom,0,ceiling}){
@@ -184,7 +188,7 @@ public final class BeaconClient {
             if(tab==0){
                 int bw=(w-8)/3,y=top+ph-48;
                 claim=button(Ui.t("overview.chest"),x,y,bw,Ui.Look.PRIMARY,b->BeaconNetwork.action("claim",""));
-                repair=button(Ui.t("overview.repair"),x+bw+4,y,bw,Ui.Look.NORMAL,b->BeaconNetwork.action("repair",""));
+                repair=button(Economy.standalone()?Ui.t("overview.repair.standalone"):Ui.t("overview.repair"),x+bw+4,y,bw,Ui.Look.NORMAL,b->BeaconNetwork.action("repair",""));
                 button(Ui.t("overview.tiers"),x+(bw+4)*2,y,w-(bw+4)*2,Ui.Look.NORMAL,b->BeaconNetwork.action("rewards",""));
             }else if(tab==1){
                 int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;
@@ -240,7 +244,9 @@ public final class BeaconClient {
             if(roomy){
                 boolean hard=on("nextHard")||on("hardRaid");
                 Component kind=active?(on("hardRaid")?Ui.t("overview.hard_active"):Ui.t("overview.normal_active",n("veteranPercent"))):Ui.t("overview.upcoming",n("raidsStarted")+1,hard?Ui.t("overview.kind_hard"):Ui.t("overview.kind_normal"));
-                Ui.text(g,font,kind,x+10,y+44,hard?Ui.BRASS:Ui.MUTED,w-20);
+                String shown=active?state.getString("raidType"):state.getString("nextRaidType");
+                if(RaidTypes.special(shown))kind=kind.copy().append(" | ").append(Ui.t("raidtype."+shown));
+                Ui.text(g,font,kind,x+10,y+44,RaidTypes.special(shown)?Ui.ORANGE:hard?Ui.BRASS:Ui.MUTED,w-20);
             }
             y+=statusH+4;
             int live=n("liveScore"),tier=n("prospectiveTier"),goal=n("nextScore"),previous=Math.max(0,goal-500);
@@ -278,7 +284,7 @@ public final class BeaconClient {
             int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;List<Component> tooltip=null;boolean creative=on("creative");
             for(int i=0;i<BRANCHES.length;i++){
                 String branch=BRANCHES[i];int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
-                int grade=n(branch),max=Rules.branchMaximum(branch),cost=Rules.upgradeCost(grade),have=n("stock_"+PARTS[i]);boolean complete=grade>=max,short_=!complete&&!creative&&have<cost;
+                int grade=n(branch),max=Rules.branchMaximum(branch),cost=Economy.beaconAmount(grade),have=n("stock_"+(Economy.standalone()?"ardent_energy":PARTS[i]));boolean complete=grade>=max,short_=!complete&&!creative&&have<cost;
                 Ui.card(g,cx,cy,cw,ch,complete?Ui.BRASS:Ui.CYAN);
                 Ui.text(g,font,Ui.t("upgrade."+branch+".name"),cx+9,cy+3,Ui.INK,cw-24-Ui.pipsWidth(max));
                 Ui.pips(g,cx+cw-8-Ui.pipsWidth(max),cy+4,grade,max,complete?Ui.BRASS:Ui.CYAN);
@@ -287,7 +293,7 @@ public final class BeaconClient {
                 int lines=Math.max(1,(rowY-(cy+14)-1)/11),textY=cy+14;
                 if(lines>=3&&!complete){Ui.text(g,font,nowText(i,grade),cx+9,textY,Ui.MUTED,cw-16);textY+=13;lines--;}
                 Ui.wrap(g,font,effect,cx+9,textY,cw-16,complete?Ui.MUTED:Ui.INK,lines);
-                var icon=part(i);g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
+                var icon=Economy.standalone()?new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get()):part(i);g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
                 Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
                 Ui.UiButton b=(Ui.UiButton)upgrades.get(i);
                 b.setPosition(cx+cw-88,rowY);b.setWidth(82);

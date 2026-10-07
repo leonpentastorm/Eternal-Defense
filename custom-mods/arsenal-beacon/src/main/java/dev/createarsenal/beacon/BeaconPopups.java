@@ -27,7 +27,8 @@ public final class BeaconPopups {
 
     static void show(BeaconNetwork.Announce a){
         Popup popup=switch(a.kind()){
-            case "raid_start" -> new Popup(Style.RAID,a.b()==1?Ui.t("popup.raid_hard"):Ui.t("popup.raid_start"),Ui.t("popup.raid_sub",a.a()),3200);
+            case "raid_start" -> new Popup(Style.RAID,RaidTypes.special(a.who())?Ui.t("raidtype."+a.who()):a.b()==1?Ui.t("popup.raid_hard"):Ui.t("popup.raid_start"),RaidTypes.special(a.who())?Ui.t("raidtype.short."+a.who()):Ui.t("popup.raid_sub",a.a()),3600);
+            case "next_raid" -> new Popup(Style.SUPPORT,Ui.t("raidtype.next",Ui.t("raidtype."+a.who())),Component.empty(),6000);
             case "wave" -> new Popup(Style.WAVE,Ui.t("popup.wave",a.a(),a.b()),Ui.t("popup.wave_sub",a.who()),2600);
             case "victory" -> new Popup(Style.VICTORY,Ui.t("popup.victory"),Ui.t("popup.victory_sub"),6500);
             case "defeat" -> new Popup(Style.DEFEAT,Ui.t("popup.defeat"),Ui.t("popup.defeat_sub"),4200);

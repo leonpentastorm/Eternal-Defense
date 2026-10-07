@@ -64,7 +64,7 @@ final class SupportTest {
         assertArrayEquals(new int[]{40,33,26,20},new int[]{CannonUpgrades.interval(0),CannonUpgrades.interval(1),CannonUpgrades.interval(2),CannonUpgrades.interval(3)});
         assertEquals(20,CannonUpgrades.interval(9),"never faster than one shell a second");
         assertEquals(1.75f,CannonUpgrades.damage(3),1e-6);assertEquals(1f,CannonUpgrades.damage(-2),1e-6);
-        assertEquals(60,CannonUpgrades.Upgrade.TRAVERSE.price(0));assertEquals(200,CannonUpgrades.Upgrade.TRAVERSE.price(2));assertEquals(-1,CannonUpgrades.Upgrade.TRAVERSE.price(3));
+        assertEquals(3,CannonUpgrades.Upgrade.TRAVERSE.price(0));assertEquals(10,CannonUpgrades.Upgrade.TRAVERSE.price(2));assertEquals(-1,CannonUpgrades.Upgrade.TRAVERSE.price(3));
         assertEquals(1,CannonUpgrades.Upgrade.QUANTUM.max());assertEquals(-1,CannonUpgrades.Upgrade.QUANTUM.price(1));
         int[] levels=new int[CannonUpgrades.Upgrade.values().length];levels[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=1;levels[CannonUpgrades.Upgrade.AURA.ordinal()]=1;
         var cfg=CannonUpgrades.Config.of(levels,CannonUpgrades.FireType.HEAL);
@@ -83,15 +83,15 @@ final class SupportTest {
         assertNotNull(data.of(id),"upgrades survive picking the gear up");
     }
     @Test void theFieldGuideQuotesTheRealNumbers(){
-        String text=guide("support.detail")+guide("support.body");
+        String text=guide("support.detail")+guide("support.body")+guide("support.detail.standalone");
         for(String expected:List.of(SupportRules.SUPPLY_FLARE_PRICE+" energy","Return Flare "+SupportRules.RETURN_FLARE_PRICE,"Fire Support Flare "+SupportRules.FIRE_FLARE_PRICE,"Support Cannon "+SupportRules.CANNON_PRICE,
                 SupportRules.SUPPLY_SECONDS_OUTSIDE+" seconds",SupportRules.SUPPLY_SECONDS_UNDERGROUND+" seconds underground",
                 "Fire Support lasts "+SupportRules.FIRE_BLASTS*SupportRules.FIRE_INTERVAL_TICKS/20+" seconds ("+SupportRules.FIRE_BLASTS+" shells)",
                 SupportRules.FIRE_DAMAGE+" damage","within "+SupportRules.BLAST_RADIUS+" blocks of the flare",
                 "portal stays open for "+SupportRules.PORTAL_LIFETIME_TICKS/20+" seconds",SupportRules.PARCEL_LIFETIME_TICKS/1200+" minutes",
                 SupportRules.UPGRADE_PLATING[1]+", "+SupportRules.UPGRADE_PLATING[2]+" and "+SupportRules.UPGRADE_PLATING[3],
-                "Faster traverse 60, 120 and 200","Rate of fire 80, 160 and 260","More volley 100, 200 and 320","Quantum tunneling "+CannonUpgrades.Upgrade.QUANTUM.price(0),
-                "Slowness field "+CannonUpgrades.Upgrade.SLOW.price(0),"Lasting portal "+CannonUpgrades.Upgrade.PORTAL.price(0),"Healing aura "+CannonUpgrades.Upgrade.AURA.price(0),"Area of effect 120, 220 and 340","Dimensional link "+CannonUpgrades.Upgrade.DIMENSION.price(0),
+                "Faster traverse 3, 6 and 10","Rate of fire 4, 8 and 12","More volley 5, 10 and 16","Quantum tunneling "+CannonUpgrades.Upgrade.QUANTUM.price(0),
+                "Slowness field "+CannonUpgrades.Upgrade.SLOW.price(0),"Lasting portal "+CannonUpgrades.Upgrade.PORTAL.price(0),"Healing aura "+CannonUpgrades.Upgrade.AURA.price(0),"Area of effect 5, 9 and 14","Dimensional link "+CannonUpgrades.Upgrade.DIMENSION.price(0),
                 "anywhere inside the zone","Barrage in process","Cannon preparing","You heard cannon fire roaring","half their maximum health",
                 "adds "+CannonUpgrades.VOLLEY_STEP+" shells","5 minutes","30 seconds after the parcel is emptied"))
             assertTrue(text.contains(expected),"guide does not mention '"+expected+"'");

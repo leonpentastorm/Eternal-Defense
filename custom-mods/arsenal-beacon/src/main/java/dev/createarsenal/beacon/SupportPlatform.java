@@ -48,10 +48,14 @@ final class SupportPlatform {
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,MK);}
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return ArsenalStructures.cell(s,0,0,0);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){
-            Direction d=c.getHorizontalDirection().getOpposite();var level=c.getLevel();BlockPos pos=c.getClickedPos();BlockPos front=pos.relative(d);
+            Direction d=c.getHorizontalDirection().getOpposite();var level=c.getLevel();BlockPos pos=c.getClickedPos();
             var player=c.getPlayer();
-            if(!level.getBlockState(front).canBeReplaced()&&!level.getBlockState(front).getCollisionShape(level,front).isEmpty()){
-                if(player!=null)player.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.blocked"),true);return null;
+            // the return zone: two blocks in front, two tall, must be free of anything solid
+            for(BlockPos cell:SupportCalls.returnZone(pos,d)){
+                var st=level.getBlockState(cell);
+                if(!st.canBeReplaced()&&!st.getCollisionShape(level,cell).isEmpty()){
+                    if(player!=null)player.displayClientMessage(Component.translatable("gui.arsenal_beacon.support.keep_clear").withStyle(net.minecraft.ChatFormatting.RED),true);return null;
+                }
             }
             var tag=c.getItemInHand().getTag();int mk=tag!=null&&tag.contains("Mk")?Math.max(1,Math.min(4,tag.getInt("Mk"))):1;
             return defaultBlockState().setValue(FACING,d).setValue(MK,mk);
@@ -130,6 +134,8 @@ final class SupportPlatform {
         @Override public void handleUpdateTag(CompoundTag n){ownerName=n.getString("OwnerName");}
         @Override public void onDataPacket(net.minecraft.network.Connection net,net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
         @Override public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket(){return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);}
+        /** The owner's sign stands above the two blocks of the platform. */
+        @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).expandTowards(0,3,0);}
         @Override public Component getDisplayName(){return Component.translatable("block.arsenal_beacon.support_platform");}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player p){return new PlatformMenu(id,inv,grid,getBlockPos(),getBlockState().getValue(MK));}
     }

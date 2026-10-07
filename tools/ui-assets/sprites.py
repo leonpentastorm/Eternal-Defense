@@ -115,3 +115,19 @@ def nameplate_texture():
     im = new(2, 1)
     im.putpixel((0, 0), RAMPS['brass'][3]); im.putpixel((1, 0), hx('#0e1a24'))
     return im
+
+
+def parachute_red_texture():
+    """The paratroopers' red and white canopy (same layout as parachute.png)."""
+    im = new(24, 8)
+    red = [hx(c) for c in ('#5a0f14', '#7a1620', '#a8202c', '#d63a45')]
+    white = [hx(c) for c in ('#9aa4ad', '#bcc6cf', '#dde5eb', '#f4f8fa')]
+    rope = [hx(c) for c in ('#5a4a30', '#7c6842', '#a08a5c', '#c4ad78')]
+    for tile, ramp in enumerate((red, white, rope)):
+        for y in range(8):
+            for x in range(8):
+                v = 1 + (1 if (x + y) % 4 == 0 else 0) + (1 if y in (2, 5) else 0)
+                if x in (0, 7): v = 0
+                if y == 0 or y == 7: v = max(0, v - 1)
+                im.putpixel((tile * 8 + x, y), ramp[min(3, v)])
+    return im

@@ -9,20 +9,20 @@ final class CannonUpgrades {
     private CannonUpgrades(){}
 
     enum Upgrade {
-        TRAVERSE("traverse",60,120,200),     // faster turret
-        RATE("rate",80,160,260),             // faster fire rate
-        VOLLEY("volley",100,200,320),        // more shells per call
-        DAMAGE("damage",100,200,320),
-        QUANTUM("quantum",400),              // fire support works below ground
-        SLOW("slow",250),                    // slowness field over the whole area
-        PORTAL("portal",200),                // 5 minute portal that can be used twice
-        AURA("aura",200),                    // healing aura round a supply flare
-        AOE("aoe",120,220,340),              // wider area of effect for every fire support
-        DIMENSION("dimension",500);          // fire support can be called in the other dimensions
+        TRAVERSE("traverse",3,6,10),     // faster turret
+        RATE("rate",4,8,12),             // faster fire rate
+        VOLLEY("volley",5,10,16),        // more shells per call
+        DAMAGE("damage",5,10,16),
+        QUANTUM("quantum",14),              // fire support works below ground
+        SLOW("slow",8),                    // slowness field over the whole area
+        PORTAL("portal",6),                // 5 minute portal that can be used twice
+        AURA("aura",6),                    // healing aura round a supply flare
+        AOE("aoe",5,9,14),              // wider area of effect for every fire support
+        DIMENSION("dimension",18);          // fire support can be called in the other dimensions
         final String id;final int[] prices;
         Upgrade(String id,int... prices){this.id=id;this.prices=prices;}
         int max(){return prices.length;}
-        /** Ardent Energy for the next level, or -1 when maxed. */
+        /** Ardent Energy for the next level in the standalone edition (the pack pays in factory parts, see {@link Economy}), or -1 when maxed. */
         int price(int level){return level<0||level>=prices.length?-1:prices[level];}
     }
 

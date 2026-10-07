@@ -94,8 +94,14 @@ final class SupportFlares {
             if(e.getEntity() instanceof Player&&e.getSource().getDirectEntity() instanceof FlareEntity f&&f.type()!=CannonUpgrades.FireType.BUNKER)e.setCanceled(true);
         }
     }
-    /** Blocks a Bunker Buster leaves alone: the beacon and everything the base is built from. */
-    static boolean bunkerSpares(BlockState state){return ArsenalStructures.owns(state)||state.is(ArsenalBeacon.STRUCTURE_PART.get())||state.is(ArsenalBeacon.BEACON.get());}
+    /** Blocks a Bunker Buster leaves alone: the beacon and the base's own blocks, and anything super hard (obsidian, crying obsidian, bedrock, reinforced deepslate, anchors, ancient debris...). */
+    static boolean bunkerSpares(BlockState state){
+        return ArsenalStructures.owns(state)||state.is(ArsenalBeacon.STRUCTURE_PART.get())||state.is(ArsenalBeacon.BEACON.get())
+            ||state.is(net.minecraft.world.level.block.Blocks.OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.BEDROCK)
+            ||state.getBlock().getExplosionResistance()>=HARD_RESISTANCE;
+    }
+    /** Explosion resistance from which a block counts as super hard (obsidian is 1200). */
+    static final float HARD_RESISTANCE=1200f;
     /** Layers of the crater dug per tick: the whole cube is gone in about this many ticks, so the ground seems to be eaten from the top down. */
     static final int CARVE_TICKS=12;
 

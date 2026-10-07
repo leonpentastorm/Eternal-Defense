@@ -33,25 +33,13 @@ public final class ReleaseThirteenGameTests {
     static int amount(Container chest,Item item){int total=0;for(int i=0;i<chest.getContainerSize();i++)if(chest.getItem(i).is(item))total+=chest.getItem(i).getCount();return total;}
     static int queued(CampaignData d,Item item){return d.rewards.stream().map(ItemStack::of).filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum();}
     @GameTest(template="empty3x3x3",batch="chest013",timeoutTicks=100)
-    public static void sharedDoubleChestPreservesOverflowAndNeverDuplicatesOnRepeatClaim(GameTestHelper h){
-        var l=h.getLevel();var floor=new BlockPos(7200,101,0);UpgradeGameTests.arena(l,floor);var d=CampaignData.get(l);d.damage.clear();d.destroyedTurrets.clear();d.resetProgress();d.phase="preparation";d.beacon=floor.above();l.setBlock(d.beacon,ArsenalBeacon.BEACON.get().defaultBlockState(),3);
-        var a=UpgradeGameTests.player(h,"chest013-a");a.setGameMode(GameType.SURVIVAL);a.setPos(floor.getX()+2,floor.getY()+1,floor.getZ());for(int i=0;i<36;i++)a.getInventory().items.set(i,new ItemStack(Items.DIAMOND,64));var before=a.getInventory().save(new ListTag());
-        try{
-            RaidRewards.queue(d,List.of(new ItemStack(Items.IRON_INGOT,56*64)));String result=RewardCache.claim(a,d);var chest=RewardCache.container(l,d);
-            h.assertTrue(chest!=null&&chest.getContainerSize()==54&&result.contains("Chest full"),"Collect creates a real native double chest with 54 shared slots");
-            h.assertTrue(amount(chest,Items.IRON_INGOT)==54*64&&queued(d,Items.IRON_INGOT)==128&&before.equals(a.getInventory().save(new ListTag())),"Full player inventory stays untouched; every overflow item stays queued");
-            var loaded=CampaignData.load(d.save(new CompoundTag()));h.assertTrue(loaded.rewardChest.equals(d.rewardChest)&&queued(loaded,Items.IRON_INGOT)==128&&RewardCache.container(l,loaded)!=null,"Chest reference and overflow survive saved-data reload");
-            chest.setItem(0,ItemStack.EMPTY);var b=UpgradeGameTests.player(h,"chest013-b");b.setGameMode(GameType.SURVIVAL);b.setPos(a.getX(),a.getY(),a.getZ());RewardCache.claim(b,d);h.assertTrue(queued(d,Items.IRON_INGOT)==64&&amount(chest,Items.IRON_INGOT)==54*64,"Second player refills the same shared chest, charging the same queue");
-            RewardCache.claim(a,d);h.assertTrue(queued(d,Items.IRON_INGOT)==64&&amount(chest,Items.IRON_INGOT)==54*64,"Repeated clicks cannot duplicate rewards");
-            d.phase="raid";RewardCache.claim(a,d);h.assertTrue(queued(d,Items.IRON_INGOT)==64,"Full raid-time claims also preserve the queue");b.closeContainer();
-        }finally{a.closeContainer();a.getInventory().clearContent();if(d.rewardChest!=null){l.setBlock(d.rewardChest,Blocks.AIR.defaultBlockState(),3);l.setBlock(d.rewardChest.east(),Blocks.AIR.defaultBlockState(),3);}d.resetProgress();d.phase="unplaced";UpgradeGameTests.release(l,floor);}h.succeed();
-    }
-    @GameTest(template="empty3x3x3",batch="chestfailure013",timeoutTicks=100)
-    public static void blockedChestPlacementKeepsQueuedLootAndDoesNotOverwriteBase(GameTestHelper h){
-        var l=h.getLevel();var d=new CampaignData();d.phase="preparation";d.beacon=h.absolutePos(new BlockPos(1,1,1));RaidRewards.queue(d,List.of(new ItemStack(Items.DIAMOND,3)));
-        // No supported floor outside this 3x3 test room. Never manufacture a chest through terrain.
-        d.phase="raid";h.assertTrue(!RewardCache.create(l,d)&&queued(d,Items.DIAMOND)==3&&d.rewardChest==null,"Raid snapshot forbids new reward-container placement without losing the queue");
-        d.phase="preparation";var old=l.getBlockState(d.beacon);l.setBlock(d.beacon,Blocks.DIAMOND_BLOCK.defaultBlockState(),3);h.assertTrue(!RewardCache.create(l,d)&&l.getBlockState(d.beacon).is(Blocks.DIAMOND_BLOCK)&&queued(d,Items.DIAMOND)==3,"Missing chest space never deletes base blocks or rewards");l.setBlock(d.beacon,old,3);h.succeed();
+    public static void beaconRewardBoxKeepsOverflowQueuedAndNeverDuplicates(GameTestHelper h){
+        var d=new CampaignData();d.phase="preparation";d.beacon=h.absolutePos(new BlockPos(1,1,1));
+        RaidRewards.queue(d,List.of(new ItemStack(Items.IRON_INGOT,56*64)));RewardCache.deposit(d,d.rewardBox);
+        h.assertTrue(amount(d.rewardBox,Items.IRON_INGOT)==54*64&&queued(d,Items.IRON_INGOT)==128,"The beacon's 54 slots fill and the overflow stays queued");
+        RewardCache.deposit(d,d.rewardBox);h.assertTrue(amount(d.rewardBox,Items.IRON_INGOT)==54*64&&queued(d,Items.IRON_INGOT)==128,"Repeated deposits cannot duplicate rewards");
+        var loaded=CampaignData.load(d.save(new CompoundTag()));h.assertTrue(amount(loaded.rewardBox,Items.IRON_INGOT)==54*64&&queued(loaded,Items.IRON_INGOT)==128,"The box and the queue survive saving");
+        h.succeed();
     }
     @GameTest(template="empty3x3x3",batch="selection013",timeoutTicks=100)
     public static void survivalCanLowerLevelAndStartImmediatelyWithoutUpgradeLoss(GameTestHelper h)throws Exception{

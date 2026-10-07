@@ -44,6 +44,6 @@ final class RaidBalance {
     private static void set(Mob mob,net.minecraft.world.entity.ai.attributes.Attribute attribute,double value){var a=mob.getAttribute(attribute);if(a!=null){a.removeModifiers();a.setBaseValue(value);}}
     static boolean canSpawn(ServerLevel level,CampaignData d){
         long alive=d.raiders.stream().map(level::getEntity).filter(e->e!=null&&e.isAlive()&&!SpecialForcesRaids.defeated(e)).count();
-        return alive<Rules.concurrentAttackers(d.wavePlayers,d.raidTier);
+        return alive<RaidTypes.concurrent(d.raidType,Rules.concurrentAttackers(d.wavePlayers,d.raidTier));
     }
 }

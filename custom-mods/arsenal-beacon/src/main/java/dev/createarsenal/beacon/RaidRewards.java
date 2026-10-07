@@ -33,6 +33,7 @@ final class RaidRewards {
         if(t>=6){add(list,"minecraft:shulker_shell",2+2*((t-6)/2));add(list,"minecraft:phantom_membrane",4+2*(t-6));}
         if(t>=8)add(list,"minecraft:dragon_breath",2*(t-7));
         add(list,"arsenal_beacon:universal_ammo_coin",8+8*t);
+        add(list,"arsenal_beacon:ardent_energy",1+t);   // the floor of the Ardent Energy income: farming and exchange sell-offs add to it
         // Bonus resources are 50% of the completion cache, rounded up; wave iron stays unchanged.
         if(hard){for(var s:list)s.setCount(s.getCount()+(s.getCount()+1)/2);if(t>=5)add(list,"minecraft:nether_star",1+extra/3);}
         supply(list,l,"ConsumableId","carfak",1+t+(hard?2+t:0));

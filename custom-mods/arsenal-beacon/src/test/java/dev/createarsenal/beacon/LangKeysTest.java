@@ -54,8 +54,9 @@ final class LangKeysTest {
         for(var u:CannonUpgrades.Upgrade.values()){needed.add("cannon.up."+u.id);needed.add("cannon.up."+u.id+".desc");}
         for(String code:List.of("selected","bought","no_energy","maxed"))needed.add("cannon.msg."+code);
         for(String key:List.of("barrage","barrage.wait","preparing","heard"))needed.add("support.notice."+key);
-        needed.addAll(List.of("support.refused.bunker_home","platform.manage.buy_support","platform.manage.buy_exchange"));
+        needed.addAll(List.of("exchange.tab.buy","exchange.tab.sell","exchange.sell","exchange.gain","exchange.sell_hint","support.keep_clear","support.refused.return_blocked","cannon.msg.no_parts","rewards.box","raidtype.next","raidtype.normal","support.refused.bunker_home","platform.manage.buy_support","platform.manage.buy_exchange"));
         for(String key:List.of("owner","hud","current","fire","upgrades","shells","shell","max","title"))needed.add("cannon."+key);
+        for(String t:RaidTypes.SPECIAL){needed.add("raidtype."+t);needed.add("raidtype.short."+t);needed.add("raidtype.tip."+t);}
         for(int age=0;age<=5;age++)needed.add("age."+age);
         for(String kind:List.of("gun","ammo","attachment","armor")){needed.add("platform.title."+kind);needed.add("platform.subtitle."+kind);needed.add("platform.station."+kind);needed.add("platform.browsing."+kind);}
         for(String type:WeaponBrowser.TYPES)needed.add("type.gun."+type);

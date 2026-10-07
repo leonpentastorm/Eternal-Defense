@@ -65,6 +65,7 @@ final class SupportCalls {
             if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
         }
         if(kind==Kind.SUPPLY&&!platform.hasItems())return "empty_grid";
+        if(kind==Kind.RETURN&&returnSpot(overworld,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING))==null)return "return_blocked";
         return null;
     }
     /** Tells the player why nothing happened. Their flare is never used up when a call is refused. */
@@ -129,18 +130,42 @@ final class SupportCalls {
     }
 
     // ---- return portal -----------------------------------------------------------------------------------
+    /** A cell a player can stand in: two open blocks, a solid floor, nothing harmful. */
+    static boolean standable(ServerLevel level,BlockPos c){
+        if(!level.hasChunkAt(c))return false;
+        var feet=level.getBlockState(c);var head=level.getBlockState(c.above());var floor=level.getBlockState(c.below());
+        if(!feet.getCollisionShape(level,c).isEmpty()||!head.getCollisionShape(level,c.above()).isEmpty()||floor.getCollisionShape(level,c.below()).isEmpty())return false;
+        if(!feet.getFluidState().isEmpty()||!head.getFluidState().isEmpty())return false;
+        return !feet.is(net.minecraft.world.level.block.Blocks.FIRE)&&!floor.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)&&!floor.is(net.minecraft.world.level.block.Blocks.CACTUS)&&!floor.is(net.minecraft.world.level.block.Blocks.CAMPFIRE);
+    }
+    /** The cells of a platform's return zone: the two blocks in front of it, two blocks tall. They are kept clear (no building) so the portal always has room. */
+    static List<BlockPos> returnZone(BlockPos platform,Direction facing){
+        var list=new java.util.ArrayList<BlockPos>();
+        for(int d=1;d<=2;d++)for(int h=0;h<=1;h++)list.add(platform.relative(facing,d).above(h));
+        return list;
+    }
+    /** Where the portal delivers a player: the front of the platform, or the nearest safe cell around it. Null when there is none (the return is cancelled, the flare is not used). */
     static Vec3 returnSpot(ServerLevel level,BlockPos platform,Direction facing){
         BlockPos front=platform.relative(facing);
-        for(BlockPos c:new BlockPos[]{front,front.above(),platform.above(2),front.relative(facing)}){
-            if(level.getBlockState(c).getCollisionShape(level,c).isEmpty()&&level.getBlockState(c.above()).getCollisionShape(level,c.above()).isEmpty())return Vec3.atBottomCenterOf(c);
+        for(BlockPos c:new BlockPos[]{front,front.relative(facing),front.above(),front.below()})if(standable(level,c))return Vec3.atBottomCenterOf(c);
+        BlockPos best=null;double bestD=Double.MAX_VALUE;
+        for(BlockPos c:BlockPos.betweenClosed(platform.offset(-3,-2,-3),platform.offset(3,2,3))){
+            if(c.getX()==platform.getX()&&c.getZ()==platform.getZ())continue;
+            double d=c.distSqr(front);if(d<bestD&&standable(level,c)){bestD=d;best=c.immutable();}
         }
-        return Vec3.atBottomCenterOf(platform.above());
+        return best==null?null:Vec3.atBottomCenterOf(best);
+    }
+    /** The spot for this player's return, or null. */
+    static Vec3 returnSpotFor(ServerPlayer p){
+        var home=p.getServer().overworld();var platform=platform(home,p.getUUID());if(platform==null)return null;
+        return returnSpot(home,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING));
     }
     /** The owner stepped into their return portal: send them to the front of their platform. Returns where they arrived, or null when refused. */
     static Vec3 finishReturn(ServerPlayer p){
         String problem=problem(p,Kind.RETURN);if(problem!=null){refuse(p,problem);return null;}
         var home=p.getServer().overworld();var platform=platform(home,p.getUUID());
         Direction facing=platform.getBlockState().getValue(SupportPlatform.FACING);Vec3 spot=returnSpot(home,platform.getBlockPos(),facing);
+        if(spot==null){refuse(p,"return_blocked");return null;}
         travel(p,home,spot,facing.toYRot());
         return spot;
     }

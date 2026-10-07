@@ -33,6 +33,10 @@ public final class CampaignData extends SavedData {
     public final Map<Long,Damage> damage=new LinkedHashMap<>();
     public final Map<String,Integer> baseCounts=new HashMap<>();
     public final List<CompoundTag> rewards=new ArrayList<>();
+    /** The reward chest: part of the beacon itself. Claimed rewards wait here (54 slots) until the team takes them. */
+    public final net.minecraft.world.SimpleContainer rewardBox=new net.minecraft.world.SimpleContainer(54);
+    /** Kind of the raid in progress and of the next one (see {@link RaidTypes}); "normal" for an ordinary raid. */
+    public String raidType="normal",nextRaidType="normal";
     public final List<CompoundTag> destroyedTurrets=new ArrayList<>();
     public record Damage(BlockState before,CompoundTag entity) {}
     public static CampaignData get(ServerLevel level) {
@@ -49,7 +53,7 @@ public final class CampaignData extends SavedData {
         rewardChest=null;raidLimit=10;raidsStarted=0;hardRaid=bossSpawned=bossKilled=false;bossId=null;
         core=logistics=defense=restoration=reconnaissance=vertical=victories=rewardTier=raidTier=score=wave=deaths=0;respiteTicks=0;respitePurchases=nextRaidBonus=0;introRaid=false;
         wavePlayers=1;waveVeteran=0;preparationTicks=raidTicks=waveTicks=0;spawnRemaining=spawnCooldown=breachClock=scanCursor=0;
-        health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();participants.clear();raiders.clear();baseCounts.clear();
+        health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();rewardBox.clearContent();raidType=nextRaidType="normal";participants.clear();raiders.clear();baseCounts.clear();
         setDirty();
     }
     public void finishDecommission() {
@@ -79,6 +83,8 @@ public final class CampaignData extends SavedData {
             d.damage.put(c.getLong("pos"),new Damage(NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(),c.getCompound("state")),c.contains("entity")?c.getCompound("entity"):null));
         }
         for(Tag t:n.getList("rewards",Tag.TAG_COMPOUND))d.rewards.add(((CompoundTag)t).copy());
+        for(Tag t:n.getList("rewardBox",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;int slot=c.getInt("Slot");if(slot>=0&&slot<54)d.rewardBox.setItem(slot,net.minecraft.world.item.ItemStack.of(c));}
+        d.raidType=n.contains("raidType")?n.getString("raidType"):"normal";d.nextRaidType=n.contains("nextRaidType")?n.getString("nextRaidType"):"normal";
         for(Tag t:n.getList("destroyedTurrets",Tag.TAG_COMPOUND))d.destroyedTurrets.add(((CompoundTag)t).copy());
         d.victoryRestoration=n.getBoolean("victoryRestoration");d.raidsStarted=n.contains("raidsStarted")?n.getInt("raidsStarted"):d.victories;d.hardRaid=n.getBoolean("hardRaid");d.bossSpawned=n.getBoolean("bossSpawned");d.bossKilled=n.getBoolean("bossKilled");d.bossId=n.hasUUID("bossId")?n.getUUID("bossId"):null;
         CompoundTag counts=n.getCompound("baseCounts");for(String key:counts.getAllKeys())d.baseCounts.put(key,counts.getInt(key));
@@ -101,6 +107,7 @@ public final class CampaignData extends SavedData {
         }
         n.put("palette",palette);n.putLongArray("positions",positions);n.putIntArray("states",states);
         ListTag ds=new ListTag();damage.forEach((p,d)->{CompoundTag c=new CompoundTag();c.putLong("pos",p);c.put("state",NbtUtils.writeBlockState(d.before()));if(d.entity()!=null)c.put("entity",d.entity());ds.add(c);});n.put("damage",ds);
+        ListTag boxTag=new ListTag();for(int i=0;i<54;i++)if(!rewardBox.getItem(i).isEmpty()){var c=new CompoundTag();rewardBox.getItem(i).save(c);c.putInt("Slot",i);boxTag.add(c);}n.put("rewardBox",boxTag);n.putString("raidType",raidType);n.putString("nextRaidType",nextRaidType);
         ListTag rewardsTag=new ListTag();rewards.forEach(t->rewardsTag.add(t.copy()));n.put("rewards",rewardsTag);
         ListTag turretTags=new ListTag();destroyedTurrets.forEach(t->turretTags.add(t.copy()));n.put("destroyedTurrets",turretTags);n.putBoolean("victoryRestoration",victoryRestoration);n.putInt("raidsStarted",raidsStarted);n.putBoolean("hardRaid",hardRaid);n.putBoolean("bossSpawned",bossSpawned);n.putBoolean("bossKilled",bossKilled);if(bossId!=null)n.putUUID("bossId",bossId);
         CompoundTag counts=new CompoundTag();baseCounts.forEach(counts::putInt);n.put("baseCounts",counts);

@@ -30,7 +30,7 @@ final class CannonControl {
         if(operable(p,pos)==null)return;
         var base=SupportData.get(p.serverLevel()).ensure(p.getUUID());
         var data=new CompoundTag();
-        data.putInt("energy",ArdentEnergy.balance(p));data.putBoolean("creative",p.isCreative());data.putInt("fire",base.fire);data.putIntArray("up",base.up);
+        data.putInt("energy",ArdentEnergy.balance(p));data.putIntArray("stock",new int[]{Economy.have(p,ArsenalBeacon.PLATING.get()),Economy.have(p,ArsenalBeacon.LOGISTICS.get()),Economy.have(p,ArsenalBeacon.COIL.get()),Economy.have(p,ArsenalBeacon.REPAIR.get())});data.putBoolean("creative",p.isCreative());data.putInt("fire",base.fire);data.putIntArray("up",base.up);
         data.putString("owner",p.getGameProfile().getName());
         BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Open(pos,data,message));
     }
@@ -43,9 +43,9 @@ final class CannonControl {
         }
         if(kind==UPGRADE){
             if(arg<0||arg>=CannonUpgrades.Upgrade.values().length)return;
-            var up=CannonUpgrades.Upgrade.values()[arg];int level_=base.up[arg],price=up.price(level_);
-            if(price<0){open(p,pos,"maxed");return;}
-            if(!ArdentEnergy.spend(p,price)){open(p,pos,"no_energy");return;}
+            var up=CannonUpgrades.Upgrade.values()[arg];int level_=base.up[arg];var price=Economy.cannon(up,level_);
+            if(price==null){open(p,pos,"maxed");return;}
+            if(!Economy.pay(p,price)){open(p,pos,price.ardent()?"no_energy":"no_parts");return;}
             base.up[arg]=level_+1;data.setDirty();
             if(up==CannonUpgrades.Upgrade.TRAVERSE)be.setTraverse(base.up[arg]);
             level.playSound(null,pos,net.minecraft.sounds.SoundEvents.ANVIL_USE,net.minecraft.sounds.SoundSource.BLOCKS,.8f,1.3f);

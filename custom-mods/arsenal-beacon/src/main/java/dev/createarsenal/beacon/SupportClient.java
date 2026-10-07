@@ -86,7 +86,7 @@ public final class SupportClient {
             vc.vertex(m,c[0],c[1],z).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0f,0f,1f).endVertex();
     }
 
-    /** The platform's plate on the back of its cabinet. */
+    /** The owner's rickety little sign, stuck on top of the platform. It is only drawn (no hitbox), so the platform stays two blocks tall. */
     static final class PlatformRenderer implements BlockEntityRenderer<SupportPlatform.PlatformEntity> {
         private final net.minecraft.client.gui.Font font;
         PlatformRenderer(BlockEntityRendererProvider.Context ctx){font=ctx.getFont();}
@@ -94,8 +94,16 @@ public final class SupportClient {
             if(be.ownerName==null||be.ownerName.isEmpty())return;
             var facing=be.getBlockState().getValue(SupportPlatform.FACING);
             pose.pushPose();
-            pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-((facing.toYRot()+180f)%360f)));pose.translate(-.5,0,-.5);
-            plate(pose,buffer,font,be.ownerName,light,.5f,.30f,15.05f/16f,.62f,0f);
+            pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-((facing.toYRot()+180f)%360f)));
+            // the post, two crossed strips from the top cap of the platform
+            var vc=buffer.getBuffer(RenderType.entityCutout(PLATE));
+            pose.pushPose();pose.translate(-.18,1.9,0);pose.mulPose(Axis.ZP.rotationDegrees(-5f));
+            for(int side=0;side<2;side++){var last=pose.last();quad(vc,last.pose(),last.normal(),-.035f,0,.035f,.55f,0f,light,.25f);pose.mulPose(Axis.YP.rotationDegrees(90f));}
+            pose.popPose();
+            // the board hangs a little crooked from the post, readable from both sides
+            pose.pushPose();pose.translate(-.18,2.32,0);pose.mulPose(Axis.ZP.rotationDegrees(9f));
+            for(int side=0;side<2;side++){plate(pose,buffer,font,be.ownerName,light,0f,-.12f,.012f,.8f,0f);pose.mulPose(Axis.YP.rotationDegrees(180f));}
+            pose.popPose();
             pose.popPose();
         }
     }
@@ -122,6 +130,18 @@ public final class SupportClient {
             pose.popPose();
         }
         @Override public boolean shouldRenderOffScreen(SupportCannon.CannonEntity be){return false;}
+    }
+
+    /** The red parachute of a paratrooper: any hostile mob floating down under slow falling wears one until it lands. */
+    @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+    public static final class TrooperChutes {
+        static final ResourceLocation RED=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/parachute_red.png");
+        @SubscribeEvent public static void draw(net.minecraftforge.client.event.RenderLivingEvent.Post<?,?> e){
+            var mob=e.getEntity();
+            if(!RaidTypes.CHUTED.contains(mob.getId())||mob.onGround()||!mob.isAlive())return;
+            var pose=e.getPoseStack();pose.pushPose();pose.translate(0,mob.getBbHeight()*.8,0);
+            ParcelRenderer.canopy(pose,e.getMultiBufferSource(),e.getPackedLight(),mob.tickCount+e.getPartialTick(),RED);pose.popPose();
+        }
     }
 
     /** Draws a flare with its own item sprite, a Return Flare as a standing purple portal, and a landed Fire Support Flare with its red area box. */
@@ -188,13 +208,14 @@ public final class SupportClient {
             pose.pushPose();pose.translate(-.5,0,-.5);
             draw(pose,buffer,type,PARCEL,light,OverlayTexture.NO_OVERLAY);
             pose.popPose();
-            if(e.falling())chute(pose,buffer,light,age);
+            if(e.falling()){pose.pushPose();pose.translate(0,CRATE_TOP,0);canopy(pose,buffer,light,age,CHUTE);pose.popPose();}
             pose.popPose();
         }
-        private void chute(PoseStack pose,MultiBufferSource buffer,int light,float age){
-            pose.pushPose();pose.translate(0,CRATE_TOP,0);
+        /** The canopy and its cords, drawn with its cords starting at the current origin. {@code texture} picks the colours (olive and sand for supplies, red and white for paratroopers). */
+        static void canopy(PoseStack pose,MultiBufferSource buffer,int light,float age,ResourceLocation texture){
+            pose.pushPose();
             var last=pose.last();var m=last.pose();var n=last.normal();
-            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(CHUTE));
+            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(texture));
             float breathe=1f+.02f*Mth.sin(age*.15f);
             // canopy: rings from the rim up to the crown, panels alternating between two colours
             for(int i=0;i<GORES;i++){
@@ -216,11 +237,11 @@ public final class SupportClient {
             }
             pose.popPose();
         }
-        private static void vert(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] p,float u,float v,float nx,float ny,float nz,int light){
+        static void vert(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] p,float u,float v,float nx,float ny,float nz,int light){
             vc.vertex(m,p[0],p[1],p[2]).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,nx,ny,nz).endVertex();
         }
         /** A cord: two thin crossed strips so it shows from every side. */
-        private static void cord(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] a,float[] b,int light){
+        static void cord(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] a,float[] b,int light){
             float dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],len=Mth.sqrt(dx*dx+dy*dy+dz*dz);if(len<1e-4f)return;
             dx/=len;dy/=len;dz/=len;
             float sx=dy*0-dz*1,sy=dz*0-dx*0,sz=dx*1-dy*0;   // dir x up-ish axis

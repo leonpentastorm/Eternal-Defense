@@ -23,7 +23,12 @@ final class CannonScreen extends BeaconClient.PanelScreen {
     }
     @Override Component subtitle(){return Ui.t("cannon.owner",data.getString("owner"));}
     private int level(int up){int[] l=data.getIntArray("up");return up<l.length?l[up]:0;}
-    private boolean affordable(int price){return data.getBoolean("creative")||data.getInt("energy")>=price;}
+    private boolean affordable(Economy.Price price){
+        if(data.getBoolean("creative"))return true;
+        if(price.ardent())return data.getInt("energy")>=price.amount();
+        int[] stock=data.getIntArray("stock");int slot=price.item()==ArsenalBeacon.PLATING.get()?0:price.item()==ArsenalBeacon.LOGISTICS.get()?1:price.item()==ArsenalBeacon.COIL.get()?2:3;
+        return slot<stock.length&&stock[slot]>=price.amount();
+    }
     private int listTop(){return top+58;}
     @Override protected void init(){
         super.init();pw=Math.min(460,width-16);ph=Math.min(300,height-16);left=(width-pw)/2;top=(height-ph)/2;types.clear();ups.clear();
@@ -52,12 +57,15 @@ final class CannonScreen extends BeaconClient.PanelScreen {
     }
     private void paintUpgrade(GuiGraphics g,Ui.UiButton r,int index,boolean hovered){
         var up=CannonUpgrades.Upgrade.values()[index];if(hovered)hover="up."+up.id;
-        int lv=level(index),price=up.price(lv),ty=r.getY()+(r.getHeight()-8)/2;
-        Ui.text(g,font,Ui.t("cannon.up."+up.id),r.getX()+6,ty,price<0?Ui.BRASS:Ui.INK,r.getWidth()-(up.max()*6+60));
+        int lv=level(index),ty=r.getY()+(r.getHeight()-8)/2;var price=Economy.cannon(up,lv);
+        Ui.text(g,font,Ui.t("cannon.up."+up.id),r.getX()+6,ty,price==null?Ui.BRASS:Ui.INK,r.getWidth()-(up.max()*6+70));
         int px=r.getX()+r.getWidth()-5;
-        if(price<0){Ui.right(g,font,Ui.t("cannon.max"),px,ty,Ui.BRASS);px-=font.width(Ui.t("cannon.max"))+4;}
-        else{Component c=Ui.t("exchange.cost",price);Ui.right(g,font,c,px,ty,affordable(price)?Ui.CYAN:Ui.ORANGE);px-=font.width(c)+4;}
-        Ui.pips(g,px-Ui.pipsWidth(up.max()),ty+1,lv,up.max(),price<0?Ui.BRASS:Ui.CYAN);
+        if(price==null){Ui.right(g,font,Ui.t("cannon.max"),px,ty,Ui.BRASS);px-=font.width(Ui.t("cannon.max"))+4;}
+        else{
+            boolean ok=affordable(price);Component c=Component.literal(price.ardent()?String.valueOf(price.amount()):"x"+price.amount());
+            g.renderItem(new ItemStack(price.item()),px-14,r.getY()+(r.getHeight()-16)/2);Ui.right(g,font,c,px-16,ty,ok?Ui.CYAN:Ui.ORANGE);px-=font.width(c)+20;
+        }
+        Ui.pips(g,px-Ui.pipsWidth(up.max()),ty+1,lv,up.max(),price==null?Ui.BRASS:Ui.CYAN);
     }
     @Override public void render(GuiGraphics g,int mx,int my,float partial){
         panel(g);hover="";
@@ -65,7 +73,7 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         Ui.text(g,font,Ui.t("cannon.fire"),x1,top+47,Ui.MUTED,colW);Ui.text(g,font,Ui.t("cannon.upgrades"),x2,top+47,Ui.MUTED,colW);
         Ui.rule(g,x1,top+55,colW);Ui.rule(g,x2,top+55,colW);
         for(int i=0;i<types.size();i++){types.get(i).selected=data.getInt("fire")==i;}
-        for(int i=0;i<ups.size();i++){var up=CannonUpgrades.Upgrade.values()[i];int price=up.price(level(i));ups.get(i).warning=price>=0&&!affordable(price);ups.get(i).active=price>=0;}
+        for(int i=0;i<ups.size();i++){var up=CannonUpgrades.Upgrade.values()[i];var price=Economy.cannon(up,level(i));ups.get(i).warning=price!=null&&!affordable(price);ups.get(i).active=price!=null;}
         // the big banner: what this player's flares call down right now
         SupportHudClient.banner(g,font,x1,listTop(),colW,BANNER,CannonUpgrades.FireType.of(data.getInt("fire")),Ui.t("cannon.current"));
         super.render(g,mx,my,partial);

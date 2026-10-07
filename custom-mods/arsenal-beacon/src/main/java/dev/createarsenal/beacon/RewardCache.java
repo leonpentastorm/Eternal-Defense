@@ -7,34 +7,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.MenuType;
 
-/** Rewards leave the saved queue only after insertion into a real, shared double chest. */
+/** Rewards leave the saved queue only after insertion into the beacon's own 54-slot reward chest. */
 final class RewardCache {
-    static Container container(ServerLevel l,CampaignData d){
-        if(d.rewardChest==null||!l.hasChunkAt(d.rewardChest)||!l.hasChunkAt(d.rewardChest.east()))return null;
-        var a=l.getBlockState(d.rewardChest);var b=l.getBlockState(d.rewardChest.east());
-        if(!a.is(Blocks.CHEST)||!b.is(Blocks.CHEST)||a.getValue(ChestBlock.TYPE)!=ChestType.RIGHT||b.getValue(ChestBlock.TYPE)!=ChestType.LEFT||a.getValue(ChestBlock.FACING)!=Direction.SOUTH||b.getValue(ChestBlock.FACING)!=Direction.SOUTH)return null;
-        return ChestBlock.getContainer((ChestBlock)Blocks.CHEST,a,l,d.rewardChest,true);
-    }
-    static boolean create(ServerLevel l,CampaignData d){
-        if(d.active())return false; // New blocks cannot appear while the raid journal is locked.
-        for(int r=3;r<=Math.min(12,d.radius());r++)for(int z=-r;z<=r;z++)for(int x=-r;x<r;x++){
-            if(Math.max(Math.abs(x),Math.abs(z))!=r)continue;
-            BlockPos a=d.beacon.offset(x,0,z),b=a.east();
-            if(!d.inside(b)||!l.hasChunkAt(a)||!l.hasChunkAt(b)||!l.getWorldBorder().isWithinBounds(a)||!l.getWorldBorder().isWithinBounds(b))continue;
-            if(!l.isEmptyBlock(a)||!l.isEmptyBlock(b)||!l.isEmptyBlock(a.above())||!l.isEmptyBlock(b.above()))continue;
-            if(!l.getBlockState(a.below()).isFaceSturdy(l,a.below(),Direction.UP)||!l.getBlockState(b.below()).isFaceSturdy(l,b.below(),Direction.UP))continue;
-            boolean adjacent=false;for(Direction side:Direction.Plane.HORIZONTAL)if(l.getBlockState(a.relative(side)).is(Blocks.CHEST)||l.getBlockState(b.relative(side)).is(Blocks.CHEST))adjacent=true;
-            if(adjacent)continue; // Never merge with or take ownership of a player's existing chest.
-            var state=Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING,Direction.SOUTH);
-            l.setBlock(a,state.setValue(ChestBlock.TYPE,ChestType.RIGHT),3);l.setBlock(b,state.setValue(ChestBlock.TYPE,ChestType.LEFT),3);
-            d.rewardChest=a;d.setDirty();return container(l,d)!=null;
-        }
-        return false;
-    }
     static void deposit(CampaignData d,Container chest){
         for(var it=d.rewards.iterator();it.hasNext();){
             CompoundTag entry=it.next();ItemStack remaining=ItemStack.of(entry);
@@ -48,18 +29,27 @@ final class RewardCache {
         }
         chest.setChanged();d.setDirty();
     }
+    /** The beacon itself is the chest: claiming moves queued rewards into its 54 slots and opens them. */
     static String claim(ServerPlayer p,CampaignData d){
         if(!d.installed()||!ArsenalBeacon.near(p,d))return "Stand near your planted beacon to collect rewards.";
-        ServerLevel l=p.server.overworld();Container chest=container(l,d);
-        if(chest==null){
-            if(d.rewards.isEmpty())return "No queued rewards. Win a wave or raid first.";
-            if(!create(l,d))return d.active()?"Create the reward chest between raids. Current rewards remain safely queued.":"Clear two adjacent ground-level blocks with headroom inside the base zone, at least three blocks from the beacon. Rewards remain queued.";
-            chest=container(l,d);
-        }
-        deposit(d,chest);
-        // Native chest menu gives all players the same persistent 54 slots, including shift-click.
-        var provider=Blocks.CHEST.getMenuProvider(l.getBlockState(d.rewardChest),l,d.rewardChest);
-        if(provider!=null)p.openMenu(provider);
-        return "Reward chest: "+d.rewardChest.toShortString()+". "+(d.rewards.isEmpty()?"All rewards deposited.":"Chest full: "+d.rewards.size()+" stacks remain queued. Empty it, then collect again.");
+        if(d.rewards.isEmpty()&&d.rewardBox.isEmpty())return "No queued rewards. Win a wave or raid first.";
+        deposit(d,d.rewardBox);
+        p.openMenu(new SimpleMenuProvider((id,inv,pl)->new ChestMenu(MenuType.GENERIC_9x6,id,inv,new BoxView(d,pl),6),Component.translatable("gui.arsenal_beacon.rewards.box")));
+        return d.rewards.isEmpty()?"Beacon reward chest opened. All rewards deposited.":"Beacon chest full: "+d.rewards.size()+" stacks remain queued. Empty it, then collect again.";
+    }
+    /** The beacon's box as one menu sees it: it is only valid while the player stands near the beacon, and every change marks the campaign dirty. */
+    static final class BoxView implements Container {
+        private final CampaignData d;private final Player player;
+        BoxView(CampaignData d,Player player){this.d=d;this.player=player;}
+        private SimpleContainer box(){return d.rewardBox;}
+        @Override public int getContainerSize(){return 54;}
+        @Override public boolean isEmpty(){return box().isEmpty();}
+        @Override public ItemStack getItem(int i){return box().getItem(i);}
+        @Override public ItemStack removeItem(int i,int n){var r=box().removeItem(i,n);d.setDirty();return r;}
+        @Override public ItemStack removeItemNoUpdate(int i){var r=box().removeItemNoUpdate(i);d.setDirty();return r;}
+        @Override public void setItem(int i,ItemStack s){box().setItem(i,s);d.setDirty();}
+        @Override public void setChanged(){d.setDirty();}
+        @Override public boolean stillValid(Player p){return d.installed()&&p.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+.5,d.beacon.getZ()+.5)<=12*12;}
+        @Override public void clearContent(){box().clearContent();d.setDirty();}
     }
 }
