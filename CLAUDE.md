@@ -13,3 +13,4 @@ Read `docs/HANDOFF.md` first: it says where the project stands, how to build and
 * Guide text keys: `key`, `key.pack`, `key.standalone`; in lang files `%` must be written `%%`. `LangKeysTest` and `SupportTest` fail when keys or quoted numbers drift.
 * Bump the network protocol (`BeaconNetwork`) whenever a packet changes, and say so in the test-build README.
 * Keep `docs/HANDOFF.md` current at the end of every round (status, decisions, untested list, next steps) and add a line to `docs/CHANGELOG.md`.
+* `docs/GAME-DESIGN-DOCUMENT.md` (Eternal Defense GDD) must be updated in the same commit as any gameplay, numbers, economy, raid, UI-flow or edition change: bump its document version, add a revision-history row.
