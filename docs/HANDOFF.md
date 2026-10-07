@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated at the end of round 5. Branch `claude/minecraft-mod-ui-guidebook-ak57k4`. Latest delivered test build: `dist/Arsenal-Support-Round5-0.21.0-test.zip`.
+Last updated at the end of round 5 (project version 0.0.1). Active development branch: **`dev`** (project version in `VERSION`). History note: the work up to 0.0.1 was done on `claude/minecraft-mod-ui-guidebook-ak57k4`, now merged into `dev`. Latest delivered test build: `dist/Arsenal-Support-Round5-0.21.0-test.zip`.
 The design is described in `docs/GAME-DESIGN-DOCUMENT.md` (keep it updated). Rules and conventions are in `/CLAUDE.md`; this file is the state of the work.
 
 ## What the project is
