@@ -32,17 +32,19 @@ final class MessHallMenu extends AbstractContainerMenu {
     private CookPot.PotEntity target(){if(selected==null)return null;return pots().stream().filter(p->p.getBlockPos().equals(selected)).findFirst().orElse(null);}
     String problem(IngredientTraits.Preview preview){
         if(!preview.problem().isEmpty())return preview.problem();
+        var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());if(!batch.problem().isEmpty())return batch.problem();
         if(stew){var pot=target();return pot==null?"pot":!pot.empty()?"pot_full":"";}
         var made=PreparedSandwich.create(preview.meal());var output=ingredients.getItem(6);
         return output.isEmpty()||ItemStack.isSameItemSameTags(output,made)&&output.getCount()<made.getMaxStackSize()?"":"output";
     }
     boolean prepare(){
         if(!stillValid(player))return false;var preview=IngredientTraits.compose(ingredients,stew);if(!problem(preview).isEmpty())return false;
+        var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());
         if(stew){if(!target().fill(hall,preview.meal(),hall.tier().servings()))return false;}
         else{var output=ingredients.getItem(6);if(output.isEmpty())ingredients.setItem(6,PreparedSandwich.create(preview.meal()));else{output.grow(1);ingredients.setChanged();}}
-        for(int i=0;i<6;i++)if(!ingredients.getItem(i).isEmpty()){
-            var unit=ingredients.getItem(i).copyWithCount(1);ingredients.removeItem(i,1);
-            if(unit.hasCraftingRemainingItem()&&player instanceof ServerPlayer sp)ArsenalBeacon.give(sp,unit.getCraftingRemainingItem());
+        for(int i=0;i<6;i++)if(batch.spent()[i]>0){
+            var unit=ingredients.getItem(i).copyWithCount(1);ingredients.removeItem(i,batch.spent()[i]);
+            if(unit.hasCraftingRemainingItem()&&player instanceof ServerPlayer sp)for(int count=0;count<batch.spent()[i];count++)ArsenalBeacon.give(sp,unit.getCraftingRemainingItem().copy());
         }
         broadcastChanges();return true;
     }
@@ -60,6 +62,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         if(sp.tickCount%100==0)hall.discover();var pots=pots();offered=pots.stream().map(CookPot.PotEntity::getBlockPos).toList();
         if(selected==null||!offered.contains(selected))selected=pots.stream().filter(CookPot.PotEntity::empty).map(CookPot.PotEntity::getBlockPos).findFirst().orElse(null);
         var preview=IngredientTraits.compose(ingredients,stew);var n=new CompoundTag();n.putBoolean("StewMode",stew);n.putString("Problem",problem(preview));n.putInt("Servings",stew?hall.tier().servings():1);n.putInt("Capacity",hall.tier().pots());n.putInt("Linked",hall.links.size());
+        var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());n.putInt("Required",batch.required());n.putInt("Available",batch.available());if(batch.spent()!=null)n.putIntArray("Spent",batch.spent());
         if(preview.meal()!=null)n.put("Meal",preview.meal().save());if(selected!=null)n.putLong("Selected",selected.asLong());
         var price=Economy.kitchen(mk);if(price!=null){n.put("UpgradeItem",new ItemStack(price.item(),price.amount()).save(new CompoundTag()));n.putInt("UpgradeCost",price.amount());n.putInt("UpgradeHave",sp.isCreative()?price.amount():Economy.have(sp,price.item()));}
         var list=new ListTag();for(var pot:pots){var c=new CompoundTag();c.putLong("Pos",pot.getBlockPos().asLong());c.putInt("Servings",pot.servings);if(pot.stew!=null)c.put("Meal",pot.stew.save());list.add(c);}n.put("Pots",list);

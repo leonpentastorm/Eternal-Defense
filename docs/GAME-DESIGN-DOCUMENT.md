@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.2 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.3 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Living document, updated through the Mess Hall development round (round 6) |
+| **Status** | Mess Hall v2 feature preview on `feature/messhall-ver-2`, based on `dev` 0.0.2 |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.3 | 2026-10-07 | Development | Mess Hall v2: 4/7/10/12 stew costs, distinct-type scoring, five scoped TaCZ buffs, cost/effect UI; protocol 23; feature branch only |
 | 0.0.2 | 2026-10-07 | Development | Mess Hall Mk I–IV, ingredient traits, portable rations, communal stew, persistent home-enhanced meals; protocol 22 |
 | 0.0.1 | 2026-10-07 | Claude | First version, covering rounds 1 to 5 |
 
@@ -120,13 +121,13 @@ New players get a starter weapon with ammo, a field guide (pack and standalone t
 
 * **Mess Hall Mk I–IV:** a rotating **2 × 2 × 1** installation, entirely inside the existing beacon zone, with six shared persistent ingredient slots and a physical sandwich output slot. Each tier has distinct functional model resources: improvised wooden spit, copper field station, stone fortified ovens, enclosed iron/green canteen. Initial craft uses vanilla materials in both editions; paid in-place upgrades preserve food and links.
 * **Cook Pot:** **2 × 1 × 1**, hollow pot with a conditional stew surface and an attached live menu board displaying stew, up to three bonuses and remaining servings. State, strengths, remaining servings and hall identity persist in its block entity.
-* **Two preparation tabs:** Sandwich produces one portable item with **1–2 effects**, stored in NBT, stacking to 16 and edible normally at full hunger. Stew holds **up to 3 effects**, assigned to one selected empty linked pot. A batch consumes one item from every occupied ingredient slot; container remainders return to the cook. Failed preparation consumes nothing, and a full pot cannot be overwritten.
+* **Two preparation tabs:** Sandwich produces one portable item with **1–2 effects**, stored in NBT, stacking to 16 and edible normally at full hunger. Stew holds **up to 3 effects**, assigned to one selected empty linked pot. Sandwich consumes one staple plus one or two fillings (2–3 distinct types). Stew consumes **4/7/10/12 ingredient units** at Mk I/II/III/IV, spread across stacked inputs, including one of every composition type. Mk I supports up to four ingredient types; later tiers up to six. Container remainders return for every consumed item. Failed preparation consumes nothing, and a full pot cannot be overwritten.
 * **Bowl serving:** interact with a filled pot while holding a normal bowl to eat immediately. The server removes one serving; the bowl remains empty and reusable. Sandwich nutrition is 8 (saturation modifier 0.6); stew nutrition is 10 (0.8).
-* **Tier hooks:** Mk I/II/III/IV link **1/2/3/4 pots** and produce **4/8/12/16 stew servings**. All tiers retain the same effect-slot limits. Next upgrades cost **8/16/32 Reinforced Plating** in the pack or **4/8/14 Ardent Energy** standalone (`Economy`). Creative upgrades are free.
-* **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Cooked meat/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/sweets → mobility. Weighted effects choose the strongest two/three; overlapping definitions do not double-score a slot. Strength caps at base × 1.0/1.25/1.5.
-* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. Meals are strategic preparation; no unsupported weapon/reload integration is added.
+* **Tier hooks:** Mk I/II/III/IV link **1/2/3/4 pots** and produce **4/8/12/16 stew servings**. All tiers retain the same effect-slot limits. Higher tiers improve servings per ingredient without multiplying a tiny batch. Next upgrades cost **8/16/32 Reinforced Plating** in the pack or **4/8/14 Ardent Energy** standalone (`Economy`). Creative upgrades are free.
+* **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Chicken/mutton/rabbit/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/fruit/sugar → mobility. Beef → firepower; honey → quick_hands; pork → brawler; golden carrot → heavy_hand; pufferfish → demolition. Weighted effects choose the strongest two/three; overlapping definitions use the maximum per effect per distinct item type. Stack quantity and duplicate slots never increase strength. Strength caps at base × 1.0/1.25/1.5.
+* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. TaCZ bonuses use the same meal state: **Firepower +5% gun damage**, **Quick Hands +6% reload speed**, **Brawler +15% gun bash damage**, **Heavy Hand +12% gun bash knockback**, **Demolition +5% grenade/rocket radius** in the field, doubled at home and scaled by the existing strength levels. Firepower uses native hit events; reload advances the native server clock; bash changes only TaCZ bash arguments; radius changes only TaCZ kinetic projectiles from native `rpg` launcher indexes. Vanilla melee, TNT/creepers and unrelated explosives receive no bonus. Full integration and unsupported types are in `docs/MESS-HALL.md`.
 * **Home enhancement:** `BaseZone` determines valid home territory. Meal strength is **2× at home**, and remaining field duration **freezes**. Outside, strength normalizes and the timer resumes. Returning home freezes the existing remainder and never refreshes it. New meals replace the old state and start **30 minutes / 36,000 field ticks**.
-* **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** HUD shows name, field time and HOME ENHANCEMENT / FIELD status.
+* **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** HUD shows name, field time, all actual effect amounts and HOME ENHANCEMENT / FIELD status. The kitchen shows available/required food units and per-slot consumption tooltips; preview tooltips list field/home effects.
 * **Linking:** nearby anchors link within **8 blocks in 3D**, respecting tier capacity. Existing valid links are not stolen. Hall UUID + persisted pot reservations prevent same-position replacement and chunk-unload reassignment. Unloaded pots retain reserved capacity. Broken anchors clean loaded links; unloaded partners validate later. Orphaned stew remains stored until the pot reconnects. No general logistics system exists.
 
 Balance is an initial estimate. Final painted art, extended co-op balance and full-pack integration remain playtest work. Exact extension format, lifecycle and ownership rules: `docs/MESS-HALL.md`.
@@ -156,7 +157,7 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 * Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
 * Mob effects are not synced to clients, so special visuals (red parachute) use their own packet.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.
-* QA: 61 beacon unit tests and 7 gun-guide tests; five opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
+* QA: 64 beacon unit tests and 7 gun-guide tests; five original and six v2 opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
 
 ## 9. Known risks and open questions
 1. Zone outline flicker during cannon fire: fix is a best guess, unconfirmed.

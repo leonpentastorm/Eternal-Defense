@@ -29,16 +29,25 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     static boolean accepts(ItemStack stack){return traits.stream().anyMatch(t->t.ingredient.test(stack));}
     record Preview(MealData meal,int occupied,boolean staple,String problem){}
     static Preview compose(Container ingredients,boolean stew){
-        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);int occupied=0;boolean staple=false;
-        for(int i=0;i<6;i++){var stack=ingredients.getItem(i);if(stack.isEmpty())continue;occupied++;boolean valid=false;
-            // Overlapping definitions merge by maximum, avoiding accidental double scoring of item + tag rules.
+        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);boolean staple=false;var typeScores=new HashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
+        for(int i=0;i<6;i++){var stack=ingredients.getItem(i);if(stack.isEmpty())continue;boolean valid=false;
+            // Validate every stack; overlaps and duplicate slots merge by maximum for each item type.
             var slotScores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
             for(var trait:traits)if(trait.ingredient.test(stack)){valid=true;staple|=trait.staple;trait.effects.forEach((e,w)->slotScores.merge(e,w,Math::max));}
-            if(!valid)return new Preview(null,occupied,staple,"ingredient");slotScores.forEach((e,w)->scores.merge(e,w,Integer::sum));
+            if(!valid)return new Preview(null,typeScores.size(),staple,"ingredient");var merged=typeScores.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));slotScores.forEach((e,w)->merged.merge(e,w,Math::max));
         }
+        int occupied=typeScores.size();typeScores.values().forEach(type->type.forEach((e,w)->scores.merge(e,w,Integer::sum)));
         var selected=MealRules.select(scores,stew);
-        String problem=occupied<2?"ingredients":!stew&&!staple?"staple":selected.isEmpty()?"effects":"";
+        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":!stew&&!staple?"staple":selected.isEmpty()?"effects":"";
         var bonuses=selected.stream().map(e->new MealData.Bonus(e,Math.min(3,scores.get(e)))).toList();
         return new Preview(problem.isEmpty()?new MealData(stew,bonuses,MealRules.FIELD_TICKS):null,occupied,staple,problem);
+    }
+    record Batch(int required,int available,int[] spent,String problem){}
+    static Batch batch(Container ingredients,Preview preview,boolean stew,int mk){
+        int[] counts=new int[6],types=new int[6];var ids=new HashMap<net.minecraft.world.item.Item,Integer>();
+        for(int i=0;i<6;i++){var stack=ingredients.getItem(i);counts[i]=stack.getCount();types[i]=ids.computeIfAbsent(stack.getItem(),item->ids.size());}
+        int required=stew?MealRules.tier(mk).ingredients():preview.occupied(),available=Arrays.stream(counts).sum();
+        var spent=MealRules.plan(counts,types,required);
+        return new Batch(required,available,spent,preview.occupied()>required?"batch_types":spent==null?"quantity":"");
     }
 }

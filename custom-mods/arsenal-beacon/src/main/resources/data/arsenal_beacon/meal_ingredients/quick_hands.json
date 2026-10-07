@@ -1,0 +1,9 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/quick_hands"
+  },
+  "staple": false,
+  "effects": {
+    "quick_hands": 1
+  }
+}

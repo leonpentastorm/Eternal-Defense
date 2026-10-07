@@ -59,3 +59,5 @@ Base repair journals must never restore spent ammunition, fuel or durability, du
 5. Record what was actually tested. An automated build is not an in-game visual check, and a single-player test is not an Essential co-op test.
 
 Work on a branch based on the source handoff commit. Keep implementation notes and screenshots with the UI change so the owner can review and playtest it.
+
+Mess Hall v2 (protocol 23): server preview supplies required/available food units and per-slot deductions. Cost and composition hover details show actual field/home effects; the meal HUD lists every effect. New captures: `docs/ui/screens/kitchen-v2/`. Older `kitchen/` captures depict 0.0.2.

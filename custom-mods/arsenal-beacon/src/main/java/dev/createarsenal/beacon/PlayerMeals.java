@@ -28,13 +28,14 @@ final class PlayerMeals extends SavedData {
         var d=new PlayerMeals();for(var t:n.getList("Players",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;var meal=MealData.load(c.getCompound("Meal"));int ticks=c.getInt("Remaining");if(c.hasUUID("Player")&&meal!=null&&ticks>0)d.players.put(c.getUUID("Player"),new State(meal,Math.min(ticks,meal.duration())));}return d;
     }
     @Override public CompoundTag save(CompoundTag n){var list=new ListTag();players.forEach((id,s)->{var c=new CompoundTag();c.putUUID("Player",id);c.put("Meal",s.meal.save());c.putInt("Remaining",s.remaining);list.add(c);});n.put("Players",list);return n;}
-    static Attribute attribute(MealRules.Effect e){return switch(e){case VITALITY->Attributes.MAX_HEALTH;case FORTITUDE->Attributes.ARMOR;case STEADINESS->Attributes.KNOCKBACK_RESISTANCE;case MOBILITY->Attributes.MOVEMENT_SPEED;};}
+    static Attribute attribute(MealRules.Effect e){return switch(e){case VITALITY->Attributes.MAX_HEALTH;case FORTITUDE->Attributes.ARMOR;case STEADINESS->Attributes.KNOCKBACK_RESISTANCE;case MOBILITY->Attributes.MOVEMENT_SPEED;default->null;};}
     static UUID modifier(MealRules.Effect e){return UUID.nameUUIDFromBytes((ArsenalBeacon.ID+":meal/"+e.id).getBytes(java.nio.charset.StandardCharsets.UTF_8));}
-    static void removeModifiers(ServerPlayer p){for(var e:MealRules.Effect.values()){var a=p.getAttribute(attribute(e));if(a!=null)a.removeModifier(modifier(e));}p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));}
+    static AttributeInstance instance(ServerPlayer p,MealRules.Effect e){var attribute=attribute(e);return attribute==null?null:p.getAttribute(attribute);}
+    static void removeModifiers(ServerPlayer p){for(var e:MealRules.Effect.values()){var a=instance(p,e);if(a!=null)a.removeModifier(modifier(e));}p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));}
     static void applyModifiers(ServerPlayer p,State s){
         // Remove our UUIDs only; brewing and other mods keep ownership of their bonuses.
-        for(var e:MealRules.Effect.values()){var a=p.getAttribute(attribute(e));if(a!=null)a.removeModifier(modifier(e));}
-        for(var b:s.meal.bonuses()){var a=p.getAttribute(attribute(b.effect()));if(a!=null)a.addTransientModifier(new AttributeModifier(modifier(b.effect()),"Prepared meal",s.home?b.home():b.field(),b.effect()==MealRules.Effect.MOBILITY?AttributeModifier.Operation.MULTIPLY_BASE:AttributeModifier.Operation.ADDITION));}
+        for(var e:MealRules.Effect.values()){var a=instance(p,e);if(a!=null)a.removeModifier(modifier(e));}
+        for(var b:s.meal.bonuses()){var a=instance(p,b.effect());if(a!=null)a.addTransientModifier(new AttributeModifier(modifier(b.effect()),"Prepared meal",s.home?b.home():b.field(),b.effect()==MealRules.Effect.MOBILITY?AttributeModifier.Operation.MULTIPLY_BASE:AttributeModifier.Operation.ADDITION));}
         p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));s.applied=true;
     }
     static void eat(ServerPlayer p,MealData meal){var d=get(p.serverLevel());var s=new State(meal,meal.duration());s.home=BaseZone.problem(p.level(),p.blockPosition())==null;d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();sync(p,s);}

@@ -53,3 +53,5 @@ The recorded baseline used TaCZ 1.1.8 hotfix 2. Download third-party mods from t
 The original `Arsenal-Standalone-Mods-0.21.0.zip` remains as the initial release artifact. Edit the source projects for the redesign. Do not unpack release JARs over them.
 
 Licensing remains as declared by each mod. Gun Displays code is MIT; its supplied artwork is reserved, as detailed in its `LICENSE.txt`. Including art in this repository for the owner's UI collaboration does not change its license.
+
+Mess Hall v2 feature preview (0.0.3, protocol 23): `feature/messhall-ver-2`. Food costs, gun buffs and compatibility: [Mess Hall notes](docs/MESS-HALL.md); test build: `dist/Arsenal-MessHall-v2-0.0.3-test.zip`.

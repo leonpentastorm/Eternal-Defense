@@ -1,0 +1,137 @@
+{
+  "project_version": "0.0.3",
+  "feature": "Mess Hall v2",
+  "branch": "feature/messhall-ver-2",
+  "base_commit": "1a839c0863f49c7355df7fec09a1ac97d3977c1d",
+  "date": "2026-10-07",
+  "network_protocol": 23,
+  "build": "JDK 17 offline build releaseJars passed; all three modules, both editions",
+  "unit_tests": {
+    "arsenal-beacon": {
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "arsenal-gun-guide": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "unit_execution": "Beacon tests executed after v2 code/resources changed; unchanged gun-guide results remained up-to-date.",
+  "real_server": {
+    "runtime": "Forge 1.20.1/47.4.20 + TaCZ 1.1.8-hotfix2",
+    "with_displays": {
+      "baseline_passed": 6,
+      "original_kitchen_passed": 5,
+      "v2_passed": 6,
+      "instance": "beacon-wo_gj0iu"
+    },
+    "without_displays": {
+      "baseline_passed": 6,
+      "original_kitchen_passed": 5,
+      "v2_passed": 6,
+      "instance": "beacon-only-1ral45kq"
+    }
+  },
+  "food": [
+    "Exact 4/7/10/12 units for 4/8/12/16 stew servings",
+    "One staple plus two fillings consumes three items for one sandwich",
+    "Insufficient ingredients and competing cooks cannot partially spend a batch",
+    "Each consumed honey bottle returns a bottle; original milk-bucket check also passed",
+    "Tier, stack quantity and duplicate slots do not increase composition strength",
+    "All five new effects obtainable from bundled vanilla food tags"
+  ],
+  "native_comparisons": {
+    "ak_body_damage": {
+      "baseline": 6.0,
+      "field": 6.299988,
+      "home": 6.6000366
+    },
+    "ak_reload_ms_with_displays": {
+      "baseline": 2627,
+      "home": 2362,
+      "field": 2487
+    },
+    "ak_reload_ms_without_displays": {
+      "baseline": 2641,
+      "home": 2340,
+      "field": 2499
+    },
+    "reload_method": "Actual native reload/script clock, server magazine transfer and completion, measured after fixture setup; tick quantization allowed",
+    "bash": "Actual native doPerLivingHurt: +15% field damage and +12% direct bash impulse; ordinary melee damage/knockback unchanged",
+    "m320_radius": {
+      "baseline": 4,
+      "field": 4.2,
+      "home": 4.4
+    },
+    "explosion_method": "Native utility call, capture actual ProjectileExplosion radius at Forge Start, cancel test blast before world damage",
+    "unrelated_explosions": "Native rifle utility, non-TaCZ exploder and actual vanilla TNT/creeper radii unchanged"
+  },
+  "lifecycle": "All five IDs serialize and transition HOME/FIELD/HOME with 2x strength and no duration refresh; other player has no bonus; clear removes bonus. Original death/login/attribute tests also passed.",
+  "client_smoke": {
+    "client_instance": "beacon-ajbndfux",
+    "reviewed": "Costs and all effects readable; tooltip amounts labeled FIELD/HOME; home HUD shows all three doubled gun bonuses.",
+    "runtime": "Actual Forge client and dedicated server, TaCZ, all three standalone client modules, Xvfb 1280x720 GUI scale 2",
+    "passed": [
+      "Sandwich and stew previews",
+      "Required/available food and field/home gun effect amounts",
+      "Real prepare button stocks 16 servings",
+      "Real bowl interaction serves one portion",
+      "Home HUD shows three gun effects and frozen 30:00",
+      "Field HUD counts down at normal strength",
+      "Home re-entry freezes reduced timer"
+    ],
+    "screenshots": [
+      "docs/ui/screens/kitchen-v2/sandwich.png",
+      "docs/ui/screens/kitchen-v2/stew.png",
+      "docs/ui/screens/kitchen-v2/home.png",
+      "docs/ui/screens/kitchen-v2/field.png",
+      "docs/ui/screens/kitchen-v2/return.png"
+    ]
+  },
+  "source_sha256": "941c4df76d0c3a0cd18161213e6b39d8892215fbe8d45081364b4871c9707fd8",
+  "source_hash_method": "Sorted beacon src paths relative to src, UTF-8 path + NUL + file bytes",
+  "jars": {
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0.jar": {
+      "sha512": "bc15266bd1153444101b84f58c0a868bc5927d98cb57ebd92c9a51594370945db5ab6ce8a9b45f532978b5be91178478d792cff20c6a0b20c532698cdd2f65ae",
+      "bytes": 3571285
+    },
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar": {
+      "sha512": "ae6c16cde7512ee52df3da7d195a1c113bf0caf1755172e8d3410e236a514c62eff925931fb2aca4630c2a671881d8e3d291eef184753ce1742d49f60914cdfb",
+      "bytes": 3522215
+    },
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0.jar": {
+      "sha512": "a5ddc69c6d1ad05e795a2391b8ae63ebb977b973bbd984e2f5426267bc895e110a4e715846a776aaaba999288dbcbfd43f43efd5ae95a38c4617dc141fef5a87",
+      "bytes": 185066
+    },
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0-standalone.jar": {
+      "sha512": "a0146403a70dc065038b06dcf2d90beab39ec50fa36da8114dcd1b3262ef9f0c55f27976663e3265474b67296649c475baf1b41f24077ab1df6964d871cf6271",
+      "bytes": 185076
+    },
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0.jar": {
+      "sha512": "9b9756a75ebf7b7f0ddf0bcd947c21280262da2686fcd982764e75b72e8fdec3ae98aace82c491def92bda3319e1db0c70b5935ad825e7830813b3d0340279a1",
+      "bytes": 21974
+    },
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0-standalone.jar": {
+      "sha512": "b545e9e9d52fa07325606e275cf0f1b7109894613a4b34ad1b6d0d7528768d448593776eceec4ff09b25e4247b92489fbfbed2d0929e74263052d04144de13ef",
+      "bytes": 21980
+    }
+  },
+  "not_tested": [
+    "Two real human clients / Essential co-op",
+    "Full Create/KubeJS pack gameplay and real factory upgrade payment",
+    "Custom gunpack scripts bypassing native hooks",
+    "Separate thrown-grenade entities / other explosive mods",
+    "Long farming/raid balance, every GUI scale/localization",
+    "Actual disk restart/chunk cycle not rerun this round; current serialization and original server tests passed; prior disk validation retained in 0.0.2 record"
+  ],
+  "limitations": [
+    "Demolition supports TaCZ native kinetic launcher projectiles with rpg gun indexes; it does not support separate thrown grenades or non-launcher explosive bullets",
+    "TaCZ animation assets keep their own playback rate; server reload state/ammo transfer complete sooner",
+    "Pot board may truncate long descriptions; preview/chat/HUD expose full data",
+    "Functional placeholder art retained from round 6"
+  ]
+}

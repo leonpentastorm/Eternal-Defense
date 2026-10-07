@@ -40,17 +40,19 @@ public final class MessHallGameTests {
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void cookingIsAtomicAcrossSharedMenusAndSandwichesAreEatable(GameTestHelper h){
         var f=fixture(h,1);h.assertTrue(!IngredientTraits.traits.isEmpty(),"Ingredient datapack loaded");inputs(f.hall,1);
+        f.hall.ingredients.setItem(3,ItemStack.EMPTY);f.hall.ingredients.setItem(4,ItemStack.EMPTY);
         var a=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);var other=UpgradeGameTests.player(h,"kitchen-other");other.setPos(f.player.getX(),f.player.getY(),f.player.getZ());var b=new MessHallMenu(2,other.getInventory(),f.hall.ingredients,f.root,1,f.hall);
         h.assertTrue(a.prepare()&&!b.prepare(),"Only the first cook can consume the last batch");var stack=f.hall.ingredients.getItem(6).copy();var meal=PreparedSandwich.meal(stack);h.assertTrue(meal!=null&&meal.bonuses().size()==2&&!meal.stew(),"Portable item carries exactly two selected effects");
         h.assertTrue(PreparedSandwich.meal(ItemStack.of(stack.save(new CompoundTag()))).equals(meal),"Sandwich composition survives item serialization");
         var result=stack.finishUsingItem(f.level,f.player);h.assertTrue(result.isEmpty()&&PlayerMeals.get(f.level).players.get(f.player.getUUID()).meal.equals(meal),"Normal item eating consumes the ration and applies owned meal state");
-        inputs(f.hall,2);f.hall.ingredients.setItem(6,new ItemStack(Items.STONE));int before=f.hall.ingredients.getItem(0).getCount();h.assertTrue(!a.prepare()&&f.hall.ingredients.getItem(0).getCount()==before,"Blocked output never consumes ingredients");
+        inputs(f.hall,2);for(int i=2;i<6;i++)f.hall.ingredients.setItem(i,ItemStack.EMPTY);f.hall.ingredients.setItem(6,new ItemStack(Items.STONE));int before=f.hall.ingredients.getItem(0).getCount();h.assertTrue(!a.prepare()&&f.hall.ingredients.getItem(0).getCount()==before,"Blocked output never consumes ingredients");
         f.hall.ingredients.setItem(6,ItemStack.EMPTY);f.hall.ingredients.setItem(5,new ItemStack(Items.MILK_BUCKET));h.assertTrue(a.prepare()&&f.player.getInventory().countItem(Items.BUCKET)==1,"Consumed ingredient returns its empty bucket");
         f.player.setPos(f.root.getX()+100,f.root.getY(),f.root.getZ());h.assertTrue(!a.clickMenuButton(f.player,2),"Remote menu actions are rejected");finish(h,f);
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void stewServingPersistenceAndLinkCleanup(GameTestHelper h){
         var f=fixture(h,2);var pot=pot(f,3);h.assertTrue(pot.connect()==f.hall,"Nearby pot connects");var extra=pot(f,6);h.assertTrue(extra.connect()==null,"Mk I enforces one linked pot");inputs(f.hall,1);
+        f.hall.ingredients.setItem(4,ItemStack.EMPTY);
         var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);menu.clickMenuButton(f.player,1);h.assertTrue(menu.prepare()&&pot.servings==4&&pot.stew.bonuses().size()==3,"Stew menu stocks three effects and four servings");
         var other=UpgradeGameTests.player(h,"kitchen-serving-other");other.setPos(pot.getBlockPos().getX(),pot.getBlockPos().getY(),pot.getBlockPos().getZ());f.player.setPos(other.getX(),other.getY(),other.getZ());
         f.player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));other.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));

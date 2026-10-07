@@ -1,0 +1,9 @@
+{
+  "ingredient": {
+    "tag": "arsenal_beacon:meal/heavy_hand"
+  },
+  "staple": false,
+  "effects": {
+    "heavy_hand": 1
+  }
+}

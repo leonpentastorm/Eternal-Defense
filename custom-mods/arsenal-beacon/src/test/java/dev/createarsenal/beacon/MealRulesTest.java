@@ -20,4 +20,21 @@ final class MealRulesTest {
         for(int mk=1;mk<=4;mk++){assertEquals(mk,MealRules.tier(mk).pots());assertEquals(mk*4,MealRules.tier(mk).servings());}
         assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);
     }
+    @Test void stewCostsGrowMoreSlowlyThanServingsButConsumeRealFood(){
+        int[] costs={4,7,10,12};for(int mk=1;mk<=4;mk++){
+            assertEquals(costs[mk-1],MealRules.tier(mk).ingredients());var plan=MealRules.plan(new int[]{16,16,16},new int[]{0,1,2},costs[mk-1]);
+            assertEquals(costs[mk-1],Arrays.stream(plan).sum());assertTrue(Arrays.stream(plan).allMatch(n->n>0));
+        }
+    }
+    @Test void planReservesEachDistinctTypeAndFailsWithoutPartialConsumption(){
+        int[] counts={1,3,2};assertArrayEquals(new int[]{1,1,2},MealRules.plan(counts,new int[]{0,0,1},4));
+        assertArrayEquals(new int[]{1,3,2},counts);assertNull(MealRules.plan(counts,new int[]{0,0,1},7));
+        assertNull(MealRules.plan(new int[]{1,1,1,1,1},new int[]{0,1,2,3,4},4));
+        assertArrayEquals(new int[]{1,0,1},MealRules.plan(counts,new int[]{0,0,1},2));
+    }
+    @Test void firearmTraitsHaveStableIdsAndConservativeDistinctAmounts(){
+        assertEquals(.05,MealRules.Effect.of("firepower").amount);assertEquals(.06,MealRules.Effect.of("quick_hands").amount);
+        assertEquals(.15,MealRules.Effect.of("brawler").amount);assertEquals(.12,MealRules.Effect.of("heavy_hand").amount);assertEquals(.05,MealRules.Effect.of("demolition").amount);
+        assertNull(MealRules.Effect.of("attack_damage"));
+    }
 }

@@ -11,7 +11,7 @@ record MealData(boolean stew,List<Bonus> bonuses,int duration) {
         double home(){return field()*MealRules.HOME_MULTIPLIER;}
         Component description(boolean enhanced){
             double value=enhanced?home():field();
-            boolean percent=effect==MealRules.Effect.STEADINESS||effect==MealRules.Effect.MOBILITY;
+            boolean percent=effect!=MealRules.Effect.VITALITY&&effect!=MealRules.Effect.FORTITUDE;
             String amount="+"+java.math.BigDecimal.valueOf(value*(percent?100:1)).setScale(2,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()+(percent?"%":"");
             return Component.translatable("gui.arsenal_beacon.meal.bonus."+effect.id,amount);
         }

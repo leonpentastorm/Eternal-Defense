@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"22-standalone":"22-pack",s->s.equals(BuildFlavor.STANDALONE?"22-standalone":"22-pack"),s->s.equals(BuildFlavor.STANDALONE?"22-standalone":"22-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"23-standalone":"23-pack",s->s.equals(BuildFlavor.STANDALONE?"23-standalone":"23-pack"),s->s.equals(BuildFlavor.STANDALONE?"23-standalone":"23-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
