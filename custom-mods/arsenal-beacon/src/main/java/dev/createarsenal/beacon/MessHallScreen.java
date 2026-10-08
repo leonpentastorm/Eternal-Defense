@@ -16,16 +16,17 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     /** Accent of each hall tier: wood, copper, stone, canteen green. */
     static final int[] TIER={0xffc9a24b,0xffd9824a,0xff9fb3bc,0xff6ee07a};
     static final int WIDTH=310,HEIGHT=238;
-    Ui.UiButton sandwich,stew,prepare,upgrade;final List<Ui.UiButton> pots=new ArrayList<>();
+    Ui.UiButton sandwich,stew,prepare,upgrade,guide;final List<Ui.UiButton> pots=new ArrayList<>();
     MessHallScreen(MessHallMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=WIDTH;imageHeight=HEIGHT;inventoryLabelY=142;}
     int uiLeft(){return leftPos;}int uiTop(){return topPos;}MessHallMenu currentMenu(){return menu;}
     private void action(int id){minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
     private int tierColor(){return TIER[Math.max(0,Math.min(3,menu.mk-1))];}
     @Override protected void init(){
-        super.init();sandwich=addRenderableWidget(new Ui.UiButton(leftPos+10,topPos+29,95,18,Component.empty(),Ui.Look.TAB,b->action(0)).painter((g,self,h)->tab(g,self,new ItemStack(Items.BREAD),"kitchen.sandwich")).noLabel());
+        super.init();pots.clear();sandwich=addRenderableWidget(new Ui.UiButton(leftPos+10,topPos+29,95,18,Component.empty(),Ui.Look.TAB,b->action(0)).painter((g,self,h)->tab(g,self,new ItemStack(Items.BREAD),"kitchen.sandwich")).noLabel());
         stew=addRenderableWidget(new Ui.UiButton(leftPos+108,topPos+29,80,18,Component.empty(),Ui.Look.TAB,b->action(1)).painter((g,self,h)->tab(g,self,new ItemStack(ArsenalBeacon.COOK_POT.get()),"kitchen.stew")).noLabel());
         prepare=addRenderableWidget(new Ui.UiButton(leftPos+194,topPos+212,104,22,Component.empty(),Ui.Look.PRIMARY,b->action(2)).painter((g,self,h)->prepareFace(g,self)).noLabel());
         upgrade=addRenderableWidget(new Ui.UiButton(leftPos+194,topPos+29,104,18,Ui.t("kitchen.upgrade",menu.mk+1),Ui.Look.NORMAL,b->action(3)));
+        guide=addRenderableWidget(new Ui.UiButton(leftPos+194,topPos+93,104,13,Ui.t("kitchen.guide"),Ui.Look.NORMAL,b->minecraft.setScreen(new MealRecipeScreen(this))));
         for(int i=0;i<4;i++){final int index=i;pots.add(addRenderableWidget(new Ui.UiButton(leftPos+194,topPos+108+i*20,104,19,Component.empty(),Ui.Look.ROW,b->action(100+index)).painter((g,self,h)->potRow(g,self,index)).noLabel()));}
     }
     private void tab(GuiGraphics g,Ui.UiButton b,ItemStack icon,String key){
@@ -73,7 +74,13 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             slot(g,x,y,effects.length==0?Ui.EDGE:MealEffects.color(MealRules.Effect.values()[effects[0]]));
             for(int k=0;k<effects.length&&k<2;k++)effectIcon(g,MealRules.Effect.values()[effects[k]],x+(effects.length==1?5:k*8),y+19,8);
         }
-        if(!isStew){slot(g,leftPos+141,topPos+52,accent);Ui.text(g,font,Ui.t("kitchen.output"),leftPos+141,topPos+72,Ui.MUTED,48);}
+        if(!isStew){
+            slot(g,leftPos+141,topPos+52,accent);slot(g,leftPos+165,topPos+52,accent);
+            if(menu.ingredients.getItem(7).isEmpty()){
+                g.blit(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,"textures/gui/bread_base.png"),leftPos+142,topPos+53,0,0,16,16,16,16);
+            }
+            Ui.text(g,font,Ui.t("kitchen.base"),leftPos+138,topPos+72,Ui.MUTED,24);Ui.text(g,font,Ui.t("kitchen.output_short"),leftPos+165,topPos+72,Ui.MUTED,24);
+        }
         // the effect cards
         int top=topPos+94;Ui.text(g,font,meal==null?Ui.t("kitchen.effects_none"):Ui.t("kitchen.effects",meal.bonuses().size(),isStew?3:2),leftPos+12,topPos+86,Ui.CYAN,176);
         for(int row=0;row<3;row++){
@@ -91,13 +98,12 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         int rx=leftPos+194;
         Ui.card(g,rx,topPos+52,104,40,accent);
         var tier=MealRules.tier(menu.mk);
-        Ui.text(g,font,Ui.t("kitchen.stat_pots",tier.pots()),rx+8,topPos+56,Ui.INK,92);
+        Ui.text(g,font,isStew?Ui.t("kitchen.links",view.getInt("Linked"),view.getInt("Capacity")):Ui.t("kitchen.stat_pots",tier.pots()),rx+8,topPos+56,Ui.INK,92);
         Ui.text(g,font,Ui.t("kitchen.stat_servings",tier.servings()),rx+8,topPos+66,Ui.INK,92);
         Ui.text(g,font,Ui.t("kitchen.stat_food",tier.ingredients()),rx+8,topPos+76,Ui.MUTED,92);
-        if(isStew)Ui.text(g,font,Ui.t("kitchen.linked",view.getInt("Linked"),view.getInt("Capacity")),rx,topPos+97,Ui.MUTED,104);
         var list=view.getList("Pots",net.minecraft.nbt.Tag.TAG_COMPOUND);
         for(int i=0;i<pots.size();i++){var b=pots.get(i);b.visible=isStew&&i<list.size();if(!b.visible)continue;var row=list.getCompound(i);var pos=BlockPos.of(row.getLong("Pos"));b.selected=view.contains("Selected")&&view.getLong("Selected")==pos.asLong();b.accent=accent;}
-        if(!isStew)Ui.wrap(g,font,Ui.t("kitchen.sandwich_hint"),rx,topPos+98,104,Ui.MUTED,9);
+        if(!isStew)Ui.wrap(g,font,Ui.t("kitchen.sandwich_hint"),rx,topPos+111,104,Ui.MUTED,7);
         upgrade.visible=menu.mk<4;upgrade.active=view.getInt("UpgradeHave")>=view.getInt("UpgradeCost")&&view.contains("UpgradeCost");
         // batch bar: how much of the food the batch needs is there
         int need=Math.max(1,view.getInt("Required")),have=view.getInt("Available");
@@ -107,7 +113,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         for(int r=0;r<3;r++)for(int c=0;c<9;c++)slot(g,leftPos+11+c*18,topPos+153+r*18,Ui.EDGE);
         for(int c=0;c<9;c++)slot(g,leftPos+11+c*18,topPos+211,Ui.EDGE);
         // a little spark over the output slot while there is something to take
-        if(!isStew&&!menu.ingredients.getItem(6).isEmpty())for(int i=0;i<3;i++){double p=((t*.0009+i*.33)%1.0);g.fill(leftPos+143+i*5,topPos+50-(int)(p*10),leftPos+145+i*5,topPos+52-(int)(p*10),((int)((1-p)*200)<<24)|0xffe36b);}
+        if(!isStew&&!menu.ingredients.getItem(6).isEmpty())for(int i=0;i<3;i++){double p=((t*.0009+i*.33)%1.0);g.fill(leftPos+167+i*5,topPos+50-(int)(p*10),leftPos+169+i*5,topPos+52-(int)(p*10),((int)((1-p)*200)<<24)|0xffe36b);}
     }
     /** Pulsing connectors underneath the ingredient icons, before the effect-card heading. */
     private void legendaryLinks(GuiGraphics g,long time){
@@ -171,6 +177,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             if(meal!=null){lines.add(Ui.t("kitchen.servings",row.getInt("Servings")));for(var bonus:meal.bonuses())lines.add(bonus.description(false));}
             g.renderTooltip(font,lines,Optional.empty(),mx,my);
         }
+        if(!menu.stew&&Ui.inside(mx,my,leftPos+141,topPos+52,18,26)&&menu.ingredients.getItem(7).isEmpty())g.renderTooltip(font,Ui.t("kitchen.base_hint"),mx,my);
         if(upgrade.visible&&upgrade.isHovered())Ui.materialTooltip(g,font,List.of(),Ui.singleCost(ItemStack.of(menu.view.getCompound("UpgradeItem")),menu.view.getInt("UpgradeCost"),menu.view.getInt("UpgradeHave")),mx,my);
     }
 }

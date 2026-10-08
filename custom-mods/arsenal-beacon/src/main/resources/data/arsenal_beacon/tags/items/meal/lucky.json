@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "minecraft:glow_berries"
+    "minecraft:glow_berries",
+    "minecraft:apple"
   ]
 }

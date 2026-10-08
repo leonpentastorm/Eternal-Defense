@@ -8,7 +8,7 @@ import java.util.*;
 final class CreativeCatalog {
     static final List<String> FIRST=List.of("defense_beacon","beacon_controller","field_guide",
         "gun_platform","ammo_platform","attachment_platform","armor_platform","exchange_shop",
-        "mess_hall_mk1","cook_pot","bowl_dispenser","prepared_sandwich",
+        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","milk_bottle","prepared_sandwich",
         "support_platform","support_cannon","supply_flare","return_flare","fire_support_flare",
         "ardent_energy","universal_ammo_coin","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
     static boolean hidden(String id){return id.matches("mess_hall_mk[234]");}

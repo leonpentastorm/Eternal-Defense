@@ -22,7 +22,7 @@ final class MessHall {
     }
     static final class HallEntity extends BlockEntity implements MenuProvider {
         UUID identity=UUID.randomUUID();final List<BlockPos> links=new ArrayList<>();
-        final SimpleContainer ingredients=new SimpleContainer(7){@Override public void setChanged(){super.setChanged();HallEntity.this.setChanged();}};
+        final SimpleContainer ingredients=new SimpleContainer(8){@Override public void setChanged(){super.setChanged();HallEntity.this.setChanged();}};
         HallEntity(BlockPos pos,BlockState state){super(ArsenalBeacon.MESS_HALL_ENTITY.get(),pos,state);}
         int mk(){return ((HallBlock)getBlockState().getBlock()).mk;}
         MealRules.Tier tier(){return MealRules.tier(mk());}
@@ -52,8 +52,8 @@ final class MessHall {
         }
         void removed(){if(level!=null&&!level.isClientSide)for(var p:List.copyOf(links))if(level.hasChunkAt(p)&&level.getBlockEntity(p) instanceof CookPot.PotEntity pot&&pot.belongs(this))pot.unlink();}
         @Override protected void saveAdditional(CompoundTag n){super.saveAdditional(n);n.putUUID("Identity",identity);var list=new ListTag();for(var p:links){var t=new CompoundTag();t.putLong("Pos",p.asLong());list.add(t);}n.put("Pots",list);net.minecraft.world.ContainerHelper.saveAllItems(n,items());}
-        private net.minecraft.core.NonNullList<ItemStack> items(){var out=net.minecraft.core.NonNullList.withSize(7,ItemStack.EMPTY);for(int i=0;i<7;i++)out.set(i,ingredients.getItem(i));return out;}
-        @Override public void load(CompoundTag n){super.load(n);if(n.hasUUID("Identity"))identity=n.getUUID("Identity");links.clear();for(var t:n.getList("Pots",Tag.TAG_COMPOUND)){var p=BlockPos.of(((CompoundTag)t).getLong("Pos"));if(inRange(p)&&!links.contains(p)&&links.size()<4)links.add(p);}var items=net.minecraft.core.NonNullList.withSize(7,ItemStack.EMPTY);net.minecraft.world.ContainerHelper.loadAllItems(n,items);for(int i=0;i<7;i++)ingredients.setItem(i,items.get(i));}
+        private net.minecraft.core.NonNullList<ItemStack> items(){var out=net.minecraft.core.NonNullList.withSize(8,ItemStack.EMPTY);for(int i=0;i<8;i++)out.set(i,ingredients.getItem(i));return out;}
+        @Override public void load(CompoundTag n){super.load(n);if(n.hasUUID("Identity"))identity=n.getUUID("Identity");links.clear();for(var t:n.getList("Pots",Tag.TAG_COMPOUND)){var p=BlockPos.of(((CompoundTag)t).getLong("Pos"));if(inRange(p)&&!links.contains(p)&&links.size()<4)links.add(p);}var items=net.minecraft.core.NonNullList.withSize(8,ItemStack.EMPTY);net.minecraft.world.ContainerHelper.loadAllItems(n,items);for(int i=0;i<8;i++)ingredients.setItem(i,items.get(i));}
         @Override public Component getDisplayName(){return getBlockState().getBlock().getName();}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player player){return new MessHallMenu(id,inv,ingredients,worldPosition,mk(),this);}
     }

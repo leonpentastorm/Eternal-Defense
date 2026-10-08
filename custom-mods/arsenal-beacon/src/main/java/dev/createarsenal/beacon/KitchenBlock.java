@@ -14,7 +14,7 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import java.util.*;
 
-/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); pots and bowl dispensers are 1 x 1 x 2. */
+/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); pots and dispensers are 1 x 1 x 2. */
 abstract class KitchenBlock extends Block implements EntityBlock {
     final boolean hall;
     KitchenBlock(boolean hall){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(ArsenalStructures.FACING,Direction.NORTH));}
@@ -44,6 +44,6 @@ abstract class KitchenBlock extends Block implements EntityBlock {
                 if(!ArsenalStructures.available(level,root,s)){BaseZone.say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
             }return super.place(c);
         }
-        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",getBlock() instanceof MessHall.HallBlock?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));if(getBlock() instanceof BowlDispenser.DispenserBlock||getBlock() instanceof MilkDispenser.DispenserBlock)lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.dispenser.empty_hands"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",getBlock() instanceof MessHall.HallBlock?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
     }
 }

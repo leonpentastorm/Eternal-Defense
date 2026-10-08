@@ -168,11 +168,11 @@ public final class BeaconClient {
     record Hover(ItemStack item,int x,int y){}
 
     static final class ControlScreen extends PanelScreen {
-        int tab,fabricationPage;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
+        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
         private final List<Hover> icons=new ArrayList<>();
         static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
         static final String[] PARTS={"reinforced_plating","logistics_module","resonance_coil","restoration_matrix","resonance_coil","logistics_module"};
-        static final String[] TABS={"overview","upgrades","raid","settings","fabrication"};
+        static final String[] TABS={"overview","upgrades","fabrication","raid"};
         ControlScreen(){super(Ui.t("title"));}
         @Override Component subtitle(){return Ui.t("subtitle");}
         private static ItemStack part(int branch){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,PARTS[branch])));}
@@ -180,10 +180,11 @@ public final class BeaconClient {
         private boolean ready(){return on("installed")&&on("near")&&!on("active");}
         @Override protected void init(){
             super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=remove=respite=startRaid=lowerTier=higherTier=null;
-            int tw=(pw-28)/TABS.length;
-            for(int i=0;i<TABS.length;i++){int page=i;var b=button(Ui.t("tab."+TABS[i]),left+14+i*tw,top+31,tw-2,18,Ui.Look.TAB,x->{tab=page;rebuildWidgets();});b.selected=i==tab;}
+            int total=0;for(String key:TABS)total+=font.width(Ui.t("tab."+key))+14;int tx=left+14,space=pw-28;
+            for(int i=0;i<TABS.length;i++){int page=i,tw=(font.width(Ui.t("tab."+TABS[i]))+14)*space/total;var b=button(Ui.t("tab."+TABS[i]),tx,top+31,tw-2,18,Ui.Look.TAB,x->{tab=page;rebuildWidgets();});b.selected=i==tab;tx+=tw;}
             closeButton();
             button(Ui.t("guide"),left+pw-92,top+4,56,18,Ui.Look.NORMAL,b->BeaconNetwork.action("guide",""));
+            button(Ui.t("tab.settings"),left+pw-157,top+4,61,18,Ui.Look.NORMAL,b->{tab=4;rebuildWidgets();});
             int x=left+14,w=pw-28;
             if(tab==0){
                 int bw=(w-8)/3,y=top+ph-48;
@@ -195,7 +196,7 @@ public final class BeaconClient {
                 for(int i=0;i<BRANCHES.length;i++){String branch=BRANCHES[i];int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
                     upgrades.add(button(Component.empty(),cx+cw-88,cy+ch-21,82,18,Ui.Look.NORMAL,b->BeaconNetwork.action("upgrade:"+branch,"")));
                 }
-            }else if(tab==2){
+            }else if(tab==3){
                 var lay=raidLayout();
                 lowerTier=button(Ui.t("raid.lower"),x+10,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.max(0,n("raidLimit")-1),""));
                 higherTier=button(Ui.t("raid.raise"),x+w-106,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.min(10,n("raidLimit")+1),""));
@@ -204,14 +205,12 @@ public final class BeaconClient {
                 startRaid=button(Ui.t("raid.start"),x+half+4,y,w-half-4,Ui.Look.NORMAL,b->BeaconNetwork.action("start-raid",""));
                 startRaid.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.start.tip")));
                 respite.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.buy.tip")));
-            }else if(tab==4){
-                int cw=(w-6)/2,stride=(ph-54-48)/3;
-                for(int i=0;i<6;i++){
+            }else if(tab==2){
+                int cw=(w-6)/2,stride=(ph-54-14)/6;
+                for(int i=0;i<WorkshopFabrication.ITEMS.size();i++){
                     int index=i,cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
-                    fabricationButtons.add(button(Ui.t("fabrication.make"),cx+cw-66,cy+Math.max(18,stride-26),60,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);int at=fabricationPage*6+index;if(at<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(at).getString("id"),"");}));
+                    fabricationButtons.add(button(Ui.t("fabrication.make"),cx+cw-39,cy+3,35,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
                 }
-                button(Component.literal("<"),x,top+ph-46,24,Ui.Look.NORMAL,b->{fabricationPage=Math.max(0,fabricationPage-1);});
-                button(Component.literal(">"),x+28,top+ph-46,24,Ui.Look.NORMAL,b->{fabricationPage=Math.min((WorkshopFabrication.ITEMS.size()-1)/6,fabricationPage+1);});
             }else{
                 int gap=settingsGap();
                 outline=button(Component.empty(),x,contentTop()+2,w,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("outline",""));
@@ -228,8 +227,8 @@ public final class BeaconClient {
             int x=left+14,w=pw-28;
             if(tab==0)overview(g,x,w);
             else if(tab==1)tooltip=upgradeCards(g,mx,my,x,w);
-            else if(tab==2)raidTab(g,x,w);
-            else if(tab==4)fabricationTab(g,mx,my,x,w);
+            else if(tab==3)raidTab(g,x,w);
+            else if(tab==2)fabricationTab(g,mx,my,x,w);
             else settingsTab(g,x,w);
             super.render(g,mx,my,partial);
             boolean notice=footer(g);
@@ -237,19 +236,22 @@ public final class BeaconClient {
             Hover hovered=itemAt(mx,my);
             if(hovered!=null)g.renderComponentTooltip(font,List.of(hovered.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
             else if(tooltip!=null){if(upgradeHoverCosts!=null)Ui.materialTooltip(g,font,tooltip,upgradeHoverCosts,mx,my);else g.renderComponentTooltip(font,tooltip,mx,my);}
-            if(tab==4&&upgradeHoverCosts!=null)Ui.materialTooltip(g,font,List.of(Ui.t("tab.fabrication")),upgradeHoverCosts,mx,my);
+            if(tab==2&&upgradeHoverCosts!=null)Ui.materialTooltip(g,font,List.of(Ui.t("tab.fabrication")),upgradeHoverCosts,mx,my);
         }
         private void fabricationTab(GuiGraphics g,int mx,int my,int x,int w){
-            var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);int cw=(w-6)/2,stride=(ph-54-48)/3;
-            for(int i=0;i<6;i++){
-                var button=fabricationButtons.get(i);int at=fabricationPage*6+i;button.visible=at<rows.size();if(!button.visible)continue;
-                var row=rows.getCompound(at);var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
+            var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);int cw=(w-6)/2,stride=(ph-54-14)/6;
+            for(int i=0;i<fabricationButtons.size();i++){
+                var button=fabricationButtons.get(i);button.visible=i<rows.size();if(!button.visible)continue;
+                var row=rows.getCompound(i);var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
                 boolean enough=on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count"));
-                int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;Ui.card(g,cx,cy,cw,stride-4,Ui.CYAN);g.renderItem(item,cx+6,cy+5);
-                Ui.text(g,font,item.getHoverName(),cx+26,cy+8,Ui.INK,cw-34);button.active=on("installed")&&on("near")&&enough;button.warning=!enough;
-                if(Ui.inside(mx,my,cx,cy,cw,stride-4))upgradeHoverCosts=costs;
+                int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;Ui.card(g,cx,cy,cw,stride-2,Ui.CYAN);
+                g.renderItem(item,cx+4,cy+3);Ui.text(g,font,item.getHoverName(),cx+23,cy+3,Ui.INK,cw-66);button.active=on("installed")&&on("near")&&enough;button.warning=!enough;
+                int costX=cx+23;for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));
+                    g.pose().pushPose();g.pose().translate(costX,cy+13,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                    String count=Integer.toString(cost.getInt("count"));g.drawString(font,count,costX+9,cy+13,cost.getInt("have")>=cost.getInt("count")?Ui.MUTED:Ui.ORANGE,false);costX+=11+font.width(count);
+                }
+                if(Ui.inside(mx,my,cx,cy,cw,stride-2))upgradeHoverCosts=costs;
             }
-            Ui.text(g,font,Ui.t("fabrication.page",fabricationPage+1,(rows.size()+5)/6),x+62,top+ph-41,Ui.MUTED,w-64);
         }
         // ---- Overview: "How is my base doing?" ------------------------------------------------
         private void overview(GuiGraphics g,int x,int w){

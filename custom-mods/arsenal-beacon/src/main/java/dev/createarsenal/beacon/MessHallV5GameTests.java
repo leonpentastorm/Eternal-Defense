@@ -29,7 +29,12 @@ public final class MessHallV5GameTests {
         return new Fixture(l,floor,root,p,d);
     }
     private static void clean(Fixture f){PlayerMeals.clear(f.player);f.campaign.phase="unplaced";f.campaign.raiders.clear();UpgradeGameTests.release(f.level,f.floor);}
-    static SimpleContainer inputs(Item... items){var c=new SimpleContainer(7);for(int i=0;i<items.length;i++)c.setItem(i,new ItemStack(items[i],16));return c;}
+    static SimpleContainer inputs(Item... items){var c=new SimpleContainer(8);for(int i=0;i<items.length;i++)c.setItem(i,new ItemStack(items[i],16));return c;}
+    // V6 keeps these backend regressions but chooses their legendary recipes deliberately.
+    static IngredientTraits.Preview legendary(net.minecraft.world.Container c,boolean stew,int mk){
+        var groups=new HashSet<String>();for(int i=0;i<6;i++)if(!c.getItem(i).isEmpty())groups.add(IngredientTraits.groupOf(c.getItem(i)));
+        var effects=EnumSet.noneOf(MealRules.Effect.class);for(var mix:MealRules.mixes(groups))effects.add(mix.effect());return IngredientTraits.compose(c,stew,mk,effects);
+    }
     private static final Map<String,List<Item>> FOODS=Map.of("protein",List.of(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),"grain",List.of(Items.BREAD,Items.COOKIE),"fruit",List.of(Items.APPLE,Items.SWEET_BERRIES),"vegetables",List.of(Items.CARROT,Items.POTATO),"fish",List.of(Items.COOKED_COD,Items.COOKED_SALMON),"fungi",List.of(Items.BROWN_MUSHROOM,Items.RED_MUSHROOM));
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v5VanillaFoodsGiveOrdinaryBonuses(GameTestHelper h){
@@ -44,25 +49,25 @@ public final class MessHallV5GameTests {
     public static void v5LegendaryPairsReplaceNormalAndUseFourDistinctFoods(GameTestHelper h){
         for(var mix:MealRules.MIXES){
             var a=FOODS.get(mix.first());var b=FOODS.get(mix.second());
-            var single=IngredientTraits.compose(inputs(a.get(0),b.get(0)),true,1).meal();
+            var single=legendary(inputs(a.get(0),b.get(0)),true,1).meal();
             h.assertTrue(single!=null&&single.bonuses().size()==1&&single.bonuses().get(0).effect()==mix.effect()&&!single.bonuses().get(0).pair(),"Pair replaces both normal groups: "+mix);
             var c=inputs(a.get(0),a.get(1),b.get(0),b.get(1));
-            for(int mk=1;mk<=4;mk++){var meal=IngredientTraits.compose(c,true,mk).meal();h.assertTrue(meal.bonuses().size()==1&&meal.bonuses().get(0).pair()==(mk==4),"Four-food doubling only Mk IV: "+mix+" level "+mk);}
-            h.assertTrue(!IngredientTraits.compose(inputs(a.get(0),a.get(1),b.get(0)),true,4).meal().bonuses().get(0).pair(),"Three distinct foods cannot double legendary "+mix);
+            for(int mk=1;mk<=4;mk++){var meal=legendary(c,true,mk).meal();h.assertTrue(meal.bonuses().size()==1&&meal.bonuses().get(0).pair()==(mk==4),"Four-food doubling only Mk IV: "+mix+" level "+mk);}
+            h.assertTrue(!legendary(inputs(a.get(0),a.get(1),b.get(0)),true,4).meal().bonuses().get(0).pair(),"Three distinct foods cannot double legendary "+mix);
         }
         var linkedInputs=inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.BREAD,Items.COOKIE,Items.COOKED_COD,Items.APPLE);
-        var links=IngredientTraits.legendaryLinks(linkedInputs,IngredientTraits.compose(linkedInputs,true,4).meal());
+        var links=IngredientTraits.legendaryLinks(linkedInputs,legendary(linkedInputs,true,4).meal());
         h.assertTrue(links.size()==2&&links.get(0).slots().length==4&&links.get(0).doubled()&&links.get(1).slots().length==2,"Visual links use the selected server mixes and all four doubling contributors");
-        var six=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.BREAD,Items.CARROT,Items.APPLE,Items.COOKED_COD,Items.BROWN_MUSHROOM),true,4).meal();
+        var six=legendary(inputs(Items.COOKED_CHICKEN,Items.BREAD,Items.CARROT,Items.APPLE,Items.COOKED_COD,Items.BROWN_MUSHROOM),true,4).meal();
         h.assertTrue(six.bonuses().size()==3&&six.bonuses().stream().allMatch(b->b.effect().gun()&&!b.pair()),"Six groups produce three single-strength legendary effects");
-        var fourPlusTwo=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.BREAD,Items.COOKIE,Items.COOKED_COD,Items.APPLE),true,4).meal();
+        var fourPlusTwo=legendary(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.BREAD,Items.COOKIE,Items.COOKED_COD,Items.APPLE),true,4).meal();
         h.assertTrue(fourPlusTwo.bonuses().size()==2&&fourPlusTwo.bonuses().get(0).pair()&&!fourPlusTwo.bonuses().get(1).pair(),"Four slots double Firepower; two slots make another legendary effect");h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v5OrdinaryPairsAndSplitStacksRespectTier(GameTestHelper h){
         for(int mk=1;mk<=4;mk++){var meal=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),true,mk).meal();h.assertTrue(meal.bonuses().get(0).pair()==(mk==4)&&meal.bonuses().get(0).strength()==1,"Two bars, no third tier: "+mk);}
-        var split=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.BREAD),true,4).meal();h.assertTrue(split.bonuses().size()==1&&!split.bonuses().get(0).pair(),"Split identical foods do not double");
-        var oneSide=IngredientTraits.compose(inputs(Items.CARROT,Items.POTATO,Items.BREAD),true,4).meal();h.assertTrue(!oneSide.bonuses().get(0).pair(),"Legendary needs two foods on BOTH sides");
+        var split=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.BREAD),true,4).meal();h.assertTrue(split.bonuses().stream().noneMatch(MealData.Bonus::pair),"Split identical foods do not double");
+        var oneSide=legendary(inputs(Items.CARROT,Items.POTATO,Items.BREAD),true,4).meal();h.assertTrue(!oneSide.bonuses().get(0).pair(),"Legendary needs two foods on BOTH sides");
         h.assertTrue(IngredientTraits.compose(inputs(Items.BREAD,Items.COOKIE,Items.COOKED_CHICKEN),false,4).meal().bonuses().stream().noneMatch(MealData.Bonus::pair),"Portable sandwiches retain normal strength");h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
@@ -94,9 +99,11 @@ public final class MessHallV5GameTests {
             var bounds=new AABB(f.root).inflate(4);int before=f.level.getEntitiesOfClass(ItemEntity.class,bounds).stream().filter(e->e.getItem().is(Items.BOWL)).mapToInt(e->e.getItem().getCount()).sum();
             upper.getBlock().playerWillDestroy(f.level,f.root.above(),upper,f.player);
             h.assertTrue(f.level.getBlockState(f.root).isAir()&&f.level.getBlockState(f.root.above()).isAir(),"Breaking upper half removes installation");
-            h.runAtTickTime(10,()->{try{
-                int after=f.level.getEntitiesOfClass(ItemEntity.class,bounds).stream().filter(e->e.getItem().is(Items.BOWL)).mapToInt(e->e.getItem().getCount()).sum();h.assertTrue(after-before==63,"Stored bowls drop exactly once: before="+before+", after="+after);
-            }finally{clean(f);}h.succeed();});
+            h.succeedWhen(()->{
+                int after=f.level.getEntitiesOfClass(ItemEntity.class,bounds).stream().filter(e->e.getItem().is(Items.BOWL)).mapToInt(e->e.getItem().getCount()).sum();
+                h.assertTrue(after-before==63,"Stored bowls drop exactly once after chunk visibility: before="+before+", after="+after);clean(f);
+            });
+            h.runAtTickTime(99,()->clean(f));
         }catch(RuntimeException e){clean(f);throw e;}
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)

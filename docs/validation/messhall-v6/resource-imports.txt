@@ -1,0 +1,3 @@
+10 owner model/texture files match archive bytes exactly.
+Resource regeneration preserves artist files and current Field Guide.
+Controller model inherits supplied shovel model.

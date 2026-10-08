@@ -1,0 +1,70 @@
+> Task :assemble UP-TO-DATE
+> Task :check UP-TO-DATE
+> Task :arsenal-beacon:downloadMcpConfig
+> Task :arsenal-beacon:extractSrg UP-TO-DATE
+> Task :arsenal-beacon:createMcpToSrg UP-TO-DATE
+> Task :arsenal-displays:compileJava UP-TO-DATE
+> Task :arsenal-displays:processResources UP-TO-DATE
+> Task :arsenal-displays:classes UP-TO-DATE
+> Task :arsenal-displays:jar
+> Task :arsenal-displays:downloadMcpConfig
+> Task :arsenal-displays:extractSrg UP-TO-DATE
+> Task :arsenal-displays:createMcpToSrg UP-TO-DATE
+> Task :arsenal-displays:reobfJar
+> Task :arsenal-beacon:compileJava
+> Task :arsenal-beacon:addMixinsToJar
+> Task :arsenal-beacon:processResources
+> Task :arsenal-beacon:classes
+> Task :arsenal-beacon:jar
+> Task :arsenal-beacon:configureReobfTaskForReobfJar
+> Task :arsenal-beacon:reobfJar
+> Task :arsenal-beacon:configureReobfTaskForReobfJarJar
+> Task :arsenal-beacon:addMixinsToJarJar
+> Task :arsenal-beacon:jarJar SKIPPED
+> Task :arsenal-beacon:reobfJarJar SKIPPED
+> Task :arsenal-beacon:addMixinsToStandaloneJar
+> Task :arsenal-beacon:standaloneJar
+> Task :arsenal-beacon:configureReobfTaskForReobfStandaloneJar
+> Task :arsenal-beacon:reobfStandaloneJar
+> Task :arsenal-beacon:assemble
+> Task :arsenal-beacon:compileTestJava UP-TO-DATE
+> Task :arsenal-beacon:processTestResources NO-SOURCE
+> Task :arsenal-beacon:testClasses UP-TO-DATE
+> Task :arsenal-beacon:test
+> Task :arsenal-beacon:check
+> Task :arsenal-beacon:build
+> Task :arsenal-displays:jarJar SKIPPED
+> Task :arsenal-displays:reobfJarJar SKIPPED
+> Task :arsenal-displays:standaloneJar
+> Task :arsenal-displays:reobfStandaloneJar
+> Task :arsenal-displays:sourcesJar UP-TO-DATE
+> Task :arsenal-displays:assemble
+> Task :arsenal-displays:compileTestJava NO-SOURCE
+> Task :arsenal-displays:processTestResources NO-SOURCE
+> Task :arsenal-displays:testClasses UP-TO-DATE
+> Task :arsenal-displays:test NO-SOURCE
+> Task :arsenal-displays:check UP-TO-DATE
+> Task :arsenal-displays:build
+> Task :arsenal-gun-guide:compileJava UP-TO-DATE
+> Task :arsenal-gun-guide:processResources UP-TO-DATE
+> Task :arsenal-gun-guide:classes UP-TO-DATE
+> Task :arsenal-gun-guide:jar
+> Task :arsenal-gun-guide:downloadMcpConfig
+> Task :arsenal-gun-guide:extractSrg UP-TO-DATE
+> Task :arsenal-gun-guide:createMcpToSrg UP-TO-DATE
+> Task :arsenal-gun-guide:reobfJar
+> Task :arsenal-gun-guide:jarJar SKIPPED
+> Task :arsenal-gun-guide:reobfJarJar SKIPPED
+> Task :arsenal-gun-guide:standaloneJar
+> Task :arsenal-gun-guide:reobfStandaloneJar
+> Task :arsenal-gun-guide:assemble
+> Task :arsenal-gun-guide:compileTestJava UP-TO-DATE
+> Task :arsenal-gun-guide:processTestResources NO-SOURCE
+> Task :arsenal-gun-guide:testClasses UP-TO-DATE
+> Task :arsenal-gun-guide:test UP-TO-DATE
+> Task :arsenal-gun-guide:check UP-TO-DATE
+> Task :arsenal-gun-guide:build
+> Task :build
+> Task :releaseJars
+BUILD SUCCESSFUL in 1m 7s
+38 actionable tasks: 24 executed, 14 up-to-date

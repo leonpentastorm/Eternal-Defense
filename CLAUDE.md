@@ -2,9 +2,9 @@
 
 Read `docs/HANDOFF.md` first: it says where the project stands, how to build and test, what is unverified and what to do next.
 
-## Current owner override — Mess Hall v5
+## Current owner override — Mess Hall v6
 
-Work and push this feature on `feature/messhall-ver-5`, as explicitly requested by the owner. Do not merge or push these changes to `dev` or `main`. Build/test execution and the feature-branch push are authorized; include the newly required backend JAR in the test ZIP. See `docs/HANDOFF.md` for validation and remaining playtests.
+Work and push this feature on `feature/messhall-ver-6`, as explicitly requested by the owner. Do not merge or push these changes to `dev` or `main`. Build/test execution and the feature-branch push are authorized; include the newly required backend JAR in the test ZIP. See `docs/HANDOFF.md` for validation and remaining playtests.
 
 ## Rules of this project
 

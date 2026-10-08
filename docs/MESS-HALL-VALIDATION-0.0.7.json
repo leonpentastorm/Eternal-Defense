@@ -1,0 +1,126 @@
+{
+  "projectVersion": "0.0.7",
+  "feature": "Mess Hall v6",
+  "date": "2026-10-09",
+  "branch": "feature/messhall-ver-6",
+  "baseCommit": "5eebf947cb7b2f07a1fb7f5b50fbd33ce96ecc94",
+  "networkProtocol": [
+    "26-pack",
+    "26-standalone"
+  ],
+  "build": {
+    "command": "./gradlew --no-daemon --offline build releaseJars",
+    "beaconUnitTests": 74,
+    "guideUnitTests": 7,
+    "guideTestStatus": "Gradle up-to-date",
+    "bothEditionsBuilt": true
+  },
+  "server": {
+    "runtime": "Forge 47.4.20 / Java 17 / TaCZ 1.1.8-hotfix2 / TaCZ Attributes 1.4 / Apocalypse 1.1.4_F",
+    "gameplayCases": 36,
+    "caseGroups": {
+      "originalKitchen": 5,
+      "nativeGunLifecycle": 6,
+      "v6": 6,
+      "v5": 10,
+      "v3v4": 9
+    },
+    "ordinaryTriples": 165,
+    "tierCompositionChecks": 660,
+    "passed": [
+      "production startup",
+      "All 5 mess hall tests passed",
+      "All 6 mess hall v2 tests passed",
+      "v6everyordinarytripledoubleswithoutlegendary",
+      "v6explicitrecipesandserverselection",
+      "v6sandwichbaseisseparateandatomic",
+      "v6milkrefillsreturnemptieswithoutloss",
+      "v6milkclearssavedmealsandeveryeffect",
+      "v6dispenserstockrequiresemptyhands",
+      "v5vanillafoodsgiveordinarybonuses",
+      "v5legendarypairsreplacenormalandusefourdistinctfoods",
+      "v5ordinarypairsandsplitstacksrespecttier",
+      "v5serverpreparationenforcestierandhidesstewoutput",
+      "v5bowldispenserfilterspersistsanddropsonce",
+      "v5everytableupgradesitsownage",
+      "v5workshoppurchasesareatomicandbeaconbound",
+      "v5gunbuffattributesuseonemodifierandcleanup",
+      "v5recoveryshoveldealszerodamageandknocksback",
+      "v5fuelweaponscannotbecrafted",
+      "v4trapclasseswavesandpersistence",
+      "v4weaponsremaineffectiveaftertrapimmunity",
+      "v4sunlightprotectionkeepscombatfire",
+      "v4backendmodifierspreserveotherowners",
+      "v4nativereloadratetransitions",
+      "v3everyvanillafoodhasatraitandeveryeffectisreachable",
+      "v3pairbonusneedstwodifferentfoodsofonefamily",
+      "v3mealshowsasvanillaeffectsandfollowsthehomezone",
+      "v3recoveryhearthandspringystepactontheirdamage"
+    ],
+    "exactDeliveryJar": false,
+    "allGameplayEntriesMatchDelivery": true,
+    "clientOnlyEntryChangesAfterSuite": [
+      "assets/arsenal_beacon/lang/en_us.json",
+      "assets/arsenal_beacon/textures/gui/bread_base.png",
+      "dev/createarsenal/beacon/MessHallScreen.class"
+    ],
+    "suiteJarSHA512": "40ccd91b1f8f87619de40a20666c1747a58b785059efab40957358b467acf58bdff345cf2aa4c09de2ca7386c6d9a3905064bc21a3ab967ce07698b14ab37eb3"
+  },
+  "restart": {
+    "exactDeliveryJar": true,
+    "passed": [
+      "production startup",
+      "restart fixture"
+    ],
+    "milk_mB": 2750,
+    "pendingMilkBottles": 3,
+    "returnedBucket": 1,
+    "baseBread": 3,
+    "potServings": 9,
+    "fieldTicks": 12345
+  },
+  "client": {
+    "screens": [
+      "sandwich",
+      "normal",
+      "legendary",
+      "cookbook",
+      "legendbook",
+      "milk",
+      "bowl",
+      "beacon",
+      "art",
+      "gun",
+      "ammo",
+      "attachment",
+      "armor"
+    ],
+    "guiScale": 3,
+    "resolution": "1280x720",
+    "guiHeight": 240,
+    "foodTooltipMod": "AppleSkin 2.5.1",
+    "creativeHalls": 1,
+    "exactDeliveryJar": true
+  },
+  "artwork": {
+    "importedFilesMatchArchive": 10,
+    "regenerationPreservesArtAndGuide": true
+  },
+  "artifactsSHA512": {
+    "pack/arsenal-beacon-0.21.0.jar": "d7404b6e1e3a9f87cfbff5ceee1a71cc541493635474d803a240042fdfd1920bc45af0c5b7a3ceb719b13433e724cfa82c5a61bc124a7799ca29089ca9984685",
+    "pack/arsenal-gun-guide-0.21.0.jar": "9b9756a75ebf7b7f0ddf0bcd947c21280262da2686fcd982764e75b72e8fdec3ae98aace82c491def92bda3319e1db0c70b5935ad825e7830813b3d0340279a1",
+    "pack/arsenal-displays-1.1.0.jar": "a5ddc69c6d1ad05e795a2391b8ae63ebb977b973bbd984e2f5426267bc895e110a4e715846a776aaaba999288dbcbfd43f43efd5ae95a38c4617dc141fef5a87",
+    "pack/tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94",
+    "standalone/arsenal-beacon-0.21.0-standalone.jar": "da3fbff0a6c9b5d1f516b5738657803734fec3b2f0381d000eefa11b9fb3a3c4dac5828282593578b9a9f84d51b17de156bf9a67a7e1df3602437a21ee3e400f",
+    "standalone/arsenal-gun-guide-0.21.0-standalone.jar": "b545e9e9d52fa07325606e275cf0f1b7109894613a4b34ad1b6d0d7528768d448593776eceec4ff09b25e4247b92489fbfbed2d0929e74263052d04144de13ef",
+    "standalone/arsenal-displays-1.1.0-standalone.jar": "a0146403a70dc065038b06dcf2d90beab39ec50fa36da8114dcd1b3262ef9f0c55f27976663e3265474b67296649c475baf1b41f24077ab1df6964d871cf6271",
+    "standalone/tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+  },
+  "unverified": [
+    "Matching complete Create/KubeJS modpack runtime",
+    "Two-human co-op and long survival balance",
+    "Third-party pipes and milk containers without a Forge fluid capability",
+    "Owner exact Gun Durability/jam addon and original crash",
+    "Other UI/gunpack/addon combinations"
+  ]
+}

@@ -1,0 +1,2 @@
+[18:59:59] [Server thread/INFO] [de.cr.be.MealV6ClientSmoke/]: V6_UI_FIXTURE_READY
+[19:01:22] [Server thread/INFO] [de.cr.be.MealV6ClientSmoke/]: V6_SERVER_UI_PASS

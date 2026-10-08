@@ -16,14 +16,19 @@ import net.minecraft.world.phys.BlockHitResult;
 
 /** A two-cell kitchen installation. Dispensing consumes stock, including in creative. */
 final class BowlDispenser {
+    static boolean emptyHands(Player p){return p.getMainHandItem().isEmpty()&&p.getOffhandItem().isEmpty();}
     static final class DispenserBlock extends KitchenBlock {
         DispenserBlock(){super(false);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new DispenserEntity(pos,state);}
         @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player player,InteractionHand hand,BlockHitResult hit){
+            if(hand!=InteractionHand.MAIN_HAND)return InteractionResult.CONSUME;
             if(player instanceof ServerPlayer p){
                 if(BaseZone.disabled(level,pos,p))return InteractionResult.CONSUME;
                 if(level.getBlockEntity(pos) instanceof DispenserEntity dispenser){
-                    if(p.isShiftKeyDown())net.minecraftforge.network.NetworkHooks.openScreen(p,dispenser,b->b.writeBlockPos(pos));
+                    if(p.isShiftKeyDown()){
+                        if(emptyHands(p))net.minecraftforge.network.NetworkHooks.openScreen(p,dispenser,b->b.writeBlockPos(pos));
+                        else p.displayClientMessage(Component.translatable("gui.arsenal_beacon.dispenser.empty_hands"),true);
+                    }
                     else if(!dispenser.dispense(p))p.displayClientMessage(Component.translatable("gui.arsenal_beacon.bowls.empty"),true);
                 }
             }

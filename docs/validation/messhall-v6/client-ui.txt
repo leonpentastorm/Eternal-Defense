@@ -1,0 +1,14 @@
+[19:00:13] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS sandwich
+[19:00:19] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS normal
+[19:00:24] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS legendary
+[19:00:29] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS cookbook
+[19:00:38] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS legendbook
+[19:00:44] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS milk
+[19:00:49] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS bowl
+[19:00:54] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS beacon
+[19:00:59] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS art
+[19:01:05] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS gun
+[19:01:10] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS ammo
+[19:01:15] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS attachment
+[19:01:20] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_UI_SCREEN_PASS armor
+[19:01:22] [Render thread/INFO] [de.cr.be.MealV6ClientSmoke$KitchenV6ScreenObserver/]: V6_CLIENT_UI_PASS screens=13 creativeHalls=1

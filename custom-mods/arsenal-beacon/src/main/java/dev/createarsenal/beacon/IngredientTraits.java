@@ -32,7 +32,9 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     record Preview(MealData meal,int occupied,boolean staple,String problem){}
     static Preview compose(Container ingredients,boolean stew){return compose(ingredients,stew,1);}
     static String groupOf(ItemStack stack){return traits.stream().filter(t->t.ingredient.test(stack)).map(Trait::family).findFirst().orElse("");}
-    static Preview compose(Container ingredients,boolean stew,int mk){
+    /** Ordinary by default. Legendary recipes reserve their groups only after explicit selection. */
+    static Preview compose(Container ingredients,boolean stew,int mk){return compose(ingredients,stew,mk,null);}
+    static Preview compose(Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
         var foods=new LinkedHashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
         var groups=new HashMap<String,Set<net.minecraft.world.item.Item>>();boolean staple=false;
         for(int i=0;i<6;i++){
@@ -40,23 +42,29 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
             var matches=traits.stream().filter(t->t.ingredient.test(stack)).toList();
             if(matches.isEmpty())return new Preview(null,foods.size(),staple,"ingredient");
             var scores=foods.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));
-            // One canonical group per item prevents overlapping datapack tags from using a food twice.
             groups.computeIfAbsent(matches.get(0).family,k->new HashSet<>()).add(stack.getItem());
-            for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->scores.merge(e,w,Math::max));}
+            for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->{if(!e.gun())scores.merge(e,w,Math::max);});}
         }
-        var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<net.minecraft.world.item.Item>();
-        for(var mix:MealRules.mixes(groups.keySet())){
-            var first=groups.get(mix.first());var second=groups.get(mix.second());used.addAll(first);used.addAll(second);
-            bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+        int limit=stew?3:2;var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<net.minecraft.world.item.Item>();var reserved=new HashSet<String>();
+        if(selected!=null){
+            if(selected.isEmpty()||selected.size()>limit)return new Preview(null,foods.size(),staple,"selection");
+            for(var mix:MealRules.MIXES)if(selected.contains(mix.effect())){
+                var first=groups.get(mix.first());var second=groups.get(mix.second());
+                if(first==null||second==null||!reserved.add(mix.first())||!reserved.add(mix.second()))return new Preview(null,foods.size(),staple,"selection");
+                used.addAll(first);used.addAll(second);
+                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+            }
         }
         var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
         foods.forEach((item,values)->{if(!used.contains(item))values.forEach((e,w)->scores.merge(e,w,Integer::sum));});
-        for(var e:MealRules.select(scores,stew))if(bonuses.stream().noneMatch(b->b.effect()==e)){
+        var ordinary=selected==null?MealRules.select(scores,stew):selected.stream().filter(e->!e.gun()).sorted().toList();
+        for(var e:ordinary){
+            if(!scores.containsKey(e))return new Preview(null,foods.size(),staple,"selection");
             boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(item->!used.contains(item)&&foods.get(item).containsKey(e)).count()>=2);
             bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
         }
-        int occupied=foods.size(),limit=stew?3:2;
-        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":!stew&&!staple?"staple":bonuses.isEmpty()?"effects":"";
+        int occupied=foods.size();
+        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
         return new Preview(problem.isEmpty()?new MealData(stew,bonuses.stream().limit(limit).toList(),MealRules.FIELD_TICKS):null,occupied,staple,problem);
     }
     /** All distinct contributors, grouped by the actual selected legendary effect. */

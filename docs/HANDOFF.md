@@ -1,5 +1,25 @@
 # Handoff: where the project stands
 
+Last updated for **Mess Hall v6**, project **0.0.7**, branch **`feature/messhall-ver-6`**, based on v5 `5eebf947cb7b2f07a1fb7f5b50fbd33ce96ecc94`. Owner authorized implementation, build/test, packaging required addon JARs, and pushing this feature. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0.
+
+Current specification: `docs/MESS-HALL-V6-IMPLEMENTATION.md`; current validation: `docs/MESS-HALL-V6-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.7.json`. Protocol **26-pack / 26-standalone**. JAR versions remain 0.21.0 / 1.1.0. TaCZ 1.1.8-hotfix2 + TaCZ Attributes 1.4 are required on both ends; Attributes is separately bundled in both editions. Milk uses Forge's built-in milk fluid and adds no required mod.
+
+## V6 decisions
+
+* Ordinary effects are the default. `MealRecipeScreen` is a live cookbook and explicit selector using server-owned choices, sources and native container-button intents. First selection starts manual mode; reset returns to ordinary ranking. A selected legendary recipe reserves its two groups and replaces their ordinary bonuses. Recipes cannot overlap groups; missing selected foods invalidate preparation. Menu IDs 40–65 survive Minecraft's signed-byte packet; pot IDs remain 100–103.
+* All eleven ordinary effects have same-group vanilla ×2 pairs. Apple additionally supplies Fortune; melon supplies Springy Step. Any three chosen ordinary effects fit six slots. Doubling remains Mk IV stew only, exactly two pips; HOME separately doubles and pauses the 30-minute field timer.
+* Hall has eight persistent slots: six mix inputs, output 6, bread-only base 7. Base bread is consumed separately and contributes no Grain/effect. Mixing bread intentionally still grants Grain/Steadiness. Stew locks/hides base and output. Cookbook return clears/rebuilds pot widgets correctly.
+* `MilkDispenser` uses an 8,000 mB milk-only Forge FluidTank/capability, one filled-container slot and one empty-output slot. Bucket 1,000 mB, bottle 250 mB; refill validates entire liquid and empty output before mutation. Normal use spends 250 mB, clears saved meal/timer/owned native and TaCZ modifiers, then every potion effect. Portable Milk Bottles share cleansing and return glass. One bucket + four glass bottles crafts four doses. Tank and pending containers persist; breaking drops items and loses liquid.
+* Both dispensers stock through empty-both-hands crouch right-click; item/menu/guide text says so. Offhand invocation cannot double dispense. Both halves retain zone checks/anchor forwarding.
+* Beacon main tabs: Overview, Upgrades, Workshop Fabrication, Raid break. Header Settings sits beside Guide. All eleven starters fit compact 2-column/6-row cards with visible material icons/counts and full hover costs. Milk price: 8 iron + 4 glass + 4 copper in either edition.
+* Owner art imported exactly for shovel, sandwich, bowl and milk. Controller inherits supplied shovel model. `tools/kitchen/generate_resources.py` excludes artist files; original ZIP/provenance is in `docs/art/kitchen-extras-v6/`. Field Guide and cookbook cover current behavior.
+
+## Build and QA
+
+Source `/workspace/.eternal-defense/activate.sh`, run `./gradlew --no-daemon --offline build releaseJars` with JDK 17. Both editions build; 74 beacon unit tests pass (7 Guide tests up-to-date). All 36 server cases pass, and their gameplay classes/data match the delivery JAR. Only renderer, language and gray bread sprite entries changed afterward; the exact delivery JAR passes real milk/bread/meal save/restart and all 13 real-client phases with AppleSkin at the minimum 240-pixel GUI. Exact hashes and entry comparisons are in the validation JSON. Production runtime scripts are `tools/qa/run-v6-server.py` and `tools/qa/run-v6-client.py`. QA flags are off in ordinary launches. Final actual checks and remaining playtests are recorded in the v6 testing document; do not treat interrupted attempts as passes.
+
+## Historical v5 handoff
+
 Last updated for **Mess Hall v5**, project **0.0.6**, branch **`feature/messhall-ver-5`**, based on v4 `73dbebf0bcff7fd8ce33ba9aa05df17fa1c87c97`. The owner authorized implementation, builds, tests, a bundle containing newly required addon JARs, and committing/pushing this feature branch. Do not merge/push `dev` or `main`; no PR, tag or public release requested. Start a fresh world for each feature until 1.0.
 
 Current design: `docs/MESS-HALL-V5-IMPLEMENTATION.md`; actual validation: `docs/MESS-HALL-V5-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.6.json`. Protocol **25-pack / 25-standalone**. JAR versions remain 0.21.0 / 1.1.0. Required TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4; the backend JAR is supplied separately in both edition folders.
