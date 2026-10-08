@@ -4,6 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "firepower": 1
-  }
+    "might": 1
+  },
+  "family": "protein"
 }

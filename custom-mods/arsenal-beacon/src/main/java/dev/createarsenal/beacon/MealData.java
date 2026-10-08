@@ -16,7 +16,7 @@ record MealData(boolean stew,List<Bonus> bonuses,int duration) {
         static Bonus ofAmplifier(MealRules.Effect effect,int amplifier){return new Bonus(effect,Math.max(1,Math.min(3,(amplifier&3)+1)),(amplifier&4)!=0);}
         String amountText(boolean enhanced){
             double value=enhanced?home():field();
-            return "+"+java.math.BigDecimal.valueOf(value*(effect.percent?100:1)).setScale(2,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()+(effect.percent?"%":"");
+            return (effect.reduction()?"−":"+")+java.math.BigDecimal.valueOf(value*(effect.percent?100:1)).setScale(2,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()+(effect.percent?"%":"");
         }
         Component description(boolean enhanced){
             var text=Component.translatable("gui.arsenal_beacon.meal.bonus."+effect.id,amountText(enhanced));

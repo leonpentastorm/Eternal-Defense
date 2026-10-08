@@ -112,6 +112,20 @@ final class LangKeysTest {
         for(String required:List.of("config/arsenal-beacon-standalone.json","crafting table","same standalone beacon and TaCZ","vanilla Ravager","copper, diamonds and gold"))assertTrue(all.contains(required),"standalone guide lost: "+required);
     }
 
+    @Test void guideExplainsCurrentFoodUnlocksAndRaidBehavior(){
+        for(boolean standalone:new boolean[]{false,true}){
+            String kitchen=edition("kitchen","body",standalone),mixes=edition("mixes","body",standalone),raids=edition("raids","body",standalone);
+            assertTrue(kitchen.contains("ONLY")&&kitchen.contains("Mk IV")&&kitchen.contains("four slots"));
+            for(var mix:MealRules.MIXES)assertTrue(mixes.contains(get("meal.effect."+mix.effect().id)),"Missing legendary recipe "+mix.effect());
+            assertTrue(raids.contains("sunlight only")&&raids.contains("25%%")&&raids.contains("Turrets"));
+            assertTrue(edition("stations","body",standalone).contains("Workshop Fabrication"));
+        }
+    }
+    @Test void resourceRegenerationDoesNotOwnGuideProse()throws Exception{
+        String generator=Files.readString(Path.of("../../tools/kitchen/generate_resources.py"));
+        assertFalse(generator.contains("'guide."),"Kitchen regeneration must preserve guide edits in the language source");
+    }
+
     @Test void guideNeverBakesInAShortcutKey(){
         var tokens=Pattern.compile("\\{([a-z]+)\\}");
         var allowed=Set.of("interact","jei","reload","emotes","shaders","backpack","quests","map");

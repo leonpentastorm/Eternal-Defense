@@ -22,7 +22,7 @@ final class BeaconItems {
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Plant to start a shared defense campaign. Confirmation required."));}
     }
     static final class Controller extends ShovelItem {
-        Controller(){super(Tiers.IRON,1.5f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
+        Controller(){super(Tiers.IRON,-3f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
         @Override public InteractionResult useOn(UseOnContext context) {
             if(context.getPlayer() instanceof ServerPlayer p){
                 if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&BaseZone.relocate(p,server,context.getClickedPos()))return InteractionResult.CONSUME;
@@ -36,7 +36,18 @@ final class BeaconItems {
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand),level.isClientSide);
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){
-            text.add(Component.literal("Hold: beacon HUD. Right-click: control panel."));text.add(Component.literal("Use on beacon: remove and reset. Confirmation required."));text.add(Component.translatable("tooltip.arsenal_beacon.shovel_relocate"));
+            text.add(Component.literal("Hold: beacon HUD. Right-click: control panel."));text.add(Component.literal("Use on beacon: remove and reset. Confirmation required."));text.add(Component.translatable("tooltip.arsenal_beacon.shovel_relocate"));text.add(Component.translatable("tooltip.arsenal_beacon.shovel_knockback"));
+        }
+    }
+    static final class RecoveryCombat {
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public void repel(net.minecraftforge.event.entity.player.AttackEntityEvent event){
+            var player=event.getEntity();if(!player.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get()))return;
+            event.setCanceled(true);
+            if(!player.level().isClientSide&&event.getTarget() instanceof net.minecraft.world.entity.LivingEntity target){
+                double yaw=player.getYRot()*Math.PI/180;target.knockback(1.0,Math.sin(yaw),-Math.cos(yaw));target.hurtMarked=true;
+                player.level().playSound(null,player.blockPosition(),net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_KNOCKBACK,net.minecraft.sounds.SoundSource.PLAYERS,1,1);
+            }
         }
     }
     static final class Guide extends Item {

@@ -1,0 +1,24 @@
+[14:44:05] [Server thread/INFO] [de.cr.be.MessHallGameTests$KitchenTestRunner/]: All 5 mess hall tests passed
+[14:44:10] [Server thread/INFO] [de.cr.be.MessHallV2GameTests/]: MEAL_V2_COMBAT_PASS bullet base=6.0 field=6.4799805 home=6.959961 bash=8.0 knockback=1.0
+[14:44:21] [Server thread/INFO] [de.cr.be.MessHallV2GameTests/]: MEAL_V2_RELOAD_PASS baseline=2653ms home=2198ms field=2406ms
+[14:44:21] [Server thread/INFO] [de.cr.be.MessHallV2GameTests$KitchenV2TestRunner/]: All 6 mess hall v2 tests passed
+[14:44:21] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5vanillafoodsgiveordinarybonuses
+[14:44:21] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5legendarypairsreplacenormalandusefourdistinctfoods
+[14:44:21] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5ordinarypairsandsplitstacksrespecttier
+[14:44:24] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5serverpreparationenforcestierandhidesstewoutput
+[14:44:25] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5bowldispenserfilterspersistsanddropsonce
+[14:44:25] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5everytableupgradesitsownage
+[14:44:25] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5workshoppurchasesareatomicandbeaconbound
+[14:44:25] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5gunbuffattributesuseonemodifierandcleanup
+[14:44:26] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5recoveryshoveldealszerodamageandknocksback
+[14:44:26] [Server thread/INFO] [de.cr.be.MessHallV5GameTests$KitchenV5Verification/]: V5_TEST_PASS v5fuelweaponscannotbecrafted
+[14:44:28] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4trapclasseswavesandpersistence
+[14:44:29] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4weaponsremaineffectiveaftertrapimmunity
+[14:44:31] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4sunlightprotectionkeepscombatfire
+[14:44:31] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4backendmodifierspreserveotherowners
+[14:44:31] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4nativereloadratetransitions
+[14:44:31] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3everyvanillafoodhasatraitandeveryeffectisreachable
+[14:44:32] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3pairbonusneedstwodifferentfoodsofonefamily
+[14:44:34] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3mealshowsasvanillaeffectsandfollowsthehomezone
+[14:44:35] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3recoveryhearthandspringystepactontheirdamage
+[14:44:36] [Server thread/INFO] [de.cr.be.MessHallGameTests/]: MESS_HALL_PERSIST_SEEDED

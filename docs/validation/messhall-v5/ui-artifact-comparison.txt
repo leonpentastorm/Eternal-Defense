@@ -1,0 +1,4 @@
+All delivery gameplay classes, client UI classes, resources and metadata match the passing UI build. Only opt-in server fixture classes changed for recipe expectations and observed daylight timing:
+dev/createarsenal/beacon/MessHallV2GameTests.class
+dev/createarsenal/beacon/MessHallV4GameTests$Runner.class
+dev/createarsenal/beacon/MessHallV4GameTests.class

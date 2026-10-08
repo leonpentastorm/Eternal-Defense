@@ -53,7 +53,7 @@ public final class MessHallGameTests {
     public static void stewServingPersistenceAndLinkCleanup(GameTestHelper h){
         var f=fixture(h,2);var pot=pot(f,3);h.assertTrue(pot.connect()==f.hall,"Nearby pot connects");var extra=pot(f,6);h.assertTrue(extra.connect()==null,"Mk I enforces one linked pot");inputs(f.hall,1);
         f.hall.ingredients.setItem(4,ItemStack.EMPTY);
-        var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);menu.clickMenuButton(f.player,1);h.assertTrue(menu.prepare()&&pot.servings==4&&pot.stew.bonuses().size()==3,"Stew menu stocks three effects and four servings");
+        var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);menu.clickMenuButton(f.player,1);h.assertTrue(menu.prepare()&&pot.servings==4&&pot.stew.bonuses().size()==2,"Four groups form two legendary effects and four servings");
         var other=UpgradeGameTests.player(h,"kitchen-serving-other");other.setPos(pot.getBlockPos().getX(),pot.getBlockPos().getY(),pot.getBlockPos().getZ());f.player.setPos(other.getX(),other.getY(),other.getZ());
         f.player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));other.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));
         pot.use(f.player,InteractionHand.MAIN_HAND);pot.use(other,InteractionHand.MAIN_HAND);h.assertTrue(pot.servings==2&&f.player.getMainHandItem().is(Items.BOWL)&&other.getMainHandItem().is(Items.BOWL),"Independent players consume one serving each and keep empty bowls");

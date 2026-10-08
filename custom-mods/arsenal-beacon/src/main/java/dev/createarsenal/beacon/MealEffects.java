@@ -18,7 +18,7 @@ final class MealEffects {
     private static final DeferredRegister<MobEffect> EFFECTS=DeferredRegister.create(ForgeRegistries.MOB_EFFECTS,ArsenalBeacon.ID);
     private static final Map<MealRules.Effect,RegistryObject<MobEffect>> MEAL=new EnumMap<>(MealRules.Effect.class);
     static final RegistryObject<MobEffect> HOME;
-    private static final int[] COLORS={0xe0484f,0x6aa0d8,0xb08a5a,0x6ee07a,0xff9a3d,0xf3d34a,0xd9603f,0x9aa4ad,0x8c4a2f,0xc9ced4,0x5fe0ea,0x7fd65a,0x8ef08e,0xff7a2a,0xb6e84a,0x4aa8ff};
+    private static final int[] COLORS={0xe0484f,0x6aa0d8,0xb08a5a,0x6ee07a,0xff9a3d,0xf3d34a,0xd9603f,0x9aa4ad,0x8c4a2f,0xc9ced4,0x5fe0ea,0x7fd65a,0x8ef08e,0xff7a2a,0xb6e84a,0x4aa8ff,0x82c9ef,0xf0daa0,0x7ce0cf,0xefad72,0xdb82d9,0x8db1ff,0xe4a477,0xffbc4e,0xb7bbff,0x9de4b5};
     static {
         for(var e:MealRules.Effect.values())MEAL.put(e,EFFECTS.register("meal_"+e.id,()->new Meal(e,COLORS[e.ordinal()])));
         HOME=EFFECTS.register("home_zone",()->new Home());

@@ -41,7 +41,7 @@ public final class ArsenalBeacon {
     private static final DeferredRegister<Block> BLOCKS=DeferredRegister.create(ForgeRegistries.BLOCKS,ID);
     private static final DeferredRegister<Item> ITEMS=DeferredRegister.create(ForgeRegistries.ITEMS,ID);
     private static final DeferredRegister<CreativeModeTab> TABS=DeferredRegister.create(Registries.CREATIVE_MODE_TAB,ID);
-    public static final RegistryObject<CreativeModeTab> ARSENAL_TAB=TABS.register("arsenal",()->CreativeModeTab.builder().title(Component.literal("Create Arsenal")).icon(()->new ItemStack(ArsenalBeacon.BEACON_ITEM.get())).displayItems((parameters,output)->{ITEMS.getEntries().forEach(item->output.accept(item.get()));ArsenalBeacon.RACKS.forEach(block->output.accept(block.get()));BuiltInRegistries.ITEM.forEach(item->{if(BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("kubejs"))output.accept(item);});}).build());
+    public static final RegistryObject<CreativeModeTab> ARSENAL_TAB=TABS.register("arsenal",()->CreativeModeTab.builder().title(Component.literal("Create Arsenal")).icon(()->new ItemStack(ArsenalBeacon.BEACON_ITEM.get())).displayItems((parameters,output)->CreativeCatalog.display(output)).build());
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> ENTITIES=DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES,ID);
     public static final RegistryObject<Block> STRUCTURE_PART=BLOCKS.register("structure_part",ArsenalStructures.Part::new);
     public static final RegistryObject<Block> BEACON=BLOCKS.register("defense_beacon",()->new DefenseBlock());
@@ -59,6 +59,10 @@ public final class ArsenalBeacon {
     private static RegistryObject<Block> kitchen(String id,int tier){RegistryObject<Block> block=BLOCKS.register(id,()->new MessHall.HallBlock(tier));ITEMS.register(id,()->new KitchenBlock.KitchenItem(block.get()));return block;}
     public static final RegistryObject<Block> COOK_POT=BLOCKS.register("cook_pot",CookPot.PotBlock::new);
     public static final RegistryObject<Item> COOK_POT_ITEM=ITEMS.register("cook_pot",()->new KitchenBlock.KitchenItem(COOK_POT.get()));
+    public static final RegistryObject<Block> BOWL_DISPENSER=BLOCKS.register("bowl_dispenser",BowlDispenser.DispenserBlock::new);
+    public static final RegistryObject<Item> BOWL_DISPENSER_ITEM=ITEMS.register("bowl_dispenser",()->new KitchenBlock.KitchenItem(BOWL_DISPENSER.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<BowlDispenser.DispenserEntity>> BOWL_DISPENSER_ENTITY=ENTITIES.register("bowl_dispenser",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(BowlDispenser.DispenserEntity::new,BOWL_DISPENSER.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<BowlDispenser.DispenserMenu>> BOWL_DISPENSER_MENU=MENUS.register("bowl_dispenser",()->net.minecraftforge.common.extensions.IForgeMenuType.create(BowlDispenser.DispenserMenu::client));
     public static final RegistryObject<Item> SANDWICH=ITEMS.register("prepared_sandwich",PreparedSandwich::new);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MessHall.HallEntity>> MESS_HALL_ENTITY=ENTITIES.register("mess_hall",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MessHall.HallEntity::new,MESS_HALL_I.get(),MESS_HALL_II.get(),MESS_HALL_III.get(),MESS_HALL_IV.get()).build(null));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<CookPot.PotEntity>> COOK_POT_ENTITY=ENTITIES.register("cook_pot",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(CookPot.PotEntity::new,COOK_POT.get()).build(null));
@@ -90,13 +94,15 @@ public final class ArsenalBeacon {
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
-        MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
+        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV2GameTests.KitchenV2TestRunner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
+        if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV5GameTests.KitchenV5Verification());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
+        if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v4ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV4ClientSmoke());
         if(Boolean.getBoolean("arsenal.kitchenSmoke"))MinecraftForge.EVENT_BUS.register(new MessHallSmoke());
     }

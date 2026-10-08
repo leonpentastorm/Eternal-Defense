@@ -14,7 +14,7 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import java.util.*;
 
-/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); a pot is 1 x 1 x 2. */
+/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); pots and bowl dispensers are 1 x 1 x 2. */
 abstract class KitchenBlock extends Block implements EntityBlock {
     final boolean hall;
     KitchenBlock(boolean hall){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(ArsenalStructures.FACING,Direction.NORTH));}
@@ -35,6 +35,7 @@ abstract class KitchenBlock extends Block implements EntityBlock {
     }
     static final class KitchenItem extends BlockItem {
         KitchenItem(Block block){super(block,new Item.Properties());}
+        @Override public String getDescriptionId(){return getBlock()==ArsenalBeacon.MESS_HALL_I.get()?"item.arsenal_beacon.mess_hall":super.getDescriptionId();}
         @Override public InteractionResult place(BlockPlaceContext c){
             var s=getBlock().getStateForPlacement(c);var level=c.getLevel();var root=c.getClickedPos();
             if(s==null)return InteractionResult.FAIL;

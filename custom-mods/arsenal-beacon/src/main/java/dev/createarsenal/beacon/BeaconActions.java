@@ -70,6 +70,7 @@ final class BeaconActions {
             else if(a.equals("start-raid"))BeaconNetwork.sendState(p,"","",RaidSelection.start(p));
             else if(a.startsWith("raid-level:"))BeaconNetwork.sendState(p,"","",RaidSelection.select(p,a.substring(11)));
             else if(a.equals("respite"))BeaconNetwork.sendState(p,"","",RaidRespite.buy(p));
+            else if(a.startsWith("fabricate:"))BeaconNetwork.sendState(p,"","",WorkshopFabrication.buy(p,a.substring(10)));
             else if(a.startsWith("upgrade:"))ArsenalBeacon.upgrade(p,a.substring(8));
             BeaconNetwork.syncNearby(p.server.overworld(),d);
         } finally {inAction=false;}

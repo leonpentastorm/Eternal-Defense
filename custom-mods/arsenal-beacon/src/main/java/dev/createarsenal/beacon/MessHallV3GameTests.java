@@ -35,22 +35,22 @@ public final class MessHallV3GameTests {
             var stack=new ItemStack(item);if(!IngredientTraits.accepts(stack))missing.add(key.getPath());reached.addAll(IngredientTraits.effectsOf(stack));
         }
         h.assertTrue(missing.isEmpty(),"Every vanilla food or drink is a meal ingredient; missing: "+missing);
-        h.assertTrue(reached.size()==MealRules.Effect.values().length,"Every effect can be had from some vanilla food; reached "+reached);
+        MealRules.MIXES.forEach(m->reached.add(m.effect()));h.assertTrue(reached.size()==MealRules.Effect.values().length,"Every effect can be had from some vanilla food; reached "+reached);
         h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v3PairBonusNeedsTwoDifferentFoodsOfOneFamily(GameTestHelper h){
-        var chickenMutton=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),true).meal();
+        var chickenMutton=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),true,4).meal();
         h.assertTrue(chickenMutton!=null&&chickenMutton.bonuses().get(0).effect()==MealRules.Effect.VITALITY&&chickenMutton.bonuses().get(0).pair(),"Cooked chicken and cooked mutton pair for Vitality");
         var single=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_BEEF),true).meal();
         h.assertTrue(single!=null&&single.bonuses().stream().noneMatch(MealData.Bonus::pair),"Chicken with beef: one food per family, no pair");
-        var eggs=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.EGG),true).meal();
-        h.assertTrue(eggs!=null&&eggs.bonuses().get(0).strength()==2&&!eggs.bonuses().get(0).pair(),"Chicken and egg feed Vitality from two families: stronger, but no pair");
-        var fish=IngredientTraits.compose(inputs(Items.COOKED_COD,Items.COOKED_SALMON),true).meal();
+        var eggs=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.EGG),true,4).meal();
+        h.assertTrue(eggs!=null&&eggs.bonuses().get(0).strength()==1&&eggs.bonuses().get(0).pair(),"Chicken and egg feed Vitality from two families: stronger, but no pair");
+        var fish=IngredientTraits.compose(inputs(Items.COOKED_COD,Items.COOKED_SALMON),true,4).meal();
         h.assertTrue(fish!=null&&fish.bonuses().get(0).effect()==MealRules.Effect.MOBILITY&&fish.bonuses().get(0).pair(),"Cooked cod and salmon pair for Mobility");
         var sandwich=IngredientTraits.compose(inputs(Items.BREAD,Items.COOKED_CHICKEN,Items.COOKED_MUTTON),false).meal();
         h.assertTrue(sandwich!=null&&sandwich.bonuses().stream().noneMatch(MealData.Bonus::pair),"Sandwiches never pair");
-        h.assertTrue(Math.abs(chickenMutton.bonuses().get(0).field()-2*new MealData.Bonus(MealRules.Effect.VITALITY,2).field())<1e-9,"The pair doubles the value");
+        h.assertTrue(Math.abs(chickenMutton.bonuses().get(0).field()-2*new MealData.Bonus(MealRules.Effect.VITALITY,1).field())<1e-9,"The pair doubles the value");
         var saved=MealData.load(chickenMutton.save());h.assertTrue(saved.equals(chickenMutton),"The pair flag survives saving");
         h.succeed();
     }

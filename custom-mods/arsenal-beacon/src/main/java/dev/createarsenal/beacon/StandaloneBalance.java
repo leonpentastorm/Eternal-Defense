@@ -64,7 +64,7 @@ public final class StandaloneBalance {
         var all=new ArrayList<WeaponPlatform.Entry>();Map<String,Integer> ammoAges=new HashMap<>();Map<String,Double> ammoPower=new HashMap<>();
         try{
             for(var entry:indexes("Gun")){
-                var id=entry.getKey();var index=entry.getValue();var output=indexed("Gun",id,1);int a=gunAge(id.toString(),index);double power=power(index);
+                var id=entry.getKey();var index=entry.getValue();var output=indexed("Gun",id,1);if(!WeaponCompatibility.craftable(output))continue;int a=gunAge(id.toString(),index);double power=power(index);
                 var data=call(index,"getGunData");Object ammo=call(data,"getAmmoId");if(ammo!=null){ammoAges.merge(ammo.toString(),a,Math::min);ammoPower.merge(ammo.toString(),power,Math::max);}
                 var fireModes=(List<?>)call(data,"getFireModeSet");if(!fireModes.isEmpty())output.getOrCreateTag().putString("GunFireMode",fireModes.get(0).toString());
                 output.getOrCreateTag().putInt("GunCurrentAmmoCount",0);
@@ -75,7 +75,7 @@ public final class StandaloneBalance {
                 all.add(entry("attachment",id,indexed("Attachment",id,1),age("attachment",id.toString(),a),new Generic(1,"")));}
             // Native consumable/throwable and magazine items need their original tags; preserve them.
             for(var recipe:level.getRecipeManager().getRecipes())if(recipe.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe")){
-                var output=(ItemStack)call(recipe,"getOutput");if(output.isEmpty()||!WeaponPlatform.validIndex(output))continue;
+                var output=(ItemStack)call(recipe,"getOutput");if(!WeaponCompatibility.craftable(output)||output.isEmpty()||!WeaponPlatform.validIndex(output))continue;
                 if(MagazineBridge.isMagazine(output)){all.add(new WeaponPlatform.Entry(recipe.getId(),recipe,MagazineBridge.gate(output),output));continue;}
                 var n=output.getOrCreateTag();if(n.contains("GunId")||n.contains("AmmoId")||n.contains("AttachmentId"))continue;
                 all.add(new WeaponPlatform.Entry(recipe.getId(),new Generic(8,""),new WeaponPlatform.Gate(1,"supply",recipe.getId().toString(),output.getHoverName().getString()),output));

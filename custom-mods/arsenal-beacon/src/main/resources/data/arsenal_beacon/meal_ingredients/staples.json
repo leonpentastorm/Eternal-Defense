@@ -3,5 +3,8 @@
     "tag": "arsenal_beacon:meal/staples"
   },
   "staple": true,
-  "effects": {}
+  "effects": {
+    "steadiness": 1
+  },
+  "family": "grain"
 }

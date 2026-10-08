@@ -1,0 +1,165 @@
+{
+  "project_version": "0.0.6",
+  "date": "2026-10-08",
+  "branch": "feature/messhall-ver-5",
+  "base_commit": "73dbebf0bcff7fd8ce33ba9aa05df17fa1c87c97",
+  "network_protocol": 25,
+  "environment": {
+    "minecraft": "1.20.1",
+    "forge": "47.4.20",
+    "java": 17,
+    "tacz": "1.1.8-hotfix2",
+    "tacz_attributes": "1.4",
+    "qa_apocalypse": "1.1.4_F",
+    "qa_appleskin": "2.5.1"
+  },
+  "build": {
+    "command": "./gradlew --no-daemon --offline build releaseJars",
+    "result": "passed",
+    "editions": [
+      "pack",
+      "standalone"
+    ],
+    "log": "/workspace/.eternal-defense/v5-delivery-build.log"
+  },
+  "unit_tests": {
+    "arsenal-beacon": {
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "execution": "executed in delivery build"
+    },
+    "arsenal-gun-guide": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "execution": "Gradle up-to-date; unchanged tests not newly rerun"
+    }
+  },
+  "server": {
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v5-vzjdvl19",
+    "baseline_tests_passed": 11,
+    "additional_cases_passed": [
+      "v5vanillafoodsgiveordinarybonuses",
+      "v5legendarypairsreplacenormalandusefourdistinctfoods",
+      "v5ordinarypairsandsplitstacksrespecttier",
+      "v5serverpreparationenforcestierandhidesstewoutput",
+      "v5bowldispenserfilterspersistsanddropsonce",
+      "v5everytableupgradesitsownage",
+      "v5workshoppurchasesareatomicandbeaconbound",
+      "v5gunbuffattributesuseonemodifierandcleanup",
+      "v5recoveryshoveldealszerodamageandknocksback",
+      "v5fuelweaponscannotbecrafted",
+      "v4trapclasseswavesandpersistence",
+      "v4weaponsremaineffectiveaftertrapimmunity",
+      "v4sunlightprotectionkeepscombatfire",
+      "v4backendmodifierspreserveotherowners",
+      "v4nativereloadratetransitions",
+      "v3everyvanillafoodhasatraitandeveryeffectisreachable",
+      "v3pairbonusneedstwodifferentfoodsofonefamily",
+      "v3mealshowsasvanillaeffectsandfollowsthehomezone",
+      "v3recoveryhearthandspringystepactontheirdamage"
+    ],
+    "total_gameplay_cases_passed": 30,
+    "installed_jars_sha512": {
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "01a60d2a6fe104237bc45e43d1c55d358e0b89c1bb70a3242888527f2498e181f877fbdc2b98a173c9daabccff0fef518955408e07e892480dceea3c5a22c899",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    },
+    "native_bullet_damage": {
+      "baseline": 6.0,
+      "field": 6.4799805,
+      "home": 6.959961
+    },
+    "native_empty_reload_ms": {
+      "baseline": 2653,
+      "home": 2198,
+      "field": 2406
+    },
+    "timing_note": "One native fixture run, not a performance benchmark."
+  },
+  "restart": {
+    "result": "passed",
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v5-vzjdvl19",
+    "pot_servings": 9,
+    "remaining_field_ticks": 12345,
+    "installed_jars_sha512": {
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "01a60d2a6fe104237bc45e43d1c55d358e0b89c1bb70a3242888527f2498e181f877fbdc2b98a173c9daabccff0fef518955408e07e892480dceea3c5a22c899",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    }
+  },
+  "client": {
+    "result": "passed",
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v5-client-aqqzm8uo",
+    "dedicated_server_instance": "/workspace/.eternal-defense/test-runs/messhall-v5-ytax48h7",
+    "resolution": [
+      1280,
+      720
+    ],
+    "gui_scale": 3,
+    "gui_height": 240,
+    "phases": [
+      "mk1",
+      "mk4",
+      "bowl",
+      "beacon",
+      "gun",
+      "ammo",
+      "attachment",
+      "armor"
+    ],
+    "creative_halls": 1,
+    "appleskin_tooltip": "Native nutrition and kitchen information share one actual item tooltip.",
+    "installed_jars_sha512": {
+      "appleskin-forge-mc1.20.1-2.5.1.jar": "3176f928fb6c60d27f5edb610ca4ab0236175404eebf32797a1ec6cdd794bb294a260231579578536d03571377e43c6181adc75d8dd2c0733f17fce4f7e636b9",
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "511f425500089afffeebd272bac2b6208ee401c163342ad0964a752d5875e3f55f60d931b6fad05b3011af99bf20f5e5482fa28706152032937984e69621ca90",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    },
+    "delivery_comparison": {
+      "gameplay_client_assets_and_metadata": "identical",
+      "different_opt_in_fixture_entries": [
+        "dev/createarsenal/beacon/MessHallV2GameTests.class",
+        "dev/createarsenal/beacon/MessHallV4GameTests$Runner.class",
+        "dev/createarsenal/beacon/MessHallV4GameTests.class"
+      ]
+    }
+  },
+  "qa_only_inputs": {
+    "Apocalypse_v1.1.4_F.zip": {
+      "sha512": "4b77a9ef03cee50f4042be834ed49c6ad17ea5b834f14cd267f9098762831aa6620963fc384533ff169d5caef154a970fde01a541a0dc83b154515a7a790863f",
+      "source": "https://www.curseforge.com/minecraft/customization/tacz-apocalypse-gun-pack/files/6308196",
+      "license": "All Rights Reserved; not redistributed"
+    },
+    "appleskin-forge-mc1.20.1-2.5.1.jar": {
+      "sha512": "3176f928fb6c60d27f5edb610ca4ab0236175404eebf32797a1ec6cdd794bb294a260231579578536d03571377e43c6181adc75d8dd2c0733f17fce4f7e636b9",
+      "source": "https://modrinth.com/mod/appleskin/version/XdXDExVF",
+      "redistributed": false
+    }
+  },
+  "delivery": {
+    "jar_sha512": {
+      "pack/arsenal-beacon-0.21.0.jar": "72dcbe3f6244740b2d4482aaf0a87668e8842275ffc751bf20b6200f64aff54f61b1e5d4e795da75da7084d7965e77233b589a8ed5a932107216dcb9abbc3f2b",
+      "pack/arsenal-gun-guide-0.21.0.jar": "9b9756a75ebf7b7f0ddf0bcd947c21280262da2686fcd982764e75b72e8fdec3ae98aace82c491def92bda3319e1db0c70b5935ad825e7830813b3d0340279a1",
+      "pack/arsenal-displays-1.1.0.jar": "a5ddc69c6d1ad05e795a2391b8ae63ebb977b973bbd984e2f5426267bc895e110a4e715846a776aaaba999288dbcbfd43f43efd5ae95a38c4617dc141fef5a87",
+      "pack/tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94",
+      "standalone/arsenal-beacon-0.21.0-standalone.jar": "01a60d2a6fe104237bc45e43d1c55d358e0b89c1bb70a3242888527f2498e181f877fbdc2b98a173c9daabccff0fef518955408e07e892480dceea3c5a22c899",
+      "standalone/arsenal-gun-guide-0.21.0-standalone.jar": "b545e9e9d52fa07325606e275cf0f1b7109894613a4b34ad1b6d0d7528768d448593776eceec4ff09b25e4247b92489fbfbed2d0929e74263052d04144de13ef",
+      "standalone/arsenal-displays-1.1.0-standalone.jar": "a0146403a70dc065038b06dcf2d90beab39ec50fa36da8114dcd1b3262ef9f0c55f27976663e3265474b67296649c475baf1b41f24077ab1df6964d871cf6271",
+      "standalone/tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    },
+    "zip": "dist/Arsenal-MessHall-v5-0.0.6-test.zip",
+    "outer_zip_checksum": "dist/Arsenal-MessHall-v5-0.0.6-test.zip.sha512",
+    "backend_separate_in_both_editions": true,
+    "public_release": false
+  },
+  "remaining_playtests": [
+    "Matching full Create/KubeJS modpack runtime",
+    "Exact owner Apocalypse/jam addon versions and original N-unjam crash",
+    "Two-human co-op and long survival balance",
+    "Other food tooltip and third-party gun scripts; every native gun statistic/animation is not exhaustively calibrated"
+  ]
+}

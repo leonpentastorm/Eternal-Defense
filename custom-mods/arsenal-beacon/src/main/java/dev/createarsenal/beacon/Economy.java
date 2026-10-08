@@ -35,6 +35,24 @@ final class Economy {
     static final int[] KITCHEN_ARDENT={4,8,14},KITCHEN_PLATING={8,16,32};
     static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}
 
+    static List<WeaponPlatform.Cost> stationCosts(String kind){
+        if(kind.equals("support"))return List.of(WeaponPlatform.cost("minecraft:iron_ingot",20),WeaponPlatform.cost("minecraft:copper_ingot",12),WeaponPlatform.cost("minecraft:redstone",12),WeaponPlatform.cost("minecraft:glass",4));
+        if(kind.equals("exchange"))return List.of(WeaponPlatform.cost("minecraft:iron_ingot",12),WeaponPlatform.cost("minecraft:copper_ingot",20),WeaponPlatform.cost("minecraft:redstone",6),WeaponPlatform.cost("minecraft:glass",4));
+        if(BuildFlavor.STANDALONE)return List.of(WeaponPlatform.cost("minecraft:iron_ingot",16),WeaponPlatform.cost("minecraft:copper_ingot",16),WeaponPlatform.cost("minecraft:redstone",8));return List.of(WeaponPlatform.cost("minecraft:iron_ingot",16),WeaponPlatform.cost(kind.equals("ammo")?"minecraft:copper_ingot":"minecraft:gold_ingot",16),WeaponPlatform.cost("create:andesite_alloy",8));}
+
+    static List<WeaponPlatform.Cost> fabrication(String id){
+        return switch(id){
+            case "gun_platform","ammo_platform","attachment_platform","armor_platform"->WeaponPlatform.purchaseCosts(id.replace("_platform",""));
+            case "support_platform"->WeaponPlatform.purchaseCosts("support");
+            case "exchange_shop"->WeaponPlatform.purchaseCosts("exchange");
+            case "support_cannon"->List.of(WeaponPlatform.cost("arsenal_beacon:ardent_energy",12));
+            case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
+            case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
+            case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
+            default->List.of();
+        };
+    }
+
     // ---- cannon upgrades --------------------------------------------------------------------------------------------------
     /** Pack: the part that pays for each upgrade and how many per level. */
     private static Supplier<Item> packPart(CannonUpgrades.Upgrade u){

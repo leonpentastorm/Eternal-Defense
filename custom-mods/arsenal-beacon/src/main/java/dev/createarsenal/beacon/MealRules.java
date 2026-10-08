@@ -12,15 +12,39 @@ final class MealRules {
         VITALITY("vitality",4,false,false),FORTITUDE("fortitude",2,false,false),STEADINESS("steadiness",.05,true,false),MOBILITY("mobility",.04,true,true),
         FIREPOWER("firepower",.08,true,false),QUICK_HANDS("quick_hands",.10,true,false),BRAWLER("brawler",.20,true,false),HEAVY_HAND("heavy_hand",.15,true,false),DEMOLITION("demolition",.10,true,false),
         MIGHT("might",.08,true,true),AGILITY("agility",.08,true,true),FORTUNE("fortune",1,false,false),RECOVERY("recovery",1,false,false),
-        HEARTH("hearth",.10,true,false),SPRINGY("springy",.12,true,false),SWIM("swim",.10,true,true);
+        HEARTH("hearth",.10,true,false),SPRINGY("springy",.12,true,false),SWIM("swim",.10,true,true),
+        RECOIL_CONTROL("recoil_control",.10,true,false),FOCUS("focus",.10,true,false),SNAP_AIM("snap_aim",.10,true,false),
+        FAST_DRAW("fast_draw",.10,true,false),DEAD_EYE("dead_eye",.08,true,false),GUN_MOBILITY("gun_mobility",.08,true,false),
+        IMPACT("impact",.25,false,false),RAPID_FIRE("rapid_fire",.05,true,false),SCOPED_FOCUS("scoped_focus",.15,true,false),HIP_FOCUS("hip_focus",.15,true,false);
         final String id;final double amount;final boolean percent,multiplier;
         Effect(String id,double amount,boolean percent,boolean multiplier){this.id=id;this.amount=amount;this.percent=percent;this.multiplier=multiplier;}
         static Effect of(String id){for(var e:values())if(e.id.equals(id))return e;return null;}
         /** Effects whose value is a share that must stay below one (damage taken). */
-        double cap(){return this==HEARTH?.8:this==SPRINGY?.9:Double.MAX_VALUE;}
+        boolean gun(){return this==FIREPOWER||this==QUICK_HANDS||this==BRAWLER||this==HEAVY_HAND||this==DEMOLITION||ordinal()>=RECOIL_CONTROL.ordinal();}
+        boolean reduction(){return this==RECOIL_CONTROL;}
+        double cap(){return this==HEARTH||this==RECOIL_CONTROL?.8:this==SPRINGY?.9:Double.MAX_VALUE;}
     }
-    /** Two different foods of one family feeding the same effect in a stew double that effect. */
+    /** Mk IV stews can double an effect with distinct foods; legendary effects need two from each group. */
     static final int PAIR_MULTIPLIER=2;
+    record Mix(String first,String second,Effect effect){}
+    /** Ordered matching: each group participates in at most one legendary mix. */
+    static final List<Mix> MIXES=List.of(
+        new Mix("protein","grain",Effect.FIREPOWER),new Mix("fruit","grain",Effect.QUICK_HANDS),
+        new Mix("protein","fungi",Effect.BRAWLER),new Mix("protein","vegetables",Effect.HEAVY_HAND),
+        new Mix("fish","fungi",Effect.DEMOLITION),new Mix("vegetables","grain",Effect.RECOIL_CONTROL),
+        new Mix("fish","vegetables",Effect.FOCUS),new Mix("fish","fruit",Effect.SNAP_AIM),
+        new Mix("fruit","fungi",Effect.FAST_DRAW),new Mix("protein","fish",Effect.DEAD_EYE),
+        new Mix("protein","fruit",Effect.GUN_MOBILITY),new Mix("fish","grain",Effect.IMPACT),
+        new Mix("vegetables","fruit",Effect.RAPID_FIRE),new Mix("vegetables","fungi",Effect.SCOPED_FOCUS),
+        new Mix("grain","fungi",Effect.HIP_FOCUS));
+    static List<Mix> mixes(Set<String> groups){
+        var used=new HashSet<String>();var out=new ArrayList<Mix>();
+        for(var mix:MIXES)if(groups.contains(mix.first)&&groups.contains(mix.second)&&!used.contains(mix.first)&&!used.contains(mix.second)){
+            used.add(mix.first);used.add(mix.second);out.add(mix);
+        }
+        return List.copyOf(out);
+    }
+    static boolean doubles(boolean stew,int mk,int first,int second,boolean legendary){return stew&&mk>=4&&first>=2&&(!legendary||second>=2);}
     /** Health restored by Recovery, in ticks between pulses. */
     static final int RECOVERY_PERIOD=100;
     record Tier(int pots,int servings,int ingredients){}

@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"24-standalone":"24-pack",s->s.equals(BuildFlavor.STANDALONE?"24-standalone":"24-pack"),s->s.equals(BuildFlavor.STANDALONE?"24-standalone":"24-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"25-standalone":"25-pack",s->s.equals(BuildFlavor.STANDALONE?"25-standalone":"25-pack"),s->s.equals(BuildFlavor.STANDALONE?"25-standalone":"25-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -71,7 +71,7 @@ final class BeaconNetwork {
             int count=0;var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,part));
             for(var stack:p.getInventory().items)if(stack.is(item))count+=stack.getCount();n.putInt("stock_"+part,count);
         }
-        return n;
+        n.put("fabrications",WorkshopFabrication.state(p));return n;
     }
     static void open(ServerPlayer p,String screen,String token){sendState(p,screen,token,"");}
     static void sendState(ServerPlayer p,String screen,String token,String message){

@@ -21,7 +21,7 @@ Tune these in `config/arsenal-beacon-common.toml` (`baseDropChance`, `lootingBon
 
 ### Exchange Shop
 
-A placeable trader's booth (3D model, right-click to open), sold in the weapon table's Workshop tab. It only works **inside the zone of a standing Defense Beacon**. Its menu has two tabs:
+A placeable trader's booth (3D model, right-click to open), sold in the beacon's Workshop Fabrication tab. It only works **inside the zone of a standing Defense Beacon**. Its menu has two tabs:
 **Sell** (hand in materials, receive Ardent Energy) and **Buy** (pay Ardent Energy, receive supplies). Buying always costs more than selling, so trading in circles never pays (a unit test checks the defaults).
 Offers come from **`config/arsenal-beacon-exchange.txt`** (`[sell]` and `[buy]` sections, `item_id [x count] = energy`), created on first use and re-read every time a shop opens.
 An older single-list file is kept as `.old.txt` and replaced. Bad lines are skipped and logged.
@@ -40,7 +40,7 @@ All support gear can only be placed inside the zone of an active Defense Beacon,
 moved for free by right-clicking it with the **Beacon Recovery Shovel** (a platform keeps its Mk level and grid contents).
 The platform and the cannon can stand **anywhere inside the zone**, however far apart: design your base around them. Each of them shows a brass **plate with its owner's name** on the back
 (the cabinet's back for the platform, the south edge of the cannon's base; the plate text is drawn by a block-entity renderer, the owner name travels in the block entity's update tag).
-The **Support Platform and the Exchange Shop are also sold in the Weapon Platform's Workshop tab** (iron, copper, redstone and glass; `WeaponPlatform.purchaseCosts`).
+The **Support Platform and the Exchange Shop are also sold in the beacon's Workshop Fabrication tab** (iron, copper, redstone and glass; `Economy.stationCosts`).
 
 | Piece | What it does |
 | --- | --- |

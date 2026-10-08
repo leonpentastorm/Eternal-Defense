@@ -88,6 +88,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
         super.render(g,mx,my,partial);
         if(!feedback.getString().isEmpty()&&net.minecraft.Util.getMillis()-shownAt<4000)Ui.text(g,font,feedback,leftPos+14,topPos+H-12,Ui.CYAN,W-28);
         renderTooltip(g,mx,my);
+        if(upgradeButton.visible&&upgradeButton.isHovered()&&SupportRules.upgradeCost(menu.mk)>=0)Ui.materialTooltip(g,font,List.of(Ui.t("support.tab.upgrade")),Ui.singleCost(new ItemStack(ArsenalBeacon.PLATING.get()),SupportRules.upgradeCost(menu.mk),Economy.have(minecraft.player,ArsenalBeacon.PLATING.get())),mx,my);
     }
     @Override public boolean mouseClicked(double mx,double my,int button){
         if(tab==1&&buyButton.isMouseOver(mx,my)&&buyButton.active&&button==0){BeaconNetwork.CHANNEL.sendToServer(new SupportShop.Buy(selected));return true;}

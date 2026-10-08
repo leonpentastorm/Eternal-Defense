@@ -80,14 +80,23 @@ public final class MessHallV4GameTests {
             RaidAdaptation.begin(f.campaign);close(h,hit(mob,f.level.damageSources().playerAttack(f.player)),20,"Player attacks remain weapons");h.assertTrue(f.campaign.trapFirstWave.isEmpty(),"Weapon hits never teach resistance");
         }finally{clean(f);}h.succeed();
     }
-    @GameTest(template="empty3x3x3",timeoutTicks=140)
+    @GameTest(template="empty3x3x3",timeoutTicks=400)
     public static void v4SunlightProtectionKeepsCombatFire(GameTestHelper h){
         var f=fixture(h);f.level.addNewPlayer(f.player);long day=f.level.getDayTime();f.level.setDayTime(6000);f.level.setWeatherParameters(6000,0,false,false);
         var raid=EntityType.ZOMBIE.create(f.level);var ambient=EntityType.ZOMBIE.create(f.level);
-        for(var zombie:List.of(raid,ambient)){zombie.setNoAi(true);zombie.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000);zombie.setHealth(1000);zombie.setItemSlot(EquipmentSlot.HEAD,ItemStack.EMPTY);zombie.moveTo(f.root.east(zombie==raid?2:5).getCenter());f.level.addFreshEntity(zombie);}
-        raid.getPersistentData().putBoolean("arsenalRaider",true);
-        h.runAtTickTime(40,()->{h.assertTrue(ambient.isOnFire(),"Control zombie ignites in daylight; ticks="+ambient.tickCount+", sky="+f.level.canSeeSky(ambient.blockPosition())+", day="+f.level.isDay()+", brightness="+ambient.getLightLevelDependentMagicValue());h.assertTrue(!raid.isOnFire(),"Raider is protected only from daylight ignition");raid.setSecondsOnFire(5);});
-        h.runAtTickTime(90,()->{try{h.assertTrue(raid.isOnFire()&&raid.getHealth()<1000,"Combat fire remains lit and damages the raider over real server ticks");}finally{raid.discard();ambient.discard();f.level.removePlayerImmediately(f.player,Entity.RemovalReason.DISCARDED);f.level.setDayTime(day);clean(f);}h.succeed();});
+        for(var zombie:List.of(raid,ambient)){zombie.setNoAi(true);zombie.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000);zombie.setHealth(1000);zombie.setItemSlot(EquipmentSlot.HEAD,ItemStack.EMPTY);zombie.moveTo(f.root.east(zombie==raid?2:5).getCenter());f.level.addFreshEntity(zombie);zombie.getRandom().setSeed(5184);}
+        raid.getPersistentData().putBoolean("arsenalRaider",true);boolean[] daylightObserved={false},cleaned={false};int[] combatStart={0};
+        Runnable cleanup=()->{if(cleaned[0])return;cleaned[0]=true;raid.discard();ambient.discard();f.level.removePlayerImmediately(f.player,Entity.RemovalReason.DISCARDED);f.level.setDayTime(day);clean(f);};
+        // Vanilla ignition is probabilistic and entity ticks can begin after GameTest ticks.
+        h.succeedWhen(()->{
+            if(!daylightObserved[0]){
+                h.assertTrue(ambient.isOnFire(),"Control zombie must be observed burning in daylight; entity ticks="+ambient.tickCount);
+                h.assertTrue(!raid.isOnFire(),"Raider is protected only from daylight ignition");daylightObserved[0]=true;combatStart[0]=raid.tickCount;raid.setSecondsOnFire(5);
+            }
+            h.assertTrue(raid.tickCount-combatStart[0]>=25,"Wait for actual combat-fire entity ticks");
+            h.assertTrue(raid.isOnFire()&&raid.getHealth()<1000,"Combat fire remains lit and damages the raider over real server ticks");cleanup.run();
+        });
+        h.runAtTickTime(399,cleanup);
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v4BackendModifiersPreserveOtherOwners(GameTestHelper h){

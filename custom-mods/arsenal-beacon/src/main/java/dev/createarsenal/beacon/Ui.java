@@ -54,6 +54,20 @@ final class Ui {
     }
     static int lines(Font font,Component text,int width){return font.split(text,Math.max(8,width)).size();}
 
+    record MaterialTip(net.minecraft.nbt.ListTag costs) implements net.minecraft.world.inventory.tooltip.TooltipComponent {}
+    static final class MaterialRenderer implements net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent {
+        final net.minecraft.nbt.ListTag costs;
+        MaterialRenderer(MaterialTip tip){costs=tip.costs();}
+        private Component name(int i){var row=costs.getCompound(i);var item=net.minecraft.world.item.ItemStack.of(row.getCompound("item"));return Component.literal(row.getInt("count")+" × "+(row.getString("label").isEmpty()?item.getHoverName().getString():row.getString("label"))+" ("+row.getInt("have")+")");}
+        @Override public int getHeight(){return costs.size()*20;}
+        @Override public int getWidth(Font font){int width=0;for(int i=0;i<costs.size();i++)width=Math.max(width,font.width(name(i))+22);return width;}
+        @Override public void renderImage(Font font,int x,int y,GuiGraphics g){for(int i=0;i<costs.size();i++){var row=costs.getCompound(i);g.renderItem(net.minecraft.world.item.ItemStack.of(row.getCompound("item")),x,y+i*20);g.drawString(font,name(i),x+22,y+i*20+4,row.getInt("have")>=row.getInt("count")?INK:ORANGE,false);}}
+    }
+    static net.minecraft.nbt.ListTag singleCost(net.minecraft.world.item.ItemStack item,int count,int have){var rows=new net.minecraft.nbt.ListTag();var row=new net.minecraft.nbt.CompoundTag();row.put("item",item.copyWithCount(1).save(new net.minecraft.nbt.CompoundTag()));row.putInt("count",count);row.putInt("have",have);rows.add(row);return rows;}
+    static void materialTooltip(GuiGraphics g,Font font,List<Component> heading,net.minecraft.nbt.ListTag costs,int mx,int my){
+        g.renderTooltip(font,heading.isEmpty()?List.of(t("platform.materials")):heading,java.util.Optional.of(new MaterialTip(costs)),mx,my);
+    }
+
     // ---- surfaces -----------------------------------------------------------------------------
     static void panel(GuiGraphics g,int x,int y,int w,int h){
         g.fill(x-1,y-1,x+w+1,y+h+1,SHADOW);

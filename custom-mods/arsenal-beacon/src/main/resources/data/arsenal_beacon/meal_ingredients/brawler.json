@@ -4,6 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "brawler": 1
-  }
+    "vitality": 1
+  },
+  "family": "protein"
 }

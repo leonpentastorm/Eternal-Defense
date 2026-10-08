@@ -10,14 +10,14 @@ import java.util.*;
 
 /**
  * Responsive two-column browser; bounded server pages and only selected-recipe costs.
- * Layout maths, requests and key handling are unchanged by the redesign; only presentation and text moved.
+ * Recipe costs and current-table upgrades share this browser; starter installations are fabricated at the beacon.
  */
 final class PlatformScreen extends BeaconClient.PanelScreen {
     private static CompoundTag data=new CompoundTag();
     private final List<BeaconClient.Hover> hoverItems=new ArrayList<>();
     private final List<Ui.UiButton> rows=new ArrayList<>();
-    private EditBox search,pageJump;private Ui.UiButton craft,upgrade,coins,previous,next,ageButton,armoryButton,turretButton,suppliesButton,typeButton,recipeTab,workshopTab;
-    private int selected,costScroll,ageFilter,workshopPage,dragPage;private boolean upgrades,navigating,dragging;
+    private EditBox search,pageJump;private Ui.UiButton craft,upgrade,coins,previous,next,ageButton,armoryButton,turretButton,suppliesButton,typeButton,recipeTab,upgradeTab;
+    private int selected,costScroll,ageFilter,upgradePage,dragPage;private boolean upgrades,navigating,dragging;
     private String weaponType="all";private WeaponBrowser.Layout layout;
     private ListTag paintedRows=new ListTag();private int paintedStart;
     private static final int[] AGE_COLORS=Ui.AGE;
@@ -27,7 +27,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     @Override Component subtitle(){String kind=data.getString("kind");return Ui.has("platform.subtitle."+kind)?Ui.t("platform.subtitle."+kind):null;}
     static void receive(WeaponPlatform.State packet){
         data=packet.data();var mc=Minecraft.getInstance();
-        if(packet.open()){mc.setScreen(data.getString("notice").isEmpty()?new PlatformScreen():new NoticeScreen(data));return;}
+        if(packet.open()){mc.setScreen(new PlatformScreen());return;}
         PlatformScreen screen=mc.screen instanceof PlatformScreen s?s:mc.screen instanceof TypeScreen s?s.parent:null;
         if(screen!=null){screen.message=packet.message();screen.ageFilter=data.getInt("ageFilter");screen.weaponType=armor()?ArmorPlatform.normalize(data.getString("weaponType")):WeaponBrowser.normalize(data.getString("weaponType"));screen.navigating=false;screen.selected=Math.min(screen.selected,Math.max(0,screen.shown().size()-1));}
     }
@@ -92,40 +92,31 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         button(Ui.t("platform.go"),left+104,top+ph-34,26,Ui.Look.NORMAL,b->jump());
         int right=left+leftWidth+22,rw=pw-leftWidth-36;
         recipeTab=button(Ui.t("platform.tab.recipe"),right,top+64,(rw-4)/2,Ui.Look.TAB,b->{upgrades=false;selected=0;costScroll=0;});
-        workshopTab=button(data.getString("kind").equals("gun")?Ui.t("platform.tab.workshop"):Ui.t("platform.tab.info"),right+rw/2+2,top+64,(rw-4)/2,Ui.Look.TAB,b->{upgrades=true;selected=0;workshopPage=0;costScroll=0;});
+        upgradeTab=button(Ui.t("platform.tab.upgrade"),right+rw/2+2,top+64,(rw-4)/2,Ui.Look.TAB,b->{upgrades=true;selected=0;upgradePage=0;costScroll=0;});
         craft=button(Component.empty(),right,top+ph-55,data.getString("kind").equals("ammo")?(rw-4)/2:rw,Ui.Look.PRIMARY,b->{var recipe=chosen();if(recipe!=null)request("craft",recipe.getString("recipe"),0);});
         if(data.getString("kind").equals("ammo"))coins=button(Component.empty(),right+rw/2+2,top+ph-55,(rw-4)/2,Ui.Look.NORMAL,b->{var recipe=chosen();if(recipe!=null)request("buyAmmoCoins",recipe.getString("recipe"),0);});
         upgrade=button(Component.empty(),right,top+ph-55,rw,Ui.Look.PRIMARY,b->{var row=chosen();if(row!=null)request(row.getString("action"),"",row.getLong("pos"));});
-        selected=Math.min(selected,layout.capacity()-1);workshopPage=WeaponBrowser.page(workshopPage,management().size(),layout.capacity());
+        selected=Math.min(selected,layout.capacity()-1);upgradePage=WeaponBrowser.page(upgradePage,management().size(),layout.capacity());
         if(data.getInt("pageSize")!=layout.capacity())browse((data.getInt("page")*Math.max(1,data.getInt("pageSize")))/layout.capacity());
     }
     private int rowHeight(){return layout.rowHeight();}
     private void request(String action,String recipe,long target){WeaponPlatform.request(action,search.getValue(),data.getInt("page"),recipe,ageFilter,target,weaponType,layout.capacity());}
     private void browse(int page){selected=0;costScroll=0;navigating=true;WeaponPlatform.request("browse",search.getValue(),Math.max(0,page),"",ageFilter,0,weaponType,layout.capacity());}
-    private int page(){return upgrades?workshopPage:data.getInt("page");}
+    private int page(){return upgrades?upgradePage:data.getInt("page");}
     private int total(){return upgrades?management().size():data.getInt("total");}
     private int lastPage(){return WeaponBrowser.lastPage(total(),layout.capacity());}
-    private void navigate(int page){int target=WeaponBrowser.page(page,total(),layout.capacity());if(upgrades){workshopPage=target;selected=costScroll=0;}else if(!navigating&&target!=data.getInt("page"))browse(target);}
+    private void navigate(int page){int target=WeaponBrowser.page(page,total(),layout.capacity());if(upgrades){upgradePage=target;selected=costScroll=0;}else if(!navigating&&target!=data.getInt("page"))browse(target);}
     private void jump(){try{navigate(Integer.parseInt(pageJump.getValue())-1);}catch(NumberFormatException ignored){}pageJump.setFocused(false);}
     private static boolean armor(){return data.getString("kind").equals("armor");}
     private boolean weapons(){return data.getString("kind").equals("gun");}
     private ListTag management(){
-        var list=new ListTag();if(!weapons())return list;
-        list.add(managementRow(Ui.plain("platform.manage.upgrade_weapon"),data.getInt("age"),"upgrade",0,data.getList("upgrades",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.GUN_PLATFORM.get())));
-        list.add(managementRow(Ui.plain("platform.manage.buy_ammo"),0,"buyAmmo",0,data.getList("buyAmmo",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.AMMO_PLATFORM.get())));
-        list.add(managementRow(Ui.plain("platform.manage.buy_attachment"),0,"buyAttachment",0,data.getList("buyAttachment",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.ATTACHMENT_PLATFORM.get())));
-        list.add(managementRow(Ui.plain("platform.manage.buy_armor"),0,"buyArmor",0,data.getList("buyArmor",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.ARMOR_PLATFORM.get())));
-        list.add(managementRow(Ui.plain("platform.manage.buy_support"),0,"buySupport",0,data.getList("buySupport",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get())));
-        list.add(managementRow(Ui.plain("platform.manage.buy_exchange"),0,"buyExchange",0,data.getList("buyExchange",Tag.TAG_COMPOUND),new ItemStack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get())));
-        for(var child:data.getList("children",Tag.TAG_COMPOUND)){
-            var row=(CompoundTag)child;var pos=net.minecraft.core.BlockPos.of(row.getLong("pos"));String kind=row.getString("kind");
-            var entry=managementRow(Ui.has("platform.manage.upgrade."+kind)?Ui.plain("platform.manage.upgrade."+kind):Ui.plain("platform.manage.upgrade_other",kind),row.getInt("age"),"upgradeChild",row.getLong("pos"),row.getList("upgrades",Tag.TAG_COMPOUND),new ItemStack(ArmorPlatform.station(kind).get()));
-            entry.putString("location",pos.getX()+", "+pos.getY()+", "+pos.getZ());list.add(entry);
-        }return list;
+        var list=new ListTag();var kind=data.getString("kind");
+        list.add(managementRow(Ui.plain("platform.upgrade_this"),data.getInt("age"),"upgrade",0,data.getList("upgrades",Tag.TAG_COMPOUND),new ItemStack(ArmorPlatform.station(kind).get())));
+        return list;
     }
     private CompoundTag managementRow(String label,int age,String action,long pos,ListTag costs,ItemStack output){var row=new CompoundTag();row.putString("label",label);row.putInt("age",age);row.putString("action",action);row.putLong("pos",pos);row.put("costs",costs);row.put("output",output.save(new CompoundTag()));return row;}
     private ListTag shown(){return upgrades?management():data.getList("recipes",Tag.TAG_COMPOUND);}
-    private CompoundTag chosen(){var rows=shown();int index=selected+(upgrades?workshopPage*layout.capacity():0);return index>=0&&index<rows.size()?rows.getCompound(index):null;}
+    private CompoundTag chosen(){var rows=shown();int index=selected+(upgrades?upgradePage*layout.capacity():0);return index>=0&&index<rows.size()?rows.getCompound(index):null;}
     @Override public void onClose(){WeaponPlatform.request("close","",0,"");super.onClose();}
     @Override public boolean keyPressed(int key,int scan,int modifiers){if(key==257&&pageJump.isFocused()){jump();return true;}if(key==257&&search.isFocused()){browse(0);return true;}if(!search.isFocused()&&!pageJump.isFocused()){if(key==266||key==267||key==268||key==269){navigate(key==268?0:key==269?lastPage():page()+(key==266?-1:1));return true;}if(PlatformKeys.matches(key,scan)){browse(data.getInt("page"));return true;}}return super.keyPressed(key,scan,modifiers);}
     @Override public boolean mouseScrolled(double mx,double my,double amount){if(mx>=left+14&&mx<left+14+layout.listWidth()&&my>=top+layout.listTop()&&my<top+ph-38){navigate(page()+(amount>0?-1:1));return true;}if(mx>=left+layout.listWidth()+22){costScroll=Math.max(0,costScroll-(int)amount);return true;}return super.mouseScrolled(mx,my,amount);}
@@ -159,8 +150,8 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         for(int i=0;i<4;i++){
             int value=Math.max(0,Math.min(5,data.getInt(KINDS[i]+"Age"))),x=left+14+i*badgeWidth,w=badgeWidth-3,y=top+33,accent=AGE_COLORS[value];
             boolean here=data.getString("kind").equals(KINDS[i]);
-            g.fill(x,y,x+w,y+28,here?Ui.CYAN:Ui.SLATE_HI);g.fill(x+1,y+1,x+w-1,y+27,Ui.SLATE);g.fill(x+1,y+1,x+w-1,y+3,accent);
-            Ui.text(g,font,Ui.t("platform.station."+KINDS[i]),x+5,y+6,Ui.MUTED,w-(w>=118?Ui.pipsWidth(5)+14:10));
+            if(here){g.fill(x-2,y-3,x+w+2,y+31,Ui.CYAN);g.fill(x-1,y-2,x+w+1,y+30,Ui.CYAN_FILL);}g.fill(x,y,x+w,y+28,here?Ui.CYAN:Ui.SLATE_HI);g.fill(x+1,y+1,x+w-1,y+27,Ui.SLATE);g.fill(x+1,y+1,x+w-1,y+3,accent);
+            Ui.text(g,font,Ui.t("platform.station."+KINDS[i]),x+5,y+6,here?Ui.INK:Ui.MUTED,w-(w>=118?Ui.pipsWidth(5)+14:10));
             if(w>=118)Ui.pips(g,x+w-Ui.pipsWidth(5)-5,y+7,value,5,accent);
             Ui.text(g,font,value==0?Ui.t("platform.no_table"):Ui.t("platform.age_line",value,ageName(value)),x+5,y+17,value==0?Ui.DISABLED:accent,w-10);
         }
@@ -176,8 +167,8 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
             armoryButton.accent=AGE_COLORS[7];turretButton.accent=AGE_COLORS[8];suppliesButton.accent=AGE_COLORS[9];
         }
         if(typeButton!=null){typeButton.visible=!upgrades;typeButton.active=data.getBoolean("typeFilterAvailable")&&!navigating;typeButton.setMessage(data.getBoolean("typeFilterAvailable")?Ui.t("platform.type.button",typeLabel(weaponType)):Ui.t("platform.type.unavailable"));}
-        recipeTab.selected=!upgrades;workshopTab.selected=upgrades;
-        var recipes=shown();int start=upgrades?workshopPage*layout.capacity():0,total=upgrades?recipes.size():data.getInt("total"),page=upgrades?workshopPage:data.getInt("page");
+        recipeTab.selected=!upgrades;upgradeTab.selected=upgrades;
+        var recipes=shown();int start=upgrades?upgradePage*layout.capacity():0,total=upgrades?recipes.size():data.getInt("total"),page=upgrades?upgradePage:data.getInt("page");
         paintedRows=recipes;paintedStart=start;
         for(int i=0;i<rows.size();i++){var row=rows.get(i);row.visible=start+i<recipes.size();row.active=row.visible;row.selected=row.visible&&i==selected;if(row.visible&&start+i<recipes.size()){var r=recipes.getCompound(start+i);row.accent=AGE_COLORS[r.getBoolean("special")?Math.max(7,ageFilter):Math.max(0,Math.min(5,r.getInt("age")))];}}
         previous.active=page>0&&(upgrades||!navigating);next.active=page<lastPage()&&(upgrades||!navigating);
@@ -189,7 +180,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         CompoundTag chosen=chosen();int targetAge=chosen==null?0:chosen.getInt("age");boolean buying=upgrades&&targetAge==0;boolean baseGear=chosen!=null&&(chosen.getString("action").equals("buySupport")||chosen.getString("action").equals("buyExchange"));
         ListTag costs=chosen==null?new ListTag():chosen.getList("costs",Tag.TAG_COMPOUND);
         boolean missing=false;if(!data.getBoolean("creative"))for(var c:costs)if(((CompoundTag)c).getInt("have")<((CompoundTag)c).getInt("count"))missing=true;
-        upgrade.setMessage(buying?Ui.t("platform.buy_station"):Ui.t("platform.upgrade_age"));upgrade.active=upgrades&&weapons()&&chosen!=null&&(buying||targetAge<5&&(targetAge!=2||data.getBoolean("netherVisited")));upgrade.warning=missing&&upgrade.active;
+        upgrade.setMessage(buying?Ui.t("platform.buy_station"):Ui.t("platform.upgrade_age"));upgrade.active=upgrades&&chosen!=null&&(buying||targetAge<5&&(targetAge!=2||data.getBoolean("netherVisited")));upgrade.warning=missing&&upgrade.active;
         craft.active=!navigating&&chosen!=null&&chosen.getBoolean("unlocked")&&!chosen.getBoolean("invalid");craft.warning=missing&&craft.active;
         if(coins!=null){coins.visible=!upgrades;coins.active=craft.active&&(data.getBoolean("creative")||chosen.getInt("coinCost")<=data.getInt("ammoCoins"));coins.setMessage(data.getBoolean("creative")?Ui.t("platform.buy_free"):chosen==null?Ui.t("platform.buy_coins"):Ui.t("platform.buy_cost",chosen.getInt("coinCost")));coins.warning=chosen!=null&&!data.getBoolean("creative")&&chosen.getInt("coinCost")>data.getInt("ammoCoins")&&craft.active;}
         craft.setMessage(chosen==null?Ui.t("platform.craft"):data.getBoolean("creative")?Ui.t("platform.craft_free"):missing?Ui.t("platform.craft_missing"):data.getString("kind").equals("ammo")?Ui.t("platform.craft_materials"):Ui.t("platform.craft_items",Math.max(1,chosen.getInt("outputCount"))));
@@ -222,7 +213,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         Ui.field(g,left+14,top+64,lw-58,20,search.isFocused());Ui.field(g,left+68,top+ph-34,32,20,pageJump.isFocused());
         super.render(g,mx,my,partial);
         footerLine(g,top+ph-12);
-        var hover=itemAt(mx,my);if(hover!=null)g.renderComponentTooltip(font,List.of(hover.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
+        var hover=itemAt(mx,my);if(upgradeTab.isHovered()||upgrade.visible&&upgrade.isHovered())Ui.materialTooltip(g,font,List.of(Ui.t("platform.upgrade_this")),upgradeTab.isHovered()?data.getList("upgrades",Tag.TAG_COMPOUND):costs,mx,my);else if(hover!=null)g.renderComponentTooltip(font,List.of(hover.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
         else if(layout.compact()&&ageButton.visible&&ageButton.isMouseOver(mx,my)&&special)g.renderComponentTooltip(font,List.of(browsing),mx,my);
         else if(pageJump.isMouseOver(mx,my)||overScrollbar(mx,my))g.renderComponentTooltip(font,List.of(Ui.t("platform.page_tip",(dragging?dragPage+1:page+1),lastPage()+1),Ui.t("platform.page_tip.scroll"),Ui.t("platform.page_tip.keys")),mx,my);
         else if(!upgrades)for(int i=0;i<rows.size();i++){Ui.UiButton row=rows.get(i);if(row.visible&&Ui.inside(mx,my,row.getX(),row.getY(),row.getWidth(),row.getHeight())){

@@ -28,14 +28,21 @@ for mk in range(1, 5):
     block(name)  # geometry: artist model (models/block/mess_hall_mkN.json), never regenerated
 
 block('cook_pot')
+block('bowl_dispenser')
+model('bowl_dispenser', {'frame': 'minecraft:block/deepslate_tiles', 'metal': 'minecraft:block/iron_block', 'glass': 'minecraft:block/glass', 'wood': 'minecraft:block/dark_oak_planks'}, [
+    cube([2, 0, 2], [14, 3, 14], 'frame'), cube([3, 3, 3], [13, 30, 13], 'metal'),
+    cube([2, 28, 2], [14, 32, 14], 'frame'), cube([4, 13, 2], [12, 26, 3], 'glass'),
+    cube([4, 5, 1], [12, 6, 5], 'wood'), cube([4, 6, 1], [5, 10, 5], 'wood'), cube([11, 6, 1], [12, 10, 5], 'wood'),
+    *[cube([5, y, 2], [11, y+1, 3], 'wood') for y in range(15, 26, 2)],
+])
 # cook_pot_stew geometry: artist model, never regenerated
 # A small bread-and-filling ration model uses vanilla textures until painted item art arrives.
 write(ASSETS / 'models/item/prepared_sandwich.json', {'textures': {'particle': 'minecraft:block/white_terracotta', 'bread': 'minecraft:block/white_terracotta', 'filling': 'minecraft:block/green_terracotta'}, 'elements': [cube([2, 4, 3], [14, 7, 13], 'bread'), cube([2, 7, 3], [14, 9, 13], 'filling'), cube([2, 9, 3], [14, 12, 13], 'bread')], 'display': {'gui': {'rotation': [30, 225, 0], 'scale': [.85, .85, .85]}, 'thirdperson_righthand': {'scale': [.5, .5, .5]}, 'firstperson_righthand': {'rotation': [0, 45, 0], 'scale': [.6, .6, .6]}}})
 
 families = {
     # Sandwich foundations
-    'staples': (['bread', 'baked_potato', 'wheat'], True, {}),
-    # Everyday foods: two different foods of one family in a stew double that family's effect
+    'staples': (['bread', 'baked_potato', 'wheat'], True, {'steadiness': 1}),
+    # Ordinary Minecraft bonuses. Category doubling is gated by Mk IV on the server.
     'protein': (['cooked_chicken', 'cooked_mutton', 'cooked_rabbit', 'rabbit_stew'], False, {'vitality': 1}),
     'eggs': (['egg'], False, {'vitality': 1}),
     'fish': (['cooked_cod', 'cooked_salmon'], False, {'mobility': 1}),
@@ -43,12 +50,12 @@ families = {
     'dairy': (['milk_bucket'], False, {'fortitude': 2}),
     'mushrooms': (['brown_mushroom', 'red_mushroom', 'mushroom_stew'], False, {'steadiness': 1}),
     'sweet': (['apple', 'sweet_berries', 'melon_slice', 'sugar'], False, {'mobility': 1}),
-    # Gun foods
-    'firepower': (['cooked_beef'], False, {'firepower': 1}),
-    'quick_hands': (['honey_bottle'], False, {'quick_hands': 1}),
-    'brawler': (['cooked_porkchop'], False, {'brawler': 1}),
-    'heavy_hand': (['golden_carrot'], False, {'heavy_hand': 1}),
-    'demolition': (['pufferfish'], False, {'demolition': 1}),
+    # Former direct gun foods now provide ordinary bonuses.
+    'firepower': (['cooked_beef'], False, {'might': 1}),
+    'quick_hands': (['honey_bottle'], False, {'recovery': 1}),
+    'brawler': (['cooked_porkchop'], False, {'vitality': 1}),
+    'heavy_hand': (['golden_carrot'], False, {'fortune': 1}),
+    'demolition': (['pufferfish'], False, {'swim': 1}),
     # Round three: the rest of the vanilla food list
     'raw_meat': (['beef', 'chicken', 'mutton', 'porkchop', 'rabbit'], False, {'might': 1}),
     'raw_fish': (['cod', 'salmon', 'tropical_fish'], False, {'swim': 1}),
@@ -60,9 +67,17 @@ families = {
     'grim': (['rotten_flesh', 'spider_eye', 'poisonous_potato'], False, {'hearth': 1}),
     'chorus': (['chorus_fruit'], False, {'springy': 2}),
 }
+groups = {
+    'staples': 'grain', 'treats': 'grain',
+    'protein': 'protein', 'eggs': 'protein', 'dairy': 'protein', 'firepower': 'protein', 'brawler': 'protein', 'raw_meat': 'protein',
+    'fish': 'fish', 'raw_fish': 'fish', 'demolition': 'fish',
+    'vegetables': 'vegetables', 'heavy_hand': 'vegetables',
+    'sweet': 'fruit', 'quick_hands': 'fruit', 'lucky': 'fruit', 'golden': 'fruit', 'enchanted': 'fruit', 'chorus': 'fruit',
+    'mushrooms': 'fungi', 'grim': 'fungi', 'mystery': 'fungi',
+}
 for name, (items, staple, effects) in families.items():
     write(DATA / f'tags/items/meal/{name}.json', {'replace': False, 'values': ['minecraft:' + i for i in items]})
-    write(DATA / f'meal_ingredients/{name}.json', {'ingredient': {'tag': 'arsenal_beacon:meal/' + name}, 'staple': staple, 'effects': effects})
+    write(DATA / f'meal_ingredients/{name}.json', {'ingredient': {'tag': 'arsenal_beacon:meal/' + name}, 'staple': staple, 'effects': effects, 'family': groups[name]})
 
 recipes = {
     'mess_hall_mk1': {'type': 'minecraft:crafting_shaped', 'pattern': ['PFP', 'IBI', 'PPP'], 'key': {'P': {'tag': 'minecraft:planks'}, 'F': {'item': 'minecraft:furnace'}, 'I': {'item': 'minecraft:iron_ingot'}, 'B': {'item': 'minecraft:barrel'}}, 'result': {'item': 'arsenal_beacon:mess_hall_mk1'}},
@@ -75,7 +90,7 @@ for name, recipe in recipes.items():
 for name in ('mineable/pickaxe',):
     path = RES / f'data/minecraft/tags/blocks/{name}.json'
     value = json.loads(path.read_text())
-    for block_name in ['cook_pot', *[f'mess_hall_mk{i}' for i in range(1, 5)]]:
+    for block_name in ['cook_pot', 'bowl_dispenser', *[f'mess_hall_mk{i}' for i in range(1, 5)]]:
         entry = 'arsenal_beacon:' + block_name
         if entry not in value['values']:
             value['values'].append(entry)
@@ -119,11 +134,7 @@ strings = {
     'meal.duration': '%s minutes of field time', 'meal.home_hint': 'At home: double strength; field timer freezes.',
     'meal.preview_field': 'FIELD: %s', 'meal.preview_home': 'HOME: %s',
     'meal.timer': 'Field time: %s', 'meal.home': 'HOME ENHANCEMENT | 2× | FROZEN', 'meal.field': 'FIELD | Normal strength',
-    'guide.kitchen.title': 'Mess Hall',
-    'guide.kitchen.body': 'Craft a Mess Hall Mk I and a Cook Pot, then place both inside the beacon zone. Right-click the hall and insert at least two ingredients. Sandwich makes portable rations; Stew stocks a selected nearby empty pot. Bring a normal bowl and use a filled pot to eat a communal serving. Your empty bowl is reusable.',
-    'guide.kitchen.detail': 'Sandwiches use one staple and one or two fillings, with 1–2 effects. Stew supports up to 3 effects and needs two different ingredient types. Mk I–IV batches consume 4/7/10/12 food items to make 4/8/12/16 servings. More items fund the batch; only different ingredients score effects. Split stacks do not improve strength. Containers return to the cook.\n\nChicken, mutton, rabbit and eggs add health; vegetables and milk add armor; mushrooms add knockback resistance; cooked fish and sweets add movement speed. Beef gives Firepower (gun damage); honey gives Quick Hands (reload speed); pork gives Brawler (gun bash damage); golden carrot gives Heavy Hand (gun bash knockback); pufferfish gives Demolition (grenade/rocket radius).\n\nMeals last 30 minutes of field time. Inside a valid beacon zone their strength doubles and the timer freezes; returning home freezes the remaining time without refreshing it. Logout pauses the timer; dimension travel preserves it; death clears the meal. New meals replace old ones. Pot links reach 8 blocks. Mk I–IV support 1/2/3/4 pots. Upgrade through the hall menu; stored food and links are retained.',
-    'guide.kitchen.detail.pack': 'Mess Hall upgrades cost 8, 16 and 32 Reinforced Plating.',
-    'guide.kitchen.detail.standalone': 'Mess Hall upgrades cost 4, 8 and 14 Ardent Energy.',
+
 }
 lang.update({'gui.arsenal_beacon.' + key: text for key, text in strings.items()})
 write(lang_path, lang)

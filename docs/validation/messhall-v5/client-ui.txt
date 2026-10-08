@@ -1,0 +1,9 @@
+[14:28:40] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS mk1
+[14:28:45] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS mk4
+[14:28:51] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS bowl
+[14:29:07] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS beacon
+[14:29:15] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS gun
+[14:29:22] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS ammo
+[14:29:27] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS attachment
+[14:29:32] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_UI_SCREEN_PASS armor
+[14:29:35] [Render thread/INFO] [de.cr.be.MealV5ClientSmoke$KitchenV5ScreenObserver/]: V5_CLIENT_UI_PASS screens=8 creativeHalls=1

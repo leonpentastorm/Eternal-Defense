@@ -1,6 +1,28 @@
 # Handoff: where the project stands
 
-Last updated for **Mess Hall v4**, project test build **0.0.5**, on **`feature/messhall-ver-4`** based on v3 commit `2ecd1276d58e430dda1ef6a012c82beccc9d57f4`. The branch was created from the verified remote v3 head without discarding local work. The owner authorized the test bundle and a commit/push to this feature branch. No PR or public release is part of this round. `dev`/`main` are unchanged. Active integration branch remains `dev`; the owner selects feature branches for this work.
+Last updated for **Mess Hall v5**, project **0.0.6**, branch **`feature/messhall-ver-5`**, based on v4 `73dbebf0bcff7fd8ce33ba9aa05df17fa1c87c97`. The owner authorized implementation, builds, tests, a bundle containing newly required addon JARs, and committing/pushing this feature branch. Do not merge/push `dev` or `main`; no PR, tag or public release requested. Start a fresh world for each feature until 1.0.
+
+Current design: `docs/MESS-HALL-V5-IMPLEMENTATION.md`; actual validation: `docs/MESS-HALL-V5-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.6.json`. Protocol **25-pack / 25-standalone**. JAR versions remain 0.21.0 / 1.1.0. Required TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4; the backend JAR is supplied separately in both edition folders.
+
+## V5 decisions
+
+* Vanilla food traits give ordinary bonuses; fifteen legendary two-group recipes replace both groups' ordinary bonuses. Six slots and three stew effects; Mk IV stew doubles only with two distinct foods per relevant group (four for legendary). No pips below Mk IV; exactly two pips at Mk IV. Sandwiches remain single strength.
+* Animated colored links and shared buff icons identify the server-selected recipe contributors. Hover shows both groups and resulting buff; four contributors are linked for doubled legendary recipes.
+* Normal Forge ingredient tooltip receives kitchen information, avoiding the old second overlapping tooltip. Stew hides/disables sandwich output. Menu height 238 fits a 240-pixel GUI.
+* Every equipment table upgrades itself; retain four nearby Age indicators and enlarge the current table frame. Beacon Workshop Fabrication owns starter purchases, including hall/pot/bowl dispenser. All upgrade cost hovers use material icon/name rows. Prices live in `Economy`.
+* Bowl Dispenser is two tall with one 64-bowl slot; use dispenses one, crouch-use stores. Recovery shovel deals zero damage despite boosts and has intrinsic Knockback II. Creative contents are grouped and show one generic Mess Hall starter.
+* Apocalypse author pack 1.1.4_F contains `bf1:ef46` and `bf1:wex` FUEL guns. Since safe compatibility with the owner's exact jam addon was not established, exclude all indexed FUEL guns from catalogues, Supply imports and final craft requests; explicitly reject `bf1:ef46`. Existing third-party guns retain native behavior. The reported unjam crash was not reproduced. The All Rights Reserved pack is local QA only and is not bundled.
+* Field Guide regular pages cover v3–v5 food and v4 sunlight/raid adaptation. Kitchen generation no longer rewrites guide text: `en_us.json` owns it. This corrects the old v3 regeneration regression and missing v4 guide update.
+
+## Build and QA
+
+Source `/workspace/.eternal-defense/activate.sh` in this managed workspace, then from the repository root run `./gradlew --no-daemon --offline build releaseJars` with JDK 17. Dependencies must already be cached. Real-runtime scripts are `tools/qa/run-v5-server.py` and `tools/qa/run-v5-client.py`; flags stay disabled in ordinary gameplay. The build passes 74 beacon unit tests (unchanged seven Guide tests are Gradle up-to-date). All 30 server gameplay cases, restart persistence and all eight real-client menu phases with AppleSkin at a 240-pixel GUI pass; current full regression results, hashes and exact commands are in the testing document.
+
+Remaining owner playtests: the matching complete Create/KubeJS modpack, exact Gun Durability/jam addon versions, two-human co-op, long balance sessions and other tooltip/gunpack mods. The standalone runtime is the automated test target. No legacy kitchen-footprint migration is needed under the fresh-world policy.
+
+## Previous handoff (historical v4 and earlier)
+
+Historical handoff for **Mess Hall v4**, project test build **0.0.5**, on **`feature/messhall-ver-4`** based on v3 commit `2ecd1276d58e430dda1ef6a012c82beccc9d57f4`. The branch was created from the verified remote v3 head without discarding local work. The owner authorized the test bundle and a commit/push to this feature branch. No PR or public release is part of this round. `dev`/`main` are unchanged. Active integration branch remains `dev`; the owner selects feature branches for this work.
 
 **Current authorization (2026-10-08):** the owner has now requested builds, tests, fixes and a documented test bundle, superseding the attachment's earlier static-only restriction. Include newly required mod JARs separately in test bundles; v4 requires TaCZ Attributes 1.4. The owner also authorized committing and pushing to `feature/messhall-ver-4`; no merge to `dev`/`main` or public release is requested. Current results are in `docs/MESS-HALL-V4-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.5.json`; earlier v2/v3 results remain historical. Until final 1.0 the owner starts a fresh world for every feature; legacy kitchen footprint migration is not implemented in this round. Existing meal save formats remain intact.
 The design is described in `docs/GAME-DESIGN-DOCUMENT.md` (keep it updated). Rules and conventions are in `/CLAUDE.md`; this file is the state of the work.

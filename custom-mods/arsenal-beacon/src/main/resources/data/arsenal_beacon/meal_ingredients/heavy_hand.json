@@ -4,6 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "heavy_hand": 1
-  }
+    "fortune": 1
+  },
+  "family": "vegetables"
 }

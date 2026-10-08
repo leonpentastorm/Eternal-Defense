@@ -2,9 +2,9 @@
 
 Read `docs/HANDOFF.md` first: it says where the project stands, how to build and test, what is unverified and what to do next.
 
-## Current owner override — Mess Hall v4
+## Current owner override — Mess Hall v5
 
-Work and push this feature on `feature/messhall-ver-4`, as explicitly requested by the owner. Do not merge or push these changes to `dev` or `main`. Build/test execution and the feature-branch push are authorized; include the newly required backend JAR in the test ZIP. See `docs/HANDOFF.md` for validation and remaining playtests.
+Work and push this feature on `feature/messhall-ver-5`, as explicitly requested by the owner. Do not merge or push these changes to `dev` or `main`. Build/test execution and the feature-branch push are authorized; include the newly required backend JAR in the test ZIP. See `docs/HANDOFF.md` for validation and remaining playtests.
 
 ## Rules of this project
 
@@ -13,7 +13,7 @@ Work and push this feature on `feature/messhall-ver-4`, as explicitly requested 
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and `Claude-Session: <the session link of that session>`.
 * Build with JDK 17: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew --no-daemon --offline build releaseJars` (unit tests: `:arsenal-beacon:test`).
 * Write down only what was actually tested; list what was not. Display artwork is All Rights Reserved by its creator.
-* Test bundles must include separate JARs for newly added required mods, with versions, source links, checksums and applicable license notices. For Mess Hall v4 this includes leopoko's TaCZ Attributes 1.4. Do not shade the addon into the beacon JAR. If redistribution is unavailable, state that before packaging and provide the author's download instead.
+* Test bundles must include separate JARs for newly added required mods, with versions, source links, checksums and applicable license notices. For Mess Hall v5 this includes leopoko's TaCZ Attributes 1.4. Do not shade the addon into the beacon JAR. If redistribution is unavailable, state that before packaging and provide the author's download instead.
 * Two editions come from one source tree: `pack` (Create, KubeJS) and `standalone` (no Create). The flavor is `/arsenal-build.properties` in the jar (`BuildFlavor.STANDALONE`); every price lives in `Economy`.
 * Guide text keys: `key`, `key.pack`, `key.standalone`; in lang files `%` must be written `%%`. `LangKeysTest` and `SupportTest` fail when keys or quoted numbers drift.
 * Bump the network protocol (`BeaconNetwork`) whenever a packet changes, and say so in the test-build README.

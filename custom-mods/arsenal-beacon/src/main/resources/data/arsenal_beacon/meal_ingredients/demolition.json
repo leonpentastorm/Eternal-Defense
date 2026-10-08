@@ -4,6 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "demolition": 1
-  }
+    "swim": 1
+  },
+  "family": "fish"
 }

@@ -5,7 +5,7 @@ import java.util.function.Function;
 /** Field-guide page assembly without any Minecraft types, so both editions can be unit tested. */
 final class GuideText {
     private GuideText(){}
-    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","energy","support","kitchen","coop","reference"};
+    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","energy","support","kitchen","mixes","coop","reference"};
     static final String REFERENCE="reference";
     /**
      * Shared text first, then the edition-specific part, so each flavor keeps only its own instructions.

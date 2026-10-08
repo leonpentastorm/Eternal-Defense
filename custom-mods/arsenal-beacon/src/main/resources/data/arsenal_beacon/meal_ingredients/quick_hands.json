@@ -4,6 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "quick_hands": 1
-  }
+    "recovery": 1
+  },
+  "family": "fruit"
 }

@@ -85,5 +85,10 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         footerLine(g,top+ph-30);
         g.renderItem(energy,left+12,top+ph-18);
         Ui.text(g,font,data.getBoolean("creative")?Ui.t("exchange.creative"):Ui.t("exchange.balance",data.getInt("energy")),left+32,top+ph-14,Ui.CYAN,pw-50);
+        for(int i=0;i<ups.size();i++)if(ups.get(i).isHovered()){
+            var up=CannonUpgrades.Upgrade.values()[i];var price=Economy.cannon(up,level(i));
+            if(price!=null)Ui.materialTooltip(g,font,List.of(Ui.t("cannon.up."+up.id),Ui.t("cannon.up."+up.id+".desc")),Ui.singleCost(new ItemStack(price.item()),price.amount(),Economy.have(Minecraft.getInstance().player,price.item())),mx,my);
+        }
+
     }
 }

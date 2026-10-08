@@ -39,7 +39,7 @@ final class MealRulesTest {
     }
     @Test void everyEffectHasAStableIdAndNewEffectsAreAppended(){
         var ids=new HashSet<String>();for(var e:MealRules.Effect.values()){assertTrue(ids.add(e.id));assertSame(e,MealRules.Effect.of(e.id));assertTrue(e.amount>0);}
-        assertEquals(16,MealRules.Effect.values().length);
+        assertEquals(26,MealRules.Effect.values().length);
         for(int i=0;i<9;i++)assertEquals(new String[]{"vitality","fortitude","steadiness","mobility","firepower","quick_hands","brawler","heavy_hand","demolition"}[i],MealRules.Effect.values()[i].id,"saved meals keep their effect ids and order");
     }
     @Test void pairedFoodsDoubleTheBonusAndSurviveTheVanillaEffectCodec(){
@@ -48,6 +48,20 @@ final class MealRulesTest {
         for(var e:MealRules.Effect.values())for(int strength=1;strength<=3;strength++)for(boolean p:new boolean[]{false,true}){
             var bonus=new MealData.Bonus(e,strength,p);var back=MealData.Bonus.ofAmplifier(e,bonus.amplifier());assertEquals(bonus,back,"amplifier "+bonus.amplifier()+" of "+e);
         }
+    }
+    @Test void everyPairOfSixGroupsHasExactlyOneLegendaryRecipe(){
+        var groups=List.of("protein","fish","vegetables","fruit","grain","fungi");var effects=new HashSet<MealRules.Effect>();
+        for(int i=0;i<6;i++)for(int j=i+1;j<6;j++){
+            var mixes=MealRules.mixes(Set.of(groups.get(i),groups.get(j)));assertEquals(1,mixes.size());assertTrue(effects.add(mixes.get(0).effect()));assertTrue(mixes.get(0).effect().gun());
+        }
+        assertEquals(15,effects.size());assertEquals(3,MealRules.mixes(new HashSet<>(groups)).size());
+        var used=new HashSet<String>();for(var mix:MealRules.mixes(new HashSet<>(groups))){assertTrue(used.add(mix.first()));assertTrue(used.add(mix.second()));}
+    }
+    @Test void doublesUnlockOnlyForMkFourStewAndFourFoodsForLegendary(){
+        for(int mk=1;mk<4;mk++){assertFalse(MealRules.doubles(true,mk,2,2,true));assertFalse(MealRules.doubles(true,mk,2,0,false));}
+        assertTrue(MealRules.doubles(true,4,2,2,true));assertTrue(MealRules.doubles(true,4,2,0,false));
+        assertFalse(MealRules.doubles(true,4,2,1,true));assertFalse(MealRules.doubles(true,4,1,2,true));assertFalse(MealRules.doubles(false,4,2,2,true));
+        assertEquals("−10%",new MealData.Bonus(MealRules.Effect.RECOIL_CONTROL,1).amountText(false));
     }
     @Test void damageProtectionsNeverReachFullImmunity(){
         var hearth=new MealData.Bonus(MealRules.Effect.HEARTH,3,true);var springy=new MealData.Bonus(MealRules.Effect.SPRINGY,3,true);

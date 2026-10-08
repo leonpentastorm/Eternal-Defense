@@ -31,32 +31,32 @@ public final class MessHallV2GameTests {
     }
     private static void clean(Fixture f){PlayerMeals.clear(f.player);f.player.closeContainer();UpgradeGameTests.release(f.level,f.floor);CampaignData.get(f.level).phase="unplaced";}
     private static MealData meal(MealRules.Effect... effects){return new MealData(true,Arrays.stream(effects).map(e->new MealData.Bonus(e,1)).toList(),MealRules.FIELD_TICKS);}
-    private static void gunFood(Fixture f,int count){f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.COOKED_BEEF,count));f.hall.ingredients.setItem(1,new ItemStack(Items.HONEY_BOTTLE,count));f.hall.ingredients.setItem(2,new ItemStack(Items.PUFFERFISH,count));}
+    private static void batchFood(Fixture f,int count){f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.COOKED_BEEF,count));f.hall.ingredients.setItem(1,new ItemStack(Items.HONEY_BOTTLE,count));f.hall.ingredients.setItem(2,new ItemStack(Items.PUFFERFISH,count));}
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v2TierBatchCostsContainersAndComposition(GameTestHelper h){
         MealData composition=null;
         for(int mk=1;mk<=4;mk++){var f=fixture(h,mk,mk);try{
-            gunFood(f,16);var preview=IngredientTraits.compose(f.hall.ingredients,true);h.assertTrue(preview.meal()!=null,"Bundled vanilla gun foods compose a meal");if(composition==null)composition=preview.meal();else h.assertTrue(composition.equals(preview.meal()),"Tier and quantity never increase composition strength");
-            h.assertTrue(preview.meal().bonuses().stream().map(MealData.Bonus::effect).toList().equals(List.of(MealRules.Effect.FIREPOWER,MealRules.Effect.QUICK_HANDS,MealRules.Effect.DEMOLITION)),"Firepower + Quick Hands + Demolition is obtainable");
+            batchFood(f,16);var preview=IngredientTraits.compose(f.hall.ingredients,true);h.assertTrue(preview.meal()!=null,"Bundled vanilla foods compose a meal");if(composition==null)composition=preview.meal();else h.assertTrue(composition.equals(preview.meal()),"Tier and quantity never increase composition strength");
+            h.assertTrue(preview.meal().bonuses().stream().map(MealData.Bonus::effect).toList().equals(List.of(MealRules.Effect.SNAP_AIM,MealRules.Effect.MIGHT)),"Recipe priority pairs Fish + Fruit; unpaired Protein supplies Might: "+preview.meal().bonuses());
             var menu=new MessHallMenu(mk,f.player.getInventory(),f.hall.ingredients,f.root,mk,f.hall);menu.clickMenuButton(f.player,1);var batch=IngredientTraits.batch(f.hall.ingredients,preview,true,mk);
             h.assertTrue(menu.prepare()&&f.pot.servings==4*mk,"Tier creates its configured servings");int left=0;for(int i=0;i<6;i++)left+=f.hall.ingredients.getItem(i).getCount();h.assertTrue(left==48-MealRules.tier(mk).ingredients(),"Exact 4/7/10/12 batch ingredient cost");
             h.assertTrue(f.player.getInventory().countItem(Items.GLASS_BOTTLE)==batch.spent()[1],"Every consumed honey bottle returns a container");
-            gunFood(f,1);h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(composition),"Stack size does not change strength");
+            batchFood(f,1);h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(composition),"Stack size does not change strength");
         }finally{clean(f);}}
         h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v2FailedAndCompetingCooksDoNotConsumeFood(GameTestHelper h){
         var f=fixture(h,4,5);try{
-            gunFood(f,1);var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,4,f.hall);menu.clickMenuButton(f.player,1);var before=f.hall.saveWithoutMetadata();
+            batchFood(f,1);var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,4,f.hall);menu.clickMenuButton(f.player,1);var before=f.hall.saveWithoutMetadata();
             h.assertTrue(!menu.prepare()&&before.equals(f.hall.saveWithoutMetadata())&&f.pot.empty(),"Insufficient food leaves all inputs and pot unchanged");
-            gunFood(f,4);var other=UpgradeGameTests.player(h,"v2-competing-cook");other.setPos(f.player.position());var second=new MessHallMenu(2,other.getInventory(),f.hall.ingredients,f.root,4,f.hall);second.clickMenuButton(other,1);
+            batchFood(f,4);var other=UpgradeGameTests.player(h,"v2-competing-cook");other.setPos(f.player.position());var second=new MessHallMenu(2,other.getInventory(),f.hall.ingredients,f.root,4,f.hall);second.clickMenuButton(other,1);
             h.assertTrue(menu.prepare()&&!second.prepare()&&f.pot.servings==16,"Two cooks serialize the last exact batch");
-            gunFood(f,1);f.hall.ingredients.setItem(3,new ItemStack(Items.COOKED_BEEF,16));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(f.pot.stew),"Duplicate slots do not increase scores");
+            batchFood(f,1);f.hall.ingredients.setItem(3,new ItemStack(Items.COOKED_BEEF,16));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(f.pot.stew),"Duplicate slots do not increase scores");
             f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.COOKED_BEEF,32));f.hall.ingredients.setItem(1,new ItemStack(Items.COOKED_BEEF,32));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal()==null,"Split stacks are not two ingredient types");
             f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.BREAD,64));f.hall.ingredients.setItem(1,new ItemStack(Items.COOKED_BEEF,64));f.hall.ingredients.setItem(2,new ItemStack(Items.HONEY_BOTTLE,16));menu.clickMenuButton(f.player,0);
             h.assertTrue(menu.prepare()&&f.hall.ingredients.getItem(0).getCount()==63&&f.hall.ingredients.getItem(1).getCount()==63&&f.hall.ingredients.getItem(2).getCount()==15&&f.hall.ingredients.getItem(6).getCount()==1,"One sandwich consumes one staple and two fillings at every tier");
-            for(var entry:Map.of(Items.COOKED_PORKCHOP,MealRules.Effect.BRAWLER,Items.GOLDEN_CARROT,MealRules.Effect.HEAVY_HAND).entrySet()){f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.BREAD));f.hall.ingredients.setItem(1,new ItemStack(entry.getKey()));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,false).meal().bonuses().get(0).effect()==entry.getValue(),"All five effects have vanilla sources");}
+            for(var entry:Map.of(Items.COOKED_PORKCHOP,MealRules.Effect.FIREPOWER,Items.GOLDEN_CARROT,MealRules.Effect.RECOIL_CONTROL).entrySet()){f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.BREAD));f.hall.ingredients.setItem(1,new ItemStack(entry.getKey()));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,false).meal().bonuses().get(0).effect()==entry.getValue(),"Two-group recipes replace direct ingredient gun bonuses");}
         }finally{clean(f);}h.succeed();
     }
     private static ItemStack gun(String id)throws Exception{

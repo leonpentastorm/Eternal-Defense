@@ -6,5 +6,6 @@
   "effects": {
     "recovery": 3,
     "fortune": 1
-  }
+  },
+  "family": "fruit"
 }

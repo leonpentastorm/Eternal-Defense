@@ -30,19 +30,44 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     /** Every effect any trait of this stack feeds (for the slot icons of the screen). */
     static EnumSet<MealRules.Effect> effectsOf(ItemStack stack){var out=EnumSet.noneOf(MealRules.Effect.class);if(!stack.isEmpty())for(var t:traits)if(t.ingredient.test(stack))out.addAll(t.effects.keySet());return out;}
     record Preview(MealData meal,int occupied,boolean staple,String problem){}
-    static Preview compose(Container ingredients,boolean stew){
-        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);boolean staple=false;var typeScores=new HashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();var families=new EnumMap<MealRules.Effect,Map<String,Set<net.minecraft.world.item.Item>>>(MealRules.Effect.class);
-        for(int i=0;i<6;i++){var stack=ingredients.getItem(i);if(stack.isEmpty())continue;boolean valid=false;
-            // Validate every stack; overlaps and duplicate slots merge by maximum for each item type.
-            var slotScores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
-            for(var trait:traits)if(trait.ingredient.test(stack)){valid=true;staple|=trait.staple;trait.effects.forEach((e,w)->{slotScores.merge(e,w,Math::max);families.computeIfAbsent(e,k->new HashMap<>()).computeIfAbsent(trait.family,k->new HashSet<>()).add(stack.getItem());});}
-            if(!valid)return new Preview(null,typeScores.size(),staple,"ingredient");var merged=typeScores.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));slotScores.forEach((e,w)->merged.merge(e,w,Math::max));
+    static Preview compose(Container ingredients,boolean stew){return compose(ingredients,stew,1);}
+    static String groupOf(ItemStack stack){return traits.stream().filter(t->t.ingredient.test(stack)).map(Trait::family).findFirst().orElse("");}
+    static Preview compose(Container ingredients,boolean stew,int mk){
+        var foods=new LinkedHashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
+        var groups=new HashMap<String,Set<net.minecraft.world.item.Item>>();boolean staple=false;
+        for(int i=0;i<6;i++){
+            var stack=ingredients.getItem(i);if(stack.isEmpty())continue;
+            var matches=traits.stream().filter(t->t.ingredient.test(stack)).toList();
+            if(matches.isEmpty())return new Preview(null,foods.size(),staple,"ingredient");
+            var scores=foods.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));
+            // One canonical group per item prevents overlapping datapack tags from using a food twice.
+            groups.computeIfAbsent(matches.get(0).family,k->new HashSet<>()).add(stack.getItem());
+            for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->scores.merge(e,w,Math::max));}
         }
-        int occupied=typeScores.size();typeScores.values().forEach(type->type.forEach((e,w)->scores.merge(e,w,Integer::sum)));
-        var selected=MealRules.select(scores,stew);
-        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":!stew&&!staple?"staple":selected.isEmpty()?"effects":"";
-        var bonuses=selected.stream().map(e->new MealData.Bonus(e,Math.min(3,scores.get(e)),stew&&families.get(e).values().stream().anyMatch(items->items.size()>=2))).toList();
-        return new Preview(problem.isEmpty()?new MealData(stew,bonuses,MealRules.FIELD_TICKS):null,occupied,staple,problem);
+        var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<net.minecraft.world.item.Item>();
+        for(var mix:MealRules.mixes(groups.keySet())){
+            var first=groups.get(mix.first());var second=groups.get(mix.second());used.addAll(first);used.addAll(second);
+            bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+        }
+        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
+        foods.forEach((item,values)->{if(!used.contains(item))values.forEach((e,w)->scores.merge(e,w,Integer::sum));});
+        for(var e:MealRules.select(scores,stew))if(bonuses.stream().noneMatch(b->b.effect()==e)){
+            boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(item->!used.contains(item)&&foods.get(item).containsKey(e)).count()>=2);
+            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
+        }
+        int occupied=foods.size(),limit=stew?3:2;
+        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":!stew&&!staple?"staple":bonuses.isEmpty()?"effects":"";
+        return new Preview(problem.isEmpty()?new MealData(stew,bonuses.stream().limit(limit).toList(),MealRules.FIELD_TICKS):null,occupied,staple,problem);
+    }
+    /** All distinct contributors, grouped by the actual selected legendary effect. */
+    record Link(MealRules.Mix mix,int[] slots,boolean doubled){}
+    static List<Link> legendaryLinks(Container ingredients,MealData meal){
+        if(meal==null)return List.of();var byGroup=new HashMap<String,List<Integer>>();var seen=new HashSet<net.minecraft.world.item.Item>();
+        for(int i=0;i<6;i++){var stack=ingredients.getItem(i);if(!stack.isEmpty()&&seen.add(stack.getItem()))byGroup.computeIfAbsent(groupOf(stack),key->new ArrayList<>()).add(i);}
+        var out=new ArrayList<Link>();for(var bonus:meal.bonuses())for(var mix:MealRules.MIXES)if(bonus.effect()==mix.effect()&&byGroup.containsKey(mix.first())&&byGroup.containsKey(mix.second())){
+            var slots=new ArrayList<>(byGroup.get(mix.first()));slots.addAll(byGroup.get(mix.second()));out.add(new Link(mix,slots.stream().mapToInt(Integer::intValue).toArray(),bonus.pair()));
+        }
+        return List.copyOf(out);
     }
     record Batch(int required,int available,int[] spent,String problem){}
     static Batch batch(Container ingredients,Preview preview,boolean stew,int mk){
