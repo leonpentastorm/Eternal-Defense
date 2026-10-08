@@ -29,6 +29,8 @@ public final class CampaignData extends SavedData {
     public boolean victoryRestoration;
     public final Set<UUID> participants=new HashSet<>();
     public final Set<UUID> raiders=new HashSet<>();
+    /** First damaging wave per trap type; resistance grows only in following waves of this raid. */
+    final Map<RaidAdaptation.Kind,Integer> trapFirstWave=new EnumMap<>(RaidAdaptation.Kind.class);
     public final Map<Long,BlockState> snapshot=new HashMap<>();
     public final Map<Long,Damage> damage=new LinkedHashMap<>();
     public final Map<String,Integer> baseCounts=new HashMap<>();
@@ -54,7 +56,7 @@ public final class CampaignData extends SavedData {
         core=logistics=defense=restoration=reconnaissance=vertical=victories=rewardTier=raidTier=score=wave=deaths=0;respiteTicks=0;respitePurchases=nextRaidBonus=0;introRaid=false;
         wavePlayers=1;waveVeteran=0;preparationTicks=raidTicks=waveTicks=0;spawnRemaining=spawnCooldown=breachClock=scanCursor=0;
         health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();rewardBox.clearContent();raidType=nextRaidType="normal";participants.clear();raiders.clear();baseCounts.clear();
-        setDirty();
+        trapFirstWave.clear();setDirty();
     }
     public void finishDecommission() {
         if(!damage.isEmpty()||!destroyedTurrets.isEmpty())throw new IllegalStateException("Pending repairs must remain journaled");
@@ -74,6 +76,7 @@ public final class CampaignData extends SavedData {
         d.preparationTicks=n.getLong("preparationTicks");d.raidTicks=n.getLong("raidTicks");d.spawnRemaining=n.getInt("spawnRemaining");d.spawnCooldown=n.getInt("spawnCooldown");d.scanCursor=n.getInt("scanCursor");d.showBoundary=n.getBoolean("showBoundary");d.showBeam=!n.contains("showBeam")||n.getBoolean("showBeam");d.showHurtbox=!n.contains("showHurtbox")||n.getBoolean("showHurtbox");
         for(Tag t:n.getList("participants",Tag.TAG_STRING))d.participants.add(UUID.fromString(t.getAsString()));
         for(Tag t:n.getList("raiders",Tag.TAG_STRING))d.raiders.add(UUID.fromString(t.getAsString()));
+        var adaptations=n.getCompound("TrapFirstWave");for(var key:adaptations.getAllKeys()){var kind=RaidAdaptation.Kind.of(key);int first=adaptations.getInt(key);if(kind!=null&&first>=1&&first<=d.wave)d.trapFirstWave.put(kind,first);}
         ListTag palette=n.getList("palette",Tag.TAG_COMPOUND);List<BlockState> states=new ArrayList<>();
         for(Tag t:palette)states.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(),(CompoundTag)t));
         long[] positions=n.getLongArray("positions");int[] indexes=n.getIntArray("states");
@@ -100,6 +103,7 @@ public final class CampaignData extends SavedData {
         n.putLong("preparationTicks",preparationTicks);n.putLong("raidTicks",raidTicks);n.putInt("spawnRemaining",spawnRemaining);n.putInt("spawnCooldown",spawnCooldown);n.putInt("scanCursor",scanCursor);n.putBoolean("showBoundary",showBoundary);n.putBoolean("showBeam",showBeam);n.putBoolean("showHurtbox",showHurtbox);
         ListTag ps=new ListTag();participants.forEach(u->ps.add(StringTag.valueOf(u.toString())));n.put("participants",ps);
         ListTag rs=new ListTag();raiders.forEach(u->rs.add(StringTag.valueOf(u.toString())));n.put("raiders",rs);
+        var adaptations=new CompoundTag();trapFirstWave.forEach((kind,first)->adaptations.putInt(kind.id,first));n.put("TrapFirstWave",adaptations);
         Map<BlockState,Integer> paletteMap=new HashMap<>();ListTag palette=new ListTag();long[] positions=new long[snapshot.size()];int[] states=new int[snapshot.size()];int cursor=0;
         for(var entry:snapshot.entrySet()) {
             int index=paletteMap.computeIfAbsent(entry.getValue(),s->{int k=palette.size();palette.add(NbtUtils.writeBlockState(s));return k;});

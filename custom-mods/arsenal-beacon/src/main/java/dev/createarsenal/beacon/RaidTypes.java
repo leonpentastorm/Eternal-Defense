@@ -125,16 +125,12 @@ final class RaidTypes {
         @SubscribeEvent public void tick(LivingEvent.LivingTickEvent e){
             var mob=e.getEntity();
             if(mob.level().isClientSide)return;
-            if(mob instanceof Mob raider&&raider.getPersistentData().getBoolean("arsenalRaider")){sunproof(raider);if(glider(raider))glide(raider);}
+            if(mob instanceof Mob raider&&raider.getPersistentData().getBoolean("arsenalRaider")&&glider(raider))glide(raider);
             if(!mob.getPersistentData().getBoolean("arsenalChute"))return;
             if(mob.onGround()||mob.isInWater()){mob.getPersistentData().remove("arsenalChute");mob.removeEffect(MobEffects.SLOW_FALLING);return;}
             var v=mob.getDeltaMovement();
             if(v.y<-FALL_SPEED)mob.setDeltaMovement(v.x,-FALL_SPEED,v.z);
             mob.fallDistance=0;
-        }
-        /** Raiders do not burn in the sun (zombies, skeletons, phantoms): daylight fire under open sky is put out at once. */
-        static void sunproof(Mob mob){
-            if(mob.isOnFire()&&mob.level().isDay()&&!mob.isInLava()&&mob.level().canSeeSky(mob.blockPosition()))mob.clearFire();
         }
         /** A vex or phantom flies straight at the closest defender within reach, otherwise at the beacon's objective, and hits it when it arrives. */
         static void glide(Mob mob){

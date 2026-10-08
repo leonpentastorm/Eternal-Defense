@@ -25,15 +25,19 @@ final class PlayerMeals extends SavedData {
     }
     @Override public CompoundTag save(CompoundTag n){var list=new ListTag();players.forEach((id,s)->{var c=new CompoundTag();c.putUUID("Player",id);c.put("Meal",s.meal.save());c.putInt("Remaining",s.remaining);list.add(c);});n.put("Players",list);return n;}
     static Attribute attribute(MealRules.Effect e){return switch(e){case VITALITY->Attributes.MAX_HEALTH;case FORTITUDE->Attributes.ARMOR;case STEADINESS->Attributes.KNOCKBACK_RESISTANCE;case MOBILITY->Attributes.MOVEMENT_SPEED;
-        case MIGHT->Attributes.ATTACK_DAMAGE;case AGILITY->Attributes.ATTACK_SPEED;case FORTUNE->Attributes.LUCK;case SWIM->net.minecraftforge.common.ForgeMod.SWIM_SPEED.get();default->null;};}
+        case MIGHT->Attributes.ATTACK_DAMAGE;case AGILITY->Attributes.ATTACK_SPEED;case FORTUNE->Attributes.LUCK;case SWIM->net.minecraftforge.common.ForgeMod.SWIM_SPEED.get();
+        case FIREPOWER->MealGunBackend.damage();case QUICK_HANDS->MealGunBackend.reload();default->null;};}
     static UUID modifier(MealRules.Effect e){return UUID.nameUUIDFromBytes((ArsenalBeacon.ID+":meal/"+e.id).getBytes(java.nio.charset.StandardCharsets.UTF_8));}
     static AttributeInstance instance(ServerPlayer p,MealRules.Effect e){var attribute=attribute(e);return attribute==null?null:p.getAttribute(attribute);}
     static void removeModifiers(ServerPlayer p){for(var e:MealRules.Effect.values()){var a=instance(p,e);if(a!=null)a.removeModifier(modifier(e));}p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));}
     static void applyModifiers(ServerPlayer p,State s){
         // Remove our UUIDs only; brewing and other mods keep ownership of their bonuses.
         for(var e:MealRules.Effect.values()){var a=instance(p,e);if(a!=null)a.removeModifier(modifier(e));}
-        for(var b:s.meal.bonuses()){var a=instance(p,b.effect());if(a!=null)a.addTransientModifier(new AttributeModifier(modifier(b.effect()),"Prepared meal",s.home?b.home():b.field(),b.effect().multiplier?AttributeModifier.Operation.MULTIPLY_BASE:AttributeModifier.Operation.ADDITION));}
+        for(var b:s.meal.bonuses()){var a=instance(p,b.effect());if(a!=null)a.addTransientModifier(new AttributeModifier(modifier(b.effect()),"Prepared meal",s.home?b.home():b.field(),operation(b.effect())));}
         p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));s.applied=true;
+    }
+    static AttributeModifier.Operation operation(MealRules.Effect e){
+        return e==MealRules.Effect.FIREPOWER||e==MealRules.Effect.QUICK_HANDS?AttributeModifier.Operation.MULTIPLY_TOTAL:e.multiplier?AttributeModifier.Operation.MULTIPLY_BASE:AttributeModifier.Operation.ADDITION;
     }
     /** The bonus of one effect for this player right now (0 without a meal); at home it is doubled. */
     static double bonus(ServerPlayer p,MealRules.Effect effect){

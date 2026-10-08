@@ -1,6 +1,6 @@
 # Arsenal standalone mods — 0.21.0
 
-Three independent releases for **Minecraft Java 1.20.1 / Forge 47.4.x**. Tested with Forge 47.4.20 and **TaCZ 1.1.8 hotfix 2**. Install the mods you want into your Minecraft folder's `mods` directory. TaCZ is required; it is not bundled in this ZIP.
+Three independent mods for **Minecraft Java 1.20.1 / Forge 47.4.x**. The older 0.21.0 baseline used Forge 47.4.20 and TaCZ 1.1.8-hotfix2. The current **0.0.5 / Mess Hall v4 test build** is on `feature/messhall-ver-4`; use `Arsenal-MessHall-v4-0.0.5-test.zip` and its [validation notes](MESS-HALL-V4-TESTING.md). Until final 1.0, use a fresh world for each feature.
 
 | Included file | Purpose | Install location |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Three independent releases for **Minecraft Java 1.20.1 / Forge 47.4.x**. Tested 
 | `arsenal-gun-guide-0.21.0-standalone.jar` | Live weapon controls, collapsing guide and supported gun-jam warning | Client; server installation unnecessary |
 | `arsenal-displays-1.1.0-standalone.jar` | Eleven weapon stands, racks and cases | Clients and server |
 
-Get TaCZ from its [official Modrinth project](https://modrinth.com/mod/timeless-and-classics-zero). Addons may have their own required libraries. Forge resolves those requirements normally.
+For v4, install **TaCZ 1.1.8-hotfix2** ([project 1028108/file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989)) and **leopoko TaCZ Attributes 1.4** (`tacz_attributes`, [project 1113285/file 8470731](https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731)) on **both clients and server** with the beacon. Both are required; the v4 test ZIP includes TaCZ Attributes separately, while TaCZ remains an author download. Gun Guide/Displays used without the beacon do not acquire the backend requirement. LesRaisins Tactical Equipements (`lrtactical`) is optional; 0.4.3 enables the scoped grenade adapter. TAA, GunsmithLib, Apotheosis, Apothic Attributes and TaCZ:Accel are not required. See [Mess Hall compatibility](MESS-HALL.md) and [v4 integration and validation](MESS-HALL-V4-IMPLEMENTATION.md).
 
 ## How the standalone beacon differs
 

@@ -1,0 +1,3 @@
+Runtime instance: /workspace/.eternal-defense/test-runs/messhall-v4-jv9q2b1s
+[07:17:16] [main/INFO] [de.cr.be.MealGunCompat/]: Meal backend: TaCZ Attributes 1.4 global damage/reload; native bash and explosive kinetic projectiles; LesRaisins adapter inactive (installed: absent)
+[07:17:48] [Server thread/INFO] [de.cr.be.MessHallGameTests/]: MESS_HALL_PERSIST_PASS

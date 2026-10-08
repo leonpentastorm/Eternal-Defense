@@ -8,3 +8,8 @@ services.gradle.org
 resources.download.minecraft.net
 api.modrinth.com
 cdn.modrinth.com
+www.cursemaven.com
+cursemaven.com
+repo.spongepowered.org
+mediafilez.forgecdn.net
+edge.forgecdn.net

@@ -46,3 +46,17 @@ mandatory=false
 versionRange="[2001,)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.arsenal_beacon]]
+modId="tacz_attributes"
+mandatory=true
+versionRange="[1.4]"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.arsenal_beacon]]
+modId="lrtactical"
+mandatory=false
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"

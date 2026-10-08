@@ -1,6 +1,8 @@
 # Handoff: where the project stands
 
-Last updated for **Mess Hall v3**, project preview version **0.0.4**. This round is delivered on **`feature/messhall-ver-3`** (based on `feature/messhall-ver-2`, project 0.0.3, which is based on published `dev` commit `1a839c0`, 0.0.2). The owner asked for feature branches and no merge into `dev`; nothing here is merged. Active development branch of the project remains **`dev`**; history note: the work up to 0.0.1 was done on `claude/minecraft-mod-ui-guidebook-ak57k4`.
+Last updated for **Mess Hall v4**, project test build **0.0.5**, on **`feature/messhall-ver-4`** based on v3 commit `2ecd1276d58e430dda1ef6a012c82beccc9d57f4`. The branch was created from the verified remote v3 head without discarding local work. The owner authorized the test bundle and a commit/push to this feature branch. No PR or public release is part of this round. `dev`/`main` are unchanged. Active integration branch remains `dev`; the owner selects feature branches for this work.
+
+**Current authorization (2026-10-08):** the owner has now requested builds, tests, fixes and a documented test bundle, superseding the attachment's earlier static-only restriction. Include newly required mod JARs separately in test bundles; v4 requires TaCZ Attributes 1.4. The owner also authorized committing and pushing to `feature/messhall-ver-4`; no merge to `dev`/`main` or public release is requested. Current results are in `docs/MESS-HALL-V4-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.5.json`; earlier v2/v3 results remain historical. Until final 1.0 the owner starts a fresh world for every feature; legacy kitchen footprint migration is not implemented in this round. Existing meal save formats remain intact.
 The design is described in `docs/GAME-DESIGN-DOCUMENT.md` (keep it updated). Rules and conventions are in `/CLAUDE.md`; this file is the state of the work.
 
 ## What the project is
@@ -13,18 +15,18 @@ Most of the code is dense single-line style; match the surrounding file.
 
 | Area | Files |
 | --- | --- |
-| Campaign and raids | `ArsenalBeacon` (begin, scan, waves, spawn, fail, commands), `RaidMarch` (blocked-raider detection), `BeaconCombat` (raider goals, straight marching), `CampaignData` (saved state), `RaidBalance`, `RaidSpawns`, `RaidBreaching`, `RaidRewards`, `RaidTypes` (special raids), `HardRaids`, `RaidRespite` |
+| Campaign and raids | `ArsenalBeacon` (begin, scan, waves, spawn, fail, commands), `RaidMarch` (blocked-raider detection), `BeaconCombat` (raider goals, straight marching), `CampaignData` (saved state), `RaidBalance`, `RaidSpawns`, `RaidBreaching`, `RaidRewards`, `RaidTypes` (special raids), `HardRaids`, `RaidRespite`, `RaidAdaptation`, `RaiderSunlightMixin` |
 | Money | `Economy` (all prices per edition), `SupportRules` (flare prices, timings), `CannonUpgrades` (upgrade table, fire types), `ArdentEnergy` (drops), `ExchangeShop` (+ `ExchangeScreen`), `StandaloneBalance`, `ArsenalConfig` |
 | Support system | `SupportData` (per-owner bases), `SupportCalls`, `SupportFlares`, `SupportPlatform`, `SupportCannon`/`CannonEntity`/`CannonControl`/`CannonScreen`, `SupportShop`, `BaseZone`, `ReturnZone`, `SupportCrate`, `SupportHud` |
 | Client | `BeaconClient` (screens, zone outline), `SupportClient` (renderers: sign, nameplate, canopy, red parachutes), `BeaconPopups`, `Ui` (UI kit) |
 | Network | `BeaconNetwork` (protocol **24**; message 14 `RaidTypes.Marks` (raid exclamation marks and parachutes), 16 open kitchen preview; the v2 meal HUD message 15 is gone; older messages in `docs/ENERGY-AND-SUPPORT.md`) |
-| Prepared food | `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`, `MealEffects` and `MealEffectClient` (vanilla potion effects that show a meal); `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
+| Prepared food | `MealGunBackend`, `MealReloadClient`, `MealGunCompat`, `MealReloadContinuityMixin`, `MealBashMixin`, `MealExplosionMixin`, gated `MealGrenadeMixin`; `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`, `MealEffects` and `MealEffectClient` (vanilla potion effects that show a meal); `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
 | Art | `tools/ui-assets/*.py` generate sprites and textures; the hand-made 3D models come from `docs/art/` via `import_support_gear.py` |
 
-## How to build and test
+## Existing build and test tools
 
-* `./gradlew --no-daemon --offline build releaseJars` (JDK 17); jars land in `custom-mods/*/build/libs/` (`-standalone` jars are the standalone edition).
-* Unit tests: 70 in the beacon module (including nine meal-rule and three raid-behaviour tests) and 7 in gun guide. Current v2 validation is listed below; older round 6 results are retained as history.
+* The owner has authorized v4 testing. Use JDK 17. First resolve the new Curse Maven TaCZ/Attributes dependencies and MixinGradle with network access; `./gradlew --no-daemon --offline build releaseJars` works only once they are cached; jars land in `custom-mods/*/build/libs/` (`-standalone` jars are the standalone edition).
+* Existing unit tests: 70 in the beacon module (including nine meal-rule and three raid-behaviour tests) and 7 in gun guide. V4 build/test results and exact scope are recorded separately below; historical v2/v3 and round 6 results remain labeled.
 * Managed cloud build: source `/workspace/.eternal-defense/activate.sh` to use retained JDK 17 and Gradle cache before the normal offline build.
 * Kitchen real-server checks: `-Darsenal.messHallTests=true`, `/mess-hall-test` (five tests). Restart fixture: `/mess-hall-fixture seed`, stop/restart the same disposable server, `/mess-hall-fixture check`. Chunk fixture: `/mess-hall-chunks unload`, poll `/mess-hall-chunks check_unloaded`, then `/mess-hall-chunks reload`. Flags are off during normal play.
 * Kitchen v2 native tests: with `-Darsenal.messHallTests=true`, `/mess-hall-v2-test` runs six food/gun/radius/reload/lifecycle comparisons. Its reload case measures actual TaCZ server ammo transfer and completion, using the same AK-47 baseline/home/field.
@@ -42,7 +44,17 @@ Most of the code is dense single-line style; match the surrounding file.
 * The beacon itself is the reward chest (no chest block). Bunker Buster never removes obsidian, crying obsidian, bedrock or anything with resistance 1,200 or more.
 * The platform stays two blocks tall; its name sign is render-only (no hitbox); the two blocks in front are a no-build return zone.
 
-## Mess Hall v3 decisions and status
+## Mess Hall v4 decisions and status
+
+* **Sunlight only:** raider daylight ignition is blocked at `Mob.isSunBurnTick`; the blanket `clearFire` tick is removed. Flame arrows and fire traps work subject to native species immunity and trap adaptation. Production mapping uses MixinGradle's generated refmap.
+* **Trap adaptation:** current-raid attackers learn eleven tagged damage classes only after positive damage. The first damaging wave stays at normal damage; each later wave gains 25% resistance, reaching immunity after four steps. Each class announces its steps and is saved in `CampaignData.TrapFirstWave`; new raids/reset clear it. Owned/attributed weapons and support cannon damage are excluded. Ownerless custom turrets need tags/markers if they discard attribution. See `docs/RAID-ADAPTATION.md`.
+* **Backend:** require leopoko **TaCZ Attributes 1.4** (`tacz_attributes`, exact `[1.4]`, CurseForge project 1113285/file 8470731), clients and server in both editions. Global `gun_damage` and `reload_speed` receive stable meal-owned transient `MULTIPLY_TOTAL` modifiers of amount `b`, preserving other values and yielding `1+b`. Former Firepower hit listener and `MealReloadMixin`/`ReloadClock` accelerator are removed. TaCZ compile/runtime pin is **1.1.8-hotfix2**, project 1028108/file **9037989**. No dependency JAR is embedded.
+* **Reload:** one backend timing path; rate changes rebase accumulated progress, and native staged timestamp deltas survive backend restoration via a cached, type-checked field bridge and one native call. Reload clips are selected by animation name across track metadata, including transitions; neutral/finished/swapped runners reset to 1. Custom private script timers/animation conventions remain a compatibility limit.
+* **Combat adapters:** Brawler/Heavy Hand retain one native bash hook without adding Strength/Might again. Demolition uses actual explosive kinetic projectile behavior/owner, not an `rpg` category. Optional LesRaisins `lrtactical` 0.4.3 (`[0.4.3,0.4.4)`) scales its shared grenade detonation radius once. Absent/other optional versions stay inactive. Power/fuse/destruction settings remain native. TAA, GunsmithLib, Apotheosis, Apothic Attributes and TaCZ:Accel are not mandatory.
+* **Preserved:** recipes, costs, servings, pot capacities, traits/pairs, models, vanilla display, baseline values and existing meal saves/lifecycle. Protocol stays **24**, with no packet changes. No legacy footprint migration is needed under the owner's fresh-world policy.
+* **Delivery/verification:** local test bundle with both editions and separate TaCZ Attributes 1.4 JARs. Both editions build; 70 beacon tests pass (7 guide results remain Gradle up-to-date); 20 standalone server cases, optional LesRaisins ownership/radius, a real stop/restart fixture, and native real-client reload speeds pass. Runtime testing fixed the cross-mixin timestamp bridge and dripstone classification. See `docs/MESS-HALL-V4-TESTING.md` and its validation JSON for client status, exact evidence and remaining coverage.
+
+## Historical Mess Hall v3 decisions and status
 
 * **Models:** the artist package (`Create-Arsenal-Mess-Hall.zip`) is installed: halls are **2 wide x 1 deep x 2 tall** (anchor, right cell, and both above), the pot **1 x 1 x 2**; front is the serving side. `tools/kitchen/generate_resources.py` no longer rewrites the model geometry (blockstates, item models, recipes, tags and traits are still generated). The menu board text of the pot is drawn by `KitchenRenderer` on the chalkboard of the upper block.
 * **Meal display:** the custom HUD and its packet are removed. A meal is shown with vanilla potion effects, one per bonus (`meal_<id>`, amplifier = strength - 1 + 4 for a pair), endless at home plus a Home Zone effect, finite and counting down in the field. The server (`PlayerMeals.syncEffects`) keeps them in step; the meal is server state, so removing the display only hides it until the next sync. Forge asks for the client extension from inside the `MobEffect` constructor: never read subclass fields there (a real crash found by the real-client QA).
@@ -50,7 +62,7 @@ Most of the code is dense single-line style; match the surrounding file.
 * **Raids:** raiders march straight at the beacon and dig only when `RaidMarch.idle` (under 1 block in a second). The old breach check ran only when `gameTime%40==0` inside a loop that runs when `clock%20==0`; the two counters have an arbitrary offset, so in most worlds it practically never fired (this also kept siege creepers from digging). Raiders carry a red exclamation mark and are sun-proof; spawns are open surface ground at or above the beacon (`RaidSpawns.openGround`, relaxed after 30 s / 90 s); vexes and phantoms are steered straight in by `RaidTypes.glide` (their own AI is off: a mob without AI is not moved by vanilla, so they are moved by hand); the marks packet is idempotent and resent every second (fixes paratroopers without a parachute: the one-shot packet could arrive before the client knew the mob).
 * **Sign post:** the post of the platform sign is drawn without culling (a flat strip vanished when seen from its back).
 
-### V3 validation (this session)
+### Historical v3 validation (prior round; not rerun for v4)
 
 * Unit tests: 70 beacon tests, zero failures (`:arsenal-beacon:test`).
 * Real client (QA harness, pack flavor, software GL): halls and pot footprints, collision boxes, kitchen screen in both modes, pair bonus preview, vanilla effects at home and in the field, effect restore after clearing, raid marks and parachutes on every paratrooper (15 of 15), flyers reaching the beacon, zombies digging through a wall, siege creeper digging at the wall and a far one staying alive, sun immunity. Screenshots in `docs/ui/screens/kitchen-v3/`.
@@ -59,7 +71,7 @@ Most of the code is dense single-line style; match the surrounding file.
 * Not verified: ground spawns of raids in a normal world (the flat QA world fails the existing "thin roof" check of `RaidSpawns.environmentSafe`, so `find` returns nothing there; the new `openGround` rule returned true, and the pure rule `allowedDrop` is unit tested); raid behaviour with real TaCZ soldiers; multiplayer; the standalone edition in a real client (same code, other flavor file); the pack with real Create items; balance of the 16 effects and the 2x pair bonus.
 
 
-## Mess Hall v2 decisions and status
+## Historical Mess Hall v2 decisions and status
 
 * Stew costs **4/7/10/12 ingredient items** for the existing **4/8/12/16 servings**, tuned in `MealRules.tier`. Reserve one of each composition type, then distribute extra cost across stacks in slot order, round by round. Mk I supports 2–4 distinct types; later tiers 2–6. Sandwich uses 2–3 types, normally one staple and one or two fillings, one item each. All failures remain atomic; every consumed container ingredient returns its remainder.
 * Composition scores each distinct item type once, independent of its quantity or duplicate slots. Datapack overlaps merge by maximum; types then sum, strongest effects win, strength remains capped at 3. Added tags/definitions for all five new IDs: beef `firepower`, honey `quick_hands`, pork `brawler`, golden carrot `heavy_hand`, pufferfish `demolition`. Existing saved meals retain their compositions.
@@ -68,7 +80,7 @@ Most of the code is dense single-line style; match the surrounding file.
 * Protocol **23-pack / 23-standalone**: cost/availability/per-slot deductions in server preview; all five effect IDs and base amounts in pot board/chat; FIELD/HOME amounts in preview tooltips and actual active amounts in the HUD. The HUD now lists all effects. Both editions share gameplay.
 * Unsupported: separate thrown-grenade entities, non-launcher explosive ammunition, custom scripts bypassing TaCZ's native reload clock/bash/explosion paths. Vanilla melee, TNT/creepers and unrelated mod explosives get no meal bonus. Animation clips keep their own playback speed while native server reload state/ammunition complete sooner. See `docs/MESS-HALL.md` for exact integration points.
 
-### V2 validation
+### Historical v2 validation
 
 * JDK 17 offline `build releaseJars`: passed, all three modules / both editions. 64 beacon + 7 gun-guide unit results, zero failures/errors/skips. Beacon tests executed after v2 changes; unchanged guide results remained up-to-date.
 * Real Forge 1.20.1 / 47.4.20 + TaCZ 1.1.8-hotfix2 servers, with and without Gun Displays: six baseline, five original Mess Hall and six v2 tests passed in each configuration. Covers all tier costs, per-unit container returns, insufficient/competing cooks, duplicate stack scoring, vanilla sources for all effects, persistence serialization and player ownership/home transitions.
@@ -111,7 +123,7 @@ Recorded checks and JAR hashes: `docs/MESS-HALL-VALIDATION-0.0.3.json`. Screensh
 
 ## Suggested next steps
 
-* Playtest Mess Hall v3 with a cook and two defenders: pair bonus values (x2 on top of strength 3 can be strong: Vitality at home reaches +24 health), the effect list, gun effects at their new sizes, and raids (marching, flyers, siege creepers, paratroopers) on a real survival world. The owner decides when to merge the feature branches.
-* Playtest round 6 with a cook and two defenders: stock pots, eat, leave and re-enter home, then raid. Tune `MealRules`, datapack trait weights and `Economy` from that feedback; finish kitchen art separately.
-* Run a real session with the special-raid commands and fix spawn placement for flyers, siege and swarm if needed.
-* When the owner confirms a round, tag the state in `docs/CHANGELOG.md` and build a new `dist/` zip like the earlier ones (`standalone/`, `pack/`, `README.txt`, `SHA512SUMS`).
+* Install the v4 test bundle in a fresh world; include its separate required backend JAR. Commit/push is authorized only for the v4 feature branch.
+* Follow the remaining playtests in `docs/MESS-HALL-V4-TESTING.md`, especially the full Create/KubeJS pack, two defenders, custom gunpack reload lifecycle and turret attribution.
+* Balance pairs and gun effects during a later survival playtest (strength 3 paired Vitality at home reaches +24 health); include marching, flyers, siege and paratroopers. Tune `MealRules`, trait weights and `Economy` from that feedback.
+* Merge/tag/public release remains a separate owner-directed step; the v4 ZIP is a local test artifact.

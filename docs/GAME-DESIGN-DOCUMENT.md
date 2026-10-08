@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.4 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.5 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Mess Hall v3 feature preview on `feature/messhall-ver-3`, based on `feature/messhall-ver-2` (project 0.0.3) |
+| **Status** | Mess Hall v4 feature test build on `feature/messhall-ver-4`, based on v3 `2ecd127`; both editions built; standalone runtime validated; delivery authorized to v4 only |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.5 | 2026-10-08 | Development | Sunlight-only protection; raid-local trap adaptation (+25% per later wave to immunity); required TaCZ Attributes 1.4 damage/reload backend with progress/animation continuity; behavior-based explosive projectiles and optional LesRaisins 0.4.3 grenades; fresh worlds per feature until 1.0; v4 test bundle includes the separate required backend; production tests correct dripstone classification and the backend timestamp bridge; protocol 24 unchanged |
 | 0.0.4 | 2026-10-07 | Development | Mess Hall v3: 2 wide x 2 tall x 1 deep halls and 1 x 2 pots with the painted models; meals shown as vanilla potion effects (HUD removed); sixteen effects and every vanilla food; stew pair bonus; juiced kitchen screen; raiders marched straight at the beacon, marked with a red exclamation mark, immune to sunlight, spawned on open surface ground at or above the beacon; flyers steered straight in; siege creepers dig; every paratrooper wears a parachute; protocol 24 |
 | 0.0.3 | 2026-10-07 | Development | Mess Hall v2: 4/7/10/12 stew costs, distinct-type scoring, five scoped TaCZ buffs, cost/effect UI; protocol 23; feature branch only |
 | 0.0.2 | 2026-10-07 | Development | Mess Hall Mk I–IV, ingredient traits, portable rations, communal stew, persistent home-enhanced meals; protocol 22 |
@@ -44,7 +45,7 @@ Industry (Create) feeds the war effort; farming and a tiered kitchen feed the de
 
 | | Pack edition | Standalone edition |
 | --- | --- | --- |
-| Needs | TaCZ, Create, KubeJS and the pack recipes | TaCZ only |
+| Needs | TaCZ 1.1.8-hotfix2, TaCZ Attributes 1.4, Create, KubeJS and the pack recipes | TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 |
 | Upgrade currency | The mod's own factory parts (reinforced plating, logistics modules, resonance coils, restoration matrices) | Ardent Energy |
 | Ardent Energy used for | Flares, the cannon purchase, Exchange goods | Everything, including beacon and cannon upgrades |
 | Ardent drop rate | about 1 kill in 15 | about 1 kill in 12 (factor 1.3) |
@@ -82,6 +83,8 @@ One source tree builds both (`/arsenal-build.properties` flavor in the jar). Eve
 * Waves: **3 + tier (capped at 5 extra)**. Every third raid is a **boss raid** (the boss arrives in the last wave; 50 percent larger cache, bonus kits and grenades).
 * Attackers scale with the number of defenders, spawn outside the zone, target doors first and dig through walls; ranged enemies hold distance.
 * **Marching (v3):** raiders walk **straight at the beacon** (no detours around terrain) and only stop to dig when they stop making progress (less than a block in a second). They spawn on **open surface ground at or above the beacon's level** (never in a crevice or below ground; if no such place exists for 30 s the rule relaxes by 4 blocks, after 90 s by 10). Every raider carries a **red exclamation mark** above its head and is **immune to sunlight**.
+* **Sunlight protection (v4):** prevents daylight ignition only. Flame arrows, lava and fire traps still deal damage; native fire-immune species retain their own immunity.
+* **Trap adaptation (v4):** each class first causing positive trap damage gets one full-damage wave; subsequent waves gain 25/50/75/100% resistance to that class. Eleven classes cover fire, fall, drowning, suffocation, spikes, crushing/cramming, freezing, explosion, ownerless projectile, magic and lightning traps. Announcements mark each step. Learning is saved for the current raid and resets at the next raid. Attributed weapons, turrets and support cannon attacks are excluded; source-erasing addons need integration tags/markers. See `docs/RAID-ADAPTATION.md`.
 * **Victory** restores everything the raid broke (damage journal). **Defeat** leaves it.
 * Warnings: chat one day ahead, then every six hours; popups for raid start, each wave, VICTORY (confetti) and DEFEAT.
 
@@ -127,7 +130,7 @@ New players get a starter weapon with ammo, a field guide (pack and standalone t
 * **Bowl serving:** interact with a filled pot while holding a normal bowl to eat immediately. The server removes one serving; the bowl remains empty and reusable. Sandwich nutrition is 8 (saturation modifier 0.6); stew nutrition is 10 (0.8).
 * **Tier hooks:** Mk I/II/III/IV link **1/2/3/4 pots** and produce **4/8/12/16 stew servings**. All tiers retain the same effect-slot limits. Higher tiers improve servings per ingredient without multiplying a tiny batch. Next upgrades cost **8/16/32 Reinforced Plating** in the pack or **4/8/14 Ardent Energy** standalone (`Economy`). Creative upgrades are free.
 * **Traits, not hundreds of recipes:** datapack definitions and extensible ingredient tags determine available effects. Staples (bread/wheat/baked potato) are required for sandwiches. Chicken/mutton/rabbit/eggs → vitality; vegetables/milk → fortitude; mushrooms → steadiness; cooked fish/fruit/sugar → mobility. Beef → firepower; honey → quick_hands; pork → brawler; golden carrot → heavy_hand; pufferfish → demolition. **Every vanilla food has a trait (v3):** raw meat → might; cookies/pumpkin pie → agility; raw fish → swim; glow berries/suspicious stew → fortune; golden apples → recovery; rotten flesh/spider eye/poisonous potato → hearth; chorus fruit → springy. **Pair bonus:** in a stew, two *different* foods of one family feeding the same effect **double** that effect. Weighted effects choose the strongest two/three; overlapping definitions use the maximum per effect per distinct item type. Stack quantity and duplicate slots never increase strength. Strength caps at base × 1.0/1.25/1.5.
-* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. TaCZ bonuses use the same meal state: **Firepower +8% gun damage**, **Quick Hands +10% reload speed**, **Brawler +20% gun bash damage**, **Heavy Hand +15% gun bash knockback**, **Demolition +10% grenade/rocket radius** (v3 raised them: the v2 values worked in server tests but were too small to notice). New v3 effects: **Might** +8% melee damage, **Agility** +8% attack speed, **Fortune** +1 luck, **Recovery** 1 health per 5 s, **Hearth** 10% less fire/explosion damage, **Springy Step** 12% less fall damage, **Strong Swimmer** +10% swim speed in the field, doubled at home and scaled by the existing strength levels. Firepower uses native hit events; reload advances the native server clock; bash changes only TaCZ bash arguments; radius changes only TaCZ kinetic projectiles from native `rpg` launcher indexes. Vanilla melee, TNT/creepers and unrelated explosives receive no bonus. Full integration and unsupported types are in `docs/MESS-HALL.md`.
+* **Field bonuses:** vitality **+4 max health**, fortitude **+2 armor**, steadiness **+5% knockback resistance**, mobility **+4% base movement speed** before strength scaling. Stable meal-only attribute modifier UUIDs preserve brewing and other mods' bonuses. TaCZ bonuses use the same meal state: **Firepower +8% gun damage**, **Quick Hands +10% reload speed**, **Brawler +20% gun bash damage**, **Heavy Hand +15% gun bash knockback**, **Demolition +10% grenade/rocket radius** (v3 raised them: the v2 values worked in server tests but were too small to notice). New v3 effects: **Might** +8% melee damage, **Agility** +8% attack speed, **Fortune** +1 luck, **Recovery** 1 health per 5 s, **Hearth** 10% less fire/explosion damage, **Springy Step** 12% less fall damage, **Strong Swimmer** +10% swim speed in the field, doubled at home and scaled by the existing strength levels. Firepower and Quick Hands use owned global TaCZ Attributes 1.4 modifiers, amount `b` with `MULTIPLY_TOTAL`, through one backend path. Reload rate transitions preserve progress and native stage changes; reload-name metadata controls client animation rate. Bash changes only native bash arguments without adding Strength/Might again. Radius scales actual player-owned explosive kinetic projectiles, across categories, and optionally the LesRaisins 0.4.3 shared grenade path. Brawler/Heavy Hand do not modify ordinary melee; Demolition does not modify TNT/creepers or unrelated explosives. Full integration and unsupported types are in `docs/MESS-HALL.md`.
 * **Home enhancement:** `BaseZone` determines valid home territory. Meal strength is **2× at home**, and remaining field duration **freezes**. Outside, strength normalizes and the timer resumes. Returning home freezes the existing remainder and never refreshes it. New meals replace the old state and start **30 minutes / 36,000 field ticks**.
 * **Lifecycle:** server-owned UUID-keyed SavedData persists composition and exact ticks. Logout/restart pause time. Dimension changes preserve the meal; other dimensions count as field. Non-death respawn retains it. **Death clears meals and their owned modifiers.** A meal is shown with ordinary vanilla potion effects (no custom HUD): one effect per bonus with its current value and time in the inventory list, endless while at home, plus a **Home Zone** effect ("your food buffs double and don't decay"). The kitchen shows available/required food units and per-slot consumption tooltips; preview tooltips list field/home effects.
 * **Linking:** nearby anchors link within **8 blocks in 3D**, respecting tier capacity. Existing valid links are not stolen. Hall UUID + persisted pot reservations prevent same-position replacement and chunk-unload reassignment. Unloaded pots retain reserved capacity. Broken anchors clean loaded links; unloaded partners validate later. Orphaned stew remains stored until the pot reconnects. No general logistics system exists.
@@ -157,16 +160,19 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 ## 8. Technical notes for designers
 * Network protocol **24** (message 14: raid marks, exclamation marks and parachutes; 16: open kitchen preview; the v2 meal HUD message 15 was removed); bump on any packet change.
 * Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
-* Mob effects and persistent data are not synced to clients, so the raid marks (red exclamation mark, red parachute) use their own idempotent packet sent every second.
+* Raid persistent flags are not synced automatically, so marks (red exclamation mark, red parachute) use their own idempotent packet sent every second. Meal MobEffects and backend attributes use native synchronization; v4 adds no packet.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.
-* QA: 67 beacon unit tests and 7 gun-guide tests; five original and six v2 opt-in Mess Hall server tests plus restart/chunk fixture commands; real-client scripted QA in `tools/qa/`. See `docs/HANDOFF.md`.
+* V4 builds and standalone runtime checks passed: 70 beacon unit tests (7 guide tests remain Gradle up-to-date), 20 kitchen/gun/raid/effect server cases, optional LesRaisins radius/ownership and a real save/restart. Exact artifacts, client status and remaining playtests: `docs/MESS-HALL-V4-TESTING.md` and validation JSON.
+
+* Until final **1.0**, the owner starts a fresh world with each feature; old kitchen footprint migration is outside current scope.
 
 ## 9. Known risks and open questions
 1. Zone outline flicker during cannon fire: fix is a best guess, unconfirmed.
 2. Ground spawn for Air, Siege and Swarm raids not exercised in a real world.
 3. Multiplayer, the End and modded dimensions untested; pack prices untested with real Create/KubeJS items.
 4. Balance is theoretical until a team plays several raids.
-5. Special-raid fairness: is a 50 percent chance too frequent? Does Air raid need a stronger anti-air toolkit than the player has? **(TBD, needs playtest data.)**
+5. V4 runtime coverage and remaining client/custom gunpack scenarios are listed in `docs/MESS-HALL-V4-TESTING.md`; broad native-path support is not empirical certification for every custom script/addon.
+6. Special-raid fairness: is a 50 percent chance too frequent? Does Air raid need a stronger anti-air toolkit than the player has? **(TBD, needs playtest data.)**
 
 ## 10. Roadmap candidates (not committed) **(TBD)**
 * More anti-air tools for the air raid counter-build.

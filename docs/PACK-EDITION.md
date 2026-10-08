@@ -1,6 +1,10 @@
 # Arsenal custom mods — pack edition, 0.21.0
 
-These three JARs are the **pack edition** for Create Arsenal 0.21.0:
+The historical release names below are the **pack edition** for Create Arsenal 0.21.0. Current **0.0.5 / Mess Hall v4** work on `feature/messhall-ver-4` has a test ZIP containing both editions and the newly required backend JAR. Pack artifacts build successfully; full Create/KubeJS pack runtime remains unverified. See [test details](MESS-HALL-V4-TESTING.md). Older update archives do not include v4. Until final 1.0 the owner starts a fresh world per feature.
+
+The v4 beacon build requires **TaCZ 1.1.8-hotfix2** ([file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989)) and **leopoko TaCZ Attributes 1.4** (`tacz_attributes`, [project 1113285/file 8470731](https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731)) on clients and server, alongside Create/KubeJS and the matching pack. The test ZIP supplies TaCZ Attributes separately; no addon is embedded in our mod JARs. LesRaisins `lrtactical` 0.4.3 is optional for the shared grenade adapter. Other gun/affix frameworks are not meal requirements. See [v4 integration scope](MESS-HALL.md).
+
+Historical file names:
 
 - `arsenal-beacon-0.21.0.jar`
 - `arsenal-gun-guide-0.21.0.jar`

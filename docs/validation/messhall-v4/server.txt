@@ -1,0 +1,17 @@
+Runtime instance: /workspace/.eternal-defense/test-runs/messhall-v4-jv9q2b1s
+[06:58:38] [main/INFO] [de.cr.be.MealGunCompat/]: Meal backend: TaCZ Attributes 1.4 global damage/reload; native bash and explosive kinetic projectiles; LesRaisins adapter inactive (installed: absent)
+[06:59:37] [Server thread/INFO] [de.cr.be.MessHallGameTests$KitchenTestRunner/]: All 5 mess hall tests passed
+[06:59:43] [Server thread/INFO] [de.cr.be.MessHallV2GameTests/]: MEAL_V2_COMBAT_PASS bullet base=6.0 field=6.4799805 home=6.959961 bash=8.0 knockback=1.0
+[06:59:57] [Server thread/INFO] [de.cr.be.MessHallV2GameTests/]: MEAL_V2_RELOAD_MEASURED baseline=2669ms home=2198ms field=2399ms
+[06:59:57] [Server thread/INFO] [de.cr.be.MessHallV2GameTests/]: MEAL_V2_RELOAD_PASS baseline=2669ms home=2198ms field=2399ms
+[06:59:57] [Server thread/INFO] [de.cr.be.MessHallV2GameTests$KitchenV2TestRunner/]: All 6 mess hall v2 tests passed
+[07:00:08] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4trapclasseswavesandpersistence
+[07:00:08] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4weaponsremaineffectiveaftertrapimmunity
+[07:00:10] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4sunlightprotectionkeepscombatfire
+[07:00:11] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4backendmodifierspreserveotherowners
+[07:00:11] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v4nativereloadratetransitions
+[07:00:13] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3everyvanillafoodhasatraitandeveryeffectisreachable
+[07:00:13] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3pairbonusneedstwodifferentfoodsofonefamily
+[07:00:22] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3mealshowsasvanillaeffectsandfollowsthehomezone
+[07:00:24] [Server thread/INFO] [de.cr.be.MessHallV4GameTests$Runner/]: V4_TEST_PASS v3recoveryhearthandspringystepactontheirdamage
+[07:00:32] [Server thread/INFO] [de.cr.be.MessHallGameTests/]: MESS_HALL_PERSIST_SEEDED

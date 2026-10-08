@@ -88,14 +88,16 @@ public final class ArsenalBeacon {
         var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();MinecraftForge.EVENT_BUS.register(new StandaloneBalance());
         if(!BuildFlavor.STANDALONE&&Boolean.getBoolean("arsenal.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
-        MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
+        MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
         MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV2GameTests.KitchenV2TestRunner());
+        if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
+        if(Boolean.getBoolean("arsenal.v4ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV4ClientSmoke());
         if(Boolean.getBoolean("arsenal.kitchenSmoke"))MinecraftForge.EVENT_BUS.register(new MessHallSmoke());
     }
     public static final class DefenseEntity extends BlockEntity {
@@ -296,6 +298,7 @@ public final class ArsenalBeacon {
     }
     static void begin(ServerLevel l,CampaignData d) {
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
+        RaidAdaptation.begin(d);
         RaidWarnings.reset();d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
         announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
     }
@@ -312,6 +315,7 @@ public final class ArsenalBeacon {
     }
     private static void nextWave(ServerLevel l,CampaignData d) {
         d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=RaidTypes.count(d.raidType,Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid));d.spawnCooldown=0;
+        RaidAdaptation.nextWave(l,d);
         BeaconNetwork.announce(l,"wave",d.wave,Rules.waves(d.raidTier),Integer.toString(d.spawnRemaining),"");
         announce(l,"Wave "+d.wave+" / "+Rules.waves(d.raidTier)+" incoming. "+d.wavePlayers+" defender(s), "+d.spawnRemaining+" attackers"+(d.waveVeteran>0?", veteran reinforcements +"+(d.waveVeteran*10)+"%":"")+".");d.setDirty();
     }

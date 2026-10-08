@@ -10,7 +10,9 @@ Editable Java, assets, recipes and Gradle projects for the three Create Arsenal 
 
 Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Both the curated modpack and standalone editions are included. They share Java and registry IDs, with different release metadata, recipes and guide content.
 
-Project update **0.0.2** adds [Mess Hall prepared food](docs/MESS-HALL.md): tiered kitchens, portable sandwiches, communal Cook Pots, and persistent meal bonuses that double and freeze their field timer at home. The new network protocol is **22**; clients and servers need matching editions and builds. Functional kitchen art uses vanilla textures pending painted replacements. Project versions (`VERSION`) remain separate from the JAR build versions above.
+Project preview **0.0.5 / Mess Hall v4** is local work on `feature/messhall-ver-4`, based on v3 commit `2ecd1276d58e430dda1ef6a012c82beccc9d57f4`. [Prepared food](docs/MESS-HALL.md) now uses TaCZ Attributes 1.4 for gun damage/reload, preserves reload progress when home bonuses change, and supports native explosive rounds plus an optional LesRaisins grenade adapter. [Raid trap adaptation](docs/RAID-ADAPTATION.md) raises resistance in later waves; raiders avoid sunlight ignition while remaining vulnerable to weapon fire. The painted v3 kitchens and vanilla meal display remain in place. Protocol stays **24** because packets did not change. Project versions (`VERSION`) remain separate from the JAR build versions above.
+
+V4 has a **local test build**: [installation and actual validation](docs/MESS-HALL-V4-TESTING.md). Both editions build and the standalone server checks pass with the required backend. The owner authorized delivery to the v4 feature branch; no PR or public release is part of this round. Until 1.0 the owner starts a fresh world for each feature; old kitchen footprint migration is outside this round. Existing meal save formats are retained.
 
 ## Build
 
@@ -28,7 +30,7 @@ Windows PowerShell:
 .\gradlew.bat --no-daemon build releaseJars
 ```
 
-Each project's `build/libs` contains its pack JAR and `-standalone.jar`. The displays project also produces a sources JAR, which is for developers rather than installation. `build` runs the Java unit tests; `releaseJars` additionally builds all three standalone releases. TaCZ is accessed through runtime integration and does **not** require a local TaCZ JAR to compile these projects. The beacon compiles against pinned public JEI APIs; there are no launcher-instance dependency paths.
+After building, each project's `build/libs` contains its pack JAR and `-standalone.jar`. The displays project also produces a sources JAR, which is for developers rather than installation. `build` runs the Java unit tests; `releaseJars` additionally builds all three standalone releases. The beacon now compiles against pinned public TaCZ and TaCZ Attributes artifacts from Curse Maven and JEI APIs. First dependency resolution needs network access; offline builds require those artifacts and MixinGradle already cached. No launcher-instance dependency paths or embedded addon JARs are used. **These commands passed for v4; see the validation record for runtime coverage.**
 
 For a cloud environment's first build, see [NETWORK-ALLOWLIST.txt](docs/NETWORK-ALLOWLIST.txt) and [network setup](docs/CLOUD-SETUP.md).
 
@@ -36,10 +38,10 @@ For a cloud environment's first build, see [NETWORK-ALLOWLIST.txt](docs/NETWORK-
 
 Install exactly one edition of each mod, with its runtime dependencies, into a separate Forge test instance. Pack and standalone JARs use the same mod IDs and cannot be installed together. A headless build does not confirm that a screen looks correct in Minecraft.
 
-- **Pack:** requires TaCZ, Create and KubeJS, plus the curated recipes/catalogue from the complete Create Arsenal pack. Use the pack's existing instance for UI testing. The small `pack-integration` folder provides authored recipe and quest context; it is not the complete modpack.
-- **Standalone:** requires TaCZ. Create, KubeJS, JEI and Gun Displays are optional for the beacon. Gun Guide is client-only. See [standalone installation and balance](docs/STANDALONE.md).
+- **Pack beacon v4:** requires TaCZ **1.1.8-hotfix2**, [leopoko's TaCZ Attributes **1.4**](https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731), Create and KubeJS, plus the curated recipes/catalogue from the complete Create Arsenal pack. The small `pack-integration` folder provides authored recipe and quest context; it is not the complete modpack.
+- **Standalone beacon v4:** requires the same TaCZ and TaCZ Attributes versions on clients and server. Create, KubeJS, JEI and Gun Displays are optional for the beacon. Gun Guide is client-only. See [standalone installation and balance](docs/STANDALONE.md).
 
-The recorded baseline used TaCZ 1.1.8 hotfix 2. Download third-party mods from their authors; they are not vendored into the source projects.
+The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989) and TaCZ Attributes project 1113285 / file 8470731. LesRaisins Tactical Equipements (`lrtactical`) is optional; its Demolition adapter is gated to 0.4.3 (`[0.4.3,0.4.4)`). TAA, GunsmithLib, Apotheosis and Apothic Attributes are not required. Download third-party mods from their authors; they are not vendored into the source projects.
 
 ## Contents and baseline
 
@@ -54,4 +56,4 @@ The original `Arsenal-Standalone-Mods-0.21.0.zip` remains as the initial release
 
 Licensing remains as declared by each mod. Gun Displays code is MIT; its supplied artwork is reserved, as detailed in its `LICENSE.txt`. Including art in this repository for the owner's UI collaboration does not change its license.
 
-Mess Hall v2 feature preview (0.0.3, protocol 23): `feature/messhall-ver-2`. Food costs, gun buffs and compatibility: [Mess Hall notes](docs/MESS-HALL.md); test build: `dist/Arsenal-MessHall-v2-0.0.3-test.zip`.
+Previous v2/v3 distributions and validation records are historical artifacts. They do not contain the v4 changes or validate this backend.

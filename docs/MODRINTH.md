@@ -1,5 +1,7 @@
 # Create Arsenal
 
+> Publication copy; the current Mess Hall v4 test build (0.0.5) has [recorded validation](MESS-HALL-V4-TESTING.md) and has not been published on Modrinth. A future beacon v4 release requires TaCZ 1.1.8-hotfix2 and leopoko TaCZ Attributes 1.4 on clients/server. [Dependency and compatibility details](MESS-HALL.md).
+
 ### Build a home worth defending. Build a factory that keeps it alive. Fill an armory with weapons worth displaying.
 
 **Minecraft 1.20.1 · Forge · built around [Timeless and Classics Zero](https://modrinth.com/mod/timeless-and-classics-zero) guns**
@@ -131,7 +133,7 @@ You do not need to read a wiki. New players get a starter weapon with matching a
 | | Standalone | Modpack edition |
 | --- | --- | --- |
 | Mods | Defense Beacon, Gun Guide, Gun Displays | The same three, with the curated Create progression |
-| Needs | Forge 1.20.1 and TaCZ | Create, KubeJS and the pack's recipe set |
+| Needs | Forge 1.20.1, TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 | Same gun/backend dependencies plus Create, KubeJS and the pack's recipe set |
 | Best for | Dropping into any TaCZ world | The full Create factory experience |
 
 ---

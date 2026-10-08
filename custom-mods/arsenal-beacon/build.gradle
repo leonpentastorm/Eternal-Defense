@@ -1,7 +1,12 @@
+buildscript {
+    repositories { mavenCentral(); maven { url = 'https://repo.spongepowered.org/repository/maven-public/' } }
+    dependencies { classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT' }
+}
 plugins {
     id 'java'
     id 'net.minecraftforge.gradle' version '6.0.54'
 }
+apply plugin: 'org.spongepowered.mixin'
 version = '0.21.0'
 group = 'dev.createarsenal'
 base { archivesName = 'arsenal-beacon' }
@@ -21,13 +26,25 @@ minecraft {
         }
     }
 }
-repositories { mavenCentral(); maven { url = 'https://maven.blamejared.com' } }
+repositories {
+    mavenCentral(); maven { url = 'https://maven.blamejared.com' }
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/'; content { includeGroup 'org.spongepowered' } }
+    maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
+}
 dependencies {
     implementation project(":arsenal-displays")
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
+    // Pinned official artifacts, development/runtime only; neither addon is shaded into our jars.
+    implementation fg.deobf('curse.maven:timeless-and-classics-zero-1028108:9037989')
+    implementation fg.deobf('curse.maven:tacz-attributes-1113285:8470731')
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly fg.deobf('mezz.jei:jei-1.20.1-common-api:15.62.0.217')
     compileOnly fg.deobf('mezz.jei:jei-1.20.1-forge-api:15.62.0.217')
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+}
+mixin {
+    add sourceSets.main, 'arsenal_beacon.refmap.json'
+    config 'arsenal_beacon.mixins.json'
 }
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 tasks.named('test', Test) { useJUnitPlatform() }

@@ -318,7 +318,7 @@ final class SupportFlares {
                     for(var at:spots){
                         double y=c.y+r*2+random.nextDouble()*2;
                         var arrow=new Arrow(level,at[0],y,at[1]){@Override protected boolean canHitEntity(net.minecraft.world.entity.Entity e){return e instanceof Enemy&&super.canHitEntity(e);}};
-                        arrow.setOwner(getOwner());arrow.pickup=AbstractArrow.Pickup.DISALLOWED;arrow.setBaseDamage(2.5*cfg.damage());
+                        arrow.setOwner(getOwner());arrow.getPersistentData().putBoolean("arsenalDefensiveWeapon",true);arrow.pickup=AbstractArrow.Pickup.DISALLOWED;arrow.setBaseDamage(2.5*cfg.damage());
                         arrow.setDeltaMovement((random.nextDouble()-.5)*.05,-1.8,(random.nextDouble()-.5)*.05);level.addFreshEntity(arrow);
                     }
                 }
@@ -326,7 +326,7 @@ final class SupportFlares {
                     int struck=0;
                     for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive())){
                         if(struck++>=12)break;
-                        bolt(level,e.getX(),e.getY(),e.getZ());e.hurt(level.damageSources().lightningBolt(),dmg);e.setSecondsOnFire(3);
+                        bolt(level,e.getX(),e.getY(),e.getZ());RaidAdaptation.weaponDamage(e,level.damageSources().lightningBolt(),dmg);RaidAdaptation.weaponFire(e,60);e.setSecondsOnFire(3);
                     }
                     if(struck==0)bolt(level,c.x+(random.nextDouble()*2-1)*r,c.y,c.z+(random.nextDouble()*2-1)*r);
                 }

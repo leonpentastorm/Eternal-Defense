@@ -1,0 +1,4 @@
+Client: /workspace/.eternal-defense/test-runs/messhall-v4-client-h0r5rnwd
+Server: /workspace/.eternal-defense/test-runs/messhall-v4-v_acwupz
+[07:39:59] [Render thread/INFO] [de.cr.be.MealV4ClientSmoke$ReloadSmokeClient/]: V4_CLIENT_RELOAD_PASS rates=[100, 120, 110] observations=45 ammo=29
+[07:39:59] [Server thread/INFO] [de.cr.be.MealV4ClientSmoke/]: V4_SERVER_RELOAD_PASS ticks=54 ammo=29

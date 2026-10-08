@@ -9,8 +9,8 @@ import java.util.List;
 @Pseudo
 @Mixin(targets="com.tacz.guns.item.ModernKineticGunItem",remap=false)
 public abstract class MealBashMixin {
-    @ModifyVariable(method="doPerLivingHurt",at=@At("HEAD"),argsOnly=true,ordinal=0,remap=false)
+    @ModifyVariable(method="doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V",at=@At("HEAD"),argsOnly=true,index=2,remap=false)
     private static float arsenal$mealKnockback(float value,LivingEntity user,LivingEntity target,float knockback,float damage,List<?> effects){return MealGunCompat.scale(user,"heavy_hand",value);}
-    @ModifyVariable(method="doPerLivingHurt",at=@At("HEAD"),argsOnly=true,ordinal=1,remap=false)
+    @ModifyVariable(method="doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V",at=@At("HEAD"),argsOnly=true,index=3,remap=false)
     private static float arsenal$mealBash(float value,LivingEntity user,LivingEntity target,float knockback,float damage,List<?> effects){return MealGunCompat.scale(user,"brawler",value);}
 }

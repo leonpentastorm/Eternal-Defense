@@ -620,5 +620,18 @@
   "gui.arsenal_beacon.kitchen.links": "Pots: %s / %s",
   "gui.arsenal_beacon.meal.timer": "Field time: %s",
   "gui.arsenal_beacon.meal.home": "HOME ENHANCEMENT | 2\u00d7 | FROZEN",
-  "gui.arsenal_beacon.meal.field": "FIELD | Normal strength"
+  "gui.arsenal_beacon.meal.field": "FIELD | Normal strength",
+  "gui.arsenal_beacon.adaptation.learned": "The Raid just adapted to %s damage (%s%% resistance).",
+  "gui.arsenal_beacon.adaptation.immune": "The Raid is now immune to %s trap damage.",
+  "gui.arsenal_beacon.adaptation.type.fire": "fire",
+  "gui.arsenal_beacon.adaptation.type.fall": "fall",
+  "gui.arsenal_beacon.adaptation.type.drowning": "drowning",
+  "gui.arsenal_beacon.adaptation.type.suffocation": "suffocation",
+  "gui.arsenal_beacon.adaptation.type.spikes": "spike",
+  "gui.arsenal_beacon.adaptation.type.crushing": "crushing",
+  "gui.arsenal_beacon.adaptation.type.freezing": "freezing",
+  "gui.arsenal_beacon.adaptation.type.explosion": "explosion",
+  "gui.arsenal_beacon.adaptation.type.projectile": "projectile",
+  "gui.arsenal_beacon.adaptation.type.magic": "magic / poison",
+  "gui.arsenal_beacon.adaptation.type.lightning": "lightning"
 }

@@ -1,0 +1,158 @@
+{
+  "project_version": "0.0.5",
+  "date": "2026-10-08",
+  "branch": "feature/messhall-ver-4",
+  "base_commit": "2ecd1276d58e430dda1ef6a012c82beccc9d57f4",
+  "network_protocol": 24,
+  "environment": {
+    "minecraft": "1.20.1",
+    "forge": "47.4.20",
+    "java": 17,
+    "tacz": "1.1.8-hotfix2",
+    "tacz_attributes": "1.4",
+    "optional_lrtactical": "0.4.3"
+  },
+  "build": {
+    "command": "./gradlew --no-daemon --offline build releaseJars",
+    "result": "passed",
+    "editions": [
+      "pack",
+      "standalone"
+    ],
+    "log": "/tmp/messhall-v4-build-10.log"
+  },
+  "unit_tests": {
+    "arsenal-beacon": {
+      "tests": 70,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "arsenal-gun-guide": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "execution": "Gradle up-to-date; unchanged guide tests were not rerun in this round"
+    }
+  },
+  "server": {
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v4-jv9q2b1s",
+    "baseline_tests_passed": 11,
+    "additional_cases_passed": [
+      "v4trapclasseswavesandpersistence",
+      "v4weaponsremaineffectiveaftertrapimmunity",
+      "v4sunlightprotectionkeepscombatfire",
+      "v4backendmodifierspreserveotherowners",
+      "v4nativereloadratetransitions",
+      "v3everyvanillafoodhasatraitandeveryeffectisreachable",
+      "v3pairbonusneedstwodifferentfoodsofonefamily",
+      "v3mealshowsasvanillaeffectsandfollowsthehomezone",
+      "v3recoveryhearthandspringystepactontheirdamage"
+    ],
+    "native_bullet_damage": {
+      "baseline": 6.0,
+      "field": 6.4799805,
+      "home": 6.959961
+    },
+    "native_ak_empty_reload_ms": {
+      "baseline": 2669,
+      "home": 2198,
+      "field": 2399
+    },
+    "installed_jars_sha512": {
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "23f3b83c6a1ee01b87c9652535176ab8ab1eea34680444863901bd289ed0631fc2793be4f99acfa1d4a78eda3f4bcad22979cd7d9b530a3887e231928bcd97a9",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    }
+  },
+  "restart": {
+    "result": "passed",
+    "servings": 9,
+    "remaining_field_ticks": 12345,
+    "evidence": "docs/validation/messhall-v4/restart.txt"
+  },
+  "optional_grenades": {
+    "result": "passed",
+    "case": "v4optionalgrenadeownerandradius",
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v4-avudqwhg",
+    "installed_jars_sha512": {
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "f4e43e8f205baf80a45a13b2a52a86715c2bf94a863306ecf0f58947017f5e8c8454f3c168262cb94f5869afa7c4d6756486936ba366531b527528f8a3f28fe3",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94",
+      "lrtactical-1.20.1-0.4.3.jar": "57c4faa6fb408f8226271ecb8ec855de728fbe04687e4c05bf36654e6f5e7fa2aba92d3ed32b108920dd34c06011cb920889f109f6e91d2c9d8e21645cb4cd39"
+    },
+    "note": "Uses prior test-fixture build; production gameplay classes are unchanged from the delivery candidate."
+  },
+  "client": {
+    "result": "passed",
+    "runtime_instance": "/workspace/.eternal-defense/test-runs/messhall-v4-client-h0r5rnwd",
+    "server_instance": "/workspace/.eternal-defense/test-runs/messhall-v4-v_acwupz",
+    "clip_rates_observed": [
+      1.0,
+      1.1,
+      1.2
+    ],
+    "active_reload_clip_observations": 45,
+    "magazine_ammo_after_reload": 29,
+    "server_reload_ticks": 54,
+    "scenarios": [
+      "home -> field during reload",
+      "meal removed during reload: neutral rate",
+      "field meal restored during reload",
+      "return home during reload",
+      "native ammo transfer and neutral runner cleanup at completion"
+    ],
+    "screenshot": "docs/validation/messhall-v4/reload-complete.png",
+    "installed_jars_sha512": {
+      "tacz-1.20.1-1.1.8-hotfix2.jar": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "arsenal-beacon-0.21.0-standalone.jar": "74a41ede8f9db2a3eddd6e9ca5e62c6b6e2e8c23b2ebca3539bbefbfdfed333f6e30d0048ace9f1cda1f325f11960c3960975a60adcc38d902c083e43614b052",
+      "tacz-attributes-1.4.jar": "f2cc86c479796de25fe95cf9e98e539385a65a9cb01bd360285fc5c68a0692fb74de840b85f7a7b339426ab0c7a791a6407c327fafb7773d98c5e347dbbc1a94"
+    }
+  },
+  "artifacts_sha512": {
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar": "74a41ede8f9db2a3eddd6e9ca5e62c6b6e2e8c23b2ebca3539bbefbfdfed333f6e30d0048ace9f1cda1f325f11960c3960975a60adcc38d902c083e43614b052",
+    "custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0.jar": "e325a0f04ea8cd1c4774ef09c66b3696af9bbd0a32871bdfefe6081457378423e4b5ded60d3d1d7f5c7e038f89d1a1f354e05fc98dd0c7c782d02e5ff9696272",
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0-standalone.jar": "a0146403a70dc065038b06dcf2d90beab39ec50fa36da8114dcd1b3262ef9f0c55f27976663e3265474b67296649c475baf1b41f24077ab1df6964d871cf6271",
+    "custom-mods/arsenal-displays/build/libs/arsenal-displays-1.1.0.jar": "a5ddc69c6d1ad05e795a2391b8ae63ebb977b973bbd984e2f5426267bc895e110a4e715846a776aaaba999288dbcbfd43f43efd5ae95a38c4617dc141fef5a87",
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0-standalone.jar": "b545e9e9d52fa07325606e275cf0f1b7109894613a4b34ad1b6d0d7528768d448593776eceec4ff09b25e4247b92489fbfbed2d0929e74263052d04144de13ef",
+    "custom-mods/arsenal-gun-guide/build/libs/arsenal-gun-guide-0.21.0.jar": "9b9756a75ebf7b7f0ddf0bcd947c21280262da2686fcd982764e75b72e8fdec3ae98aace82c491def92bda3319e1db0c70b5935ad825e7830813b3d0340279a1"
+  },
+  "remaining": [
+    "Full Create/KubeJS pack runtime",
+    "Two human clients / Essential co-op",
+    "Custom gun namespaces, private script clocks and animation conventions",
+    "Exhaustive tactical/shell-stage reload, cancel/swap/death/disconnect scenarios",
+    "Source-erasing third-party turret integrations",
+    "Long survival/raid balance and all GUI scales"
+  ],
+  "delivery": {
+    "authorized_branch": "feature/messhall-ver-4",
+    "zip": "dist/Arsenal-MessHall-v4-0.0.5-test.zip",
+    "new_required_mod_included": "TaCZ Attributes 1.4, unmodified separate JAR in each edition folder",
+    "merge_or_public_release": false
+  },
+  "tested_build_comparison": {
+    "server": {
+      "production_gameplay_entries_identical": true,
+      "changed_qa_entries": [
+        "dev/createarsenal/beacon/MealV4ClientSmoke$Client.class",
+        "dev/createarsenal/beacon/MealV4ClientSmoke$ReloadSmokeClient.class",
+        "dev/createarsenal/beacon/MealV4ClientSmoke.class"
+      ]
+    },
+    "optional_grenades": {
+      "production_gameplay_entries_identical": true,
+      "changed_qa_entries": [
+        "dev/createarsenal/beacon/MealV4ClientSmoke$Client.class",
+        "dev/createarsenal/beacon/MealV4ClientSmoke$ReloadSmokeClient.class",
+        "dev/createarsenal/beacon/MealV4ClientSmoke.class",
+        "dev/createarsenal/beacon/MessHallV4GameTests.class"
+      ]
+    }
+  },
+  "qa_runner_checks": [
+    "Python syntax compilation passed",
+    "Self-contained launcher argument expansion matches the tested runtime helper for all official manifest arguments"
+  ]
+}

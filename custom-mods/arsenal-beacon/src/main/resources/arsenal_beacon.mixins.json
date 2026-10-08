@@ -6,11 +6,15 @@
   "mixins": [
     "SoundResourceCacheMixin",
     "GunPackSyncMixin",
-    "MealReloadMixin",
     "MealBashMixin",
-    "MealExplosionMixin"
+    "MealExplosionMixin",
+    "MealReloadContinuityMixin",
+    "RaiderSunlightMixin",
+    "MealGrenadeMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "refmap": "arsenal_beacon.refmap.json",
+  "plugin": "dev.createarsenal.beacon.mixin.MealMixinPlugin"
 }
