@@ -1,0 +1,62 @@
+QA_CHECK PASS compose is equivalent to the v6 implementation on 6000 random Mk IV stew tables of real foods (1995 rejections became 'missing') same=6000 differ=0
+QA_CHECK PASS the one-screen kitchen opens with the recipe palette cells=26
+QA_CHECK PASS with nothing chosen, nothing on the table: coach says add food, button disabled problem=ingredients
+QA_CHECK PASS the pack makes Vitality (fit 2) but has no Recovery food [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+QA_CHECK PASS one click chooses the recipe (server order) [0]
+QA_CHECK PASS the order is stored with the hall 
+QA_CHECK PASS the table does not make it yet, Gather is offered problem=missing
+QA_CHECK PASS Gather put foods and bread on the table 
+QA_CHECK PASS the table is ready to cook problem=
+QA_CHECK PASS a notice was shown gathered
+QA_CHECK PASS a sandwich with Vitality is in the output slot 
+QA_CHECK PASS the fillings were spent 
+QA_CHECK PASS Firepower is refused alongside Vitality order_conflict
+QA_CHECK PASS Clear returns to automatic []
+QA_CHECK PASS a legendary and an ordinary recipe can be ordered together [3, 4]
+QA_CHECK PASS sandwich limit is two: a third is refused 
+QA_CHECK PASS the third recipe is refused (order full) order_full
+QA_CHECK PASS Gather fills the table for Firepower + Mobility problem=
+QA_CHECK PASS Take back empties the table into the pack 
+QA_CHECK PASS mode is stored with the hall 
+QA_CHECK PASS Mk IV stew gathers four foods for the doubled legendary and two for Mobility 
+QA_CHECK PASS every chosen effect is doubled (Mk IV stew, pack allows it) [{Effect:4,Pair:1b},{Effect:3,Pair:1b}]
+QA_CHECK PASS the stew is in the pot servings=16
+QA_CHECK PASS the order survives closing the screen 
+QA_CHECK PASS reopened hall shows the same order and mode [3, 4]
+QA_CHECK PASS three disjoint legendary recipes can be ordered in a Mk IV stew [20, 23, 25]
+QA_CHECK PASS Mk 1: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 1: the hall has a Mk 1 menu mk=1
+QA_CHECK PASS Mk 1: stew is locked mode=false notice=stew_locked
+QA_CHECK PASS Mk 1: the sandwich lasts 15 minutes duration=18000
+QA_CHECK PASS Mk 1: ?2 doubling is off [Bonus[effect=VITALITY, strength=1, pair=false], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 2: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 2: the hall has a Mk 2 menu mk=2
+QA_CHECK PASS Mk 2: stew is open mode=true notice=
+QA_CHECK PASS Mk 2: the sandwich lasts 20 minutes duration=24000
+QA_CHECK PASS Mk 2: ?2 doubling is off [Bonus[effect=VITALITY, strength=1, pair=false], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 2: the stew lasts 20 minutes and fills 8 servings duration=24000 servings=8
+QA_CHECK PASS Mk 3: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 3: the hall has a Mk 3 menu mk=3
+QA_CHECK PASS Mk 3: stew is open mode=true notice=
+QA_CHECK PASS Mk 3: the sandwich lasts 25 minutes duration=30000
+QA_CHECK PASS Mk 3: ?2 doubling is on [Bonus[effect=VITALITY, strength=1, pair=true], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 3: the stew lasts 25 minutes and fills 12 servings duration=30000 servings=12
+QA_CHECK PASS taking a bowl is announced Took a bowl ? only 2 left
+QA_CHECK PASS the bowl arrived 
+QA_CHECK PASS low stock is reported with a count Took the last bowl ? restock it with empty hands
+QA_CHECK PASS an empty dispenser says so The Bowl Dispenser is empty ? crouch with empty hands to stock it.
+QA_CHECK PASS the server sees a sneaking player with empty hands sneak=true main=0 air off=0 air client sneak=true
+QA_CHECK PASS the Bowl Dispenser screen opens dev.createarsenal.beacon.BowlDispenserScreen@4e32d885
+QA_CHECK PASS milk with nothing to clear tells you so You have no effects to clear ? no milk spent.
+QA_CHECK PASS and spends nothing 
+QA_CHECK PASS the milk announces what it cleared and how much is left Milk cleared Poison, Strength, your Firepower Stew ? 5,500 mB left
+QA_CHECK PASS a lost meal gets a chat line [The milk washed away your Firepower Stew.]
+QA_CHECK PASS one dose was spent 
+QA_CHECK PASS effects are gone 
+QA_CHECK PASS the server sees a sneaking player with empty hands (milk) sneak=true main=0 air
+QA_CHECK PASS the Milk Dispenser screen opens dev.createarsenal.beacon.MilkDispenserScreen@4179260d
+QA_CHECK PASS fabrication tab shows all eleven cards tab=2
+QA_CHECK PASS the upgrade view has one button, dark while the materials are missing dev.createarsenal.beacon.Ui$UiButton@25832704
+QA_CHECK PASS with free materials the one button is live 
+QA_CHECK PASS one click raised the table one Age 2
+QA_SUMMARY pass=61 fail=0

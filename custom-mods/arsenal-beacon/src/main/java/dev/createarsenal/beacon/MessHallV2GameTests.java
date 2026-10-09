@@ -35,7 +35,7 @@ public final class MessHallV2GameTests {
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v2TierBatchCostsContainersAndComposition(GameTestHelper h){
         MealData composition=null;
-        for(int mk=1;mk<=4;mk++){var f=fixture(h,mk,mk);try{
+        for(int mk=4;mk<=4;mk++){var f=fixture(h,mk,mk);try{ // 0.0.11: six food slots exist only at Mk IV, and stew needs Mk II
             batchFood(f,16);var preview=IngredientTraits.compose(f.hall.ingredients,true);h.assertTrue(preview.meal()!=null,"Bundled vanilla foods compose a meal");if(composition==null)composition=preview.meal();else h.assertTrue(composition.equals(preview.meal()),"Tier and quantity never increase composition strength");
             h.assertTrue(preview.meal().bonuses().stream().map(MealData.Bonus::effect).toList().equals(List.of(MealRules.Effect.MIGHT,MealRules.Effect.RECOVERY,MealRules.Effect.SWIM)),"Ordinary defaults preserve all three food bonuses: "+preview.meal().bonuses());
             var menu=new MessHallMenu(mk,f.player.getInventory(),f.hall.ingredients,f.root,mk,f.hall);menu.clickMenuButton(f.player,1);var batch=IngredientTraits.batch(f.hall.ingredients,preview,true,mk);

@@ -25,7 +25,8 @@ final class MessHall {
         /** The table's standing order, kept with the ingredients: sandwich or stew, and the recipes chosen on the kitchen screen (empty = automatic). */
         boolean stewMode;final EnumSet<MealRules.Effect> order=EnumSet.noneOf(MealRules.Effect.class);
         boolean explicitOrder(){return !order.isEmpty();}
-        void setMode(boolean stew){if(stewMode!=stew){stewMode=stew;if(order.size()>(stew?3:2))order.clear();setChanged();}}
+        /** Stew needs a Mk II hall; a Mk I hall always stays on sandwiches. */
+        void setMode(boolean wanted){boolean stew=wanted&&tier().stew();if(stewMode!=stew){stewMode=stew;if(order.size()>(stew?3:2))order.clear();setChanged();}}
         void setOrder(Set<MealRules.Effect> next){order.clear();order.addAll(next);setChanged();}
         final SimpleContainer ingredients=new SimpleContainer(8){@Override public void setChanged(){super.setChanged();HallEntity.this.setChanged();}};
         HallEntity(BlockPos pos,BlockState state){super(ArsenalBeacon.MESS_HALL_ENTITY.get(),pos,state);}

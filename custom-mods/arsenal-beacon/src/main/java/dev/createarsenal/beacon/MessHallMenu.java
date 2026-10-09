@@ -24,7 +24,11 @@ import java.util.function.Supplier;
  * 40+ toggle a recipe (one per effect, signed bytes), 100+ choose a pot.
  */
 final class MessHallMenu extends AbstractContainerMenu {
-    static final int WIDTH=316,HEIGHT=238,MIX_X=9,MIX_Y=116,BASE_X=148,OUT_X=178,INV_Y=159,HOT_Y=217;
+    /** Two columns: the table and its buttons on the left, the effects to choose on the right. Needs a GUI at least 376 wide (every 16:9 window does). */
+    static final int WIDTH=376,HEIGHT=238,MIX_X=9,MIX_Y=48,INV_Y=159,HOT_Y=217;
+    /** The base bread and the sandwich output sit just after the open food slots, so a hall with three slots does not leave a gap. */
+    static int baseX(int mk){return MIX_X+MealRules.tier(mk).slots()*18+10;}
+    static int outX(int mk){return baseX(mk)+24;}
     static final int MODE_SANDWICH=0,MODE_STEW=1,PREPARE=2,UPGRADE=3,CLEAR=4,GATHER=5,TAKE_BACK=6,RECIPE=40,POT=100;
     /** Notice kinds shown by the screen: 0 information, 1 something to fix, 2 done. */
     static final int INFO=0,WARN=1,DONE=2;
@@ -36,14 +40,18 @@ final class MessHallMenu extends AbstractContainerMenu {
     private boolean catalogueSent,seenMode;private int noticeSeq,noticeKind;private String noticeKey="";private List<String> noticeArgs=List.of();
     private long fitSignature=Long.MIN_VALUE;private int[] fit=new int[MealRules.Effect.values().length];private boolean gatherable,covered;
     MessHallMenu(int id,Inventory inv,Container ingredients,BlockPos pos,int mk,MessHall.HallEntity hall){
-        super(ArsenalBeacon.MESS_HALL_MENU.get(),id);this.ingredients=ingredients;this.pos=pos;this.mk=mk;this.hall=hall;this.player=inv.player;this.stew=this.seenMode=hall!=null&&hall.stewMode;
-        for(int i=0;i<6;i++)addSlot(new Slot(ingredients,i,MIX_X+i*18,MIX_Y){@Override public boolean mayPlace(ItemStack stack){return player.level().isClientSide||IngredientTraits.accepts(stack);}});
-        addSlot(new Slot(ingredients,6,OUT_X,MIX_Y){
+        super(ArsenalBeacon.MESS_HALL_MENU.get(),id);this.ingredients=ingredients;this.pos=pos;this.mk=mk;this.hall=hall;this.player=inv.player;this.stew=this.seenMode=hall!=null&&hall.stewMode&&mk>=2;
+        int open=MealRules.tier(mk).slots();
+        for(int i=0;i<6;i++){final boolean usable=i<open;addSlot(new Slot(ingredients,i,MIX_X+i*18,MIX_Y){
+            @Override public boolean mayPlace(ItemStack stack){return usable&&(player.level().isClientSide||IngredientTraits.accepts(stack));}
+            @Override public boolean isActive(){return usable;}
+        });}
+        addSlot(new Slot(ingredients,6,outX(mk),MIX_Y){
             @Override public boolean mayPlace(ItemStack stack){return false;}
             @Override public boolean isActive(){return !stew;}
             @Override public boolean mayPickup(Player p){return !stew;}
         });
-        addSlot(new Slot(ingredients,7,BASE_X,MIX_Y){
+        addSlot(new Slot(ingredients,7,baseX(mk),MIX_Y){
             @Override public boolean mayPlace(ItemStack stack){return stack.is(Items.BREAD);}
             @Override public boolean isActive(){return !stew;}
             @Override public boolean mayPickup(Player p){return !stew;}
@@ -60,6 +68,7 @@ final class MessHallMenu extends AbstractContainerMenu {
     boolean explicit(){return hall.explicitOrder();}
     IngredientTraits.Preview composition(){return IngredientTraits.compose(ingredients,stew,hall.mk(),explicit()?hall.order:null);}
     String problem(IngredientTraits.Preview preview){
+        if(stew&&!hall.tier().stew())return "stew_locked";
         if(!preview.problem().isEmpty())return preview.problem();
         var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());if(!batch.problem().isEmpty())return batch.problem();
         if(stew){var pot=target();return pot==null?"pot":!pot.empty()?"pot_full":"";}
@@ -145,6 +154,7 @@ final class MessHallMenu extends AbstractContainerMenu {
 
     @Override public boolean clickMenuButton(Player p,int button){
         if(!stillValid(p)||p!=player)return false;
+        if(button==MODE_STEW&&!hall.tier().stew()){notice(WARN,"stew_locked");broadcastChanges();return false;}
         if(button==MODE_SANDWICH||button==MODE_STEW){
             stew=seenMode=button==MODE_STEW;hall.setMode(stew);hall.discover();
             if(explicit()&&!possible(hall.order,hall.mk())){hall.setOrder(EnumSet.noneOf(MealRules.Effect.class));notice(WARN,stew?"order_reset_stew":"order_reset_sandwich");}

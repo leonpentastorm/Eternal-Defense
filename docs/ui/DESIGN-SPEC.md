@@ -106,7 +106,8 @@ the beacon's own palette (charcoal `#2f343a` brushed metal, gold `#c3963f` plate
 
 Rules the kitchen and dispenser screens follow (0.0.8). New container screens should too.
 
-* **Size.** Never wider than 316 or taller than 238 GUI pixels: Minecraft's automatic GUI scale guarantees a 320 x 240 window, so a larger panel is cut off at the smallest supported size. Check at GUI scale 3 on a 1280 x 720 window.
+* **Size.** Never taller than 238 GUI pixels: Minecraft's automatic GUI scale guarantees at least 240 rows. Width: 316 by default (the guaranteed 320). A screen that needs two columns may be up to 376 wide, which every 16:9 window has (a 1280 x 720 window at scale 3 is 427 x 240); say so in its documentation, because a 4:3 screen at a high scale is narrower. The Mess Hall is the one 376 px screen. Check at GUI scale 3 on a 1280 x 720 window.
+* **Columns.** When one screen has both actions and choices, keep them apart: buttons that do something (mode tabs, Gather/Make/Cook, Take back, Clear, Upgrade) in the left column, the things you choose (the effect tiles) and what they add up to in the right column. Calm the tiles, not the numbers: unchosen choices are dimmed, the chosen ones carry the one bright frame.
 * **Slots.** Draw every slot with `Ui.slot` (a coloured 18 px frame and a recessed 16 px well) and the player's inventory with `Ui.inventory`; never plain bordered rectangles. The frame takes the accent of what the slot is for (effect colour, tier colour); an empty slot that wants something specific shows `Ui.ghost` of that item.
 * **Status cards.** One `Ui.card` carries a block's state; its accent says how it is doing (brass or cyan normal, orange running low, red empty). The numbers and a `Ui.bar` or `Ui.tank` sit inside it.
 * **Key hints** come from the live key bindings through `Ui.keyHint`, never from fixed text such as "right-click".

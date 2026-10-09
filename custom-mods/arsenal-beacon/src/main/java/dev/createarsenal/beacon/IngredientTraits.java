@@ -48,7 +48,7 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     static Preview compose(Container ingredients,boolean stew,int mk){return compose(ingredients,stew,mk,null);}
     static Preview compose(Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
         var table=new ArrayList<MealPlanner.Food>();var kinds=new HashSet<String>();boolean staple=false;
-        for(int i=0;i<6;i++){
+        for(int i=0;i<MealRules.tier(mk).slots();i++){
             var stack=ingredients.getItem(i);if(stack.isEmpty())continue;
             var food=foodOf(stack);
             if(food==null)return new Preview(null,kinds.size(),staple,"ingredient");

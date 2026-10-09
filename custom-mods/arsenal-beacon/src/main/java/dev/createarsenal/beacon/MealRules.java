@@ -5,6 +5,7 @@ import java.util.*;
 /** Balance and composition rules, independent of Minecraft registries. */
 final class MealRules {
     private MealRules(){}
+    /** The longest a meal can last (a Mk IV hall); every hall tier has its own length, see {@link #tier}. */
     static final int FIELD_TICKS=30*60*20,LINK_RANGE=8;
     static final double HOME_MULTIPLIER=2;
     /** Every meal effect. Order is the tie-break when two effects score the same, so new effects are only ever appended. */
@@ -24,7 +25,7 @@ final class MealRules {
         boolean reduction(){return this==RECOIL_CONTROL;}
         double cap(){return this==HEARTH||this==RECOIL_CONTROL?.8:this==SPRINGY?.9:Double.MAX_VALUE;}
     }
-    /** Mk IV stews can double an effect with distinct foods; legendary effects need two from each group. */
+    /** From Mk III a meal can double an effect with distinct foods; legendary effects need two from each group, which takes four food slots (Mk IV). */
     static final int PAIR_MULTIPLIER=2;
     record Mix(String first,String second,Effect effect){}
     /** Ordered matching: each group participates in at most one legendary mix. */
@@ -44,11 +45,19 @@ final class MealRules {
         }
         return List.copyOf(out);
     }
-    static boolean doubles(boolean stew,int mk,int first,int second,boolean legendary){return stew&&mk>=4&&first>=2&&(!legendary||second>=2);}
+    static boolean doubles(int mk,int first,int second,boolean legendary){return tier(mk).doubling()&&first>=2&&(!legendary||second>=2);}
     /** Health restored by Recovery, in ticks between pulses. */
     static final int RECOVERY_PERIOD=100;
-    record Tier(int pots,int servings,int ingredients){}
-    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,8,7);case 3->new Tier(3,12,10);case 4->new Tier(4,16,12);default->new Tier(1,4,4);};}
+    /**
+     * What a hall of this level can do. {@code slots}: food slots on the table (kinds of food). {@code minutes}: how long its meals last in the field.
+     * Mk I makes sandwiches only; Mk II unlocks stew; Mk III lets one effect count twice; Mk IV opens all six slots.
+     */
+    record Tier(int mk,int pots,int servings,int ingredients,int slots,int minutes){
+        boolean stew(){return mk>=2;}
+        boolean doubling(){return mk>=3;}
+        int ticks(){return minutes*60*20;}
+    }
+    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,2,8,7,3,20);case 3->new Tier(3,3,12,10,3,25);case 4->new Tier(4,4,16,12,6,30);default->new Tier(1,1,4,4,3,15);};}
     /** Reserve one unit of each composition type, then spread the remaining batch cost across stacks. */
     static int[] plan(int[] counts,int[] types,int required){
         var spent=new int[counts.length];var seen=new HashSet<Integer>();int left=required;

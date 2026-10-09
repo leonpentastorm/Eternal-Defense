@@ -1,8 +1,17 @@
 # Handoff: where the project stands
 
-Last updated for the **Field Guide side menu**, project **0.0.10** (on top of the Field Guide pass 0.0.9 and the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
+Last updated for the **Mess Hall levels and two-column kitchen**, project **0.0.11** (on top of the Field Guide pass 0.0.9 and the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **28-pack / 28-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Mess Hall levels, kitchen layout, table upgrade (0.0.11)
+
+* Rules are in `docs/MESS-HALL-TIERS.md` (read it first). Protocol **28**; the channel check has four places that carry the number (`BeaconNetwork` line 15): a first QA run caught that only the first had been changed.
+* `MessHallScreen` is a rewrite around two columns. Constants at the top (`LX/RX/..._Y`) are the whole layout; the slot positions live in `MessHallMenu` (`MIX_Y`, `baseX(mk)`, `outX(mk)`). It needs a GUI at least 376 wide; this is a decision of the owner ("make the UI bigger if needed"), documented in `docs/ui/DESIGN-SPEC.md`. Palette tiles are 20 px cells that dim unless chosen.
+* `PlatformScreen.renderUpgrade` is the whole Upgrade view (ladder, materials grid, one button); the browser's other widgets are hidden in that view each frame.
+* The legacy server GameTests (v2 to v6) were edited only enough to compile and to stop asserting the old Mk IV-only doubling. They have not run since the original author's runtime was last available; expect to re-baseline them when it returns.
+* Validation: `docs/TIERS-AND-TABLES-TESTING.md` (96 unit tests, `QaKitchen` 61/61 in the all-parts run, then 38/38 (pack) and 35/35 (standalone, kitchen and tiers parts) after a last label fix, and a pack-edition guide run 21/21; evidence in `docs/validation/messhall-tiers/`). Bundle: `python3 tools/release/package-field-guide.py --backend-jar <TaCZ Attributes 1.4 jar>` writes `dist/Arsenal-MessHallLevels-0.0.11-test.zip` and its `.sha512`. `tools/qa/QaKitchen.java.txt` has a `tiers` part (Mk I to III through the real menu) and the `table` part now clicks the Upgrade button.
+* Not done: a human playthrough of the new tier ladder (is 15 minutes at Mk I enough to matter? is Mk III with three slots a real step up?); balance is the owner's numbers, untested in play.
 
 ## Field Guide side menu (0.0.10)
 

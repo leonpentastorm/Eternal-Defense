@@ -25,6 +25,10 @@ Found and fixed during the run: the label colour leaked over the whole bullet (c
 * Clicking the menu at scale 2 jumped to the right page. Hovering the rail was seen to show a name only in the code path; the tooltip was not captured in a screenshot.
 * `LangKeysTest.everyGuidePageHasItsOwnMenuIcon` reads the source: a page without an icon `case` fails.
 
+## 0.0.11 text changes
+
+The Mess Hall page (new *Mess Hall levels* and *Doubling (×2)* cards, Mk I to IV wording on the sandwich, stew and meal cards) and the Stations page (the Ages card, one Upgrade button) changed. `QaGuide`, pack edition, 1280 x 720, was re-run on the final text: **21 of 21** checks. The two Mess Hall cards were read in the screenshots (`docs/validation/messhall-tiers/guide-*.png`). The standalone edition's text for these cards was read in the lang file and covered by the edition tests, but not re-photographed in this round. The beacon unit tests number 96, all passing.
+
 ## Not tested
 
 * A new player reading it. Nobody has checked that the copy actually answers their questions; it is written from the code and the design document.

@@ -16,9 +16,14 @@ final class MealRulesTest {
         var sandwich=MealRules.select(scores,false);var stew=MealRules.select(scores,true);assertEquals(2,sandwich.size());assertEquals(3,stew.size());assertEquals(MealRules.Effect.MOBILITY,sandwich.get(0));assertEquals(MealRules.Effect.VITALITY,sandwich.get(1));assertEquals(sandwich,MealRules.select(new HashMap<>(scores),false));
         assertTrue(MealRules.select(Map.of(MealRules.Effect.FORTITUDE,0),true).isEmpty());assertEquals(1,MealRules.select(Map.of(MealRules.Effect.VITALITY,2),false).size());
     }
-    @Test void eachTierKeepsBothMealModesAndImprovesCommunalCapacity(){
-        for(int mk=1;mk<=4;mk++){assertEquals(mk,MealRules.tier(mk).pots());assertEquals(mk*4,MealRules.tier(mk).servings());}
-        assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);
+    @Test void eachTierBuildsOnTheLastOne(){
+        int[] minutes={15,20,25,30},slots={3,3,3,6};
+        for(int mk=1;mk<=4;mk++){
+            var tier=MealRules.tier(mk);assertEquals(mk,tier.pots());assertEquals(mk*4,tier.servings());
+            assertEquals(minutes[mk-1],tier.minutes(),"Mk "+mk+" meals last");assertEquals(minutes[mk-1]*1200,tier.ticks());assertEquals(slots[mk-1],tier.slots(),"Mk "+mk+" food slots");
+            assertEquals(mk>=2,tier.stew(),"stew is unlocked by Mk II");assertEquals(mk>=3,tier.doubling(),"doubling is unlocked by Mk III");
+        }
+        assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);assertEquals(MealRules.FIELD_TICKS,MealRules.tier(4).ticks(),"the longest meal is the old fixed half hour");
     }
     @Test void stewCostsGrowMoreSlowlyThanServingsButConsumeRealFood(){
         int[] costs={4,7,10,12};for(int mk=1;mk<=4;mk++){
@@ -57,10 +62,10 @@ final class MealRulesTest {
         assertEquals(15,effects.size());assertEquals(3,MealRules.mixes(new HashSet<>(groups)).size());
         var used=new HashSet<String>();for(var mix:MealRules.mixes(new HashSet<>(groups))){assertTrue(used.add(mix.first()));assertTrue(used.add(mix.second()));}
     }
-    @Test void doublesUnlockOnlyForMkFourStewAndFourFoodsForLegendary(){
-        for(int mk=1;mk<4;mk++){assertFalse(MealRules.doubles(true,mk,2,2,true));assertFalse(MealRules.doubles(true,mk,2,0,false));}
-        assertTrue(MealRules.doubles(true,4,2,2,true));assertTrue(MealRules.doubles(true,4,2,0,false));
-        assertFalse(MealRules.doubles(true,4,2,1,true));assertFalse(MealRules.doubles(true,4,1,2,true));assertFalse(MealRules.doubles(false,4,2,2,true));
+    @Test void doublesUnlockAtMkThreeAndLegendaryNeedsTwoFoodsFromEachGroup(){
+        for(int mk=1;mk<3;mk++){assertFalse(MealRules.doubles(mk,2,2,true));assertFalse(MealRules.doubles(mk,2,0,false));}
+        for(int mk=3;mk<=4;mk++){assertTrue(MealRules.doubles(mk,2,0,false));assertTrue(MealRules.doubles(mk,2,2,true));assertFalse(MealRules.doubles(mk,1,0,false));}
+        assertFalse(MealRules.doubles(4,2,1,true));assertFalse(MealRules.doubles(4,1,2,true));
         assertEquals("−10%",new MealData.Bonus(MealRules.Effect.RECOIL_CONTROL,1).amountText(false));
     }
     @Test void damageProtectionsNeverReachFullImmunity(){

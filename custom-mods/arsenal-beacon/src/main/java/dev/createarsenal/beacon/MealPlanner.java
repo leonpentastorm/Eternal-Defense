@@ -9,7 +9,7 @@ import java.util.*;
  */
 final class MealPlanner {
     private MealPlanner(){}
-    static final int SLOTS=6,BUDGET=12000;
+    static final int BUDGET=12000;
     /** One kind of food: its registry id, its canonical group, the ordinary effects it feeds (never gun effects) and how many fit one slot. */
     record Food(String key,String group,Map<MealRules.Effect,Integer> weights,boolean staple,int stackLimit){
         Food {weights=Map.copyOf(weights);}
@@ -26,7 +26,7 @@ final class MealPlanner {
             groups.computeIfAbsent(food.group,k->new HashSet<>()).add(food.key);
             staple|=food.staple;food.weights.forEach((e,w)->scores.merge(e,w,Math::max));
         }
-        int limit=stew?3:2,occupied=foods.size();var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<String>();var reserved=new HashSet<String>();
+        var tier=MealRules.tier(mk);int limit=stew?3:2,occupied=foods.size();var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<String>();var reserved=new HashSet<String>();
         var unmet=EnumSet.noneOf(MealRules.Effect.class);
         if(selected!=null){
             if(selected.isEmpty()||selected.size()>limit)return new Eval(null,occupied,staple,"selection",unmet,List.of());
@@ -35,7 +35,7 @@ final class MealPlanner {
                 var first=groups.get(mix.first());var second=groups.get(mix.second());
                 if(first==null||second==null){unmet.add(mix.effect());continue;}
                 used.addAll(first);used.addAll(second);
-                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(mk,first.size(),second.size(),true)));
             }
         }
         var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
@@ -44,11 +44,11 @@ final class MealPlanner {
         for(var e:ordinary){
             if(!scores.containsKey(e)){unmet.add(e);continue;}
             boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(key->!used.contains(key)&&foods.get(key).containsKey(e)).count()>=2);
-            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
+            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(mk,doubled?2:1,0,false)));
         }
-        String problem=!unmet.isEmpty()?"missing":occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
+        String problem=table.size()>tier.slots()?"slots":!unmet.isEmpty()?"missing":occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
         var made=bonuses.stream().limit(limit).toList();
-        return new Eval(problem.isEmpty()?new MealData(stew,made,MealRules.FIELD_TICKS):null,occupied,staple,problem,unmet,made);
+        return new Eval(problem.isEmpty()?new MealData(stew,made,tier.ticks()):null,occupied,staple,problem,unmet,made);
     }
 
     /** {@code units} lines up with {@code keys}: what to put in each slot. {@code covered}: the pool can pay the whole batch. */
@@ -64,7 +64,7 @@ final class MealPlanner {
         var legendary=new ArrayList<MealRules.Mix>();var ordinary=new ArrayList<MealRules.Effect>();var reserved=new HashSet<String>();
         for(var mix:MealRules.MIXES)if(order.contains(mix.effect())){if(!reserved.add(mix.first())||!reserved.add(mix.second()))return null;legendary.add(mix);}
         for(var e:new TreeSet<>(order))if(!e.gun())ordinary.add(e);
-        int required=stew?MealRules.tier(mk).ingredients():0,cap=stew?Math.min(SLOTS,required):3;boolean doubling=stew&&mk>=4;
+        var tier=MealRules.tier(mk);int required=stew?tier.ingredients():0,cap=stew?Math.min(tier.slots(),required):Math.min(3,tier.slots());boolean doubling=tier.doubling();
         Comparator<String> rank=(a,b)->{
             int onA=onTable.contains(a)?0:1,onB=onTable.contains(b)?0:1;if(onA!=onB)return onA-onB;
             int sa=usable(catalogue,stock,a),sb=usable(catalogue,stock,b);return sa!=sb?sb-sa:a.compareTo(b);

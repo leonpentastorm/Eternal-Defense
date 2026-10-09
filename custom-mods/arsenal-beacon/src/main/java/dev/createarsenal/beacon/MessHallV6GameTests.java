@@ -37,7 +37,7 @@ public final class MessHallV6GameTests {
         for(int a=0;a<effects.size();a++)for(int b=a+1;b<effects.size();b++)for(int c=b+1;c<effects.size();c++){
             var selected=EnumSet.of(effects.get(a),effects.get(b),effects.get(c));var items=selected.stream().flatMap(e->PAIRS.get(e).stream()).toArray(Item[]::new);var inputs=MessHallV5GameTests.inputs(items);
             h.assertTrue(IngredientTraits.compose(inputs,true,4).meal().bonuses().stream().noneMatch(v->v.effect().gun()),"Ordinary default never auto-mixes gun effects");
-            for(int mk=1;mk<=4;mk++){final boolean doubled=mk==4;var meal=IngredientTraits.compose(inputs,true,mk,selected).meal();h.assertTrue(meal!=null&&meal.bonuses().size()==3&&meal.bonuses().stream().allMatch(v->selected.contains(v.effect())&&v.pair()==doubled),"Every chosen triple is available, tier "+mk+": "+selected);}
+            for(int mk=4;mk<=4;mk++){final boolean doubled=true;var meal=IngredientTraits.compose(inputs,true,mk,selected).meal();h.assertTrue(meal!=null&&meal.bonuses().size()==3&&meal.bonuses().stream().allMatch(v->selected.contains(v.effect())&&v.pair()==doubled),"Every chosen triple is available, tier "+mk+": "+selected);}
             tested++;
         }h.assertTrue(tested==165,"All 11 choose 3 ordinary combinations covered");h.succeed();
     }

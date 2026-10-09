@@ -1,0 +1,36 @@
+QA_CHECK PASS the one-screen kitchen opens with the recipe palette cells=26
+QA_CHECK PASS with nothing chosen, nothing on the table: coach says add food, button disabled problem=ingredients
+QA_CHECK PASS the pack makes Vitality (fit 2) but has no Recovery food [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+QA_CHECK PASS one click chooses the recipe (server order) [0]
+QA_CHECK PASS the order is stored with the hall 
+QA_CHECK PASS the table does not make it yet, Gather is offered problem=missing
+QA_CHECK PASS Gather put foods and bread on the table 
+QA_CHECK PASS the table is ready to cook problem=
+QA_CHECK PASS a notice was shown gathered
+QA_CHECK PASS a sandwich with Vitality is in the output slot 
+QA_CHECK PASS the fillings were spent 
+QA_CHECK PASS Firepower is refused alongside Vitality order_conflict
+QA_CHECK PASS Clear returns to automatic []
+QA_CHECK PASS a legendary and an ordinary recipe can be ordered together [3, 4]
+QA_CHECK PASS sandwich limit is two: a third is refused 
+QA_CHECK PASS the third recipe is refused (order full) order_full
+QA_CHECK PASS Gather fills the table for Firepower + Mobility problem=
+QA_CHECK PASS Take back empties the table into the pack 
+QA_CHECK PASS Mk 1: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 1: the hall has a Mk 1 menu mk=1
+QA_CHECK PASS Mk 1: stew is locked mode=false notice=stew_locked
+QA_CHECK PASS Mk 1: the sandwich lasts 15 minutes duration=18000
+QA_CHECK PASS Mk 1: ?2 doubling is off [Bonus[effect=VITALITY, strength=1, pair=false], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 2: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 2: the hall has a Mk 2 menu mk=2
+QA_CHECK PASS Mk 2: stew is open mode=true notice=
+QA_CHECK PASS Mk 2: the sandwich lasts 20 minutes duration=24000
+QA_CHECK PASS Mk 2: ?2 doubling is off [Bonus[effect=VITALITY, strength=1, pair=false], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 2: the stew lasts 20 minutes and fills 8 servings duration=24000 servings=8
+QA_CHECK PASS Mk 3: three food slots are open, the fourth is closed 
+QA_CHECK PASS Mk 3: the hall has a Mk 3 menu mk=3
+QA_CHECK PASS Mk 3: stew is open mode=true notice=
+QA_CHECK PASS Mk 3: the sandwich lasts 25 minutes duration=30000
+QA_CHECK PASS Mk 3: ?2 doubling is on [Bonus[effect=VITALITY, strength=1, pair=true], Bonus[effect=FORTITUDE, strength=1, pair=false]]
+QA_CHECK PASS Mk 3: the stew lasts 25 minutes and fills 12 servings duration=30000 servings=12
+QA_SUMMARY pass=35 fail=0

@@ -31,7 +31,7 @@ record MealData(boolean stew,List<Bonus> bonuses,int duration) {
     }
     static MealData load(CompoundTag n){
         boolean stew=n.getBoolean("Stew");var out=new ArrayList<Bonus>();var seen=EnumSet.noneOf(MealRules.Effect.class);
-        for(var t:n.getList("Bonuses",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;var e=MealRules.Effect.of(c.getString("Effect"));if(e!=null&&seen.add(e)&&out.size()<(stew?3:2))out.add(new Bonus(e,Math.max(1,Math.min(3,c.getInt("Strength"))),stew&&c.getBoolean("Pair")));}
+        for(var t:n.getList("Bonuses",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;var e=MealRules.Effect.of(c.getString("Effect"));if(e!=null&&seen.add(e)&&out.size()<(stew?3:2))out.add(new Bonus(e,Math.max(1,Math.min(3,c.getInt("Strength"))),c.getBoolean("Pair")));}
         return out.isEmpty()?null:new MealData(stew,out,Math.max(20,Math.min(MealRules.FIELD_TICKS,n.getInt("Duration"))));
     }
 }

@@ -1,5 +1,15 @@
 # Change log
 
+## 0.0.11 — Mess Hall levels, two-column kitchen, one-button table upgrade (2026-10-09)
+
+Feature `feature/messhall-ver-6` (owner override). Network protocol raised to **28-pack / 28-standalone** (the open food slots change what the kitchen menu does on both sides). Rules: `docs/MESS-HALL-TIERS.md`.
+
+* **Mess Hall levels rebalanced (owner request).** Mk I: sandwiches only, meals last 15 minutes, 3 food slots. Mk II: unlocks stew, 20 minutes. Mk III: 25 minutes, unlocks ×2 doubling (sandwiches and stew). Mk IV: 30 minutes, all 6 food slots, and the only level that can double a legendary effect (four food slots). Pots, servings and prices are unchanged. A meal remembers how long its hall made it last.
+* **The kitchen screen is two columns (376 × 238).** Left: mode tabs, the table, Gather/Make/Cook, Take back, Clear order and Upgrade. Right: the 26 effects to choose (dimmed unless chosen, so the palette stops shouting), the order cards, the next-step line and three chips: meal length, food slots, ×2. Plain explanations of ×2 and of each level in the chips, the recipe tooltips, the badge and the Upgrade tooltip. Needs a GUI at least 376 wide (every 16:9 window; lower the GUI scale on 4:3).
+* **Weapon, Ammo, Attachment and Armor table Upgrade view rebuilt.** A full-width card: the Age ladder (done, you are here, next, later), what the next Age unlocks, a grid of materials with what you hold, and one **Upgrade to <Age>** button. No more blank left half.
+* Field Guide: the Mess Hall page lists the four levels and has a *Doubling (×2)* card; the Legendary mixes page and the fabrication blurb follow the new rules.
+* Tests: 96 beacon unit tests (tier table, doubling from Mk III, slots, meal length). Real client: `tools/qa/QaKitchen.java.txt` gained a `tiers` part and a table-upgrade click. The server GameTests of v2 to v6 were edited to compile and still were not run.
+
 ## 0.0.10 — Field Guide side menu with item icons (2026-10-09)
 
 Feature `feature/messhall-ver-6` (owner override). UI only: no rules, numbers or packets changed (protocol stays **27**).

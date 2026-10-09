@@ -1,5 +1,7 @@
 # Mess Hall v6 implementation
 
+> **Tier rules (meal length, food slots, stew from Mk II, doubling from Mk III) changed in project 0.0.11: see `MESS-HALL-TIERS.md`; the Mk IV-only doubling text below is out of date.**
+>
 > The kitchen screen, Mix guide cookbook and dispenser screens described below were replaced by the UI pass of project 0.0.8: see `MESS-HALL-V7-UI.md`. Rules, numbers and the recipe matrix on this page still apply.
 
 Project **0.0.7**; branch **feature/messhall-ver-6**, based on v5 **5eebf94**. Protocol **26-pack / 26-standalone**. Fresh world per feature until 1.0. Both editions require TaCZ **1.1.8-hotfix2** and TaCZ Attributes **1.4**; the latter is included separately in the test ZIP. Mod JAR versions stay 0.21.0 / 1.1.0.

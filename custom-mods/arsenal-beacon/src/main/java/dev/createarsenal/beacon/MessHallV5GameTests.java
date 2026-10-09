@@ -52,7 +52,9 @@ public final class MessHallV5GameTests {
             var single=legendary(inputs(a.get(0),b.get(0)),true,1).meal();
             h.assertTrue(single!=null&&single.bonuses().size()==1&&single.bonuses().get(0).effect()==mix.effect()&&!single.bonuses().get(0).pair(),"Pair replaces both normal groups: "+mix);
             var c=inputs(a.get(0),a.get(1),b.get(0),b.get(1));
-            for(int mk=1;mk<=4;mk++){var meal=legendary(c,true,mk).meal();h.assertTrue(meal.bonuses().size()==1&&meal.bonuses().get(0).pair()==(mk==4),"Four-food doubling only Mk IV: "+mix+" level "+mk);}
+            // 0.0.11 tiers: four foods need six food slots, which only a Mk IV hall has; below that the table refuses them
+            var meal=legendary(c,true,4).meal();h.assertTrue(meal.bonuses().size()==1&&meal.bonuses().get(0).pair(),"Four-food doubling at Mk IV: "+mix);
+            h.assertTrue(legendary(c,true,3).meal()==null,"Three food slots cannot hold four foods: "+mix);
             h.assertTrue(!legendary(inputs(a.get(0),a.get(1),b.get(0)),true,4).meal().bonuses().get(0).pair(),"Three distinct foods cannot double legendary "+mix);
         }
         var linkedInputs=inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.BREAD,Items.COOKIE,Items.COOKED_COD,Items.APPLE);
@@ -65,7 +67,7 @@ public final class MessHallV5GameTests {
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v5OrdinaryPairsAndSplitStacksRespectTier(GameTestHelper h){
-        for(int mk=1;mk<=4;mk++){var meal=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),true,mk).meal();h.assertTrue(meal.bonuses().get(0).pair()==(mk==4)&&meal.bonuses().get(0).strength()==1,"Two bars, no third tier: "+mk);}
+        for(int mk=1;mk<=4;mk++){var meal=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_MUTTON),true,mk).meal();h.assertTrue(meal.bonuses().get(0).pair()==(mk>=3)&&meal.bonuses().get(0).strength()==1,"Doubling from Mk III, no third tier: "+mk);}
         var split=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.COOKED_CHICKEN,Items.BREAD),true,4).meal();h.assertTrue(split.bonuses().stream().noneMatch(MealData.Bonus::pair),"Split identical foods do not double");
         var oneSide=legendary(inputs(Items.CARROT,Items.POTATO,Items.BREAD),true,4).meal();h.assertTrue(!oneSide.bonuses().get(0).pair(),"Legendary needs two foods on BOTH sides");
         h.assertTrue(IngredientTraits.compose(inputs(Items.BREAD,Items.COOKIE,Items.COOKED_CHICKEN),false,4).meal().bonuses().stream().noneMatch(MealData.Bonus::pair),"Portable sandwiches retain normal strength");h.succeed();

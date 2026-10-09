@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * QA ONLY (never part of a release): boots a flat world on the real client and drives the Mess Hall, both dispensers and the beacon screens
  * the way a player does, checking server state and taking screenshots. Copied into a throwaway tree by tools/qa/setup-qa.sh.
- * Scenario parts come from /tmp/claude-0/qa-kitchen.flag (default: all): kitchen stew legendary dispensers beacon table.
+ * Scenario parts come from /tmp/claude-0/qa-kitchen.flag (default: all): equiv kitchen stew legendary tiers dispensers beacon table.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class QaKitchen {
@@ -120,6 +120,7 @@ public final class QaKitchen {
     static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
 
     // ---- the v6 composition, kept verbatim as the reference for the differential check -----------------------------------
+    static boolean oldDoubles(boolean stew,int mk,int first,int second,boolean legendary){return stew&&mk>=4&&first>=2&&(!legendary||second>=2);}
     record OldPreview(MealData meal,int occupied,boolean staple,String problem){}
     static OldPreview oldCompose(net.minecraft.world.Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
         var foods=new LinkedHashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
@@ -139,7 +140,7 @@ public final class QaKitchen {
                 var first=groups.get(mix.first());var second=groups.get(mix.second());
                 if(first==null||second==null||!reserved.add(mix.first())||!reserved.add(mix.second()))return new OldPreview(null,foods.size(),staple,"selection");
                 used.addAll(first);used.addAll(second);
-                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+                bonuses.add(new MealData.Bonus(mix.effect(),1,oldDoubles(stew,mk,first.size(),second.size(),true)));
             }
         }
         var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
@@ -148,7 +149,7 @@ public final class QaKitchen {
         for(var e:ordinary){
             if(!scores.containsKey(e))return new OldPreview(null,foods.size(),staple,"selection");
             boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(item->!used.contains(item)&&foods.get(item).containsKey(e)).count()>=2);
-            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
+            bonuses.add(new MealData.Bonus(e,1,oldDoubles(stew,mk,doubled?2:1,0,false)));
         }
         int occupied=foods.size();
         String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
@@ -160,7 +161,7 @@ public final class QaKitchen {
         for(int t=0;t<trials;t++){
             var c=new net.minecraft.world.SimpleContainer(8);int n=random.nextInt(7);
             for(int i=0;i<n;i++){var item=foods.get(random.nextInt(foods.size()));c.setItem(random.nextInt(6),new ItemStack(item,1+random.nextInt(5)));}
-            boolean stew=random.nextBoolean();int mk=1+random.nextInt(4);Set<MealRules.Effect> selected=null;
+            boolean stew=true;int mk=4;Set<MealRules.Effect> selected=null; // 0.0.11: only a Mk IV stew still follows the v6 rules
             if(random.nextInt(3)>0){selected=EnumSet.noneOf(MealRules.Effect.class);int k=random.nextInt(4);while(selected.size()<k)selected.add(values[random.nextInt(values.length)]);}
             var before=oldCompose(c,stew,mk,selected);var after=IngredientTraits.compose(c,stew,mk,selected);
             boolean ok;
@@ -170,8 +171,14 @@ public final class QaKitchen {
             else ok=false;
             if(ok)same++;else{mismatched++;if(shown++<5)com.mojang.logging.LogUtils.getLogger().info("QA_NOTE differs stew={} mk={} selected={} old={}/{} new={}/{}",stew,mk,selected,before.problem(),before.meal(),after.problem(),after.meal());}
         }
-        check("compose is equivalent to the v6 implementation on "+trials+" random tables of real foods ("+mapped+" rejections became 'missing')",mismatched==0,"same="+same+" differ="+mismatched);
+        check("compose is equivalent to the v6 implementation on "+trials+" random Mk IV stew tables of real foods ("+mapped+" rejections became 'missing')",mismatched==0,"same="+same+" differ="+mismatched);
     }
+    // ---- the four hall levels ---------------------------------------------------------------------------
+    static BlockPos tierPos(int mk){return mk==1?at(-6,0,0):mk==2?at(-12,0,0):at(-6,0,6);}
+    static MessHall.HallEntity hallAt(BlockPos p){return (MessHall.HallEntity)sl().getBlockEntity(p);}
+    static void openAt(BlockPos p){srv(()->{var h=hallAt(p);h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(p);b.writeVarInt(h.mk());});});}
+    static boolean viewReady(){return ui()!=null&&ui().currentMenu().view.contains("Fit");}
+    static Ui.UiButton upgradeButton(){if(!(mc().screen instanceof PlatformScreen screen))return null;for(var c:screen.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().startsWith(Ui.plain("platform.upgrade_to","").trim()))return b;return null;}
     static void script(){
         step(5,()->{mc().options.guiScale().set(3);mc().resizeDisplay();cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("weather clear");cmd("kill @e[type=!player]");beacon();},"setup");
         step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));CampaignData.get(sl()).core=3;
@@ -237,6 +244,42 @@ public final class QaKitchen {
             step(3,()->{for(var e:new MealRules.Effect[]{MealRules.Effect.DEAD_EYE,MealRules.Effect.RAPID_FIRE,MealRules.Effect.HIP_FOCUS})click(cell(e));},"three legendaries");
             step(8,()->{check("three disjoint legendary recipes can be ordered in a Mk IV stew",order().size()==3,String.valueOf(order()));shot("k17_three_legendary");},"state");
         }
+        if(part("tiers")){
+            step(3,()->close(),"close");
+            for(int mk=1;mk<=3;mk++){
+                final int level=mk;final BlockPos pos=tierPos(mk);final int minutes=10+5*mk;
+                step(5,()->srv(()->{
+                    var block=level==1?ArsenalBeacon.MESS_HALL_I.get():level==2?ArsenalBeacon.MESS_HALL_II.get():ArsenalBeacon.MESS_HALL_III.get();
+                    sl().setBlock(pos,block.defaultBlockState(),3);sl().setBlock(pos.offset(3,0,0),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
+                    var h=hallAt(pos);h.ingredients.clearContent();
+                    h.ingredients.setItem(0,new ItemStack(Items.COOKED_CHICKEN,16));h.ingredients.setItem(1,new ItemStack(Items.COOKED_MUTTON,16));h.ingredients.setItem(2,new ItemStack(Items.CARROT,16));h.ingredients.setItem(7,new ItemStack(Items.BREAD,4));
+                    h.setOrder(EnumSet.noneOf(MealRules.Effect.class));h.setMode(false);h.discover();
+                    sp().teleportTo(sl(),pos.getX()+.5,sy,pos.getZ()+3.5,180,0);}),"place the Mk "+level+" hall, its pot and a table of chicken, mutton, carrot and bread");
+                step(25,()->openAt(pos),"open the Mk "+level+" hall");
+                until("hall "+level+" screen",60,()->viewReady(),()->{});
+                step(10,()->{
+                    var m=ui().currentMenu();
+                    check("Mk "+level+": three food slots are open, the fourth is closed",m.slots.get(2).isActive()&&!m.slots.get(3).isActive()&&!m.slots.get(3).mayPlace(new ItemStack(Items.CARROT)),"");
+                    check("Mk "+level+": the hall has a Mk "+level+" menu",m.mk==level,"mk="+m.mk);shot("t"+level+"0_mk"+level);},"state");
+                step(3,()->click(ui().stew),"click Stew");
+                step(10,()->{boolean open=level>=2;boolean mode=srvGet(()->hallAt(pos).stewMode);
+                    check("Mk "+level+": stew is "+(open?"open":"locked"),mode==open&&(open||view().getString("Notice").equals("stew_locked")),"mode="+mode+" notice="+view().getString("Notice"));shot("t"+level+"1_stew_tab");},"state");
+                step(3,()->click(ui().sandwich),"back to sandwich");
+                step(8,()->click(ui().primary),"Make sandwich");
+                step(10,()->{
+                    var meal=srvGet(()->PreparedSandwich.meal(hallAt(pos).ingredients.getItem(6)));
+                    check("Mk "+level+": the sandwich lasts "+minutes+" minutes",meal!=null&&meal.duration()==minutes*1200,meal==null?"no sandwich":"duration="+meal.duration());
+                    check("Mk "+level+": ×2 doubling is "+(level>=3?"on":"off"),meal!=null&&meal.bonuses().stream().anyMatch(b->b.effect()==MealRules.Effect.VITALITY&&b.pair())==(level>=3),String.valueOf(meal==null?null:meal.bonuses()));
+                    shot("t"+level+"2_made");},"state");
+                if(level>=2){
+                    step(3,()->click(ui().stew),"stew tab");
+                    step(8,()->click(ui().primary),"Cook stew");
+                    step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
+                        check("Mk "+level+": the stew lasts "+minutes+" minutes and fills "+(4*level)+" servings",pot.stew!=null&&pot.stew.duration()==minutes*1200&&pot.servings==4*level,pot.stew==null?"no stew":"duration="+pot.stew.duration()+" servings="+pot.servings);shot("t"+level+"3_cooked");},"state");
+                }
+                step(3,()->close(),"close");
+            }
+        }
         if(part("dispensers")){
             step(3,()->close(),"close");
             step(5,()->{BAR.clear();srv(()->{sp().getInventory().setItem(30,ItemStack.EMPTY);var d=(BowlDispenser.DispenserEntity)sl().getBlockEntity(at(8,0,0));d.stock.setItem(0,new ItemStack(Items.BOWL,3));});},"stock the bowl dispenser with 3");
@@ -288,7 +331,16 @@ public final class QaKitchen {
             step(25,()->srv(()->WeaponPlatform.open(sp(),at(14,0,0))),"open it");
             until("table screen",60,()->mc().screen instanceof PlatformScreen,()->{});
             step(10,()->{for(var c:mc().screen.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals(Ui.plain("platform.tab.upgrade"))){b.onPress();break;}},"upgrade tab");
-            step(15,()->shot("t01_table_upgrade"),"shot");
+            step(15,()->{check("the upgrade view has one button, dark while the materials are missing",upgradeButton()!=null&&upgradeButton().visible&&!upgradeButton().active,String.valueOf(upgradeButton()));shot("t01_table_upgrade");},"shot");
+            step(3,()->{var b=upgradeButton();hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);},"hover the button");step(6,()->shot("t02_table_upgrade_tip"),"tooltip");
+            step(3,()->mc().setScreen(null),"close");
+            step(5,()->{cmd("gamemode creative");},"switch to creative (materials are free)");
+            step(15,()->srv(()->WeaponPlatform.open(sp(),at(14,0,0))),"open it again");
+            until("table screen 2",60,()->mc().screen instanceof PlatformScreen,()->{});
+            step(10,()->{for(var c:mc().screen.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals(Ui.plain("platform.tab.upgrade"))){b.onPress();break;}},"upgrade tab");
+            step(15,()->{check("with free materials the one button is live",upgradeButton().active,"");shot("t03_table_upgrade_ready");},"shot");
+            step(3,()->click(upgradeButton()),"press it");
+            step(20,()->{check("one click raised the table one Age",srvGet(()->sl().getBlockState(at(14,0,0)).getValue(WeaponPlatform.AGE))==2,String.valueOf(srvGet(()->sl().getBlockState(at(14,0,0)).getValue(WeaponPlatform.AGE))));shot("t04_table_upgraded");},"state");
             step(3,()->mc().setScreen(null),"close");
         }
         step(5,()->{mc().setScreen(null);com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",pass,fail);},"summary");
