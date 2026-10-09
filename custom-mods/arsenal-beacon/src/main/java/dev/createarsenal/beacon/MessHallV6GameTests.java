@@ -56,7 +56,7 @@ public final class MessHallV6GameTests {
             h.assertTrue(menu.clickMenuButton(f.player,40+MealRules.Effect.SWIM.ordinal()),"Unreserved Fish adds ordinary Swim");
             menu.view.put("Meal",new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.RAPID_FIRE,3,true)),36000).save());h.assertTrue(menu.prepare(),"Server cooks from selected intents and actual foods");
             var pot=(CookPot.PotEntity)f.level.getBlockEntity(potPos);h.assertTrue(pot.stew.bonuses().size()==2&&pot.stew.bonuses().stream().allMatch(b->b.pair()&&(b.effect()==MealRules.Effect.FIREPOWER||b.effect()==MealRules.Effect.SWIM)),"Both real recipes doubled; fake client meal ignored");
-            menu.clickMenuButton(f.player,4);h.assertTrue(!menu.explicitSelection&&menu.effects.isEmpty()&&menu.composition().meal().bonuses().stream().noneMatch(b->b.effect().gun()),"Reset restores ordinary defaults");
+            menu.clickMenuButton(f.player,4);h.assertTrue(!menu.explicit()&&menu.order().isEmpty()&&menu.composition().meal().bonuses().stream().noneMatch(b->b.effect().gun()),"Reset restores ordinary defaults");
             menu.clickMenuButton(f.player,40+MealRules.Effect.SWIM.ordinal());hall.ingredients.setItem(4,ItemStack.EMPTY);hall.ingredients.setItem(5,ItemStack.EMPTY);h.assertTrue(menu.composition().meal()==null&&!menu.prepare(),"Removing selected recipe foods invalidates cooking");
         }finally{clean(f);}h.succeed();
     }
@@ -98,7 +98,9 @@ public final class MessHallV6GameTests {
             h.assertTrue(d.tank.getFluidAmount()==250&&f.player.getActiveEffects().isEmpty()&&f.player.getMaxHealth()==20&&!PlayerMeals.get(f.level).players.containsKey(f.player.getUUID()),"Upper half cleanses all effects and saved meal with one dose");
             PlayerMeals.tick(f.player);PlayerMeals.refresh(f.player);h.assertTrue(f.player.getActiveEffects().isEmpty()&&recoil.getModifier(PlayerMeals.modifier(MealRules.Effect.RECOIL_CONTROL))==null&&recoil.getModifier(external)!=null,"Meal cannot reappear; unrelated attributes survive");
             h.assertTrue(!PlayerMeals.load(PlayerMeals.get(f.level).save(new CompoundTag())).players.containsKey(f.player.getUUID()),"Cleared timer absent from persisted data");
-            d.dispense(f.player);f.player.addEffect(new MobEffectInstance(MobEffects.POISON,1000));h.assertTrue(!d.dispense(f.player)&&f.player.hasEffect(MobEffects.POISON),"Empty tank has no cleansing or negative drain");
+            h.assertTrue(d.tank.getFluidAmount()==250&&!d.dispense(f.player)&&d.tank.getFluidAmount()==250,"With nothing to clear the milk is not spent");
+            f.player.addEffect(new MobEffectInstance(MobEffects.POISON,1000));h.assertTrue(d.dispense(f.player)&&d.tank.isEmpty()&&!f.player.hasEffect(MobEffects.POISON),"The last dose clears the poison");
+            f.player.addEffect(new MobEffectInstance(MobEffects.POISON,1000));h.assertTrue(!d.dispense(f.player)&&f.player.hasEffect(MobEffects.POISON),"Empty tank has no cleansing or negative drain");
             var bottle=new ItemStack(ArsenalBeacon.MILK_BOTTLE.get());h.assertTrue(bottle.finishUsingItem(f.level,f.player).is(Items.GLASS_BOTTLE)&&f.player.getActiveEffects().isEmpty(),"Portable milk bottle cleanses and returns glass");
         }finally{recoil.removeModifier(external);clean(f);}h.succeed();
     }

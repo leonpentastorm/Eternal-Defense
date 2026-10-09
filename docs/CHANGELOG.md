@@ -1,5 +1,14 @@
 # Change log
 
+## 0.0.8 — Mess Hall v6 UI pass (2026-10-09)
+
+Feature `feature/messhall-ver-6` (owner override), on top of v6 `cfba0ab`. Protocol **27-pack / 27-standalone**. Details: `docs/MESS-HALL-V7-UI.md`.
+
+* **Kitchen on one screen.** The Mix guide cookbook is gone. Every recipe is an icon on the Mess Hall screen: click to choose, hover for values, feeding foods and whether your pack can make it. **Gather ingredients** fetches the right foods from the table and the pack (Mk IV doubling included), **Take back** returns the table, one primary button cooks. A two-recipe sandwich takes four clicks instead of about twenty. The order and mode are stored with the hall. Gameplay rules and numbers are unchanged.
+* **Dispenser feedback.** Taking a bowl and using the Milk Dispenser now show what happened (bowls left, what the milk cleared, milk left), with sound and particles. The Milk Dispenser and Milk Bottle no longer spend milk when you have no effects to clear.
+* **UI restyle of the v4-v6 screens.** Bowl and Milk Dispenser screens, Workshop Fabrication (grouped, short names, descriptions), the weapon-table Upgrade view, and the Kitchen, Legendary mixes and Stations guide pages.
+* New pure `MealPlanner` shared by preparation and Gather; 12 new unit tests (88 beacon unit tests in total). New real-client scenario `tools/qa/QaKitchen.java.txt`.
+
 ## 0.0.7 — Mess Hall v6 (2026-10-09)
 
 Feature `feature/messhall-ver-6`, based on v5 `5eebf94`. Ordinary meals remain ordinary unless a legendary recipe is selected in the new detailed Mix guide. Separate bread-only sandwich base contributes no Grain; all eleven ordinary effects now have vanilla ×2 pairs, supporting any three chosen ordinary effects within six mixing slots. Milk Dispenser adds an 8,000 mB Forge-fluid tank, container returns, fill bar and 250 mB complete effect/meal cleanup; Milk Bottles are craftable and drinkable. Both dispenser stock menus require empty main/off hands. Imported owner shovel/sandwich/dispenser art is protected from regeneration. Beacon Settings moves beside Guide; four main tabs and eleven compact fabrication cards show costs without paging. Field Guide/GDD updated; protocol 26; both-edition test bundle includes separate TaCZ Attributes 1.4 JARs. Actual validation: `MESS-HALL-V6-TESTING.md`.

@@ -4,7 +4,7 @@ Current feature: **v6**, project **0.0.7**, branch `feature/messhall-ver-6`, pro
 
 The current specification, ingredient groups, all fifteen legendary recipes, exact tier/economy numbers, server behavior and UI flow are in [MESS-HALL-V6-IMPLEMENTATION.md](MESS-HALL-V6-IMPLEMENTATION.md). Tested scope and remaining playtests are in [MESS-HALL-V6-TESTING.md](MESS-HALL-V6-TESTING.md).
 
-* Every vanilla ingredient gives ordinary Minecraft bonuses. Ordinary is the default. The Mix guide can explicitly select ordinary bonuses or a legendary two-group recipe, replacing those groups’ normal bonuses.
+* Every vanilla ingredient gives ordinary Minecraft bonuses. Ordinary is the default. Recipe icons on the kitchen screen explicitly select ordinary bonuses or a legendary two-group recipe, replacing those groups’ normal bonuses.
 * Six mixing slots plus a separate bread-only base slot; at most two effects in a sandwich, three in stew. Newly composed bonuses have one base strength; food weights choose effects rather than increasing strength.
 * **Only Mk IV stew doubles categories:** two distinct foods for an ordinary bonus, or two distinct foods from EACH paired group (four slots) for a legendary bonus. No split-stack shortcut or triple stacking. Levels I–III show no strength bars; Mk IV stew shows two.
 * Home doubles meal values and freezes remaining field time; it does not refresh it. Thirty minutes in the field; logout pauses, dimension travel retains, death clears, new meals replace.

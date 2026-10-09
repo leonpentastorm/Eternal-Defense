@@ -70,6 +70,31 @@ final class LangKeysTest {
         assertTrue(missing.isEmpty(),"Missing language keys: "+missing);
     }
 
+    /** Keys that reach {@code Ui.t} through helper methods, and the full keys the server puts in messages, are invisible to the first test. */
+    @Test void everyKitchenAndDispenserKeyNamedInTheSourceExists() throws Exception {
+        var short_=Pattern.compile("\"((?:kitchen|bowls|milk|dispenser)\\.[a-z_]+(?:\\.[a-z_]+)*)\"");
+        var full=Pattern.compile("\"(gui\\.arsenal_beacon\\.[a-z_]+(?:\\.[a-z_]+)*)\"");
+        var missing=new TreeSet<String>();
+        try(Stream<Path> files=Files.walk(Path.of("src/main/java/dev/createarsenal/beacon"))){
+            for(Path file:files.filter(f->f.toString().endsWith(".java")).toList()){
+                String text=Files.readString(file);
+                Matcher a=short_.matcher(text);while(a.find())if(get(a.group(1))==null&&!a.group(1).endsWith("."))missing.add(a.group(1));
+                Matcher b=full.matcher(text);while(b.find())if(!LANG.containsKey(b.group(1)))missing.add(b.group(1));
+            }
+        }
+        assertTrue(missing.isEmpty(),"Language keys named in code but missing: "+missing);
+    }
+    @Test void kitchenFamiliesOfKeysAreComplete(){
+        var needed=new ArrayList<String>();
+        for(String p:List.of("ingredients","ingredient","staple","effects","pot","pot_full","output","sandwich_types","batch_types","quantity","selection","missing"))needed.add("kitchen.problem."+p);
+        for(String p:List.of("ready","gather","missing","ingredients","ingredient","staple","effects","selection","sandwich_types","batch_types","quantity","pot","pot_full","output"))needed.add("kitchen.hint."+p);
+        for(String n:List.of("cooked","made","gathered","gather_short","gather_choose","gather_bread","gather_missing","gather_blocked","order_full","order_tier","order_conflict","order_reset_stew","order_reset_sandwich","returned","table_empty"))needed.add("kitchen.notice."+n);
+        for(String group:List.of("protein","fish","vegetables","fruit","grain","fungi")){needed.add("kitchen.group."+group);needed.add("kitchen.group_short."+group);}
+        for(var e:MealRules.Effect.values()){needed.add("meal.effect."+e.id);needed.add("meal.bonus."+e.id);}
+        var missing=needed.stream().filter(k->get(k)==null).toList();assertTrue(missing.isEmpty(),"Missing language keys: "+missing);
+        for(var key:List.of("kitchen.notice.cooked","kitchen.notice.gather_short","milk.cleared"))assertTrue(get(key).contains("$"),key+" reorders its arguments");
+    }
+
     @Test void percentSignsCannotBreakMinecraftFormatting(){
         // A '%' must start %s, %1$s or %%. "25% more" is safe, "25%more" is not.
         var bad=new ArrayList<String>();
@@ -115,7 +140,10 @@ final class LangKeysTest {
     @Test void guideExplainsCurrentFoodUnlocksAndRaidBehavior(){
         for(boolean standalone:new boolean[]{false,true}){
             String kitchen=edition("kitchen","body",standalone),mixes=edition("mixes","body",standalone),raids=edition("raids","body",standalone);
-            assertTrue(kitchen.contains("ONLY")&&kitchen.contains("Mk IV")&&kitchen.contains("four slots"));
+            String detail=edition("kitchen","detail",standalone);
+            assertTrue(kitchen.contains("Gather ingredients")&&kitchen.contains("Make sandwich")&&kitchen.contains("Cook stew"),"the kitchen page teaches the three steps");
+            assertTrue(detail.contains("Mk IV stew only")&&detail.contains("EACH group"),"the double rule stays documented");
+            assertFalse(kitchen.contains("Mix guide")||detail.contains("Mix guide")||edition("mixes","body",standalone).contains("Mix guide"),"the Mix guide screen no longer exists");
             for(var mix:MealRules.MIXES)assertTrue(mixes.contains(get("meal.effect."+mix.effect().id)),"Missing legendary recipe "+mix.effect());
             assertTrue(raids.contains("sunlight only")&&raids.contains("25%%")&&raids.contains("Turrets"));
             assertTrue(edition("stations","body",standalone).contains("Workshop Fabrication"));

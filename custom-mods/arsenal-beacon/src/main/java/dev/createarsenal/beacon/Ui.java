@@ -60,12 +60,84 @@ final class Ui {
         MaterialRenderer(MaterialTip tip){costs=tip.costs();}
         private Component name(int i){var row=costs.getCompound(i);var item=net.minecraft.world.item.ItemStack.of(row.getCompound("item"));return Component.literal(row.getInt("count")+" × "+(row.getString("label").isEmpty()?item.getHoverName().getString():row.getString("label"))+" ("+row.getInt("have")+")");}
         @Override public int getHeight(){return costs.size()*20;}
-        @Override public int getWidth(Font font){int width=0;for(int i=0;i<costs.size();i++)width=Math.max(width,font.width(name(i))+22);return width;}
-        @Override public void renderImage(Font font,int x,int y,GuiGraphics g){for(int i=0;i<costs.size();i++){var row=costs.getCompound(i);g.renderItem(net.minecraft.world.item.ItemStack.of(row.getCompound("item")),x,y+i*20);g.drawString(font,name(i),x+22,y+i*20+4,row.getInt("have")>=row.getInt("count")?INK:ORANGE,false);}}
+        private boolean short_(int i){var row=costs.getCompound(i);return row.getInt("have")<row.getInt("count");}
+        @Override public int getWidth(Font font){int width=0;for(int i=0;i<costs.size();i++)width=Math.max(width,font.width(name(i))+22+(short_(i)?9:0));return width;}
+        /** A short row is orange and also carries an alert mark, so the shortage never rests on colour alone. */
+        @Override public void renderImage(Font font,int x,int y,GuiGraphics g){
+            for(int i=0;i<costs.size();i++){
+                var row=costs.getCompound(i);g.renderItem(net.minecraft.world.item.ItemStack.of(row.getCompound("item")),x,y+i*20);
+                g.drawString(font,name(i),x+22,y+i*20+4,short_(i)?ORANGE:INK,false);
+                if(short_(i))alert(g,x+22+font.width(name(i))+5,y+i*20+3,ORANGE);
+            }
+        }
     }
     static net.minecraft.nbt.ListTag singleCost(net.minecraft.world.item.ItemStack item,int count,int have){var rows=new net.minecraft.nbt.ListTag();var row=new net.minecraft.nbt.CompoundTag();row.put("item",item.copyWithCount(1).save(new net.minecraft.nbt.CompoundTag()));row.putInt("count",count);row.putInt("have",have);rows.add(row);return rows;}
     static void materialTooltip(GuiGraphics g,Font font,List<Component> heading,net.minecraft.nbt.ListTag costs,int mx,int my){
         g.renderTooltip(font,heading.isEmpty()?List.of(t("platform.materials")):heading,java.util.Optional.of(new MaterialTip(costs)),mx,my);
+    }
+
+    /**
+     * A tooltip made of short coloured lines, status marks and rows of item icons (the foods a recipe accepts). It draws itself,
+     * so it can order text and icons freely; the vanilla tooltip only places a component after its first line.
+     */
+    record Block(Component text,int color,int mark,List<net.minecraft.world.item.ItemStack> icons,int more){
+        static Block line(Component text,int color){return new Block(text,color,0,List.of(),0);}
+        /** {@code mark}: 1 check, 2 alert. */
+        static Block marked(int mark,Component text,int color){return new Block(text,color,mark,List.of(),0);}
+        static Block icons(Component label,int color,List<net.minecraft.world.item.ItemStack> icons,int more){return new Block(label,color,0,icons,more);}
+    }
+    record InfoTip(List<Block> blocks) implements net.minecraft.world.inventory.tooltip.TooltipComponent {}
+    static final class InfoRenderer implements net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent {
+        static final int WRAP=190;final List<Block> blocks;
+        InfoRenderer(InfoTip tip){blocks=tip.blocks();}
+        private List<FormattedCharSequence> rows(Font font,Block b){return b.text==null?List.of():font.split(b.text,WRAP-(b.mark!=0?10:0));}
+        @Override public int getHeight(){var font=Minecraft.getInstance().font;int h=2;for(var b:blocks)h+=rows(font,b).size()*10+(b.icons.isEmpty()?0:18);return h;}
+        @Override public int getWidth(Font font){
+            int w=0;for(var b:blocks){for(var row:rows(font,b))w=Math.max(w,font.width(row)+(b.mark!=0?10:0));w=Math.max(w,b.icons.size()*17+(b.more>0?font.width("+"+b.more)+5:0));}return w;
+        }
+        @Override public void renderImage(Font font,int x,int y,GuiGraphics g){
+            y+=2;
+            for(var b:blocks){
+                var rows=rows(font,b);
+                for(int i=0;i<rows.size();i++){
+                    if(i==0&&b.mark==1)check(g,x,y+1,b.color);else if(i==0&&b.mark==2)alert(g,x+2,y+1,b.color);
+                    g.drawString(font,rows.get(i),x+(b.mark!=0?10:0),y,b.color,false);y+=10;
+                }
+                if(!b.icons.isEmpty()){
+                    for(int i=0;i<b.icons.size();i++){
+                        int ix=x+i*17;field(g,ix-1,y-1,17,17,false);g.pose().pushPose();g.pose().translate(ix+1,y+1,0);g.pose().scale(.75f,.75f,1);g.renderItem(b.icons.get(i),0,0);g.pose().popPose();
+                    }
+                    if(b.more>0)g.drawString(font,"+"+b.more,x+b.icons.size()*17+3,y+4,MUTED,false);
+                    y+=18;
+                }
+            }
+        }
+    }
+
+    // ---- pixel marks (shapes carry meaning as well as colour) ---------------------------------------------
+    static void glyph(GuiGraphics g,int x,int y,String[] rows,int color){
+        for(int r=0;r<rows.length;r++)for(int c=0;c<rows[r].length();c++)if(rows[r].charAt(c)=='#')g.fill(x+c,y+r,x+c+1,y+r+1,color);
+    }
+    private static final String[] CHECK={"....#","...##","#.##.","###..",".#..."},ALERT={"##","##","##","##","..","##"},CROSS={"#...#",".#.#.","..#..",".#.#.","#...#"},
+        DEPOSIT={"...#...","...#...","#..#..#",".#.#.#.","..###..","...#...","#######"};
+    static void check(GuiGraphics g,int x,int y,int color){glyph(g,x,y,CHECK,color);}
+    static void alert(GuiGraphics g,int x,int y,int color){glyph(g,x,y,ALERT,color);}
+    static void cross(GuiGraphics g,int x,int y,int color){glyph(g,x,y,CROSS,color);}
+    static void deposit(GuiGraphics g,int x,int y,int color){glyph(g,x,y,DEPOSIT,color);}
+    /** The item drawn dim, for "put this here" hints in an empty slot. */
+    static void ghost(GuiGraphics g,net.minecraft.world.item.ItemStack stack,int x,int y){
+        g.renderItem(stack,x,y);g.pose().pushPose();g.pose().translate(0,0,200);g.fill(x,y,x+16,y+16,0x990a1218);g.pose().popPose();
+    }
+    /** A glass tube filled from the bottom, with a mark every {@code ticks}th of its height and a bright surface line. */
+    static void tank(GuiGraphics g,int x,int y,int w,int h,float fraction,int liquid,int ticks){
+        g.fill(x,y,x+w,y+h,EDGE);g.fill(x+1,y+1,x+w-1,y+h-1,DEEP);
+        int inner=h-2,fill=Math.round(inner*Math.max(0,Math.min(1,fraction)));
+        if(fill>0){
+            int top=y+1+inner-fill;g.fill(x+1,top,x+w-1,y+h-1,liquid);g.fill(x+1,top,x+w-1,top+1,0xaaffffff);g.fill(x+1,top+1,x+w-1,top+2,0x33ffffff);
+            g.fill(x+w-3,top+1,x+w-1,y+h-1,0x22000000);
+        }
+        g.fill(x+1,y+1,x+2,y+h-1,0x22ffffff);
+        for(int i=1;i<ticks;i++){int ty=y+1+inner*i/ticks;g.fill(x,ty,x+(i%2==0?4:2),ty+1,SLATE_HI);g.fill(x+w-(i%2==0?4:2),ty,x+w,ty+1,SLATE_HI);}
     }
 
     // ---- surfaces -----------------------------------------------------------------------------
@@ -89,6 +161,17 @@ final class Ui {
     static void card(GuiGraphics g,int x,int y,int w,int h,int accent){
         g.fill(x,y,x+w,y+h,SLATE);g.fill(x,y,x+w,y+1,SLATE_HI);g.fill(x,y+h-1,x+w,y+h,DEEP);
         g.fill(x,y,x+3,y+h,accent);
+    }
+    /** An inventory slot: coloured frame, recessed well. {@code x,y} is the frame's corner, the item sits one pixel inside. */
+    static void slot(GuiGraphics g,int x,int y,int frame){g.fill(x,y,x+18,y+18,frame);inset(g,x+1,y+1,16,16);}
+    /** The player's inventory, 27 + 9 slots; the first frame is at {@code x,y} and the hotbar sits 58 px below. */
+    static void inventory(GuiGraphics g,int x,int y){
+        for(int r=0;r<3;r++)for(int c=0;c<9;c++)slot(g,x+c*18,y+r*18,EDGE);
+        for(int c=0;c<9;c++)slot(g,x+c*18,y+58,EDGE);
+    }
+    /** A key hint: the player's live key label in a small cap, then what it does. Returns the next free y. */
+    static int keyHint(GuiGraphics g,Font font,Component key,Component what,int x,int y,int width){
+        int w=chip(g,font,key,x,y,CYAN,Math.min(width/2,font.width(key)+10));text(g,font,what,x+w+6,y+2,MUTED,width-w-6);return y+15;
     }
     static void inset(GuiGraphics g,int x,int y,int w,int h){g.fill(x,y,x+w,y+h,DEEP);g.fill(x,y,x+w,y+1,SHADOW);g.fill(x,y+h-1,x+w,y+h,SLATE_HI);}
     /** Frame for a borderless EditBox so text fields match the buttons. */

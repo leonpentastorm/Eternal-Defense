@@ -162,7 +162,8 @@ public final class BeaconClient {
             if(!message.equals(shownMessage)){shownMessage=message;shownAt=now;}
             return !message.isEmpty()&&now-shownAt<=7000;
         }
-        void hint(GuiGraphics g,Component text){int y=top+ph-17;Ui.text(g,font,text,left+14,y,Ui.MUTED,pw-28);}
+        void hint(GuiGraphics g,Component text){hint(g,text,Ui.MUTED);}
+        void hint(GuiGraphics g,Component text,int color){int y=top+ph-17;Ui.text(g,font,text,left+14,y,color,pw-28);}
         Hover itemAt(double x,double y){return null;}
     }
     record Hover(ItemStack item,int x,int y){}
@@ -206,10 +207,9 @@ public final class BeaconClient {
                 startRaid.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.start.tip")));
                 respite.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.buy.tip")));
             }else if(tab==2){
-                int cw=(w-6)/2,stride=(ph-54-14)/6;
                 for(int i=0;i<WorkshopFabrication.ITEMS.size();i++){
-                    int index=i,cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
-                    fabricationButtons.add(button(Ui.t("fabrication.make"),cx+cw-39,cy+3,35,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
+                    int index=i;var cell=fabricationCell(i,x,w);
+                    fabricationButtons.add(button(Ui.t("fabrication.make"),cell.x+cell.w-41,cell.y+(cell.h-18)/2,37,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
                 }
             }else{
                 int gap=settingsGap();
@@ -236,22 +236,46 @@ public final class BeaconClient {
             Hover hovered=itemAt(mx,my);
             if(hovered!=null)g.renderComponentTooltip(font,List.of(hovered.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
             else if(tooltip!=null){if(upgradeHoverCosts!=null)Ui.materialTooltip(g,font,tooltip,upgradeHoverCosts,mx,my);else g.renderComponentTooltip(font,tooltip,mx,my);}
-            if(tab==2&&upgradeHoverCosts!=null)Ui.materialTooltip(g,font,List.of(Ui.t("tab.fabrication")),upgradeHoverCosts,mx,my);
+            if(tab==2&&upgradeHoverCosts!=null){
+                var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);var fabItem=ItemStack.EMPTY;String id="";
+                for(int i=0;i<fabricationButtons.size()&&i<rows.size();i++){var cell=fabricationCell(i,left+14,pw-28);if(Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h)){fabItem=ItemStack.of(rows.getCompound(i).getCompound("item"));id=rows.getCompound(i).getString("id");}}
+                Ui.materialTooltip(g,font,fabItem.isEmpty()?List.of(Ui.t("tab.fabrication")):List.of(fabItem.getHoverName(),Ui.t("fabrication.desc."+id)),upgradeHoverCosts,mx,my);
+            }
+        }
+        /** Starter installations in three groups: the four tables, the kitchen, and support and trade. */
+        private static final int[] FAB_GROUP_START={0,4,8};
+        private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
+        private static final String[] FAB_GROUP={"tables","kitchen","support"};
+        private record FabCell(int x,int y,int w,int h){}
+        private int fabricationRowHeight(){return Math.max(20,Math.min(34,(ph-54-14-3*12)/6-2));}
+        private FabCell fabricationCell(int index,int x,int w){
+            int group=index>=FAB_GROUP_START[2]?2:index>=FAB_GROUP_START[1]?1:0,inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
+            int cw=(w-6)/2,y=contentTop()+group*(12+2*(rowH+2))+12+(inGroup/2)*(rowH+2);
+            return new FabCell(x+(inGroup%2)*(cw+6),y,cw,rowH);
         }
         private void fabricationTab(GuiGraphics g,int mx,int my,int x,int w){
-            var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);int cw=(w-6)/2,stride=(ph-54-14)/6;
+            var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);boolean here=on("installed")&&on("near");
+            for(int group=0;group<3;group++){
+                int y=contentTop()+group*(12+2*(fabricationRowHeight()+2));var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
+                Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],w/2);Ui.rule(g,x+font.width(label)+6,y+5,w-font.width(label)-6);
+            }
             for(int i=0;i<fabricationButtons.size();i++){
                 var button=fabricationButtons.get(i);button.visible=i<rows.size();if(!button.visible)continue;
-                var row=rows.getCompound(i);var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
+                var row=rows.getCompound(i);var id=row.getString("id");var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
                 boolean enough=on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count"));
-                int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;Ui.card(g,cx,cy,cw,stride-2,Ui.CYAN);
-                g.renderItem(item,cx+4,cy+3);Ui.text(g,font,item.getHoverName(),cx+23,cy+3,Ui.INK,cw-66);button.active=on("installed")&&on("near")&&enough;button.warning=!enough;
-                int costX=cx+23;for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));
-                    g.pose().pushPose();g.pose().translate(costX,cy+13,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
-                    String count=Integer.toString(cost.getInt("count"));g.drawString(font,count,costX+9,cy+13,cost.getInt("have")>=cost.getInt("count")?Ui.MUTED:Ui.ORANGE,false);costX+=11+font.width(count);
+                int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;var cell=fabricationCell(i,x,w);
+                Ui.card(g,cell.x,cell.y,cell.w,cell.h,enough&&here?FAB_ACCENT[group]:Ui.EDGE);
+                g.renderItem(item,cell.x+7,cell.y+(cell.h-16)/2);
+                Ui.text(g,font,Ui.t("fabrication.name."+id),cell.x+27,cell.y+(cell.h>=26?4:2),enough&&here?Ui.INK:Ui.MUTED,cell.w-27-44);
+                int costX=cell.x+27,costY=cell.y+cell.h-(cell.h>=26?12:10);
+                for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));int need=cost.getInt("count"),have=cost.getInt("have");boolean short_=!on("creative")&&have<need;
+                    g.pose().pushPose();g.pose().translate(costX,costY-1,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                    var count=Component.literal(Integer.toString(need));g.drawString(font,count,costX+9,costY,short_?Ui.ORANGE:Ui.MUTED,false);costX+=12+font.width(count);
                 }
-                if(Ui.inside(mx,my,cx,cy,cw,stride-2))upgradeHoverCosts=costs;
+                button.active=here&&enough;button.warning=!enough&&here;
+                if(Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h))upgradeHoverCosts=costs;
             }
+            if(!here)hint(g,Ui.t(on("installed")?"fabrication.near":"fabrication.plant"),Ui.ORANGE);
         }
         // ---- Overview: "How is my base doing?" ------------------------------------------------
         private void overview(GuiGraphics g,int x,int w){

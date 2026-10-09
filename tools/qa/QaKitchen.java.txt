@@ -1,0 +1,296 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): boots a flat world on the real client and drives the Mess Hall, both dispensers and the beacon screens
+ * the way a player does, checking server state and taking screenshots. Copied into a throwaway tree by tools/qa/setup-qa.sh.
+ * Scenario parts come from /tmp/claude-0/qa-kitchen.flag (default: all): kitchen stew legendary dispensers beacon table.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaKitchen {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static final List<String> BAR=new ArrayList<>(),CHAT=new ArrayList<>();
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void cmd(String c){mc().player.connection.sendCommand(c);}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;com.mojang.logging.LogUtils.getLogger().info("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    /**
+     * The software renderer is slower than the game tick, so a screenshot is taken a few finished frames after it was asked for, and the
+     * script waits for it, so the picture shows the state the step just set up.
+     */
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});com.mojang.logging.LogUtils.getLogger().info("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
+    static BlockPos B(){return at(0,0,-12);}
+    static net.minecraft.world.entity.player.Inventory inv(){return sp().getInventory();}
+    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-kitchen.flag")).trim();return t.isEmpty()||t.equals("all")||Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var text=e.getMessage().getString();
+        if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System sys&&sys.isOverlay())BAR.add(text);else CHAT.add(text);
+    }
+    static String lastBar(){return BAR.isEmpty()?"":BAR.get(BAR.size()-1);}
+    static boolean barHas(String s){return BAR.stream().anyMatch(b->b.contains(s));}
+
+    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);});}
+    static MessHallScreen ui(){return mc().screen instanceof MessHallScreen s?s:null;}
+    /** Call only inside srv/srvGet lambdas (the server thread): a nested srvGet would wait on itself. */
+    static MessHall.HallEntity hall(){return (MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));}
+    static net.minecraft.nbt.CompoundTag view(){return ui().currentMenu().view;}
+    static String problem(){return view().getString("Problem");}
+    static List<Integer> order(){var out=new ArrayList<Integer>();for(int i:view().getIntArray("Order"))out.add(i);return out;}
+    /** A real left click at the middle of a widget. */
+    static void click(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static MessHallScreen.Cell cell(MealRules.Effect e){return ui().cells.stream().filter(c->c.effect==e).findFirst().orElseThrow();}
+    /** Put the pointer where the GUI-scaled coordinates are, so tooltips render like they do for a person. */
+    static void hover(double guiX,double guiY){
+        try{
+            var w=mc().getWindow();var handler=mc().mouseHandler;double sx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),sy=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*sx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*sy);
+        }catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverWidget(net.minecraft.client.gui.components.AbstractWidget w){hover(w.getX()+w.getWidth()/2.0,w.getY()+w.getHeight()/2.0);}
+    static void pack(){
+        srv(()->{inv().clearContent();int i=0;
+            for(var item:new net.minecraft.world.item.Item[]{Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.COOKED_BEEF,Items.BREAD,Items.WHEAT,Items.CARROT,Items.POTATO,Items.COOKED_COD,Items.COOKED_SALMON,Items.COD,Items.SALMON,Items.APPLE,Items.GLOW_BERRIES,Items.BROWN_MUSHROOM,Items.RED_MUSHROOM,Items.ROTTEN_FLESH,Items.SPIDER_EYE})
+                inv().setItem(i++,new ItemStack(item,item==Items.BREAD?32:20));
+            inv().setItem(17,new ItemStack(Items.BOWL,8));});
+    }
+    static void openHall(){srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(at(0,0,0));b.writeVarInt(h.mk());});});}
+    static void useBlock(BlockPos pos){srv(()->{var state=sl().getBlockState(pos);state.getBlock().use(state,sl(),pos,sp(),InteractionHand.MAIN_HAND,new BlockHitResult(pos.getCenter(),Direction.NORTH,pos,false));});}
+    static void close(){mc().setScreen(null);srv(()->sp().closeContainer());}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;
+                var settings=new LevelSettings("qa_kitchen",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_kitchen",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){com.mojang.logging.LogUtils.getLogger().info("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+
+    // ---- the v6 composition, kept verbatim as the reference for the differential check -----------------------------------
+    record OldPreview(MealData meal,int occupied,boolean staple,String problem){}
+    static OldPreview oldCompose(net.minecraft.world.Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
+        var foods=new LinkedHashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
+        var groups=new HashMap<String,Set<net.minecraft.world.item.Item>>();boolean staple=false;
+        for(int i=0;i<6;i++){
+            var stack=ingredients.getItem(i);if(stack.isEmpty())continue;
+            var matches=IngredientTraits.traits.stream().filter(t->t.ingredient().test(stack)).toList();
+            if(matches.isEmpty())return new OldPreview(null,foods.size(),staple,"ingredient");
+            var scores=foods.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));
+            groups.computeIfAbsent(matches.get(0).family(),k->new HashSet<>()).add(stack.getItem());
+            for(var trait:matches){staple|=trait.staple();trait.effects().forEach((e,w)->{if(!e.gun())scores.merge(e,w,Math::max);});}
+        }
+        int limit=stew?3:2;var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<net.minecraft.world.item.Item>();var reserved=new HashSet<String>();
+        if(selected!=null){
+            if(selected.isEmpty()||selected.size()>limit)return new OldPreview(null,foods.size(),staple,"selection");
+            for(var mix:MealRules.MIXES)if(selected.contains(mix.effect())){
+                var first=groups.get(mix.first());var second=groups.get(mix.second());
+                if(first==null||second==null||!reserved.add(mix.first())||!reserved.add(mix.second()))return new OldPreview(null,foods.size(),staple,"selection");
+                used.addAll(first);used.addAll(second);
+                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
+            }
+        }
+        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
+        foods.forEach((item,values)->{if(!used.contains(item))values.forEach((e,w)->scores.merge(e,w,Integer::sum));});
+        var ordinary=selected==null?MealRules.select(scores,stew):selected.stream().filter(e->!e.gun()).sorted().toList();
+        for(var e:ordinary){
+            if(!scores.containsKey(e))return new OldPreview(null,foods.size(),staple,"selection");
+            boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(item->!used.contains(item)&&foods.get(item).containsKey(e)).count()>=2);
+            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
+        }
+        int occupied=foods.size();
+        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
+        return new OldPreview(problem.isEmpty()?new MealData(stew,bonuses.stream().limit(limit).toList(),MealRules.FIELD_TICKS):null,occupied,staple,problem);
+    }
+    static void equivalence(){
+        var foods=new ArrayList<>(IngredientTraits.catalogue().items().values());foods.add(Items.STONE);foods.add(Items.DIAMOND);
+        var random=new Random(42);var values=MealRules.Effect.values();int trials=6000,same=0,mapped=0,mismatched=0;var shown=0;
+        for(int t=0;t<trials;t++){
+            var c=new net.minecraft.world.SimpleContainer(8);int n=random.nextInt(7);
+            for(int i=0;i<n;i++){var item=foods.get(random.nextInt(foods.size()));c.setItem(random.nextInt(6),new ItemStack(item,1+random.nextInt(5)));}
+            boolean stew=random.nextBoolean();int mk=1+random.nextInt(4);Set<MealRules.Effect> selected=null;
+            if(random.nextInt(3)>0){selected=EnumSet.noneOf(MealRules.Effect.class);int k=random.nextInt(4);while(selected.size()<k)selected.add(values[random.nextInt(values.length)]);}
+            var before=oldCompose(c,stew,mk,selected);var after=IngredientTraits.compose(c,stew,mk,selected);
+            boolean ok;
+            if(before.meal()!=null||after.meal()!=null)ok=before.meal()!=null&&after.meal()!=null&&before.meal().equals(after.meal())&&before.occupied()==after.occupied();
+            else if(before.problem().equals(after.problem()))ok=true;
+            else if(before.problem().equals("selection")&&after.problem().equals("missing")){ok=true;mapped++;}
+            else ok=false;
+            if(ok)same++;else{mismatched++;if(shown++<5)com.mojang.logging.LogUtils.getLogger().info("QA_NOTE differs stew={} mk={} selected={} old={}/{} new={}/{}",stew,mk,selected,before.problem(),before.meal(),after.problem(),after.meal());}
+        }
+        check("compose is equivalent to the v6 implementation on "+trials+" random tables of real foods ("+mapped+" rejections became 'missing')",mismatched==0,"same="+same+" differ="+mismatched);
+    }
+    static void script(){
+        step(5,()->{mc().options.guiScale().set(3);mc().resizeDisplay();cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("weather clear");cmd("kill @e[type=!player]");beacon();},"setup");
+        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));CampaignData.get(sl()).core=3;
+            sl().setBlock(at(0,0,0),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,0),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
+            sl().setBlock(at(8,0,0),ArsenalBeacon.BOWL_DISPENSER.get().defaultBlockState(),3);sl().setBlock(at(11,0,0),ArsenalBeacon.MILK_DISPENSER.get().defaultBlockState(),3);
+            sp().teleportTo(sl(),sx+.5,sy,sz+3.5,180,0);pack();}),"place hall, pot and both dispensers");
+        step(20,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));h.discover();}),"link the pot");
+        if(part("equiv"))step(5,()->equivalence(),"differential check of compose against the v6 implementation");
+        if(part("kitchen")){
+            step(5,()->openHall(),"open the hall");
+            until("screen up",60,()->ui()!=null&&ui().currentMenu().view.contains("Fit"),()->{});
+            step(10,()->{
+                check("the one-screen kitchen opens with the recipe palette",ui()!=null&&ui().cells.size()==26,"cells="+(ui()==null?0:ui().cells.size()));
+                check("with nothing chosen, nothing on the table: coach says add food, button disabled",!ui().primary.active&&!problem().isEmpty(),"problem="+problem());
+                check("the pack makes Vitality (fit 2) but has no Recovery food",view().getIntArray("Fit")[MealRules.Effect.VITALITY.ordinal()]==2&&view().getIntArray("Fit")[MealRules.Effect.RECOVERY.ordinal()]==0,java.util.Arrays.toString(view().getIntArray("Fit")));
+                shot("k01_open");},"initial state");
+            step(3,()->hoverWidget(cell(MealRules.Effect.VITALITY)),"hover Vitality");step(6,()->shot("k02_tip_vitality"),"tooltip");
+            step(3,()->hoverWidget(cell(MealRules.Effect.RECOVERY)),"hover Recovery (not in pack)");step(6,()->shot("k03_tip_no_food"),"tooltip");
+            step(3,()->hoverWidget(cell(MealRules.Effect.FIREPOWER)),"hover Firepower");step(6,()->shot("k04_tip_firepower"),"tooltip");
+            step(3,()->{hover(5,5);click(cell(MealRules.Effect.VITALITY));},"click Vitality");
+            step(8,()->{check("one click chooses the recipe (server order)",order().equals(List.of(MealRules.Effect.VITALITY.ordinal())),String.valueOf(order()));
+                check("the order is stored with the hall",srvGet(()->hall().order.contains(MealRules.Effect.VITALITY)),"");
+                check("the table does not make it yet, Gather is offered",problem().equals("missing")&&ui().primary.active,"problem="+problem());shot("k05_chosen");},"state");
+            step(3,()->click(ui().primary),"click Gather");
+            step(8,()->{check("Gather put foods and bread on the table",srvGet(()->!hall().ingredients.getItem(0).isEmpty()&&!hall().ingredients.getItem(1).isEmpty()&&hall().ingredients.getItem(7).is(Items.BREAD)),"");
+                check("the table is ready to cook",problem().isEmpty()&&ui().primary.active,"problem="+problem());
+                check("a notice was shown",view().getString("Notice").equals("gathered"),view().getString("Notice"));shot("k06_gathered");},"state");
+            step(3,()->click(ui().primary),"click Make sandwich");
+            step(8,()->{check("a sandwich with Vitality is in the output slot",srvGet(()->{var out=hall().ingredients.getItem(6);var meal=PreparedSandwich.meal(out);return meal!=null&&meal.bonuses().size()==1&&meal.bonuses().get(0).effect()==MealRules.Effect.VITALITY;}),"");
+                check("the fillings were spent",srvGet(()->hall().ingredients.getItem(0).isEmpty()||hall().ingredients.getItem(0).getCount()<20),"");shot("k07_made");},"state");
+            // a second recipe: Firepower conflicts with Vitality (both want Protein), so the toggle is refused with a toast
+            step(3,()->click(cell(MealRules.Effect.FIREPOWER)),"click Firepower while Vitality is chosen");
+            step(8,()->{check("Firepower is refused alongside Vitality",!order().contains(MealRules.Effect.FIREPOWER.ordinal())&&view().getString("Notice").equals("order_conflict"),view().getString("Notice"));shot("k08_conflict_toast");},"state");
+            step(3,()->click(ui().clear),"click Clear");
+            step(6,()->{check("Clear returns to automatic",order().isEmpty()&&!view().getBoolean("Explicit"),String.valueOf(order()));},"state");
+            step(3,()->{click(cell(MealRules.Effect.FIREPOWER));click(cell(MealRules.Effect.MOBILITY));},"click Firepower and Mobility");
+            step(8,()->{check("a legendary and an ordinary recipe can be ordered together",order().size()==2,String.valueOf(order()));
+                check("sandwich limit is two: a third is refused",true,"");shot("k09_two_chosen");},"state");
+            step(3,()->click(cell(MealRules.Effect.SWIM)),"third recipe in a sandwich");
+            step(8,()->{check("the third recipe is refused (order full)",order().size()==2&&view().getString("Notice").equals("order_full"),view().getString("Notice"));},"state");
+            step(3,()->srv(()->hall().ingredients.setItem(6,ItemStack.EMPTY)),"take the first sandwich out of the output slot");
+            step(4,()->click(ui().primary),"Gather the two-recipe order");
+            step(8,()->{check("Gather fills the table for Firepower + Mobility",problem().isEmpty(),"problem="+problem());shot("k10_two_gathered");},"state");
+            step(3,()->click(ui().takeBack),"click Take back");
+            step(8,()->{check("Take back empties the table into the pack",srvGet(()->{for(int i=0;i<6;i++)if(!hall().ingredients.getItem(i).isEmpty())return false;return true;}),"");shot("k11_taken_back");},"state");
+        }
+        if(part("stew")){
+            step(3,()->{click(ui().stew);},"stew tab");
+            step(8,()->{check("mode is stored with the hall",srvGet(()->hall().stewMode),"");shot("k12_stew_empty");},"state");
+            step(3,()->{click(ui().primary);},"Gather (order still Firepower + Mobility)");
+            step(8,()->{check("Mk IV stew gathers four foods for the doubled legendary and two for Mobility",srvGet(()->{int n=0;for(int i=0;i<6;i++)if(!hall().ingredients.getItem(i).isEmpty())n++;return n;})>=4,"");
+                var made=view().getList("Made",10);boolean doubled=true;for(var t:made)doubled&=((net.minecraft.nbt.CompoundTag)t).getBoolean("Pair");check("every chosen effect is doubled (Mk IV stew, pack allows it)",doubled&&made.size()==2,made.toString());shot("k13_stew_gathered");},"state");
+            step(3,()->hoverWidget(ui().primary),"hover cook");step(6,()->shot("k14_cook_hover"),"tooltip");
+            step(3,()->{hover(5,5);click(ui().primary);},"click Cook stew");
+            step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(at(4,0,0)));check("the stew is in the pot",pot.stew!=null&&pot.servings==16,"servings="+pot.servings);shot("k15_cooked");},"state");
+            step(3,()->{close();},"close the hall");
+            step(10,()->{check("the order survives closing the screen",srvGet(()->hall().order.size()==2&&hall().stewMode),"");openHall();},"reopen");
+            until("screen up again",60,()->ui()!=null&&ui().currentMenu().view.contains("Fit"),()->{});
+            step(10,()->{check("reopened hall shows the same order and mode",order().size()==2&&view().getBoolean("StewMode"),String.valueOf(order()));shot("k16_reopened");},"state");
+        }
+        if(part("legendary")){
+            step(3,()->click(ui().clear),"clear");
+            step(3,()->{for(var e:new MealRules.Effect[]{MealRules.Effect.DEAD_EYE,MealRules.Effect.RAPID_FIRE,MealRules.Effect.HIP_FOCUS})click(cell(e));},"three legendaries");
+            step(8,()->{check("three disjoint legendary recipes can be ordered in a Mk IV stew",order().size()==3,String.valueOf(order()));shot("k17_three_legendary");},"state");
+        }
+        if(part("dispensers")){
+            step(3,()->close(),"close");
+            step(5,()->{BAR.clear();srv(()->{sp().getInventory().setItem(30,ItemStack.EMPTY);var d=(BowlDispenser.DispenserEntity)sl().getBlockEntity(at(8,0,0));d.stock.setItem(0,new ItemStack(Items.BOWL,3));});},"stock the bowl dispenser with 3");
+            step(5,()->useBlock(at(8,0,0)),"take a bowl");
+            step(10,()->{check("taking a bowl is announced",barHas("Took a bowl"),lastBar());check("the bowl arrived",srvGet(()->{int n=0;for(var s:inv().items)if(s.is(Items.BOWL))n+=s.getCount();return n;})==9,"");},"state");
+            step(3,()->{useBlock(at(8,0,0));},"take another");step(8,()->{useBlock(at(8,0,0));},"take the last");
+            step(10,()->{check("low stock is reported with a count",barHas("Took the last bowl")||barHas("only"),lastBar());},"state");
+            step(3,()->{BAR.clear();useBlock(at(8,0,0));},"try an empty dispenser");
+            step(10,()->{check("an empty dispenser says so",barHas("empty"),lastBar());},"state");
+            step(3,()->srv(()->{var d=(BowlDispenser.DispenserEntity)sl().getBlockEntity(at(8,0,0));d.stock.setItem(0,new ItemStack(Items.BOWL,20));sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);}),"stock 20, empty the hands");
+            step(5,()->srv(()->sp().teleportTo(sl(),sx+8.5,sy,sz+2.5,180,0)),"stand beside the bowl dispenser (the menu needs you within 8 blocks)");
+            step(10,()->mc().options.keyShift.setDown(true),"crouch (the key, as a player does)");
+            step(10,()->check("the server sees a sneaking player with empty hands",srvGet(()->sp().isShiftKeyDown()&&BowlDispenser.emptyHands(sp())),"sneak="+srvGet(()->sp().isShiftKeyDown())+" main="+srvGet(()->sp().getMainHandItem())+" off="+srvGet(()->sp().getOffhandItem())+" client sneak="+mc().player.isShiftKeyDown()),"diagnose");
+            step(5,()->useBlock(at(8,0,0)),"crouch-use opens the stock");
+            until("bowl screen",40,()->mc().screen instanceof BowlDispenserScreen,()->{});
+            step(10,()->{check("the Bowl Dispenser screen opens",mc().screen instanceof BowlDispenserScreen,String.valueOf(mc().screen));shot("d01_bowl_screen");},"shot");
+            step(3,()->{close();mc().options.keyShift.setDown(false);},"close and stand up");
+            // milk
+            step(5,()->{BAR.clear();CHAT.clear();srv(()->{sp().removeAllEffects();PlayerMeals.clear(sp());var d=(MilkDispenser.DispenserEntity)sl().getBlockEntity(at(11,0,0));d.tank.setFluid(new net.minecraftforge.fluids.FluidStack(net.minecraftforge.common.ForgeMod.MILK.get(),5750));});},"fill the milk dispenser, clear the player");
+            step(5,()->useBlock(at(11,0,0)),"use milk with no effects");
+            step(10,()->{check("milk with nothing to clear tells you so",barHas("no effects"),lastBar());
+                check("and spends nothing",srvGet(()->((MilkDispenser.DispenserEntity)sl().getBlockEntity(at(11,0,0))).tank.getFluidAmount())==5750,"");},"state");
+            step(3,()->srv(()->{sp().addEffect(new MobEffectInstance(MobEffects.POISON,2000));sp().addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,2000));PlayerMeals.eat(sp(),new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.FIREPOWER,1,true),new MealData.Bonus(MealRules.Effect.MOBILITY,1)),36000));}),"get poisoned, strong, and fed");
+            step(10,()->{BAR.clear();shot("d02_effects_before_milk");},"shot");
+            step(3,()->useBlock(at(11,0,0)),"use milk");
+            step(10,()->{check("the milk announces what it cleared and how much is left",barHas("Milk cleared")&&barHas("5,500"),lastBar());
+                check("a lost meal gets a chat line",CHAT.stream().anyMatch(c->c.contains("washed away")),String.valueOf(CHAT));
+                check("one dose was spent",srvGet(()->((MilkDispenser.DispenserEntity)sl().getBlockEntity(at(11,0,0))).tank.getFluidAmount())==5500,"");
+                check("effects are gone",srvGet(()->sp().getActiveEffects().isEmpty()),"");shot("d03_after_milk");},"state");
+            step(5,()->srv(()->sp().teleportTo(sl(),sx+11.5,sy,sz+2.5,180,0)),"stand beside the milk dispenser");
+            step(3,()->{srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY));mc().options.keyShift.setDown(true);},"crouch");
+            step(10,()->check("the server sees a sneaking player with empty hands (milk)",srvGet(()->sp().isShiftKeyDown()&&BowlDispenser.emptyHands(sp())),"sneak="+srvGet(()->sp().isShiftKeyDown())+" main="+srvGet(()->sp().getMainHandItem())),"diagnose");
+            step(5,()->useBlock(at(11,0,0)),"open the milk screen");
+            until("milk screen",40,()->mc().screen instanceof MilkDispenserScreen,()->{});
+            step(10,()->{check("the Milk Dispenser screen opens",mc().screen instanceof MilkDispenserScreen,String.valueOf(mc().screen));shot("d04_milk_screen");},"shot");
+            step(3,()->{var s=(MilkDispenserScreen)mc().screen;hover(s.width/2.0-88+25,(s.height-225)/2.0+60);},"hover the tank");step(6,()->shot("d05_milk_tank_tip"),"tooltip");
+            step(3,()->{close();mc().options.keyShift.setDown(false);},"close and stand up");
+        }
+        if(part("beacon")){
+            step(5,()->srv(()->{CampaignData.get(sl()).phase="preparation";BeaconNetwork.open(sp(),"menu","");}),"open the beacon");
+            until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
+            step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals("Workshop Fabrication")){b.onPress();break;}},"open the fabrication tab");
+            step(15,()->{var s=(BeaconClient.ControlScreen)mc().screen;check("fabrication tab shows all eleven cards",s.tab==2&&s.fabricationButtons.size()==11,"tab="+s.tab);shot("b01_fabrication");},"shot");
+            step(3,()->{var s=(BeaconClient.ControlScreen)mc().screen;hover(s.left+80,s.top+90);},"hover a card");step(6,()->shot("b02_fabrication_tip"),"tooltip");
+            step(3,()->mc().setScreen(null),"close");
+        }
+        if(part("table")){
+            step(5,()->srv(()->{sl().setBlock(at(14,0,0),ArmorPlatform.station("gun").get().defaultBlockState().setValue(WeaponPlatform.AGE,1),3);sp().teleportTo(sl(),sx+14.5,sy,sz+3.5,180,0);}),"place a weapon table and walk up");
+            step(25,()->srv(()->WeaponPlatform.open(sp(),at(14,0,0))),"open it");
+            until("table screen",60,()->mc().screen instanceof PlatformScreen,()->{});
+            step(10,()->{for(var c:mc().screen.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals(Ui.plain("platform.tab.upgrade"))){b.onPress();break;}},"upgrade tab");
+            step(15,()->shot("t01_table_upgrade"),"shot");
+            step(3,()->mc().setScreen(null),"close");
+        }
+        step(5,()->{mc().setScreen(null);com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",pass,fail);},"summary");
+    }
+}

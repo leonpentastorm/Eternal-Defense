@@ -1,6 +1,20 @@
 # Handoff: where the project stands
 
-Last updated for **Mess Hall v6**, project **0.0.7**, branch **`feature/messhall-ver-6`**, based on v5 `5eebf947cb7b2f07a1fb7f5b50fbd33ce96ecc94`. Owner authorized implementation, build/test, packaging required addon JARs, and pushing this feature. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0.
+Last updated for the **Mess Hall v6 UI pass**, project **0.0.8**, branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
+
+Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## UI pass decisions (0.0.8)
+
+* The kitchen is one screen: recipe palette, Gather, Take back, one primary button. `MealRecipeScreen` and the Mix guide are deleted. The recipe order and sandwich/stew mode are stored on the `HallEntity` (`stewMode`, `order`), not in the menu.
+* Planning lives in `MealPlanner` (no Minecraft types): `evaluate` is the one composition function behind both `IngredientTraits.compose` and Gather; `plan` searches for foods that make exactly an order from the table plus the pack. Keep the two in step by changing only `evaluate`. Planner tests: `MealPlannerTest` (includes a brute-force completeness check).
+* Toggling a recipe is checked against the hall's tier and group rules, not against the pack, so players can plan ahead. Pack-aware status per recipe (`Fit` in the preview: 0 none, 1 blocked, 2 addable, 3 chosen, 4 chosen but no food) is recomputed only when the table, pack, order, mode or tier change.
+* Preview schema changed: `Choices` removed; added `Explicit`, `Order`, `Unmet`, `Made`, `Fit`, `Gatherable`, `Covered`, `Limit`, `NoticeSeq/Notice/NoticeKind/NoticeArgs` and a one-time `Catalogue`. Button ids: 5 gather, 6 take back (new); 40+ recipe toggles and 100+ pots as before.
+* Dispensers: the Milk Dispenser and Milk Bottle never spend milk when the player has no effects. All messages are action bar plus sound and particles; one chat line when a saved meal is lost.
+* Restyled screens and the rules they follow are in `docs/ui/DESIGN-SPEC.md` (new section *Container screens*). Panels must stay within 316 x 238.
+* `tools/qa/QaKitchen.java.txt` is the real-client scenario (`tools/qa/setup-qa.sh <dir> pack QaKitchen`, then `xvfb-run ./gradlew :arsenal-beacon:runClient`). It sneaks through the key binding (a forced server flag is overwritten by the client) and waits for rendered frames before each screenshot because the software renderer lags the game tick.
+
+Previous handoff, **Mess Hall v6**, project **0.0.7**, branch **`feature/messhall-ver-6`**, based on v5 `5eebf947cb7b2f07a1fb7f5b50fbd33ce96ecc94`. Owner authorized implementation, build/test, packaging required addon JARs, and pushing this feature. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0.
 
 Current specification: `docs/MESS-HALL-V6-IMPLEMENTATION.md`; current validation: `docs/MESS-HALL-V6-TESTING.md` and `docs/MESS-HALL-VALIDATION-0.0.7.json`. Protocol **26-pack / 26-standalone**. JAR versions remain 0.21.0 / 1.1.0. TaCZ 1.1.8-hotfix2 + TaCZ Attributes 1.4 are required on both ends; Attributes is separately bundled in both editions. Milk uses Forge's built-in milk fluid and adds no required mod.
 
@@ -61,8 +75,8 @@ Most of the code is dense single-line style; match the surrounding file.
 | Money | `Economy` (all prices per edition), `SupportRules` (flare prices, timings), `CannonUpgrades` (upgrade table, fire types), `ArdentEnergy` (drops), `ExchangeShop` (+ `ExchangeScreen`), `StandaloneBalance`, `ArsenalConfig` |
 | Support system | `SupportData` (per-owner bases), `SupportCalls`, `SupportFlares`, `SupportPlatform`, `SupportCannon`/`CannonEntity`/`CannonControl`/`CannonScreen`, `SupportShop`, `BaseZone`, `ReturnZone`, `SupportCrate`, `SupportHud` |
 | Client | `BeaconClient` (screens, zone outline), `SupportClient` (renderers: sign, nameplate, canopy, red parachutes), `BeaconPopups`, `Ui` (UI kit) |
-| Network | `BeaconNetwork` (protocol **24**; message 14 `RaidTypes.Marks` (raid exclamation marks and parachutes), 16 open kitchen preview; the v2 meal HUD message 15 is gone; older messages in `docs/ENERGY-AND-SUPPORT.md`) |
-| Prepared food | `MealGunBackend`, `MealReloadClient`, `MealGunCompat`, `MealReloadContinuityMixin`, `MealBashMixin`, `MealExplosionMixin`, gated `MealGrenadeMixin`; `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`, `MealEffects` and `MealEffectClient` (vanilla potion effects that show a meal); `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
+| Network | `BeaconNetwork` (protocol **27**; message 14 `RaidTypes.Marks` (raid exclamation marks and parachutes), 16 open kitchen preview; the v2 meal HUD message 15 is gone; older messages in `docs/ENERGY-AND-SUPPORT.md`) |
+| Prepared food | `MealPlanner` (pure recipe logic and the Gather planner), `MessHallMenu`/`MessHallScreen` (one-screen kitchen), `MealGunBackend`, `MealReloadClient`, `MealGunCompat`, `MealReloadContinuityMixin`, `MealBashMixin`, `MealExplosionMixin`, gated `MealGrenadeMixin`; `MealRules`, `MealData`, `IngredientTraits`, `PreparedSandwich`, `PlayerMeals`, `MealEffects` and `MealEffectClient` (vanilla potion effects that show a meal); `KitchenBlock`, `MessHall`, `CookPot`, `MessHallMenu`, `MessHallScreen`, `MealClient`, `KitchenRenderer`; `docs/MESS-HALL.md` |
 | Art | `tools/ui-assets/*.py` generate sprites and textures; the hand-made 3D models come from `docs/art/` via `import_support_gear.py` |
 
 ## Existing build and test tools
@@ -77,6 +91,10 @@ Most of the code is dense single-line style; match the surrounding file.
   Pick the parts to run with a flag file (`/tmp/claude-0/qa-r5.flag`: `sign reward exchange upgrade hard raids dbg all`); switch edition through the flavor argument. Tips learned the hard way:
   kill leftover client JVMs by PID (`pkill -x java` misses them, and `pgrep -f` in the same command line kills your own shell); never nest the server-read helper; walls in the harness must not cover the shop column.
   `QaWorld` has rounds 3 to 5 scripts and `scriptR6()` for Mess Hall v3 (flag file `/tmp/claude-0/qa-r6.flag`, parts `sign halls ui effects marks raids air march siege sun`); add a new `scriptR7()` rather than editing old ones. The script has a client run configuration, makes Gun Displays' TaCZ dependency optional and starts with known client options (first launch otherwise stops at the narrator screen); `TACZ_JAR=<path> tools/qa/setup-qa.sh <dir>` puts TaCZ on the classpath so `./gradlew :arsenal-beacon:runGameTestServer` runs the real TaCZ game tests. Run long QA in the background and poll the log.
+
+* **Kitchen UI QA (0.0.8):** `tools/qa/setup-qa.sh /tmp/claude-0/qa pack QaKitchen` copies the tree with the `QaKitchen` scenario (`tools/qa/QaKitchen.java.txt`: hall, pot, both dispensers, beacon and weapon-table screens; parts via `/tmp/claude-0/qa-kitchen.flag`: `kitchen stew legendary dispensers beacon table`), then `xvfb-run -s "-screen 0 1280x720x24" ./gradlew --no-daemon :arsenal-beacon:runClient`. Screenshots land in `run-client/shots/screenshots`; copy them out before the next `setup-qa.sh`, which wipes the tree. TaCZ and TaCZ Attributes are normal dependencies, so the setup only adds a client and a server run with the mixin ref-map remap.
+* **Not re-run in this session:** the v2 to v6 Mess Hall GameTests of the original author (`run-v6-server.py` needs his retained runtime). A dev-server replay was tried (Gradle does not forward stdin; RCON gave an unexplained command error) and dropped. Instead `QaKitchen` part `equiv` compares the new `compose` with the v6 one on random tables of real foods (see `MESS-HALL-V7-TESTING.md`). `MessHallV6GameTests` was edited for the new milk and selection rules but its changed cases have not been executed.
+* Unit tests: 88 in the beacon module (`MealPlannerTest` adds twelve, `LangKeysTest` now also scans the sources for kitchen and dispenser keys).
 
 ## Decisions the owner has made (do not re-litigate)
 

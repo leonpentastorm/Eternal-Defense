@@ -29,43 +29,44 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     static boolean accepts(ItemStack stack){return traits.stream().anyMatch(t->t.ingredient.test(stack));}
     /** Every effect any trait of this stack feeds (for the slot icons of the screen). */
     static EnumSet<MealRules.Effect> effectsOf(ItemStack stack){var out=EnumSet.noneOf(MealRules.Effect.class);if(!stack.isEmpty())for(var t:traits)if(t.ingredient.test(stack))out.addAll(t.effects.keySet());return out;}
-    record Preview(MealData meal,int occupied,boolean staple,String problem){}
+    /** {@code unmet}: chosen effects the table cannot make yet (the problem is then "missing"). */
+    record Preview(MealData meal,int occupied,boolean staple,String problem,EnumSet<MealRules.Effect> unmet,List<MealData.Bonus> bonuses){
+        Preview(MealData meal,int occupied,boolean staple,String problem){this(meal,occupied,staple,problem,EnumSet.noneOf(MealRules.Effect.class),List.of());}
+    }
     static Preview compose(Container ingredients,boolean stew){return compose(ingredients,stew,1);}
     static String groupOf(ItemStack stack){return traits.stream().filter(t->t.ingredient.test(stack)).map(Trait::family).findFirst().orElse("");}
+    static String key(ItemStack stack){return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();}
+    /** The planner's view of one stack: group of the first matching trait, effect weights merged by maximum, gun effects never score. Null without a trait. */
+    static MealPlanner.Food foodOf(ItemStack stack){
+        if(stack.isEmpty())return null;
+        var matches=traits.stream().filter(t->t.ingredient.test(stack)).toList();if(matches.isEmpty())return null;
+        var weights=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);boolean staple=false;
+        for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->{if(!e.gun())weights.merge(e,w,Math::max);});}
+        return new MealPlanner.Food(key(stack),matches.get(0).family,weights,staple,stack.getMaxStackSize());
+    }
     /** Ordinary by default. Legendary recipes reserve their groups only after explicit selection. */
     static Preview compose(Container ingredients,boolean stew,int mk){return compose(ingredients,stew,mk,null);}
     static Preview compose(Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
-        var foods=new LinkedHashMap<net.minecraft.world.item.Item,EnumMap<MealRules.Effect,Integer>>();
-        var groups=new HashMap<String,Set<net.minecraft.world.item.Item>>();boolean staple=false;
+        var table=new ArrayList<MealPlanner.Food>();var kinds=new HashSet<String>();boolean staple=false;
         for(int i=0;i<6;i++){
             var stack=ingredients.getItem(i);if(stack.isEmpty())continue;
-            var matches=traits.stream().filter(t->t.ingredient.test(stack)).toList();
-            if(matches.isEmpty())return new Preview(null,foods.size(),staple,"ingredient");
-            var scores=foods.computeIfAbsent(stack.getItem(),item->new EnumMap<>(MealRules.Effect.class));
-            groups.computeIfAbsent(matches.get(0).family,k->new HashSet<>()).add(stack.getItem());
-            for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->{if(!e.gun())scores.merge(e,w,Math::max);});}
+            var food=foodOf(stack);
+            if(food==null)return new Preview(null,kinds.size(),staple,"ingredient");
+            table.add(food);kinds.add(food.key());staple|=food.staple();
         }
-        int limit=stew?3:2;var bonuses=new ArrayList<MealData.Bonus>();var used=new HashSet<net.minecraft.world.item.Item>();var reserved=new HashSet<String>();
-        if(selected!=null){
-            if(selected.isEmpty()||selected.size()>limit)return new Preview(null,foods.size(),staple,"selection");
-            for(var mix:MealRules.MIXES)if(selected.contains(mix.effect())){
-                var first=groups.get(mix.first());var second=groups.get(mix.second());
-                if(first==null||second==null||!reserved.add(mix.first())||!reserved.add(mix.second()))return new Preview(null,foods.size(),staple,"selection");
-                used.addAll(first);used.addAll(second);
-                bonuses.add(new MealData.Bonus(mix.effect(),1,MealRules.doubles(stew,mk,first.size(),second.size(),true)));
-            }
+        var eval=MealPlanner.evaluate(table,stew,mk,selected);
+        return new Preview(eval.meal(),eval.occupied(),eval.staple(),eval.problem(),eval.unmet(),eval.bonuses());
+    }
+    /** Every food any trait accepts, built once per datapack reload by testing the item registry. The kitchen sends it to the client for its recipe tooltips. */
+    record Catalogue(Map<String,MealPlanner.Food> foods,Map<String,net.minecraft.world.item.Item> items){}
+    private static List<Trait> catalogued;private static Catalogue catalogue=new Catalogue(Map.of(),Map.of());
+    static synchronized Catalogue catalogue(){
+        if(catalogued==traits)return catalogue;
+        var foods=new TreeMap<String,MealPlanner.Food>();var items=new HashMap<String,net.minecraft.world.item.Item>();
+        for(var item:net.minecraft.core.registries.BuiltInRegistries.ITEM){
+            var stack=new ItemStack(item);var food=foodOf(stack);if(food!=null){foods.put(food.key(),food);items.put(food.key(),item);}
         }
-        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);
-        foods.forEach((item,values)->{if(!used.contains(item))values.forEach((e,w)->scores.merge(e,w,Integer::sum));});
-        var ordinary=selected==null?MealRules.select(scores,stew):selected.stream().filter(e->!e.gun()).sorted().toList();
-        for(var e:ordinary){
-            if(!scores.containsKey(e))return new Preview(null,foods.size(),staple,"selection");
-            boolean doubled=groups.values().stream().anyMatch(items->items.stream().filter(item->!used.contains(item)&&foods.get(item).containsKey(e)).count()>=2);
-            bonuses.add(new MealData.Bonus(e,1,MealRules.doubles(stew,mk,doubled?2:1,0,false)));
-        }
-        int occupied=foods.size();
-        String problem=occupied<2?"ingredients":!stew&&occupied>3?"sandwich_types":bonuses.isEmpty()?"effects":"";
-        return new Preview(problem.isEmpty()?new MealData(stew,bonuses.stream().limit(limit).toList(),MealRules.FIELD_TICKS):null,occupied,staple,problem);
+        catalogued=traits;catalogue=new Catalogue(Collections.unmodifiableMap(foods),Map.copyOf(items));return catalogue;
     }
     /** All distinct contributors, grouped by the actual selected legendary effect. */
     record Link(MealRules.Mix mix,int[] slots,boolean doubled){}

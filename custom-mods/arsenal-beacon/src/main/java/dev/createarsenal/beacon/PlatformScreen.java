@@ -16,7 +16,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     private static CompoundTag data=new CompoundTag();
     private final List<BeaconClient.Hover> hoverItems=new ArrayList<>();
     private final List<Ui.UiButton> rows=new ArrayList<>();
-    private EditBox search,pageJump;private Ui.UiButton craft,upgrade,coins,previous,next,ageButton,armoryButton,turretButton,suppliesButton,typeButton,recipeTab,upgradeTab;
+    private EditBox search,pageJump;private Ui.UiButton find,go,craft,upgrade,coins,previous,next,ageButton,armoryButton,turretButton,suppliesButton,typeButton,recipeTab,upgradeTab;
     private int selected,costScroll,ageFilter,upgradePage,dragPage;private boolean upgrades,navigating,dragging;
     private String weaponType="all";private WeaponBrowser.Layout layout;
     private ListTag paintedRows=new ListTag();private int paintedStart;
@@ -69,7 +69,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         String query=search==null?data.getString("query"):search.getValue();super.init();layout=WeaponBrowser.layout(width,height,weapons()||armor(),armor());pw=layout.width();ph=layout.height();left=(width-pw)/2;top=(height-ph)/2;clearWidgets();rows.clear();int leftWidth=layout.listWidth();ageFilter=data.getInt("ageFilter");if(search==null)weaponType=armor()?ArmorPlatform.normalize(data.getString("weaponType")):WeaponBrowser.normalize(data.getString("weaponType"));
         search=addRenderableWidget(new EditBox(font,left+19,top+70,leftWidth-68,10,Ui.t("platform.search")));
         search.setBordered(false);search.setMaxLength(80);search.setValue(query);search.setHint(Ui.t("platform.search.hint").copy().withStyle(s->s.withColor(0x74888f)));
-        button(Ui.t("platform.find"),left+leftWidth-40,top+64,54,Ui.Look.PRIMARY,b->browse(0));
+        find=button(Ui.t("platform.find"),left+leftWidth-40,top+64,54,Ui.Look.PRIMARY,b->browse(0));
         closeButton();
         boolean compact=layout.compact();int half=(leftWidth-4)/2;
         ageButton=button(Component.empty(),left+14,top+86,compact&&(weapons()||armor())?half:leftWidth,Ui.Look.NORMAL,b->{ageFilter=data.getString("kind").equals("ammo")?(ageFilter==5?10:ageFilter==10?11:ageFilter>=11?0:ageFilter+1):(ageFilter>=5?0:ageFilter+1);browse(0);});
@@ -89,7 +89,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         }
         previous=button(Component.literal("<"),left+14,top+ph-34,22,Ui.Look.NORMAL,b->navigate(page()-1));next=button(Component.literal(">"),left+40,top+ph-34,22,Ui.Look.NORMAL,b->navigate(page()+1));
         pageJump=addRenderableWidget(new EditBox(font,left+73,top+ph-28,22,10,Ui.t("platform.page")));pageJump.setBordered(false);pageJump.setMaxLength(6);pageJump.setFilter(value->value.matches("[0-9]*"));
-        button(Ui.t("platform.go"),left+104,top+ph-34,26,Ui.Look.NORMAL,b->jump());
+        go=button(Ui.t("platform.go"),left+104,top+ph-34,26,Ui.Look.NORMAL,b->jump());
         int right=left+leftWidth+22,rw=pw-leftWidth-36;
         recipeTab=button(Ui.t("platform.tab.recipe"),right,top+64,(rw-4)/2,Ui.Look.TAB,b->{upgrades=false;selected=0;costScroll=0;});
         upgradeTab=button(Ui.t("platform.tab.upgrade"),right+rw/2+2,top+64,(rw-4)/2,Ui.Look.TAB,b->{upgrades=true;selected=0;upgradePage=0;costScroll=0;});
@@ -122,7 +122,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     @Override public boolean mouseScrolled(double mx,double my,double amount){if(mx>=left+14&&mx<left+14+layout.listWidth()&&my>=top+layout.listTop()&&my<top+ph-38){navigate(page()+(amount>0?-1:1));return true;}if(mx>=left+layout.listWidth()+22){costScroll=Math.max(0,costScroll-(int)amount);return true;}return super.mouseScrolled(mx,my,amount);}
     private boolean overScrollbar(double mx,double my){return mx>=left+layout.listWidth()+6&&mx<left+layout.listWidth()+14&&my>=top+layout.listTop()&&my<=top+ph-39;}
     private void dragTo(double my){double progress=(my-(top+layout.listTop()))/Math.max(1,ph-39-layout.listTop());dragPage=(int)Math.round(Math.max(0,Math.min(1,progress))*lastPage());}
-    @Override public boolean mouseClicked(double mx,double my,int button){if(button==0&&lastPage()>0&&overScrollbar(mx,my)){dragging=true;dragTo(my);return true;}return super.mouseClicked(mx,my,button);}
+    @Override public boolean mouseClicked(double mx,double my,int button){if(button==0&&!upgrades&&lastPage()>0&&overScrollbar(mx,my)){dragging=true;dragTo(my);return true;}return super.mouseClicked(mx,my,button);}
     @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){if(dragging){dragTo(my);return true;}return super.mouseDragged(mx,my,button,dx,dy);}
     @Override public boolean mouseReleased(double mx,double my,int button){if(dragging){dragging=false;dragTo(my);navigate(dragPage);return true;}return super.mouseReleased(mx,my,button);}
 
@@ -172,10 +172,15 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         paintedRows=recipes;paintedStart=start;
         for(int i=0;i<rows.size();i++){var row=rows.get(i);row.visible=start+i<recipes.size();row.active=row.visible;row.selected=row.visible&&i==selected;if(row.visible&&start+i<recipes.size()){var r=recipes.getCompound(start+i);row.accent=AGE_COLORS[r.getBoolean("special")?Math.max(7,ageFilter):Math.max(0,Math.min(5,r.getInt("age")))];}}
         previous.active=page>0&&(upgrades||!navigating);next.active=page<lastPage()&&(upgrades||!navigating);
+        // A one-row upgrade list needs no search, pager or scrollbar.
+        search.visible=find.visible=previous.visible=next.visible=pageJump.visible=go.visible=!upgrades;
+        for(int i=0;i<rows.size();i++)rows.get(i).setY(upgrades?top+64+i*rowHeight():top+layout.listTop()+(i/layout.columns())*rowHeight());
         if(!pageJump.isFocused())pageJump.setValue(Integer.toString((dragging?dragPage:page)+1));
-        Ui.text(g,font,total==0?Ui.t("platform.no_matches"):Ui.t("platform.range",page*layout.capacity()+1,Math.min(total,(page+1)*layout.capacity()),total),left+136,top+ph-28,Ui.MUTED,lw-136);
-        int sx=left+lw+6,sy=top+layout.listTop(),sh=ph-39-layout.listTop();g.fill(sx,sy,sx+8,sy+sh,Ui.DEEP);
-        int thumb=Math.min(sh,Math.max(12,sh/Math.max(1,lastPage()+1))),thumbY=sy+(lastPage()==0?0:(int)((sh-thumb)*(dragging?dragPage:page)/(double)lastPage()));g.fill(sx+1,thumbY,sx+7,thumbY+thumb,dragging?Ui.INK:Ui.CYAN);
+        if(!upgrades){
+            Ui.text(g,font,total==0?Ui.t("platform.no_matches"):Ui.t("platform.range",page*layout.capacity()+1,Math.min(total,(page+1)*layout.capacity()),total),left+136,top+ph-28,Ui.MUTED,lw-136);
+            int sx=left+lw+6,sy=top+layout.listTop(),sh=ph-39-layout.listTop();g.fill(sx,sy,sx+8,sy+sh,Ui.DEEP);
+            int thumb=Math.min(sh,Math.max(12,sh/Math.max(1,lastPage()+1))),thumbY=sy+(lastPage()==0?0:(int)((sh-thumb)*(dragging?dragPage:page)/(double)lastPage()));g.fill(sx+1,thumbY,sx+7,thumbY+thumb,dragging?Ui.INK:Ui.CYAN);
+        }else Ui.wrap(g,font,Ui.t("platform.upgrade_info"),left+14,top+64+rowHeight()+8,lw,Ui.MUTED,6);
         craft.visible=!upgrades;upgrade.visible=upgrades;upgrade.active=false;
         CompoundTag chosen=chosen();int targetAge=chosen==null?0:chosen.getInt("age");boolean buying=upgrades&&targetAge==0;boolean baseGear=chosen!=null&&(chosen.getString("action").equals("buySupport")||chosen.getString("action").equals("buyExchange"));
         ListTag costs=chosen==null?new ListTag():chosen.getList("costs",Tag.TAG_COMPOUND);
@@ -210,7 +215,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         else if(costs.size()>visible&&!locked&&(!compact||chosen==null||!chosen.getBoolean("magazine")))Ui.text(g,font,Ui.t("platform.scroll",costs.size()),right,top+ph-70,Ui.MUTED,rw);
         if(ArmorPlatform.component(data.getString("kind"))&&!upgrades)Ui.text(g,font,Ui.t("platform.later",data.getInt("locked")),right,top+ph-33,Ui.MUTED,rw);
         if(ArmorPlatform.component(data.getString("kind"))&&chosen==null)Ui.wrap(g,font,Ui.t("platform.hold_gun",ControlHints.interact()),left+14,top+149,lw,Ui.MUTED,3);
-        Ui.field(g,left+14,top+64,lw-58,20,search.isFocused());Ui.field(g,left+68,top+ph-34,32,20,pageJump.isFocused());
+        if(!upgrades){Ui.field(g,left+14,top+64,lw-58,20,search.isFocused());Ui.field(g,left+68,top+ph-34,32,20,pageJump.isFocused());}
         super.render(g,mx,my,partial);
         footerLine(g,top+ph-12);
         var hover=itemAt(mx,my);if(upgradeTab.isHovered()||upgrade.visible&&upgrade.isHovered())Ui.materialTooltip(g,font,List.of(Ui.t("platform.upgrade_this")),upgradeTab.isHovered()?data.getList("upgrades",Tag.TAG_COMPOUND):costs,mx,my);else if(hover!=null)g.renderComponentTooltip(font,List.of(hover.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
