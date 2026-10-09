@@ -1,0 +1,158 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): boots a flat world on the real client, opens the Field Guide the way a player does, pages through every
+ * page (scrolling each one to its end) and takes a screenshot per screen, then repeats a few pages at a larger GUI scale and opens the plant
+ * confirmation. Copied into a throwaway tree by tools/qa/setup-qa.sh.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaGuide {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static final List<String> BAR=new ArrayList<>(),CHAT=new ArrayList<>();
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void cmd(String c){mc().player.connection.sendCommand(c);}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;com.mojang.logging.LogUtils.getLogger().info("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    /**
+     * The software renderer is slower than the game tick, so a screenshot is taken a few finished frames after it was asked for, and the
+     * script waits for it, so the picture shows the state the step just set up.
+     */
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});com.mojang.logging.LogUtils.getLogger().info("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
+    static BlockPos B(){return at(0,0,-12);}
+    static net.minecraft.world.entity.player.Inventory inv(){return sp().getInventory();}
+    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-kitchen.flag")).trim();return t.isEmpty()||t.equals("all")||Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var text=e.getMessage().getString();
+        if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System sys&&sys.isOverlay())BAR.add(text);else CHAT.add(text);
+    }
+    static String lastBar(){return BAR.isEmpty()?"":BAR.get(BAR.size()-1);}
+    static boolean barHas(String s){return BAR.stream().anyMatch(b->b.contains(s));}
+
+    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);});}
+    static MessHallScreen ui(){return mc().screen instanceof MessHallScreen s?s:null;}
+    /** Call only inside srv/srvGet lambdas (the server thread): a nested srvGet would wait on itself. */
+    static MessHall.HallEntity hall(){return (MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));}
+    static net.minecraft.nbt.CompoundTag view(){return ui().currentMenu().view;}
+    static String problem(){return view().getString("Problem");}
+    static List<Integer> order(){var out=new ArrayList<Integer>();for(int i:view().getIntArray("Order"))out.add(i);return out;}
+    /** A real left click at the middle of a widget. */
+    static void click(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static MessHallScreen.Cell cell(MealRules.Effect e){return ui().cells.stream().filter(c->c.effect==e).findFirst().orElseThrow();}
+    /** Put the pointer where the GUI-scaled coordinates are, so tooltips render like they do for a person. */
+    static void hover(double guiX,double guiY){
+        try{
+            var w=mc().getWindow();var handler=mc().mouseHandler;double sx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),sy=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*sx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*sy);
+        }catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverWidget(net.minecraft.client.gui.components.AbstractWidget w){hover(w.getX()+w.getWidth()/2.0,w.getY()+w.getHeight()/2.0);}
+    static void pack(){
+        srv(()->{inv().clearContent();int i=0;
+            for(var item:new net.minecraft.world.item.Item[]{Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.COOKED_BEEF,Items.BREAD,Items.WHEAT,Items.CARROT,Items.POTATO,Items.COOKED_COD,Items.COOKED_SALMON,Items.COD,Items.SALMON,Items.APPLE,Items.GLOW_BERRIES,Items.BROWN_MUSHROOM,Items.RED_MUSHROOM,Items.ROTTEN_FLESH,Items.SPIDER_EYE})
+                inv().setItem(i++,new ItemStack(item,item==Items.BREAD?32:20));
+            inv().setItem(17,new ItemStack(Items.BOWL,8));});
+    }
+    static void openHall(){srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(at(0,0,0));b.writeVarInt(h.mk());});});}
+    static void useBlock(BlockPos pos){srv(()->{var state=sl().getBlockState(pos);state.getBlock().use(state,sl(),pos,sp(),InteractionHand.MAIN_HAND,new BlockHitResult(pos.getCenter(),Direction.NORTH,pos,false));});}
+    static void close(){mc().setScreen(null);srv(()->sp().closeContainer());}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;
+                var settings=new LevelSettings("qa_guide",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_guide",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){com.mojang.logging.LogUtils.getLogger().info("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+
+
+    static BeaconClient.GuideScreen guide(){return mc().screen instanceof BeaconClient.GuideScreen g?g:null;}
+    static void key(int code){mc().screen.keyPressed(code,0,0);}
+
+    /** Every screenful of every page: the first shot, then Page Down until the scroll position stops moving. */
+    static void pages(String tag){
+        for(int p=0;p<GuideText.IDS.length;p++){
+            final int page=p;
+            step(4,()->{var g=guide();check(tag+" page "+(page+1)+" is "+GuideText.IDS[page],g!=null&&g.page==page,"page="+(g==null?-1:g.page));shot(tag+String.format("%02d_%s_0",page+1,GuideText.IDS[page]));},"first screen of page "+(p+1));
+            for(int k=1;k<=9;k++){
+                final int n=k;
+                step(3,()->{var g=guide();int before=g.scroll;key(267);if(g.scroll!=before)shot(tag+String.format("%02d_%s_%d",page+1,GuideText.IDS[page],n));},"scroll "+k+" on page "+(p+1));
+            }
+            step(3,()->key(262),"next page");
+        }
+    }
+
+    static void script(){
+        step(5,()->{mc().options.guiScale().set(3);mc().resizeDisplay();},"GUI scale 3 (a 427 x 240 window, the smallest the game allows)");
+        step(5,()->srv(()->BeaconNetwork.open(sp(),"guide","")),"open the guide");
+        until("guide screen",60,()->mc().screen instanceof BeaconClient.GuideScreen,()->{});
+        step(10,()->{check("the guide opens",guide()!=null,String.valueOf(mc().screen));},"opened");
+        pages("g");
+        step(3,()->{var g=guide();check("the last page is the Reference",g.page==GuideText.IDS.length-1,"page="+g.page);},"at the end");
+        // a larger window shows the page list on the left
+        step(3,()->{mc().options.guiScale().set(2);mc().resizeDisplay();},"GUI scale 2");
+        step(10,()->{var g=guide();g.page=0;g.scroll=0;shot("w01_start_scale2");},"scale 2: start");
+        step(3,()->{var g=guide();for(var c:g.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().contains(Ui.plain("guide.gear.title"))){click(b);break;}},"click the Gun Guide entry in the list");
+        step(10,()->{var g=guide();check("the list jumps to the Gun Guide page",g.page==GuideText.IDS.length-3,"page="+g.page);shot("w02_gear_scale2");},"scale 2: gear");
+        step(3,()->{var g=guide();for(var c:g.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().contains(Ui.plain("guide.reference.title"))){click(b);break;}},"click the Reference entry");
+        step(10,()->shot("w03_reference_scale2"),"scale 2: reference");
+        step(3,()->{mc().options.guiScale().set(3);mc().resizeDisplay();mc().setScreen(new BeaconClient.ConfirmScreen("place","qa"));},"plant confirmation");
+        step(12,()->shot("c01_plant_confirm"),"confirmation shot");
+        step(3,()->mc().setScreen(null),"close");
+        step(5,()->{mc().setScreen(null);com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",pass,fail);},"summary");
+    }
+}

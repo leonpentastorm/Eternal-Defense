@@ -1,0 +1,42 @@
+# Real-client checks for the Field Guide pass (project 0.0.9)
+# Scenario tools/qa/QaGuide.java.txt; pack edition run, then standalone edition run. Both: 17 checks, 17 pass, 79 screenshots; 12 are kept here.
+
+## pack
+QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS g page 1 is start page=0
+QA_CHECK PASS g page 2 is zone page=1
+QA_CHECK PASS g page 3 is raids page=2
+QA_CHECK PASS g page 4 is control page=3
+QA_CHECK PASS g page 5 is upgrades page=4
+QA_CHECK PASS g page 6 is repair page=5
+QA_CHECK PASS g page 7 is stations page=6
+QA_CHECK PASS g page 8 is energy page=7
+QA_CHECK PASS g page 9 is support page=8
+QA_CHECK PASS g page 10 is kitchen page=9
+QA_CHECK PASS g page 11 is mixes page=10
+QA_CHECK PASS g page 12 is gear page=11
+QA_CHECK PASS g page 13 is coop page=12
+QA_CHECK PASS g page 14 is reference page=13
+QA_CHECK PASS the last page is the Reference page=13
+QA_CHECK PASS the list jumps to the Gun Guide page page=11
+QA_DONE pass=17 fail=0
+
+## standalone
+QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS g page 1 is start page=0
+QA_CHECK PASS g page 2 is zone page=1
+QA_CHECK PASS g page 3 is raids page=2
+QA_CHECK PASS g page 4 is control page=3
+QA_CHECK PASS g page 5 is upgrades page=4
+QA_CHECK PASS g page 6 is repair page=5
+QA_CHECK PASS g page 7 is stations page=6
+QA_CHECK PASS g page 8 is energy page=7
+QA_CHECK PASS g page 9 is support page=8
+QA_CHECK PASS g page 10 is kitchen page=9
+QA_CHECK PASS g page 11 is mixes page=10
+QA_CHECK PASS g page 12 is gear page=11
+QA_CHECK PASS g page 13 is coop page=12
+QA_CHECK PASS g page 14 is reference page=13
+QA_CHECK PASS the last page is the Reference page=13
+QA_CHECK PASS the list jumps to the Gun Guide page page=11
+QA_DONE pass=17 fail=0

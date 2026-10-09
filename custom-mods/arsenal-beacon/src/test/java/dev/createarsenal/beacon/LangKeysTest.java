@@ -154,6 +154,65 @@ final class LangKeysTest {
         assertFalse(generator.contains("'guide."),"Kitchen regeneration must preserve guide edits in the language source");
     }
 
+    private static final Pattern SENTENCE_END=Pattern.compile("(?<=[.!?])\\s+");
+
+    /** Every feature card tells a newcomer the same five things in the same order. */
+    @Test void everyGuideCardFollowsTheSameFormat(){
+        var broken=new ArrayList<String>();
+        for(boolean standalone:new boolean[]{false,true})for(String id:GuideText.IDS){
+            if(id.equals(GuideText.REFERENCE))continue;
+            String heading="";var labels=new ArrayList<String>();
+            var lines=new ArrayList<>(List.of(edition(id,"body",standalone).split("\n")));lines.add("# end");
+            for(String line:lines){
+                if(line.startsWith("# ")){
+                    if(labels.contains("What it is")){
+                        for(String needed:List.of("You get","How it works","How to unlock"))if(!labels.contains(needed))broken.add(id+"/"+heading+" lacks '"+needed+"'");
+                        if(labels.indexOf("You get")<labels.indexOf("What it is")||labels.indexOf("How it works")<labels.indexOf("You get")||labels.indexOf("How to unlock")<labels.indexOf("How it works"))broken.add(id+"/"+heading+" has its lines out of order");
+                    }
+                    heading=line.substring(2);labels.clear();
+                }else if(line.startsWith("- ")){
+                    int colon=line.indexOf(": ");if(colon>0)labels.add(line.substring(2,colon));
+                }
+            }
+        }
+        assertTrue(broken.isEmpty(),"Guide cards out of format: "+broken);
+    }
+
+    /** The guide is for somebody who just spawned in: short lines, short sentences, no walls of text. */
+    @Test void guideSentencesStayShortAndPlain(){
+        var long_=new ArrayList<String>();
+        for(boolean standalone:new boolean[]{false,true})for(String id:GuideText.IDS){
+            if(id.equals(GuideText.REFERENCE))continue;
+            for(String line:edition(id,"body",standalone).split("\n")){
+                if(line.length()>330)long_.add(id+": line of "+line.length()+" characters: "+line.substring(0,Math.min(50,line.length())));
+                for(String sentence:SENTENCE_END.split(line))if(sentence.split("\\s+").length>42)long_.add(id+": sentence over 42 words: "+sentence.substring(0,Math.min(60,sentence.length())));
+            }
+        }
+        assertTrue(long_.isEmpty(),"Guide copy too dense for a new player: "+long_);
+    }
+
+    /** Add a block or an item and this fails until the guide has a card for it. */
+    @Test void everyRegisteredFeatureHasAGuideCard()throws Exception{
+        var cards=Map.ofEntries(Map.entry("defense_beacon","Defense Beacon"),Map.entry("beacon_controller","Recovery Shovel"),Map.entry("field_guide","Field Guide"),
+            Map.entry("gun_platform","Weapon Platform"),Map.entry("ammo_platform","Ammo Platform"),Map.entry("attachment_platform","Attachment Platform"),Map.entry("armor_platform","Armor Platform"),
+            Map.entry("universal_ammo_coin","Ammo Coins"),Map.entry("ardent_energy","Ardent Energy"),Map.entry("exchange_shop","Exchange Shop"),
+            Map.entry("support_platform","Support Platform"),Map.entry("support_cannon","Support Cannon"),Map.entry("support_flare","Support Flare"),Map.entry("return_flare","Return Flare"),Map.entry("fire_support_flare","Fire Support Flare"),
+            Map.entry("mess_hall_mk1","Mess Hall"),Map.entry("cook_pot","Cook Pot and stew"),Map.entry("prepared_sandwich","Sandwich"),Map.entry("bowl_dispenser","Bowl Dispenser"),
+            Map.entry("milk_dispenser","Milk Dispenser and Milk Bottle"),Map.entry("milk_bottle","Milk Dispenser and Milk Bottle"));
+        var ignored=Set.of("structure_part","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
+        String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArsenalBeacon.java"));
+        var registered=new TreeSet<String>();
+        for(String regex:List.of("(?:BLOCKS|ITEMS)\\.register\\(\"([a-z0-9_]+)\"","part\\(\"([a-z_]+)\"\\)","kitchen\\(\"([a-z0-9_]+)\"")){Matcher m=Pattern.compile(regex).matcher(source);while(m.find())registered.add(m.group(1));}
+        Matcher platforms=Pattern.compile("platform\\(\"([a-z]+)\"\\)").matcher(source);while(platforms.find())registered.add(platforms.group(1)+"_platform");
+        var unknown=registered.stream().filter(id->!cards.containsKey(id)&&!ignored.contains(id)).toList();
+        assertTrue(unknown.isEmpty(),"Registered but missing from the Field Guide (add a card, then list it here): "+unknown);
+        for(boolean standalone:new boolean[]{false,true}){
+            String all=Stream.of(GuideText.IDS).map(id->edition(id,"body",standalone)).collect(Collectors.joining("\n"));
+            var headings=Stream.of(all.split("\n")).filter(l->l.startsWith("# ")).map(l->l.substring(2)).collect(Collectors.toSet());
+            for(String heading:Stream.concat(cards.values().stream(),Stream.of("Gun Guide","Gun Displays")).collect(Collectors.toSet()))assertTrue(headings.contains(heading),(standalone?"standalone":"pack")+" guide has no card named '"+heading+"'");
+        }
+    }
+
     @Test void guideNeverBakesInAShortcutKey(){
         var tokens=Pattern.compile("\\{([a-z]+)\\}");
         var allowed=Set.of("interact","jei","reload","emotes","shaders","backpack","quests","map");

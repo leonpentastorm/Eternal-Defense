@@ -1,8 +1,20 @@
 # Handoff: where the project stands
 
-Last updated for the **Mess Hall v6 UI pass**, project **0.0.8**, branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
+Last updated for the **Field Guide pass**, project **0.0.9** (on top of the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Field Guide pass decisions (0.0.9)
+
+* **Audience and rule (owner, 2026-10-09):** guide text helps a player who just spawned in: what the mod is about, and the catches to mind when using each system (for example the beacon only comes off with the Recovery Shovel, which resets everything, so choose where to plant it). It is **not** the design document. The owner said the same applies to every guide-style prompt in the UI. Rules and enforcement: `docs/GUIDE-STYLE.md`; one line in `CLAUDE.md`.
+* Fourteen pages (`GuideText.IDS`, new `gear` page for Gun Guide and Gun Displays). Each feature is a card: `What it is`, `You get`, `How it works`, `How to unlock`, then `Careful` (red) and `Good to know` bullets. Exact numbers stay in each page's `detail` key, which feeds the Reference tab; the Reference tab was kept, only the page `body` keys were rewritten (the `*.pack`/`*.standalone` body suffix keys were folded into the cards).
+* Edition lines: a line starting `[pack] ` or `[standalone] ` is dropped for the other edition (`GuideText.forEdition`). Old suffix keys still work (coop pages, detail keys). `RichText` colours a bullet's leading `Label:`.
+* Tests added: `LangKeysTest` card format, density (330 characters / 42 words) and `everyRegisteredFeatureHasAGuideCard` (parses `ArsenalBeacon` registrations; add a block or item and it fails until a card exists); `GuideTextTest`.
+* Corrected while auditing: standalone upgrades and the upgrade hover claimed crafted parts although `Economy.beaconAmount` charges Ardent Energy; the plant confirmation understated the shovel (now says it resets the campaign); the start page still listed the old tab names.
+* GDD claimed a Gun Displays trophy room counts toward base score. `BaseScoring` has no rule for displays (they count only as ordinary placed blocks); the GDD line was corrected. Nobody has playtested whether that is what the owner wants.
+* `tools/qa/QaGuide.java.txt` is the real-client scenario for the guide (`tools/qa/setup-qa.sh <dir> pack QaGuide`).
+* Validation: `docs/FIELD-GUIDE-TESTING.md` (95 unit tests; two real-client runs, 17/17 checks each, evidence in `docs/validation/field-guide/`). Bundle: `tools/release/package-field-guide.py --backend-jar <TaCZ Attributes 1.4 jar>` writes `dist/Arsenal-FieldGuide-0.0.9-test.zip` and its `.sha512`.
+* **Not done / next:** nobody outside the code has read the new copy as a new player would; ask the owner for a fresh-world playthrough and fix the questions it raises. The Reference tab is still the old exact-numbers material (kept on purpose); cut it if the owner wants a lighter guide. The v2 to v6 server GameTests were still not run.
 
 ## UI pass decisions (0.0.8)
 

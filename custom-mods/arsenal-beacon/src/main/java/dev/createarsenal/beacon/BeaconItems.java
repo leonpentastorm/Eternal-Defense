@@ -19,7 +19,7 @@ final class BeaconItems {
             return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
         }
         InteractionResult confirmedPlace(UseOnContext context){return super.useOn(context);}
-        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Plant to start a shared defense campaign. Confirmation required."));}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Plant to start a shared defense campaign. Confirmation required."));text.add(Component.literal("Choose the spot with care: only the Recovery Shovel removes it, and that resets the campaign.").withStyle(net.minecraft.ChatFormatting.RED));}
     }
     static final class Controller extends ShovelItem {
         Controller(){super(Tiers.IRON,-3f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
@@ -56,6 +56,6 @@ final class BeaconItems {
             if(player instanceof ServerPlayer p)BeaconNetwork.open(p,"guide","");
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand),level.isClientSide);
         }
-        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Right-click for short campaign instructions."));}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Right-click to read what everything is and how to use it."));}
     }
 }

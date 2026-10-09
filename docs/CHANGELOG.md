@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.9 — Field Guide for new players (2026-10-09)
+
+Feature `feature/messhall-ver-6` (owner override). No rules, numbers or packets changed (protocol stays **27**). Writing rules: `docs/GUIDE-STYLE.md`.
+
+* **The Field Guide is rewritten for somebody who has just spawned in.** Fourteen pages of feature cards: *What it is, You get, How it works, How to unlock*, plus red *Careful* notes for the catches (the beacon only comes off with the Recovery Shovel and that resets every upgrade, win and reward level; one Support Platform and Cannon per player; the Milk Dispenser clears good effects and your meal; a Raid break makes the next raid tougher; and so on). It is not the design document: exact numbers stay in the Reference tab.
+* **Gaps filled.** New *Extra gun mods* page (Gun Guide and Gun Displays); starter kit, Recovery Shovel and Field Guide cards; raid warnings, trap learning, Special Forces and the reward chest; Workshop Fabrication, Ammo Coins, Supplies and Ages; every Mess Hall block and what a meal does; Settings.
+* **Stale text corrected.** Standalone upgrades are paid in Ardent Energy, not crafted parts (the guide and the upgrade hover said otherwise); repair prices are read from the button instead of being quoted wrongly for one edition.
+* **Other prompts.** The plant confirmation and the Defense Beacon tooltip now say that only the shovel removes the beacon and that this resets the campaign. The Field Guide tooltip is plainer.
+* **Mechanism.** A line starting with `[pack] ` or `[standalone] ` is shown to that edition only, so an edition difference sits inside its card. Bullet labels (`Careful:` in red, others in brass) are coloured by `RichText`.
+* **Tests.** 95 beacon unit tests: card format, short sentences, every registered block/item has a card (`LangKeysTest`), edition-line rules (`GuideTextTest`). New real-client scenario `tools/qa/QaGuide.java.txt` pages through every screen of the guide.
+
 ## 0.0.8 — Mess Hall v6 UI pass (2026-10-09)
 
 Feature `feature/messhall-ver-6` (owner override), on top of v6 `cfba0ab`. Protocol **27-pack / 27-standalone**. Details: `docs/MESS-HALL-V7-UI.md`.

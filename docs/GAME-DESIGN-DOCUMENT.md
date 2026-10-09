@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.8 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.9 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
 | **Status** | Mess Hall v6 feature test build on `feature/messhall-ver-6`, based on v5 `5eebf94`; fresh worlds per feature until 1.0; validation scope in MESS-HALL-V6-TESTING.md |
 
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.9 | 2026-10-09 | Development | Field Guide rewritten for a player who has just spawned in: every feature (including Gun Guide and Gun Displays) is a card with what it is, what it gives, how it works, how to unlock it and what can go wrong; red "Careful" notes for resets and other catches; edition-only lines inside one card; plant confirmation and item tooltips warn that only the shovel removes the beacon and that this resets the campaign; standalone upgrade hint corrected to Ardent Energy. No rules or numbers changed. |
 | 0.0.8 | 2026-10-09 | Development | Kitchen UI pass: one-screen recipe palette with Gather and Take back (replaces the Mix guide cookbook), order and mode stored with the hall, pack-aware recipe statuses; Bowl and Milk Dispenser feedback (milk is no longer spent when there is nothing to clear); dispenser, Workshop Fabrication and table-upgrade screens restyled; kitchen guide pages rewritten; protocol 27. |
 | 0.0.7 | 2026-10-09 | Development | Explicit ordinary/legendary selection and cookbook; independent base bread; every ordinary ×2 triple fits six slots; milk fluid tank and complete cleanse; empty-hand dispenser stock; compact eleven-item fabrication; header Settings; owner kitchen/shovel/sandwich models; protocol 26. |
 | 0.0.6 | 2026-10-08 | Development | Workshop Fabrication and independent upgrades; Field Radio weapon exclusion; Mk IV-only doubling; fifteen legendary gun recipes and ten new icons; bowl dispenser; tooltip and compact-layout fixes; zero-damage recovery shovel; creative categories; guide v3–v5 coverage. |
@@ -61,7 +62,7 @@ One source tree builds both (`/arsenal-build.properties` flavor in the jar). Eve
 
 * **Defense Beacon** (`arsenal_beacon`): the campaign, raids, support system, Weapon Platform, Exchange.
 * **Gun Guide**: client HUD showing the real controls of the held gun, with the player's own key bindings, key-conflict warnings and a jam alert.
-* **Gun Displays**: eleven stands, wall racks and glass cases; a trophy room counts toward base score.
+* **Gun Displays**: eleven stands, wall racks and glass cases for showing guns. Decoration only; they count like any other placed block for base score.
 
 ## 4. Core loop
 
@@ -122,7 +123,7 @@ Each player owns **one Support Platform** and **one Support Cannon**, placed any
 A workshop with four stations: **Weapons** (search, filter by type and era, craft), **Ammo** (matching ammo and magazines; pay in materials or Universal Ammo Coins), **Attachments** (compatible with the held gun, locked count), **Armor**. Five eras take the player from frontier rifles to futuristic hardware; modern pistols are a modern unlock. The beacon’s Workshop Fabrication tab sells all starter installations; each table upgrades itself.
 
 ### 5.7 Field guide and onboarding
-New players get a starter weapon with ammo, a field guide (pack and standalone texts differ via `key.pack` / `key.standalone` suffixes) and the beacon tools. Every screen uses icons and a "How to unlock" line on locked entries. A **Reference** tab holds the exact rules. A test fails if the guide quotes a number that no longer matches the code.
+New players get a starter weapon with ammo, the field guide and the beacon tools. The guide is written for somebody who has just spawned in and is not the design document: fourteen pages, each a set of feature cards (*What it is, You get, How it works, How to unlock*, then red *Careful* notes for catches such as the beacon only coming off with the shovel and resetting the campaign). Pack and standalone differ by `[pack]` / `[standalone]` lines inside a card or by `key.pack` / `key.standalone` suffixes. The **Reference** tab holds the exact numbers. Tests fail if a card is out of format, a registered block or item has no card, or the guide quotes a number that no longer matches the code. Writing rules: `docs/GUIDE-STYLE.md`.
 
 ### 5.8 Mess Hall and prepared meals
 **A fortress should have a kitchen feeding the war effort.** A farmer/cook supports the group with portable expedition rations and communal pre-raid meals. Casual cooking is useful; a dedicated cook supports more people without being mandatory.

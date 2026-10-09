@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack|standalone] [QaWorld|QaKitchen]   (the scenario file tools/qa/<name>.java.txt)
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack|standalone] [QaWorld|QaKitchen|QaGuide]   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
