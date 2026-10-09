@@ -53,7 +53,7 @@ public final class MessHallGameTests {
     public static void stewServingPersistenceAndLinkCleanup(GameTestHelper h){
         var f=fixture(h,2);var pot=pot(f,3);h.assertTrue(pot.connect()==f.hall,"Nearby pot connects");var extra=pot(f,6);h.assertTrue(extra.connect()==null,"Mk I enforces one linked pot");inputs(f.hall,1);
         f.hall.ingredients.setItem(4,ItemStack.EMPTY);
-        var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);menu.clickMenuButton(f.player,1);h.assertTrue(menu.prepare()&&pot.servings==4&&pot.stew.bonuses().size()==3,"Ordinary defaults preserve three effects and four servings");
+        var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,1,f.hall);menu.clickMenuButton(f.player,1);h.assertTrue(menu.prepare()&&pot.servings==3&&pot.stew.bonuses().size()==3,"Ordinary defaults preserve three effects and four servings");
         var other=UpgradeGameTests.player(h,"kitchen-serving-other");other.setPos(pot.getBlockPos().getX(),pot.getBlockPos().getY(),pot.getBlockPos().getZ());f.player.setPos(other.getX(),other.getY(),other.getZ());
         f.player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));other.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.BOWL));
         pot.use(f.player,InteractionHand.MAIN_HAND);pot.use(other,InteractionHand.MAIN_HAND);h.assertTrue(pot.servings==2&&f.player.getMainHandItem().is(Items.BOWL)&&other.getMainHandItem().is(Items.BOWL),"Independent players consume one serving each and keep empty bowls");
@@ -86,7 +86,7 @@ public final class MessHallGameTests {
         f.player.getInventory().add(new ItemStack(Economy.kitchen(1).item(),Economy.kitchen(1).amount()));h.assertTrue(f.hall.upgrade(f.player),"Paid upgrade succeeds");var upgraded=(MessHall.HallEntity)f.level.getBlockEntity(f.root);
         h.assertTrue(upgraded.mk()==2&&upgraded.identity.equals(identity)&&upgraded.ingredients.getItem(0).getCount()==3&&pot.validLink()==upgraded,"Tier change retains identity, ingredients and links");
         var second=pot(f,6);h.assertTrue(second.connect()==upgraded,"Mk II unlocks a second pot");for(int mk=2;mk<4;mk++){f.player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);upgraded.upgrade(f.player);upgraded=(MessHall.HallEntity)f.level.getBlockEntity(f.root);}
-        h.assertTrue(upgraded.mk()==4&&upgraded.tier().servings()==16&&upgraded.tier().pots()==4,"Progression reaches communal Mk IV capacity");finish(h,f);
+        h.assertTrue(upgraded.mk()==4&&upgraded.tier().servings()==9&&upgraded.tier().pots()==4,"Progression reaches communal Mk IV capacity");finish(h,f);
     }
     private static final BlockPos PERSIST=new BlockPos(7183,101,0);
     private static MessHall.HallEntity unloadingHall;

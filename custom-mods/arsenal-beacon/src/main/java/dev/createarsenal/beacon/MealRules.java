@@ -57,7 +57,7 @@ final class MealRules {
         boolean doubling(){return mk>=3;}
         int ticks(){return minutes*60*20;}
     }
-    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,2,8,7,3,20);case 3->new Tier(3,3,12,10,3,25);case 4->new Tier(4,4,16,12,6,30);default->new Tier(1,1,4,4,3,15);};}
+    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,2,5,7,3,20);case 3->new Tier(3,3,7,10,3,25);case 4->new Tier(4,4,9,12,6,30);default->new Tier(1,1,3,4,3,15);};}
     /** Reserve one unit of each composition type, then spread the remaining batch cost across stacks. */
     static int[] plan(int[] counts,int[] types,int required){
         var spent=new int[counts.length];var seen=new HashSet<Integer>();int left=required;

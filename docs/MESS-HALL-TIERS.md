@@ -9,7 +9,7 @@ Owner request, 2026-10-09. This page is the current rule for what each Mess Hall
 | Mk III | sandwiches and stew | 25 minutes | 3 | **yes** |
 | Mk IV | sandwiches and stew | 30 minutes | **6** | yes, and the only level that can double a legendary effect |
 
-Unchanged per level: linked pots 1/2/3/4, stew servings 4/8/12/16, stew batch units 4/7/10/12, upgrade prices (pack 8/16/32 Reinforced Beacon Plating, standalone 4/8/14 Ardent Energy).
+Unchanged per level: linked pots 1/2/3/4, stew servings 3/5/7/9 (lowered from 4/8/12/16 in 0.0.14), stew batch units 4/7/10/12, upgrade prices (pack 8/16/32 Reinforced Beacon Plating, standalone 4/8/14 Ardent Energy).
 
 ## Rules
 

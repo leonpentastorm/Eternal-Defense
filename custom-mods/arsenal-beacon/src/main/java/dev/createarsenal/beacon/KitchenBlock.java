@@ -17,7 +17,9 @@ import java.util.*;
 /** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); pots and dispensers are 1 x 1 x 2. */
 abstract class KitchenBlock extends Block implements EntityBlock {
     final boolean hall;
-    KitchenBlock(boolean hall){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(ArsenalStructures.FACING,Direction.NORTH));}
+    KitchenBlock(boolean hall){this(hall,0);}
+    /** {@code light}: the block light the kitchen block gives off (the Cook Pot's lamp over its chalkboard). */
+    KitchenBlock(boolean hall,int light){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL).lightLevel(s->light));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(ArsenalStructures.FACING,Direction.NORTH));}
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(ArsenalStructures.FACING);}
     @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(ArsenalStructures.FACING,c.getHorizontalDirection().getOpposite());}
     List<BlockPos> cells(BlockPos root,BlockState state){var right=state.getValue(ArsenalStructures.FACING).getClockWise();return hall?List.of(root.relative(right),root.above(),root.relative(right).above()):List.of(root.above());}

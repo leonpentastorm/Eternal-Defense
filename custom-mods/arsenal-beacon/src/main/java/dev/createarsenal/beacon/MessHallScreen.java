@@ -31,7 +31,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     /** Table problems the Gather button can solve by rebuilding the table from the pack. */
     static final Set<String> GATHERABLE=Set.of("missing","ingredients","ingredient","sandwich_types","batch_types","quantity","staple","effects");
     private static final net.minecraft.resources.ResourceLocation BREAD_BASE=new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,"textures/gui/bread_base.png");
-    Ui.UiButton sandwich,stew,clear,takeBack,upgrade,primary;final List<Ui.UiButton> pots=new ArrayList<>();final List<Cell> cells=new ArrayList<>();
+    Ui.UiButton sandwich,stew,clear,takeBack,upgrade,primary,replaceYes,replaceNo;/** The "replace the stew?" question is open: only its two buttons answer. */boolean confirming;final List<Ui.UiButton> pots=new ArrayList<>();final List<Cell> cells=new ArrayList<>();
     private int lastNotice,badgeLeft;private long noticeAt;private final Map<String,ItemStack> stacks=new HashMap<>();
 
     MessHallScreen(MessHallMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=WIDTH;imageHeight=HEIGHT;}
@@ -77,14 +77,24 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         for(int i=0;i<EVERYDAY.size();i++)cells.add(addRenderableWidget(new Cell(leftPos+RX+(i%COLS)*PITCH,topPos+EVERYDAY_Y+(i/COLS)*PITCH,EVERYDAY.get(i))));
         for(int i=0;i<LEGENDARY.size();i++)cells.add(addRenderableWidget(new Cell(leftPos+RX+(i%COLS)*PITCH,topPos+LEGEND_Y+(i/COLS)*PITCH,LEGENDARY.get(i))));
         for(int i=0;i<4;i++){final int index=i;pots.add(addRenderableWidget(new Ui.UiButton(leftPos+LX+i*42,topPos+ZONE_Y,40,18,Component.empty(),Ui.Look.ROW,b->action(MessHallMenu.POT+index)).painter((g,self,h)->potChip(g,self,index)).noLabel()));}
-        primary=addRenderableWidget(new Ui.UiButton(leftPos+LX,topPos+PRIMARY_Y,LW,21,Component.empty(),Ui.Look.PRIMARY,b->{int mode=ctaMode();if(mode==GATHER)action(MessHallMenu.GATHER);else if(mode==COOK)action(MessHallMenu.PREPARE);}).painter(this::primaryFace).noLabel());
+        primary=addRenderableWidget(new Ui.UiButton(leftPos+LX,topPos+PRIMARY_Y,LW,21,Component.empty(),Ui.Look.PRIMARY,b->{int mode=ctaMode();if(mode==GATHER)action(MessHallMenu.GATHER);else if(mode==COOK){if(replacing())confirming=true;else action(MessHallMenu.PREPARE);}}).painter(this::primaryFace).noLabel());
         takeBack=addRenderableWidget(new Ui.UiButton(leftPos+LX,topPos+SECOND_Y,82,12,Ui.t("kitchen.take_back"),Ui.Look.NORMAL,b->action(MessHallMenu.TAKE_BACK)));
         clear=addRenderableWidget(new Ui.UiButton(leftPos+LX+86,topPos+SECOND_Y,82,12,Ui.t("kitchen.order_clear"),Ui.Look.NORMAL,b->action(MessHallMenu.CLEAR)));
         upgrade=addRenderableWidget(new Ui.UiButton(leftPos+LX,topPos+UPGRADE_Y,LW,12,Component.empty(),Ui.Look.NORMAL,b->action(MessHallMenu.UPGRADE)).painter(this::upgradeFace).noLabel());
+        replaceYes=addRenderableWidget(new Ui.UiButton(leftPos+WIDTH/2-122,topPos+HEIGHT/2+22,118,16,Ui.t("kitchen.replace.yes"),Ui.Look.DANGER,b->{confirming=false;action(MessHallMenu.REPLACE);}));
+        replaceNo=addRenderableWidget(new Ui.UiButton(leftPos+WIDTH/2+4,topPos+HEIGHT/2+22,118,16,Ui.t("kitchen.replace.no"),Ui.Look.PRIMARY,b->confirming=false));
+        replaceYes.visible=replaceNo.visible=false;confirming=false;
         var tierLabel=Ui.t("kitchen.tier",menu.mk);badgeLeft=leftPos+WIDTH-font.width(tierLabel)-Ui.pipsWidth(4)-31;
     }
 
     // ---- buttons ------------------------------------------------------------------------------------------
+    /** Stew is ready to cook, but the chosen pot still has stew: cooking throws it away, so the screen asks first. */
+    private boolean replacing(){var v=view();return v.getBoolean("StewMode")&&v.getString("Problem").equals("pot_full");}
+    /** The chosen pot's row of the view: its servings and meal, or null. */
+    private CompoundTag chosenPot(){
+        var v=view();if(!v.contains("Selected"))return null;
+        for(var t:v.getList("Pots",Tag.TAG_COMPOUND)){var row=(CompoundTag)t;if(row.getLong("Pos")==v.getLong("Selected"))return row;}return null;
+    }
     private int ctaMode(){
         String problem=view().getString("Problem");
         if(explicit()&&GATHERABLE.contains(problem))return view().getBoolean("Gatherable")?GATHER:MISSING;
@@ -160,10 +170,10 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             int kind=view().getInt("NoticeKind");int color=kind==1?Ui.ORANGE:kind==2?Ui.CYAN:Ui.CYAN_DIM;
             Ui.card(g,x,y,RW,STRIP_H,color);Ui.wrap(g,font,toast,x+7,y+1,RW-12,Ui.INK,2);return;
         }
-        var view=view();String problem=view.getString("Problem");boolean ready=view.contains("Problem")&&problem.isEmpty();
+        var view=view();String problem=view.getString("Problem");boolean replace=replacing();boolean ready=view.contains("Problem")&&problem.isEmpty()||replace;
         Ui.inset(g,x,y,RW,STRIP_H);
-        if(ready)Ui.check(g,x+5,y+5,Ui.CYAN);else if(!problem.isEmpty())Ui.alert(g,x+6,y+4,Ui.ORANGE);
-        Ui.text(g,font,hint(problem),x+(problem.isEmpty()&&!ready?6:16),y+5,ready?Ui.CYAN:problem.isEmpty()?Ui.MUTED:Ui.ORANGE,RW-20);
+        if(replace)Ui.alert(g,x+6,y+4,Ui.ORANGE);else if(ready)Ui.check(g,x+5,y+5,Ui.CYAN);else if(!problem.isEmpty())Ui.alert(g,x+6,y+4,Ui.ORANGE);
+        Ui.text(g,font,hint(problem),x+(problem.isEmpty()&&!ready?6:16),y+5,replace?Ui.ORANGE:ready?Ui.CYAN:problem.isEmpty()?Ui.MUTED:Ui.ORANGE,RW-20);
     }
     private Component toast(){
         int seq=view().getInt("NoticeSeq");if(seq!=lastNotice){lastNotice=seq;noticeAt=net.minecraft.Util.getMillis();}
@@ -341,6 +351,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             lines.add(Ui.t(lacking.isEmpty()?"kitchen.tip.missing_blocked":"kitchen.tip.missing_foods",String.join(", ",lacking)));
             g.renderTooltip(font,font.split(lines.get(0),190),mx,my);return;
         }
+        if(replacing()){tip(g,"kitchen.tip.cook_replace",mx,my,view().getInt("Servings"));return;}
         if(problem.isEmpty()){tip(g,view().getBoolean("StewMode")?"kitchen.tip.cook_stew":"kitchen.tip.make_sandwich",mx,my,view().getInt("Servings"));return;}
         tip(g,"kitchen.problem."+problem,mx,my);
     }
@@ -380,8 +391,12 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     }
     @Override public void render(GuiGraphics g,int mx,int my,float partial){
         var view=view();
-        primary.active=view.contains("Problem")&&(ctaMode()==GATHER||ctaMode()==COOK&&view.getString("Problem").isEmpty());
-        renderBackground(g);super.render(g,mx,my,partial);renderTooltip(g,mx,my);tooltips(g,mx,my);
+        primary.active=view.contains("Problem")&&(ctaMode()==GATHER||ctaMode()==COOK&&(view.getString("Problem").isEmpty()||replacing()));
+        if(confirming&&!replacing())confirming=false; // somebody emptied the pot, or the mode changed
+        replaceYes.visible=replaceNo.visible=confirming;
+        renderBackground(g);
+        if(confirming){super.render(g,-1,-1,partial);confirmation(g,mx,my);return;}
+        super.render(g,mx,my,partial);renderTooltip(g,mx,my);tooltips(g,mx,my);
         var list=view.getList("Pots",Tag.TAG_COMPOUND);
         for(int i=0;i<pots.size()&&i<list.size();i++)if(pots.get(i).visible&&pots.get(i).isHovered()&&!(hoveredSlot!=null&&hoveredSlot.hasItem())){
             var row=list.getCompound(i);var pos=BlockPos.of(row.getLong("Pos"));var meal=MealData.load(row.getCompound("Meal"));var lines=new ArrayList<Component>();
@@ -389,5 +404,29 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             if(meal!=null){lines.add(Ui.t("kitchen.servings",row.getInt("Servings")));for(var bonus:meal.bonuses())lines.add(bonus.description(false));}
             g.renderTooltip(font,lines,Optional.empty(),mx,my);
         }
+    }
+
+    /** The question before a pot with stew is cooked over: dims the kitchen and asks. Only its two buttons answer; Escape means keep the stew. */
+    private void confirmation(GuiGraphics g,int mx,int my){
+        g.pose().pushPose();g.pose().translate(0,0,400); // above the item icons of the slots and the carried item
+        g.fill(0,0,width,height,0xb0050a0e);
+        int w=260,h=96,x=leftPos+WIDTH/2-w/2,y=topPos+HEIGHT/2-h/2+4;
+        Ui.panel(g,x,y,w,h);g.fill(x,y,x+w,y+2,Ui.ORANGE);
+        Ui.alert(g,x+10,y+11,Ui.ORANGE);g.drawString(font,Ui.t("kitchen.replace.title"),x+24,y+10,Ui.INK,false);
+        var pot=chosenPot();var meal=pot==null?null:MealData.load(pot.getCompound("Meal"));
+        var list=view().getList("Pots",Tag.TAG_COMPOUND);int number=1;for(int i=0;i<list.size();i++)if(pot!=null&&list.getCompound(i).getLong("Pos")==pot.getLong("Pos"))number=i+1;
+        Ui.wrap(g,font,Ui.t("kitchen.replace.body",number,pot==null?0:pot.getInt("Servings"),meal==null?"?":meal.name().getString(),view().getInt("Servings")),x+12,y+26,w-24,Ui.MUTED,4);
+        replaceYes.render(g,mx,my,0);replaceNo.render(g,mx,my,0);
+        g.pose().popPose();
+    }
+    @Override public boolean mouseClicked(double mx,double my,int button){
+        if(confirming){return replaceYes.mouseClicked(mx,my,button)||replaceNo.mouseClicked(mx,my,button)||true;}
+        return super.mouseClicked(mx,my,button);
+    }
+    @Override public boolean mouseReleased(double mx,double my,int button){return confirming||super.mouseReleased(mx,my,button);}
+    @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){return confirming||super.mouseDragged(mx,my,button,dx,dy);}
+    @Override public boolean keyPressed(int key,int scan,int mods){
+        if(confirming){if(key==256)confirming=false;return true;} // Escape: keep the stew
+        return super.keyPressed(key,scan,mods);
     }
 }

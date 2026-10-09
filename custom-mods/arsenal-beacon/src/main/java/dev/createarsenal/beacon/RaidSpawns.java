@@ -109,19 +109,69 @@ final class RaidSpawns {
     /** A new raid, the end of one, or the server stopping: forget every probe. */
     static void forgetCorridors(){CORRIDORS.clear();corridorRaid=Long.MIN_VALUE;probesThisRaid=0;}
     static int probesThisRaid(){return probesThisRaid;}
+    /** One column of ground: its surface height ({@link #UNKNOWN} when it could not be read), and whether the surface is a fluid or lava/magma. */
+    record Column(int surface,boolean fluid,boolean lava){
+        static final Column NOT_READABLE=new Column(UNKNOWN,false,false);
+        boolean known(){return surface!=UNKNOWN;}
+    }
+    /**
+     * Reads one column from the {@code MOTION_BLOCKING_NO_LEAVES} height map. Never loads a chunk: an unloaded column is unknown. A surface that is
+     * a tree trunk, or a block a player placed, is not the ground either, so it is unknown too (a trunk would look like a cliff).
+     */
+    static Column column(ServerLevel l,int x,int z,Set<Long> placed){
+        if(!l.hasChunkAt(new BlockPos(x,0,z)))return Column.NOT_READABLE;
+        int y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);var top=new BlockPos(x,y-1,z);var state=l.getBlockState(top);var fluid=l.getFluidState(top);
+        boolean lava=fluid.is(net.minecraft.tags.FluidTags.LAVA)||state.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK);
+        if(lava||!fluid.isEmpty())return new Column(y,!lava,lava);
+        String id=BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        if(placed.contains(top.asLong())||id.endsWith("_log")||id.endsWith("_wood")||id.endsWith("_stem")||id.endsWith("_hyphae"))return Column.NOT_READABLE;
+        return new Column(y,false,false);
+    }
     private static Corridor probe(ServerLevel l,CampaignData d,int wedge){
         int from=d.radius()+PROBE_FROM,to=Math.max(from,farthest(l,d)),n=(to-from)/PROBE_STEP+1;int[] surface=new int[n];boolean[] hazard=new boolean[n];
         double angle=(wedge+.5)*WEDGE;var placed=BaseScoring.Ledger.get(l).placed;
         for(int i=0;i<n;i++){
-            var column=ringAt(d.beacon,from+i*PROBE_STEP,angle);surface[i]=UNKNOWN;
-            if(!l.hasChunkAt(column))continue; // never load a chunk for a probe
-            int y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,column.getX(),column.getZ());var top=new BlockPos(column.getX(),y-1,column.getZ());var state=l.getBlockState(top);
-            if(!l.getFluidState(top).isEmpty()||state.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)){hazard[i]=true;surface[i]=y;continue;}
-            String id=BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-            if(placed.contains(top.asLong())||id.endsWith("_log")||id.endsWith("_wood")||id.endsWith("_stem")||id.endsWith("_hyphae"))continue; // a trunk or a player's block is not the ground
-            surface[i]=y;
+            var column=ringAt(d.beacon,from+i*PROBE_STEP,angle);var c=column(l,column.getX(),column.getZ(),placed);
+            surface[i]=c.surface();hazard[i]=c.fluid()||c.lava();
         }
         return new Corridor(from,surface,hazard);
+    }
+    /** Is this column inside the protected zone (square, like the zone itself)? Players' own ground: the gate probes never judge it. */
+    static boolean insideZone(CampaignData d,int x,int z){return Math.max(Math.abs(x-d.beacon.getX()),Math.abs(z-d.beacon.getZ()))<=d.radius();}
+    /**
+     * What a raider would meet in the next {@link RaidMarch#LOOKAHEAD_BLOCKS} blocks of its straight line to the beacon: lava or magma, a drop of
+     * {@link RaidMarch#GATE_DROP_BLOCKS} or more, or a stretch of {@link RaidMarch#GATE_FLUID_SPAN} wet blocks in a row. One sample per block, the
+     * raider's own feet as the first one; samples inside the zone and beyond the beacon are unknown.
+     */
+    static TerrainProbe.Hazard lookAhead(ServerLevel l,CampaignData d,net.minecraft.world.entity.Mob mob){
+        double dx=d.beacon.getX()+.5-mob.getX(),dz=d.beacon.getZ()+.5-mob.getZ(),len=Math.sqrt(dx*dx+dz*dz);
+        if(len<1)return TerrainProbe.Hazard.NONE;dx/=len;dz/=len;
+        int n=RaidMarch.LOOKAHEAD_BLOCKS+1;int[] surface=new int[n];boolean[] fluid=new boolean[n],lava=new boolean[n];var placed=BaseScoring.Ledger.get(l).placed;
+        surface[0]=mob.blockPosition().getY();
+        for(int i=1;i<n;i++){
+            surface[i]=UNKNOWN;if(i>=len)continue;
+            int x=net.minecraft.util.Mth.floor(mob.getX()+dx*i),z=net.minecraft.util.Mth.floor(mob.getZ()+dz*i);
+            if(insideZone(d,x,z))continue;
+            var c=column(l,x,z,placed);surface[i]=c.surface();fluid[i]=c.fluid();lava[i]=c.lava();
+        }
+        return TerrainProbe.probe(surface,fluid,lava,1);
+    }
+    /**
+     * The same probe along the whole straight way from {@code from} (a gate's destination) to the edge of the zone, one sample every
+     * {@link RaidMarch#DESTINATION_SPACING} blocks: a raider that comes out there must be able to march in.
+     */
+    static TerrainProbe.Hazard lineProbe(ServerLevel l,CampaignData d,BlockPos from){
+        double dx=d.beacon.getX()-from.getX(),dz=d.beacon.getZ()-from.getZ(),len=Math.sqrt(dx*dx+dz*dz);
+        if(len<1)return TerrainProbe.Hazard.NONE;dx/=len;dz/=len;
+        int spacing=RaidMarch.DESTINATION_SPACING,max=(int)(len/spacing)+1;var surface=new ArrayList<Integer>();var fluid=new ArrayList<Boolean>();var lava=new ArrayList<Boolean>();var placed=BaseScoring.Ledger.get(l).placed;
+        for(int i=0;i<max;i++){
+            int x=net.minecraft.util.Mth.floor(from.getX()+.5+dx*i*spacing),z=net.minecraft.util.Mth.floor(from.getZ()+.5+dz*i*spacing);
+            if(insideZone(d,x,z))break;
+            var c=column(l,x,z,placed);surface.add(c.surface());fluid.add(c.fluid());lava.add(c.lava());
+        }
+        int[] s=new int[surface.size()];boolean[] f=new boolean[s.length],v=new boolean[s.length];
+        for(int i=0;i<s.length;i++){s[i]=surface.get(i);f[i]=fluid.get(i);v[i]=lava.get(i);}
+        return TerrainProbe.probe(s,f,v,spacing);
     }
 
     /**
@@ -164,20 +214,21 @@ final class RaidSpawns {
         for(int w:rescueOrder(stuckWedge,start)){T found=attempt.apply(w);if(found!=null)return found;}return null;
     }
     /**
-     * A place for a stuck raider: it passes every rule a fresh spawn does ({@link #safe}: outside the zone and its {@link #CLEARANCE}, loaded and
-     * entity-ticking, inside the world border, at or above the beacon's level, open and level ground) and its wedge has a clean corridor,
-     * and it is at least {@link #RESCUE_PLAYER_DISTANCE} blocks from every player. It lies on the ring at the minimum distance plus the usual
-     * spread, in another wedge than the one the raider was stuck in when any other will do. Null when nothing qualifies.
+     * A place for a stuck raider to come out of its gate: it passes every rule a fresh spawn does ({@link #safe}: outside the zone and its
+     * {@link #CLEARANCE}, loaded and entity-ticking, inside the world border, at or above the beacon's level, open and level ground), the straight
+     * way from it to the zone passes the {@link TerrainProbe} (no lava, chasm or wide lake), and it is at least {@link #RESCUE_PLAYER_DISTANCE}
+     * blocks from every player. It lies on the ring at the minimum distance plus the usual spread, in another wedge than the one the raider was
+     * stuck in when any other will do. Null when nothing qualifies.
      */
     static BlockPos findRescue(ServerLevel l,CampaignData d,int stuckWedge,Collection<net.minecraft.world.phys.Vec3> players){
         return pickRescue(stuckWedge,l.random.nextInt(WEDGES),wedge->{
             for(int tries=0;tries<RESCUE_TRIES;tries++){
-                int extra=l.random.nextInt(SPREAD+1);int distance=d.radius()+CLEARANCE+extra;
+                int extra=l.random.nextInt(SPREAD+1);
                 var column=ring(d.beacon,d.radius(),(wedge+l.random.nextDouble())*WEDGE,extra);
                 if(wedgeOf(d.beacon,column)!=wedge||!l.hasChunkAt(column))continue;
-                if(!corridor(l,d,wedge).score(distance).clean())return null; // the whole wedge is no good
                 var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,column);
                 if(!farFromPlayers(net.minecraft.world.phys.Vec3.atBottomCenterOf(p),players,RESCUE_PLAYER_DISTANCE))continue;
+                if(lineProbe(l,d,p)!=TerrainProbe.Hazard.NONE)continue;
                 if(safe(l,d,p))return p;
             }
             return null;

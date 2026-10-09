@@ -41,6 +41,7 @@ public final class SupportClient {
         e.registerBlockEntityRenderer(ArsenalBeacon.SUPPORT_PLATFORM_ENTITY.get(),PlatformRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.PARCEL.get(),ParcelRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.FLARE.get(),FlareRenderer::new);
+        e.registerEntityRenderer(ArsenalBeacon.RAIDER_GATE.get(),GateRenderer::new);
     }
     @SubscribeEvent public static void supportScreens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(ArsenalBeacon.SUPPORT_MENU.get(),SupportScreen::new));}
 
@@ -170,7 +171,7 @@ public final class SupportClient {
         FlareRenderer(EntityRendererProvider.Context ctx){super(ctx);items=ctx.getItemRenderer();shadowRadius=0f;}
         @Override public void render(SupportFlares.FlareEntity e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
             var kind=e.kind();boolean landed=e.landed();
-            if(kind==SupportCalls.Kind.RETURN&&e.open()){portal(e,partial,pose,buffer);return;}
+            if(kind==SupportCalls.Kind.RETURN&&e.open()){drawPortal(pose,buffer,entityRenderDispatcher,e.tickCount+partial,3f,255,255,255,255);return;}
             Item item=switch(kind){case SUPPLY->ArsenalBeacon.SUPPLY_FLARE.get();case RETURN->ArsenalBeacon.RETURN_FLARE.get();case FIRE->ArsenalBeacon.FIRE_FLARE.get();};
             pose.pushPose();
             pose.translate(0,landed?.45:.12,0);pose.scale(1.4f,1.4f,1.4f);
@@ -190,22 +191,35 @@ public final class SupportClient {
             float pulse=.75f+.25f*Mth.sin((e.tickCount+partial)*.2f);
             LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,c[0],c[1],c[2],pulse);
         }
-        private void portal(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
-            float age=e.tickCount+partial;
-            float grow=Math.min(1f,age/12f),pulse=1f+.04f*Mth.sin(age*.3f);
-            int frame=(int)(age/3f)%4;float u0=frame/4f,u1=(frame+1)/4f;
-            pose.pushPose();
-            pose.scale(grow*pulse,grow*pulse,grow*pulse);
-            pose.mulPose(entityRenderDispatcher.cameraOrientation());pose.mulPose(Axis.YP.rotationDegrees(180f));
-            var last=pose.last();var m=last.pose();var n=last.normal();
-            var vc=buffer.getBuffer(RenderType.entityTranslucentEmissive(PORTAL));
-            corner(vc,m,n,-.5f,0f,u0,1f);corner(vc,m,n,.5f,0f,u1,1f);corner(vc,m,n,.5f,2f,u1,0f);corner(vc,m,n,-.5f,2f,u0,0f);
-            pose.popPose();
-        }
-        private static void corner(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v){
-            vc.vertex(m,x,y,0f).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
-        }
         @Override public ResourceLocation getTextureLocation(SupportFlares.FlareEntity e){return TextureAtlas.LOCATION_BLOCKS;}
+    }
+
+    /**
+     * A standing portal, two blocks tall, turned towards the camera, drawn from the Return portal sprite (four frames side by side). It grows in over
+     * its first twelve ticks. {@code frameTicks} is how long one frame lasts; the colour tints the sprite. The player's Return portal draws it white
+     * and fast, the Raider Gate red and slow, so the two can never be mistaken for each other.
+     */
+    static void drawPortal(PoseStack pose,MultiBufferSource buffer,net.minecraft.client.renderer.entity.EntityRenderDispatcher dispatcher,float age,float frameTicks,int red,int green,int blue,int alpha){
+        float grow=Math.min(1f,age/12f),pulse=1f+.04f*Mth.sin(age*.3f);
+        int frame=(int)(age/frameTicks)%4;float u0=frame/4f,u1=(frame+1)/4f;
+        pose.pushPose();
+        pose.scale(grow*pulse,grow*pulse,grow*pulse);
+        pose.mulPose(dispatcher.cameraOrientation());pose.mulPose(Axis.YP.rotationDegrees(180f));
+        var last=pose.last();var m=last.pose();var n=last.normal();
+        var vc=buffer.getBuffer(RenderType.entityTranslucentEmissive(FlareRenderer.PORTAL));
+        corner(vc,m,n,-.5f,0f,u0,1f,red,green,blue,alpha);corner(vc,m,n,.5f,0f,u1,1f,red,green,blue,alpha);corner(vc,m,n,.5f,2f,u1,0f,red,green,blue,alpha);corner(vc,m,n,-.5f,2f,u0,0f,red,green,blue,alpha);
+        pose.popPose();
+    }
+    private static void corner(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v,int red,int green,int blue,int alpha){
+        vc.vertex(m,x,y,0f).color(red,green,blue,alpha).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
+    }
+    /** The gate a stuck raider channels beside: the Return portal sprite in red, at about half the speed. Nothing else is drawn. */
+    static final class GateRenderer extends EntityRenderer<RaiderGate> {
+        GateRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
+        @Override public void render(RaiderGate e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
+            drawPortal(pose,buffer,entityRenderDispatcher,e.tickCount+partial,7f,255,45,45,235);
+        }
+        @Override public ResourceLocation getTextureLocation(RaiderGate e){return FlareRenderer.PORTAL;}
     }
 
     /**

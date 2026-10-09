@@ -84,10 +84,18 @@ final class LangKeysTest {
         }
         assertTrue(missing.isEmpty(),"Language keys named in code but missing: "+missing);
     }
+    @Test void theRaidsCardExplainsTheRedGateInPlainWords(){
+        for(boolean standalone:new boolean[]{false,true}){
+            String body=edition("raids","body",standalone);
+            assertTrue(body.contains("red gate")&&body.contains("lava, a chasm or a wide lake")&&body.contains("You can shoot it"),"the gate is explained: what it is, what it does and what to do about it");
+            assertTrue(body.lines().filter(l->l.contains("red gate")).allMatch(l->l.length()<=330),"one short line");
+        }
+    }
     @Test void kitchenFamiliesOfKeysAreComplete(){
         var needed=new ArrayList<String>();
         for(String p:List.of("ingredients","ingredient","staple","effects","pot","pot_full","output","sandwich_types","batch_types","quantity","selection","missing","slots","stew_locked"))needed.add("kitchen.problem."+p);
         for(String p:List.of("ready","gather","missing","ingredients","ingredient","staple","effects","selection","sandwich_types","batch_types","quantity","pot","pot_full","output","slots","stew_locked"))needed.add("kitchen.hint."+p);
+        for(String k:List.of("replace.title","replace.body","replace.yes","replace.no","tip.cook_replace","notice.replaced"))needed.add("kitchen."+k);
         for(String n:List.of("cooked","made","gathered","gather_short","gather_choose","gather_bread","gather_missing","gather_blocked","order_full","order_tier","order_conflict","order_reset_stew","order_reset_sandwich","returned","table_empty","stew_locked"))needed.add("kitchen.notice."+n);
         for(String group:List.of("protein","fish","vegetables","fruit","grain","fungi")){needed.add("kitchen.group."+group);needed.add("kitchen.group_short."+group);}
         for(var e:MealRules.Effect.values()){needed.add("meal.effect."+e.id);needed.add("meal.bonus."+e.id);}
@@ -142,7 +150,7 @@ final class LangKeysTest {
             String kitchen=edition("kitchen","body",standalone),mixes=edition("mixes","body",standalone),raids=edition("raids","body",standalone);
             String detail=edition("kitchen","detail",standalone);
             assertTrue(kitchen.contains("Gather ingredients")&&kitchen.contains("Make sandwich")&&kitchen.contains("Cook stew"),"the kitchen page teaches the three steps");
-            assertTrue(detail.contains("Doubling unlocks at Mk III")&&detail.contains("EACH group")&&detail.contains("only Mk IV can double one"),"the double rule stays documented");
+            assertTrue(detail.contains("3/5/7/9 servings")&&detail.contains("Doubling unlocks at Mk III")&&detail.contains("EACH group")&&detail.contains("only Mk IV can double one"),"the double rule stays documented");
             assertTrue(kitchen.contains("Mk I: sandwiches only")&&kitchen.contains("Mk II: unlocks stew")&&kitchen.contains("Mk III: meals last 25 minutes")&&kitchen.contains("Mk IV: meals last 30 minutes"),"the four hall levels are spelled out");
             assertFalse(kitchen.contains("Mix guide")||detail.contains("Mix guide")||edition("mixes","body",standalone).contains("Mix guide"),"the Mix guide screen no longer exists");
             for(var mix:MealRules.MIXES)assertTrue(mixes.contains(get("meal.effect."+mix.effect().id)),"Missing legendary recipe "+mix.effect());

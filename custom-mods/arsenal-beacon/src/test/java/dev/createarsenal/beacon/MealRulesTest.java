@@ -19,13 +19,13 @@ final class MealRulesTest {
     @Test void eachTierBuildsOnTheLastOne(){
         int[] minutes={15,20,25,30},slots={3,3,3,6};
         for(int mk=1;mk<=4;mk++){
-            var tier=MealRules.tier(mk);assertEquals(mk,tier.pots());assertEquals(mk*4,tier.servings());
+            var tier=MealRules.tier(mk);assertEquals(mk,tier.pots());assertEquals(mk*2+1,tier.servings(),"servings 3/5/7/9: a Mk IV pot holds nine");
             assertEquals(minutes[mk-1],tier.minutes(),"Mk "+mk+" meals last");assertEquals(minutes[mk-1]*1200,tier.ticks());assertEquals(slots[mk-1],tier.slots(),"Mk "+mk+" food slots");
             assertEquals(mk>=2,tier.stew(),"stew is unlocked by Mk II");assertEquals(mk>=3,tier.doubling(),"doubling is unlocked by Mk III");
         }
         assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);assertEquals(MealRules.FIELD_TICKS,MealRules.tier(4).ticks(),"the longest meal is the old fixed half hour");
     }
-    @Test void stewCostsGrowMoreSlowlyThanServingsButConsumeRealFood(){
+    @Test void stewCostsGrowWithTheLevelAndConsumeRealFood(){
         int[] costs={4,7,10,12};for(int mk=1;mk<=4;mk++){
             assertEquals(costs[mk-1],MealRules.tier(mk).ingredients());var plan=MealRules.plan(new int[]{16,16,16},new int[]{0,1,2},costs[mk-1]);
             assertEquals(costs[mk-1],Arrays.stream(plan).sum());assertTrue(Arrays.stream(plan).allMatch(n->n>0));

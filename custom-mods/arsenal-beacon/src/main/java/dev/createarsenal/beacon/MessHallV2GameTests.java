@@ -39,7 +39,7 @@ public final class MessHallV2GameTests {
             batchFood(f,16);var preview=IngredientTraits.compose(f.hall.ingredients,true);h.assertTrue(preview.meal()!=null,"Bundled vanilla foods compose a meal");if(composition==null)composition=preview.meal();else h.assertTrue(composition.equals(preview.meal()),"Tier and quantity never increase composition strength");
             h.assertTrue(preview.meal().bonuses().stream().map(MealData.Bonus::effect).toList().equals(List.of(MealRules.Effect.MIGHT,MealRules.Effect.RECOVERY,MealRules.Effect.SWIM)),"Ordinary defaults preserve all three food bonuses: "+preview.meal().bonuses());
             var menu=new MessHallMenu(mk,f.player.getInventory(),f.hall.ingredients,f.root,mk,f.hall);menu.clickMenuButton(f.player,1);var batch=IngredientTraits.batch(f.hall.ingredients,preview,true,mk);
-            h.assertTrue(menu.prepare()&&f.pot.servings==4*mk,"Tier creates its configured servings");int left=0;for(int i=0;i<6;i++)left+=f.hall.ingredients.getItem(i).getCount();h.assertTrue(left==48-MealRules.tier(mk).ingredients(),"Exact 4/7/10/12 batch ingredient cost");
+            h.assertTrue(menu.prepare()&&f.pot.servings==MealRules.tier(mk).servings(),"Tier creates its configured servings");int left=0;for(int i=0;i<6;i++)left+=f.hall.ingredients.getItem(i).getCount();h.assertTrue(left==48-MealRules.tier(mk).ingredients(),"Exact 4/7/10/12 batch ingredient cost");
             h.assertTrue(f.player.getInventory().countItem(Items.GLASS_BOTTLE)==batch.spent()[1],"Every consumed honey bottle returns a container");
             batchFood(f,1);h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(composition),"Stack size does not change strength");
         }finally{clean(f);}}
@@ -51,7 +51,7 @@ public final class MessHallV2GameTests {
             batchFood(f,1);var menu=new MessHallMenu(1,f.player.getInventory(),f.hall.ingredients,f.root,4,f.hall);menu.clickMenuButton(f.player,1);var before=f.hall.saveWithoutMetadata();
             h.assertTrue(!menu.prepare()&&before.equals(f.hall.saveWithoutMetadata())&&f.pot.empty(),"Insufficient food leaves all inputs and pot unchanged");
             batchFood(f,4);var other=UpgradeGameTests.player(h,"v2-competing-cook");other.setPos(f.player.position());var second=new MessHallMenu(2,other.getInventory(),f.hall.ingredients,f.root,4,f.hall);second.clickMenuButton(other,1);
-            h.assertTrue(menu.prepare()&&!second.prepare()&&f.pot.servings==16,"Two cooks serialize the last exact batch");
+            h.assertTrue(menu.prepare()&&!second.prepare()&&f.pot.servings==MealRules.tier(4).servings(),"Two cooks serialize the last exact batch");
             batchFood(f,1);f.hall.ingredients.setItem(3,new ItemStack(Items.COOKED_BEEF,16));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal().equals(f.pot.stew),"Duplicate slots do not increase scores");
             f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.COOKED_BEEF,32));f.hall.ingredients.setItem(1,new ItemStack(Items.COOKED_BEEF,32));h.assertTrue(IngredientTraits.compose(f.hall.ingredients,true).meal()==null,"Split stacks are not two ingredient types");
             f.hall.ingredients.clearContent();f.hall.ingredients.setItem(0,new ItemStack(Items.BREAD,64));f.hall.ingredients.setItem(1,new ItemStack(Items.COOKED_BEEF,64));f.hall.ingredients.setItem(2,new ItemStack(Items.HONEY_BOTTLE,16));f.hall.ingredients.setItem(7,new ItemStack(Items.BREAD,1));menu.clickMenuButton(f.player,0);

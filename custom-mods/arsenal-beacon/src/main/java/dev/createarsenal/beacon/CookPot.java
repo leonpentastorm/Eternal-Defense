@@ -14,7 +14,9 @@ import java.util.*;
 final class CookPot {
     private CookPot(){}
     static final class PotBlock extends KitchenBlock {
-        PotBlock(){super(false);}
+        /** The lamp bar over the chalkboard gives some light, so the menu can be read in a dark kitchen. */
+        static final int LAMP_LIGHT=10;
+        PotBlock(){super(false,LAMP_LIGHT);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new PotEntity(pos,state);}
         @Override public void setPlacedBy(net.minecraft.world.level.Level l,BlockPos pos,BlockState state,net.minecraft.world.entity.LivingEntity who,net.minecraft.world.item.ItemStack stack){super.setPlacedBy(l,pos,state,who,stack);if(!l.isClientSide&&l.getBlockEntity(pos) instanceof PotEntity pot)pot.connect();}
         @Override public void onRemove(BlockState s,net.minecraft.world.level.Level l,BlockPos p,BlockState next,boolean moving){if(!s.is(next.getBlock())&&l.getBlockEntity(p) instanceof PotEntity pot)pot.unlink();super.onRemove(s,l,p,next,moving);}
@@ -41,7 +43,9 @@ final class CookPot {
             for(var h:halls)if(h.link(this))return h;return null;
         }
         boolean empty(){return stew==null||servings<=0;}
-        boolean fill(MessHall.HallEntity hall,MealData meal,int count){if(!empty()||!belongs(hall)||validLink()!=hall||!meal.stew())return false;stew=meal;servings=count;changed();return true;}
+        boolean fill(MessHall.HallEntity hall,MealData meal,int count){return fill(hall,meal,count,false);}
+        /** {@code replace}: the cook confirmed that the stew still in the pot is thrown away. */
+        boolean fill(MessHall.HallEntity hall,MealData meal,int count,boolean replace){if(!(replace||empty())||!belongs(hall)||validLink()!=hall||!meal.stew())return false;stew=meal;servings=count;changed();return true;}
         void changed(){setChanged();if(level!=null&&!level.isClientSide)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         void use(ServerPlayer p,InteractionHand hand){
             if(p.isSpectator()||BaseZone.problem(level,worldPosition)!=null||p.distanceToSqr(worldPosition.getX()+.5,worldPosition.getY()+.5,worldPosition.getZ()+.5)>64)return;

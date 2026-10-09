@@ -41,7 +41,7 @@ final class StuckRaiderTest {
         t=RaidMarch.observe(t,80,40*S,true);assertEquals(40*S,t.improvedAt());
         assertFalse(RaidMarch.stuck(t,40*S+24*S,false));assertTrue(RaidMarch.stuck(t,40*S+25*S,false));
     }
-    @Test void aRescuedRaiderGetsAFreshClockAndAGraceWindow(){
+    @Test void aRaiderThatCameThroughAGateGetsAFreshClockAndAGraceWindow(){
         var t=RaidMarch.rescued(150,1000);
         assertEquals(150,t.best());assertEquals(1000,t.improvedAt());assertEquals(1000+10*S,t.graceUntil());assertEquals(0,t.dry());
         assertFalse(RaidMarch.stuck(t,1000+10*S,false),"grace and the clock both still run");
@@ -77,17 +77,17 @@ final class StuckRaiderTest {
     }
 
     // ---- escalation ladder -----------------------------------------------------------------------------------------------------------
-    @Test void aRaiderIsRescuedThreeTimesAndWithdrawnOnTheFourthStall(){
-        assertEquals(3,RaidMarch.MAX_RESCUES);
+    @Test void aRaiderOpensThreeGatesAndIsWithdrawnOnTheFourthStall(){
+        assertEquals(3,RaidMarch.MAX_GATES);
         int rescues=0;var steps=new ArrayList<RaidMarch.Step>();
         for(int stall=0;stall<4;stall++){var step=RaidMarch.next(rescues,false);steps.add(step);if(step==RaidMarch.Step.RESCUE)rescues++;}
         assertEquals(List.of(RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.WITHDRAW),steps);
     }
-    @Test void aBossIsAlwaysRescuedAndNeverWithdrawn(){
+    @Test void aBossAlwaysGetsAGateAndIsNeverWithdrawn(){
         for(int rescues:new int[]{0,1,2,3,4,10,1000})assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(rescues,true));
         for(int dry=0;dry<20;dry++)assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(dry,true));
     }
-    @Test void aRaiderWithNoPlaceToGoIsRetriedTwiceThenWithdrawn(){
+    @Test void aRaiderWithNoGateDestinationIsRetriedTwiceThenWithdrawn(){
         assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(1,false));assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(2,false));
         assertEquals(RaidMarch.Step.WITHDRAW,RaidMarch.afterNoDestination(3,false));assertEquals(3,RaidMarch.DRY_LIMIT);
     }

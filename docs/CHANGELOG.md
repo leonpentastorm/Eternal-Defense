@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.14 — Raider Gates, replacing stew in a pot, a lit Cook Pot board, fewer servings (2026-10-09)
+
+Branch `feature/raider-gates` (from `feature/stuck-raiders`, 0.0.13). **No packet was added or changed: the network protocol stays 28.** Rules: GDD section 5.2 (*Raider Gates*); tests: `docs/RAIDER-GATES-TESTING.md`.
+
+* **Raider Gates replace the silent rescue of 0.0.13.** A ground raider that walks up to lava or magma, a drop of 6 or more blocks or 8 or more blocks of water in a row (a short pond is waded), or that makes no progress for 25 seconds (and is not fighting, shooting or digging), stops and channels for 8 seconds beside a red gate, drawn with the Return portal sprite tinted red and at half the speed. The channeler cannot move (a high-priority goal; `setNoAi` is not used) and can be shot: each second it is hurt delays it by 3 seconds, at most 10 in total; killing it cancels the gate. Three seconds before it reappears the destination shows portal particles and a portal sound; it comes out at the edge of the staging ring, 24 or more blocks from every player, and marches again after a 10-second grace window. Raiders stuck at the same place share one gate (8 channel at a time, the rest wait). After three gates a raider is withdrawn (no drop, one chat line per wave); a boss is gated again and never withdrawn.
+* **Shared probe.** `TerrainProbe` is one pure helper used for the look-ahead in front of a raider and for checking the whole way from a gate's destination to the zone. `RaidMarch` holds every number as a named constant; the progress timer, busy rules and UUID-keyed, pruned trackers of 0.0.13 are reused.
+* **Opt-in diagnostics** (`-Darsenal.stuckLog=true`) now log every trigger (probe or timer), channel start, interruption, teleport, wait, cancel and withdrawal with the terrain around the raider and the gate id.
+* **Mess Hall:** a stew can be cooked over the stew still in a pot: the screen asks "Replace the stew?" (Replace stew / Keep it / Escape), the server refuses an unconfirmed cook into a pot with stew (new menu button 7, no new packet). **Stew servings per pot are lower: 3/5/7/9 instead of 4/8/12/16** (Mk IV 16 to 9; you asked for the Mk IV number, the rest of the ladder was scaled so Mk IV is not worse than Mk III; one line in `MealRules.tier`). **The Cook Pot's lamp bar gives light** (block light 10) and its board text is drawn full-bright, so the menu can be read in the dark.
+* Field Guide: the Raids card explains the red gate in one line; the Cook Pot card says the old stew is thrown away after you confirm, and quotes 5 to 9 servings.
+* Tests: unit tests for the probe, the channel clock, the damage-delay cap, gate assignment and the ladder; 11 GameTests (the 7 of 0.0.13 reworked for gates plus the new ones) pass in a real client's integrated server; the kitchen QA run checks the replace flow, the new servings and the lamp. Not run: the legacy v2 to v6 GameTests (their stew assertions were adjusted to compile), a dedicated server, two players, real terrain, the standalone edition's kitchen after this change.
+
 ## 0.0.13 — Stuck raiders no longer lose raids (2026-10-09)
 
 Branch `feature/stuck-raiders` (from `dev` 0.0.12). Network protocol unchanged (28). Rules: GDD section 5.2 (*Stuck raiders*, *Marchable corridors*); tests: `docs/STUCK-RAIDERS-TESTING.md`.

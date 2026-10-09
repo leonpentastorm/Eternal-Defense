@@ -21,7 +21,7 @@ final class KitchenRenderer implements BlockEntityRenderer<CookPot.PotEntity> {
         // chalkboard of the artist model: face z=13.25/16 (north), x 2.5..13.5, y 18.5..26.5 (in 1/16 blocks); text is drawn mirrored from its right edge
         pose.translate(.5,1.63,13.25/16-.004);pose.mulPose(Axis.YP.rotationDegrees(180));pose.scale(.0068f,-.0068f,.0068f);
         var font=Minecraft.getInstance().font;int y=0;
-        for(var line:lines){var fitted=Ui.fit(font,line,96);font.drawInBatch(fitted,-font.width(fitted)/2f,y,0xffe8e2c8,false,pose.last().pose(),buffer,Font.DisplayMode.NORMAL,0,light);y+=9;}
+        for(var line:lines){var fitted=Ui.fit(font,line,96);font.drawInBatch(fitted,-font.width(fitted)/2f,y,0xffe8e2c8,false,pose.last().pose(),buffer,Font.DisplayMode.NORMAL,0,LightTexture.FULL_BRIGHT);y+=9;}
         pose.popPose();
     }
     @Override public boolean shouldRenderOffScreen(CookPot.PotEntity pot){return true;}

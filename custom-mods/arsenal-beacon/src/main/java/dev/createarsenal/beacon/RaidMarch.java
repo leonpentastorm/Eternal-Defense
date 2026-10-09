@@ -7,8 +7,10 @@ import java.util.*;
 /**
  * Raiders march straight at the beacon and only stop to dig when something blocks them. This class tells which ones are blocked
  * for a second ({@link #idle}) and which ones have made no real headway for a long time ({@link Track}, the stuck tracker).
- * A stuck raider is rescued (moved back to the edge of the staging ring) a few times and then withdrawn, so one unreachable
- * mob can never decide a raid. The decisions are pure static functions; the world-touching part lives in {@link RaidRescue}.
+ * A stuck raider, or one that has walked up to lava, a chasm or a wide lake, opens a red gate, channels beside it for a few seconds
+ * (it can be shot) and then reappears at the edge of the staging ring; after {@link #MAX_GATES} gates it is withdrawn, so one
+ * unreachable mob can never decide a raid. The decisions are pure static functions; the world-touching parts live in
+ * {@link RaidRescue} (the once-a-second check) and {@link RaiderGates} (gates and channels).
  */
 final class RaidMarch {
     private RaidMarch(){}
@@ -26,16 +28,37 @@ final class RaidMarch {
     static final int GRACE_SECONDS=10;
     /** Breaking or damaging a block makes a raider busy for this long. */
     static final int BREACH_BUSY_SECONDS=5;
-    /** A raider is rescued this many times before it is withdrawn. */
-    static final int MAX_RESCUES=3;
+    /** A raider opens this many gates before it is withdrawn (a raid boss opens as many as it needs). */
+    static final int MAX_GATES=3;
     /** A raider that is stuck and for which no rescue place was found this many times in a row is withdrawn as well (never a boss). */
     static final int DRY_LIMIT=3;
     /** A ranged raider holding its firing distance is busy within this many blocks of its target (the distance {@code needsBreach} uses). */
     static final double FIRING_DISTANCE=14;
     /** A raider that a player this close has just hurt is being fought, not stuck (raiders hand their target to players within 5 blocks). */
     static final double ENGAGED_RADIUS=12;
-    /** Persistent-data key of how many times a raider was rescued (survives chunk reloads). */
-    static final String RESCUES="arsenalRescues";
+    /** Persistent-data key of how many gates a raider has opened (survives chunk reloads). */
+    static final String GATES="arsenalGates";
+
+    // ---- raider gates ------------------------------------------------------------------------------------------------------------
+    /** How far ahead of a raider, in blocks along the straight line to the beacon, the terrain is looked at (one sample per block). */
+    static final int LOOKAHEAD_BLOCKS=10;
+    /** Terrain a raider cannot cross: a drop of this many blocks between two neighbouring samples ... */
+    static final int GATE_DROP_BLOCKS=6;
+    /** ... or surface fluid on this many blocks in a row (a pond a zombie can wade through is shorter). Lava and magma always count. */
+    static final int GATE_FLUID_SPAN=8;
+    /** Distance between two samples when a destination's whole way to the zone is checked with the same probe. */
+    static final int DESTINATION_SPACING=2;
+    /** A raider channels this long beside its gate before it reappears. */
+    static final int CHANNEL_SECONDS=8;
+    /** Each time the channeler is hurt (checked once a second) the channel takes this much longer ... */
+    static final int DAMAGE_DELAY_SECONDS=3;
+    /** ... but the total delay never exceeds this, so a tough raider under long-range fire cannot stall the wave into the raid timeout. */
+    static final int MAX_DELAY_SECONDS=10;
+    /** The destination shows particles and a portal sound this long before the raider appears. */
+    static final int TELEGRAPH_SECONDS=3;
+    /** A stuck raider within this many blocks of an existing gate uses that gate; a gate has room for this many channelers, the rest wait. */
+    static final double GATE_JOIN_RADIUS=8;
+    static final int GATE_CAPACITY=8;
     static final long TICKS_PER_SECOND=20;
 
     /**
@@ -65,7 +88,7 @@ final class RaidMarch {
         return t!=null&&!busy&&now>=t.graceUntil()&&now-t.improvedAt()>=STUCK_SECONDS*TICKS_PER_SECOND;
     }
 
-    /** Pure: the entry after a rescue: new distance, a fresh stall clock and a {@link #GRACE_SECONDS} grace window. */
+    /** Pure: the entry after a raider came through its gate: new distance, a fresh stall clock and a {@link #GRACE_SECONDS} grace window. */
     static Track rescued(double newDistance,long now){return new Track(newDistance,now,now+GRACE_SECONDS*TICKS_PER_SECOND,0);}
 
     /** Pure: the entry after a stuck raider found no place to go: look again after the grace window. */
@@ -94,9 +117,9 @@ final class RaidMarch {
 
     // ---- the escalation ladder -----------------------------------------------------------------------------------------------------
     enum Step{RESCUE,WITHDRAW,RETRY}
-    /** Pure: what happens to a raider that is stuck, given how often it was rescued already. Bosses are never withdrawn. */
-    static Step next(int rescues,boolean boss){return boss||rescues<MAX_RESCUES?Step.RESCUE:Step.WITHDRAW;}
-    /** Pure: what happens when a stuck raider that should be rescued found no place: try again later, or give up on it (never a boss). */
+    /** Pure: what happens to a raider that is stuck, given how many gates it has opened already. Bosses are never withdrawn. */
+    static Step next(int gates,boolean boss){return boss||gates<MAX_GATES?Step.RESCUE:Step.WITHDRAW;}
+    /** Pure: what happens when a stuck raider that should go through a gate found no destination: try again later, or give up on it (never a boss). */
     static Step afterNoDestination(int dryAttempts,boolean boss){return !boss&&dryAttempts>=DRY_LIMIT?Step.WITHDRAW:Step.RETRY;}
 
     /** Pure: the chat line for the raiders withdrawn in one wave. */

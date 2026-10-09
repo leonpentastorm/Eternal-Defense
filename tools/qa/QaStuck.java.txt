@@ -17,7 +17,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * QA ONLY (never part of a release): boots a flat world on the real client and runs the stuck-raider GameTests (StuckRaiderGameTests) on its
+ * QA ONLY (never part of a release): boots a flat world on the real client and runs the stuck-raider GameTests (RaiderGateGameTests) on its
  * integrated server, with the diagnostics log switched on. Copied into a throwaway tree by tools/qa/setup-qa.sh.
  * Results: QA_CHECK lines (one per test, from the STUCK_TEST_* lines of the runner) and QA_SUMMARY.
  */
@@ -39,14 +39,35 @@ public final class QaStuck {
             if(++tick<260)return;started=true;
             mc.getSingleplayerServer().execute(()->{
                 System.setProperty("arsenal.stuckLog","true");
-                MinecraftForge.EVENT_BUS.register(new StuckRaiderGameTests.Runner());
-                StuckRaiderGameTests.Runner.start(mc.getSingleplayerServer().overworld());
+                MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
+                RaiderGateGameTests.Runner.start(mc.getSingleplayerServer().overworld());
             });
             return;
         }
-        if(!done&&StuckRaiderGameTests.Runner.lastPass>=0){
-            done=true;int p=StuckRaiderGameTests.Runner.lastPass,f=StuckRaiderGameTests.Runner.lastFail;
-            com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",p,f);mc.stop();
+        if(!done&&RaiderGateGameTests.Runner.lastPass>=0){
+            done=true;int p=RaiderGateGameTests.Runner.lastPass,f=RaiderGateGameTests.Runner.lastFail;
+            com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",p,f);scene=1;sceneTick=0;
         }
+        if(done&&scene>0)scene(mc);
     }
+    /** After the tests: a red gate and a husk standing beside it, photographed by day and by night (what a player sees). */
+    static int scene,sceneTick;
+    static void scene(Minecraft mc){
+        var server=mc.getSingleplayerServer();sceneTick++;
+        if(scene==1&&sceneTick==5){
+            server.execute(()->{
+                var level=server.overworld();var player=server.getPlayerList().getPlayers().get(0);
+                double x=player.getX(),y=player.getY(),z=player.getZ();player.teleportTo(level,x,y,z,0f,5f);
+                var gate=ArsenalBeacon.RAIDER_GATE.get().create(level);gate.moveTo(x+1.6,y,z+6,0,0);level.addFreshEntity(gate);
+                var husk=net.minecraft.world.entity.EntityType.HUSK.create(level);husk.moveTo(x,y,z+6,180,0);husk.setNoAi(true);husk.setPersistenceRequired();level.addFreshEntity(husk);
+                var red=new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(1f,.1f,.1f),1.1f);
+                for(int i=0;i<12;i++){double a=i*Math.PI/6;level.sendParticles(red,x+Math.cos(a)*.7,y+.15,z+6+Math.sin(a)*.7,1,0,0,0,0);}
+            });
+        }
+        if(scene==1&&sceneTick==140){grab(mc,"gate_day");}
+        if(scene==1&&sceneTick==150){server.execute(()->server.overworld().setDayTime(18000));}
+        if(scene==1&&sceneTick==260){grab(mc,"gate_night");}
+        if(scene==1&&sceneTick==280){scene=0;mc.stop();}
+    }
+    static void grab(Minecraft mc,String name){new java.io.File("shots").mkdirs();net.minecraft.client.Screenshot.grab(new java.io.File("shots"),name+".png",mc.getMainRenderTarget(),m->{});com.mojang.logging.LogUtils.getLogger().info("QA_SHOT {}",name);}
 }

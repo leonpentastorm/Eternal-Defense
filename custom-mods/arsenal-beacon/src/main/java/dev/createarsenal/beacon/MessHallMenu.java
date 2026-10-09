@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 /**
  * Standard container slots and button packets; the client sends an intent, never a meal or serving count.
  * Buttons: 0/1 sandwich or stew, 2 prepare, 3 upgrade, 4 clear the order, 5 gather the order from the pack, 6 take the table back,
- * 40+ toggle a recipe (one per effect, signed bytes), 100+ choose a pot.
+ * 7 cook and replace the stew still in the chosen pot (the screen asks first), 40+ toggle a recipe (one per effect, signed bytes), 100+ choose a pot.
  */
 final class MessHallMenu extends AbstractContainerMenu {
     /** Two columns: the table and its buttons on the left, the effects to choose on the right. Needs a GUI at least 376 wide (every 16:9 window does). */
@@ -29,7 +29,7 @@ final class MessHallMenu extends AbstractContainerMenu {
     /** The base bread and the sandwich output sit just after the open food slots, so a hall with three slots does not leave a gap. */
     static int baseX(int mk){return MIX_X+MealRules.tier(mk).slots()*18+10;}
     static int outX(int mk){return baseX(mk)+24;}
-    static final int MODE_SANDWICH=0,MODE_STEW=1,PREPARE=2,UPGRADE=3,CLEAR=4,GATHER=5,TAKE_BACK=6,RECIPE=40,POT=100;
+    static final int MODE_SANDWICH=0,MODE_STEW=1,PREPARE=2,UPGRADE=3,CLEAR=4,GATHER=5,TAKE_BACK=6,REPLACE=7,RECIPE=40,POT=100;
     /** Notice kinds shown by the screen: 0 information, 1 something to fix, 2 done. */
     static final int INFO=0,WARN=1,DONE=2;
     final Container ingredients;final BlockPos pos;final int mk;final MessHall.HallEntity hall;final Player player;
@@ -83,17 +83,22 @@ final class MessHallMenu extends AbstractContainerMenu {
     private static String fx(Collection<MealRules.Effect> effects){return "fx:"+String.join(",",effects.stream().map(e->e.id).toList());}
     private void sound(net.minecraft.sounds.SoundEvent event,float pitch){if(player instanceof ServerPlayer sp)sp.playNotifySound(event,SoundSource.BLOCKS,.7f,pitch);}
 
-    boolean prepare(){
-        if(!stillValid(player))return false;var preview=composition();if(!problem(preview).isEmpty())return false;
+    boolean prepare(){return prepare(false);}
+    /** {@code replace}: the cook confirmed that the stew still in the chosen pot is thrown away; without it a pot with stew is refused ("pot_full"). */
+    boolean prepare(boolean replace){
+        if(!stillValid(player))return false;var preview=composition();var problem=problem(preview);
+        if(!problem.isEmpty()&&!(replace&&problem.equals("pot_full")))return false;
         var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());var meal=preview.meal();int potNumber=0;
-        if(stew){var pot=target();if(!pot.fill(hall,meal,hall.tier().servings()))return false;potNumber=pots().indexOf(pot)+1;}
+        int thrownAway=0;String thrownAwayName="";
+        if(stew){var pot=target();if(!pot.empty()){thrownAway=pot.servings;thrownAwayName=pot.stew.name().getString();}if(!pot.fill(hall,meal,hall.tier().servings(),replace))return false;potNumber=pots().indexOf(pot)+1;}
         else{ingredients.removeItem(7,1);var output=ingredients.getItem(6);if(output.isEmpty())ingredients.setItem(6,PreparedSandwich.create(meal));else{output.grow(1);ingredients.setChanged();}}
         for(int i=0;i<6;i++)if(batch.spent()[i]>0){
             var unit=ingredients.getItem(i).copyWithCount(1);ingredients.removeItem(i,batch.spent()[i]);
             if(unit.hasCraftingRemainingItem()&&player instanceof ServerPlayer sp)for(int count=0;count<batch.spent()[i];count++)ArsenalBeacon.give(sp,unit.getCraftingRemainingItem().copy());
         }
         var effects=fx(meal.bonuses().stream().map(MealData.Bonus::effect).toList());
-        if(stew)notice(DONE,"cooked",effects,hall.tier().servings(),potNumber);else notice(DONE,"made",effects);
+        if(stew&&thrownAway>0)notice(DONE,"replaced",effects,hall.tier().servings(),potNumber,thrownAway);
+        else if(stew)notice(DONE,"cooked",effects,hall.tier().servings(),potNumber);else notice(DONE,"made",effects);
         if(player.level() instanceof ServerLevel level){
             level.playSound(null,pos,stew?SoundEvents.BREWING_STAND_BREW:SoundEvents.VILLAGER_WORK_BUTCHER,SoundSource.BLOCKS,.8f,stew?1f:1.2f);
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,pos.getX()+.5,pos.getY()+1.1,pos.getZ()+.5,3,.2,.1,.2,.01);
@@ -160,6 +165,7 @@ final class MessHallMenu extends AbstractContainerMenu {
             if(explicit()&&!possible(hall.order,hall.mk())){hall.setOrder(EnumSet.noneOf(MealRules.Effect.class));notice(WARN,stew?"order_reset_stew":"order_reset_sandwich");}
         }
         else if(button==PREPARE)return prepare();
+        else if(button==REPLACE)return prepare(true);
         else if(button==UPGRADE&&p instanceof ServerPlayer sp)return hall.upgrade(sp);
         else if(button==CLEAR)hall.setOrder(EnumSet.noneOf(MealRules.Effect.class));
         else if(button==GATHER&&p instanceof ServerPlayer sp){var done=gather(sp);broadcastChanges();return done;}

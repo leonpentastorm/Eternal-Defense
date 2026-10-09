@@ -51,6 +51,7 @@ final class BeaconCombat {
         if(!attached.add(mob))return;
         mob.targetSelector.addGoal(0,new TargetBeacon(mob));
         if(RaidTypes.glider(mob))return; // vexes and phantoms are steered straight at their target by RaidTypes
+        mob.goalSelector.addGoal(-1,new RaiderGates.ChannelGoal(mob)); // outranks everything: a raider channeling at a gate cannot move
         Goal nativeRanged=mob.goalSelector.getAvailableGoals().stream().map(WrappedGoal::getGoal).filter(g->{String name=g.getClass().getName();return name.endsWith(".GunAttackGoal")||name.endsWith("$GuardianAttackGoal")||name.endsWith("$BlazeAttackGoal")||name.endsWith("$GhastShootFireballGoal");}).findFirst().orElse(null);
         if(nativeRanged!=null)mob.goalSelector.addGoal(0,new RangedBeacon(mob,nativeRanged));
         else if(mob instanceof AbstractSkeleton skeleton)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedBowAttackGoal<>(skeleton,1,40,10)));

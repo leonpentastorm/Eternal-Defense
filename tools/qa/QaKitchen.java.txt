@@ -233,7 +233,7 @@ public final class QaKitchen {
                 var made=view().getList("Made",10);boolean doubled=true;for(var t:made)doubled&=((net.minecraft.nbt.CompoundTag)t).getBoolean("Pair");check("every chosen effect is doubled (Mk IV stew, pack allows it)",doubled&&made.size()==2,made.toString());shot("k13_stew_gathered");},"state");
             step(3,()->hoverWidget(ui().primary),"hover cook");step(6,()->shot("k14_cook_hover"),"tooltip");
             step(3,()->{hover(5,5);click(ui().primary);},"click Cook stew");
-            step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(at(4,0,0)));check("the stew is in the pot",pot.stew!=null&&pot.servings==16,"servings="+pot.servings);shot("k15_cooked");},"state");
+            step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(at(4,0,0)));check("the stew is in the pot",pot.stew!=null&&pot.servings==9,"servings="+pot.servings);shot("k15_cooked");},"state");
             step(3,()->{close();},"close the hall");
             step(10,()->{check("the order survives closing the screen",srvGet(()->hall().order.size()==2&&hall().stewMode),"");openHall();},"reopen");
             until("screen up again",60,()->ui()!=null&&ui().currentMenu().view.contains("Fit"),()->{});
@@ -275,10 +275,33 @@ public final class QaKitchen {
                     step(3,()->click(ui().stew),"stew tab");
                     step(8,()->click(ui().primary),"Cook stew");
                     step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
-                        check("Mk "+level+": the stew lasts "+minutes+" minutes and fills "+(4*level)+" servings",pot.stew!=null&&pot.stew.duration()==minutes*1200&&pot.servings==4*level,pot.stew==null?"no stew":"duration="+pot.stew.duration()+" servings="+pot.servings);shot("t"+level+"3_cooked");},"state");
+                        check("Mk "+level+": the stew lasts "+minutes+" minutes and fills "+(2*level+1)+" servings",pot.stew!=null&&pot.stew.duration()==minutes*1200&&pot.servings==2*level+1,pot.stew==null?"no stew":"duration="+pot.stew.duration()+" servings="+pot.servings);shot("t"+level+"3_cooked");},"state");
+                    // cooking over a pot that still has stew: the screen asks first, "Keep it" changes nothing, "Replace stew" refills the pot
+                    step(3,()->srv(()->{var pot=(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0));pot.servings=pot.servings-1;pot.changed();var h=hallAt(pos);
+                        h.ingredients.setItem(0,new ItemStack(Items.COOKED_CHICKEN,16));h.ingredients.setItem(1,new ItemStack(Items.COOKED_MUTTON,16));h.ingredients.setItem(2,new ItemStack(Items.CARROT,16));}),"use one serving and restock the table");
+                    step(8,()->click(ui().pots.get(0)),"choose the pot that still has stew");
+                    step(10,()->{check("Mk "+level+": a pot with stew is not an error: cooking is offered",view().getString("Problem").equals("pot_full")&&ui().primary.active,"problem="+view().getString("Problem")+" active="+ui().primary.active);},"state");
+                    step(3,()->click(ui().primary),"Cook stew over the old stew");
+                    step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
+                        check("Mk "+level+": the screen asks before it throws the stew away",ui().confirming&&ui().replaceYes.visible&&pot.servings==2*level,"confirming="+ui().confirming+" servings="+pot.servings);shot("t"+level+"4_replace_question");},"state");
+                    step(3,()->click(ui().replaceNo),"Keep it");
+                    step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
+                        check("Mk "+level+": Keep it changes nothing",!ui().confirming&&pot.servings==2*level,"confirming="+ui().confirming+" servings="+pot.servings);},"state");
+                    step(3,()->click(ui().primary),"Cook stew again");
+                    step(8,()->click(ui().replaceYes),"Replace stew");
+                    step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
+                        check("Mk "+level+": Replace stew refills the pot and says so",!ui().confirming&&pot.servings==2*level+1&&view().getString("Notice").equals("replaced"),"servings="+pot.servings+" notice="+view().getString("Notice"));shot("t"+level+"5_replaced");},"state");
                 }
                 step(3,()->close(),"close");
             }
+            // the Cook Pot's lamp gives light, and its board can be read at night from both sides
+            step(5,()->{var pot=tierPos(3).offset(3,0,0);int light=srvGet(()->sl().getBrightness(net.minecraft.world.level.LightLayer.BLOCK,pot.above()));
+                check("the Cook Pot's lamp gives light on its board",light>=8,"block light on the upper cell="+light);
+                srv(()->{sl().setDayTime(18000);sp().teleportTo(sl(),pot.getX()+.5,sy,pot.getZ()+4.5,180,-8);});},"night, stand south of the pot");
+            step(60,()->shot("t90_pot_board_south"),"photograph the board from the south");
+            step(10,()->{var pot=tierPos(3).offset(3,0,0);srv(()->sp().teleportTo(sl(),pot.getX()+.5,sy,pot.getZ()-3.5,0,-8));},"stand north of the pot");
+            step(60,()->shot("t91_pot_board_north"),"photograph the board from the north");
+            step(5,()->srv(()->sl().setDayTime(6000)),"day again");
         }
         if(part("dispensers")){
             step(3,()->close(),"close");
