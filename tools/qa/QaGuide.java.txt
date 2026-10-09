@@ -123,6 +123,16 @@ public final class QaGuide {
     static BeaconClient.GuideScreen guide(){return mc().screen instanceof BeaconClient.GuideScreen g?g:null;}
     static void key(int code){mc().screen.keyPressed(code,0,0);}
 
+    /** The side menu has an entry per page, stays inside the panel, never overlaps itself and leaves the page column alone. */
+    static void menu(String label){
+        var g=guide();var rows=g.nav;boolean inside=true,overlap=false;int right=0,backX=-1;
+        for(var b:rows){inside&=b.getX()>=g.left&&b.getY()>=g.top&&b.getX()+b.getWidth()<=g.left+g.pw&&b.getY()+b.getHeight()<=g.top+g.ph-8;right=Math.max(right,b.getX()+b.getWidth());}
+        for(int i=0;i<rows.size();i++)for(int j=i+1;j<rows.size();j++){var a=rows.get(i);var c=rows.get(j);if(a.getX()<c.getX()+c.getWidth()&&c.getX()<a.getX()+a.getWidth()&&a.getY()<c.getY()+c.getHeight()&&c.getY()<a.getY()+a.getHeight())overlap=true;}
+        for(var c:g.children())if(c instanceof net.minecraft.client.gui.components.Button bt&&bt.getMessage().getString().equals(Ui.plain("back")))backX=bt.getX();
+        check(label+": the side menu has one entry per page",rows.size()==GuideText.IDS.length,"n="+rows.size());
+        check(label+": the side menu is inside the panel, does not overlap and clears the page column",inside&&!overlap&&right<backX,"inside="+inside+" overlap="+overlap+" right="+right+" back="+backX+" mode="+(g.fullList?"list":"rail")+" gui="+mc().getWindow().getGuiScaledWidth()+"x"+mc().getWindow().getGuiScaledHeight());
+    }
+
     /** Every screenful of every page: the first shot, then Page Down until the scroll position stops moving. */
     static void pages(String tag){
         for(int p=0;p<GuideText.IDS.length;p++){
@@ -141,11 +151,12 @@ public final class QaGuide {
         step(5,()->srv(()->BeaconNetwork.open(sp(),"guide","")),"open the guide");
         until("guide screen",60,()->mc().screen instanceof BeaconClient.GuideScreen,()->{});
         step(10,()->{check("the guide opens",guide()!=null,String.valueOf(mc().screen));},"opened");
+        step(3,()->menu("scale 3"),"menu geometry at scale 3");
         pages("g");
         step(3,()->{var g=guide();check("the last page is the Reference",g.page==GuideText.IDS.length-1,"page="+g.page);},"at the end");
         // a larger window shows the page list on the left
         step(3,()->{mc().options.guiScale().set(2);mc().resizeDisplay();},"GUI scale 2");
-        step(10,()->{var g=guide();g.page=0;g.scroll=0;shot("w01_start_scale2");},"scale 2: start");
+        step(10,()->{menu("scale 2");var g=guide();g.page=0;g.scroll=0;shot("w01_start_scale2");},"scale 2: start");
         step(3,()->{var g=guide();for(var c:g.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().contains(Ui.plain("guide.gear.title"))){click(b);break;}},"click the Gun Guide entry in the list");
         step(10,()->{var g=guide();check("the list jumps to the Gun Guide page",g.page==GuideText.IDS.length-3,"page="+g.page);shot("w02_gear_scale2");},"scale 2: gear");
         step(3,()->{var g=guide();for(var c:g.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().contains(Ui.plain("guide.reference.title"))){click(b);break;}},"click the Reference entry");

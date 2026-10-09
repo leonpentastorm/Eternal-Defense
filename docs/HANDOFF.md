@@ -1,8 +1,15 @@
 # Handoff: where the project stands
 
-Last updated for the **Field Guide pass**, project **0.0.9** (on top of the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
+Last updated for the **Field Guide side menu**, project **0.0.10** (on top of the Field Guide pass 0.0.9 and the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **27-pack / 27-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Field Guide side menu (0.0.10)
+
+* Owner request: bring the side navigation back (the book looked cheap without it) and give every page an item icon. Cause of the loss: `GuideScreen` used to show the list only when 14 rows of 14 px fitted (`ph >= 288`, and 13 rows needed 274), so the 14th page took it away from some window sizes.
+* Now the menu always exists. `fullList` (panel at least 430 wide and 17 px per row) shows icon and title; otherwise a two-column icon rail with a tooltip. The guide panel is allowed up to 330 px tall (other panels stay 290). Icons: `GuideScreen.icon`, drawn on an `Ui.EDGE` tile; the 12 px form scales the item by 0.75.
+* `QaGuide` checks menu geometry; `QA_WIDTH=1600 QA_HEIGHT=900 tools/qa/setup-qa.sh <dir> pack QaGuide` runs another window size.
+* Not tested: keyboard-only use of the menu (Tab, Enter) and a narrator, GUI scale 4, the crossbow fallback when Gun Displays is absent.
 
 ## Field Guide pass decisions (0.0.9)
 

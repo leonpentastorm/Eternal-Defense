@@ -22,6 +22,10 @@ Every feature gets a card, in this order:
 * Lists that are not a feature (the fifteen legendary mixes, the fire support types) use `- Label: text` bullets under a plain heading.
 * Do not put design intent, balance reasoning, config tuning or formulas in a page. Exact numbers a player may want to look up go in the page's `detail` key, which feeds the **Reference** tab.
 
+## The side menu
+
+Every page has an item icon in the Field Guide's side menu (`BeaconClient.GuideScreen.icon`). Pick the item that stands for the page's subject, ideally one of the mod's own. A page added to `GuideText.IDS` without a `case` there fails `LangKeysTest.everyGuidePageHasItsOwnMenuIcon`. Keep page titles short: the menu rail shows them only as a tooltip, but the list cuts them at about 17 characters.
+
 ## Keys and editions
 
 * A page `x` has `guide.x.title`, `guide.x.body` and optionally `guide.x.detail`. The page list is `GuideText.IDS`.

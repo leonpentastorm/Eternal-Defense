@@ -463,33 +463,81 @@ public final class BeaconClient {
         static final String[] IDS=GuideText.IDS;
         final Screen parent;int page,scroll;
         private RichText cached;private int cachedPage=-1,cachedWidth;private String cachedLanguage="";
-        private int navWidth,textX,textWidth,textTop,textBottom;
-        private final List<Ui.UiButton> nav=new ArrayList<>();
+        private int navX,navTop,navWidth,navHeight,textX,textWidth,textTop,textBottom;
+        /** True: icon and title on every row. False: a two-column rail of icons whose names show on hover. */
+        boolean fullList;
+        final List<Ui.UiButton> nav=new ArrayList<>();
         GuideScreen(Screen parent){super(Ui.t("guide.title"));this.parent=parent;}
         @Override Component subtitle(){return Ui.edition("guide.subtitle");}
         static String raw(String id,String part,boolean standalone){return GuideText.raw(id,part,standalone,key->Ui.has(key)?Ui.plain(key):null);}
         private String pageText(){return ControlHints.guide(GuideText.page(IDS[page],BuildFlavor.STANDALONE,key->Ui.has(key)?Ui.plain(key):null));}
+        /** The item that stands for each page in the side menu. */
+        static ItemStack icon(String id){
+            return new ItemStack(switch(id){
+                case "start"->ArsenalBeacon.GUIDE.get();
+                case "zone"->ArsenalBeacon.BEACON_ITEM.get();
+                case "raids"->net.minecraft.world.item.Items.ZOMBIE_HEAD;
+                case "control"->ArsenalBeacon.CONTROLLER.get();
+                case "upgrades"->ArsenalBeacon.PLATING.get();
+                case "repair"->ArsenalBeacon.REPAIR.get();
+                case "stations"->ArsenalBeacon.GUN_PLATFORM.get().asItem();
+                case "energy"->ArsenalBeacon.ARDENT_ENERGY.get();
+                case "support"->ArsenalBeacon.SUPPORT_CANNON_ITEM.get();
+                case "kitchen"->ArsenalBeacon.MESS_HALL_I.get().asItem();
+                case "mixes"->ArsenalBeacon.SANDWICH.get();
+                case "gear"->ArsenalBeacon.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:ArsenalBeacon.RACKS.get(0).get().asItem();
+                case "coop"->net.minecraft.world.item.Items.PLAYER_HEAD;
+                default->net.minecraft.world.item.Items.WRITABLE_BOOK;
+            });
+        }
         private RichText text(){
             String language=Minecraft.getInstance().getLanguageManager().getSelected();
             if(cached==null||cachedPage!=page||cachedWidth!=textWidth||!cachedLanguage.equals(language)){cached=RichText.layout(font,pageText(),textWidth-10,Ui.BRASS);cachedPage=page;cachedWidth=textWidth;cachedLanguage=language;}
             return cached;
         }
-        /** Back/Next, arrow keys and the list all end up here, and the list highlight follows in render(). */
+        /** Back/Next, arrow keys and the side menu all end up here, and the menu highlight follows in render(). */
         private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;cached=null;}
         @Override protected void init(){
             super.init();nav.clear();
-            int rows=IDS.length,avail=ph-40-56;
-            navWidth=pw>=460&&(avail+4)/rows>=14?138:0;
-            textX=left+14+(navWidth>0?navWidth+8:0);textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
+            // The guide may be taller than the other panels: 14 rows with full-size icons need the room.
+            ph=Math.min(330,height-16);top=(height-ph)/2;
+            int rows=IDS.length;
+            // The menu is a full-height strip beside the page. It never goes away: when 14 icon-and-title rows do not fit,
+            // it becomes a two-column rail of icons and the names move to a tooltip.
+            navX=left+10;navTop=top+32;navHeight=ph-40;
+            int step=(navHeight-4)/rows;
+            fullList=pw>=430&&step>=17;
+            navWidth=fullList?142:54;
+            textX=navX+navWidth+10;textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
             closeButton();
-            if(navWidth>0){
-                int step=Math.min(21,(textBottom-textTop+4)/rows);
-                for(int i=0;i<rows;i++){int index=i;var b=button(Component.literal((i+1)+"  ").append(Ui.t("guide."+IDS[i]+".title")),left+14,textTop-6+i*step,navWidth,step-2,Ui.Look.ROW,x->go(index));nav.add(b);}
+            for(int i=0;i<rows;i++){
+                int index=i;String id=IDS[i];ItemStack icon=icon(id);
+                Ui.UiButton b;
+                if(fullList)b=new Ui.UiButton(navX+3,navTop+2+i*step,navWidth-6,step-1,Ui.t("guide."+id+".title"),Ui.Look.ROW,x->go(index));
+                else{
+                    int rowsPerColumn=(rows+1)/2,cell=Math.min(22,(navHeight-4)/rowsPerColumn-2);
+                    b=new Ui.UiButton(navX+4+(i/rowsPerColumn)*(cell+2),navTop+3+(i%rowsPerColumn)*(cell+3),cell,cell,Ui.t("guide."+id+".title"),Ui.Look.ROW,x->go(index));
+                }
+                b.noLabel().painter((g,self,hover)->paintNav(g,self,icon));
+                nav.add(addRenderableWidget(b));
             }
-            int y=top+ph-30;
-            button(Ui.t("back"),left+14,y,80,Ui.Look.NORMAL,b->go(page-1));
-            button(Ui.t("done"),left+pw/2-35,y,70,Ui.Look.PRIMARY,b->onClose());
-            button(Ui.t("next"),left+pw-94,y,80,Ui.Look.NORMAL,b->go(page+1));
+            int w=textWidth,side=Math.min(80,(w-82)/2),y=top+ph-30;
+            button(Ui.t("back"),textX,y,side,Ui.Look.NORMAL,b->go(page-1));
+            button(Ui.t("done"),textX+w/2-35,y,70,Ui.Look.PRIMARY,b->onClose());
+            button(Ui.t("next"),textX+w-side,y,side,Ui.Look.NORMAL,b->go(page+1));
+        }
+        private void paintNav(GuiGraphics g,Ui.UiButton self,ItemStack icon){
+            int x=self.getX(),y=self.getY(),w=self.getWidth(),h=self.getHeight();
+            if(fullList){
+                // Full-size icon when the row is tall enough, otherwise the item at three quarters. A lighter tile keeps dark items readable.
+                boolean big=h>=19;int size=big?16:12,ix=x+4,iy=y+(h-size)/2;
+                g.fill(ix,iy,ix+size,iy+size,Ui.EDGE);
+                g.pose().pushPose();g.pose().translate(ix,iy,0);if(!big)g.pose().scale(0.75f,0.75f,1f);g.renderItem(icon,0,0);g.pose().popPose();
+                g.drawString(font,Ui.fit(font,self.getMessage(),w-size-14),ix+size+6,y+(h-8)/2,self.selected?Ui.INK:Ui.MUTED,false);
+            }else{
+                int ix=x+(w-16)/2,iy=y+(h-16)/2;
+                g.fill(ix,iy,ix+16,iy+16,Ui.EDGE);g.renderItem(icon,ix,iy);
+            }
         }
         private int maxScroll(){return Math.max(0,text().height-(textBottom-textTop));}
         @Override public boolean mouseScrolled(double x,double y,double amount){scroll=Math.max(0,Math.min(maxScroll(),scroll-(int)(amount*22)));return true;}
@@ -509,11 +557,10 @@ public final class BeaconClient {
             panel(g);
             scroll=Math.min(scroll,maxScroll());
             for(int i=0;i<nav.size();i++)nav.get(i).selected=i==page;
-            if(navWidth>0)Ui.inset(g,left+12,textTop-8,navWidth+4,textBottom-textTop+10);
+            Ui.inset(g,navX,navTop,navWidth,navHeight);
             boolean more=text().height>textBottom-textTop&&scroll<maxScroll();
             Ui.text(g,font,more?Ui.t("guide.page_more",page+1,IDS.length):Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-12);
             Ui.text(g,font,Ui.t("guide."+IDS[page]+".title"),textX,top+44,Ui.INK,textWidth-12);
-            if(navWidth==0){int px=left+pw-14-Ui.pipsWidth(IDS.length);Ui.pips(g,px,top+37,page+1,IDS.length,Ui.CYAN);}
             var text=text();
             g.enableScissor(textX,textTop,textX+textWidth,textBottom);text.draw(g,font,textX+2,textTop+2,scroll,textTop,textBottom);g.disableScissor();
             if(text.height>textBottom-textTop){
@@ -521,6 +568,7 @@ public final class BeaconClient {
                 g.fill(textX+textWidth-3,textTop,textX+textWidth,textBottom,Ui.TRACK);g.fill(textX+textWidth-3,ty,textX+textWidth,ty+thumb,Ui.CYAN);
             }
             super.render(g,mx,my,partial);
+            if(!fullList)for(var b:nav)if(b.isHovered()){g.renderTooltip(font,b.getMessage(),mx,my);break;}
         }
     }
 }

@@ -1,5 +1,14 @@
 # Change log
 
+## 0.0.10 — Field Guide side menu with item icons (2026-10-09)
+
+Feature `feature/messhall-ver-6` (owner override). UI only: no rules, numbers or packets changed (protocol stays **27**).
+
+* **The side menu is back, and it stays.** The old rule hid it whenever 14 rows did not fit (a window around 1600 x 900 at GUI scale 3 lost it once the guide grew to 14 pages), so the book looked bare. The menu is now a full-height strip beside the page in every window.
+* **An item icon per page**: Field Guide (Start here), Defense Beacon (Your base zone), Zombie Head (Raids), Recovery Shovel (Raid control), Reinforced Beacon Plating (Upgrades), Restoration Matrix (Repair or pack up), Weapon Platform, Ardent Energy, Support Cannon, Mess Hall, Prepared Sandwich (Legendary mixes), a Gun Displays stand (Extra gun mods; a crossbow if that mod is missing), Player Head (Co-op) and Writable Book (Reference). Icons sit on a lighter tile so dark items stay readable.
+* **Two forms.** Tall enough: a list with icon and title (16 px icons when the rows are 19 px or more, 12 px otherwise). Too short, such as the smallest GUI (427 x 240): a two-column rail of icons with the page name in a tooltip. The page buttons and header sit beside the menu; the guide panel may now be up to 330 px tall.
+* Tests: `LangKeysTest.everyGuidePageHasItsOwnMenuIcon` (96 beacon unit tests). `tools/qa/QaGuide.java.txt` checks the menu geometry; `tools/qa/setup-qa.sh` takes `QA_WIDTH` / `QA_HEIGHT`.
+
 ## 0.0.9 — Field Guide for new players (2026-10-09)
 
 Feature `feature/messhall-ver-6` (owner override). No rules, numbers or packets changed (protocol stays **27**). Writing rules: `docs/GUIDE-STYLE.md`.

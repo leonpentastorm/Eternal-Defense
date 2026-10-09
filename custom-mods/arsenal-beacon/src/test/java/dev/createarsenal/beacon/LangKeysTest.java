@@ -191,6 +191,14 @@ final class LangKeysTest {
         assertTrue(long_.isEmpty(),"Guide copy too dense for a new player: "+long_);
     }
 
+    /** The side menu shows one item per page; a page added to the list without an icon would silently get the book. */
+    @Test void everyGuidePageHasItsOwnMenuIcon()throws Exception{
+        String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/BeaconClient.java"));
+        int start=source.indexOf("static ItemStack icon(String id)");assertTrue(start>0,"the menu icon method moved");
+        String method=source.substring(start,source.indexOf("private RichText text()",start));
+        for(String id:GuideText.IDS)if(!id.equals(GuideText.REFERENCE))assertTrue(method.contains("case \""+id+"\"->"),"no menu icon for page "+id);
+    }
+
     /** Add a block or an item and this fails until the guide has a card for it. */
     @Test void everyRegisteredFeatureHasAGuideCard()throws Exception{
         var cards=Map.ofEntries(Map.entry("defense_beacon","Defense Beacon"),Map.entry("beacon_controller","Recovery Shovel"),Map.entry("field_guide","Field Guide"),

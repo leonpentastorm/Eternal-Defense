@@ -7,6 +7,7 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--backend-jar',type=Path,required=True)
 args=parser.parse_args()
 repo=Path(__file__).resolve().parents[2]
+project_version=(repo/'VERSION').read_text().strip()
 backend=args.backend_jar.read_bytes()
 with zipfile.ZipFile(args.backend_jar) as jar:
     metadata=jar.read('META-INF/mods.toml').decode()
@@ -24,7 +25,7 @@ for name in ['FIELD-GUIDE-TESTING.md','GUIDE-STYLE.md','MESS-HALL-V7-UI.md','MES
 for folder in ('field-guide','messhall-v7'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file():files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
-files['README.txt']=b'''Eternal Defense - Field Guide for new players - project 0.0.9 - local test build
+files['README.txt']=('''Eternal Defense - Field Guide for new players - project '''+project_version+''' - local test build
 Minecraft 1.20.1 / Forge 47.4.20 / Java 17. Network protocol 27 (unchanged).
 
 Start a FRESH world for this feature. Keep existing worlds separate from this test instance.
@@ -41,6 +42,8 @@ WHAT CHANGED (see docs/FIELD-GUIDE-TESTING.md and docs/GUIDE-STYLE.md)
 * The Field Guide is rewritten for somebody who has just spawned in. Every feature is a card:
   what it is, what you get, how it works, how to unlock it, and red Careful notes for the catches
   (for example: the beacon only comes off with the Recovery Shovel and that resets the whole campaign).
+* The Field Guide's side menu is back in every window size, with an item icon for each page
+  (a list with titles when there is room, a two-column icon rail with hover names when there is not).
 * New page "Extra gun mods" for Gun Guide and Gun Displays; many features that had no explanation now do.
 * The plant confirmation and the Defense Beacon tooltip warn about the reset. The standalone upgrade
   hint now says Ardent Energy (it used to say "craft it").
@@ -53,7 +56,7 @@ Apocalypse gunpack and AppleSkin were not used in this round and are not redistr
 See docs/FIELD-GUIDE-TESTING.md for the checks that were actually run and what was not.
 JAR versions remain 0.21.0 / 1.1.0; use SHA512SUMS to identify this build.
 Feature branch: feature/messhall-ver-6. This is not a public release.
-'''
+''').encode()
 files['THIRD-PARTY.md']=b'''# Included required addon
 
 TaCZ Attributes 1.4 by leopoko, mod ID `tacz_attributes`, MIT.
@@ -91,7 +94,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 files['SHA512SUMS']=(''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name,data in sorted(files.items()))).encode()
-out=repo/'dist/Arsenal-FieldGuide-0.0.9-test.zip';out.parent.mkdir(exist_ok=True)
+out=repo/('dist/Arsenal-FieldGuide-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
     for name,data in sorted(files.items()):archive.writestr(name,data)
 with zipfile.ZipFile(out) as archive:
