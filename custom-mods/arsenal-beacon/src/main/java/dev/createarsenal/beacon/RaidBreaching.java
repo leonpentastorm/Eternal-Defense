@@ -23,6 +23,6 @@ final class RaidBreaching {
     static boolean breach(ServerLevel l,CampaignData d,Mob mob){
         if(!d.phase.equals("raid")||!BeaconCombat.hostile(mob))return false;var p=choose(l,d,mob);if(p==null)return false;
         if(d.inside(p)){if(!d.snapshot.containsKey(p.asLong()))return false;ArsenalBeacon.damageBlock(l,d,p);}else l.destroyBlock(p,true,mob);
-        mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);mob.getNavigation().stop();return l.getBlockState(p).isAir();
+        RaidMarch.breached(mob,l.getGameTime());mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);mob.getNavigation().stop();return l.getBlockState(p).isAir();
     }
 }

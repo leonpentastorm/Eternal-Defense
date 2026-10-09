@@ -81,7 +81,7 @@ final class BeaconCombat {
             if(mob.level() instanceof ServerLevel l){var p=net.minecraft.core.BlockPos.containing(x,mob.getY(),z);if(!l.hasChunkAt(p))return false;var surface=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p);y=Math.abs(surface.getY()-mob.getY())<=12?surface.getY():mob.getY();}}
         if(mob.getNavigation().moveTo(x,y,z,speed)&&!mob.getNavigation().isDone())return true;
         // No usable path (walls, water, rock): head straight for the spot anyway; RaidBreaching digs when the way is really shut.
-        mob.getMoveControl().setWantedPosition(x,y,z,speed);return true;
+        RaidMarch.forcedMove(mob,mob.level().getGameTime());mob.getMoveControl().setWantedPosition(x,y,z,speed);return true;
     }
     static final class MeleeBeacon extends Goal {
         final Mob mob;int cooldown;

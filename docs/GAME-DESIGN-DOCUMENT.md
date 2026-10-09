@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.12 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.13 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
 | **Status** | Active development on `dev` (includes the Mess Hall v6 work, the Field Guide pass and the Mess Hall levels of 0.0.11); fresh worlds per feature until 1.0; what was tested is listed per round in `docs/*-TESTING.md` |
 
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.13 | 2026-10-09 | Development | **Stuck raiders no longer lose raids.** A raider that makes no real headway toward the beacon for 25 seconds (and is not fighting, shooting or digging) is moved back to the staging ring, up to three times, and then withdrawn; bosses are moved again and never withdrawn. Spawn directions are now checked once per raid for a marchable corridor (water, lava, cliffs) and clean directions are preferred. Raiders still march straight; no detour pathfinding. Opt-in diagnostics log (`-Darsenal.stuckLog=true`). Field Guide Raids card gets one line. No packet changes (protocol stays 28). |
 | 0.0.12 | 2026-10-09 | Development | **Feature guide for designers** added (new section after the core loop): every feature explained in plain words (what it is, what the player does, how it behaves, its job in the game, the dials, what has not been played yet), a feature-dependency table and a playtest-first list. Section 5 is now labelled as the rulebook. Stale technical note corrected (protocol 28). No rules or numbers changed. |
 | 0.0.11 | 2026-10-09 | Development | **Mess Hall levels rebalanced** (Mk I sandwiches only, 15-minute meals, 3 food slots; Mk II unlocks stew, 20 minutes; Mk III 25 minutes and unlocks ×2 doubling, in sandwiches and stew; Mk IV 30 minutes and all 6 food slots, the only level that can double a legendary effect); meals remember their length; protocol 28. Kitchen screen re-laid out in two columns (376 × 238): actions on the left, effects to choose on the right, calmer recipe tiles, chips for meal length, food slots and ×2. Weapon/Ammo/Attachment/Armor table Upgrade view rebuilt as an Age ladder, a materials grid and one Upgrade button. |
 | 0.0.10 | 2026-10-09 | Development | Field Guide side menu restored for every window size, with an item icon per page (list with titles when tall enough, two-column icon rail with hover names when short). UI only. |
@@ -166,10 +167,11 @@ Bought in the Upgrades tab with the team standing near the beacon, between raids
 
 #### Anatomy of a raid
 * **What happens.** The base is scored and snapshotted. Waves then come from outside the zone: **3 + tier** waves, with at most five extra. Raiders scale with the number of defenders. They spawn on open surface ground at or above the beacon's level, never underground (the rule relaxes after 30 and 90 seconds if no such spot exists), walk **straight at the beacon**, and only stop to dig through doors and walls when they stop making progress. Each raider wears a **red exclamation mark** and is immune to sunlight. Ranged raiders hold their distance. Any raider left alive after one minute glows.
+* **A raider that cannot arrive never decides the raid.** Raiders are not given detours (they march straight, by design), so the game watches for the ones that stall: a raider that has not got 3 blocks closer to the beacon for 25 seconds, while it is not fighting a defender, shooting or digging, is moved back to the edge of the staging ring. It can be moved three times; the fourth stall removes it from the raid (no drop, and chat says "N stuck raiders withdrew" once per wave). A raid boss is moved again each time and is never removed. Flyers, parachutists in the air and Special Forces soldiers are left alone. The spawn directions are also checked once per raid for water, lava and cliffs on the straight line to the base, and clean directions are used first.
 * **How it ends.** Victory: everything the raid broke is put back (a damage journal), and the prizes go to the reward chest, with Ardent Energy and Ammo Coins. Defeat: the beacon switches off and the damage stays until repaired. Spent ammo, fuel and tool wear are never refunded either way.
 * **Job in the game.** The pressure the whole game pushes against. Straight-line marching makes the fight readable and the base's geometry matter.
-* **Dials.** Wave count, spawn rules and attacker counts in the raid code (`Rules`, `RaidTypes`).
-* **Not played yet.** Ground spawning for Air, Siege and Swarm raids in a real world; two-human co-op.
+* **Dials.** Wave count, spawn rules and attacker counts in the raid code (`Rules`, `RaidTypes`); stall time, progress distance, rescue count and the busy rules in `RaidMarch`; corridor rules in `RaidSpawns`.
+* **Not played yet.** Ground spawning for Air, Siege and Swarm raids in a real world; two-human co-op; whether 25 seconds, 3 blocks and 3 rescues feel fair on real terrain (the diagnostics log shows what a stuck raider stood on).
 
 #### Boss raids
 * **What it is.** Every third raid is a boss raid. It is simply a stronger raid. It has nothing to do with how often raids come.
@@ -365,6 +367,7 @@ A new player receives a Defense Beacon, the Field Guide, the Recovery Shovel and
 ### What to playtest first
 
 1. The tier curve: does a first-week team survive tier 0 and want to raise the cap?
+   (Also: run one raid with `-Darsenal.stuckLog=true` on rough terrain and read the `[stuck]` lines; they name the biome, the blocks under and in front of every stuck raider.)
 2. Special raid frequency (50 percent from raid 4) and whether the air raid has a counter.
 3. Mess Hall levels: do 15 / 20 / 25 / 30 minutes and the Mk III doubling step each feel like a real upgrade?
 4. Whether energy income is enough for the cannon purchase and first upgrades within two or three raids.
@@ -387,6 +390,8 @@ A new player receives a Defense Beacon, the Field Guide, the Recovery Shovel and
 * Attackers scale with the number of defenders, spawn outside the zone, target doors first and dig through walls; ranged enemies hold distance.
 * **Marching (v3):** raiders walk **straight at the beacon** (no detours around terrain) and only stop to dig when they stop making progress (less than a block in a second). They spawn on **open surface ground at or above the beacon's level** (never in a crevice or below ground; if no such place exists for 30 s the rule relaxes by 4 blocks, after 90 s by 10). Every raider carries a **red exclamation mark** above its head and is **immune to sunlight**.
 * **Sunlight protection (v4):** prevents daylight ignition only. Flame arrows, lava and fire traps still deal damage; native fire-immune species retain their own immunity.
+* **Stuck raiders (0.0.13):** `RaidMarch` keeps, for every ground raider, the 3D distance to the beacon at its last accepted progress. A raider is **stuck** when it has not got `PROGRESS_BLOCKS` (3) closer for `STUCK_SECONDS` (25) and is not busy. Busy means: within melee reach of the beacon with line of sight; a ranged raider within `FIRING_DISTANCE` (14) with line of sight; it broke or damaged a block in the last `BREACH_BUSY_SECONDS` (5); a player within `ENGAGED_RADIUS` (12) while something hurt the raider in the last 5 seconds (a bystander alone does not count; raiders hand their target to players within 5 blocks); or its chunk is not entity-ticking. Busy time restarts the 25-second clock, so a raider that stops fighting gets a fresh 25 seconds. A stuck raider is **rescued** (`RaidSpawns.findRescue`): moved to a spot that passes every spawn rule (outside the zone plus 64 blocks, entity-ticking chunk, inside the world border, at the beacon's level, open level ground), whose sector has a clean corridor, at least 24 blocks from every player, in another sector than the one it was stuck in when possible, on the ring at the minimum distance plus the usual spread (up to 16). Navigation is stopped, fall distance and motion reset, and the raider has a 10-second grace window. The rescue count is stored on the mob (`arsenalRescues`), so it survives chunk reloads. After `MAX_RESCUES` (3) the next stall **withdraws** the raider: discarded, removed from the raid, no drop, no Ardent Energy; one chat line per wave ("N stuck raiders withdrew"). When no spot is found the attempt is retried after the grace window and an ordinary raider is withdrawn after `DRY_LIMIT` (3) failed attempts. A raid boss (`arsenalBoss`) is moved again on every stall and never withdrawn (that would fail the raid with "Boss was not defeated"); each move is logged. Out of scope on purpose: flyers and gliders (vex, phantom, blaze), paratroopers while their parachute is on, Special Forces soldiers; siege-creeper ignition is unchanged. Movement is unchanged: raiders still march straight, with no detour pathfinding.
+* **Marchable corridors (0.0.13):** the staging ring is cut into 12 world-aligned wedges of 30 degrees (wedge 0 starts due east). Once per raid, the first time a wedge is needed, its centre ray is sampled every 4 blocks from 8 blocks beyond the zone to the farthest staging ring, using the heights of the `MOTION_BLOCKING_NO_LEAVES` map and no chunk loading. A surface of water, lava or magma, a rise of more than 2 blocks or a drop of more than 3 between neighbouring samples is a violation; a sample in an unloaded chunk, or one whose top block is a tree trunk or a player's block, is unknown and never a violation. A spawn at distance D is judged by the samples between D and the zone. `RaidSpawns.find` tries the same rings and 12 candidates per ring as before (random wedge to start, random angle inside it), but candidates in clean wedges come first and then the fewest violations; every candidate is checked at most once. Heuristic: the cached ray is the wedge's centre, a candidate's real line can differ by up to 15 degrees. Diagnostics: `-Darsenal.stuckLog=true` logs every stuck, rescue and withdraw as one `[stuck] event=... key=value` line (mob type, role, short id, wave, position, distance, blocks at feet, below and ahead, fluid, biome, rescue number, destination, and whether `approach()` had to push the mob straight at its goal because it found no path).
 * **Trap adaptation (v4):** each class first causing positive trap damage gets one full-damage wave; subsequent waves gain 25/50/75/100% resistance to that class. Eleven classes cover fire, fall, drowning, suffocation, spikes, crushing/cramming, freezing, explosion, ownerless projectile, magic and lightning traps. Announcements mark each step. Learning is saved for the current raid and resets at the next raid. Attributed weapons, turrets and support cannon attacks are excluded; source-erasing addons need integration tags/markers. See `docs/RAID-ADAPTATION.md`.
 * **Victory** restores everything the raid broke (damage journal). **Defeat** leaves it.
 * Warnings: chat one day ahead, then every six hours; popups for raid start, each wave, VICTORY (confetti) and DEFEAT.
@@ -451,7 +456,7 @@ Goals the numbers are tuned against:
 * Factory and target farming both work; **factory is clearly faster**.
 * Rough income: standalone tier 3 raid is about 8 + drops of 80/12 + bonus; the whole cannon is about 25 average raids of standalone income. **(unverified: all numbers are design estimates; no long playtest yet.)**
 
-Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `StandaloneBalance`, `ArdentEnergy`/`ArsenalConfig`, `RaidTypes` (`CHANCE_PERCENT`, `FIRST_SPECIAL_RAID`, count factors).
+Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `StandaloneBalance`, `ArdentEnergy`/`ArsenalConfig`, `RaidTypes` (`CHANCE_PERCENT`, `FIRST_SPECIAL_RAID`, count factors), `RaidMarch` (`PROGRESS_BLOCKS`, `STUCK_SECONDS`, `GRACE_SECONDS`, `BREACH_BUSY_SECONDS`, `MAX_RESCUES`, `DRY_LIMIT`, `FIRING_DISTANCE`, `ENGAGED_RADIUS`), `RaidSpawns` (`WEDGES`, `PROBE_STEP`, `PROBE_FROM`, `MAX_STEP`, `MAX_DROP`, `RESCUE_TRIES`, `RESCUE_PLAYER_DISTANCE`).
 
 ## 7. UI and audio
 * Shared UI kit (`Ui`): consistent panels, tabs, rows, cards, pips; icon-first with plain-language requirements.
@@ -466,6 +471,7 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 * Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
 * Raid persistent flags are not synced automatically, so marks (red exclamation mark, red parachute) use their own idempotent packet sent every second. Meal MobEffects and backend attributes use native synchronization; v4 adds no packet.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.
+* Opt-in switches (system properties, all off by default): `-Darsenal.stuckLog=true` (stuck-raider diagnostics), `-Darsenal.stuckTests=true` (registers the stuck-raider GameTests and `/stuck-raider-test`).
 * V4 builds and standalone runtime checks passed: 70 beacon unit tests (7 guide tests remain Gradle up-to-date), 20 kitchen/gun/raid/effect server cases, optional LesRaisins radius/ownership and a real save/restart. Exact artifacts, client status and remaining playtests: `docs/MESS-HALL-V4-TESTING.md` and validation JSON.
 
 * Until final **1.0**, the owner starts a fresh world with each feature; old kitchen footprint migration is outside current scope.
@@ -476,7 +482,8 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 3. Two-human co-op, the End and modded dimensions untested; pack prices untested with real Create/KubeJS items.
 4. Balance is theoretical until a team plays several raids.
 5. V4 runtime coverage and remaining client/custom gunpack scenarios are listed in `docs/MESS-HALL-V4-TESTING.md`; broad native-path support is not empirical certification for every custom script/addon.
-6. Special-raid fairness: is a 50 percent chance too frequent? Does Air raid need a stronger anti-air toolkit than the player has? **(TBD, needs playtest data.)**
+6. Stuck-raider thresholds (25 seconds, 3 blocks, 3 rescues) and the corridor limits (rise 2, drop 3) are estimates; the corridor probe judges a wedge's centre ray, not each spawn's exact line. **(unverified on real terrain; use the diagnostics log.)**
+7. Special-raid fairness: is a 50 percent chance too frequent? Does Air raid need a stronger anti-air toolkit than the player has? **(TBD, needs playtest data.)**
 
 ## 10. Roadmap candidates (not committed) **(TBD)**
 * More anti-air tools for the air raid counter-build.

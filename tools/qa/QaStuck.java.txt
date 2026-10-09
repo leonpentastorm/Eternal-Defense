@@ -1,0 +1,52 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * QA ONLY (never part of a release): boots a flat world on the real client and runs the stuck-raider GameTests (StuckRaiderGameTests) on its
+ * integrated server, with the diagnostics log switched on. Copied into a throwaway tree by tools/qa/setup-qa.sh.
+ * Results: QA_CHECK lines (one per test, from the STUCK_TEST_* lines of the runner) and QA_SUMMARY.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaStuck {
+    static int tick;static boolean created,started,done;
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=Minecraft.getInstance();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;
+                var settings=new LevelSettings("qa_stuck",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_stuck",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!started){
+            if(++tick<260)return;started=true;
+            mc.getSingleplayerServer().execute(()->{
+                System.setProperty("arsenal.stuckLog","true");
+                MinecraftForge.EVENT_BUS.register(new StuckRaiderGameTests.Runner());
+                StuckRaiderGameTests.Runner.start(mc.getSingleplayerServer().overworld());
+            });
+            return;
+        }
+        if(!done&&StuckRaiderGameTests.Runner.lastPass>=0){
+            done=true;int p=StuckRaiderGameTests.Runner.lastPass,f=StuckRaiderGameTests.Runner.lastFail;
+            com.mojang.logging.LogUtils.getLogger().info("QA_SUMMARY pass={} fail={}",p,f);mc.stop();
+        }
+    }
+}

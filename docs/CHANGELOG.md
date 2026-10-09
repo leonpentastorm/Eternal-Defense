@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.13 — Stuck raiders no longer lose raids (2026-10-09)
+
+Branch `feature/stuck-raiders` (from `dev` 0.0.12). Network protocol unchanged (28). Rules: GDD section 5.2 (*Stuck raiders*, *Marchable corridors*); tests: `docs/STUCK-RAIDERS-TESTING.md`.
+
+* **A raider that cannot reach the beacon no longer decides the raid.** A ground raider with no 3-block gain in distance to the beacon for 25 seconds (and not fighting, shooting or digging) is moved back to the staging ring up to three times and then withdrawn (discarded: no drop, one chat line per wave). A raid boss is moved again each time and is never withdrawn. Raiders still march straight; `approach()` and the pathfinding are unchanged.
+* **Spawn directions are checked once per raid** for water, lava, magma, steep rises and drops on the straight line to the base (12 world-aligned sectors, one probe each, never loading a chunk); `RaidSpawns.find` uses clean sectors first, then the fewest violations.
+* `RaidMarch` now keys everything by UUID and prunes it every cycle (the old map was keyed by entity id and never pruned); everything is cleared when a raid starts or ends and when the server stops.
+* Opt-in diagnostics: `-Darsenal.stuckLog=true` logs every stuck, rescue and withdraw as one `[stuck]` line (block ids, fluid, biome, whether `approach()` had to push the mob straight at its goal). `-Darsenal.stuckTests=true` registers the stuck-raider GameTests.
+* Field Guide Raids card: one line telling players that stuck raiders are moved and, after a few tries, sent away.
+* Tests: 124 beacon unit tests (28 new); 7 real-server GameTests pass in the real client's integrated server (`tools/qa/QaStuck.java.txt`). Not run: the legacy v2 to v6 GameTests, a dedicated server, two players, real terrain.
+
 ## 0.0.12 — Feature guide for designers, branches merged into dev (2026-10-09)
 
 * **`docs/GAME-DESIGN-DOCUMENT.md` has a new section, *Feature guide for designers*,** right after the core loop. Every feature in plain words: what it is, what the player does, how it behaves, its job in the game, the dials that change it and what has not been played yet; a feature-dependency table; a playtest-first list. Section 5 is now labelled as the rulebook with exact numbers. A stale protocol note was corrected (protocol 28).

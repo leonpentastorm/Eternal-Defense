@@ -108,6 +108,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV5GameTests.KitchenV5Verification());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV6GameTests.KitchenV6Verification());
+        if(Boolean.getBoolean("arsenal.stuckTests"))MinecraftForge.EVENT_BUS.register(new StuckRaiderGameTests.Runner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
         if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
@@ -186,7 +187,7 @@ public final class ArsenalBeacon {
         if(e.getOriginal().getPersistentData().getBoolean("arsenalStarterGranted"))e.getEntity().getPersistentData().putBoolean("arsenalStarterGranted",true);
         if(e.getOriginal().getPersistentData().getBoolean("arsenalSupportGranted03"))e.getEntity().getPersistentData().putBoolean("arsenalSupportGranted03",true);
     }
-    @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;RaidMarch.forget();BeaconActions.clear();}
+    @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;RaidRescue.reset();BeaconActions.clear();}
     private static final com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack> RAID_TYPE_SUGGEST=(c,b)->{b.suggest("normal");for(String t:RaidTypes.SPECIAL)b.suggest(t);return b.buildFuture();};
     private static boolean raidTypeOk(String t){return t.equals("normal")||RaidTypes.special(t);}
     @SubscribeEvent public void commands(RegisterCommandsEvent event) {
@@ -267,7 +268,7 @@ public final class ArsenalBeacon {
         feedback(p,RewardCache.claim(p,d));
     }
     static void decommission(ServerLevel l,CampaignData d,ServerPlayer p) {
-        for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}
+        RaidRescue.reset();for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}
         net.minecraft.world.Containers.dropContents(l,d.beacon,d.rewardBox);   // the chest goes with the beacon: its contents spill out
         if(l.hasChunkAt(d.beacon)&&l.getBlockState(d.beacon).is(BEACON.get()))l.setBlock(d.beacon,Blocks.AIR.defaultBlockState(),3);
         d.campaignSerial++;d.resetProgress();d.phase="decommissioning";d.setDirty();
@@ -278,7 +279,7 @@ public final class ArsenalBeacon {
     static boolean reconcileMissing(ServerLevel l,CampaignData d) {
         if(d.installed()&&l.hasChunkAt(d.beacon)&&!l.getBlockState(d.beacon).is(BEACON.get())) {decommission(l,d,null);return true;}return false;
     }
-    private static void announce(ServerLevel l,String s){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Create Arsenal] "+s).withStyle(ChatFormatting.GOLD),false);}
+    static void announce(ServerLevel l,String s){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Create Arsenal] "+s).withStyle(ChatFormatting.GOLD),false);}
     @SubscribeEvent public void tick(TickEvent.ServerTickEvent event) {
         if(event.phase!=TickEvent.Phase.END)return;
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
@@ -312,7 +313,7 @@ public final class ArsenalBeacon {
     }
     static void begin(ServerLevel l,CampaignData d) {
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
-        RaidAdaptation.begin(d);
+        RaidAdaptation.begin(d);RaidRescue.reset();
         RaidWarnings.reset();d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
         announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
     }
@@ -357,6 +358,7 @@ public final class ArsenalBeacon {
             mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
             // Real attack goals target the objective; contact alone never damages it.
             BeaconCombat.attach(mob);
+            if(RaidRescue.tick(l,d,mob,it))continue; // stuck for good: withdrawn (a rescue only moves it)
             boolean idle=RaidMarch.idle(mob);
             if(d.raidType.equals("siege")&&mob instanceof net.minecraft.world.entity.monster.Creeper creeper){
                 // siege creepers dig: stuck at a wall near the base, they blow a hole for the shooters behind them (never far from it)
@@ -367,7 +369,9 @@ public final class ArsenalBeacon {
             if(idle&&!(mob instanceof net.minecraft.world.entity.monster.Vex)&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
             // All hostile breach attempts run through BeaconCombat and the same damage journal.
         }
+        RaidMarch.prune(d.raiders);
         if(d.spawnRemaining==0&&d.raiders.isEmpty()){
+            RaidRescue.announceWithdrawn(l);
             reward(d,Items.IRON_INGOT,RaidRewards.waveIron(d.raidTier)); // Each cleared wave has a claimable supply reward.
             if(d.wave>=Rules.waves(d.raidTier)){
                 if(d.hardRaid&&(!d.bossSpawned||!d.bossKilled)){fail(l,d,"Boss was not defeated. No completion cache awarded; surviving wave rewards remain.");return;}
@@ -375,7 +379,7 @@ public final class ArsenalBeacon {
                 RaidRewards.queue(d,RaidRewards.completion(l,d.rewardTier,d.hardRaid&&d.bossKilled));
                 if(RaidTypes.special(d.raidType)){int bonus=RaidTypes.bonusEnergy(d.rewardTier);RaidRewards.queue(d,java.util.List.of(new ItemStack(ARDENT_ENERGY.get(),bonus)));announce(l,RaidTypes.name(d.raidType).getString()+" survived: +"+bonus+" Ardent Energy in the reward.");}
                 if(d.introRaid&&!d.introCompleted){RaidRewards.queue(d,java.util.List.of(new ItemStack(GUN_PLATFORM.get())));d.introCompleted=true;d.introRaid=false;announce(l,"Introduction complete! Claim your Weapon Platform at the beacon.");}
-                BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";RaidTypes.finish(l,d);announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
+                BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";RaidTypes.finish(l,d);RaidRescue.reset();announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
             }
             else nextWave(l,d);
             d.setDirty();
@@ -462,7 +466,7 @@ public final class ArsenalBeacon {
     }
     private static void fail(ServerLevel l,CampaignData d,String reason) {
         d.health=Math.max(0,d.health-d.maximumHealth()/5);d.victoryRestoration=false;d.phase="restore";d.preparationTicks=0;d.spawnRemaining=0;
-        BeaconNetwork.announce(l,"defeat",0,0,"","");RaidTypes.finish(l,d);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();
+        BeaconNetwork.announce(l,"defeat",0,0,"","");RaidTypes.finish(l,d);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();RaidRescue.announceWithdrawn(l);RaidRescue.reset();
         // Keep all machine journals until restoration succeeds, even if a chunk is unloaded.
         // Empty wall entries are deliberately not repaired after a failed defense.
         d.damage.entrySet().removeIf(e->e.getValue().entity()==null);d.setDirty();announce(l,reason);
