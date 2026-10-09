@@ -1,8 +1,14 @@
 # Change log
 
+## 0.0.12 — Feature guide for designers, branches merged into dev (2026-10-09)
+
+* **`docs/GAME-DESIGN-DOCUMENT.md` has a new section, *Feature guide for designers*,** right after the core loop. Every feature in plain words: what it is, what the player does, how it behaves, its job in the game, the dials that change it and what has not been played yet; a feature-dependency table; a playtest-first list. Section 5 is now labelled as the rulebook with exact numbers. A stale protocol note was corrected (protocol 28).
+* The Mess Hall v6 line (0.0.7 to 0.0.11) was pushed onto `dev` at the owner's request (fast-forward from 0.0.2's `1a839c0`), and the branches whose commits are all in `dev` were deleted. `CLAUDE.md`, `README.md` and `docs/HANDOFF.md` no longer say that work lives on `feature/messhall-ver-6`.
+* No rules, numbers or code changed in this entry.
+
 ## 0.0.11 — Mess Hall levels, two-column kitchen, one-button table upgrade (2026-10-09)
 
-Feature `feature/messhall-ver-6` (owner override). Network protocol raised to **28-pack / 28-standalone** (the open food slots change what the kitchen menu does on both sides). Rules: `docs/MESS-HALL-TIERS.md`.
+Developed on `feature/messhall-ver-6` (owner override), merged into `dev` in 0.0.12. Network protocol raised to **28-pack / 28-standalone** (the open food slots change what the kitchen menu does on both sides). Rules: `docs/MESS-HALL-TIERS.md`.
 
 * **Mess Hall levels rebalanced (owner request).** Mk I: sandwiches only, meals last 15 minutes, 3 food slots. Mk II: unlocks stew, 20 minutes. Mk III: 25 minutes, unlocks ×2 doubling (sandwiches and stew). Mk IV: 30 minutes, all 6 food slots, and the only level that can double a legendary effect (four food slots). Pots, servings and prices are unchanged. A meal remembers how long its hall made it last.
 * **The kitchen screen is two columns (376 × 238).** Left: mode tabs, the table, Gather/Make/Cook, Take back, Clear order and Upgrade. Right: the 26 effects to choose (dimmed unless chosen, so the palette stops shouting), the order cards, the next-step line and three chips: meal length, food slots, ×2. Plain explanations of ×2 and of each level in the chips, the recipe tooltips, the badge and the Upgrade tooltip. Needs a GUI at least 376 wide (every 16:9 window; lower the GUI scale on 4:3).

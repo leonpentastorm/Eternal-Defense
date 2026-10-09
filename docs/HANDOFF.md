@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated for the **Mess Hall levels and two-column kitchen**, project **0.0.11** (on top of the Field Guide pass 0.0.9 and the Mess Hall v6 UI pass 0.0.8), branch **`feature/messhall-ver-6`** (owner override in `CLAUDE.md`), on top of v6 `cfba0ab`. No dev/main merge or push, PR, tag or public release. Fresh worlds per feature until 1.0. Protocol **28-pack / 28-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
+Last updated for the **designer feature guide**, project **0.0.12**, on branch **`dev`**. On 2026-10-09 the owner asked for the Mess Hall v6 line (0.0.7 to 0.0.11: Mess Hall levels and two-column kitchen, Field Guide pass and side menu, one-button table upgrade) to be pushed onto `dev` and for the merged feature branches to be deleted; `dev` was fast-forwarded to `97987a3` plus the 0.0.12 documentation commit. `main` is untouched. No PR or public release. Fresh worlds per feature until 1.0. Protocol **28-pack / 28-standalone**. JAR versions remain 0.21.0 / 1.1.0; TaCZ 1.1.8-hotfix2 and TaCZ Attributes 1.4 are required as before.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
 

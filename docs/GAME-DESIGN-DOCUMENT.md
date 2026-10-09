@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Title** | Eternal Defense |
-| **Document / project version** | 0.0.11 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
+| **Document / project version** | 0.0.12 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Mess Hall v6 feature test build on `feature/messhall-ver-6`, based on v5 `5eebf94`; fresh worlds per feature until 1.0; validation scope in MESS-HALL-V6-TESTING.md |
+| **Status** | Active development on `dev` (includes the Mess Hall v6 work, the Field Guide pass and the Mess Hall levels of 0.0.11); fresh worlds per feature until 1.0; what was tested is listed per round in `docs/*-TESTING.md` |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:
@@ -19,6 +19,7 @@
 
 | Doc version | Date | Author | Change |
 | --- | --- | --- | --- |
+| 0.0.12 | 2026-10-09 | Development | **Feature guide for designers** added (new section after the core loop): every feature explained in plain words (what it is, what the player does, how it behaves, its job in the game, the dials, what has not been played yet), a feature-dependency table and a playtest-first list. Section 5 is now labelled as the rulebook. Stale technical note corrected (protocol 28). No rules or numbers changed. |
 | 0.0.11 | 2026-10-09 | Development | **Mess Hall levels rebalanced** (Mk I sandwiches only, 15-minute meals, 3 food slots; Mk II unlocks stew, 20 minutes; Mk III 25 minutes and unlocks ×2 doubling, in sandwiches and stew; Mk IV 30 minutes and all 6 food slots, the only level that can double a legendary effect); meals remember their length; protocol 28. Kitchen screen re-laid out in two columns (376 × 238): actions on the left, effects to choose on the right, calmer recipe tiles, chips for meal length, food slots and ×2. Weapon/Ammo/Attachment/Armor table Upgrade view rebuilt as an Age ladder, a materials grid and one Upgrade button. |
 | 0.0.10 | 2026-10-09 | Development | Field Guide side menu restored for every window size, with an item icon per page (list with titles when tall enough, two-column icon rail with hover names when short). UI only. |
 | 0.0.9 | 2026-10-09 | Development | Field Guide rewritten for a player who has just spawned in: every feature (including Gun Guide and Gun Displays) is a card with what it is, what it gives, how it works, how to unlock it and what can go wrong; red "Careful" notes for resets and other catches; edition-only lines inside one card; plant confirmation and item tooltips warn that only the shovel removes the beacon and that this resets the campaign; standalone upgrade hint corrected to Ardent Energy. No rules or numbers changed. |
@@ -75,7 +76,303 @@ One source tree builds both (`/arsenal-build.properties` flavor in the jar). Eve
 5. **Announce next type:** the kind of the next raid is shown at once.
 6. **Spend:** upgrades, flares, Exchange; loop back, stronger.
 
-## 5. Systems
+## Feature guide for designers
+
+**How to read this.** Section 5 is the rulebook with the exact numbers and the code names. This section goes feature by feature and says, in plain words: what the feature is, what the player does with it, how it behaves, what job it does in the game, and which dials change it. It is written for someone who has not read the code. A line marked *Not played yet* has only been checked by unit tests, a real-client run or a code read, never by a team playing several raids (see section 9). Where the pack and standalone editions differ, both are named. If this guide and the code disagree, the code is right.
+
+### The game in one minute
+
+A team plants one **Defense Beacon**. It makes a protected **zone** around it. Inside the zone the team builds; the beacon **scores the base**, and the score sets a **reward tier** from 0 to 10. At night, **raids** march on the beacon, harder and more often at higher tiers. Winning pays loot and **Ardent Energy** (the soft currency) and puts back everything the raiders broke. Energy and materials buy **guns, ammo and gear** at the workshop tables, a personal **support cannon** that delivers supplies, rescues and bombardments, and **beacon upgrades**. A **kitchen** turns food into short combat buffs. Everything is taught by an in-game **Field Guide**. The loop is: prepare, survive, spend, get stronger, face a bigger raid.
+
+### How the features feed each other
+
+| Feature | Gives the player | Needs | Feeds |
+| --- | --- | --- | --- |
+| Defense Beacon and zone | A place to build and defend; the raid clock | Planting once | Everything below; all placed gear must sit inside the zone |
+| Base score | Reward tier (0 to 10) | Building inside the zone | Raid size, raid frequency, reward size |
+| Raids | Loot, Ardent Energy, Ammo Coins, the first Weapon Platform | A planted beacon and a defended base | Energy and ammo supply; pressure to build and prepare |
+| Ardent Energy | Spending power | Kills and won raids | Flares, cannon, Exchange goods, standalone upgrades |
+| Exchange Shop | Converts spare materials to energy and back | Zone, a few materials | Lets factory players sell surplus and non-factory players buy parts |
+| Weapon, Ammo, Attachment, Armor tables | Guns, ammo, attachments, armor | Materials (or coins for ammo), Ages | The fighting power of the team |
+| Support Platform and Cannon | Supplies by parachute, a ride home, bombardments | Energy, one platform and one cannon per player | Survivability and burst damage in raids |
+| Mess Hall, Cook Pot, dispensers | Meals with 15 to 30 minute buffs | Food, a hall level | Gun and survival stats during raids |
+| Raid control (cap, start, break) | Control over pace and difficulty | Nothing | How much risk the team takes |
+| Field Guide, tooltips, confirmations | Understanding | Nothing | Onboarding and fewer irreversible mistakes |
+
+### Part A. The campaign
+
+#### Defense Beacon
+* **What it is.** The heart of the campaign: a glowing crystal block. One per world, Overworld only, shared by the whole team. It cannot be broken or moved by normal play.
+* **What the player does.** Plants it once (a confirmation screen explains what cannot be undone). Right-clicks it to open four tabs: Overview, Upgrades, Workshop Fabrication and Raid break. Settings and the Field Guide sit in the header.
+* **How it behaves.** Planting starts the campaign and a short first raid at once. The beacon has health. A bigger Core raises it. Raiders hitting it, and defenders dying near it (three deaths), lower it. At zero it switches off: that is a defeat. Wild hostile mobs can also hit an exposed beacon they can see from 24 blocks, even during a raid break, so players cover it with solid blocks. Repairing (Overview, Repair) gives +250 health and restarts the campaign. The cost is 6 Ardent Energy (standalone) or 8 of the pack part.
+* **Job in the game.** It gives the fight a place and the team one thing to lose (pillar 1). The planting spot is the biggest permanent decision of the game.
+* **Dials.** Health and radius per Core level in `Rules`; repair price in `Economy`.
+* **Designer watch-out.** The only exit is the full reset (see Recovery Shovel). New players are warned in the plant confirmation, the beacon tooltip and the Field Guide.
+
+#### Base zone
+* **What it is.** The area around the beacon that belongs to the team, drawn as a moving cyan grid (it can be switched off in Settings).
+* **What the player does.** Builds inside it. Places the kitchen, Exchange Shop and support gear only inside it.
+* **How it behaves.** Radius grows with Core: **8, 12, 18, 24** blocks. The Vertical branch makes it taller: it starts 3 blocks down and 8 up and reaches 16 down and 48 up at the fifth level. The zone is centred on the beacon. A clear 3 × 3 space, two blocks tall, around the beacon is needed for the largest Core level. Weapon tables placed inside count toward the base score.
+* **Job in the game.** It is the design boundary: everything the player owns that matters is inside, and the raid spawns are outside. It also defines "home" for meal doubling (see Mess Hall).
+* **Dials.** Radii per Core level; vertical limits; the zone grid toggle is a client setting.
+
+#### Base score and reward tier
+* **What it is.** A grade for the base. When a raid starts the beacon scans the zone: structure, material palette, detail blocks (stairs, slabs, fences, doors), lighting, furnishings (beds, bookshelves, barrels, chests, tables), usable closed rooms, machinery and weapon stations.
+* **What the player sees.** The Overview shows the score and the reward tier.
+* **How it behaves.** The tier runs 0 to 10. Each of the five Logistics levels adds one tier; a good base adds up to five more. A higher tier makes the next raids bigger, makes them come more often (about weekly at tier 0, down to every two days at the top) and makes the rewards bigger. Natural terrain scores nothing, and ore blocks score no more than plain blocks.
+* **Job in the game.** It makes building well and playing well the same investment (pillar 2): a beautiful, functional base is both the reward engine and the difficulty setter. The raid level cap is the escape valve for a team that grew faster than its gear.
+* **Dials.** Scoring weights in the base-scoring code; tier from Logistics in `Rules`; schedule intervals per tier.
+* **Not played yet.** Whether the scoring weights reward the right things, and whether the tier curve feels fair.
+
+#### Beacon upgrades (six branches)
+Bought in the Upgrades tab with the team standing near the beacon, between raids. In Creative everything is free. Packing up the beacon wipes every upgrade.
+
+| Branch | What it does | Levels |
+| --- | --- | --- |
+| Core | Wider zone, tougher beacon (radius 8, 12, 18, 24) | 3 upgrades (Mk-1 to Mk-4) |
+| Logistics | Each level adds one reward tier | 5 |
+| Defense | 15, 30, 45 and 60 percent less damage to the beacon | 4 |
+| Restoration | Faster rebuilding after a raid; the beacon heals 5, 10, 15, 20, 25 percent of its health after a victory | 5 |
+| Vertical | Zone height: it starts 3 blocks down and 8 up and ends 16 down and 48 up | 5 |
+| Reconnaissance | Raiders glow the moment they appear (normally they glow after one minute) | one purchase |
+
+* **Prices.** Standalone, in Ardent Energy: **4, 8, 14, 22, 32** by level. Pack: **8, 16, 32, 64, 128** of the branch's own factory part (reinforced plating, logistics modules, resonance coils, restoration matrices).
+* **Job in the game.** The permanent sink for energy and factory output, and the only way to raise the reward tier by spending.
+* **Designer watch-out.** Logistics raises both rewards and danger. The Field Guide says so in red on that card.
+
+#### Reward chest
+* **What it is.** The beacon itself is the chest. A 54-slot chest for the whole team, opened from the Overview.
+* **How it behaves.** Prizes are put in each time the screen opens; whatever does not fit waits in a queue. If the beacon is destroyed, the contents spill out. If the campaign is packed up, unclaimed prizes are thrown away.
+* **Job in the game.** Keeps raid loot out of the pack so it cannot be lost on death, and gives raids a clear "collect" moment.
+
+#### Recovery Shovel
+* **What it is.** A special iron shovel and the player's remote control for the beacon. Everyone starts with one; it is craftable (iron above and below, copper left and right, redstone in the middle).
+* **What the player does.** Right-clicks the air to open the beacon panel from far away; hits a monster to knock it back (it deals no damage, whatever the player's strength); uses it on their own Support Platform or Cannon to pick it up free of charge, keeping upgrades and contents; uses it on the beacon to pack the whole campaign up.
+* **How it behaves.** Using it on the beacon asks for confirmation. The result is a full reset: every upgrade, win and reward tier returns to zero, raids stop, unclaimed prizes are thrown away, the player gets one fresh beacon back and the buildings stay.
+* **Job in the game.** The only way to relocate or abandon a base. It makes the plant decision weighty without making it a trap.
+* **Designer watch-out.** Anyone with a shovel can reset the world for everyone. The game asks first; there is no permission system.
+
+### Part B. Raids
+
+#### Raid schedule and control
+* **What it is.** The pace of the game: when raids come and how hard they are allowed to be.
+* **How it behaves.** An introduction raid starts the moment the beacon is planted: short, gentle, always ordinary. Winning it hands over the first Weapon Platform. After that raids come at night, about once a week at reward tier 0, more often as the tier rises. The clock counts **active days** only (days when someone is online).
+* **What the player controls (Raid break tab).**
+  * *Raid level cap*, a dial from 0 to 10. Lower it for an easier raid and a smaller prize; it never touches base score or upgrades. The whole team shares it.
+  * *Start raid now.* Starts a raid at the shown level at a time of the team's choosing. The base is scanned first and any bought break ends. It cannot be undone.
+  * *Raid break.* Pay to push the next raid back five active days. Each purchase costs more than the last and purchases add up. Every break also makes the next raid tougher and richer (up to three tiers, never above the cap). Pack price: brass, precision mechanisms and gold. Standalone: copper, diamonds and gold.
+* **Job in the game.** Three ways to trade risk against reward without ever stalling the game: wait, lower, or push on. The break is a deliberate "pay for time, get a bigger raid" trade.
+* **Dials.** Intervals per tier and break prices in `Rules` and `Economy`.
+
+#### Anatomy of a raid
+* **What happens.** The base is scored and snapshotted. Waves then come from outside the zone: **3 + tier** waves, with at most five extra. Raiders scale with the number of defenders. They spawn on open surface ground at or above the beacon's level, never underground (the rule relaxes after 30 and 90 seconds if no such spot exists), walk **straight at the beacon**, and only stop to dig through doors and walls when they stop making progress. Each raider wears a **red exclamation mark** and is immune to sunlight. Ranged raiders hold their distance. Any raider left alive after one minute glows.
+* **How it ends.** Victory: everything the raid broke is put back (a damage journal), and the prizes go to the reward chest, with Ardent Energy and Ammo Coins. Defeat: the beacon switches off and the damage stays until repaired. Spent ammo, fuel and tool wear are never refunded either way.
+* **Job in the game.** The pressure the whole game pushes against. Straight-line marching makes the fight readable and the base's geometry matter.
+* **Dials.** Wave count, spawn rules and attacker counts in the raid code (`Rules`, `RaidTypes`).
+* **Not played yet.** Ground spawning for Air, Siege and Swarm raids in a real world; two-human co-op.
+
+#### Boss raids
+* **What it is.** Every third raid is a boss raid. It is simply a stronger raid. It has nothing to do with how often raids come.
+* **How it behaves.** 25 percent more attackers, a boss arrives with the final wave, completion rewards are 50 percent larger. In the pack the boss is a modded boss with a red boss bar, and beating it also gives bonus medical kits and grenades; in standalone, without boss mods, it is a vanilla Ravager. The Overview announces when the next raid is a boss raid.
+* **Job in the game.** A rhythm: two raids to recover and prepare, a third that tests the build.
+
+#### Special raids
+* **What it is.** From the fourth raid on, half of all raids (also boss raids) carry a twist, each asking for a different counter-build. The next raid's type is shown at once after each raid and in the Overview.
+
+| Type | What it asks of the base |
+| --- | --- |
+| Air raid | Flying mobs ignore walls. Build anti-air, not thicker walls. |
+| Paratroopers | Heavy mobs drop from high up on red parachutes; shoot them while they float. |
+| Siege | Creepers dig into walls and shooters fire through the holes. |
+| They are thousands | Only zombies and husks, double count, spawning faster, up to 96 alive. |
+
+* **Reward.** A won special raid adds 3 + 2 × tier Ardent Energy.
+* **Job in the game.** Variety. Each type punishes one defensive habit (wall-only bases, one weapon type, no area damage).
+* **Dials.** `RaidTypes`: `CHANCE_PERCENT`, `FIRST_SPECIAL_RAID`, count factors.
+* **Not played yet.** Is 50 percent too frequent? Does the air raid need a stronger anti-air toolkit than the player has?
+
+#### Special Forces
+* **What it is.** Armed soldiers who join raids once the reward tier is 4 or more.
+* **How it behaves.** A warning comes first. One soldier per wave at tiers 4 to 6, heavy soldiers from tier 7. They shoot from far away, so cover (sandbags) matters. Their bodies can be looted for about ten minutes.
+* **Job in the game.** An answer to teams that ignore ranged play, and a loot source for the high tiers.
+
+#### Trap learning
+* **What it is.** Raiders get used to the same kind of trap.
+* **How it behaves.** The first wave takes full damage from a trap class. Each later wave takes 25 percent less from it, until after four steps it does nothing. Eleven classes (fire, fall, drowning, suffocation, spikes, crushing, freezing, explosion, projectile without an owner, magic, lightning). Chat announces each step. The learning resets at the next raid. Turrets, player weapons, projectiles fired by players and the support cannon are exempt and never get weaker. Raiders are protected from sunlight only: flame arrows, lava and fire traps still hurt, and fire traps adapt like any other class.
+* **Job in the game.** Stops one-trap fortresses and nudges the team toward mixed defences and active fighting.
+
+#### Warnings and announcements
+* Chat warns a day ahead, then every six hours, then once more when the raid is only waiting for night. Big banners mark the start, each wave, VICTORY (with confetti) and DEFEAT. A red BEACON IS BEING ATTACKED warning reaches every player in every dimension, with no tool in hand needed.
+* **Job in the game.** Pillar 5: readable and teachable. A player should never be surprised by a raid they could have prepared for.
+
+### Part C. Money and trade
+
+#### Ardent Energy
+* **What it is.** The soft currency. A glowing item won by fighting; it cannot be crafted.
+* **How it behaves.** About one hostile kill in 15 drops one (1 in 12 in standalone). Looting adds 1 percent per level, mobs with 60 or more health drop two, bosses always drop one. A kill needs a player or a raider behind it. Every won raid pays a fixed amount (1 + tier in the pack, 2 + 2 × tier in standalone) plus the drops.
+* **What it buys.** Pack: flares, the cannon, Exchange goods. Standalone: all of that plus beacon upgrades, repairs and Mess Hall upgrades.
+* **Job in the game.** The meter of progress. In the pack, factory parts pay for upgrades, so energy stays for flares, the cannon and trade. In standalone, energy is the only currency for everything.
+* **Dials.** `baseDropChance`, `lootingBonusPerLevel`, `bossDrop` in `arsenal-beacon-common.toml`; `Economy`, `RaidRewards`.
+
+#### Exchange Shop
+* **What it is.** A shop booth placed inside the zone with two tabs: Sell (hand in materials for energy) and Buy (pay energy for goods).
+* **How it behaves.** Buying always costs more than selling the same thing, and a unit test checks that no loop pays. Offers live in `config/arsenal-beacon-exchange.txt` (`[sell]`, `[buy]`), so a server can change them. Pack: the player hands in factory surplus and buys supplies and ammo coins at a premium. Standalone: the player hands in rare vanilla materials (diamond, blaze rod, ender pearl and similar) and buys ammo coins and basic materials.
+* **Job in the game.** The bridge between a factory player and a non-factory player: one sells surplus, the other buys parts at a premium. Factory is faster by design.
+
+#### Ammo Coins
+* **What it is.** A special coin won only from raids; it cannot be crafted.
+* **How it behaves.** At the Ammo Platform, Buy with coins pays for the whole batch shown. The coin price grows with the Age and the strength of the gun. Coins buy empty magazines, never filled ones.
+* **Job in the game.** Makes ammunition a raid reward, so a won raid replenishes the team (pillar 3).
+
+#### Workshop Fabrication
+* **What it is.** A beacon tab selling the starter version of every station: eleven installations: the four tables, Mess Hall, Cook Pot, Bowl Dispenser, Milk Dispenser, Support Platform, Support Cannon and Exchange Shop.
+* **How it behaves.** The price comes out of the player's pack at once, with a check that the output fits. Prices live in `Economy`. Each table upgrades itself at its own screen.
+* **Job in the game.** One place to learn what exists and what it costs.
+
+### Part D. The workshop tables
+
+#### Weapon, Ammo, Attachment and Armor Platforms
+* **What they are.** Four workbench stations. **Weapons**: search by name, filter by type and era, craft any unlocked gun. **Ammo**: only ammo that fits the held gun, paid in materials or Ammo Coins. **Attachments**: scopes, grips, magazines, only parts that fit the held gun; a counter shows how many are locked. **Armor**: helmets, vests, boots, pouches, plates, vision gear. A **Supplies** category in the Weapon table holds food, medical kits, grenades, tools and gear materials.
+* **How they behave.** The first Weapon Platform comes from winning the first raid; the others are bought at Workshop Fabrication. A magazine crafted at the Ammo Platform is empty and is filled with loose rounds using the magazine addon. Guns that use the FUEL reload type are excluded from crafting (they need Field Radio refills) as a stability fallback.
+* **Job in the game.** Converts materials into combat power, with eras gating the pace.
+* **Dials.** Recipes and costs in the pack scripts and `Economy`; per-gun Age in the data.
+
+#### Ages and table upgrades
+* **What they are.** Five Ages each table can reach: Frontier, World Wars, Modern, Advanced, Exotic. Each of the four tables has its own Age. A modern pistol stays a Modern unlock.
+* **What the player does.** Opens a table, picks the Upgrade tab and presses one big **Upgrade to <Age>** button. A ladder shows the Ages done, the current one and the next; a grid shows the materials needed and what the player holds. The button stays dark until the materials are present.
+* **How it behaves.** Modern and later Ages need the team to have visited the Nether (and, in the pack, the Create precision parts). Locks apply in Survival. Creative is free.
+* **Job in the game.** The long progression spine of the gun side of the game, in five steps.
+* **Not played yet.** The pace of the Age upgrades against raids.
+
+### Part E. The support system (one per player)
+
+#### Support Platform
+* **What it is.** A player's own landing pad and supply box, up to four levels (a supply grid from 3 × 3 up to 6 × 6; the pack upgrades cost 16, 32 and 64 plating, standalone prices are in `Economy`).
+* **How it behaves.** One per player, only the owner can open it, placed inside the zone, two blocks tall with an owner sign above it. The two blocks in front of it are a no-build **return zone** that must stay clear. It stops working while the beacon is gone. The shovel moves it free.
+* **Job in the game.** Personal ownership (every player has something that is theirs) and the anchor for deliveries and returns.
+
+#### Support Cannon
+* **What it is.** A big 3 × 3 gun that belongs to its owner. Everything the owner calls goes through it. Bought for 12 Ardent Energy.
+* **How it behaves.** It turns toward the flare with a grinding sound and only fires once settled. It handles one call at a time. Far-away players read "Cannon preparing" and "You heard cannon fire roaring". Clicking it opens the choice of fire support and the upgrades.
+* **Job in the game.** It gives each player a "button" that pays off for energy, and makes the base feel defended by something big.
+
+#### Flares
+Flares are bought at the platform's Shop tab; throwing them is free. If something goes wrong the flare is handed back.
+
+| Flare | Price (energy) | What it does |
+| --- | --- | --- |
+| Supply | 3 | The cannon fires and a chest with everything in the platform's grid parachutes in (about 12 s outside, 7 s underground). The grid empties when sent. |
+| Return | 2 | A portal (30 s, 5 min and usable twice with the upgrade) takes the owner to the platform from any dimension. It needs a free cell in front of the platform, or it is cancelled. |
+| Fire Support | 6 | A red box marks the target and the cannon shells it with the fire support the owner chose. A second flare during a barrage waits ("Barrage in process"). |
+
+* **Job in the game.** The three things a player in a raid wants most: a resupply, an escape, and a big explosion, each at a small price that is affordable after two or three raids.
+
+#### Six fire support types and ten cannon upgrades
+* **Types.** Explosion Barrage (6 shells), Arrow Cluster (8), Narukami's Favor (lightning on every hostile, 5), Bunker Buster (one bomb digging a large cube; it hurts players inside its box for half their health and is handed back if its box would touch the beacon zone), Healing Barrage, Curse of Debilitation. The owner's choice applies even to a borrowed flare.
+* **Upgrades.** Traverse, Fire Rate, Volley, Damage, Quantum Tunneling (works underground), Slowness field, a lasting two-way Portal, Healing Aura, Area of Effect and Dimensional Link (works in other dimensions). About 185 energy in total in standalone; the pack pays the factory parts listed in `Economy.PACK_AMOUNTS`.
+* **Job in the game.** The long energy sink after the first purchases, and a way to specialise a cannon (damage dealer, healer, controller).
+
+### Part F. The kitchen
+
+#### The idea
+A fortress should have a kitchen feeding the war effort. A farmer or cook supports the team with portable sandwiches and big pots of stew before a raid. Casual cooking is useful; a dedicated cook supports more people without being mandatory.
+
+#### Mess Hall (four levels)
+* **What it is.** The cooking station, a 2 × 1 × 2 block placed inside the zone. It has up to six shared food slots, a bread-only **Base** slot and a sandwich output slot.
+* **What the player does.** Opens it, clicks the effects to choose on the right, presses Gather ingredients, then Make sandwich or Cook stew. Buttons that do things are on the left and the effects to choose are on the right.
+* **What each level adds.**
+
+| Level | Makes | Meals last | Food slots | Doubling (×2) | Pots linked | Stew servings |
+| --- | --- | --- | --- | --- | --- | --- |
+| Mk I | sandwiches only | 15 minutes | 3 | no | 1 | 4 |
+| Mk II | sandwiches and stew | 20 minutes | 3 | no | 2 | 8 |
+| Mk III | sandwiches and stew | 25 minutes | 3 | yes | 3 | 12 |
+| Mk IV | sandwiches and stew | 30 minutes | 6 | yes, and legendary effects too | 4 | 16 |
+
+* **Prices.** The hall itself is crafted from vanilla materials or bought at Workshop Fabrication. Upgrades cost 8 / 16 / 32 Reinforced Beacon Plating (pack) or 4 / 8 / 14 Ardent Energy (standalone); Creative is free; food and pot links stay.
+* **What the screen says.** Three chips under the order show the meal length, the open food slots and whether ×2 is unlocked (a padlock until Mk III). The Stew tab shows a padlock below Mk II. The Upgrade button's tooltip says what the next level adds.
+* **Job in the game.** A visible ladder of four clear steps, each unlocking one thing the player can feel: a first meal, stew for the team, double effects, and the full six-slot table.
+* **Dials.** `MealRules.tier` (minutes, slots, stew, doubling, pots, servings), `Economy` for prices.
+* **Not played yet.** Whether 15, 20, 25 and 30 minutes and the Mk III doubling step feel right in play.
+
+#### Cook Pot and stew
+* **What it is.** A 1 × 1 × 2 pot with a chalkboard menu on it. One selected empty pot, linked to the hall within 8 blocks, holds a batch of stew with up to three effects and 4 to 16 servings.
+* **How it behaves.** A cook consumes food units (4 / 7 / 10 / 12 at Mk I to IV) spread over stacks, including one of every food type used. A bowl right-click takes one serving and eats it at once; the bowl stays empty and reusable. A pot that still has stew cannot be overwritten. A Mk I hall cannot cook stew.
+* **Job in the game.** Communal pre-raid meals: one cook feeds the whole team.
+
+#### Sandwich
+* **What it is.** A portable meal for one player, stacking to 16, eaten at any hunger level.
+* **How it behaves.** One bread in the Base slot plus two or three different fillings. It gives one or two effects. The base bread gives nothing.
+* **Job in the game.** The casual, personal option for solo play and for cooks without a pot.
+
+#### Ingredients, groups and effects
+* **Food groups.** Six: Protein and dairy, Grain and staples, Fruit and sweets, Fish, Vegetables, Fungi and fermented. Every vanilla food has a group and traits; the kitchen tooltips list which foods feed which effect.
+* **Everyday effects (11).** Vitality (+4 health), Fortitude (+2 armor), Steadiness (+5 percent knockback resistance), Mobility (+4 percent movement), Might (+8 percent melee damage), Agility (+8 percent attack speed), Fortune (+1 luck), Recovery (heals 1 health every 5 seconds), Hearth (10 percent fire and explosion protection), Springy Step (12 percent fall protection), Strong Swimmer (+10 percent swim speed).
+* **Legendary effects (15).** Each needs foods from two specific groups, one recipe for every pair of the six groups: Firepower, Quick Hands, Brawler, Heavy Hand, Demolition, Recoil Control, Focus, Snap Aim, Fast Draw, Dead Eye, Gun Mobility, Impact, Rapid Fire, Scoped Focus and Hip Focus. They improve gun damage, reload, recoil, accuracy, aiming and draw speed, bash damage and knockback, grenade radius, headshots, movement with a gun and rate of fire (the exact percentages are in section 5.8 and in the guide).
+* **Rules.** A legendary effect uses up both of its groups, so those groups cannot also feed everyday effects, and two legendary picks cannot share a group. A sandwich holds at most two effects, a stew at most three. A Mk IV stew with three separate pairs, which uses all six groups and all six food slots, makes three legendary effects at once.
+* **Job in the game.** Ordinary effects are survival stats; legendary effects are gun stats that ask the cook to plan around groups. The two together make the cook a real specialist.
+
+#### Doubling (×2)
+* **What it is.** A way to make one effect count twice.
+* **How it behaves.** Put two different foods of the same group on the table that both feed the effect (for example cooked chicken and cooked mutton for Vitality). One food is not enough, and two stacks of the same food do not count. Unlocked at Mk III, in sandwiches and in stew. A legendary effect needs two different foods from each of its two groups, four food slots, so only Mk IV can double one. A doubled effect shows ×2 on its order card.
+* **Job in the game.** The reason to invest in a higher hall and to vary the pantry. It rewards cooks who stock a wider range of food.
+* **Designer watch-out.** The Mk IV legendary doubling was the hardest rule to explain; the screen now shows the ×2 requirement per recipe in its tooltip (open, locked at Mk III, or locked at Mk IV).
+
+#### Gather, Take back, Clear order
+* **What they do.** Gather lays out exactly the foods that make the chosen effects, taking them from the pack (it spends nothing; only cooking does). Take back puts the whole table back in the pack. Clear order empties the choices. Choosing nothing lets the hall pick effects from whatever food is on the table.
+* **Job in the game.** The player thinks in effects ("I want Vitality and Fortitude"), not in recipes and stacks.
+
+#### The active meal
+* **How it behaves.** A player has one active meal. A new meal replaces the old one. Eaten meals show as ordinary potion effects (value and time), plus a Home Zone effect. A meal lasts as long as the hall that made it allows (15 to 30 field minutes). Logging out pauses it. **Death clears it**, and milk clears it too. Inside the base zone ("home") every value doubles and the timer stops; stepping out resumes it. Returning home never refreshes the time.
+* **Job in the game.** Makes the base the best place to fight (the cook's buffs are strongest there) while meals still travel with the player, for a limited time.
+
+#### Bowl Dispenser and Milk Dispenser
+* **What they are.** Two utility blocks. The Bowl Dispenser (1 × 1 × 2) gives out bowls: right-click takes one, and crouching with empty hands opens its stock (up to 64 bowls). The Milk Dispenser holds 8,000 mB of milk (buckets add 1,000, bottles 250) and a normal use spends 250 mB, clearing every potion effect and the active meal.
+* **How they behave.** Each announces what it did (bowls left, what milk cleared, milk left). Milk is not spent if there is nothing to clear. Milk Bottles carry the same cleanse.
+* **Job in the game.** Bowls remove tedium from serving stew; milk is the "reset" for a meal the player no longer wants.
+
+### Part G. The two gun add-on mods
+
+#### Gun Guide
+* **What it is.** A client-only card that lists the controls of the gun in the player's hand, with the player's own key bindings.
+* **How it behaves.** Draw a gun and the card opens for five seconds, then shrinks to a badge; a key (configurable) toggles it. A warning appears if two actions share a key. A red JAM alert appears when the gun jams (this needs the TaCZ Durability addon).
+* **Job in the game.** Removes the biggest barrier to using many different guns: not knowing the controls.
+
+#### Gun Displays
+* **What it is.** Eleven decoration blocks for guns: stands, wall racks, glass cases.
+* **How it behaves.** Right-click with a gun to display it, again with another gun to swap, with empty hands to take it back. With the Defense Beacon installed, get them from the Weapon Platform's Supplies category. Wall racks need a solid wall. They count like any other placed block for the base score; there is no special rule for them.
+* **Job in the game.** A trophy room. Decoration with no gameplay effect.
+* **Not played yet.** Whether the owner wants displays to count more toward the base score.
+
+### Part H. Teaching and teamwork
+
+#### Starter kit
+A new player receives a Defense Beacon, the Field Guide, the Recovery Shovel and one starter gun with ammo (pack: an FK15P flintlock and 64 round balls; standalone: the weakest installed gun and 64 matching rounds), once, the first time they join.
+
+#### Field Guide
+* **What it is.** The in-game book. Fourteen pages with a side menu that shows an item icon per page; a Reference tab holds the exact numbers.
+* **How it behaves.** Every feature is a card: what it is, what it gives, how it works, how to unlock it, and red *Careful* notes for catches (the beacon only comes off with the shovel and that resets the campaign). It is written for a player who has just spawned in and is not the design document. The same tone applies to tooltips, confirmations and hints. Tests fail if a card is out of format, a registered block or item has no card, or a number in the guide stops matching the code.
+* **Job in the game.** Pillar 5. Writing rules: `docs/GUIDE-STYLE.md`.
+
+#### Playing together
+* **What is shared.** The beacon, its upgrades, the raid level cap and the reward chest.
+* **What is personal.** Each player's Support Platform, Cannon, fire support choice and active meal.
+* **Designer watch-out.** One player's shovel can reset everyone's campaign. Two-human co-op has not been played yet.
+
+#### Operator commands
+`/arsenal claim`, `upgrade <branch>`, `repair`; operators also have `boundary`, `test-raid [type]` and `next-raid <type>` to test raid types.
+
+### What to playtest first
+
+1. The tier curve: does a first-week team survive tier 0 and want to raise the cap?
+2. Special raid frequency (50 percent from raid 4) and whether the air raid has a counter.
+3. Mess Hall levels: do 15 / 20 / 25 / 30 minutes and the Mk III doubling step each feel like a real upgrade?
+4. Whether energy income is enough for the cannon purchase and first upgrades within two or three raids.
+5. Two players on one server: shared beacon, personal cannons, the shovel reset.
+
+---
+
+## 5. Systems (rulebook with exact numbers)
 
 ### 5.1 Defense Beacon and base zone
 * One beacon per world; its zone is a glowing grid. Core level sets the radius: **8, 12, 18, 24** blocks (Mk-1 to Mk-4).
@@ -165,7 +462,7 @@ Tuning knobs: `Economy`, `CannonUpgrades`, `SupportRules`, `RaidRewards`, `Stand
 * Art: hand-made 3D models (shop, platform Mk-1 to Mk-4, cannon, parcel) and painted 64x64 sprites; red parachute canopy drawn procedurally.
 
 ## 8. Technical notes for designers
-* Network protocol **26** (message 14: raid marks, exclamation marks and parachutes; 16: open kitchen preview; the v2 meal HUD message 15 was removed); bump on any packet change.
+* Network protocol **28** (raised from 26 by the 0.0.8 kitchen preview rework, 27, and the 0.0.11 open-food-slots menu change, 28); bump on any packet or menu-behaviour change. Message 14 carries raid marks, exclamation marks and parachutes; the kitchen preview is its own message; the v2 meal HUD message 15 was removed.
 * Server owns all rules; clients render. Campaign state in `CampaignData`; per-player support state in `SupportData`; prepared meals in `PlayerMeals` SavedData, kitchen inventories/links and communal servings in block entities.
 * Raid persistent flags are not synced automatically, so marks (red exclamation mark, red parachute) use their own idempotent packet sent every second. Meal MobEffects and backend attributes use native synchronization; v4 adds no packet.
 * Operator test commands: `/arsenal test-raid <type>`, `/arsenal next-raid <type>`.

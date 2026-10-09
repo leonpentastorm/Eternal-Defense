@@ -2,9 +2,9 @@
 
 Read `docs/HANDOFF.md` first: it says where the project stands, how to build and test, what is unverified and what to do next.
 
-## Current owner override — Mess Hall v6
+## Branch note (2026-10-09)
 
-Work and push this feature on `feature/messhall-ver-6`, as explicitly requested by the owner. Do not merge or push these changes to `dev` or `main`. Build/test execution and the feature-branch push are authorized; include the newly required backend JAR in the test ZIP. See `docs/HANDOFF.md` for validation and remaining playtests.
+The Mess Hall v6 work (`feature/messhall-ver-6`, project 0.0.7 to 0.0.11) was merged into `dev` at the owner's request and the merged feature branches were deleted. Work on `dev` as the rules below say; `main` still only receives merges when the owner asks. Build/test execution is authorized; include any newly required backend JAR in the test ZIP.
 
 ## Rules of this project
 
