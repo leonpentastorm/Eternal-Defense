@@ -1,5 +1,5 @@
 # Real-client checks for the Field Guide pass (project 0.0.9)
-# Scenario tools/qa/QaGuide.java.txt; pack edition run, then standalone edition run. Both: 17 checks, 17 pass, 79 screenshots; 12 are kept here.
+# Scenario tools/qa/QaGuide.java.txt; pack edition run, then standalone edition run, both on the final text. Both: 17 checks, 17 pass, 79 screenshots; 13 are kept here.
 
 ## pack
 QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
