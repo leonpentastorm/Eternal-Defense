@@ -118,9 +118,11 @@ public final class QaHunt {
         step(2,()->look(SAT.offset(3,1,4),SAT.getX()+.5,SAT.getY()+1,SAT.getZ()+.5),"close to the satellite");
         step(30,()->shot("h2_satellite"),"shot");
         // ---- a real board at Mk III (Garrison lookups in a normal world) ---------------------------------------------------------------
-        step(5,()->srv(()->{var h=h();Hunts.reset(sl());h.satelliteMk=3;h.table=TABLE;h.satellite=SAT;Hunts.fillIfLinked(sl());
-            for(var o:h.board.offers)log("QA_NOTE offer {} {} {} at {} {}, {} m {}",o.id,o.codename,o.kind.id,o.x,o.z,o.distance,TacticalRules.compass(o.bearing));}),"fill the board at Mk III");
-        step(10,()->{var n=srvGet(()->h().board.offers.size());check("a Mk III board has 4 offers",n==4,"offers="+n);
+        step(5,()->srv(()->{var h=h();Hunts.reset(sl());h.satelliteMk=3;h.table=TABLE;h.satellite=SAT;Hunts.fillIfLinked(sl());}),"fill the board at Mk III");
+        // at most one Garrison lookup per server tick: a second Garrison waits for the next fill pass (once a second)
+        until("the board is full",400,()->srvGet(()->h().board.offers.size()>=4),()->{});
+        step(10,()->{srv(()->{for(var o:h().board.offers)log("QA_NOTE offer {} {} {} at {} {}, {} m {}",o.id,o.codename,o.kind.id,o.x,o.z,o.distance,TacticalRules.compass(o.bearing));});
+            var n=srvGet(()->h().board.offers.size());check("a Mk III board has 4 offers",n==4,"offers="+n);
             var minSep=srvGet(()->{double m=360;var b=h().board.bearings();for(int i=0;i<b.size();i++)for(int j=i+1;j<b.size();j++)m=Math.min(m,TacticalRules.angle(b.get(i),b.get(j)));return m;});
             check("offers lie at least 40 degrees apart",minSep>=40,"closest="+minSep);
             var dist=srvGet(()->h().board.offers.stream().allMatch(o->o.distance>=TacticalRules.minDistance(d().radius())&&o.distance<=1024));check("offers lie between the zone + 150 and 1024 blocks",dist,"");},"board checks");

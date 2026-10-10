@@ -61,30 +61,41 @@ final class Hunts {
         if(mk==null)return;
         int capacity=TacticalRules.offers(mk),wanted=h.board.toFill(capacity);
         if(wanted==0&&h.board.filled)return;
-        for(int i=0;i<wanted;i++)if(!addOffer(l,d,h,mk))break;
+        // a second Garrison lookup in one server tick waits for the next pass (the server tick fills again within a second)
+        for(int i=0;i<wanted;i++){var added=addOffer(l,d,h,mk,true);if(added==Added.LATER)return;if(added==Added.NO)break;}
         if(!h.board.filled)h.board.lastDay=TacticalRules.day(l.getDayTime());   // the first fill counts as this day's offers
         h.board.filledTo(capacity);h.setDirty();
     }
-    /** One new offer: a random class the satellite can find; a Garrison needs a structure in range, else it becomes a Patrol. */
-    static boolean addOffer(ServerLevel l,CampaignData d,HuntData h,int mk){
+    enum Added{YES,NO,LATER}
+    /** The game time of the last Garrison lookup: at most one per server tick when the board fills (each costs up to a few tens of ms). */
+    private static long lookupAt=Long.MIN_VALUE;
+    /**
+     * One new offer: a random class the satellite can find; a Garrison needs a structure in range, else it becomes a Patrol. With
+     * {@code mayWait}, a Garrison rolled in a tick that already ran a lookup is not made now ({@link Added#LATER}); the next pass rolls again.
+     */
+    static Added addOffer(ServerLevel l,CampaignData d,HuntData h,int mk,boolean mayWait){
         // a well-mixed seed: java.util.Random's first draws from closely related seeds come out alike (a whole board of one class)
         var random=new Random(TacticalRules.mix(l.getSeed(),h.board.nextId,l.getGameTime()));
         var kinds=TacticalRules.classes(mk);var kind=kinds.get(random.nextInt(kinds.size()));
         int range=TacticalRules.range(mk);var taken=h.board.bearings();
         TacticalRules.Inside inside=(x,z)->l.getWorldBorder().isWithinBounds(x,z);
         TacticalRules.Spot spot=null;
-        if(kind==TacticalRules.Kind.GARRISON){spot=garrison(l,d.beacon.getX(),d.beacon.getZ(),d.radius(),range,taken,random);if(spot==null)kind=TacticalRules.Kind.PATROL;}
+        if(kind==TacticalRules.Kind.GARRISON){
+            if(mayWait&&lookupAt==l.getGameTime())return Added.LATER;
+            lookupAt=l.getGameTime();
+            spot=garrison(l,d.beacon.getX(),d.beacon.getZ(),d.radius(),range,taken,random);if(spot==null)kind=TacticalRules.Kind.PATROL;
+        }
         if(spot==null)spot=TacticalRules.place(random,d.beacon.getX(),d.beacon.getZ(),d.radius(),range,taken,inside);
-        if(spot==null)return false;
+        if(spot==null)return Added.NO;
         long id=h.board.nextId++;
         h.board.offers.add(new HuntBoard.Offer(id,kind,TacticalRules.codename(l.getSeed()*31+id),spot.x(),spot.z(),spot.distance(),spot.bearing()));
-        h.setDirty();return true;
+        h.setDirty();return Added.YES;
     }
     /** Vanilla surface structures a Garrison may hold (modded structures are ignored). Their loot is never touched. */
     static final Set<ResourceLocation> GARRISON_STRUCTURES=Set.of(new ResourceLocation("pillager_outpost"),new ResourceLocation("desert_pyramid"),new ResourceLocation("jungle_pyramid"),
         new ResourceLocation("swamp_hut"),new ResourceLocation("igloo"),new ResourceLocation("mansion"));
     /** At most this many structure checks per Garrison offer. */
-    static final int GARRISON_CHECKS=6;
+    static final int GARRISON_CHECKS=4;
     /**
      * A Garrison objective: the location of a whitelisted vanilla structure within the satellite's range, looked up once when the offer is made.
      * Candidates come from each structure set's spread (pure arithmetic); only those in the distance window, apart from the other offers,
@@ -144,10 +155,10 @@ final class Hunts {
             showMk(l,h);
             var mk=uplink(l,d,h);
             if(mk!=null){
-                if(!h.board.filled)fillIfLinked(l);
+                if(!h.board.filled||h.board.toFill(TacticalRules.offers(mk))>0)fillIfLinked(l);
                 // completed offers come back one a dawn
                 int n=h.board.dawn(TacticalRules.day(l.getDayTime()),TacticalRules.offers(mk));
-                for(int i=0;i<n;i++)if(addOffer(l,d,h,mk))h.setDirty();
+                for(int i=0;i<n;i++)if(addOffer(l,d,h,mk,false)==Added.YES)h.setDirty();
                 if(n>0)refresh(l);
             }
         }
@@ -310,7 +321,7 @@ final class Hunts {
     /** No ground for the warband at the objective: the mission ends, the offer is replaced right away. */
     static void unreachable(ServerLevel l,CampaignData d,HuntData h){
         var ended=h.board.unreachable();if(ended==null)return;
-        h.missionMap=null;h.setDirty();var mk=uplink(l,d,h);if(mk!=null)addOffer(l,d,h,mk);
+        h.missionMap=null;h.setDirty();var mk=uplink(l,d,h);if(mk!=null)addOffer(l,d,h,mk,false);
         sync(l,h,null);announce(l,Component.translatable("gui.arsenal_beacon.tactical.unreachable",ended.offer.codename));
     }
 
