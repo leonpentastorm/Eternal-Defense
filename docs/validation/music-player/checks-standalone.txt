@@ -1,0 +1,57 @@
+# Real client, STANDALONE edition, 1280 x 720, GUI scale auto (2026-10-10). QaWorld scenario r7 (tools/qa/QaWorld.java.txt), parts: music settings menu fire.
+# Sound: OpenAL Soft 'wave' backend (ALSOFT_CONF), so the game's own audio output was recorded to a file; see audio-capture-standalone.txt.
+# The two FAIL lines are harness timing, explained in docs/MUSIC-PLAYER-TESTING.md.
+05:31:08 OpenAL initialized on device Wave File Writer
+05:31:44 QA_CHECK PASS wave 1 of a hard raid plays a song of the ordinary pool phase_one_assault/normal
+05:31:44 QA_CHECK PASS it is the song every player of this raid hears on wave 1 phase_one_assault/normal expected phase_one_assault
+05:31:44 QA_CHECK PASS the game's own music waits while it plays 
+05:31:51 QA_CHECK PASS wave 2 changes to another song of the pool raid_normal/normal after phase_one_assault
+05:31:51 QA_CHECK PASS the wave 2 song is the planned one raid_normal/normal
+05:31:58 QA_CHECK PASS the boss wave of a hard raid plays a boss song raid_boss/boss
+05:32:05 QA_CHECK PASS far from the beacon the card hides but the song and its player stay near=false raid_boss/boss
+05:32:10 QA_CHECK PASS the music player can be hidden while the song keeps playing raid_boss/boss
+05:32:14 QA_CHECK PASS a special raid plays a special song anomaly_protocol/special
+05:32:20 [Create Arsenal] Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.
+05:32:20 [System] [CHAT] [Create Arsenal] Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.
+05:33:40 QA_TIMEOUT victory
+05:33:40 QA_CHECK FAIL after VICTORY the raid song stops and the fanfare holds the music none holds=false
+05:33:40 QA_CHECK FAIL after the fanfare the game's music is still held for a quiet moment 
+05:33:54 QA_CHECK PASS the Settings tab has the two music switches 
+05:33:55 QA_CHECK PASS Raid music off: saved, and the song stops none
+05:33:56 QA_CHECK PASS Raid music on again: the wave's song comes back phase_one_assault/normal
+05:33:59 QA_CHECK PASS Music player off is saved 
+05:33:59 QA_CHECK PASS Music player on again 
+05:34:00 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@6a1f63fd
+05:34:00 QA_CHECK PASS Area of effect is listed with the three-level upgrades index 4
+05:34:02 QA_CHECK PASS a maxed upgrade is still hovered (inactive but hovered) active=false hovered=true
+05:34:03 QA_CHECK PASS the list scrolls to its end and shows the Starshell scroll=5 visible=7
+05:34:03 QA_CHECK PASS rows above the window are hidden 
+05:34:03 QA_CHECK PASS choosing a type is stored fire=9
+05:34:07 QA_CHECK PASS EXPLOSION (falling shells): the flare is the chosen type EXPLOSION
+05:34:22 QA_CHECK PASS EXPLOSION (falling shells): 6 shot(s) fired shots=6
+05:34:22 QA_CHECK PASS explosion: shells were seen falling (Ordnance entities on the client) samples=181
+05:34:22 QA_CHECK PASS explosion: zombies inside the box died alive=0
+05:34:25 QA_CHECK PASS CLUSTER: the flare is the chosen type CLUSTER
+05:34:37 QA_CHECK PASS CLUSTER: 5 shot(s) fired shots=5
+05:34:37 QA_CHECK PASS cluster: the bomblets killed or hurt the zombies alive=1
+05:34:40 QA_CHECK PASS CRYO: the flare is the chosen type CRYO
+05:34:50 QA_CHECK PASS CRYO: 4 shot(s) fired shots=4
+05:34:50 QA_CHECK PASS cryo: a zombie was frozen and slowed (Slowness V) 
+05:34:54 QA_CHECK PASS NAPALM: the flare is the chosen type NAPALM
+05:35:09 QA_CHECK PASS NAPALM: 4 shot(s) fired shots=4
+05:35:09 QA_CHECK PASS napalm: zombies burned at night (the ground fire) 
+05:35:09 QA_CHECK PASS napalm: the zombies died in the fire alive=0
+05:35:12 QA_CHECK PASS GRAVITY: the flare is the chosen type GRAVITY
+05:35:22 QA_CHECK PASS GRAVITY: 3 shot(s) fired shots=3
+05:35:22 QA_CHECK PASS gravity: the zombies were dragged toward the flare start=2.377275035905454 closest=0.33834417209763695
+05:35:25 QA_CHECK PASS SHOCKWAVE: the flare is the chosen type SHOCKWAVE
+05:35:34 QA_CHECK PASS SHOCKWAVE: 4 shot(s) fired shots=4
+05:35:34 QA_CHECK PASS shockwave: the zombies were thrown away from the flare start=2.3772750359054555 farthest=10.808973082640408
+05:35:38 QA_CHECK PASS STARSHELL: the flare is the chosen type STARSHELL
+05:36:11 QA_CHECK PASS STARSHELL: 1 shot(s) fired shots=1
+05:36:11 QA_CHECK PASS starshell: the star burned in the sky 
+05:36:11 QA_CHECK PASS starshell: zombies glowed 
+05:36:11 QA_CHECK PASS starshell: the player saw in the dark (Night Vision) 
+05:36:11 QA_CHECK PASS starshell: deals no damage alive=6
+05:39:14 QA_TIMEOUT the bomb is falling
+05:39:15 QA_DONE pass=46 fail=2

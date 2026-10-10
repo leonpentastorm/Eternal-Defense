@@ -6,6 +6,10 @@
 * Unit tests: 154 pass, 0 fail (`:arsenal-beacon:test`). New `BeautifyPathTest`: raid music choice (`RaidMusic.cue`), the fall of a round (`Ordnance.Fall.drop`: lands exactly at the flight time, a bomb bores on and stops), screen shake falloff, the scrolling type list (`CannonScreen.visibleRows`, `scrollTo`), the upgrade order (three-level upgrades and Area of effect first), shell counts, damage shares and radii of the six new types, the pull and push helpers (never past the centre, bosses and knockback resistance), and that the Field Guide quotes the new numbers. `LangKeysTest` covers the new names, descriptions and subtitles and the guide's card rules; `SupportTest` now expects an out-of-range fire type to clamp to the Starshell.
 * Audio was checked by analysis only (levels per band, loudness, spectrograms, that loops have no gap or click at the seam), not by listening: the author of these files cannot hear them.
 
+## Run in the next round (0.0.17)
+
+The real-client checks of this round were run with the music player: the cannon menu, the six new fire supports against zombies, the falling shell and bomb, and the 11 Raider Gate GameTests with the exit gate. Results and evidence: `docs/MUSIC-PLAYER-TESTING.md`, `docs/validation/music-player/`.
+
 ## Not run in this round
 
 * A real client: music switching and looping, the fanfare, every sound in the game, the falling rounds and their models, the blasts at a distance, the screen shake, the six new fire supports against real mobs, the exit gate (the gate GameTest was extended but not run), the cannon menu scroll and tooltips at several GUI scales.

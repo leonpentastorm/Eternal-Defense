@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.17 — Raid music player: your songs, a new song every wave, a player under the beacon card (2026-10-10)
+
+Branch `feature/music-player` (from `feature/beautify-path`, 0.0.16). **No packet was added or changed: the network protocol stays 28.** Rules: GDD section 7 and Part B (*Raid music and the music player*); tests: `docs/MUSIC-PLAYER-TESTING.md`.
+
+* **Your songs.** Barren Gap, Line Holder, Phase One Assault and Silent Trigger (ordinary raids), Boss Battle (boss wave) and Anomaly Protocol (special raids) are converted to Ogg Vorbis, trimmed of silence at both ends and brought to the same loudness (-16 LUFS) by `tools/audio/import_songs.py`. The three original themes of 0.0.16 stay in the pools (Hold the Line, Iron Tyrant, Strange Signals), so the boss and special pools also have two songs each to alternate.
+* **A new song every wave.** Each wave starts a song from its pool and loops it (seamless, no gap) until the next wave, which fades to another song of the pool (3 s out, 1.5 s in); a wave never repeats the song of the wave before. The order is random but fixed per raid and base, so every player hears the same song. The boss wave of a hard raid plays a boss song (0.0.16 played the boss theme for the whole hard raid). The music now plays for every player in the Overworld during a raid, not only near the beacon. Winning still plays the fanfare.
+* **The player.** A strip right under the beacon's status card: the song's name, a moving level meter, the time and a progress bar. It stays for the whole raid, also away from the beacon where the status card hides; it says "muted" when the Music slider is at 0.
+* **Settings.** The beacon panel's Settings tab now has two personal switches on the right, *Raid music* and *Music player*, saved on your own computer (`config/arsenal-beacon-client.toml`). With Raid music off the game's own music keeps playing during raids and the fanfare is replaced by the old toast sound.
+* The game's music manager is now held while a raid song plays (a client mixin on `MusicManager.tick`, replacing the 0.0.16 mixin on `Minecraft.getSituationalMusic`), so the raid music can fade and loop by itself.
+* Field Guide: the Raids card says every wave starts a new song, where its name shows, and where to turn it off.
+
 ## 0.0.16 — Beautify Path: raid music, falling shells, bigger blasts, exit gates, six new fire supports (2026-10-10)
 
 Branch `feature/beautify-path` (from `feature/optimize-path`, 0.0.15). **No packet was added or changed: the network protocol stays 28** (new sounds and the new entity are registry entries; an older client is refused by the registry check). Rules: GDD section 5.5 and section 7; tests: `docs/BEAUTIFY-PATH-TESTING.md`.

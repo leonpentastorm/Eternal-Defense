@@ -3,17 +3,8 @@ package dev.createarsenal.beacon;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The pure parts of the Beautify Path (0.0.16): raid music choice, the falling ordnance, the scrolling cannon menu and the six new fire supports. */
+/** The pure parts of the Beautify Path (0.0.16): the falling ordnance, the scrolling cannon menu and the six new fire supports. */
 final class BeautifyPathTest {
-    @Test void raidMusicFollowsTheRaid(){
-        assertEquals("normal",RaidMusic.cue(true,"raid",true,false,"normal"));
-        assertEquals("boss",RaidMusic.cue(true,"raid",true,true,"normal"),"a hard raid plays the boss theme from the start");
-        assertEquals("boss",RaidMusic.cue(true,"raid",true,true,"siege"),"hard beats special");
-        assertEquals("special",RaidMusic.cue(true,"raid",true,false,"siege"));
-        assertEquals("",RaidMusic.cue(true,"raid",false,false,"normal"),"far from the beacon: the game's own music");
-        assertEquals("",RaidMusic.cue(true,"peace",true,false,"normal"));
-        assertEquals("",RaidMusic.cue(false,"raid",true,false,"normal"),"stale beacon state plays nothing");
-    }
     @Test void ordnanceFallsInItsFlightTimeThenTravelsOn(){
         assertEquals(0,Ordnance.Fall.drop(48,30,0,0,0),1e-9);
         assertEquals(24,Ordnance.Fall.drop(48,30,0,0,15),1e-9);

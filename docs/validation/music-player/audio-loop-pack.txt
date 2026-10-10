@@ -1,0 +1,42 @@
+# The seamless loop, from the recorded game audio of the pack run (capture starts 05:42:55; the loop part set a special raid wave that plays Strange Signals, 63.5 s long, at 05:44:53 = 118 s, and held it for 75 s).
+# columns: time into the capture, loudness, best-matching file, normalised cross-correlation, position in that file.
+  118.0s -22.9 dB raid_special r=0.71 at 0.5s
+  120.0s -22.5 dB raid_special r=0.98 at 2.5s
+  122.0s -22.7 dB raid_special r=0.99 at 4.5s
+  124.0s -17.0 dB raid_special r=0.97 at 6.5s
+  126.0s -16.9 dB raid_special r=0.98 at 8.5s
+  128.0s -16.3 dB raid_special r=0.98 at 10.5s
+  130.0s -15.6 dB raid_special r=0.98 at 12.5s
+  132.0s -16.6 dB raid_special r=0.95 at 14.5s
+  134.0s -16.0 dB raid_special r=0.94 at 16.5s
+  136.0s -16.1 dB raid_special r=0.96 at 18.5s
+  138.0s -15.5 dB raid_special r=0.98 at 20.5s
+  140.0s -15.4 dB raid_special r=0.98 at 22.5s
+  142.0s -15.0 dB raid_special r=0.98 at 24.5s
+  144.0s -15.5 dB raid_special r=0.96 at 26.5s
+  146.0s -14.9 dB raid_special r=0.92 at 28.5s
+  148.0s -14.1 dB raid_special r=0.95 at 30.5s
+  150.0s -14.3 dB raid_special r=0.97 at 32.5s
+  152.0s -14.1 dB raid_special r=0.98 at 34.5s
+  154.0s -14.6 dB raid_special r=0.98 at 36.5s
+  156.0s -14.6 dB raid_special r=0.97 at 38.5s
+  158.0s -14.1 dB raid_special r=0.96 at 40.5s
+  160.0s -14.0 dB raid_special r=0.95 at 42.5s
+  162.0s -14.0 dB raid_special r=0.95 at 44.5s
+  164.0s -15.1 dB raid_special r=0.97 at 46.5s
+  166.0s -16.3 dB raid_special r=0.99 at 48.5s
+  168.0s -18.2 dB raid_special r=0.99 at 50.5s
+  170.0s -18.5 dB raid_special r=0.99 at 52.5s
+  172.0s -19.2 dB raid_special r=0.98 at 54.5s
+  174.0s -19.5 dB raid_special r=0.97 at 56.5s
+  176.0s -19.1 dB raid_special r=0.97 at 58.5s
+  178.0s -19.4 dB raid_special r=0.98 at 60.5s
+  180.0s -22.1 dB raid_special r=0.44 at 13.1s
+  182.0s -24.6 dB raid_special r=1.00 at 1.0s
+  184.0s -22.5 dB raid_special r=1.00 at 3.0s
+  186.0s -21.7 dB raid_special r=1.00 at 5.0s
+  188.0s -16.5 dB raid_special r=0.97 at 7.0s
+  190.0s -16.7 dB raid_special r=0.93 at 9.0s
+  192.0s -19.5 dB raid_special r=0.67 at 11.0s
+# At 178 s the song is 60.5 s in; the 180 s window holds the seam; at 182 s it is 1.0 s in: it started over at 181.0 s, exactly when the 63.5 s file ended.
+# 50 ms RMS from 176 to 186 s: min -29.2 dB (at 182.6 s), median -21.9 dB, max -14.3 dB: no silent gap at the seam.

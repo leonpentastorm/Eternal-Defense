@@ -864,6 +864,130 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             strangerMenu=false;srv(()->{sl().getBlockState(at(10,0,0)).use(sl(),sp(),net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at(10,0,0)),net.minecraft.core.Direction.NORTH,at(10,0,0),false));strangerMenu=!(sp().containerMenu instanceof SupportPlatform.PlatformMenu);});},"no beacon refused");
         step(10,()->check("without a beacon the platform will not open",strangerMenu,""),"disabled platform");
     }
+    // ======================= MUSIC PLAYER + BEAUTIFY QA (flag file /tmp/claude-0/qa-r7.flag; parts: music settings menu fire) =======================
+    static boolean part7(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r7.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static void raidState(String type,boolean hard,int wave){srv(()->{var d=CampaignData.get(sl());d.phase="raid";d.raidType=type;d.hardRaid=hard;d.raidTier=0;d.introRaid=false;d.introCompleted=true;d.wave=wave;d.raidsStarted=7;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.setDirty();BeaconNetwork.syncNearby(sl(),d);});}
+    static String playing(){var s=RaidMusic.nowPlaying();return s==null?"none":s.id()+"/"+s.pool();}
+    static RaidPlaylist.Song expected(String pool,int wave){return srvGet(()->{var d=CampaignData.get(sl());return RaidPlaylist.song(pool,RaidPlaylist.seed(d.beacon.asLong(),d.raidsStarted),wave);});}
+    static RaidPlaylist.Song wave1;static int QA_LOOP_WAVE;
+    static Object field(Object o,String name){try{var f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(Exception e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static double meanDist;static double minMean,maxMean;static boolean sawSlowFreeze,sawBurning,sawGlow,sawNightVision,sawStar,shellShot;static int ordnanceSeen;
+    static double mean(Vec3 c){double s=0;int n=0;for(var e:sl().getEntities(null,SupportFlares.blastBox(c,12)))if(e instanceof net.minecraft.world.entity.monster.Zombie z&&z.isAlive()){s+=Math.hypot(z.getX()-c.x,z.getZ()-c.z);n++;}return n==0?Double.NaN:s/n;}
+    static void watchFire(){
+        minMean=Double.MAX_VALUE;maxMean=0;sawSlowFreeze=sawBurning=sawGlow=sawNightVision=sawStar=false;ordnanceSeen=0;SAMPLERS.clear();
+        SAMPLERS.add(()->{if(fireAt2==null)return;double m=srvGet(()->mean(fireAt2));if(!Double.isNaN(m)){minMean=Math.min(minMean,m);maxMean=Math.max(maxMean,m);}
+            srv(()->{for(var e:sl().getEntities(null,SupportFlares.blastBox(fireAt2,12)))if(e instanceof net.minecraft.world.entity.monster.Zombie z&&z.isAlive()){
+                var slow=z.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);if(slow!=null&&slow.getAmplifier()==CannonUpgrades.CRYO_SLOW_AMPLIFIER&&z.getTicksFrozen()>0)sawSlowFreeze=true;
+                if(z.isOnFire())sawBurning=true;if(z.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING))sawGlow=true;}
+                if(sp().hasEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION))sawNightVision=true;});
+            if(mc().level!=null)for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o){ordnanceSeen++;if(o.style()==Ordnance.STAR)sawStar=true;}
+        });
+    }
+    static void freeZombies(){for(var e:sl().getEntities(null,SupportFlares.blastBox(fireAt2,8)))if(e instanceof net.minecraft.world.entity.monster.Zombie z){z.setNoAi(false);}sp().setGameMode(GameType.CREATIVE);}
+    static void scriptR7(){
+        step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
+        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(10,()->placeHeld(at(0,-1,0)),"place platform");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(10,()->placeHeld(at(8,-1,6)),"place cannon");
+        step(20,()->{srv(()->inv().clearContent());},"settle");
+        if(part7("music")){
+            step(60,()->{mc().options.hideGui=false;face(sx+.5,sy,sz-4+.5,180,0);RaidMusic.setEnabled(true);RaidMusic.setPlayerShown(true);raidState("normal",true,1);},"a hard raid, wave 1");
+            step(80,()->{wave1=RaidMusic.nowPlaying();var want=expected("normal",1);check("wave 1 of a hard raid plays a song of the ordinary pool",wave1!=null&&wave1.pool().equals("normal"),playing());
+                check("it is the song every player of this raid hears on wave 1",wave1!=null&&wave1.equals(want),playing()+" expected "+(want==null?"none":want.id()));
+                check("the game's own music waits while it plays",RaidMusic.holdsMusic(),"");shot("r7_music_wave1");},"wave 1 song");
+            step(60,()->raidState("normal",true,2),"wave 2");
+            step(80,()->{var s=RaidMusic.nowPlaying();check("wave 2 changes to another song of the pool",s!=null&&s.pool().equals("normal")&&!s.equals(wave1),playing()+" after "+(wave1==null?"none":wave1.id()));check("the wave 2 song is the planned one",s!=null&&s.equals(expected("normal",2)),playing());shot("r7_music_wave2");},"wave 2 song");
+            step(60,()->raidState("normal",true,3),"boss wave");
+            step(80,()->{check("the boss wave of a hard raid plays a boss song",RaidMusic.nowPlaying()!=null&&RaidMusic.nowPlaying().pool().equals("boss"),playing());shot("r7_music_boss");},"boss song");
+            step(60,()->{mc().options.hideGui=false;srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+150.5,180,0));},"walk far from the beacon");
+            step(80,()->{boolean near=srvGet(()->ArsenalBeacon.near(sp(),CampaignData.get(sl())));check("far from the beacon the card hides but the song and its player stay",!near&&RaidMusic.nowPlaying()!=null,"near="+near+" "+playing());shot("r7_music_far");},"far");
+            step(10,()->RaidMusic.setPlayerShown(false),"player off");
+            step(20,()->{check("the music player can be hidden while the song keeps playing",!RaidMusic.playerShown()&&RaidMusic.nowPlaying()!=null,playing());shot("r7_music_player_hidden");RaidMusic.setPlayerShown(true);},"hidden");
+            step(60,()->{face(sx+.5,sy,sz-4+.5,180,0);raidState("siege",false,1);},"a special raid");
+            step(80,()->{check("a special raid plays a special song",RaidMusic.nowPlaying()!=null&&RaidMusic.nowPlaying().pool().equals("special"),playing());shot("r7_music_special");},"special");
+            step(10,()->{mc().options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(0.0);},"music volume 0");
+            step(20,()->{shot("r7_music_muted");mc().options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(1.0);},"muted");
+            // the real end of a raid: the last wave is cleared on the server, which announces VICTORY (standalone only: the pack's
+            // completion cache needs Create items, which the development runtime does not have)
+            if(BuildFlavor.STANDALONE){
+            step(2,()->srv(()->{var d=CampaignData.get(sl());d.raidType="normal";d.hardRaid=false;d.wave=Rules.waves(d.raidTier);d.spawnRemaining=0;d.raiders.clear();d.setDirty();}),"clear the last wave");
+            until("victory",400,()->!srvGet(()->CampaignData.get(sl()).phase.equals("raid"))&&RaidMusic.nowPlaying()==null,()->{});
+            step(10,()->{check("after VICTORY the raid song stops and the fanfare holds the music",RaidMusic.nowPlaying()==null&&RaidMusic.holdsMusic(),playing()+" holds="+RaidMusic.holdsMusic());shot("r7_music_victory");},"victory");
+            step(260,()->{},"the fanfare plays");
+            step(5,()->{check("after the fanfare the game's music is still held for a quiet moment",RaidMusic.holdsMusic(),"");},"quiet after the fanfare");
+            }
+        }
+        if(part7("settings")){
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.damage.clear();d.setDirty();BeaconNetwork.syncNearby(sl(),d);}),"back to preparation");
+            step(5,()->{face(sx+.5,sy,sz-6+.5,180,0);raidState("normal",false,1);},"a raid again");
+            step(60,()->{var s=new BeaconClient.ControlScreen();s.tab=4;mc().setScreen(s);},"open settings");
+            step(20,()->{check("the Settings tab has the two music switches",mc().screen instanceof BeaconClient.ControlScreen s&&s.music!=null&&s.player!=null,"");shot("r7_settings");},"settings");
+            step(2,()->{if(mc().screen instanceof BeaconClient.ControlScreen s)press(s.music);},"turn raid music off");
+            step(20,()->{check("Raid music off: saved, and the song stops",!RaidMusic.enabled()&&RaidMusic.nowPlaying()==null&&!RaidMusic.holdsMusic(),playing());shot("r7_settings_music_off");},"music off");
+            step(2,()->{if(mc().screen instanceof BeaconClient.ControlScreen s)press(s.music);},"turn it on again");
+            step(40,()->{check("Raid music on again: the wave's song comes back",RaidMusic.enabled()&&RaidMusic.nowPlaying()!=null,playing());},"music on");
+            step(2,()->{if(mc().screen instanceof BeaconClient.ControlScreen s)press(s.player);},"music player off");
+            step(10,()->{check("Music player off is saved",!RaidMusic.playerShown(),"");if(mc().screen instanceof BeaconClient.ControlScreen s)press(s.player);},"player toggle");
+            step(5,()->{check("Music player on again",RaidMusic.playerShown(),"");mc().setScreen(null);},"player on");
+            step(2,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.setDirty();BeaconNetwork.syncNearby(sl(),d);}),"end the raid");
+        }
+        if(part7("menu")){
+            step(5,()->{mc().options.hideGui=false;energy(100);near();srv(()->{var b=SupportData.get(sl()).of(sp().getUUID());b.up[CannonUpgrades.Upgrade.AOE.ordinal()]=CannonUpgrades.Upgrade.AOE.max();b.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=1;SupportData.get(sl()).setDirty();});},"max Area of effect");
+            step(10,()->srv(()->{sl().getBlockState(at(8,0,6)).use(sl(),sp(),net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at(8,0,6)),net.minecraft.core.Direction.NORTH,at(8,0,6),false));}),"click the cannon");
+            step(30,()->{check("the cannon menu opens",mc().screen instanceof CannonScreen,String.valueOf(mc().screen));
+                var order=CannonScreen.ORDER;check("Area of effect is listed with the three-level upgrades",order.indexOf(CannonUpgrades.Upgrade.AOE)<5,"index "+order.indexOf(CannonUpgrades.Upgrade.AOE));hover(2,2);shot("r7_cannon_menu");},"menu");
+            step(3,()->{if(mc().screen instanceof CannonScreen s){@SuppressWarnings("unchecked") var ups=(List<Ui.UiButton>)field(s,"ups");var row=ups.get(CannonScreen.ORDER.indexOf(CannonUpgrades.Upgrade.AOE));hover(row.getX()+row.getWidth()/2.0,row.getY()+row.getHeight()/2.0);}},"hover the maxed Area of effect");
+            step(6,()->{shot("r7_cannon_maxed_tooltip");if(mc().screen instanceof CannonScreen s){@SuppressWarnings("unchecked") var ups=(List<Ui.UiButton>)field(s,"ups");var row=ups.get(CannonScreen.ORDER.indexOf(CannonUpgrades.Upgrade.AOE));check("a maxed upgrade is still hovered (inactive but hovered)",!row.active&&row.isHovered(),"active="+row.active+" hovered="+row.isHovered());}},"maxed tooltip");
+            step(3,()->{if(mc().screen instanceof CannonScreen s){@SuppressWarnings("unchecked") var types=(List<Ui.UiButton>)field(s,"types");var first=types.get(0);for(int i=0;i<12;i++)s.mouseScrolled(first.getX()+10,first.getY()+5,-1);hover(2,2);}},"scroll the fire support list");
+            step(6,()->{if(mc().screen instanceof CannonScreen s){int scroll=(int)field(s,"typeScroll"),visible=(int)field(s,"visibleTypes");@SuppressWarnings("unchecked") var types=(List<Ui.UiButton>)field(s,"types");
+                check("the list scrolls to its end and shows the Starshell",scroll==types.size()-visible&&types.get(types.size()-1).visible,"scroll="+scroll+" visible="+visible);
+                check("rows above the window are hidden",visible>=types.size()||!types.get(0).visible,"");}shot("r7_cannon_menu_scrolled");},"scrolled");
+            step(3,()->{act(CannonControl.SELECT,CannonUpgrades.FireType.GRAVITY.ordinal());},"choose Gravity Well");
+            step(15,()->{check("choosing a type is stored",base().fire==CannonUpgrades.FireType.GRAVITY.ordinal(),"fire="+base().fire);shot("r7_cannon_menu_gravity");mc().setScreen(null);},"chosen");
+        }
+        if(part7("pictures")){
+            // a shell and the Bunker Buster bomb falling, seen from the side (thrown far from the beacon zone, which the Bunker Buster refuses)
+            for(int type:new int[]{0,3}){String name=type==0?"r7_shell_falling":"r7_bomb_falling";
+                step(3,()->{clearFlares();near();act(CannonControl.SELECT,type);},name+": choose");
+                step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);sp().setHealth(20);});cmd("time set 6000");},name+": go");
+                step(25,()->{mc().setScreen(null);shellShot=false;SAMPLERS.clear();SAMPLERS.add(()->{if(shellShot||mc().level==null)return;for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o&&o.style()!=Ordnance.STAR&&o.tickCount>=12&&o.tickCount<=16){shellShot=true;mc().options.hideGui=true;
+                    var p=o.position();srv(()->sp().teleportTo(sl(),p.x+14,p.y-24,p.z+14,135,-33));}});throwHeld();},name+": throw");
+                until(name+": falling",900,()->shellShot,()->{});
+                step(4,()->{check(name+": a round was seen falling",shellShot,"");shot(name);},name+": shot");
+                step(18,()->{shot(name.replace("falling","blast"));mc().options.hideGui=false;SAMPLERS.clear();},name+": blast");
+                until(name+": done",1500,()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,40,80)).isEmpty(),()->{});
+            }
+        }
+        if(part7("loop")){
+            step(2,()->srv(()->{CampaignData.get(sl()).raidsStarted=7;}),"raid number");
+            // hold one wave longer than its song: the song must start over by itself (audio capture shows the seam)
+            step(5,()->{mc().options.hideGui=false;face(sx+.5,sy,sz-4+.5,180,0);int wave=1;for(int w=1;w<20;w++){var song=expected("special",w);if(song!=null&&song.id().equals("raid_special")){wave=w;break;}}raidState("siege",false,wave);QA_LOOP_WAVE=wave;},"a special raid on a wave that plays the 64-second song");
+            step(1500,()->{check("the 64-second song plays",RaidMusic.nowPlaying()!=null&&RaidMusic.nowPlaying().id().equals("raid_special"),playing()+" wave "+QA_LOOP_WAVE);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE loop started");},"play it for 75 seconds");
+            step(5,()->{check("after 75 seconds the same song still plays (looped, wave unchanged)",RaidMusic.nowPlaying()!=null&&RaidMusic.nowPlaying().id().equals("raid_special")&&RaidMusic.position()<20,playing()+" at "+RaidMusic.position()+" s");shot("r7_music_looped");
+                srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.setDirty();BeaconNetwork.syncNearby(sl(),d);});},"looped");
+        }
+        if(part7("fire")){
+            step(2,()->{watchFire();srv(()->{var b=SupportData.get(sl()).of(sp().getUUID());b.up[CannonUpgrades.Upgrade.AOE.ordinal()]=0;SupportData.get(sl()).setDirty();});},"watch");
+            fireTest(0,"EXPLOSION (falling shells)",6,()->{shellShot=false;},()->{check("explosion: shells were seen falling (Ordnance entities on the client)",ordnanceSeen>0,"samples="+ordnanceSeen);check("explosion: zombies inside the box died",zombiesAlive(fireAt2,5)==0,"alive="+zombiesAlive(fireAt2,5));});
+            fireTest(6,"CLUSTER",5,()->{},()->{check("cluster: the bomblets killed or hurt the zombies",zombiesAlive(fireAt2,5)<=2,"alive="+zombiesAlive(fireAt2,5));});
+            fireTest(7,"CRYO",4,()->{},()->{check("cryo: a zombie was frozen and slowed (Slowness V)",sawSlowFreeze,"");});
+            fireTest(8,"NAPALM",4,()->{},()->{check("napalm: zombies burned at night (the ground fire)",sawBurning,"");check("napalm: the zombies died in the fire",zombiesAlive(fireAt2,5)<=1,"alive="+zombiesAlive(fireAt2,5));});
+            step(1,()->{minMean=Double.MAX_VALUE;maxMean=0;},"reset distance");
+            fireTest(9,"GRAVITY",3,()->{freeZombies();meanDist=mean(fireAt2);},()->{check("gravity: the zombies were dragged toward the flare",minMean<meanDist-1,"start="+meanDist+" closest="+minMean);sp().setGameMode(GameType.SURVIVAL);});
+            step(1,()->{minMean=Double.MAX_VALUE;maxMean=0;},"reset distance");
+            fireTest(10,"SHOCKWAVE",4,()->{freeZombies();meanDist=mean(fireAt2);},()->{check("shockwave: the zombies were thrown away from the flare",maxMean>meanDist+2,"start="+meanDist+" farthest="+maxMean);sp().setGameMode(GameType.SURVIVAL);});
+            fireTest(11,"STARSHELL",1,()->{srv(()->sp().teleportTo(sl(),fireAt2.x+3,fireAt2.y,fireAt2.z+3,0,0));},()->{check("starshell: the star burned in the sky",sawStar,"");check("starshell: zombies glowed",sawGlow,"");check("starshell: the player saw in the dark (Night Vision)",sawNightVision,"");check("starshell: deals no damage",zombiesAlive(fireAt2,5)>=5,"alive="+zombiesAlive(fireAt2,5));});
+            step(1,()->SAMPLERS.clear(),"stop watching");
+        }
+    }
     static boolean strangerMenu;static Vec3 landAt,portalAt,fireAt;static long throwStart,landTick,parcelAppeared;
 
     static int energyBefore,flaresBefore,shotsBefore;static float healthBefore;
@@ -880,7 +1004,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
         for(var sm:SAMPLERS)try{sm.run();}catch(Throwable t){}
-        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
         if(wait>0){wait--;return;}
         var head=STEPS.peek();
         if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}

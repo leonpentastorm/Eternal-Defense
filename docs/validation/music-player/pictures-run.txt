@@ -1,0 +1,8 @@
+# Real client, PACK edition (2026-10-10). QaWorld scenario r7, part: pictures. An Explosion Barrage flare and a Bunker Buster flare thrown 40 blocks south of the beacon; when the client first sees a round 12 to 16 ticks into its fall, the player is moved beside its path and a screenshot taken.
+05:49:02 Dev just called in EXPLOSION BARRAGE
+05:49:03 [System] [CHAT] Dev just called in EXPLOSION BARRAGE
+05:49:10 QA_CHECK PASS r7_shell_falling: a round was seen falling 
+05:49:23 Dev just called in BUNKER BUSTER
+05:49:23 [System] [CHAT] Dev just called in BUNKER BUSTER
+05:49:26 QA_CHECK PASS r7_bomb_falling: a round was seen falling 
+05:49:28 QA_DONE pass=2 fail=0

@@ -7,14 +7,20 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The mod's own sounds (files under {@code assets/arsenal_beacon/sounds}, made by {@code tools/audio}): the raid music, the victory fanfare,
+ * The mod's own sounds (files under {@code assets/arsenal_beacon/sounds}; the owner's raid songs are converted and every other sound is made by
+ * {@code tools/audio}): the raid songs, the victory fanfare,
  * the support cannon, the flares and the fire supports. Range follows the volume a sound is played at (16 blocks per unit of volume), so a
  * blast played at volume 8 is heard 128 blocks away.
  */
 final class ArsenalSounds {
     private ArsenalSounds(){}
     static final DeferredRegister<SoundEvent> SOUNDS=DeferredRegister.create(ForgeRegistries.SOUND_EVENTS,ArsenalBeacon.ID);
-    static final RegistryObject<SoundEvent> RAID_NORMAL=of("music.raid_normal"),RAID_BOSS=of("music.raid_boss"),RAID_SPECIAL=of("music.raid_special"),VICTORY=of("music.victory");
+    static final RegistryObject<SoundEvent> VICTORY=of("music.victory");
+    /** One event per raid song ({@code music.<id>}), in the order of {@link RaidPlaylist#SONGS}. */
+    private static final java.util.Map<String,RegistryObject<SoundEvent>> SONGS=new java.util.LinkedHashMap<>();
+    static {for(var song:RaidPlaylist.SONGS)SONGS.put(song.id(),of("music."+song.id()));}
+    /** The sound event of a raid song (null for an unknown id). */
+    static SoundEvent song(String id){var event=SONGS.get(id);return event==null?null:event.get();}
     static final RegistryObject<SoundEvent> CANNON_FIRE=of("cannon.fire"),CANNON_TRAVERSE=of("cannon.traverse"),CANNON_CLANK=of("cannon.clank"),CANNON_LOCK=of("cannon.lock");
     static final RegistryObject<SoundEvent> FLARE_SIGNAL=of("flare.signal"),SHELL_WHISTLE=of("shell.whistle"),BOMB_WHISTLE=of("bomb.whistle"),SHELL_EXPLOSION=of("shell.explosion");
     static final RegistryObject<SoundEvent> BUNKER_IMPACT=of("bunker.impact"),BUNKER_DIG=of("bunker.dig");

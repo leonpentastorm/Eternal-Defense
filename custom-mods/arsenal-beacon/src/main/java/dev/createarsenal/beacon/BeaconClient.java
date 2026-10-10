@@ -45,8 +45,11 @@ public final class BeaconClient {
     /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
     private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
     private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
-    /** Which raid theme should play for this player now (see {@link RaidMusic#cue}); "" for none. */
-    static String raidMusicCue(){return RaidMusic.cue(current(),state.getString("phase"),state.getBoolean("near"),state.getBoolean("hardRaid"),state.getString("raidType"));}
+    /** The raid song this wave plays (see {@link RaidPlaylist}), or null when no raid is running. */
+    static RaidPlaylist.Song raidSong(){
+        String pool=RaidPlaylist.cue(current(),state.getString("phase"),state.getBoolean("hardRaid"),n("wave"),n("waves"),state.getString("raidType"));
+        return pool.isEmpty()?null:RaidPlaylist.song(pool,RaidPlaylist.seed(state.getLong("beacon"),n("raidsStarted")),n("wave"));
+    }
     private static boolean holding(){var p=Minecraft.getInstance().player;return p!=null&&(p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get()));}
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
@@ -58,16 +61,27 @@ public final class BeaconClient {
      * Status card shown near a planted beacon, during raids and while holding the recovery shovel.
      * It sits at the left edge, vertically centred, clear of chat and the hotbar (bottom), the Gun Guide
      * (right edge), the TaCZ weapon HUD (bottom right) and block-information overlays (top centre).
+     * The raid music player sits right under it and stays for the whole raid, even where the card is hidden.
      */
     private static void hud(GuiGraphics g,int w,int h){
-        var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null||!current()||!Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))return;
-        drawHud(g,w,h);
+        var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null||!current())return;
+        var card=card(w,h);
+        if(Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))drawHud(g,card);
+        RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
     }
-    static void drawHud(GuiGraphics g,int w,int h){
+    record Card(int x,int y,int width,int height){}
+    /** Where the status card goes on a {@code w} by {@code h} screen (also when it is hidden, so the music player does not jump). */
+    static Card card(int w,int h){
+        var font=Minecraft.getInstance().font;boolean raid=state.getString("phase").equals("raid");
+        Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
+        int width=Math.min(Math.max(Math.max(140,RaidMusic.playerWidth(font)),Math.max(font.width(title),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3)),height=48+(raid&&on("hardRaid")?14:0);
+        return new Card(6,Math.max(8,(h-height-(raid?RaidMusic.PLAYER_HEIGHT+4:0))/2),width,height);
+    }
+    static void drawHud(GuiGraphics g,int w,int h){drawHud(g,card(w,h));}
+    static void drawHud(GuiGraphics g,Card card){
         var mc=Minecraft.getInstance();var font=mc.font;boolean raid=state.getString("phase").equals("raid"),dead=n("health")<=0;
         Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
-        int width=Math.min(Math.max(140,Math.max(font.width(title),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3)),height=48+(raid&&on("hardRaid")?14:0);
-        int x=6,y=Math.max(8,(h-height)/2);
+        int width=card.width(),height=card.height(),x=card.x(),y=card.y();
         float fraction=Math.max(0,Math.min(1,n("health")/(float)Math.max(1,n("maximum"))));
         g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
         g.fill(x,y,x+3,y+height,dead?Ui.RED:Ui.CYAN);g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
@@ -171,7 +185,7 @@ public final class BeaconClient {
     record Hover(ItemStack item,int x,int y){}
 
     static final class ControlScreen extends PanelScreen {
-        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
+        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
         private final List<Hover> icons=new ArrayList<>();
         static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
         static final String[] PARTS={"reinforced_plating","logistics_module","resonance_coil","restoration_matrix","resonance_coil","logistics_module"};
@@ -182,7 +196,7 @@ public final class BeaconClient {
         private int contentTop(){return top+54;}
         private boolean ready(){return on("installed")&&on("near")&&!on("active");}
         @Override protected void init(){
-            super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=remove=respite=startRaid=lowerTier=higherTier=null;
+            super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=music=player=remove=respite=startRaid=lowerTier=higherTier=null;
             int total=0;for(String key:TABS)total+=font.width(Ui.t("tab."+key))+14;int tx=left+14,space=pw-28;
             for(int i=0;i<TABS.length;i++){int page=i,tw=(font.width(Ui.t("tab."+TABS[i]))+14)*space/total;var b=button(Ui.t("tab."+TABS[i]),tx,top+31,tw-2,18,Ui.Look.TAB,x->{tab=page;rebuildWidgets();});b.selected=i==tab;tx+=tw;}
             closeButton();
@@ -214,14 +228,18 @@ public final class BeaconClient {
                     fabricationButtons.add(button(Ui.t("fabrication.make"),cell.x+cell.w-41,cell.y+(cell.h-18)/2,37,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
                 }
             }else{
-                int gap=settingsGap();
-                outline=button(Component.empty(),x,contentTop()+2,w,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("outline",""));
-                beam=button(Component.empty(),x,contentTop()+2+gap,w,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("beam",""));
-                hurtbox=button(Component.empty(),x,contentTop()+2+gap*2,w,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("hurtbox",""));
+                // left: what the base shows (saved with the beacon); right: this player's own music choices (saved on this computer)
+                int gap=settingsGap(),col=settingsColumn(w),x2=x+col+10;
+                outline=button(Component.empty(),x,contentTop()+2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("outline",""));
+                beam=button(Component.empty(),x,contentTop()+2+gap,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("beam",""));
+                hurtbox=button(Component.empty(),x,contentTop()+2+gap*2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("hurtbox",""));
+                music=button(Component.empty(),x2,contentTop()+2,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setEnabled(!RaidMusic.enabled()));
+                player=button(Component.empty(),x2,contentTop()+2+gap,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setPlayerShown(!RaidMusic.playerShown()));
                 remove=button(Ui.t("settings.remove"),x,contentTop()+2+gap*3,w,22,Ui.Look.DANGER,b->BeaconNetwork.action("remove",""));
             }
         }
         private int settingsGap(){return Math.min(48,Math.max(33,(ph-54-28)/4));}
+        private static int settingsColumn(int w){return (w-10)/2;}
         private record RaidLayout(int levelY,int cardH,int breakY,boolean roomy){}
         private RaidLayout raidLayout(){boolean roomy=ph>=270;int cardH=roomy?72:60;return new RaidLayout(contentTop()+20,cardH,contentTop()+cardH+4,roomy);}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
@@ -417,13 +435,19 @@ public final class BeaconClient {
         }
         // ---- Settings: "What is protected?" ---------------------------------------------------
         private void settingsTab(GuiGraphics g,int x,int w){
-            int gap=settingsGap(),y=contentTop()+2;boolean here=on("installed")&&on("near");
+            int gap=settingsGap(),y=contentTop()+2,col=settingsColumn(w),x2=x+col+10,lines=Math.max(1,(gap-25)/10);boolean here=on("installed")&&on("near");
             String[] keys={"outline","beam","hurtbox"};Button[] toggles={outline,beam,hurtbox};
             for(int i=0;i<3;i++){
                 var b=(Ui.UiButton)toggles[i];b.on=on(keys[i]);b.setMessage(Ui.t("settings."+keys[i]));b.active=here;
                 Component note=i==0?Ui.t("settings.outline.note",n("radius"),n("below"),n("above")):Ui.t("settings."+keys[i]+".note");
-                Ui.text(g,font,note,x+4,y+gap*i+25,Ui.MUTED,w-8);
+                Ui.wrap(g,font,note,x+4,y+gap*i+25,col-8,Ui.MUTED,lines);
             }
+            var m=(Ui.UiButton)music;m.on=RaidMusic.enabled();m.setMessage(Ui.t("settings.music"));
+            var p=(Ui.UiButton)player;p.on=RaidMusic.playerShown();p.setMessage(Ui.t("settings.player"));p.active=m.on;
+            Ui.wrap(g,font,Ui.t("settings.music.note"),x2+4,y+25,w-col-18,Ui.MUTED,lines);
+            Ui.wrap(g,font,Ui.t("settings.player.note"),x2+4,y+gap+25,w-col-18,Ui.MUTED,lines);
+            int volume=Math.round(Minecraft.getInstance().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MUSIC)*100);
+            Ui.wrap(g,font,Ui.t("settings.music.volume",volume),x2+4,y+gap*2+6,w-col-18,volume<=0?Ui.ORANGE:Ui.MUTED,Math.max(2,lines+1));
             remove.active=on("installed")&&on("controller")&&on("canRemove");
             Ui.wrap(g,font,ph>=300?Ui.t("settings.remove.note"):Ui.t("settings.remove.short"),x+4,y+gap*3+25,w-8,Ui.MUTED,ph>=300?2:1);
         }

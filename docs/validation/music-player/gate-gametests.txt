@@ -1,0 +1,15 @@
+# Raider Gate GameTests (RaiderGateGameTests, 11 tests) in a real client's integrated server, PACK edition, 2026-10-10, via tools/qa/setup-qa.sh <dir> pack QaStuck.
+# gate_01 (a raider sealed in a stone cell) now also asserts the 0.0.16 exit gate: a second red gate stands where the raider came out, and it closes RaidMarch.EXIT_LINGER_SECONDS (2) after.
+05:56:02 STUCK_TEST_PASS akillcancelsthechannelandtheemptygategoesaway
+05:56:02 STUCK_TEST_PASS damagedelaysthechannelbutthetotaldelayiscapped
+05:56:02 STUCK_TEST_PASS afterthreegatestheraideriswithdrawnandthewavecompleteswellbeforethetimeout
+05:56:02 STUCK_TEST_PASS ninestuckraidersshareonegateeightchannelandtheninthwaits
+05:56:02 STUCK_TEST_PASS flyersandparachutistsareleftalone
+05:56:02 STUCK_TEST_PASS abossgoesthroughgateaftergateandisneverwithdrawn
+05:56:02 STUCK_TEST_PASS asectorcrossingalakeisneverchosenwhilecleansectorsexist
+05:56:02 STUCK_TEST_PASS araidersealedinastonecellopensagatechannelsandcomesoutatthering
+05:56:02 STUCK_TEST_PASS wheneverysectorhasawatercrossingtheonewiththefewestviolationsisused
+05:56:02 STUCK_TEST_PASS lavamagmaachasmandawidelaketriggertheprobebutashortponddoesnot
+05:56:02 STUCK_TEST_PASS achannelingraiderstandsbesidearedgateandcannotmove
+05:56:02 STUCK_TESTS_DONE pass=11 fail=0
+05:56:02 QA_SUMMARY pass=11 fail=0

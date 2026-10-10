@@ -54,7 +54,7 @@ public final class BeaconPopups {
         long now=net.minecraft.Util.getMillis();
         if(current!=null&&now-startedAt>current.durationMs())current=null;
         if(current==null&&!QUEUE.isEmpty()){current=QUEUE.remove(0);startedAt=now;
-            switch(current.style()){case VICTORY->{RaidMusic.victory();if(mc.options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MUSIC)<=0)sound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE);}case RAID->sound(SoundEvents.RAID_HORN.get());case WAVE->sound(SoundEvents.BELL_BLOCK);case DEFEAT->sound(SoundEvents.WITHER_DEATH);default->{}}}
+            switch(current.style()){case VICTORY->{if(!RaidMusic.victory())sound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE);}case RAID->sound(SoundEvents.RAID_HORN.get());case WAVE->sound(SoundEvents.BELL_BLOCK);case DEFEAT->sound(SoundEvents.WITHER_DEATH);default->{}}}
         g.pose().pushPose();g.pose().translate(0,0,650);
         if(current!=null)draw(g,mc,w,h,current,now-startedAt);
         for(int i=0;i<TOASTS.size();){

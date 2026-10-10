@@ -1,0 +1,29 @@
+# Real client, PACK edition, 1280 x 720 (2026-10-10). QaWorld scenario r7, parts: music settings menu pictures loop (the pack's victory needs Create, absent in the development runtime, so the music part skips it).
+# The two 'a round was seen falling' checks passed, but their screenshots showed the cannon menu (choosing the type reopened it); the pictures were taken again in a later run (pictures-run.txt).
+05:42:55 OpenAL initialized on device Wave File Writer
+05:43:37 QA_CHECK PASS wave 1 of a hard raid plays a song of the ordinary pool line_holder/normal
+05:43:37 QA_CHECK PASS it is the song every player of this raid hears on wave 1 line_holder/normal expected line_holder
+05:43:37 QA_CHECK PASS the game's own music waits while it plays 
+05:43:44 QA_CHECK PASS wave 2 changes to another song of the pool barren_gap/normal after line_holder
+05:43:44 QA_CHECK PASS the wave 2 song is the planned one barren_gap/normal
+05:43:51 QA_CHECK PASS the boss wave of a hard raid plays a boss song boss_battle/boss
+05:43:58 QA_CHECK PASS far from the beacon the card hides but the song and its player stay near=false boss_battle/boss
+05:44:03 QA_CHECK PASS the music player can be hidden while the song keeps playing boss_battle/boss
+05:44:07 QA_CHECK PASS a special raid plays a special song anomaly_protocol/special
+05:44:16 QA_CHECK PASS the Settings tab has the two music switches 
+05:44:17 QA_CHECK PASS Raid music off: saved, and the song stops none
+05:44:19 QA_CHECK PASS Raid music on again: the wave's song comes back line_holder/normal
+05:44:21 QA_CHECK PASS Music player off is saved 
+05:44:21 QA_CHECK PASS Music player on again 
+05:44:23 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@48b4fecb
+05:44:23 QA_CHECK PASS Area of effect is listed with the three-level upgrades index 4
+05:44:24 QA_CHECK PASS a maxed upgrade is still hovered (inactive but hovered) active=false hovered=true
+05:44:25 QA_CHECK PASS the list scrolls to its end and shows the Starshell scroll=5 visible=7
+05:44:25 QA_CHECK PASS rows above the window are hidden 
+05:44:25 QA_CHECK PASS choosing a type is stored fire=9
+05:44:34 QA_CHECK PASS r7_shell_falling: a round was seen falling 
+05:44:50 QA_CHECK PASS r7_bomb_falling: a round was seen falling 
+05:44:53 QA_CHECK PASS the 64-second song plays raid_special/special wave 2
+05:44:53 QA_NOTE loop started
+05:46:08 QA_CHECK PASS after 75 seconds the same song still plays (looped, wave unchanged) raid_special/special at 11 s
+05:46:08 QA_DONE pass=24 fail=0

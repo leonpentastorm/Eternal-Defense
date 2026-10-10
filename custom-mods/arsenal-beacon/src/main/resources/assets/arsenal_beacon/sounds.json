@@ -1,8 +1,49 @@
 {
+  "music.barren_gap": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/barren_gap",
+        "stream": true
+      }
+    ]
+  },
+  "music.line_holder": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/line_holder",
+        "stream": true
+      }
+    ]
+  },
+  "music.phase_one_assault": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/phase_one_assault",
+        "stream": true
+      }
+    ]
+  },
+  "music.silent_trigger": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/silent_trigger",
+        "stream": true
+      }
+    ]
+  },
   "music.raid_normal": {
     "sounds": [
       {
         "name": "arsenal_beacon:music/raid_normal",
+        "stream": true,
+        "volume": 0.92
+      }
+    ]
+  },
+  "music.boss_battle": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/boss_battle",
         "stream": true
       }
     ]
@@ -11,6 +52,15 @@
     "sounds": [
       {
         "name": "arsenal_beacon:music/raid_boss",
+        "stream": true,
+        "volume": 0.89
+      }
+    ]
+  },
+  "music.anomaly_protocol": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/anomaly_protocol",
         "stream": true
       }
     ]
@@ -19,7 +69,8 @@
     "sounds": [
       {
         "name": "arsenal_beacon:music/raid_special",
-        "stream": true
+        "stream": true,
+        "volume": 0.86
       }
     ]
   },
@@ -27,7 +78,8 @@
     "sounds": [
       {
         "name": "arsenal_beacon:music/victory",
-        "stream": true
+        "stream": true,
+        "volume": 0.85
       }
     ]
   },
