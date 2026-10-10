@@ -13,3 +13,4 @@ reports/
 .env
 .env.*
 __pycache__/
+custom-mods/*/logs/
