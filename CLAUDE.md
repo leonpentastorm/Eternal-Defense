@@ -4,7 +4,7 @@ Read `docs/HANDOFF.md` first: it says where the project stands, how to build and
 
 ## Branch note (2026-10-09)
 
-The Mess Hall v6 work (`feature/messhall-ver-6`, project 0.0.7 to 0.0.11) was merged into `dev` at the owner's request and the merged feature branches were deleted. Work on `dev` as the rules below say; `main` still only receives merges when the owner asks. Build/test execution is authorized; include any newly required backend JAR in the test ZIP.
+The Mess Hall v6 work (`feature/messhall-ver-6`, project 0.0.7 to 0.0.11) was merged into `dev` at the owner's request and the merged feature branches were deleted. On 2026-10-10 the feature branches of 0.0.13 to 0.0.17 (`feature/stuck-raiders`, `feature/raider-gates`, `feature/optimize-path`, `feature/beautify-path`, `feature/music-player`) were merged into `dev` at the owner's request (a fast-forward). Work on `dev` as the rules below say; `main` still only receives merges when the owner asks. Build/test execution is authorized; include any newly required backend JAR in the test ZIP.
 
 ## Rules of this project
 

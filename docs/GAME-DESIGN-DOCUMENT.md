@@ -5,7 +5,7 @@
 | **Title** | Eternal Defense |
 | **Document / project version** | 0.0.17 (see `VERSION`; 0.0.x per update on `dev`, 0.1.0 when the owner calls it, 1.0.0 on merge to `main`) |
 | **Platform** | Minecraft 1.20.1, Forge 47.x, Java 17 |
-| **Status** | Active development on `dev` (includes the Mess Hall v6 work, the Field Guide pass and the Mess Hall levels of 0.0.11); fresh worlds per feature until 1.0; what was tested is listed per round in `docs/*-TESTING.md` |
+| **Status** | Active development on `dev`, which since 2026-10-10 includes everything up to 0.0.17 (stuck raiders, Raider Gates, Optimize Path, Beautify Path, raid music player); fresh worlds per feature until 1.0; what was tested is listed per round in `docs/*-TESTING.md` |
 
 > ## KEEP THIS DOCUMENT CURRENT
 > **Every developer (human or Claude) who changes gameplay, numbers, UI flow, economy, raids, controls or editions MUST update this document in the same commit**, then:

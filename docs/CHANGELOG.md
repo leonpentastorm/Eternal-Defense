@@ -1,5 +1,9 @@
 # Change log
 
+## dev — all new features merged (2026-10-10)
+
+At the owner's request `dev` was fast-forwarded to `feature/music-player`: it now contains 0.0.13 (stuck raiders), 0.0.14 (Raider Gates), 0.0.15 (Optimize Path), 0.0.16 (Beautify Path) and 0.0.17 (raid music player) below. No code changed in the merge; the project version stays 0.0.17. Test bundles: `dist/Arsenal-Dev-0.0.17-pack-test.zip` and `dist/Arsenal-Dev-0.0.17-standalone-test.zip`.
+
 ## 0.0.17 — Raid music player: your songs, a new song every wave, a player under the beacon card (2026-10-10)
 
 Branch `feature/music-player` (from `feature/beautify-path`, 0.0.16). **No packet was added or changed: the network protocol stays 28.** Rules: GDD section 7 and Part B (*Raid music and the music player*); tests: `docs/MUSIC-PLAYER-TESTING.md`.
