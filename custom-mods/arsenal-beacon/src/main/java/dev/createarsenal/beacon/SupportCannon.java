@@ -145,10 +145,7 @@ final class SupportCannon {
             double rad=Math.toRadians(yaw),pitch=Math.toRadians(PITCH_DEGREES);
             double reach=REACH,flat=Math.cos(pitch)*reach;
             double x=worldPosition.getX()+.5-Math.sin(rad)*flat,y=worldPosition.getY()+PIVOT_Y+Math.sin(pitch)*reach,z=worldPosition.getZ()+.5-Math.cos(rad)*flat;
-            level.sendParticles(ParticleTypes.FLAME,x,y,z,16,.15,.15,.15,.08);
-            level.sendParticles(ParticleTypes.LARGE_SMOKE,x,y,z,10,.25,.2,.25,.03);
-            level.sendParticles(ParticleTypes.EXPLOSION,x,y,z,1,0,0,0,0);
-            level.playSound(null,x,y,z,SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,3f,.55f);
+            Blasts.muzzle(level,x,y,z);   // flash, fire and smoke at the muzzle, and a roar heard across the base
             level.blockEvent(worldPosition,getBlockState().getBlock(),1,0);
         }
         void tick(Level level){
@@ -160,12 +157,13 @@ final class SupportCannon {
                 if(Math.abs(speed)>0.2f){
                     // heavy machinery: a grinding scrape of the traverse gear with the odd clank of a pawl
                     long t=level.getGameTime();float load=Math.min(1f,Math.abs(speed)/MAX_SPEED);
-                    if(t%7==0){grinds++;level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.GRINDSTONE_USE,SoundSource.BLOCKS,1.1f,.45f+.25f*load,false);}
-                    if(t%23==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,SoundEvents.IRON_TRAPDOOR_OPEN,SoundSource.BLOCKS,.7f,.35f,false);
+                    // a geared motor dragging tons of steel round: grinding gears under load, with the clank of the ratchet now and then
+                    if(t%9==0){grinds++;level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,ArsenalSounds.CANNON_TRAVERSE.get(),SoundSource.BLOCKS,1.6f,.8f+.35f*load,false);}
+                    if(t%23==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,ArsenalSounds.CANNON_CLANK.get(),SoundSource.BLOCKS,1.2f,.9f+.2f*level.random.nextFloat(),false);
                 }
             }else{
                 settled=ready()?settled+1:0;
-                if(settled==1&&level instanceof ServerLevel server)server.playSound(null,worldPosition,SoundEvents.ANVIL_LAND,SoundSource.BLOCKS,.7f,.5f);   // the turret locks onto its target
+                if(settled==1&&level instanceof ServerLevel server)server.playSound(null,worldPosition,ArsenalSounds.CANNON_LOCK.get(),SoundSource.BLOCKS,2f,1f);   // the turret locks onto its target
             }
         }
         @Override public boolean triggerEvent(int id,int param){if(id==1){recoil=RECOIL_TICKS;return true;}return super.triggerEvent(id,param);}

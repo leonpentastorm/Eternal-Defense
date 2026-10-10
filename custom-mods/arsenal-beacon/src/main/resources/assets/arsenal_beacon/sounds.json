@@ -1,0 +1,136 @@
+{
+  "music.raid_normal": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/raid_normal",
+        "stream": true
+      }
+    ]
+  },
+  "music.raid_boss": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/raid_boss",
+        "stream": true
+      }
+    ]
+  },
+  "music.raid_special": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/raid_special",
+        "stream": true
+      }
+    ]
+  },
+  "music.victory": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/victory",
+        "stream": true
+      }
+    ]
+  },
+  "cannon.fire": {
+    "sounds": [
+      "arsenal_beacon:sfx/cannon_fire"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.fire"
+  },
+  "cannon.traverse": {
+    "sounds": [
+      "arsenal_beacon:sfx/cannon_traverse"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.traverse"
+  },
+  "cannon.clank": {
+    "sounds": [
+      "arsenal_beacon:sfx/cannon_clank"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.clank"
+  },
+  "cannon.lock": {
+    "sounds": [
+      "arsenal_beacon:sfx/cannon_lock"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.lock"
+  },
+  "flare.signal": {
+    "sounds": [
+      "arsenal_beacon:sfx/flare_signal"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.signal"
+  },
+  "shell.whistle": {
+    "sounds": [
+      "arsenal_beacon:sfx/shell_whistle"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.shell.whistle"
+  },
+  "bomb.whistle": {
+    "sounds": [
+      "arsenal_beacon:sfx/bomb_whistle"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.bomb.whistle"
+  },
+  "shell.explosion": {
+    "sounds": [
+      "arsenal_beacon:sfx/shell_explosion"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.shell.explosion"
+  },
+  "bunker.impact": {
+    "sounds": [
+      "arsenal_beacon:sfx/bunker_impact"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.bunker.impact"
+  },
+  "bunker.dig": {
+    "sounds": [
+      "arsenal_beacon:sfx/bunker_dig"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.bunker.dig"
+  },
+  "fire.cluster": {
+    "sounds": [
+      "arsenal_beacon:sfx/cluster_pop"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.cluster"
+  },
+  "fire.cryo": {
+    "sounds": [
+      "arsenal_beacon:sfx/cryo_burst"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.cryo"
+  },
+  "fire.napalm": {
+    "sounds": [
+      "arsenal_beacon:sfx/napalm_whoosh"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.napalm"
+  },
+  "fire.gravity_hum": {
+    "sounds": [
+      "arsenal_beacon:sfx/gravity_hum"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.gravity_hum"
+  },
+  "fire.gravity_implode": {
+    "sounds": [
+      "arsenal_beacon:sfx/gravity_implode"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.gravity_implode"
+  },
+  "fire.shockwave": {
+    "sounds": [
+      "arsenal_beacon:sfx/shockwave_blast"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.shockwave"
+  },
+  "fire.starshell": {
+    "sounds": [
+      "arsenal_beacon:sfx/starshell_pop"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.starshell"
+  }
+}

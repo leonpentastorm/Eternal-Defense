@@ -19,7 +19,9 @@ import java.util.*;
  * {@link RaiderGate} and then appears at the edge of the staging ring, where it marches again. While it channels it cannot move (the
  * {@link ChannelGoal}), it shows a ring of red particles, and it can be shot: every second it was hurt in delays the end by
  * {@link RaidMarch#DAMAGE_DELAY_SECONDS} seconds, to at most {@link RaidMarch#MAX_DELAY_SECONDS}; killing it cancels the channel. Three seconds
- * before it appears the destination shows particles and a portal sound.
+ * before it appears a second red gate opens at the destination (with particles and a portal sound), so players near the spot see where it
+ * will come out; that exit closes {@link RaidMarch#EXIT_LINGER_SECONDS} seconds after the raider has stepped out of it (at once if the channel is
+ * cancelled).
  * <p>One gate serves an obstacle: a raider that gets stuck within {@link RaidMarch#GATE_JOIN_RADIUS} blocks of a gate uses it; a gate has room for
  * {@link RaidMarch#GATE_CAPACITY} channelers, the others wait their turn. A gate goes away when nobody is assigned to it any more. Nothing is
  * saved: after a reload the raiders fall back to the progress timer. All state lives here and is cleared when a raid starts or ends.
@@ -30,12 +32,14 @@ final class RaiderGates {
     /** One raider's place at a gate. */
     static final class Channel {
         final UUID gate;final Vec3 gatePos;final String reason;Phase phase=Phase.WAITING;
-        long startedAt,completeAt;int delayTicks;float health;BlockPos destination;boolean telegraphed;
+        long startedAt,completeAt;int delayTicks;float health;BlockPos destination;boolean telegraphed;UUID exit;
         Channel(UUID gate,Vec3 gatePos,String reason,BlockPos destination){this.gate=gate;this.gatePos=gatePos;this.reason=reason;this.destination=destination;}
     }
     private static final Map<UUID,Channel> CHANNELS=new HashMap<>();
     /** The gates this class made (so a world with no gate is never searched for one). */
     private static final Set<UUID> KNOWN=new HashSet<>();
+    /** Exit gates and the tick each one closes (Long.MAX_VALUE while its raider is still channeling). */
+    private static final Map<UUID,Long> EXITS=new HashMap<>();
 
     // ---- pure decisions --------------------------------------------------------------------------------------------------------------
     /** Pure: the tick the channel ends, given when it started and how long damage has delayed it. */
@@ -66,14 +70,15 @@ final class RaiderGates {
     static int channelingAt(UUID gate){int n=0;for(var c:CHANNELS.values())if(c.gate.equals(gate)&&c.phase==Phase.CHANNELING)n++;return n;}
     static int assigned(){return CHANNELS.size();}
     /** A raid starts or ends, the server stops: forget every channel. Use {@link #reset(ServerLevel)} to take the gates out of a world too. */
-    static void reset(){CHANNELS.clear();KNOWN.clear();}
-    static void reset(ServerLevel l){for(var gate:gates(l))gate.discard();CHANNELS.clear();KNOWN.clear();}
+    static void reset(){CHANNELS.clear();KNOWN.clear();EXITS.clear();}
+    static void reset(ServerLevel l){for(var gate:gates(l))gate.discard();CHANNELS.clear();KNOWN.clear();EXITS.clear();}
+    static int exits(){return EXITS.size();}
     static List<? extends RaiderGate> gates(ServerLevel l){return KNOWN.isEmpty()?List.of():l.getEntities(EntityTypeTest.forClass(RaiderGate.class),g->true);}
 
     // ---- the life of a channel -----------------------------------------------------------------------------------------------------------
     /** A stuck raider gets a place at the nearest gate within reach, or at a new one beside it. It channels at once when the gate has room, else it waits. */
     static void open(ServerLevel l,CampaignData d,Mob mob,BlockPos destination,String reason,long now){
-        var raiderAt=mob.position();var found=new ArrayList<RaiderGate>();for(var g:gates(l))if(g.isAlive())found.add(g);
+        var raiderAt=mob.position();var found=new ArrayList<RaiderGate>();for(var g:gates(l))if(g.isAlive()&&!g.exit)found.add(g);
         int index=nearestGate(found.stream().map(RaiderGate::position).toList(),raiderAt,RaidMarch.GATE_JOIN_RADIUS);
         RaiderGate gate;
         if(index>=0)gate=found.get(index);
@@ -108,7 +113,9 @@ final class RaiderGates {
             if(!ch.telegraphed){
                 if(!destinationOk(l,d,ch.destination)){ch.destination=RaidRescue.findDestination(l,d,mob);if(ch.destination==null){cancel(l,d,mob,ch,"no place");RaidRescue.noPlace(l,d,mob,now);return;}}
                 ch.telegraphed=true;var at=Vec3.atBottomCenterOf(ch.destination);
+                ch.exit=openExit(l,ch.destination);
                 l.playSound(null,at.x,at.y,at.z,SoundEvents.PORTAL_AMBIENT,SoundSource.HOSTILE,1.2f,1.2f);
+                l.playSound(null,at.x,at.y,at.z,SoundEvents.PORTAL_TRIGGER,SoundSource.HOSTILE,.5f,1.6f);
                 RaidRescue.diagnose("TELEGRAPH",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest(ch.destination),ch.reason,ch.gate);
             }
             var at=Vec3.atBottomCenterOf(ch.destination);
@@ -125,6 +132,9 @@ final class RaiderGates {
         var dest=ch.destination;
         if(!destinationOk(l,d,dest)||!RaidRescue.fits(l,mob,dest)){dest=RaidRescue.findDestination(l,d,mob);}
         if(dest==null){cancel(l,d,mob,ch,"no place");RaidRescue.noPlace(l,d,mob,now);return;}
+        // the exit stands where the raider comes out (it moves with a destination that had to change), and closes a moment later
+        if(!dest.equals(ch.destination)||ch.exit==null||!(l.getEntity(ch.exit) instanceof RaiderGate)){closeExit(l,ch.exit);ch.exit=openExit(l,dest);}
+        if(ch.exit!=null)EXITS.put(ch.exit,now+RaidMarch.EXIT_LINGER_SECONDS*RaidMarch.TICKS_PER_SECOND);
         var from=mob.position();
         l.sendParticles(ParticleTypes.PORTAL,from.x,from.y+1,from.z,50,.4,.8,.4,.8);l.playSound(null,from.x,from.y,from.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,.7f);
         RaidRescue.diagnose("TELEPORT",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest.getX()+","+dest.getY()+","+dest.getZ(),ch.reason,ch.gate); // logged where the raider stood
@@ -134,8 +144,18 @@ final class RaiderGates {
         RaidMarch.track(mob.getUUID(),RaidMarch.rescued(Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+1,d.beacon.getZ()+.5)),now));
     }
     private static void cancel(ServerLevel l,CampaignData d,Mob mob,Channel ch,String why){
-        CHANNELS.remove(mob.getUUID());
+        CHANNELS.remove(mob.getUUID());closeExit(l,ch.exit);
         RaidRescue.diagnose("CANCEL",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest(ch.destination),why,ch.gate);
+    }
+    /** Opens the red exit gate at a destination, standing on the spot the raider will appear at. */
+    private static UUID openExit(ServerLevel l,BlockPos dest){
+        var gate=ArsenalBeacon.RAIDER_GATE.get().create(l);if(gate==null)return null;
+        gate.exit=true;var at=Vec3.atBottomCenterOf(dest);gate.moveTo(at.x,at.y,at.z,0,0);l.addFreshEntity(gate);
+        KNOWN.add(gate.getUUID());EXITS.put(gate.getUUID(),Long.MAX_VALUE);return gate.getUUID();
+    }
+    private static void closeExit(ServerLevel l,UUID exit){
+        if(exit==null)return;EXITS.remove(exit);KNOWN.remove(exit);
+        if(l.getEntity(exit) instanceof RaiderGate g)g.discard();
     }
     private static String dest(BlockPos p){return p==null?"-":p.getX()+","+p.getY()+","+p.getZ();}
     /** A small ring of red particles on the channeler (the vanilla particle packet; nothing of ours). */
@@ -150,14 +170,18 @@ final class RaiderGates {
      */
     static void cleanup(ServerLevel l,CampaignData d){
         if(CHANNELS.isEmpty()&&KNOWN.isEmpty())return;
+        long now=l.getGameTime();
         for(var it=CHANNELS.entrySet().iterator();it.hasNext();){
             var e=it.next();var entity=l.getEntity(e.getKey());
             if(d.raiders.contains(e.getKey())&&entity instanceof Mob mob&&mob.isAlive())continue;
             if(e.getValue().phase==Phase.CHANNELING&&entity instanceof Mob m)RaidRescue.diagnose("CANCEL",l,d,m,null,m.getPersistentData().getInt(RaidMarch.GATES),dest(e.getValue().destination),"raider died or left the raid",e.getValue().gate);
+            if(e.getValue().exit!=null&&EXITS.getOrDefault(e.getValue().exit,0L)==Long.MAX_VALUE)EXITS.put(e.getValue().exit,now);   // its raider is gone: the exit closes
             it.remove();
         }
         for(var gate:gates(l)){
-            var id=gate.getUUID();boolean used=false;for(var c:CHANNELS.values())if(c.gate.equals(id)){used=true;break;}
+            var id=gate.getUUID();
+            if(gate.exit){if(now>=EXITS.getOrDefault(id,0L)){gate.discard();EXITS.remove(id);KNOWN.remove(id);}continue;}
+            boolean used=false;for(var c:CHANNELS.values())if(c.gate.equals(id)){used=true;break;}
             if(!used){gate.discard();KNOWN.remove(id);}
         }
         KNOWN.removeIf(id->l.getEntity(id)==null);

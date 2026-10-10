@@ -58,7 +58,7 @@ final class SupportTest {
         assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.BUNKER,3),"the bunker buster ignores volley upgrades");
         assertEquals(12,CannonUpgrades.volleys(CannonUpgrades.FireType.EXPLOSION,3),"+2 per volley level");
         assertEquals(11,CannonUpgrades.volleys(CannonUpgrades.FireType.NARUKAMI,3));
-        assertEquals(CannonUpgrades.FireType.EXPLOSION,CannonUpgrades.FireType.of(-4));assertEquals(CannonUpgrades.FireType.CURSE,CannonUpgrades.FireType.of(99));
+        assertEquals(CannonUpgrades.FireType.EXPLOSION,CannonUpgrades.FireType.of(-4));assertEquals(CannonUpgrades.FireType.STARSHELL,CannonUpgrades.FireType.of(99));
     }
     @Test void upgradesGetFasterStrongerAndCapOut(){
         assertArrayEquals(new int[]{40,33,26,20},new int[]{CannonUpgrades.interval(0),CannonUpgrades.interval(1),CannonUpgrades.interval(2),CannonUpgrades.interval(3)});
@@ -141,7 +141,7 @@ final class SupportTest {
         assertTrue(SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(3))+SupportCannon.SETTLE_TICKS<turn,"Faster traverse shortens it");
         assertEquals(240+turn,SupportRules.supplyTicks(true)+turn,"the delivery delay is added on top of the turn");
     }
-    private static String guide(String key){
+    static String guide(String key){
         try(var in=SupportTest.class.getResourceAsStream("/assets/arsenal_beacon/lang/en_us.json")){
             var json=com.google.gson.JsonParser.parseReader(new InputStreamReader(in,StandardCharsets.UTF_8)).getAsJsonObject();
             return json.get("gui.arsenal_beacon.guide."+key).getAsString();

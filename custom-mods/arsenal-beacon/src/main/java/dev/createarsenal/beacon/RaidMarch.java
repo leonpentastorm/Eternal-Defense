@@ -49,7 +49,7 @@ final class RaidMarch {
     /** Distance between two samples when a destination's whole way to the zone is checked with the same probe. */
     static final int DESTINATION_SPACING=2;
     /** A raider channels this long beside its gate before it reappears. */
-    static final int CHANNEL_SECONDS=8;
+    static final int CHANNEL_SECONDS=8,EXIT_LINGER_SECONDS=2;
     /** Each time the channeler is hurt (checked once a second) the channel takes this much longer ... */
     static final int DAMAGE_DELAY_SECONDS=3;
     /** ... but the total delay never exceeds this, so a tough raider under long-range fire cannot stall the wave into the raid timeout. */

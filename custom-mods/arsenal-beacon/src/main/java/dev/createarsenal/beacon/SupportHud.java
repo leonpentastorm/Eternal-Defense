@@ -18,7 +18,8 @@ import java.util.function.Supplier;
 final class SupportHud {
     private SupportHud(){}
     /** Accent colour of each type (ARGB), in {@link CannonUpgrades.FireType} order. */
-    static final int[] ACCENT={0xffff7a3d,0xffe8c17b,0xffffe14d,0xffed5560,0xff5fe07c,0xffb98cff};
+    static final int[] ACCENT={0xffff7a3d,0xffe8c17b,0xffffe14d,0xffed5560,0xff5fe07c,0xffb98cff,
+        0xffffb347,0xff8fe6ff,0xffff5a1f,0xff9d6bff,0xfff4f19a,0xfffff4d0};
     /** The player's choice as the server last announced it (the default is the Explosion Barrage). */
     static int chosen;
 

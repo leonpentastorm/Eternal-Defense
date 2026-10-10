@@ -53,7 +53,7 @@ final class SupportFlares {
     static AABB blastBox(Vec3 c,double r){return new AABB(c.x-r,c.y-0.5,c.z-r,c.x+r,c.y+r,c.z+r);}
     /** A Bunker Buster digs down as well as up: its box is a cube around the flare, and every block in it goes. */
     static AABB bunkerBox(Vec3 c,double r){return new AABB(c.x-r,c.y-r,c.z-r,c.x+r,c.y+r,c.z+r);}
-    static AABB boxFor(CannonUpgrades.FireType type,Vec3 c,double r){return type==CannonUpgrades.FireType.BUNKER?bunkerBox(c,r):blastBox(c,r);}
+    static AABB boxFor(CannonUpgrades.FireType type,Vec3 c,double r){return type==CannonUpgrades.FireType.BUNKER||type==CannonUpgrades.FireType.STARSHELL?bunkerBox(c,r):blastBox(c,r);}
 
     static final class FlareItem extends Item {
         final SupportCalls.Kind kind;
@@ -122,6 +122,10 @@ final class SupportFlares {
         private int turnStart=-1,gunAt=-1,openAt=-1,fireTick=-1;
         private boolean outside,spawned,planned,held,queued;private int cooldown;
         private int carveY=Integer.MIN_VALUE,carveFloor,carveX0,carveX1,carveZ0,carveZ1;
+        /** Napalm patches still burning and gravity wells still pulling (their centre, size and the flare tick they end), and the starshell's end. Not saved. */
+        private record Patch(Vec3 at,double r,int until){}
+        private final List<Patch> burning=new ArrayList<>(),wells=new ArrayList<>();
+        private int starUntil=-1;
         private UUID parcelId;
         /** A "back" portal leads to this spot (in this dimension) instead of to the platform. */
         private Vec3 dest;private String destDim="";
@@ -153,7 +157,7 @@ final class SupportFlares {
             if(hit.getDirection()==Direction.UP){
                 // it comes to rest exactly where it touched the ground: everything the call does is measured from this point
                 Vec3 at=hit.getLocation();setPos(at.x,at.y,at.z);setDeltaMovement(Vec3.ZERO);setNoGravity(true);entityData.set(LANDED,true);
-                if(!level().isClientSide)level().playSound(null,getX(),getY(),getZ(),SoundEvents.FLINTANDSTEEL_USE,SoundSource.NEUTRAL,1f,.8f);
+                if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY->1.1f;case RETURN->1f;case FIRE->.9f;});
             }else{
                 Vec3 m=getDeltaMovement();setDeltaMovement(-m.x*.2,Math.min(m.y,0)*.5,-m.z*.2);   // slides down walls and bounces off ceilings
             }
@@ -247,7 +251,8 @@ final class SupportFlares {
             server.sendParticles(ParticleTypes.POOF,getX(),getY()+.3,getZ(),10,.2,.2,.2,.02);discard();
         }
         private void slowField(ServerLevel server){
-            for(LivingEntity e:server.getEntitiesOfClass(LivingEntity.class,box(),e->e instanceof Enemy&&e.isAlive()))
+            var area=type()==CannonUpgrades.FireType.STARSHELL?blastBox(position(),CannonUpgrades.radius(CannonUpgrades.FireType.EXPLOSION,cfg.aoe())):box();
+            for(LivingEntity e:server.getEntitiesOfClass(LivingEntity.class,area,e->e instanceof Enemy&&e.isAlive()))
                 e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,40,1,true,true));
             if(landedTicks%20==0){double r=radius();for(int i=0;i<16;i++){double a=i*Math.PI/8;server.sendParticles(ParticleTypes.SNOWFLAKE,getX()+Math.cos(a)*r,getY()+.2,getZ()+Math.sin(a)*r,1,0,0,0,0);}}
         }
@@ -292,19 +297,33 @@ final class SupportFlares {
                 if(!gunReady(server,owner,live,t))return;
                 startAt=t+10;
             }
-            int rel=t-startAt,interval=cfg.interval(),n=cfg.volleys(),flight=cfg.type()==CannonUpgrades.FireType.BUNKER?30:SupportRules.BLAST_FLIGHT_TICKS;
-            if(rel>=0&&rel%interval==0&&rel/interval<n){shot(server,owner,live,rel==0);if(cfg.type()==CannonUpgrades.FireType.BUNKER)server.playSound(null,getX(),getY(),getZ(),SoundEvents.FIREWORK_ROCKET_LAUNCH,SoundSource.BLOCKS,3f,.4f);}
+            int rel=t-startAt,interval=cfg.interval(),n=cfg.volleys(),flight=SupportRules.BLAST_FLIGHT_TICKS;
+            if(rel>=0&&rel%interval==0&&rel/interval<n){shot(server,owner,live,rel==0);launch(server,flight);}
             int land=rel-flight;
-            if(land>=0&&land%interval==0&&land/interval<n)resolve(server);
-            if(carveY==Integer.MIN_VALUE&&land>interval*(n-1)+20)discard();
+            if(land>=0&&land%interval==0&&land/interval<n)resolve(server,t);
+            linger(server,t);
+            if(carveY==Integer.MIN_VALUE&&land>interval*(n-1)+20&&burning.isEmpty()&&wells.isEmpty()&&starUntil<0)discard();
         }
-        private void resolve(ServerLevel level){
+        /**
+         * The cannon has fired: the round is seen falling from high over the flare and lands exactly when it resolves. Nothing flies from the
+         * cannon to the target. Lightning needs no round; a starshell, a cluster shell and an arrow cluster burst in the air above the flare.
+         */
+        private void launch(ServerLevel server,int flight){
+            var type=type();Vec3 c=position();double r=radius(),h=Ordnance.DROP_HEIGHT;
+            switch(type){
+                case NARUKAMI->{}
+                case BUNKER->Ordnance.drop(server,c,Ordnance.BOMB,type,flight,h,CARVE_TICKS,Math.max(1,Mth.ceil(box().getYsize()/2)));
+                case ARROW->Ordnance.drop(server,c.add(0,r*2,0),Ordnance.SHELL,type,flight,h-r*2,0,0);
+                case CLUSTER->Ordnance.drop(server,c.add(0,CannonUpgrades.CLUSTER_BURST_HEIGHT,0),Ordnance.SHELL,type,flight,h-CannonUpgrades.CLUSTER_BURST_HEIGHT,0,0);
+                case STARSHELL->Ordnance.drop(server,c.add(0,CannonUpgrades.STAR_BURST_HEIGHT,0),Ordnance.SHELL,type,flight,h,0,0);
+                default->Ordnance.drop(server,c,Ordnance.SHELL,type,flight,h,0,0);
+            }
+        }
+        private void resolve(ServerLevel level,int t){
             Vec3 c=position();var type=cfg.type();double r=radius();var box=box();float dmg=SupportRules.FIRE_DAMAGE*cfg.damage();
             switch(type){
                 case EXPLOSION->{
-                    level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,c.x,c.y+.5,c.z,1,0,0,0,0);
-                    level.sendParticles(ParticleTypes.FLAME,c.x,c.y+.4,c.z,60,r*.4,.5,r*.4,.1);
-                    level.playSound(null,c.x,c.y,c.z,SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,3f,.9f);
+                    Blasts.shell(level,c,r);
                     for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive()))e.hurt(level.damageSources().explosion(this,getOwner()),dmg);
                 }
                 case ARROW->{
@@ -331,8 +350,7 @@ final class SupportFlares {
                     if(struck==0)bolt(level,c.x+(random.nextDouble()*2-1)*r,c.y,c.z+(random.nextDouble()*2-1)*r);
                 }
                 case BUNKER->{
-                    level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,c.x,c.y,c.z,4,r*.3,r*.3,r*.3,0);
-                    level.playSound(null,c.x,c.y,c.z,SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,6f,.5f);
+                    Blasts.bunker(level,c,r);
                     for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive()))e.hurt(level.damageSources().explosion(this,getOwner()),dmg*2);
                     // the one support that hurts players: half their health, armor or not
                     for(Player p:level.getEntitiesOfClass(Player.class,box,Player::isAlive))p.hurt(level.damageSources().indirectMagic(this,getOwner()),p.getMaxHealth()*SupportRules.BUNKER_PLAYER_SHARE);
@@ -354,7 +372,105 @@ final class SupportFlares {
                         e.addEffect(new MobEffectInstance(MobEffects.BLINDNESS,(int)(200*k),0));e.addEffect(new MobEffectInstance(MobEffects.GLOWING,(int)(300*k),0));
                     }
                 }
+                case CLUSTER->{
+                    // the shell bursts over the flare and its bomblets land all over a wide box; a mob is hit by one bomblet at most
+                    var burst=c.add(0,CannonUpgrades.CLUSTER_BURST_HEIGHT,0);
+                    Blasts.far(level,ParticleTypes.FLASH,burst.x,burst.y,burst.z,1,0,0,0,0,Blasts.FAR);level.sendParticles(ParticleTypes.EXPLOSION,burst.x,burst.y,burst.z,3,.6,.4,.6,0);
+                    double br=CannonUpgrades.BOMBLET_RADIUS;var hit=new java.util.HashSet<LivingEntity>();
+                    for(int k=0;k<CannonUpgrades.CLUSTER_BOMBLETS;k++){
+                        double bx=c.x+(random.nextDouble()*2-1)*r*.85,bz=c.z+(random.nextDouble()*2-1)*r*.85;
+                        level.sendParticles(ParticleTypes.EXPLOSION,bx,c.y+.4,bz,1,0,0,0,0);level.sendParticles(ParticleTypes.FLAME,bx,c.y+.3,bz,10,.4,.2,.4,.06);level.sendParticles(ParticleTypes.SMOKE,bx,c.y+.5,bz,8,.3,.3,.3,.03);
+                        for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,new AABB(bx-br,c.y-.5,bz-br,bx+br,c.y+br,bz+br),e->e instanceof Enemy&&e.isAlive()))
+                            if(hit.add(e))e.hurt(level.damageSources().explosion(this,getOwner()),CannonUpgrades.hit(CannonUpgrades.BOMBLET_SHARE,cfg.damage()));
+                    }
+                    Blasts.sound(level,c,ArsenalSounds.CLUSTER.get(),Blasts.FIRE_VOLUME,.95f+.1f*random.nextFloat());
+                }
+                case CRYO->{
+                    level.sendParticles(ParticleTypes.SNOWFLAKE,c.x,c.y+.6,c.z,140,r*.45,.6,r*.45,.05);level.sendParticles(ParticleTypes.ITEM_SNOWBALL,c.x,c.y+.6,c.z,40,r*.4,.4,r*.4,.1);
+                    level.sendParticles(ParticleTypes.CLOUD,c.x,c.y+.4,c.z,30,r*.4,.2,r*.4,.02);Blasts.ring(level,c,ParticleTypes.SNOWFLAKE,24,.6,.3);
+                    Blasts.sound(level,c,ArsenalSounds.CRYO.get(),Blasts.FIRE_VOLUME,1f);
+                    for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive())){
+                        boolean boss=e.getPersistentData().getBoolean("arsenalBoss");int hold=boss?CannonUpgrades.CRYO_HOLD_TICKS/2:CannonUpgrades.CRYO_HOLD_TICKS;
+                        RaidAdaptation.weaponFreeze(e,CannonUpgrades.CRYO_FROZEN_TICKS);
+                        RaidAdaptation.weaponDamage(e,level.damageSources().freeze(),CannonUpgrades.hit(CannonUpgrades.CRYO_SHARE,cfg.damage()));
+                        if(e.canFreeze())e.setTicksFrozen(Math.max(e.getTicksFrozen(),boss?CannonUpgrades.CRYO_FROZEN_TICKS/2:CannonUpgrades.CRYO_FROZEN_TICKS));
+                        e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,hold,CannonUpgrades.CRYO_SLOW_AMPLIFIER));e.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN,hold,2));
+                    }
+                }
+                case NAPALM->{
+                    burning.add(new Patch(c,r,t+CannonUpgrades.NAPALM_TICKS));
+                    Blasts.far(level,ParticleTypes.FLASH,c.x,c.y+.5,c.z,1,0,0,0,0,Blasts.FAR);
+                    level.sendParticles(ParticleTypes.FLAME,c.x,c.y+.3,c.z,160,r*.5,.3,r*.5,.08);level.sendParticles(ParticleTypes.LAVA,c.x,c.y+.3,c.z,30,r*.4,.2,r*.4,0);
+                    level.sendParticles(ParticleTypes.LARGE_SMOKE,c.x,c.y+1,c.z,30,r*.4,.5,r*.4,.05);
+                    Blasts.sound(level,c,ArsenalSounds.NAPALM.get(),Blasts.FIRE_VOLUME,1f);
+                    for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive())){RaidAdaptation.weaponFire(e,CannonUpgrades.NAPALM_BURN_SECONDS*20);e.setSecondsOnFire(CannonUpgrades.NAPALM_BURN_SECONDS);}
+                }
+                case GRAVITY->{
+                    wells.add(new Patch(c,r,t+CannonUpgrades.GRAVITY_TICKS));
+                    level.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+.6,c.z,90,r*.5,.5,r*.5,.05);level.sendParticles(ParticleTypes.PORTAL,c.x,c.y+.6,c.z,60,r*.4,.4,r*.4,1.2);
+                    Blasts.sound(level,c,ArsenalSounds.GRAVITY_HUM.get(),Blasts.FIRE_VOLUME,1f);
+                }
+                case SHOCKWAVE->{
+                    Blasts.far(level,ParticleTypes.FLASH,c.x,c.y+1,c.z,1,0,0,0,0,Blasts.FAR);level.sendParticles(ParticleTypes.SONIC_BOOM,c.x,c.y+1,c.z,1,0,0,0,0);
+                    level.sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.5,c.z,3,r*.3,.3,r*.3,0);
+                    Blasts.ring(level,c,ParticleTypes.CLOUD,32,1.6,.3);Blasts.ring(level,c,ParticleTypes.POOF,24,1.1,1.0);Blasts.debris(level,c,30,r*.3);
+                    Blasts.sound(level,c,ArsenalSounds.SHOCKWAVE.get(),Blasts.SHELL_VOLUME,1f);
+                    for(LivingEntity e:level.getEntitiesOfClass(LivingEntity.class,box,e->e instanceof Enemy&&e.isAlive())){
+                        e.hurt(level.damageSources().explosion(this,getOwner()),CannonUpgrades.hit(CannonUpgrades.SHOCKWAVE_SHARE,cfg.damage()));
+                        double[] v=CannonUpgrades.push(e.getX()-c.x,e.getZ()-c.z,CannonUpgrades.moveScale(e.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE),e.getPersistentData().getBoolean("arsenalBoss")));
+                        e.setDeltaMovement(v[0],v[1],v[2]);e.hurtMarked=true;
+                    }
+                }
+                case STARSHELL->{
+                    // the star bursts high over the flare and sinks slowly while it burns
+                    var burst=c.add(0,CannonUpgrades.STAR_BURST_HEIGHT,0);
+                    Blasts.far(level,ParticleTypes.FLASH,burst.x,burst.y,burst.z,2,.3,.3,.3,0,Blasts.FAR);Blasts.far(level,ParticleTypes.FIREWORK,burst.x,burst.y,burst.z,70,.5,.5,.5,.25,Blasts.FAR);
+                    level.playSound(null,burst.x,burst.y,burst.z,ArsenalSounds.STARSHELL.get(),SoundSource.BLOCKS,Blasts.FLARE_VOLUME,1f);
+                    Ordnance.drop(level,c.add(0,1,0),Ordnance.STAR,type,CannonUpgrades.STAR_TICKS,CannonUpgrades.STAR_BURST_HEIGHT-1,0,0);
+                    starUntil=t+CannonUpgrades.STAR_TICKS;starPulse(level);
+                }
             }
+        }
+        // ---- what keeps going after a round has landed: burning napalm, pulling gravity wells, the burning star ---------------------------
+        private void linger(ServerLevel l,int t){
+            burning.removeIf(p->t>=p.until());
+            if(!burning.isEmpty()){
+                if(t%4==0)for(var p:burning){l.sendParticles(ParticleTypes.FLAME,p.at().x,p.at().y+.2,p.at().z,12,p.r()*.5,.1,p.r()*.5,.02);l.sendParticles(ParticleTypes.SMOKE,p.at().x,p.at().y+.6,p.at().z,6,p.r()*.4,.3,p.r()*.4,.02);if(t%8==0)l.sendParticles(ParticleTypes.LAVA,p.at().x,p.at().y+.2,p.at().z,2,p.r()*.4,0,p.r()*.4,0);}
+                if(t%20==0){
+                    // once a second: every patch a mob stands in hurts it (one hit for all of them) and keeps it burning
+                    var patches=new java.util.HashMap<LivingEntity,Integer>();
+                    for(var p:burning)for(LivingEntity e:l.getEntitiesOfClass(LivingEntity.class,blastBox(p.at(),p.r()),e->e instanceof Enemy&&e.isAlive()))patches.merge(e,1,Integer::sum);
+                    patches.forEach((e,k)->{RaidAdaptation.weaponDamage(e,l.damageSources().inFire(),CannonUpgrades.napalm(k,cfg.damage()));RaidAdaptation.weaponFire(e,CannonUpgrades.NAPALM_BURN_SECONDS*20);e.setSecondsOnFire(CannonUpgrades.NAPALM_BURN_SECONDS);});
+                }
+            }
+            for(var it=wells.iterator();it.hasNext();){
+                var w=it.next();
+                if(t>=w.until()){implode(l,w);it.remove();continue;}
+                for(LivingEntity e:l.getEntitiesOfClass(LivingEntity.class,blastBox(w.at(),w.r()+CannonUpgrades.GRAVITY_REACH),e->e instanceof Enemy&&e.isAlive())){
+                    double[] v=CannonUpgrades.pull(e.getX()-w.at().x,e.getZ()-w.at().z,CannonUpgrades.moveScale(e.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE),e.getPersistentData().getBoolean("arsenalBoss")));
+                    e.setDeltaMovement(e.getDeltaMovement().add(v[0],0,v[1]));e.hurtMarked=true;
+                }
+                if(t%2==0){
+                    for(int i=0;i<6;i++){double a=t*.35+i*Math.PI/3,d=w.r()*(1-(t%20)/20.0);l.sendParticles(ParticleTypes.REVERSE_PORTAL,w.at().x+Math.cos(a)*d,w.at().y+.4,w.at().z+Math.sin(a)*d,1,0,0,0,0);}
+                    l.sendParticles(ParticleTypes.PORTAL,w.at().x,w.at().y+.6,w.at().z,12,w.r()*.5,.3,w.r()*.5,.8);
+                }
+            }
+            if(starUntil>=0){if(t>=starUntil)starUntil=-1;else if(t%CannonUpgrades.STAR_PULSE_TICKS==0)starPulse(l);}
+        }
+        /** The well collapses: everything still in the box is hurt. */
+        private void implode(ServerLevel l,Patch w){
+            var c=w.at();
+            l.sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.5,c.z,6,w.r()*.3,.3,w.r()*.3,0);l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+.5,c.z,80,w.r()*.4,.4,w.r()*.4,.3);
+            Blasts.far(l,ParticleTypes.FLASH,c.x,c.y+.5,c.z,1,0,0,0,0,Blasts.FAR);
+            Blasts.sound(l,c,ArsenalSounds.GRAVITY_IMPLODE.get(),Blasts.FIRE_VOLUME,1f);
+            for(LivingEntity e:l.getEntitiesOfClass(LivingEntity.class,blastBox(c,w.r()),e->e instanceof Enemy&&e.isAlive()))
+                e.hurt(l.damageSources().explosion(this,getOwner()),CannonUpgrades.hit(CannonUpgrades.GRAVITY_SHARE,cfg.damage()));
+        }
+        /** While the star burns: hostile mobs in its reach glow, players in it see in the dark. */
+        private void starPulse(ServerLevel l){
+            var area=bunkerBox(position(),radius());
+            for(LivingEntity e:l.getEntitiesOfClass(LivingEntity.class,area,e->e instanceof Enemy&&e.isAlive()))e.addEffect(new MobEffectInstance(MobEffects.GLOWING,CannonUpgrades.STAR_GLOW_TICKS,0,true,false));
+            for(Player p:l.getEntitiesOfClass(Player.class,area,Player::isAlive))p.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,CannonUpgrades.STAR_VISION_TICKS,0,true,false,true));
         }
         private void bolt(ServerLevel level,double x,double y,double z){
             var bolt=EntityType.LIGHTNING_BOLT.create(level);if(bolt==null)return;
@@ -380,7 +496,7 @@ final class SupportFlares {
                     if(state.isAir()||!state.getFluidState().isEmpty()||state.getDestroySpeed(level,pos)<0||bunkerSpares(state))continue;
                     level.setBlock(pos,Blocks.AIR.defaultBlockState(),Block.UPDATE_CLIENTS);dug++;
                 }
-                if(dug>0&&carveY%3==0){level.sendParticles(ParticleTypes.EXPLOSION,getX(),carveY+.5,getZ(),1,radius()*.4,0,radius()*.4,0);level.playSound(null,getX(),carveY,getZ(),SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,2f,.7f);}
+                if(dug>0&&carveY%3==0)Blasts.dig(level,new Vec3(getX(),carveY+.5,getZ()),radius());
             }
             if(carveY<carveFloor){
                 // let sand, water and torches around the hole notice it
@@ -390,6 +506,7 @@ final class SupportFlares {
                     for(int x=carveX0;x<=carveX1;x++){touch(level,pos,x,y,carveZ0);touch(level,pos,x,y,carveZ1);}
                     for(int z=carveZ0;z<=carveZ1;z++){touch(level,pos,carveX0,y,z);touch(level,pos,carveX1,y,z);}
                 }
+                Blasts.deep(level,new Vec3(getX(),carveFloor+.5,getZ()),radius());
                 carveY=Integer.MIN_VALUE;
             }
         }

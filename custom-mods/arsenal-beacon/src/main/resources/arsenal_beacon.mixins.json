@@ -12,6 +12,9 @@
     "RaiderSunlightMixin",
     "MealGrenadeMixin"
   ],
+  "client": [
+    "RaidMusicMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

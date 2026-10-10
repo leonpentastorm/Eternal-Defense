@@ -1,4 +1,4 @@
-"""Icons of the six fire support types (64 x 64, the same painted style as the flare sprites).
+"""Icons of the twelve fire support types (64 x 64, the same painted style as the flare sprites).
 
 They are drawn in the cannon menu next to each type's name and, large, in the "current support" banner and HUD.
 """
@@ -151,4 +151,133 @@ def curse():
     return im
 
 
-ICONS = {'explosion': explosion, 'arrow': arrow, 'narukami': narukami, 'bunker': bunker, 'heal': heal, 'curse': curse}
+RAMPS['ice'] = [hx(c) for c in ('#0b2f45', '#145a80', '#2b93c4', '#6fd0f2', '#bff0ff', '#f4fdff')]
+RAMPS['star'] = [hx(c) for c in ('#5a3d00', '#a87400', '#f2b705', '#ffe066', '#fff6c2', '#ffffff')]
+
+
+def cluster():
+    """A canister shell breaking open over five falling bomblets."""
+    im = new(64, 64)
+    d = ImageDraw.Draw(im)
+    # the opened canister, tilted, at the top
+    d.polygon([(18, 4), (34, 4), (36, 18), (16, 18)], fill=pick('steel', .55))
+    d.polygon([(20, 4), (26, 4), (26, 18), (18, 18)], fill=pick('steel', .8))
+    d.rectangle((16, 12, 36, 14), fill=pick('ember', .7))
+    d.polygon([(16, 18), (12, 24), (20, 20)], fill=pick('steel', .4)); d.polygon([(36, 18), (42, 24), (33, 20)], fill=pick('steel', .4))
+    # the bomblets, each with a spark trail
+    for (x, y, r) in ((14, 34, 5), (30, 30, 5), (46, 32, 5), (22, 50, 5), (40, 50, 5)):
+        for k in range(1, 4): d.point((x - k, y - 2 * k), fill=pick('ember', .9 - k * .15))
+        sphere(im, x, y, r, 'dark')
+        im.putpixel((x - 2, y - 2), pick('ember', .95)); im.putpixel((x - 1, y - 2), pick('ember', .7))
+    spark(im, 52, 14, 'ember', 3); spark(im, 8, 18, 'ember', 2)
+    outline(im)
+    return im
+
+
+def cryo():
+    """A six-armed ice crystal over a cold glow."""
+    im = new(64, 64)
+    glow(im, 32, 32, 28, 'ice', .55)
+    d = ImageDraw.Draw(im)
+    for k in range(6):
+        a = k * math.pi / 3 - math.pi / 2
+        x1, y1 = 32 + math.cos(a) * 27, 32 + math.sin(a) * 27
+        d.line([(32, 32), (x1, y1)], fill=pick('ice', .85), width=4)
+        d.line([(32, 32), (x1, y1)], fill=pick('ice', .99), width=1)
+        for t, l in ((.55, 9), (.8, 6)):
+            bx, by = 32 + math.cos(a) * 27 * t, 32 + math.sin(a) * 27 * t
+            for side in (-1, 1):
+                b = a + side * math.pi / 3.2
+                d.line([(bx, by), (bx + math.cos(b) * l, by + math.sin(b) * l)], fill=pick('ice', .8), width=2)
+    sphere(im, 32, 32, 6, 'ice')
+    for (x, y, s) in ((10, 10, 2), (54, 14, 3), (12, 52, 3), (52, 52, 2)):
+        spark(im, x, y, 'ice', s)
+    outline(im)
+    return im
+
+
+def napalm():
+    """A wall of fire rolling over the ground."""
+    im = new(64, 64)
+    d = ImageDraw.Draw(im)
+    tongues = [(6, 30), (14, 14), (22, 26), (30, 6), (38, 22), (46, 10), (54, 28), (60, 20)]
+    base = [(2, 56), (62, 56)]
+    d.polygon([base[0]] + tongues + [base[1]], fill=pick('red', .55))
+    inner = [(x, y + 10 + (4 if i % 2 else 0)) for i, (x, y) in enumerate(tongues)]
+    d.polygon([(6, 56)] + inner + [(58, 56)], fill=pick('ember', .55))
+    core = [(x, min(54, y + 22)) for (x, y) in tongues[1:-1]]
+    d.polygon([(12, 56)] + core + [(52, 56)], fill=pick('ember', .85))
+    d.rectangle((2, 56, 61, 60), fill=pick('dark', .45))
+    for (x, y, s) in ((8, 6, 2), (56, 4, 3), (30, 2, 2)):
+        spark(im, x, y, 'ember', s)
+    outline(im)
+    return im
+
+
+def gravity():
+    """A violet vortex with a black core, pulling specks in."""
+    im = new(64, 64)
+    glow(im, 32, 32, 30, 'purple', .5)
+    for arm in range(3):
+        for k in range(160):
+            t = k / 160
+            a = arm * 2 * math.pi / 3 + t * 3.4 * math.pi
+            r = 4 + 25 * t
+            x, y = int(32 + math.cos(a) * r), int(32 + math.sin(a) * r)
+            for dx in (0, 1):
+                if 0 <= x + dx < 64 and 0 <= y < 64: im.putpixel((x + dx, y), pick('purple', .95 - .55 * t))
+    sphere(im, 32, 32, 6, 'dark')
+    for (x, y) in ((8, 20), (54, 44), (46, 8), (14, 52), (58, 24)):
+        im.putpixel((x, y), pick('purple', .99)); im.putpixel((x + 1, y), pick('purple', .7))
+    outline(im)
+    return im
+
+
+def shockwave():
+    """A white-hot burst with pressure rings running outward."""
+    im = new(64, 64)
+    d = ImageDraw.Draw(im)
+    for r, v in ((29, .45), (22, .65), (15, .85)):
+        d.ellipse((32 - r, 32 - r, 32 + r, 32 + r), outline=pick('star', v), width=3)
+    glow(im, 32, 32, 11, 'star', 1.2)
+    sphere(im, 32, 32, 6, 'star')
+    for k in range(8):
+        a = k * math.pi / 4 + math.pi / 8
+        d.line([(32 + math.cos(a) * 9, 32 + math.sin(a) * 9), (32 + math.cos(a) * 16, 32 + math.sin(a) * 16)], fill=pick('cloth', .95), width=1)
+    outline(im)
+    return im
+
+
+def starshell():
+    """A burning star hanging under a small parachute, lighting the night."""
+    im = new(64, 64)
+    glow(im, 32, 42, 22, 'star', .6)
+    d = ImageDraw.Draw(im)
+    d.pieslice((14, 2, 50, 30), 180, 360, fill=pick('cloth', .7))
+    d.pieslice((18, 5, 46, 27), 180, 360, fill=pick('cloth', .9))
+    for x in (16, 32, 48):
+        d.line([(x, 16), (32, 38)], fill=pick('cloth', .5), width=1)
+    pts = []
+    for i in range(10):
+        a = i * math.pi / 5 - math.pi / 2
+        r = 12 if i % 2 == 0 else 5
+        pts.append((32 + math.cos(a) * r, 44 + math.sin(a) * r))
+    d.polygon(pts, fill=pick('star', .75))
+    sphere(im, 32, 44, 4, 'star')
+    for (x, y, s) in ((8, 40, 3), (56, 38, 3), (14, 58, 2), (50, 58, 2)):
+        spark(im, x, y, 'star', s)
+    outline(im)
+    return im
+
+
+ICONS = {'explosion': explosion, 'arrow': arrow, 'narukami': narukami, 'bunker': bunker, 'heal': heal, 'curse': curse,
+         'cluster': cluster, 'cryo': cryo, 'napalm': napalm, 'gravity': gravity, 'shockwave': shockwave, 'starshell': starshell}
+
+if __name__ == '__main__':
+    # Writes only the icons named on the command line (all twelve without names): make_sprites.py rewrites much more than icons.
+    import sys, pathlib
+    out = pathlib.Path(__file__).resolve().parents[2] / 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon/textures/gui/fire_support'
+    for name in sys.argv[1:] or list(ICONS):
+        im = ICONS[name](); im.save(out / f'{name}.png')
+        for px in (32, 16): im.resize((px, px), Image.BOX).save(out / f'{name}_{px}.png')
+        print('icon', name)

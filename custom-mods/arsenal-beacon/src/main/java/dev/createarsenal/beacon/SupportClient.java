@@ -33,21 +33,25 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 public final class SupportClient {
     private SupportClient(){}
     static final ResourceLocation TURRET=new ResourceLocation(ArsenalBeacon.ID,"block/support_cannon_turret"),BARREL=new ResourceLocation(ArsenalBeacon.ID,"block/support_cannon_barrel"),
-        PARCEL=new ResourceLocation(ArsenalBeacon.ID,"block/support_parcel");
+        PARCEL=new ResourceLocation(ArsenalBeacon.ID,"block/support_parcel"),SHELL=new ResourceLocation(ArsenalBeacon.ID,"block/support_shell"),
+        BOMB=new ResourceLocation(ArsenalBeacon.ID,"block/support_bomb");
 
-    @SubscribeEvent public static void supportModels(ModelEvent.RegisterAdditional e){e.register(TURRET);e.register(BARREL);e.register(PARCEL);}
+    @SubscribeEvent public static void supportModels(ModelEvent.RegisterAdditional e){e.register(TURRET);e.register(BARREL);e.register(PARCEL);e.register(SHELL);e.register(BOMB);}
     @SubscribeEvent public static void supportRenderers(EntityRenderersEvent.RegisterRenderers e){
         e.registerBlockEntityRenderer(ArsenalBeacon.CANNON_ENTITY.get(),CannonRenderer::new);
         e.registerBlockEntityRenderer(ArsenalBeacon.SUPPORT_PLATFORM_ENTITY.get(),PlatformRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.PARCEL.get(),ParcelRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.FLARE.get(),FlareRenderer::new);
         e.registerEntityRenderer(ArsenalBeacon.RAIDER_GATE.get(),GateRenderer::new);
+        e.registerEntityRenderer(ArsenalBeacon.ORDNANCE.get(),OrdnanceRenderer::new);
     }
     @SubscribeEvent public static void supportScreens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(ArsenalBeacon.SUPPORT_MENU.get(),SupportScreen::new));}
 
-    static void draw(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay){
+    static void draw(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay){drawTinted(pose,buffer,type,model,light,overlay,1f,1f,1f);}
+    /** Draws an additional block model; faces with a tint index take the colour (the rest keep their texture's own colours). */
+    static void drawTinted(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay,float r,float g,float b){
         var mc=Minecraft.getInstance();BakedModel baked=mc.getModelManager().getModel(model);
-        mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),buffer.getBuffer(type),null,baked,1f,1f,1f,light,overlay,ModelData.EMPTY,type);
+        mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),buffer.getBuffer(type),null,baked,r,g,b,light,overlay,ModelData.EMPTY,type);
     }
 
     // ---- owner nameplates ---------------------------------------------------------------------------------------------------
@@ -186,8 +190,9 @@ public final class SupportClient {
          */
         private void area(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             double r=e.radius();
-            AABB box=e.type()==CannonUpgrades.FireType.BUNKER?new AABB(-r,-r,-r,r,r,r):new AABB(-r,-0.5,-r,r,r,r);
-            float[] c=switch(e.type()){case HEAL->new float[]{.2f,1f,.35f};case CURSE->new float[]{.7f,.25f,1f};case NARUKAMI->new float[]{1f,.85f,.2f};case ARROW->new float[]{1f,.55f,.15f};default->new float[]{1f,.1f,.1f};};
+            AABB box=e.type()==CannonUpgrades.FireType.BUNKER||e.type()==CannonUpgrades.FireType.STARSHELL?new AABB(-r,-r,-r,r,r,r):new AABB(-r,-0.5,-r,r,r,r);
+            float[] c=switch(e.type()){case HEAL->new float[]{.2f,1f,.35f};case CURSE->new float[]{.7f,.25f,1f};case NARUKAMI->new float[]{1f,.85f,.2f};case ARROW->new float[]{1f,.55f,.15f};
+                case EXPLOSION,BUNKER->new float[]{1f,.1f,.1f};default->{int a=SupportHud.accent(e.type());yield new float[]{((a>>16)&255)/255f,((a>>8)&255)/255f,(a&255)/255f};}};
             float pulse=.75f+.25f*Mth.sin((e.tickCount+partial)*.2f);
             LevelRenderer.renderLineBox(pose,buffer.getBuffer(RenderType.lines()),box,c[0],c[1],c[2],pulse);
         }
@@ -213,6 +218,36 @@ public final class SupportClient {
     private static void corner(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v,int red,int green,int blue,int alpha){
         vc.vertex(m,x,y,0f).color(red,green,blue,alpha).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
     }
+    /**
+     * Falling ordnance: a shell banded in its fire support's colour, or the Bunker Buster bomb (bigger, slowly turning), both nose down;
+     * a starshell is drawn as a burning star that sinks slowly after it bursts.
+     */
+    static final class OrdnanceRenderer extends EntityRenderer<Ordnance> {
+        static final ResourceLocation STAR=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/starshell.png");
+        OrdnanceRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
+        @Override public void render(Ordnance o,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
+            float age=o.tickCount+partial;
+            if(o.style()==Ordnance.STAR){
+                float size=1.3f+.15f*Mth.sin(age*.5f);
+                pose.pushPose();pose.translate(0,.2,0);pose.scale(size,size,size);
+                pose.mulPose(entityRenderDispatcher.cameraOrientation());pose.mulPose(Axis.YP.rotationDegrees(180f));
+                var last=pose.last();var vc=buffer.getBuffer(RenderType.entityTranslucentEmissive(STAR));
+                quad(vc,last.pose(),last.normal(),-.5f,-.5f,0f,1f);quad(vc,last.pose(),last.normal(),.5f,-.5f,1f,1f);quad(vc,last.pose(),last.normal(),.5f,.5f,1f,0f);quad(vc,last.pose(),last.normal(),-.5f,.5f,0f,0f);
+                pose.popPose();return;
+            }
+            boolean bomb=o.style()==Ordnance.BOMB;int c=SupportHud.accent(o.type());
+            pose.pushPose();
+            pose.mulPose(Axis.YP.rotationDegrees(age*(bomb?5f:14f)));
+            float scale=bomb?1.3f:1f;pose.scale(scale,scale,scale);pose.translate(-.5,0,-.5);
+            drawTinted(pose,buffer,RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS),bomb?BOMB:SHELL,light,OverlayTexture.NO_OVERLAY,((c>>16)&255)/255f,((c>>8)&255)/255f,(c&255)/255f);
+            pose.popPose();
+        }
+        private static void quad(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v){
+            vc.vertex(m,x,y,0f).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
+        }
+        @Override public ResourceLocation getTextureLocation(Ordnance o){return TextureAtlas.LOCATION_BLOCKS;}
+    }
+
     /** The gate a stuck raider channels beside: the Return portal sprite in red, at about half the speed. Nothing else is drawn. */
     static final class GateRenderer extends EntityRenderer<RaiderGate> {
         GateRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}

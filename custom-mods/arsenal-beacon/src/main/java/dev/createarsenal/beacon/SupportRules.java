@@ -12,8 +12,11 @@ final class SupportRules {
     /** A Bunker Buster takes this share of a player's maximum health, whatever armor they wear. */
     static final float BUNKER_PLAYER_SHARE=0.5f;
     static final int PORTAL_LIFETIME_TICKS=600;
-    /** Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. */
-    static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=10;
+    /**
+     * Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. A shell is seen falling from high above
+     * the flare for BLAST_FLIGHT_TICKS after the cannon fires (1.5 seconds, long enough to hear it whistle in; 0.5 before 0.0.16).
+     */
+    static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=30;
     /** Seconds until supplies arrive, counted from the moment the flare lands. */
     static final int SUPPLY_SECONDS_OUTSIDE=12,SUPPLY_SECONDS_UNDERGROUND=7;
     static final int PARCEL_DROP_HEIGHT=40,PARCEL_MIN_DROP=8,PARCEL_LIFETIME_TICKS=36000;

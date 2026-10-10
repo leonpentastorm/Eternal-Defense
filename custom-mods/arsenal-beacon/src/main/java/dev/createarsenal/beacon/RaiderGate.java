@@ -16,6 +16,8 @@ import net.minecraftforge.network.NetworkHooks;
  * the vanilla spawn packet is enough for clients to see it.
  */
 final class RaiderGate extends Entity {
+    /** Server: this one is the exit at a channeler's destination (raiders come out of it; nobody joins it). */
+    boolean exit;
     RaiderGate(EntityType<? extends RaiderGate> type,Level level){super(type,level);noPhysics=true;}
     @Override protected void defineSynchedData(){}
     @Override protected void readAdditionalSaveData(CompoundTag tag){}

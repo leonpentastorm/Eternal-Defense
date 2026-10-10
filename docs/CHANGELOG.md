@@ -1,5 +1,19 @@
 # Change log
 
+## 0.0.16 — Beautify Path: raid music, falling shells, bigger blasts, exit gates, six new fire supports (2026-10-10)
+
+Branch `feature/beautify-path` (from `feature/optimize-path`, 0.0.15). **No packet was added or changed: the network protocol stays 28** (new sounds and the new entity are registry entries; an older client is refused by the registry check). Rules: GDD section 5.5 and section 7; tests: `docs/BEAUTIFY-PATH-TESTING.md`.
+
+* **Raid music.** Three original themes (`tools/audio/compose.py`): *Hold the Line* (ordinary raids), *Strange Signals* (special raids) and *Iron Tyrant* (hard raids, from the first wave). They replace the game's music while a raid runs and you are near the beacon, and loop. Winning plays an original fanfare (*Laurels*) at once; losing or walking away stops the theme. The Music volume slider controls all of it (a client mixin on `Minecraft.getSituationalMusic`, since Forge 47 has no music event).
+* **Cannon and flare sounds.** A new shot (heard 128 blocks away), gear grinding and pawl clanks while it turns, a clank when it locks on. A landing flare cracks loudly with a flash, sparks and a signal plume.
+* **Falling rounds.** The cannon fires into the sky and each round is seen falling from 48 blocks above the flare: a 3D shell banded in the fire support's colour, or the Bunker Buster's bomb, with smoke and a whistle that follows it down. Nothing flies from the cannon to the target, and a flare underground is reached through the rock. **Every round now takes 1.5 s to land (was 0.5 s; the Bunker Buster was already 1.5 s).**
+* **Bigger blasts.** Explosion Barrage shells and the Bunker Buster have far bigger flashes, fireballs, pressure rings, smoke columns and thrown earth, seen up to 160 blocks away, and echoing blast sounds; the bomb keeps rumbling as it bores down. Nearby players' view shakes (scaled by the Screen Effect Scale option, off at 0).
+* **Exit gates.** A channeling raider's destination now gets its own red gate when it is shown (3 s before the jump); the raider steps out of it and it closes 2 s later.
+* **Six new fire support types:** Cluster Strike, Cryo Shell, Napalm Carpet, Gravity Well, Shockwave and Starshell (numbers in the GDD and the Field Guide Reference tab), each with an icon, a colour, a sound and a guide line. Saved choices keep their meaning (the new types are appended).
+* **Cannon menu.** The fire support list scrolls (mouse wheel) and keeps the chosen type in view; the three-level upgrades, Area of effect included, are on top; a maxed upgrade can still be hovered and says "Fully upgraded".
+* Field Guide: six new type lines and their numbers, the falling rounds, the second red gate, the raid music. Subtitles for every new sound.
+* Tests: 154 unit tests pass (new `BeautifyPathTest`); the gate GameTest also checks the exit gate. Both editions build. **Not yet run in a real client** in this round (see the testing document).
+
 ## 0.0.15 — Optimize Path: the same game, less work per tick (2026-10-10)
 
 Branch `feature/optimize-path` (from `feature/raider-gates`, 0.0.14). **No feature, number or packet changed: the network protocol stays 28.** Audit and changes: `docs/OPTIMIZE-PATH.md`; tests and measurements: `docs/OPTIMIZE-PATH-TESTING.md`.

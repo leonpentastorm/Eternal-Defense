@@ -19,7 +19,7 @@ public final class RaidAdaptation {
     private static final TagKey<EntityType<?>> WEAPONS=TagKey.create(Registries.ENTITY_TYPE,new ResourceLocation(ArsenalBeacon.ID,"adaptation_exempt_sources"));
     private static final TagKey<DamageType> EXEMPT=TagKey.create(Registries.DAMAGE_TYPE,new ResourceLocation(ArsenalBeacon.ID,"adaptation_exempt"));
     private static final ThreadLocal<Boolean> WEAPON_CALL=ThreadLocal.withInitial(()->false);
-    private static final String FIRE_UNTIL="arsenalWeaponFireUntil",POISON_UNTIL="arsenalWeaponPoisonUntil",WITHER_UNTIL="arsenalWeaponWitherUntil";
+    private static final String FIRE_UNTIL="arsenalWeaponFireUntil",POISON_UNTIL="arsenalWeaponPoisonUntil",WITHER_UNTIL="arsenalWeaponWitherUntil",FREEZE_UNTIL="arsenalWeaponFreezeUntil";
 
     // Specific spikes precede broad vanilla fall tags (stalagmite belongs to both).
     enum Kind {
@@ -63,6 +63,7 @@ public final class RaidAdaptation {
         if(source.is(DamageTypes.ON_FIRE)&&n.getLong(FIRE_UNTIL)>now)return null;
         if(source.is(DamageTypes.MAGIC)&&n.getLong(POISON_UNTIL)>now)return null;
         if(source.is(DamageTypes.WITHER)&&n.getLong(WITHER_UNTIL)>now)return null;
+        if(source.is(DamageTypes.FREEZE)&&n.getLong(FREEZE_UNTIL)>now)return null;
         for(var k:Kind.values())if(source.is(k.tag))return k;
         return null; // Void, commands, starvation and unknown combat types are never inferred as traps.
     }
@@ -73,6 +74,10 @@ public final class RaidAdaptation {
     }
     public static void weaponFire(LivingEntity target,int ticks){
         target.getPersistentData().putLong(FIRE_UNTIL,target.level().getGameTime()+Math.max(0,ticks)+20);
+    }
+    /** A weapon froze the target (the Cryo Shell): the frost damage that follows belongs to the weapon, not to a trap. */
+    public static void weaponFreeze(LivingEntity target,int ticks){
+        target.getPersistentData().putLong(FREEZE_UNTIL,target.level().getGameTime()+Math.max(0,ticks)+20);
     }
     public static final class Events {
         @SubscribeEvent(priority=EventPriority.LOWEST) public void attack(LivingAttackEvent e){

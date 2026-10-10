@@ -81,10 +81,10 @@ public final class RaiderGateGameTests {
         var cell=BEACON.east(40);
         for(var side:List.of(cell.east(),cell.west(),cell.north(),cell.south()))for(int y=0;y<2;y++)l.setBlock(side.above(y),Blocks.STONE.defaultBlockState(),2|16);
         l.setBlock(cell.above(2),Blocks.STONE.defaultBlockState(),2|16);
-        var mob=raider(f,EntityType.HUSK,cell,false);BeaconCombat.attach(mob);long start=l.getGameTime();long[] channelAt={-1},outAt={-1};var seenAt=new Vec3[]{null};
+        var mob=raider(f,EntityType.HUSK,cell,false);BeaconCombat.attach(mob);long start=l.getGameTime();long[] channelAt={-1},outAt={-1};var seenAt=new Vec3[]{null};boolean[] exitAtArrival={false};
         h.onEachTick(()->{long t=l.getGameTime()-start;if(t>0&&t%SEC==0){second(f,mob);
             if(channelAt[0]<0&&RaiderGates.channeling(mob.getUUID())){channelAt[0]=t;seenAt[0]=mob.position();}
-            if(channelAt[0]>=0&&outAt[0]<0&&!mob.blockPosition().equals(cell))outAt[0]=t;}});
+            if(channelAt[0]>=0&&outAt[0]<0&&!mob.blockPosition().equals(cell)){outAt[0]=t;exitAtArrival[0]=gatesNear(l,mob.blockPosition(),3).stream().anyMatch(g->g.exit);}}});
         h.succeedWhen(()->{
             h.assertTrue(channelAt[0]>=0,"the sealed raider has not started to channel yet");
             h.assertTrue(Math.abs(channelAt[0]-RaidMarch.STUCK_SECONDS*SEC)<=SEC*8,"it started to channel after "+channelAt[0]+" ticks, expected about "+RaidMarch.STUCK_SECONDS*SEC);
@@ -97,6 +97,8 @@ public final class RaiderGateGameTests {
             h.assertTrue(mob.fallDistance==0&&mob.getNavigation().isDone()&&!RaiderGates.channeling(mob.getUUID()),"no leftover fall, path or channel");
             h.assertTrue(f.campaign().raiders.contains(mob.getUUID())&&mob.isAlive(),"it stays part of the raid");
             h.assertTrue(gatesNear(l,cell,12).isEmpty(),"the gate is gone once nobody is assigned to it");
+            h.assertTrue(exitAtArrival[0],"a second red gate stood where the raider came out");
+            h.assertTrue(RaiderGates.exits()==0&&gatesNear(l,mob.blockPosition(),6).isEmpty(),"the exit gate closes "+RaidMarch.EXIT_LINGER_SECONDS+" seconds after the raider stepped out");
             mob.discard();for(var side:List.of(cell.east(),cell.west(),cell.north(),cell.south()))for(int y=0;y<2;y++)l.setBlock(side.above(y),Blocks.AIR.defaultBlockState(),2|16);l.setBlock(cell.above(2),Blocks.AIR.defaultBlockState(),2|16);
         });
     }

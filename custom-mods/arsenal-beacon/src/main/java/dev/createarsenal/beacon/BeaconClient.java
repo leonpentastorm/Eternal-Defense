@@ -45,6 +45,8 @@ public final class BeaconClient {
     /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
     private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
     private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
+    /** Which raid theme should play for this player now (see {@link RaidMusic#cue}); "" for none. */
+    static String raidMusicCue(){return RaidMusic.cue(current(),state.getString("phase"),state.getBoolean("near"),state.getBoolean("hardRaid"),state.getString("raidType"));}
     private static boolean holding(){var p=Minecraft.getInstance().player;return p!=null&&(p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get()));}
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
