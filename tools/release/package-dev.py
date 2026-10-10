@@ -45,11 +45,14 @@ WHAT IS NEW IN 0.0.20 (since the 0.0.19 bundle)
   gets a map with a red X and a Return Flare; the warband comes out of red gates when you get within 64 blocks; the last kill pays
   Ardent Energy and ammo coins into the beacon's reward chest. SCAN MAP draws the land around the base on the table.
 * No more repeating "Reinforcements are waiting" line: with no open ground far out, enemies come out of red gates closer in, and
-  chat says so once a wave. Every enemy the mod places comes out of a red gate. /arsenal test-gate shows one (operators).
+  chat says so once a wave. Every enemy the mod places comes out of a red gate, which stands just behind it (bigger than a
+  stuck raider's gate) and stays 5 seconds. /arsenal test-gate shows one (operators).
 * Raid enemies start with Speed II for 10 seconds.
 * Your 0.0.18 incoming sound is back, played where the round lands: heard whichever way you look.
 * Cannon menu: Effect, Damage and Area for each fire support, with your own cannon's numbers; the card scrolls.
-* Cryo Shell 3 blocks wider every way. Starshell: see docs/TACTICAL-OPERATIONS-TESTING.md (the effects a player really gets).
+* Cryo Shell 3 blocks wider every way. Starshell: in this build a player in its light gets Haste II and no Regeneration (checked
+  in the game); if you still see Regeneration, tell us which cannon type and which parcel were near (the Healing Barrage and the
+  parcel's Healing aura give Regeneration).
 * The mission-cleared jingle is a placeholder (your Victory Fanfare) until you send a song for it.
 
 WHAT WAS NEW IN 0.0.19
