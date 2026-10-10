@@ -12,7 +12,7 @@ final class HandTunedRoundTest {
     // ---- sounds ------------------------------------------------------------------------------------------------------------
     @Test void theOwnersSoundsAreShippedAndMonoWhereTheyArePlacedInTheWorld() throws Exception{
         var sounds=json("/assets/arsenal_beacon/sounds.json");var lang=json("/assets/arsenal_beacon/lang/en_us.json");
-        var files=Map.of("cannon.fire","cannon_fire","cannon.turning","cannon_turning","cannon.turning_done","cannon_turning_done","ordnance.incoming","ordnance_incoming",
+        var files=Map.of("cannon.fire","cannon_fire","cannon.turning","cannon_turning","cannon.turning_done","cannon_turning_done",
             "bunker.buster","bunker_buster","fire.cluster_strike","cluster_strike","fire.shockwave","shockwave","beacon.attacked","beacon_attacked");
         for(var e:files.entrySet()){
             var event=sounds.getAsJsonObject(e.getKey());assertNotNull(event,e.getKey());
@@ -21,20 +21,17 @@ final class HandTunedRoundTest {
             int channels=ogg("/assets/arsenal_beacon/sounds/sfx/"+e.getValue()+".ogg").channels();
             assertEquals(e.getKey().equals("beacon.attacked")?2:1,channels,e.getValue()+": a sound placed in the world must be mono");
         }
-        for(String gone:List.of("cannon.traverse","cannon.clank","cannon.lock","shell.whistle","bomb.whistle","shell.explosion","bunker.impact","bunker.dig","fire.cluster","fire.gravity_implode"))
+        // (the shell and bomb whistles came back in 0.0.19, RadioAndWhistleTest)
+        for(String gone:List.of("cannon.traverse","cannon.clank","cannon.lock","shell.explosion","bunker.impact","bunker.dig","fire.cluster","fire.gravity_implode",
+            "ordnance.incoming"))
             assertFalse(sounds.has(gone),gone+" was replaced");
     }
-    @Test void theCannonFiresWhenTheLockSoundEndsAndTheRoundLandsWhenTheScreamEnds() throws Exception{
+    @Test void theCannonFiresWhenTheLockSoundEnds() throws Exception{
         double done=ogg("/assets/arsenal_beacon/sounds/sfx/cannon_turning_done.ogg").seconds();
         assertEquals(Math.ceil(done*20),SupportCannon.DONE_TICKS,"the gun fires the tick the lock sound ends ("+done+" s)");
         assertEquals(SupportCannon.DONE_TICKS,SupportCannon.SETTLE_TICKS);
-        double incoming=ogg("/assets/arsenal_beacon/sounds/sfx/ordnance_incoming.ogg").seconds();
-        // the scream cuts off 0.2 s before the file ends (a short fade follows the impact)
-        assertEquals(incoming-.2,SupportRules.BLAST_FLIGHT_TICKS/20.0,.1,"the round lands as the incoming sound hits ("+incoming+" s)");
-        // any pitch but 1 stretches the sound and moves its impact off the landing (the Bunker Buster's bomb had .92 at first: 0.45 s late)
-        var play=java.util.regex.Pattern.compile("ArsenalSounds\\.INCOMING\\.get\\(\\),SoundSource\\.BLOCKS,INCOMING_VOLUME,([^,]+),")
-            .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/createarsenal/beacon/OrdnanceClient.java")));
-        assertTrue(play.find(),"the incoming sound is played");assertEquals("1f",play.group(1),"the incoming sound plays at pitch 1");
+        // the 0.0.18 incoming sound set this pace (its impact 5.15 s in); it gave way to the whistle in 0.0.19 and the owner kept the pace
+        assertEquals(103,SupportRules.BLAST_FLIGHT_TICKS);
     }
     @Test void theAttackAlarmSoundsWhenTheWarningShowsAndRepeats(){
         assertTrue(BeaconAlerts.alarm(true,-1),"when the warning appears");

@@ -247,6 +247,7 @@ final class SupportFlares {
                 if(cfg.type()==CannonUpgrades.FireType.BUNKER&&BaseZone.touches(server,box())){bunkerHome(server,owner);return;}
                 if(!cfg.tunnel()&&server.dimensionType().hasSkyLight()&&SupportRules.underground(cover(server,blockPosition()))){underground(server,owner);return;}
             }
+            if(t==0&&dest==null)SupportChatter.say(server,position(),kind,owner);   // the call is taken: the radio answers
             if(t%2==0)server.sendParticles(kind==SupportCalls.Kind.FIRE?ParticleTypes.FLAME:kind==SupportCalls.Kind.SUPPLY?ParticleTypes.END_ROD:ParticleTypes.WITCH,getX(),getY()+.25,getZ(),2,.06,.15,.06,.02);
             if(t%6==0)server.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,getX(),getY()+.3,getZ(),0,0,.07,0,1);
             if(kind==SupportCalls.Kind.FIRE&&cfg.slow()&&t%10==0)slowField(server);

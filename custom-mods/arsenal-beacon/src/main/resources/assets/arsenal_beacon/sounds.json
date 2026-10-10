@@ -31,12 +31,35 @@
       }
     ]
   },
-  "music.raid_normal": {
+  "music.acid_redeemer": {
     "sounds": [
       {
-        "name": "arsenal_beacon:music/raid_normal",
-        "stream": true,
-        "volume": 0.92
+        "name": "arsenal_beacon:music/acid_redeemer",
+        "stream": true
+      }
+    ]
+  },
+  "music.assault_loop": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/assault_loop",
+        "stream": true
+      }
+    ]
+  },
+  "music.breach_core": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/breach_core",
+        "stream": true
+      }
+    ]
+  },
+  "music.rolling_wave": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/rolling_wave",
+        "stream": true
       }
     ]
   },
@@ -48,29 +71,11 @@
       }
     ]
   },
-  "music.raid_boss": {
-    "sounds": [
-      {
-        "name": "arsenal_beacon:music/raid_boss",
-        "stream": true,
-        "volume": 0.89
-      }
-    ]
-  },
   "music.anomaly_protocol": {
     "sounds": [
       {
         "name": "arsenal_beacon:music/anomaly_protocol",
         "stream": true
-      }
-    ]
-  },
-  "music.raid_special": {
-    "sounds": [
-      {
-        "name": "arsenal_beacon:music/raid_special",
-        "stream": true,
-        "volume": 0.86
       }
     ]
   },
@@ -90,12 +95,6 @@
       }
     ],
     "subtitle": "subtitles.arsenal_beacon.cannon.fire"
-  },
-  "flare.signal": {
-    "sounds": [
-      "arsenal_beacon:sfx/flare_signal"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.flare.signal"
   },
   "fire.cryo": {
     "sounds": [
@@ -137,14 +136,6 @@
     ],
     "subtitle": "subtitles.arsenal_beacon.cannon.turning_done"
   },
-  "ordnance.incoming": {
-    "sounds": [
-      {
-        "name": "arsenal_beacon:sfx/ordnance_incoming"
-      }
-    ],
-    "subtitle": "subtitles.arsenal_beacon.ordnance.incoming"
-  },
   "bunker.buster": {
     "sounds": [
       {
@@ -176,5 +167,53 @@
       }
     ],
     "subtitle": "subtitles.arsenal_beacon.beacon.attacked"
+  },
+  "shell.whistle": {
+    "sounds": [
+      "arsenal_beacon:sfx/shell_whistle"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.shell.whistle"
+  },
+  "bomb.whistle": {
+    "sounds": [
+      "arsenal_beacon:sfx/bomb_whistle"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.bomb.whistle"
+  },
+  "flare.chatter_1": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_1"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "flare.chatter_2": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_2"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "flare.chatter_3": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_3"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "flare.chatter_4": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_4"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "flare.chatter_5": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_5"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "flare.chatter_6": {
+    "sounds": [
+      "arsenal_beacon:sfx/chatter_6"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.flare.chatter"
   }
 }

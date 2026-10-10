@@ -1,0 +1,25 @@
+# What the game played in the PACK run of 0.0.19 (checks-pack.txt), 2026-10-10. Same method as audio-standalone.txt; nobody listened.
+# Time = seconds into the capture (sound engine started 13:40:17).
+
+## Songs (which_song.py, r >= 0.7)
+   38-40 s Breach Core, 44-48 Rolling Wave, 50-52 Phase One Assault, 54-58 Silent Trigger, 60-62 Line Holder, 64-66 Acid Redeemer,
+   70-74 Barren Gap, 76-78 Boss Battle  (hard raid of 8 waves: eight different songs, the boss song last)
+   80-84 Anomaly Protocol, 86-88 Breach Core, 90-94 Rolling Wave, 96-100 Phase One Assault  (special raid of 4 waves)
+   Each song plays from its start (position 1 to 3 s into the song in the first window). No removed 0.0.16 theme.
+   (No victory in the pack run: the pack's completion rewards need Create, which the development runtime does not have.)
+
+## Radio lines (chatter_1..6, r >= 0.5)
+   103.10 line 5, 109.10 line 2, 115.14 line 4, 121.28 line 2, 127.36 line 6, 133.48 line 5   (six fire flares; r=0.86-0.96)
+   139.68 line 1, 145.78 line 4, 151.86 line 1                                                 (three supply flares)
+   none for the return flare and the refused flare; 168.48 line 4 (barrage flare), 187.26 line 6 (Bunker Buster flare)
+   The flare siren and the 0.0.18 incoming sound were searched for in the whole capture: not found.
+
+## The whistle (matched 1.0-1.4 s into the file; pitches as the client logged them: 0.964, 1.033, 0.942, 1.012, 0.921, 0.990; bomb 0.931)
+   shell whistle start   ends at    blast heard   end minus blast
+   173.04 s              174.65 s   174.66 s      -0.01 s
+   175.12 s              176.62 s   176.64 s      -0.02 s
+   177.08 s              178.73 s   178.68 s      +0.05 s
+   179.14 s              180.67 s   180.68 s      -0.01 s
+   181.02 s              182.70 s   182.66 s      +0.04 s
+   183.12 s              184.69 s   184.64 s      +0.05 s
+   bomb 191.96 s         193.62 s   193.62 s       0.00 s (the Bunker Buster's own blast)

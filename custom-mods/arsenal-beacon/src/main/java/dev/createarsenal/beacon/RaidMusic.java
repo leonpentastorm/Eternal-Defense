@@ -27,8 +27,8 @@ public final class RaidMusic {
     private RaidMusic(){}
     /** Fades (ticks): a new song comes in, an old one goes out (a wave change), the raid song gives way to the fanfare. */
     static final int FADE_IN=30,FADE_OUT=60,FADE_FOR_VICTORY=10;
-    /** How long the fanfare owns the music (its length plus a breath), then how long the game's own music still waits (ticks). */
-    static final int VICTORY_TICKS=200,QUIET_AFTER=600;
+    /** How long the fanfare owns the music (its length, 10 s since the owner's fanfare of 0.0.19, plus a breath), then how long the game's own music still waits (ticks). */
+    static final int VICTORY_TICKS=220,QUIET_AFTER=600;
     /** A track that does not play (the sound engine dropped it) is started again after this many ticks. */
     static final int RESTART_AFTER=40;
     /** Height of the player strip (pixels). */

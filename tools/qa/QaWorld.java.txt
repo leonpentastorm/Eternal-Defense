@@ -1120,6 +1120,138 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(160,()->{SAMPLERS.clear();check("alarm: it sounded when the banner came up and once more 8 s later (10 s attack, banner up 4 s after)",alarms==2,"alarms="+alarms);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE alarm over");},"attack over");
         }
     }
+    // ---- r9 (0.0.19): the owner's songs with no repeat in a raid, the new fanfare, the radio chatter instead of the siren, the whistle back ----
+    static boolean part9(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r9.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return false;}}
+    /** Every sound of the mod (and the firework pop) the client really starts: game time, event, pitch. */
+    record Heard(long tick,long nanos,String id,float pitch,double x,double y,double z){}
+    static final java.util.List<Heard> HEARD=new java.util.concurrent.CopyOnWriteArrayList<>();
+    static final java.util.Map<Integer,Long> LANDING9=new java.util.concurrent.ConcurrentHashMap<>();
+    static final java.util.List<long[]> WHISTLE9=new java.util.concurrent.CopyOnWriteArrayList<>();   // {ordnance id, start tick, end tick x100}
+    static boolean listening9;static int heard0;static java.util.List<String> songs9=new java.util.ArrayList<>();static int flares9;
+    static long now9(){return mc().level==null?0:mc().level.getGameTime();}
+    static void listen9(){
+        if(listening9)return;listening9=true;
+        mc().getSoundManager().addListener((sound,events)->{
+            var id=sound.getLocation();
+            if(!id.getNamespace().equals(ArsenalBeacon.ID)&&!id.getPath().contains("firework_rocket.blast")&&!id.getPath().equals("entity.generic.explode"))return;
+            HEARD.add(new Heard(now9(),System.nanoTime(),id.toString(),sound.getPitch(),sound.getX(),sound.getY(),sound.getZ()));
+            com.mojang.logging.LogUtils.getLogger().info("QA_SOUND {} {} pitch {}",now9(),id,String.format("%.3f",sound.getPitch()));
+            if(id.getPath().endsWith("whistle")&&mc().level!=null)
+                for(var o:mc().level.getEntitiesOfClass(Ordnance.class,new net.minecraft.world.phys.AABB(sound.getX(),sound.getY(),sound.getZ(),sound.getX(),sound.getY(),sound.getZ()).inflate(3)))
+                    WHISTLE9.add(new long[]{o.getId(),now9(),Math.round((now9()+OrdnanceClient.WHISTLE_SECONDS*20/sound.getPitch())*100)});
+        });
+    }
+    static java.util.List<Heard> heardSince(int from,String path){var out=new java.util.ArrayList<Heard>();for(int i=from;i<HEARD.size();i++)if(HEARD.get(i).id().endsWith(path)||path.isEmpty())out.add(HEARD.get(i));return out;}
+    static java.util.List<Heard> chatterSince(int from){var out=new java.util.ArrayList<Heard>();for(int i=from;i<HEARD.size();i++)if(HEARD.get(i).id().contains("flare.chatter_"))out.add(HEARD.get(i));return out;}
+    /** Milliseconds from the end of each whistle (its start plus its length at its pitch) to the first blast heard after it (a blast 1 to 2.5 s after the whistle starts). */
+    static java.util.List<Long> whistleGaps(String whistle,String blast){
+        var out=new java.util.ArrayList<Long>();var blasts=heardSince(heard0,blast);
+        for(var w:heardSince(heard0,whistle)){long end=w.nanos()+Math.round(OrdnanceClient.WHISTLE_SECONDS/w.pitch()*1e9);Long best=null;
+            for(var b:blasts){long d=b.nanos()-w.nanos();if(d<1_000_000_000L||d>2_500_000_000L)continue;long gap=(end-b.nanos())/1_000_000;if(best==null||Math.abs(gap)<Math.abs(best))best=gap;}
+            out.add(best==null?Long.MIN_VALUE:best);}
+        return out;
+    }
+    static int line9(Heard h){return Integer.parseInt(h.id().substring(h.id().lastIndexOf('_')+1));}
+    static void raidState9(String type,boolean hard,int tier,int wave){srv(()->{var d=CampaignData.get(sl());d.phase="raid";d.raidType=type;d.hardRaid=hard;d.raidTier=tier;d.introRaid=false;d.introCompleted=true;d.wave=wave;d.raidsStarted=11;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.setDirty();BeaconNetwork.syncNearby(sl(),d);});}
+    static RaidPlaylist.Song planned9(String type,boolean hard,int wave,int waves){return srvGet(()->{var d=CampaignData.get(sl());return RaidPlaylist.song(RaidPlaylist.cue(true,"raid",hard,wave,waves,type),RaidPlaylist.seed(d.beacon.asLong(),d.raidsStarted),wave);});}
+    static void flare9(BlockPos ground,SupportCalls.Kind kind,CannonUpgrades.FireType type){srv(()->{
+        var base=SupportData.get(sl()).of(sp().getUUID());
+        var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],type);
+        var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(kind,new net.minecraft.nbt.ListTag(),cfg);
+        f.setPos(ground.getX()+.5,ground.getY()+1.6,ground.getZ()+.5);f.setDeltaMovement(0,-.3,0);sl().addFreshEntity(f);});}
+    static void scriptR9(){
+        step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("gamerule doFireTick false");cmd("weather clear");beacon(true);listen9();},"setup");
+        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(10,()->placeHeld(at(0,-1,0)),"place platform");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(10,()->placeHeld(at(8,-1,6)),"place cannon");
+        step(20,()->{srv(()->{inv().clearContent();clearMonsters();});},"settle");
+        if(part9("music")){
+            // a hard raid of eight waves (reward tier 5): eight different songs, the boss song last
+            step(5,()->{mc().options.hideGui=false;face(sx+.5,sy,sz-4+.5,180,0);RaidMusic.setEnabled(true);RaidMusic.setPlayerShown(true);songs9.clear();heard0=HEARD.size();},"music on");
+            for(int w=1;w<=8;w++){final int wave=w;
+                step(100,()->{raidState9("normal",true,5,wave);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE hard raid wave {} of 8",wave);},"hard raid, wave "+wave);
+                step(1,()->{var s=RaidMusic.nowPlaying();songs9.add(s==null?"none":s.id());var want=planned9("normal",true,wave,8);
+                    check("music: hard raid wave "+wave+" of 8 plays its planned song",s!=null&&s.equals(want),(s==null?"none":s.id())+" planned "+(want==null?"none":want.id()));
+                    if(wave==2)shot("r9_music_wave2");},"wave "+wave+" song");
+            }
+            step(1,()->{check("music: eight waves, eight different songs",new java.util.HashSet<>(songs9).size()==8&&!songs9.contains("none"),String.join(",",songs9));
+                check("music: the boss wave plays the boss song",songs9.size()==8&&songs9.get(7).equals("boss_battle"),String.join(",",songs9));
+                var started=new java.util.LinkedHashSet<String>();for(var h:heardSince(heard0,""))if(h.id().contains(":music."))started.add(h.id().substring(h.id().indexOf(":music.")+7));
+                check("music: the client started each of those songs",started.containsAll(songs9),"started="+started);
+                check("music: none of the removed 0.0.16 themes",started.stream().noneMatch(n->n.startsWith("raid_")),"started="+started);},"eight songs");
+            // a special raid of four waves (tier 1): it opens with its own song, then three ordinary songs, no repeat
+            step(5,()->{songs9.clear();},"special raid");
+            for(int w=1;w<=4;w++){final int wave=w;
+                step(100,()->raidState9("siege",false,1,wave),"special raid, wave "+wave);
+                step(1,()->{var s=RaidMusic.nowPlaying();songs9.add(s==null?"none":s.id());var want=planned9("siege",false,wave,4);
+                    check("music: special raid wave "+wave+" plays its planned song",s!=null&&s.equals(want),(s==null?"none":s.id())+" planned "+(want==null?"none":want.id()));},"special wave "+wave+" song");
+            }
+            step(1,()->{check("music: a special raid opens with Anomaly Protocol and never repeats",songs9.size()==4&&songs9.get(0).equals("anomaly_protocol")&&new java.util.HashSet<>(songs9).size()==4,String.join(",",songs9));},"special songs");
+            if(BuildFlavor.STANDALONE){
+                step(2,()->{heard0=HEARD.size();srv(()->{var d=CampaignData.get(sl());d.raidType="normal";d.hardRaid=false;d.raidTier=0;d.wave=Rules.waves(0);d.spawnRemaining=0;d.raiders.clear();d.setDirty();});},"clear the last wave");
+                until("victory",400,()->!srvGet(()->CampaignData.get(sl()).phase.equals("raid"))&&RaidMusic.nowPlaying()==null,()->{});
+                step(10,()->{check("victory: the owner's fanfare plays",!heardSince(heard0,"music.victory").isEmpty(),"");check("victory: the raid song stopped and the fanfare holds the music",RaidMusic.nowPlaying()==null&&RaidMusic.holdsMusic(),"");com.mojang.logging.LogUtils.getLogger().info("QA_NOTE victory fanfare");},"victory");
+                step(240,()->{},"the fanfare plays (10 s)");
+            }
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.setDirty();BeaconNetwork.syncNearby(sl(),d);}),"raid over");
+            step(60,()->{},"quiet");
+        }
+        if(part9("chatter")){
+            // six fire support flares: each landing gets one radio line, never the same twice in a row, and no siren
+            step(5,()->{clearFlares();srv(()->{sp().teleportTo(sl(),sx+14.5,sy,sz+40.5,0,0);sp().setGameMode(net.minecraft.world.level.GameType.CREATIVE);});heard0=HEARD.size();flares9=0;},"chatter: stand south of the base");
+            for(int i=0;i<6;i++){final int k=i;
+                step(5,()->{flare9(at(10+k*2,-1,48),SupportCalls.Kind.FIRE,CannonUpgrades.FireType.EXPLOSION);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE fire flare {}",k+1);},"fire flare "+(k+1));
+                step(115,()->clearFlares(),"fire flare "+(k+1)+" answered");
+            }
+            step(1,()->{var lines=chatterSince(heard0);var seq=new java.util.ArrayList<Integer>();for(var h:lines)seq.add(line9(h));
+                check("chatter: each of the six fire flares got one radio line",lines.size()==6,"lines="+seq);
+                boolean repeat=false;for(int i=1;i<seq.size();i++)if(seq.get(i).equals(seq.get(i-1)))repeat=true;
+                check("chatter: never the same line twice in a row",!repeat,"lines="+seq);
+                check("chatter: the lines play at normal pitch on the player",lines.stream().allMatch(h->Math.abs(h.pitch()-1)<.001),"");
+                check("chatter: the flare siren is gone",heardSince(heard0,"flare.signal").isEmpty(),"");
+                check("chatter: each landing pops (the game's firework blast)",heardSince(heard0,"firework_rocket.blast").size()>=6,"pops="+heardSince(heard0,"firework_rocket.blast").size());
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE fire lines {}",seq);heard0=HEARD.size();},"fire lines");
+            for(int i=0;i<3;i++){final int k=i;
+                step(5,()->flare9(at(10+k*2,-1,52),SupportCalls.Kind.SUPPLY,CannonUpgrades.FireType.EXPLOSION),"supply flare "+(k+1));
+                step(115,()->clearFlares(),"supply flare "+(k+1)+" answered");
+            }
+            step(1,()->{var seq=new java.util.ArrayList<Integer>();for(var h:chatterSince(heard0))seq.add(line9(h));
+                check("chatter: a supply flare gets only line 1 or 4, never the same twice in a row",seq.size()==3&&seq.stream().allMatch(n->n==1||n==4)&&!seq.get(0).equals(seq.get(1))&&!seq.get(1).equals(seq.get(2)),"lines="+seq);
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE supply lines {}",seq);heard0=HEARD.size();
+                flare9(at(14,-1,56),SupportCalls.Kind.RETURN,CannonUpgrades.FireType.EXPLOSION);},"return flare");
+            step(100,()->{check("chatter: a return flare gets no radio line",chatterSince(heard0).isEmpty(),"lines="+chatterSince(heard0).size());clearFlares();heard0=HEARD.size();
+                srv(()->{var st=net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)for(int y=3;y<6;y++)sl().setBlock(at(30+x,y,48+z),st,3);});
+                flares9=count(sp(),"arsenal_beacon:fire_support_flare");},"build a thick roof");
+            step(5,()->flare9(at(30,-1,48),SupportCalls.Kind.FIRE,CannonUpgrades.FireType.EXPLOSION),"fire flare under the roof");
+            step(100,()->{check("chatter: a refused call (under cover, no Quantum) gets no radio line",chatterSince(heard0).isEmpty()&&count(sp(),"arsenal_beacon:fire_support_flare")==flares9+1,"lines="+chatterSince(heard0).size()+" flares="+count(sp(),"arsenal_beacon:fire_support_flare"));clearFlares();},"refused, silent");
+        }
+        if(part9("whistle")){
+            // an Explosion Barrage: six whistles, each ending the tick its shell lands; then a Bunker Buster's bomb whistle
+            step(5,()->{clearFlares();WHISTLE9.clear();LANDING9.clear();heard0=HEARD.size();srv(()->sp().teleportTo(sl(),sx+14.5,sy,sz+40.5,0,0));
+                SAMPLERS.clear();SAMPLERS.add(()->{if(mc().level!=null)for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o&&(o.style()==Ordnance.SHELL||o.style()==Ordnance.BOMB))LANDING9.putIfAbsent(o.getId(),now9()+o.flight()-o.tickCount);});
+                shots0=cannon().shots;flare9(at(14,-1,52),SupportCalls.Kind.FIRE,CannonUpgrades.FireType.EXPLOSION);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE barrage flare");},"barrage");
+            until("barrage: six shells landed",1500,()->cannon().shots-shots0>=6&&LANDING9.size()>=6&&LANDING9.values().stream().allMatch(t->t<now9()-5),()->{});
+            step(40,()->{var whistles=heardSince(heard0,"shell.whistle");
+                check("whistle: six shell whistles for six shells",whistles.size()==6,"whistles="+whistles.size());
+                check("whistle: no 0.0.18 incoming sound",heardSince(heard0,"ordnance.incoming").isEmpty(),"");
+                check("whistle: pitches 0.92 to 1.08",whistles.stream().allMatch(h->h.pitch()>=.919f&&h.pitch()<=1.081f),"");
+                var gaps=whistleGaps("shell.whistle","entity.generic.explode");
+                check("whistle: each ends as its shell's blast is heard (within 80 ms)",gaps.size()==6&&gaps.stream().allMatch(g->Math.abs(g)<=80),"whistle end minus blast (ms) "+gaps);
+                clearFlares();SAMPLERS.clear();},"barrage whistles");
+            step(5,()->{WHISTLE9.clear();LANDING9.clear();heard0=HEARD.size();shots0=cannon().shots;
+                SAMPLERS.add(()->{if(mc().level!=null)for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o&&(o.style()==Ordnance.SHELL||o.style()==Ordnance.BOMB))LANDING9.putIfAbsent(o.getId(),now9()+o.flight()-o.tickCount);});
+                flare9(at(14,-1,64),SupportCalls.Kind.FIRE,CannonUpgrades.FireType.BUNKER);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE bunker flare");},"bunker buster");
+            until("bunker: the bomb landed",1500,()->cannon().shots-shots0>=1&&LANDING9.size()>=1&&LANDING9.values().stream().allMatch(t->t<now9()-5),()->{});
+            step(60,()->{var w=heardSince(heard0,"bomb.whistle");
+                check("whistle: the Bunker Buster's bomb whistles (pitch 0.9 to 1.0)",w.size()==1&&w.get(0).pitch()>=.899f&&w.get(0).pitch()<=1.001f,"bomb whistles="+w.size());
+                var gaps=whistleGaps("bomb.whistle","bunker.buster");
+                check("whistle: the bomb's whistle ends as its blast is heard (within 80 ms)",gaps.size()==1&&Math.abs(gaps.get(0))<=80,"whistle end minus blast (ms) "+gaps);
+                check("bunker: its own blast sound",!heardSince(heard0,"bunker.buster").isEmpty(),"");
+                clearFlares();SAMPLERS.clear();},"bomb whistle");
+        }
+    }
     static boolean strangerMenu;static Vec3 landAt,portalAt,fireAt;static long throwStart,landTick,parcelAppeared;
 
     static int energyBefore,flaresBefore,shotsBefore;static float healthBefore;
@@ -1141,7 +1273,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             if(++r8Watch%20==0)srv(()->{var d=CampaignData.get(sl());if(d.lastAttackTick!=r8LastAttack&&d.beacon!=null){r8LastAttack=d.lastAttackTick;var b=Vec3.atCenterOf(d.beacon);var who=new StringBuilder();
                 for(var ent:sl().getEntities(null,new net.minecraft.world.phys.AABB(b,b).inflate(6)))if(ent instanceof net.minecraft.world.entity.Mob m&&!(ent instanceof BeaconCombat.Objective))who.append(m.getType().getDescriptionId()).append(m.isNoAi()?"(noAI)":"").append(String.format(" %.1f; ",Math.sqrt(m.distanceToSqr(b))));
                 com.mojang.logging.LogUtils.getLogger().info("QA_NOTE beacon hit at game tick {}; mobs within 6 blocks: {}",d.lastAttackTick,who.length()==0?"none":who);}});}
-        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r8.flag").exists())scriptR8();else if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r9.flag").exists())scriptR9();else if(new java.io.File("/tmp/claude-0/qa-r8.flag").exists())scriptR8();else if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
         if(wait>0){wait--;return;}
         var head=STEPS.peek();
         if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}

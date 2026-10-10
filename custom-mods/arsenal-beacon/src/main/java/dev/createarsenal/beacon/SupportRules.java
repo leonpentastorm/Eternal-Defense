@@ -14,8 +14,9 @@ final class SupportRules {
     static final int PORTAL_LIFETIME_TICKS=600;
     /**
      * Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. A round takes BLAST_FLIGHT_TICKS from the
-     * shot to the impact: 5.15 seconds since 0.0.18, the moment the owner's incoming-shell sound (ordnance_incoming.ogg) hits (1.5 s in 0.0.16,
-     * 0.5 s before). It is seen falling from high above the flare the whole time.
+     * shot to the impact: 5.15 seconds since 0.0.18 (1.5 s in 0.0.16, 0.5 s before). It was set by the owner's incoming sound of 0.0.18; in
+     * 0.0.19 that sound gave way to the 0.0.16 whistle again (it now starts 1.55 s before the impact) and the owner kept this pace. It is seen
+     * falling from high above the flare the whole time.
      */
     static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=103;
     /**

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Converts the owner's raid songs (MP3) into the OGG Vorbis files the game plays.
 
-Usage: python3 import_songs.py <folder with Boss/, Normal/, Special raid/> <out_dir>
+Usage: python3 import_songs.py <the owner's upload folder> <out_dir>
 
-Each song is cut free of silence at both ends (a looping song must not pause at its seam), brought to the same loudness
+Every song of the table below that is in the folder is converted (the owner's uploads: 0.0.17 had Boss/, Normal/, Special raid/;
+0.0.19 had New songs/, with four more ordinary songs and the victory fanfare). Each song is cut free of silence at both ends (a looping song must not pause at its seam), brought to the same loudness
 (-16 LUFS, two-pass linear EBU R128, so its dynamics are untouched), stripped of its cover picture and tags, and written as
 48 kHz stereo Vorbis (quality 4). Needs ffmpeg with libvorbis. The table below is the whole mapping: file name, the
-resource name in sounds/music/, and the pool; RaidMusic.SONGS must list the same resource names, titles and lengths.
+resource name in sounds/music/, and the pool ("victory" is the fanfare); RaidPlaylist.SONGS must list the same resource names
+and lengths, and the lang file the titles (the owner's file names; the MP3 title tags of three 0.0.19 songs differ).
 """
 import json, os, re, subprocess, sys
 
@@ -17,6 +19,11 @@ SONGS = [
     ("Normal/Silent Trigger.mp3", "silent_trigger", "normal"),
     ("Boss/Boss Battle.mp3", "boss_battle", "boss"),
     ("Special raid/Anomaly Protocol.mp3", "anomaly_protocol", "special"),
+    ("New songs/Acid Redeemer.mp3", "acid_redeemer", "normal"),
+    ("New songs/Assault Loop.mp3", "assault_loop", "normal"),
+    ("New songs/Breach Core.mp3", "breach_core", "normal"),
+    ("New songs/Rolling Wave.mp3", "rolling_wave", "normal"),
+    ("New songs/Victory Fanfare.mp3", "victory", "victory"),
 ]
 TARGET_LUFS = -16.0
 TRIM = "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.3,areverse"
@@ -44,6 +51,8 @@ def main():
     src_dir, out_dir = sys.argv[1], sys.argv[2]
     os.makedirs(out_dir, exist_ok=True)
     for rel, name, pool in SONGS:
+        if not os.path.exists(os.path.join(src_dir, rel)):
+            continue
         m, length = convert(os.path.join(src_dir, rel), os.path.join(out_dir, name + ".ogg"))
         print(f"{name:20s} {pool:8s} {length:7.2f} s  input {m['input_i']} LUFS -> {TARGET_LUFS}")
 

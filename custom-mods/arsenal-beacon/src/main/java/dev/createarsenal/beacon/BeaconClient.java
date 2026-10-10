@@ -47,8 +47,8 @@ public final class BeaconClient {
     private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
     /** The raid song this wave plays (see {@link RaidPlaylist}), or null when no raid is running. */
     static RaidPlaylist.Song raidSong(){
-        String pool=RaidPlaylist.cue(current(),state.getString("phase"),state.getBoolean("hardRaid"),n("wave"),n("waves"),state.getString("raidType"));
-        return pool.isEmpty()?null:RaidPlaylist.song(pool,RaidPlaylist.seed(state.getLong("beacon"),n("raidsStarted")),n("wave"));
+        String cue=RaidPlaylist.cue(current(),state.getString("phase"),state.getBoolean("hardRaid"),n("wave"),n("waves"),state.getString("raidType"));
+        return RaidPlaylist.song(cue,RaidPlaylist.seed(state.getLong("beacon"),n("raidsStarted")),n("wave"));
     }
     private static boolean holding(){var p=Minecraft.getInstance().player;return p!=null&&(p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get()));}
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}

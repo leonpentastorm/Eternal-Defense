@@ -6,7 +6,7 @@ Usage: find_sfx.py <capture.wav> <name=file.ogg[@pitch,pitch...]> ... [--thresho
 The capture is downmixed to mono and resampled to 16 kHz; each sound (at each listed pitch: OpenAL plays a pitch by
 resampling, so a pitch p shortens the sound by 1/p) is slid along it and the normalised cross-correlation is computed
 (1.00 = the capture at that moment is exactly that sound, scaled). Peaks above the threshold, at least half a sound apart, are
-printed with their time into the capture (with --skip, a later part of each sound is matched and the time printed is still where the sound began, at pitch 1). Only the first `--head` seconds of each sound are matched (default 1.5 s), so a
+printed with their time into the capture and the pitch that matched best (with --skip, a later part of each sound is matched and the time printed is still where the sound began). Only the first `--head` seconds of each sound are matched (default 1.5 s), so a
 long sound still matches when something else starts on top of its tail.
 """
 import argparse, subprocess
@@ -67,15 +67,18 @@ def main():
         name, rest = spec.split("=", 1)
         path, _, pitches = rest.partition("@")
         base = decode(path)
-        best = None
+        best = which = None
         for p in [float(v) for v in pitches.split(",")] if pitches else [1.0]:
             r = resample(base, p); k = int(a.skip / p * RATE); t = r[k:k + int(a.head * RATE)]
             s = ncc(x, t)
-            best = s if best is None else np.maximum(best, s)
+            if best is None: best, which = s, np.full(len(s), p)
+            else:
+                n = min(len(best), len(s)); better = s[:n] > best[:n]
+                which[:n][better] = p; best[:n] = np.maximum(best[:n], s[:n])
         for i in peaks(best, a.threshold, max(1, len(t) // 2)):
-            found.append((offset + i / RATE - a.skip, name, best[i]))
-    for when, name, score in sorted(found):
-        print(f"{when:8.2f} s  {name:22s} r={score:.2f}")
+            found.append((offset + i / RATE - a.skip / which[i], name, best[i], which[i]))
+    for when, name, score, pitch in sorted(found):
+        print(f"{when:8.2f} s  {name:22s} r={score:.2f}  pitch {pitch:.3f}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,15 @@
 # Change log
 
+## 0.0.19 — Your songs only, no repeats, the whistle back, the radio answers (2026-10-10)
+
+On `dev`. **No packet was added or changed: the network protocol stays 28.** Rules: GDD 0.0.19 (Part A "Raid music and the music player", section 7 "UI and audio"); tests: `docs/NEW-SOUND-TESTING.md`.
+
+* **Raid music is all yours:** four more songs (Acid Redeemer, Assault Loop, Breach Core, Rolling Wave) join the ordinary ones, so there are eight, as many as the longest raid has waves. The three themes and the victory fanfare made for 0.0.16 (Hold the Line, Iron Tyrant, Strange Signals, Laurels) are removed. Winning plays your Victory Fanfare.
+* **No song plays twice in one raid:** the waves go through the eight ordinary songs in a shuffled order. A special raid opens with Anomaly Protocol and goes on with ordinary songs; a hard raid's boss wave plays Boss Battle. Every player of the base still hears the same song.
+* **The falling round whistles again** (the 0.0.16 shell and bomb whistles): the whistle rides the round for the last 1.55 s of its fall and ends as it lands. Your 0.0.18 incoming sound is removed; the 5.15 s from shot to impact stays.
+* **No more flare siren.** A landing flare pops (the game's firework blast), and when its call is taken your radio answers with one of your six fire support lines, picked at random and never the same twice in a row. A supply flare gets "payload incoming" or "stay out of the drop zone"; a return flare and a refused call (under cover without Quantum tunneling, a Bunker Buster at home) get none. The line follows you on the Voice/Speech volume slider.
+* Unit tests: 173 (new `RadioAndWhistleTest`; `MusicPlayerTest` checks that no song repeats in any raid of 3 to 8 waves).
+
 ## 0.0.18 — Your hand-tuned sounds, a heavier cannon, reworked fire supports (2026-10-10)
 
 On `dev`. **No packet was added or changed: the network protocol stays 28** (new sound events and an entity data field are registry and entity data, not packets). Rules: GDD 0.0.18 (Part A upgrade table, section 5.5, section 7); tests: `docs/HAND-TUNED-ROUND-TESTING.md`.

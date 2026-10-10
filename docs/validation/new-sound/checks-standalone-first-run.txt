@@ -1,0 +1,61 @@
+# 0.0.19 real-client run, STANDALONE edition, FIRST run (scenario r9), 2026-10-10: 33 pass, 2 fail.
+# The two fails: the whistles were timed to end on the client's landing tick and ended 0.8 to 2.4 ticks before it by the client's
+# game clock; the recording (audio-standalone.txt, first run) showed them ending 0.03 to 0.10 s before the blast. Fixed
+# (OrdnanceClient.BLAST_HEARD_AFTER_LANDING) and the check now compares each whistle's end with the blast the client hears.
+[13:27:35] QA_START spawn 5 -60 6
+[13:27:39] QA_NOTE hard raid wave 1 of 8
+[13:27:44] QA_CHECK PASS music: hard raid wave 1 of 8 plays its planned song breach_core planned breach_core
+[13:27:44] QA_NOTE hard raid wave 2 of 8
+[13:27:49] QA_CHECK PASS music: hard raid wave 2 of 8 plays its planned song phase_one_assault planned phase_one_assault
+[13:27:49] QA_SHOT r9_music_wave2
+[13:27:50] QA_NOTE hard raid wave 3 of 8
+[13:27:55] QA_CHECK PASS music: hard raid wave 3 of 8 plays its planned song assault_loop planned assault_loop
+[13:27:55] QA_NOTE hard raid wave 4 of 8
+[13:28:00] QA_CHECK PASS music: hard raid wave 4 of 8 plays its planned song barren_gap planned barren_gap
+[13:28:00] QA_NOTE hard raid wave 5 of 8
+[13:28:05] QA_CHECK PASS music: hard raid wave 5 of 8 plays its planned song line_holder planned line_holder
+[13:28:05] QA_NOTE hard raid wave 6 of 8
+[13:28:10] QA_CHECK PASS music: hard raid wave 6 of 8 plays its planned song rolling_wave planned rolling_wave
+[13:28:10] QA_NOTE hard raid wave 7 of 8
+[13:28:15] QA_CHECK PASS music: hard raid wave 7 of 8 plays its planned song acid_redeemer planned acid_redeemer
+[13:28:15] QA_NOTE hard raid wave 8 of 8
+[13:28:20] QA_CHECK PASS music: hard raid wave 8 of 8 plays its planned song boss_battle planned boss_battle
+[13:28:21] QA_CHECK PASS music: eight waves, eight different songs breach_core,phase_one_assault,assault_loop,barren_gap,line_holder,rolling_wave,acid_redeemer,boss_battle
+[13:28:21] QA_CHECK PASS music: the boss wave plays the boss song breach_core,phase_one_assault,assault_loop,barren_gap,line_holder,rolling_wave,acid_redeemer,boss_battle
+[13:28:21] QA_CHECK PASS music: the client started each of those songs started=[breach_core, phase_one_assault, assault_loop, barren_gap, line_holder, rolling_wave, acid_redeemer, boss_battle]
+[13:28:21] QA_CHECK PASS music: none of the removed 0.0.16 themes started=[breach_core, phase_one_assault, assault_loop, barren_gap, line_holder, rolling_wave, acid_redeemer, boss_battle]
+[13:28:26] QA_CHECK PASS music: special raid wave 1 plays its planned song anomaly_protocol planned anomaly_protocol
+[13:28:31] QA_CHECK PASS music: special raid wave 2 plays its planned song breach_core planned breach_core
+[13:28:36] QA_CHECK PASS music: special raid wave 3 plays its planned song phase_one_assault planned phase_one_assault
+[13:28:41] QA_CHECK PASS music: special raid wave 4 plays its planned song assault_loop planned assault_loop
+[13:28:41] QA_CHECK PASS music: a special raid opens with Anomaly Protocol and never repeats anomaly_protocol,breach_core,phase_one_assault,assault_loop
+[13:28:42] QA_CHECK PASS victory: the owner's fanfare plays 
+[13:28:42] QA_CHECK PASS victory: the raid song stopped and the fanfare holds the music 
+[13:28:42] QA_NOTE victory fanfare
+[13:28:58] QA_NOTE fire flare 1
+[13:29:04] QA_NOTE fire flare 2
+[13:29:10] QA_NOTE fire flare 3
+[13:29:16] QA_NOTE fire flare 4
+[13:29:22] QA_NOTE fire flare 5
+[13:29:29] QA_NOTE fire flare 6
+[13:29:35] QA_CHECK PASS chatter: each of the six fire flares got one radio line lines=[5, 4, 3, 4, 1, 5]
+[13:29:35] QA_CHECK PASS chatter: never the same line twice in a row lines=[5, 4, 3, 4, 1, 5]
+[13:29:35] QA_CHECK PASS chatter: the lines play at normal pitch on the player 
+[13:29:35] QA_CHECK PASS chatter: the flare siren is gone 
+[13:29:35] QA_CHECK PASS chatter: each landing pops (the game's firework blast) pops=6
+[13:29:35] QA_NOTE fire lines [5, 4, 3, 4, 1, 5]
+[13:29:53] QA_CHECK PASS chatter: a supply flare gets only line 1 or 4, never the same twice in a row lines=[1, 4, 1]
+[13:29:53] QA_NOTE supply lines [1, 4, 1]
+[13:29:53] QA_CHECK PASS chatter: a return flare gets no radio line lines=0
+[13:29:58] QA_CHECK PASS chatter: a refused call (under cover, no Quantum) gets no radio line lines=0 flares=1
+[13:30:04] QA_NOTE barrage flare
+[13:30:20] QA_CHECK PASS whistle: six shell whistles for six shells whistles=6
+[13:30:20] QA_CHECK PASS whistle: no 0.0.18 incoming sound 
+[13:30:20] QA_CHECK PASS whistle: pitches 0.92 to 1.08 
+[13:30:20] QA_CHECK FAIL whistle: each ends within a tick of its shell's landing end minus landing (ticks) [-0.9, -2.0, -1.3, -2.4, -1.6, -0.8]
+[13:30:20] QA_CHECK PASS whistle: it starts 1.4 to 1.7 s before the landing 
+[13:30:22] QA_NOTE bunker flare
+[13:30:29] QA_CHECK PASS whistle: the Bunker Buster's bomb whistles (pitch 0.9 to 1.0) bomb whistles=1
+[13:30:29] QA_CHECK FAIL whistle: the bomb's whistle ends within a tick of its landing 
+[13:30:29] QA_CHECK PASS bunker: its own blast sound 
+[13:30:32] QA_DONE pass=33 fail=2

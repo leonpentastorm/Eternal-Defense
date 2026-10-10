@@ -1,0 +1,46 @@
+# What the game played in the STANDALONE runs of 0.0.19 (checks-standalone.txt, checks-standalone-first-run.txt), 2026-10-10.
+# The client ran with OpenAL Soft's "wave" backend, so its real mixed output went to a WAV file; nobody listened. Tools:
+# tools/audio/which_song.py (every 2 s window against every song file, normalised cross-correlation; r = 1.00 means that song at
+# that position) and tools/audio/find_sfx.py (each effect, at every pitch the code can give it; prints the start and the best pitch).
+# Time = seconds into the capture of the final run (sound engine started 13:35:10).
+
+## Songs (final run; which_song.py, windows with r >= 0.7 shown)
+   38-40 s  Acid Redeemer      (hard raid of 8 waves, wave 1)          r=1.00/0.99, position 1.9 then 3.9 s: playing from its start
+   42-46 s  Assault Loop       (wave 2; picture standalone-music-wave2.jpg shows "Assault Loop 0:04" under the beacon card)
+   48-50 s  Rolling Wave       (wave 3)
+   52-56 s  Silent Trigger     (wave 4)
+   58-62 s  Breach Core        (wave 5)
+   64-66 s  Barren Gap         (wave 6)
+   68-72 s  Phase One Assault  (wave 7)
+   74-78 s  Boss Battle        (wave 8, the boss wave)
+   80-82 s  Anomaly Protocol   (special raid, wave 1)
+   84-88 s  Acid Redeemer      (special raid, wave 2)
+   90-92 s  Assault Loop       (wave 3)
+   94-96 s  Rolling Wave       (wave 4)
+  100-106 s Victory           r=1.00, positions 1.2, 3.2, 5.2, 7.2 s: the owner's fanfare, played to its end (10 s); quiet after
+  No window matched Hold the Line, Iron Tyrant, Strange Signals or the 0.0.16 fanfare: those files are no longer in the mod.
+  First run (another beacon position, so another order): Breach Core, Phase One Assault, Assault Loop, Barren Gap, Line Holder,
+  Rolling Wave, Acid Redeemer, Boss Battle; then Anomaly Protocol, Breach Core, Phase One Assault, Assault Loop; then the fanfare
+  (r=1.00 for 8 s). Each song began within 2 s of its wave; no song twice in a raid.
+
+## Radio lines (final run; find_sfx.py on chatter_1..6.ogg, r >= 0.5, whole capture)
+  115.36 line 3, 121.38 line 1, 127.44 line 2, 133.54 line 6, 139.64 line 3, 145.76 line 1   (six fire flares, 6 s apart; r=0.85-0.96)
+  151.96 line 4, 158.02 line 1, 164.10 line 4                                                 (three supply flares: only 1 and 4)
+  (none for the return flare and none for the refused flare under the roof, 170 to 175 s)
+  180.68 line 5 (the barrage flare), 199.38 line 4 (the Bunker Buster flare)
+  Never the same line twice in a row. The 0.0.16 flare siren (flare_signal.ogg) was searched for in the whole capture: not found.
+  First run: fire 5, 4, 3, 4, 1, 5; supply 1, 4, 1 (r=0.84-0.96); no siren.
+
+## The whistle (final run; find_sfx.py on the whistles matched 1.0-1.4 s into the file; blasts: Minecraft's explode1-4 and bunker_buster)
+  shell whistle start (pitch)   ends at (start + 1.55 s / pitch)   blast heard   whistle end minus blast
+  185.28 s (0.955)              186.91 s                           186.94 s      -0.03 s
+  187.36 s (1.020)              188.88 s                           188.92 s      -0.04 s
+  189.30 s (0.930)              190.97 s                           190.90 s      +0.07 s
+  191.36 s (1.000)              192.91 s                           192.94 s      -0.03 s
+  193.46 s (1.070)              194.91 s                           194.90 s      +0.01 s
+  195.32 s (0.980)              196.90 s                           196.88 s      +0.02 s
+  bomb whistle 204.02 s (0.925)  205.70 s                          205.70 s      0.00 s (the Bunker Buster's own blast)
+  The pitches found in the audio are the ones the client logged (QA_SOUND: 0.953, 1.022, 0.931, 1.001, 1.070, 0.980; bomb 0.924).
+  The 0.0.18 incoming sound (ordnance_incoming.ogg, from git) was searched for in the whole capture: not found.
+  First run (whistles timed to the client's landing tick): six shell whistles ended 0.03 to 0.10 s (0.07 s on average) before their
+  blasts, the bomb's 0.10 s before. That is why the whistle now starts 1.4 ticks later (OrdnanceClient.BLAST_HEARD_AFTER_LANDING).

@@ -21,24 +21,37 @@ final class MusicPlayerTest {
         assertEquals("",RaidPlaylist.cue(true,"restore",false,3,3,"normal"),"the raid is over");
         assertEquals("",RaidPlaylist.cue(false,"raid",false,1,3,"normal"),"stale beacon state plays nothing");
         for(String pool:List.of("normal","special","boss"))assertFalse(RaidPlaylist.pool(pool).isEmpty(),pool);
-        assertEquals(5,RaidPlaylist.pool("normal").size());
+        assertEquals(8,RaidPlaylist.pool("normal").size(),"one ordinary song for every wave of the longest raid");
+        assertEquals(8,Rules.waves(99),"the longest raid");
     }
-    @Test void everyWaveChangesTheSongAndEveryPlayerHearsTheSame(){
-        var seen=new HashSet<Integer>();
-        for(long seed=-300;seed<300;seed++){
-            int last=-1;
-            for(int wave=1;wave<=12;wave++){
-                int k=RaidPlaylist.pick(seed,wave,5);
-                assertTrue(k>=0&&k<5);assertNotEquals(last,k,"seed "+seed+" wave "+wave+" repeats the song of the wave before");
-                assertEquals(k,RaidPlaylist.pick(seed,wave,5),"the same raid and wave always give the same song");
-                last=k;if(wave==1)seen.add(k);
+    @Test void noSongPlaysTwiceInOneRaidAndEveryPlayerHearsTheSame(){
+        var openers=new HashSet<String>();
+        for(long seed=-400;seed<400;seed++)for(String type:List.of("normal","siege"))for(boolean hard:new boolean[]{false,true})for(int waves=3;waves<=8;waves++){
+            var played=new ArrayList<String>();
+            for(int wave=1;wave<=waves;wave++){
+                var song=RaidPlaylist.song(RaidPlaylist.cue(true,"raid",hard,wave,waves,type),seed,wave);
+                assertNotNull(song);
+                assertFalse(played.contains(song.id()),"seed "+seed+" "+type+(hard?" hard":"")+" wave "+wave+" of "+waves+" plays "+song.id()+" again: "+played);
+                assertEquals(song,RaidPlaylist.song(RaidPlaylist.cue(true,"raid",hard,wave,waves,type),seed,wave),"the same raid and wave always give the same song");
+                played.add(song.id());
             }
+            if(hard)assertEquals("boss_battle",played.get(waves-1),"the boss wave of a hard raid");
+            if(type.equals("siege"))assertEquals("anomaly_protocol",played.get(0),"a special raid opens with its own song");
+            else openers.add(played.get(0));
         }
-        assertEquals(5,seen.size(),"any song can open a raid");
-        assertEquals(0,RaidPlaylist.pick(42,3,1));assertEquals(0,RaidPlaylist.pick(42,3,0));
-        for(int wave=1;wave<4;wave++)assertNotEquals(RaidPlaylist.song("boss",7,wave),RaidPlaylist.song("boss",7,wave+1),"two boss songs alternate");
-        assertEquals("boss",RaidPlaylist.song("boss",7,1).pool());assertNull(RaidPlaylist.song("none",7,1));
+        assertEquals(8,openers.size(),"any ordinary song can open a raid");
+        // a raid longer than the songs (none is, today) starts a new shuffle, never with the song just played
+        for(long seed=0;seed<300;seed++){int last=-1;for(int i=0;i<40;i++){int k=RaidPlaylist.order(seed,i,8);assertNotEquals(last,k,"seed "+seed+" index "+i);last=k;}}
+        assertEquals(0,RaidPlaylist.order(42,3,1));assertEquals(0,RaidPlaylist.order(42,3,0));
+        assertNull(RaidPlaylist.song("",7,1));assertNull(RaidPlaylist.song("normal",7,0));
         assertNotEquals(RaidPlaylist.seed(100,4),RaidPlaylist.seed(100,5),"each raid has its own order");
+    }
+    @Test void allTheMusicIsTheOwnersAndTheFanfareFitsItsTime() throws Exception{
+        for(String gone:List.of("raid_normal","raid_boss","raid_special"))
+            assertNull(MusicPlayerTest.class.getResource("/assets/arsenal_beacon/sounds/music/"+gone+".ogg"),gone+" (made for 0.0.16) was taken out");
+        double fanfare=oggSeconds("/assets/arsenal_beacon/sounds/music/victory.ogg");
+        assertEquals(10,fanfare,.5,"the owner's Victory Fanfare");
+        assertTrue(fanfare*20+10<=RaidMusic.VICTORY_TICKS,"the fanfare is not cut off ("+fanfare+" s, "+RaidMusic.VICTORY_TICKS+" ticks)");
     }
     @Test void theClockReadsMinutesAndSeconds(){
         assertEquals("0:00",RaidPlaylist.clock(0));assertEquals("0:09",RaidPlaylist.clock(9));assertEquals("2:14",RaidPlaylist.clock(134));assertEquals("0:00",RaidPlaylist.clock(-4));

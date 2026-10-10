@@ -20,6 +20,8 @@ final class Blasts {
     /** Players this close see the flash, fireballs and smoke column of a big blast (the vanilla limit is 32 blocks). */
     static final double FAR=160;
     /** Volumes: a sound is heard up to 16 blocks per unit of volume. */
+    /** The flare's landing pop carries 32 blocks. */
+    static final float FLARE_POP_VOLUME=2f;
     static final float CANNON_VOLUME=8f,FLARE_VOLUME=6f,SHELL_VOLUME=6f,BUNKER_VOLUME=12f,FIRE_VOLUME=5f,BOMBLET_VOLUME=2.5f;
 
     /** Sends a particle burst to every player within {@code range}, past the vanilla distance limit. */
@@ -96,11 +98,14 @@ final class Blasts {
         far(l,ParticleTypes.EXPLOSION,x,y,z,1,0,0,0,0,FAR);
         sound(l,new Vec3(x,y,z),ArsenalSounds.CANNON_FIRE.get(),CANNON_VOLUME,vary(l,1f));
     }
-    /** A flare lands: a bright burst, sparks and a rising plume of signal smoke, with a sound that turns heads across the chunk. */
+    /**
+     * A flare lands: a bright burst, sparks and a rising plume of signal smoke, with the game's firework pop. (The 0.0.16 siren is gone in
+     * 0.0.19: the thrower's radio answers instead, {@link SupportChatter}.)
+     */
     static void flareLanded(ServerLevel l,Vec3 at,float pitch){
         far(l,ParticleTypes.FLASH,at.x,at.y+.3,at.z,1,0,0,0,0,96);
         far(l,ParticleTypes.FIREWORK,at.x,at.y+.3,at.z,30,.2,.3,.2,.18,96);
         far(l,ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,at.x,at.y+.2,at.z,4,.1,.1,.1,.01,FAR);
-        l.playSound(null,at.x,at.y,at.z,ArsenalSounds.FLARE_SIGNAL.get(),SoundSource.PLAYERS,FLARE_VOLUME,pitch);
+        l.playSound(null,at.x,at.y,at.z,net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_BLAST,SoundSource.PLAYERS,FLARE_POP_VOLUME,pitch);
     }
 }

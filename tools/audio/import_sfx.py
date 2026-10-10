@@ -10,9 +10,10 @@ above 1 in the code only makes a sound carry farther (Minecraft caps its loudnes
 the file. The turning grind becomes a seamless loop (its end is crossfaded into its start). The
 attack alarm stays stereo: it is a warning played to the player, not a sound in the world. Needs numpy and ffmpeg (libvorbis).
 
-The trim points matter to the code: the cannon fires the moment cannon_turning_done.ogg ends (SupportCannon.DONE_TICKS) and a
-round lands when ordnance_incoming.ogg reaches its impact (SupportRules.BLAST_FLIGHT_TICKS); OwnerSoundsTest checks both
-against the files.
+The trim points matter to the code: the cannon fires the moment cannon_turning_done.ogg ends (SupportCannon.DONE_TICKS);
+HandTunedRoundTest checks it against the file. (SFX-Bomb-Incoming.mp3, trimmed to 0-5.35 s with a 0.15 s fade-out, was shipped in
+0.0.18 as ordnance_incoming.ogg and set the 5.15-second flight of a round; in 0.0.19 the owner preferred the 0.0.16 whistle again and
+kept the flight, so it is no longer converted.)
 """
 import os, subprocess, sys
 import numpy as np
@@ -23,7 +24,6 @@ SOUNDS = [
     ("SFX-Cannon-Fire.mp3", "cannon_fire", True, None, 0.0, 0.0, 0),
     ("SFX-CannonTurning-Start.wav", "cannon_turning", True, None, 0.0, 0.10, 0),
     ("SFX-CannonTurning-Done.mp3", "cannon_turning_done", True, (0.28, 1.15), 0.05, 0.0, 0),
-    ("SFX-Bomb-Incoming.mp3", "ordnance_incoming", True, (0.0, 5.35), 0.15, 0.0, 0),
     ("SFX-Bunker-Buster.mp3", "bunker_buster", True, None, 0.0, 0.0, 0),
     ("SFX-Cluster-Strike.flac", "cluster_strike", True, (0.0, 0.45), 0.2, 0.0, -6),
     ("SFX-Shockwave.wav", "shockwave", True, (0.065, None), 0.0, 0.0, 0),

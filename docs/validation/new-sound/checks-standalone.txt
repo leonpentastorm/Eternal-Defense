@@ -1,0 +1,130 @@
+# 0.0.19 real-client run, STANDALONE edition (tools/qa/QaWorld.java.txt scenario r9, all parts: music chatter whistle), 2026-10-10, final run.
+# Development runtime, xvfb, 1280 x 720. Sound engine started 13:35:10 (audio-standalone.txt counts from there).
+# QA_SOUND: every sound of the mod (plus the firework pop and the game's explosion) the client really started: game tick, event, pitch.
+[13:35:41] QA_START spawn -10 -60 3
+[13:35:46] QA_NOTE hard raid wave 1 of 8
+[13:35:46] QA_SOUND 268 arsenal_beacon:music.acid_redeemer pitch 1.000
+[13:35:51] QA_CHECK PASS music: hard raid wave 1 of 8 plays its planned song acid_redeemer planned acid_redeemer
+[13:35:51] QA_NOTE hard raid wave 2 of 8
+[13:35:51] QA_SOUND 371 arsenal_beacon:music.assault_loop pitch 1.000
+[13:35:56] QA_CHECK PASS music: hard raid wave 2 of 8 plays its planned song assault_loop planned assault_loop
+[13:35:56] QA_SHOT r9_music_wave2
+[13:35:56] QA_NOTE hard raid wave 3 of 8
+[13:35:56] QA_SOUND 473 arsenal_beacon:music.rolling_wave pitch 1.000
+[13:36:01] QA_CHECK PASS music: hard raid wave 3 of 8 plays its planned song rolling_wave planned rolling_wave
+[13:36:01] QA_NOTE hard raid wave 4 of 8
+[13:36:01] QA_SOUND 577 arsenal_beacon:music.silent_trigger pitch 1.000
+[13:36:06] QA_CHECK PASS music: hard raid wave 4 of 8 plays its planned song silent_trigger planned silent_trigger
+[13:36:06] QA_NOTE hard raid wave 5 of 8
+[13:36:06] QA_SOUND 680 arsenal_beacon:music.breach_core pitch 1.000
+[13:36:11] QA_CHECK PASS music: hard raid wave 5 of 8 plays its planned song breach_core planned breach_core
+[13:36:11] QA_NOTE hard raid wave 6 of 8
+[13:36:11] QA_SOUND 783 arsenal_beacon:music.barren_gap pitch 1.000
+[13:36:16] QA_CHECK PASS music: hard raid wave 6 of 8 plays its planned song barren_gap planned barren_gap
+[13:36:17] QA_NOTE hard raid wave 7 of 8
+[13:36:17] QA_SOUND 886 arsenal_beacon:music.phase_one_assault pitch 1.000
+[13:36:22] QA_CHECK PASS music: hard raid wave 7 of 8 plays its planned song phase_one_assault planned phase_one_assault
+[13:36:22] QA_NOTE hard raid wave 8 of 8
+[13:36:22] QA_SOUND 988 arsenal_beacon:music.boss_battle pitch 1.000
+[13:36:27] QA_CHECK PASS music: hard raid wave 8 of 8 plays its planned song boss_battle planned boss_battle
+[13:36:27] QA_CHECK PASS music: eight waves, eight different songs acid_redeemer,assault_loop,rolling_wave,silent_trigger,breach_core,barren_gap,phase_one_assault,boss_battle
+[13:36:27] QA_CHECK PASS music: the boss wave plays the boss song acid_redeemer,assault_loop,rolling_wave,silent_trigger,breach_core,barren_gap,phase_one_assault,boss_battle
+[13:36:27] QA_CHECK PASS music: the client started each of those songs started=[acid_redeemer, assault_loop, rolling_wave, silent_trigger, breach_core, barren_gap, phase_one_assault, boss_battle]
+[13:36:27] QA_CHECK PASS music: none of the removed 0.0.16 themes started=[acid_redeemer, assault_loop, rolling_wave, silent_trigger, breach_core, barren_gap, phase_one_assault, boss_battle]
+[13:36:27] QA_SOUND 1100 arsenal_beacon:music.anomaly_protocol pitch 1.000
+[13:36:32] QA_CHECK PASS music: special raid wave 1 plays its planned song anomaly_protocol planned anomaly_protocol
+[13:36:32] QA_SOUND 1203 arsenal_beacon:music.acid_redeemer pitch 1.000
+[13:36:37] QA_CHECK PASS music: special raid wave 2 plays its planned song acid_redeemer planned acid_redeemer
+[13:36:38] QA_SOUND 1305 arsenal_beacon:music.assault_loop pitch 1.000
+[13:36:43] QA_CHECK PASS music: special raid wave 3 plays its planned song assault_loop planned assault_loop
+[13:36:43] QA_SOUND 1410 arsenal_beacon:music.rolling_wave pitch 1.000
+[13:36:48] QA_CHECK PASS music: special raid wave 4 plays its planned song rolling_wave planned rolling_wave
+[13:36:48] QA_CHECK PASS music: a special raid opens with Anomaly Protocol and never repeats anomaly_protocol,acid_redeemer,assault_loop,rolling_wave
+[13:36:48] QA_SOUND 1522 arsenal_beacon:music.victory pitch 1.000
+[13:36:49] QA_CHECK PASS victory: the owner's fanfare plays 
+[13:36:49] QA_CHECK PASS victory: the raid song stopped and the fanfare holds the music 
+[13:36:49] QA_NOTE victory fanfare
+[13:37:05] QA_NOTE fire flare 1
+[13:37:05] QA_SOUND 1850 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:05] QA_SOUND 1850 arsenal_beacon:flare.chatter_3 pitch 1.000
+[13:37:11] QA_NOTE fire flare 2
+[13:37:11] QA_SOUND 1974 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:11] QA_SOUND 1974 arsenal_beacon:flare.chatter_1 pitch 1.000
+[13:37:12] QA_SOUND 1994 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:17] QA_NOTE fire flare 3
+[13:37:17] QA_SOUND 2094 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:17] QA_SOUND 2094 arsenal_beacon:flare.chatter_2 pitch 1.000
+[13:37:18] QA_SOUND 2105 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:23] QA_NOTE fire flare 4
+[13:37:23] QA_SOUND 2217 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:23] QA_SOUND 2217 arsenal_beacon:flare.chatter_6 pitch 1.000
+[13:37:24] QA_SOUND 2225 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:29] QA_NOTE fire flare 5
+[13:37:29] QA_SOUND 2339 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:29] QA_SOUND 2339 arsenal_beacon:flare.chatter_3 pitch 1.000
+[13:37:30] QA_SOUND 2348 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:35] QA_NOTE fire flare 6
+[13:37:35] QA_SOUND 2461 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:37:35] QA_SOUND 2461 arsenal_beacon:flare.chatter_1 pitch 1.000
+[13:37:36] QA_SOUND 2470 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:41] QA_CHECK PASS chatter: each of the six fire flares got one radio line lines=[3, 1, 2, 6, 3, 1]
+[13:37:41] QA_CHECK PASS chatter: never the same line twice in a row lines=[3, 1, 2, 6, 3, 1]
+[13:37:41] QA_CHECK PASS chatter: the lines play at normal pitch on the player 
+[13:37:41] QA_CHECK PASS chatter: the flare siren is gone 
+[13:37:41] QA_CHECK PASS chatter: each landing pops (the game's firework blast) pops=6
+[13:37:41] QA_NOTE fire lines [3, 1, 2, 6, 3, 1]
+[13:37:42] QA_SOUND 2585 minecraft:entity.firework_rocket.blast pitch 1.100
+[13:37:42] QA_SOUND 2585 arsenal_beacon:flare.chatter_4 pitch 1.000
+[13:37:43] QA_SOUND 2608 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:48] QA_SOUND 2706 minecraft:entity.firework_rocket.blast pitch 1.100
+[13:37:48] QA_SOUND 2706 arsenal_beacon:flare.chatter_1 pitch 1.000
+[13:37:48] QA_SOUND 2715 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:37:54] QA_SOUND 2829 minecraft:entity.firework_rocket.blast pitch 1.100
+[13:37:54] QA_SOUND 2829 arsenal_beacon:flare.chatter_4 pitch 1.000
+[13:37:54] QA_SOUND 2837 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:38:00] QA_CHECK PASS chatter: a supply flare gets only line 1 or 4, never the same twice in a row lines=[4, 1, 4]
+[13:38:00] QA_NOTE supply lines [4, 1, 4]
+[13:38:00] QA_SOUND 2950 minecraft:entity.firework_rocket.blast pitch 1.000
+[13:38:00] QA_SOUND 2950 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:38:00] QA_CHECK PASS chatter: a return flare gets no radio line lines=0
+[13:38:05] QA_SOUND 3054 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:38:05] QA_CHECK PASS chatter: a refused call (under cover, no Quantum) gets no radio line lines=0 flares=1
+[13:38:10] QA_NOTE barrage flare
+[13:38:10] QA_SOUND 3159 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:38:10] QA_SOUND 3159 arsenal_beacon:flare.chatter_5 pitch 1.000
+[13:38:10] QA_SOUND 3159 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:38:11] QA_SOUND 3181 arsenal_beacon:cannon.fire pitch 0.990
+[13:38:13] QA_SOUND 3221 arsenal_beacon:cannon.fire pitch 0.995
+[13:38:15] QA_SOUND 3252 arsenal_beacon:shell.whistle pitch 0.953
+[13:38:15] QA_SOUND 3262 arsenal_beacon:cannon.fire pitch 0.985
+[13:38:17] QA_SOUND 3285 minecraft:entity.generic.explode pitch 0.776
+[13:38:17] QA_SOUND 3294 arsenal_beacon:shell.whistle pitch 1.022
+[13:38:17] QA_SOUND 3300 arsenal_beacon:cannon.fire pitch 0.975
+[13:38:19] QA_SOUND 3324 minecraft:entity.generic.explode pitch 0.801
+[13:38:19] QA_SOUND 3332 arsenal_beacon:shell.whistle pitch 0.931
+[13:38:19] QA_SOUND 3342 arsenal_beacon:cannon.fire pitch 0.998
+[13:38:20] QA_SOUND 3363 minecraft:entity.generic.explode pitch 0.774
+[13:38:21] QA_SOUND 3372 arsenal_beacon:shell.whistle pitch 1.001
+[13:38:21] QA_SOUND 3380 arsenal_beacon:cannon.fire pitch 0.970
+[13:38:23] QA_SOUND 3404 minecraft:entity.generic.explode pitch 0.673
+[13:38:23] QA_SOUND 3415 arsenal_beacon:shell.whistle pitch 1.070
+[13:38:25] QA_SOUND 3444 minecraft:entity.generic.explode pitch 0.671
+[13:38:25] QA_SOUND 3453 arsenal_beacon:shell.whistle pitch 0.980
+[13:38:26] QA_SOUND 3484 minecraft:entity.generic.explode pitch 0.698
+[13:38:27] QA_CHECK PASS whistle: six shell whistles for six shells whistles=6
+[13:38:27] QA_CHECK PASS whistle: no 0.0.18 incoming sound 
+[13:38:27] QA_CHECK PASS whistle: pitches 0.92 to 1.08 
+[13:38:27] QA_CHECK PASS whistle: each ends as its shell's blast is heard (within 80 ms) whistle end minus blast (ms) [-26, -25, 63, -10, -1, 4]
+[13:38:29] QA_NOTE bunker flare
+[13:38:29] QA_SOUND 3533 minecraft:entity.firework_rocket.blast pitch 0.900
+[13:38:29] QA_SOUND 3533 arsenal_beacon:flare.chatter_4 pitch 1.000
+[13:38:29] QA_SOUND 3540 arsenal_beacon:cannon.turning_done pitch 1.000
+[13:38:30] QA_SOUND 3557 arsenal_beacon:cannon.fire pitch 1.054
+[13:38:34] QA_SOUND 3626 arsenal_beacon:bomb.whistle pitch 0.924
+[13:38:35] QA_SOUND 3659 arsenal_beacon:bunker.buster pitch 1.029
+[13:38:36] QA_SOUND 3664 minecraft:entity.generic.explode pitch 0.537
+[13:38:36] QA_SOUND 3664 minecraft:entity.generic.explode pitch 0.359
+[13:38:36] QA_CHECK PASS whistle: the Bunker Buster's bomb whistles (pitch 0.9 to 1.0) bomb whistles=1
+[13:38:36] QA_CHECK PASS whistle: the bomb's whistle ends as its blast is heard (within 80 ms) whistle end minus blast (ms) [21]
+[13:38:36] QA_CHECK PASS bunker: its own blast sound 
+[13:38:39] QA_DONE pass=34 fail=0
