@@ -1,8 +1,7 @@
 package dev.createarsenal.beacon;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -12,8 +11,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Client side of falling ordnance: the whistle that follows a shell or bomb down, and the shake of the view when one lands near the player.
- * The shake honours the game's "Screen Effect Scale" accessibility option (0 turns it off).
+ * Client side of falling ordnance: the incoming-shell sound, played where the round will land so its scream ends with the impact, and the
+ * shake of the view when one lands near the player. The shake honours the game's "Screen Effect Scale" accessibility option (0 turns it off).
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class OrdnanceClient {
@@ -21,19 +20,36 @@ public final class OrdnanceClient {
     /** Strongest shake (degrees) and the distance at which it fades out, for a shell and for a Bunker Buster. */
     static final float SHELL_SHAKE=1.4f,BOMB_SHAKE=4.5f;static final double SHELL_REACH=28,BOMB_REACH=64;
     static final int SHELL_SHAKE_TICKS=14,BOMB_SHAKE_TICKS=34;
+    /** Volume of the incoming sound: heard 64 blocks from the impact point. Always at pitch 1: another pitch would move its impact off the landing. */
+    static final float INCOMING_VOLUME=4f;
     private static float strength;private static long startedAt=-1;private static int length;
+    /** Rounds whose landing was already shaken (the client may see the last tick or not, so the removal also counts). */
+    private static final java.util.Set<Integer> LANDED=new java.util.HashSet<>();
 
     static void tick(Ordnance o){
         o.trail();
-        if(o.tickCount==1&&o.style()!=Ordnance.STAR)Minecraft.getInstance().getSoundManager().play(new Whistle(o));
-        if(o.tickCount==o.flight()&&o.style()!=Ordnance.STAR)landed(o);
+        boolean round=o.style()==Ordnance.SHELL||o.style()==Ordnance.BOMB;
+        if(!round)return;
+        if(o.tickCount==1){
+            var at=o.target();if(at==null)return;
+            Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(ArsenalSounds.INCOMING.get(),SoundSource.BLOCKS,INCOMING_VOLUME,1f,RandomSource.create(),at.x,at.y+1,at.z));
+        }
+        if(o.tickCount>=o.flight()-1)landed(o);
+    }
+    /** The round left the client: if that was its landing (a shell is removed the tick it lands), the landing still shakes the view. */
+    static void removed(Ordnance o){
+        boolean round=o.style()==Ordnance.SHELL||o.style()==Ordnance.BOMB;
+        if(round&&o.tickCount>=o.flight()-4)landed(o);
+        LANDED.remove(o.getId());
     }
     /** Pure: how hard the view shakes at {@code distance} blocks from a landing (0 beyond the reach). */
     static float shakeAt(float strongest,double reach,double distance){return distance>=reach?0f:(float)(strongest*(1-distance/reach)*(1-distance/reach));}
     private static void landed(Ordnance o){
-        var mc=Minecraft.getInstance();var p=mc.player;if(p==null)return;
+        if(!LANDED.add(o.getId()))return;
+        var mc=Minecraft.getInstance();var p=mc.player;if(p==null||mc.level==null)return;
         boolean bomb=o.style()==Ordnance.BOMB;
-        float s=shakeAt(bomb?BOMB_SHAKE:SHELL_SHAKE,bomb?BOMB_REACH:SHELL_REACH,Math.sqrt(p.distanceToSqr(o.getX(),o.getY(),o.getZ())))*mc.options.screenEffectScale().get().floatValue();
+        var at=o.target()!=null?o.target():o.position();
+        float s=shakeAt(bomb?BOMB_SHAKE:SHELL_SHAKE,bomb?BOMB_REACH:SHELL_REACH,Math.sqrt(p.distanceToSqr(at.x,at.y,at.z)))*mc.options.screenEffectScale().get().floatValue();
         if(s<=0.05f)return;
         long now=mc.level.getGameTime();
         if(startedAt>=0&&now-startedAt<length&&current(now,0)>s)return;   // a stronger shake is still running
@@ -50,20 +66,5 @@ public final class OrdnanceClient {
         e.setYaw(e.getYaw()+a*(Mth.sin(time*2.3f)*.6f+Mth.sin(time*5.1f)*.4f));
         e.setPitch(e.getPitch()+a*(Mth.sin(time*3.7f+1f)*.6f+Mth.sin(time*6.3f)*.4f));
         e.setRoll(e.getRoll()+a*.5f*Mth.sin(time*4.4f+2f));
-    }
-
-    /** The incoming whistle: it rides on the falling ordnance (so it is heard where it is) and stops when it lands. */
-    static final class Whistle extends AbstractTickableSoundInstance {
-        private final Ordnance o;
-        Whistle(Ordnance o){
-            super(o.style()==Ordnance.BOMB?ArsenalSounds.BOMB_WHISTLE.get():ArsenalSounds.SHELL_WHISTLE.get(),SoundSource.BLOCKS,RandomSource.create());
-            this.o=o;volume=4f;pitch=o.style()==Ordnance.BOMB?.9f+.1f*random.nextFloat():.92f+.16f*random.nextFloat();
-            x=o.getX();y=o.getY();z=o.getZ();attenuation=SoundInstance.Attenuation.LINEAR;looping=false;
-        }
-        @Override public void tick(){
-            if(o.isRemoved()||o.landed()){stop();return;}
-            x=o.getX();y=o.getY();z=o.getZ();
-        }
-        @Override public boolean canStartSilent(){return true;}
     }
 }

@@ -8,7 +8,7 @@ public final class Rules {
         return Math.min(5,Math.max(0,logistics)) + buildingTier(baseScore);
     }
     public static int buildingTier(int score){return Math.min(5,Math.max(0,score)/500);}
-    public static int branchMaximum(String branch){return branch.equals("reconnaissance")?1:branch.equals("logistics")?5:branch.equals("core")?3:4;}
+    public static int branchMaximum(String branch){return branch.equals("reconnaissance")?3:branch.equals("logistics")?5:branch.equals("core")?3:4;}
     public static int intervalDays(int tier) { return Math.max(2, 7 - Math.max(0, Math.min(5, tier))); }
     public static boolean hardRaid(int raidNumber){return raidNumber>0&&raidNumber%3==0;}
     // Lookup tables are built once (0.0.15): these are asked thousands of times a tick (every zone test asks radius/below/above).
@@ -17,7 +17,13 @@ public final class Rules {
     public static int radius(int core) { return RADIUS[Math.max(0,Math.min(3,core))]; }
     public static int maximumHealth(int core) { return MAXIMUM_HEALTH[Math.max(0,Math.min(3,core))]; }
     public static int waves(int tier) { return 3 + Math.min(5, Math.max(0, tier)); }
-    public static boolean highlightAttackers(int reconnaissance, long waveTicks) { return reconnaissance > 0 || waveTicks >= 1200L; }
+    /**
+     * Ticks into a wave after which the raiders still alive glow through walls, by Reconnaissance level (0.0.18): 5 minutes without it, then 3,
+     * then 1, and from the start of every wave at the top level (before 0.0.18: 1 minute, or at once with its single level).
+     */
+    static final int[] REVEAL_TICKS={6000,3600,1200,0};
+    public static int revealTicks(int reconnaissance){return REVEAL_TICKS[Math.max(0,Math.min(REVEAL_TICKS.length-1,reconnaissance))];}
+    public static boolean highlightAttackers(int reconnaissance, long waveTicks) { return waveTicks >= revealTicks(reconnaissance); }
     public static int enemies(int tier, int wave, int players) {
         int t=Math.max(0,Math.min(10,tier)),w=Math.max(1,Math.min(8,wave)),p=Math.max(1,Math.min(8,players));
         int solo=t==0?3+w:6+t*2+w;

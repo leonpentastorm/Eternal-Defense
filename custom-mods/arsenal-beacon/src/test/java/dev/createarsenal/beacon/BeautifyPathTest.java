@@ -13,7 +13,7 @@ final class BeautifyPathTest {
         assertEquals(52,Ordnance.Fall.drop(48,30,20,8,40),1e-9,"a bomb bores on through its crater");
         assertEquals(56,Ordnance.Fall.drop(48,30,20,8,90),1e-9,"and stops at the bottom");
         assertEquals(0,Ordnance.Fall.drop(48,30,0,0,-3),1e-9);
-        assertEquals(SupportRules.BLAST_FLIGHT_TICKS,30,"1.5 seconds: long enough to see and hear the shell fall");
+        assertEquals(40,Ordnance.Fall.drop(80,100,0,0,50,false),1e-9);assertEquals(20,Ordnance.Fall.drop(80,100,0,0,50,true),1e-9,"a falling round speeds up (0.0.18)");
     }
     @Test void theShakeFadesWithDistance(){
         assertEquals(OrdnanceClient.BOMB_SHAKE,OrdnanceClient.shakeAt(OrdnanceClient.BOMB_SHAKE,64,0),1e-6);
@@ -40,40 +40,28 @@ final class BeautifyPathTest {
         assertTrue(order.indexOf(CannonUpgrades.Upgrade.AOE)<firstSingle,"Area of effect sits with the three-level upgrades");
     }
     @Test void theSixNewFireSupportsHaveTheirShellCounts(){
-        assertEquals(5,CannonUpgrades.volleys(CannonUpgrades.FireType.CLUSTER,0));
-        assertEquals(4,CannonUpgrades.volleys(CannonUpgrades.FireType.CRYO,0));
-        assertEquals(4,CannonUpgrades.volleys(CannonUpgrades.FireType.NAPALM,0));
-        assertEquals(3,CannonUpgrades.volleys(CannonUpgrades.FireType.GRAVITY,0));
-        assertEquals(4,CannonUpgrades.volleys(CannonUpgrades.FireType.SHOCKWAVE,0));
-        assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.STARSHELL,3),"one star, whatever the volley upgrade");
-        assertEquals(9,CannonUpgrades.volleys(CannonUpgrades.FireType.GRAVITY,3));
+        for(var type:java.util.List.of(CannonUpgrades.FireType.CLUSTER,CannonUpgrades.FireType.CRYO,CannonUpgrades.FireType.NAPALM,CannonUpgrades.FireType.GRAVITY,CannonUpgrades.FireType.STARSHELL))
+            for(int lv=0;lv<=3;lv++)assertEquals(1,CannonUpgrades.volleys(type,lv),type+" is one round (0.0.18)");
+        assertEquals(4,CannonUpgrades.volleys(CannonUpgrades.FireType.SHOCKWAVE,0));assertEquals(10,CannonUpgrades.volleys(CannonUpgrades.FireType.SHOCKWAVE,3));
         assertFalse(CannonUpgrades.FireType.STARSHELL.damaging());assertTrue(CannonUpgrades.FireType.NAPALM.damaging());
         // the new types were added after the old ones, so saved choices and packets keep their meaning
         assertEquals(5,CannonUpgrades.FireType.CURSE.ordinal());assertEquals(6,CannonUpgrades.FireType.CLUSTER.ordinal());
         assertEquals(CannonUpgrades.FireType.values().length,SupportHud.ACCENT.length,"every type has its colour");
     }
     @Test void theNewFireSupportsQuoteTheirNumbers(){
-        assertEquals(15,CannonUpgrades.hit(CannonUpgrades.BOMBLET_SHARE,1),1e-4);
-        assertEquals(8,CannonUpgrades.hit(CannonUpgrades.CRYO_SHARE,1),1e-4);
-        assertEquals(5,CannonUpgrades.napalm(1,1),1e-4);assertEquals(10,CannonUpgrades.napalm(2,1),1e-4);assertEquals(0,CannonUpgrades.napalm(0,1),1e-9);
-        assertEquals(20,CannonUpgrades.hit(CannonUpgrades.GRAVITY_SHARE,1),1e-4);
-        assertEquals(12,CannonUpgrades.hit(CannonUpgrades.SHOCKWAVE_SHARE,1),1e-4);
         assertEquals(7,CannonUpgrades.radius(CannonUpgrades.FireType.CLUSTER,0),1e-9);
         assertEquals(16,CannonUpgrades.radius(CannonUpgrades.FireType.STARSHELL,0),1e-9);assertEquals(22,CannonUpgrades.radius(CannonUpgrades.FireType.STARSHELL,3),1e-9);
         String text=SupportTest.guide("support.detail")+SupportTest.guide("support.body");
-        for(String expected:java.util.List.of("6 bomblets","15 damage within 2.5 blocks","1.75 times","5 seconds","5 damage a second","20 damage","12 damage","burns 30 seconds","within 16 blocks","adds 2 blocks","1.5 seconds to fall"))
+        for(String expected:java.util.List.of("1.75 times","12 seconds","5 damage","120 in all","15 seconds (+5 per More volley level)","10 seconds (+4 per More volley level)","5 seconds (+2 per More volley level)","within 8 blocks","burns 30 seconds","within 16 blocks","adds 2 blocks","5 seconds from the shot to the impact","Haste II","3 or more solid blocks"))
             assertTrue(text.contains(expected),"guide does not mention '"+expected+"'");
     }
-    @Test void gravityAndShockwaveMoveBossesLess(){
+    @Test void gravityMovesBossesLess(){
         assertEquals(1,CannonUpgrades.moveScale(0,false),1e-9);
         assertEquals(.5,CannonUpgrades.moveScale(.5,false),1e-9);
         assertEquals(0,CannonUpgrades.moveScale(1.4,false),1e-9);
         assertEquals(CannonUpgrades.BOSS_MOVE,CannonUpgrades.moveScale(0,true),1e-9);
         double[] in=CannonUpgrades.pull(10,0,1);assertEquals(-CannonUpgrades.GRAVITY_PULL,in[0],1e-9);assertEquals(0,in[1],1e-9);
         double[] near=CannonUpgrades.pull(.1,.1,1);assertEquals(0,near[0],1e-9);
-        double[] close=CannonUpgrades.pull(0,.2,1);assertEquals(0,close[1],1e-9,"never past the centre");
         double[] last=CannonUpgrades.pull(0,1,10);assertEquals(-.5,last[1],1e-9,"at most half the way in one tick");
-        double[] out=CannonUpgrades.push(3,4,1);assertEquals(.6*CannonUpgrades.SHOCKWAVE_PUSH,out[0],1e-9);assertEquals(.8*CannonUpgrades.SHOCKWAVE_PUSH,out[2],1e-9);assertTrue(out[1]>0);
-        double[] up=CannonUpgrades.push(0,0,1);assertEquals(0,up[0],1e-9);assertTrue(up[1]>0);
     }
 }

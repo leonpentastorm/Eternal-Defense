@@ -39,11 +39,12 @@ class RulesTest {
         assertEquals(4,Rules.enemies(0,1,1));assertEquals(7,Rules.enemies(0,1,2));assertEquals(6,Rules.enemies(0,3,1));
         assertEquals(2,Rules.contactDamage(0,0));assertEquals(1,Rules.contactDamage(0,4));assertTrue(Rules.contactDamage(5,0)>Rules.contactDamage(0,0));
     }
-    @Test void attackersAreRevealedAtOneMinuteOrImmediatelyWithReconnaissance() {
-        assertFalse(Rules.highlightAttackers(0,1199));
-        assertTrue(Rules.highlightAttackers(0,1200));
-        assertTrue(Rules.highlightAttackers(0,3600));
-        assertTrue(Rules.highlightAttackers(1,0));
+    @Test void attackersAreRevealedAfterFiveThreeOneMinutesOrAtOnceWithReconnaissance() {
+        assertFalse(Rules.highlightAttackers(0,5999));assertTrue(Rules.highlightAttackers(0,6000),"5 minutes without Reconnaissance");
+        assertFalse(Rules.highlightAttackers(1,3599));assertTrue(Rules.highlightAttackers(1,3600),"3 minutes at level 1");
+        assertFalse(Rules.highlightAttackers(2,1199));assertTrue(Rules.highlightAttackers(2,1200),"1 minute at level 2");
+        assertTrue(Rules.highlightAttackers(3,0),"from the start of the wave at level 3");
+        assertEquals(3,Rules.branchMaximum("reconnaissance"));assertEquals(0,Rules.revealTicks(9),"levels past the top stay at the top");
     }
     @Test void earlyCampaignRemainsWeekly() {
         assertEquals(7, Rules.intervalDays(Rules.rewardTier(0,0)));

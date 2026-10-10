@@ -240,7 +240,7 @@ public final class ArsenalBeacon {
         p.sendSystemMessage(Component.literal("/arsenal upgrade <core|logistics|defense|restoration|reconnaissance> | /arsenal claim | /arsenal repair | /arsenal boundary"));
         String[] branches={"core","logistics","defense","restoration","reconnaissance","vertical"};int[] grades={d.core,d.logistics,d.defense,d.restoration,d.reconnaissance,d.vertical};
         for(int i=0;i<branches.length;i++) {
-            String branch=branches[i];int grade=grades[i],limit=branch.equals("reconnaissance")?1:4;
+            String branch=branches[i];int grade=grades[i],limit=Rules.branchMaximum(branch);
             p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconAmount(grade)+(Economy.standalone()?" Ardent Energy":" components"):" - complete")+"]")
                 .withStyle(style->style.withColor(ChatFormatting.AQUA).withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,"/arsenal upgrade "+branch))));
         }
@@ -248,14 +248,18 @@ public final class ArsenalBeacon {
     static boolean near(ServerPlayer p,CampaignData d){return p.level().dimension()==Level.OVERWORLD&&p.blockPosition().distSqr(d.beacon)<(d.radius()+64.0)*(d.radius()+64.0);}
     static int upgrade(ServerPlayer p,String branch) {
         var d=CampaignData.get(p.server.overworld());if(!near(p,d)||d.active()||!d.installed())return feedback(p,"Upgrades require being near a planted beacon between raids.");
-        int grade;Item part;
-        switch(branch){case "core"-> {grade=d.core;part=PLATING.get();}case "logistics"->{grade=d.logistics;part=LOGISTICS.get();}case "defense"->{grade=d.defense;part=COIL.get();}case "restoration"->{grade=d.restoration;part=REPAIR.get();}case "reconnaissance"->{grade=d.reconnaissance;part=COIL.get();}case "vertical"->{grade=d.vertical;part=LOGISTICS.get();}default->{return feedback(p,"Branches: core, logistics, defense, restoration, reconnaissance, vertical.");}}
+        int grade;
+        switch(branch){case "core"->grade=d.core;case "logistics"->grade=d.logistics;case "defense"->grade=d.defense;case "restoration"->grade=d.restoration;case "reconnaissance"->grade=d.reconnaissance;case "vertical"->grade=d.vertical;default->{return feedback(p,"Branches: core, logistics, defense, restoration, reconnaissance, vertical.");}}
         if(grade>=Rules.branchMaximum(branch))return feedback(p,"That branch is fully upgraded.");
         if(branch.equals("core")){var wanted=p.server.overworld().getBlockState(d.beacon).setValue(ArsenalStructures.MK,ArsenalStructures.mark(d.core+1));if(!ArsenalStructures.available(p.server.overworld(),d.beacon,wanted))return feedback(p,"Clear a 3 x 3 area, two blocks tall, centered on the beacon before upgrading to Mk-4. Nothing consumed.");}
-        int cost=Economy.beaconAmount(grade);if(Economy.standalone())part=ARDENT_ENERGY.get();if(!consume(p,part,cost))return feedback(p,"Upgrade needs "+cost+" "+part.getDescription().getString()+(Economy.standalone()?". Kill hostile mobs, or trade rare materials at an Exchange Shop.":". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy."));
+        // every part of the price must be there before anything is taken (the Vertical zone takes all four factory parts)
+        var cost=Economy.beaconCost(branch,grade);var missing=new java.util.ArrayList<String>();
+        for(var part:cost){Item item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()));if(!p.isCreative()&&count(p,item)<part.amount())missing.add(part.amount()+" "+item.getDescription().getString());}
+        if(!missing.isEmpty())return feedback(p,"Upgrade needs "+String.join(", ",missing)+(Economy.standalone()?". Kill hostile mobs, or trade rare materials at an Exchange Shop.":". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy."));
+        for(var part:cost)consume(p,net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id())),part.amount());
         switch(branch){case "core"->{int oldMaximum=d.maximumHealth();d.core++;d.health=Math.min(d.maximumHealth(),d.health+d.maximumHealth()-oldMaximum);ArsenalStructures.syncBeacon(p.server.overworld(),d);}case "logistics"->d.logistics++;case "defense"->d.defense++;case "restoration"->d.restoration++;case "reconnaissance"->d.reconnaissance++;case "vertical"->d.vertical++;}
         d.setDirty();BaseSurvey.request(p.server.overworld());
-        if(branch.equals("reconnaissance"))return feedback(p,"Reconnaissance online: every raid attacker is highlighted from the moment it spawns.");
+        if(branch.equals("reconnaissance"))return feedback(p,Rules.revealTicks(d.reconnaissance)==0?"Reconnaissance complete: every raid attacker is highlighted from the moment it spawns.":"Reconnaissance upgraded: raid attackers are highlighted "+Rules.revealTicks(d.reconnaissance)/1200+" minute(s) into each wave.");
         return feedback(p,switch(branch){case "core"->"Core upgraded: Mk-"+(d.core+1)+", radius "+d.radius()+", "+d.maximumHealth()+" maximum HP.";case "vertical"->"Vertical zone upgraded: "+d.below()+" below / "+d.above()+" above. Beacon model and HP unchanged.";case "defense"->"Defense upgraded: "+Rules.defensePercent(d.defense)+"% less beacon damage.";case "restoration"->"Restoration upgraded: heal "+Rules.healingPercent(d.restoration)+"% of maximum HP after victory; repair "+(32+d.restoration*32)+" blocks per tick.";default->"Logistics upgraded: +"+d.logistics+" payout tiers. Better paid tiers shorten the following interval.";});
     }
     static int repair(ServerPlayer p) {
@@ -264,6 +268,7 @@ public final class ArsenalBeacon {
         if(!consume(p,Economy.standalone()?ARDENT_ENERGY.get():PLATING.get(),Economy.repairAmount()))return feedback(p,Economy.standalone()?"Needs "+Economy.repairAmount()+" Ardent Energy.":"Needs 8 reinforced plating. JEI shows the recipe.");
         d.health=Math.min(d.maximumHealth(),d.health+250);d.phase="preparation";d.setDirty();return feedback(p,"Repaired +250 HP. Campaign resumed.");
     }
+    static int count(ServerPlayer p,Item item){int found=0;for(ItemStack s:p.getInventory().items)if(s.is(item))found+=s.getCount();return found;}
     static boolean consume(ServerPlayer p,Item item,int cost) {
         if(p.isCreative())return true;int found=0;for(ItemStack s:p.getInventory().items)if(s.is(item))found+=s.getCount();if(found<cost)return false;
         for(ItemStack s:p.getInventory().items)if(s.is(item)){int take=Math.min(cost,s.getCount());s.shrink(take);cost-=take;if(cost==0)break;}p.getInventory().setChanged();return true;
@@ -347,7 +352,8 @@ public final class ArsenalBeacon {
     }
     private static void raid(ServerLevel l,CampaignData d) {
         d.raidTicks++;d.waveTicks++;
-        if(d.reconnaissance==0&&d.waveTicks==1200)announce(l,"One minute elapsed: remaining attackers are now highlighted through walls.");
+        int reveal=Rules.revealTicks(d.reconnaissance);
+        if(reveal>0&&d.waveTicks==reveal)announce(l,reveal/1200+(reveal==1200?" minute":" minutes")+" elapsed: remaining attackers are now highlighted through walls.");
         if(d.raidTicks>24000L){fail(l,d,"Raid timed out. Beacon loses 20% health; damaged structures stay damaged.");return;}
         if(d.health<=0){fail(l,d,"Beacon disabled. Repair it between raids; your base remains in the world.");return;}
         if(!l.hasChunkAt(d.beacon)){fail(l,d,"Beacon area unloaded. Retreat counts as a lost defense.");return;}

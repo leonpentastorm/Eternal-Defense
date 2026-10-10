@@ -6,19 +6,21 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * What a fire support looks and sounds like when it lands (server side; vanilla particle and sound packets only). The big ones are sent to
- * players far beyond the usual 32 blocks, so a barrage on the far side of the base is still seen and heard.
+ * players far beyond the usual 32 blocks, so a barrage on the far side of the base is still seen and heard. Explosions use the game's own
+ * explosion sound (0.0.18) except the Bunker Buster, the cluster bomblets and the shockwave, which have the owner's sounds.
  */
 final class Blasts {
     private Blasts(){}
     /** Players this close see the flash, fireballs and smoke column of a big blast (the vanilla limit is 32 blocks). */
     static final double FAR=160;
     /** Volumes: a sound is heard up to 16 blocks per unit of volume. */
-    static final float CANNON_VOLUME=8f,FLARE_VOLUME=6f,SHELL_VOLUME=8f,BUNKER_VOLUME=12f,FIRE_VOLUME=5f;
+    static final float CANNON_VOLUME=8f,FLARE_VOLUME=6f,SHELL_VOLUME=6f,BUNKER_VOLUME=12f,FIRE_VOLUME=5f,BOMBLET_VOLUME=2.5f;
 
     /** Sends a particle burst to every player within {@code range}, past the vanilla distance limit. */
     static void far(ServerLevel l,ParticleOptions particle,double x,double y,double z,int count,double dx,double dy,double dz,double speed,double range){
@@ -26,6 +28,8 @@ final class Blasts {
     }
     static void sound(ServerLevel l,Vec3 at,SoundEvent event,float volume,float pitch){l.playSound(null,at.x,at.y,at.z,event,SoundSource.BLOCKS,volume,pitch);}
     private static float vary(ServerLevel l,float base){return base*(.94f+.12f*l.random.nextFloat());}
+    /** The game's explosion sound, pitched like a TNT blast. */
+    static void explode(ServerLevel l,Vec3 at,float volume,float pitch){sound(l,at,SoundEvents.GENERIC_EXPLODE,volume,pitch*(1f+(l.random.nextFloat()-l.random.nextFloat())*.2f)*.7f);}
 
     /** A ring of puffs running outward along the ground: the pressure wave. */
     static void ring(ServerLevel l,Vec3 c,ParticleOptions particle,int points,double speed,double y){
@@ -38,7 +42,7 @@ final class Blasts {
         far(l,new BlockParticleOption(ParticleTypes.BLOCK,ground),c.x,c.y+.4,c.z,count,spread,.3,spread,.45,64);
     }
 
-    /** A shell of the Explosion Barrage lands: flash, fireballs, a ring of dust, earth thrown up, a column of smoke, and a blast that echoes. */
+    /** A shell of the Explosion Barrage lands: flash, fireballs, a ring of dust, earth thrown up, a column of smoke, and the game's explosion. */
     static void shell(ServerLevel l,Vec3 c,double r){
         far(l,ParticleTypes.FLASH,c.x,c.y+1,c.z,1,0,0,0,0,FAR);
         far(l,ParticleTypes.EXPLOSION_EMITTER,c.x,c.y+.6,c.z,3,r*.25,.4,r*.25,0,FAR);
@@ -49,7 +53,7 @@ final class Blasts {
         far(l,ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,c.x,c.y+.5,c.z,8,r*.2,.2,r*.2,.02,FAR);
         ring(l,c,ParticleTypes.CLOUD,24,.7,.3);
         debris(l,c,40,r*.35);
-        sound(l,c,ArsenalSounds.SHELL_EXPLOSION.get(),SHELL_VOLUME,vary(l,1f));
+        explode(l,c,SHELL_VOLUME,1f);
     }
     /** The Bunker Buster hits: everything of a shell, much bigger, twice the pressure wave and a fountain of earth. */
     static void bunker(ServerLevel l,Vec3 c,double r){
@@ -62,20 +66,26 @@ final class Blasts {
         far(l,ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,c.x,c.y+.5,c.z,30,r*.3,.3,r*.3,.03,FAR);
         ring(l,c,ParticleTypes.CLOUD,40,1.3,.3);ring(l,c,ParticleTypes.POOF,32,.9,1.2);
         debris(l,c,160,r*.45);
-        sound(l,c,ArsenalSounds.BUNKER_IMPACT.get(),BUNKER_VOLUME,vary(l,1f));
+        sound(l,c,ArsenalSounds.BUNKER_BUSTER.get(),BUNKER_VOLUME,vary(l,1f));
     }
     /** The bomb bores another layer down. */
     static void dig(ServerLevel l,Vec3 at,double r){
         far(l,ParticleTypes.EXPLOSION,at.x,at.y,at.z,2,r*.4,0,r*.4,0,96);
         far(l,ParticleTypes.LARGE_SMOKE,at.x,at.y+1,at.z,10,r*.3,.5,r*.3,.05,96);
-        sound(l,at,ArsenalSounds.BUNKER_DIG.get(),4f,vary(l,.9f));
+        explode(l,at,3f,.85f);
     }
     /** The bomb's last blast at the bottom of its crater. */
     static void deep(ServerLevel l,Vec3 at,double r){
         far(l,ParticleTypes.EXPLOSION_EMITTER,at.x,at.y+.5,at.z,2,r*.2,.2,r*.2,0,FAR);
         far(l,ParticleTypes.LARGE_SMOKE,at.x,at.y+1,at.z,60,r*.3,r*.4,r*.3,.12,FAR);
         far(l,ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,at.x,at.y+1,at.z,16,r*.2,.3,r*.2,.03,FAR);
-        sound(l,at,ArsenalSounds.BUNKER_DIG.get(),8f,.6f);
+        explode(l,at,6f,.6f);
+    }
+    /** One cluster bomblet goes off: a small blast and its own crack, quieter than a shell so a dozen at once still sound like a cluster. */
+    static void bomblet(ServerLevel l,double x,double y,double z){
+        far(l,ParticleTypes.EXPLOSION,x,y+.4,z,1,0,0,0,0,96);
+        l.sendParticles(ParticleTypes.FLAME,x,y+.3,z,8,.4,.2,.4,.06);l.sendParticles(ParticleTypes.SMOKE,x,y+.5,z,6,.3,.3,.3,.03);
+        sound(l,new Vec3(x,y,z),ArsenalSounds.CLUSTER_STRIKE.get(),BOMBLET_VOLUME,.85f+.35f*l.random.nextFloat());
     }
     /** The cannon fires: a muzzle flash and smoke at the barrel and a roar heard across the base. */
     static void muzzle(ServerLevel l,double x,double y,double z){

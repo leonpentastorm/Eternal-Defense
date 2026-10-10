@@ -188,11 +188,10 @@ public final class BeaconClient {
         int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
         private final List<Hover> icons=new ArrayList<>();
         static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
-        static final String[] PARTS={"reinforced_plating","logistics_module","resonance_coil","restoration_matrix","resonance_coil","logistics_module"};
+        private static ItemStack item(String id){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,id)));}
         static final String[] TABS={"overview","upgrades","fabrication","raid"};
         ControlScreen(){super(Ui.t("title"));}
         @Override Component subtitle(){return Ui.t("subtitle");}
-        private static ItemStack part(int branch){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,PARTS[branch])));}
         private int contentTop(){return top+54;}
         private boolean ready(){return on("installed")&&on("near")&&!on("active");}
         @Override protected void init(){
@@ -352,7 +351,9 @@ public final class BeaconClient {
             int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;List<Component> tooltip=null;boolean creative=on("creative");
             for(int i=0;i<BRANCHES.length;i++){
                 String branch=BRANCHES[i];int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
-                int grade=n(branch),max=Rules.branchMaximum(branch),cost=Economy.beaconAmount(grade),have=n("stock_"+(Economy.standalone()?"ardent_energy":PARTS[i]));boolean complete=grade>=max,short_=!complete&&!creative&&have<cost;
+                int grade=n(branch),max=Rules.branchMaximum(branch);var prices=Economy.beaconCost(branch,Math.min(grade,max-1));
+                boolean complete=grade>=max,short_=!complete&&!creative&&prices.stream().anyMatch(pr->n("stock_"+pr.id())<pr.amount());
+                int cost=prices.get(0).amount(),have=n("stock_"+prices.get(0).id());
                 Ui.card(g,cx,cy,cw,ch,complete?Ui.BRASS:Ui.CYAN);
                 Ui.text(g,font,Ui.t("upgrade."+branch+".name"),cx+9,cy+3,Ui.INK,cw-24-Ui.pipsWidth(max));
                 Ui.pips(g,cx+cw-8-Ui.pipsWidth(max),cy+4,grade,max,complete?Ui.BRASS:Ui.CYAN);
@@ -361,16 +362,29 @@ public final class BeaconClient {
                 int lines=Math.max(1,(rowY-(cy+14)-1)/11),textY=cy+14;
                 if(lines>=3&&!complete){Ui.text(g,font,nowText(i,grade),cx+9,textY,Ui.MUTED,cw-16);textY+=13;lines--;}
                 Ui.wrap(g,font,effect,cx+9,textY,cw-16,complete?Ui.MUTED:Ui.INK,lines);
-                var icon=Economy.standalone()?new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get()):part(i);g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
-                Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
+                var icon=item(prices.get(0).id());var costs=new net.minecraft.nbt.ListTag();
+                if(prices.size()==1){
+                    g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
+                    Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
+                    costs=Ui.singleCost(icon,cost,have);
+                }else{
+                    // several parts (the Vertical zone in the pack): each icon with the number needed, orange when there are not enough
+                    int px=cx+8,step=Math.max(24,(cw-100)/prices.size());
+                    for(var pr:prices){
+                        var stack=item(pr.id());int owned=n("stock_"+pr.id());
+                        g.renderItem(stack,px,rowY+1);icons.add(new Hover(stack,px,rowY+1));
+                        if(!complete)Ui.text(g,font,Component.literal("x"+pr.amount()),px+16,rowY+9,owned<pr.amount()&&!creative?Ui.ORANGE:Ui.INK,step-16);
+                        costs.addAll(Ui.singleCost(stack,pr.amount(),owned));px+=step;
+                    }
+                }
                 Ui.UiButton b=(Ui.UiButton)upgrades.get(i);
                 b.setPosition(cx+cw-88,rowY);b.setWidth(82);
-                b.setMessage(complete?Ui.t("upgrade.complete"):creative?Ui.t("upgrade.free"):short_?Ui.t("upgrade.short",cost-have):Ui.t("upgrade.buy",cost));
+                b.setMessage(complete?Ui.t("upgrade.complete"):creative?Ui.t("upgrade.free"):prices.size()>1?Ui.t(short_?"upgrade.short_parts":"upgrade.buy_parts"):short_?Ui.t("upgrade.short",cost-have):Ui.t("upgrade.buy",cost));
                 b.warning=short_;b.look=complete?Ui.Look.NORMAL:Ui.Look.PRIMARY;b.active=ready()&&!complete;
                 if(Ui.inside(mx,my,cx,cy,cw,ch)&&!Ui.inside(mx,my,cx+8,rowY+1,16,16)&&tooltip==null){
                     tooltip=new ArrayList<>(List.of(Ui.t("upgrade."+branch+".name"),effect));
                     if(complete)tooltip.add(Ui.t("upgrade.branch_complete"));
-                    else{upgradeHoverCosts=Ui.singleCost(icon,cost,have);tooltip.add(Ui.edition("upgrade.craft"));}
+                    else{upgradeHoverCosts=costs;tooltip.add(Ui.edition("upgrade.craft"));}
                 }
             }
             return tooltip;
@@ -382,6 +396,7 @@ public final class BeaconClient {
                 case "defense" -> Ui.t("upgrade.defense.next",Rules.defensePercent(next));
                 case "restoration" -> Ui.t("upgrade.restoration.next",Rules.healingPercent(next));
                 case "vertical" -> Ui.t("upgrade.vertical.next",Rules.below(next),Rules.above(next));
+                case "reconnaissance" -> Ui.t("upgrade.reconnaissance.next",reveal(next));
                 default -> Ui.t("upgrade."+BRANCHES[branch]+".next");
             };
         }
@@ -392,9 +407,11 @@ public final class BeaconClient {
                 case "defense" -> Ui.t("upgrade.defense.now",Rules.defensePercent(grade));
                 case "restoration" -> Ui.t("upgrade.restoration.now",Rules.healingPercent(grade));
                 case "vertical" -> Ui.t("upgrade.vertical.now",Rules.below(grade),Rules.above(grade));
-                default -> Ui.t(grade>0?"upgrade.reconnaissance.now_on":"upgrade.reconnaissance.now_off");
+                default -> Ui.t("upgrade.reconnaissance.now",reveal(grade));
             };
         }
+        /** "after 3 minutes", "after 1 minute" or "the moment a wave starts": when raiders start to glow at Reconnaissance {@code level}. */
+        static Component reveal(int level){int minutes=Rules.revealTicks(level)/1200;return minutes<=0?Ui.t("upgrade.reconnaissance.at_once"):minutes==1?Ui.t("upgrade.reconnaissance.after_one"):Ui.t("upgrade.reconnaissance.after",minutes);}
         private static Component completeText(int branch,int grade){
             return switch(BRANCHES[branch]){
                 case "core" -> Ui.t("upgrade.core.done",grade+1,Rules.radius(grade),Rules.maximumHealth(grade));

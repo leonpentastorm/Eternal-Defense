@@ -1,5 +1,25 @@
 # Change log
 
+## 0.0.18 — Your hand-tuned sounds, a heavier cannon, reworked fire supports (2026-10-10)
+
+On `dev`. **No packet was added or changed: the network protocol stays 28** (new sound events and an entity data field are registry and entity data, not packets). Rules: GDD 0.0.18 (Part A upgrade table, section 5.5, section 7); tests: `docs/HAND-TUNED-ROUND-TESTING.md`.
+
+* **Your sounds** (`tools/audio/import_sfx.py`: made mono where they play in the world, trimmed, loop made seamless): the cannon's turning sound loops while the turret moves, then its lock clunk plays and the cannon fires the moment that clunk ends (0.9 s); its shot; the incoming round, played at the impact point so it ends exactly when the round lands; the Bunker Buster's blast; the cluster bomblets, many quick ones at once (the sound is 6 dB quieter than your file); the shockwave; and an alarm with the red BEACON IS BEING ATTACKED warning (again every 8 s while it stays up). **Every other explosion now uses Minecraft's own explosion sound** (barrage shells, the Bunker Buster's digging, the cluster burst, the gravity well closing). The 0.0.16 synthesized sounds they replace are removed.
+* **Rounds land 5.15 s after the shot** (was 1.5 s), when your incoming sound hits; they fall from 80 blocks, faster and faster.
+* **Heavier turret:** turning takes 1.5 times as long without Faster traverse (a half turn 7.4 s instead of 4.9 s); the top Faster traverse level is exactly the old unupgraded speed.
+* **Quantum tunneling** is needed only when 3 or more solid blocks are above the flare. An open pit, however deep, or a spot under a thin roof or a tree is not "underground" any more.
+* **Beacon upgrades:** Defense is paid in reinforced plating (was resonance coils). The Vertical zone costs 2 of each of the four parts at first, then 4, 8, 16, 32 (was 8, 16... logistics modules) in the pack edition. Reconnaissance has three levels: without it raiders glow 5 minutes into a wave (was 1 minute), then 3 minutes, 1 minute, and from the start of every wave.
+* **Fire supports:**
+  * Cluster Strike: one shell (Volley does nothing), then bomblets rain on the area for 12 s; a mob that stays inside takes 80 percent of a full Explosion Barrage (120).
+  * Napalm Carpet: one shell; the ground burns with real fire for 10 s (+4 s per Volley level) in a flat 2-high box 1.2 times as wide; mobs in it take 5 a second and burn. No fire near the beacon zone; the fire is taken away when it ends.
+  * Cryo Shell: one shell; snow covers the same kind of box for 15 s (+5 s per Volley level); hostile mobs in it nearly stop. No damage any more. The snow is taken away when it ends.
+  * Gravity Well: one shell; twice as wide (8 blocks each way), 5 s (+2 s per Volley level), with a turning vortex sprite on the ground. It only pulls: no damage, so the crowd in the middle is yours to shoot.
+  * Shockwave: as wide as a level 1 beacon zone (8 blocks each way); every hostile mob inside is shoved out past the edge, bosses too. No damage.
+  * Starshell: lights its whole area with hidden light blocks (taken away when it goes out) and gives players in it Haste II instead of Night Vision.
+  * Arrow Cluster Bomb: tipped arrows (poison, slowness, weakness, harming; undead get healing arrows, which hurt them), shown in their potion colour; 6 volleys (was 8).
+  * Bunker Buster: the view shake near the impact now triggers reliably (the client could miss the landing tick).
+* Field Guide, cannon menu descriptions, the Reconnaissance card and the refusal message follow the new rules. Unit tests: 169 (new `HandTunedRoundTest`). Checked in a real client of both editions with the game's audio recorded (`docs/HAND-TUNED-ROUND-TESTING.md`).
+
 ## dev — all new features merged (2026-10-10)
 
 At the owner's request `dev` was fast-forwarded to `feature/music-player`: it now contains 0.0.13 (stuck raiders), 0.0.14 (Raider Gates), 0.0.15 (Optimize Path), 0.0.16 (Beautify Path) and 0.0.17 (raid music player) below. No code changed in the merge; the project version stays 0.0.17. Test bundles: `dist/Arsenal-Dev-0.0.17-pack-test.zip` and `dist/Arsenal-Dev-0.0.17-standalone-test.zip`.

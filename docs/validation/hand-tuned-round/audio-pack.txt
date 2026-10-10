@@ -1,0 +1,46 @@
+# What the game played: the sound effects found in the recorded audio of the PACK run (checks-pack.txt), 2026-10-10.
+# The client ran with OpenAL Soft's "wave" backend, so the game's real mixed output went to a WAV file (48 kHz stereo). Nobody listened.
+# Method (tools/audio/find_sfx.py): the capture is made mono, 16 kHz; each sound file (at every pitch the code can give it) is slid along it
+# and the normalised cross-correlation is computed; r = 1.00 means the capture is exactly that sound at that moment. Sounds that start
+# under a louder one are matched on a later part of the file (--skip) and the time printed is still where the sound began.
+# Time = seconds into the capture (the sound engine started at 09:37:24). Vanilla explosions: random/explode1-4.ogg of Minecraft 1.20.1.
+
+## Cannon (Explosion Barrage thrown at 35 s; QA: lock at server tick 159, first shot at 176)
+   35.10 s  cannon_turning (loop)  r=0.76 on 3-4 s into the file (its first 2 s are under the flare's own landing sound)
+            still there at 41.6 s (r=0.51 on 6.5 s into the file), gone by 42.1 s: it stopped when the turret locked on
+   42.06 s  cannon_turning_done    r=0.90   the lock clunk, 0.870 s long, so it ends at 42.93 s
+   42.94 s  cannon_fire            r=0.98   the first shot: 0.01 s after the clunk ends
+   42.96 s  ordnance_incoming      r=0.61   the incoming scream, started with the shot (at the impact point; matched on 4-5 s into the file)
+   44.96 / 46.96 / 48.98 / 50.94 / 52.96 s  cannon_fire r=0.92 / 0.74 / 0.63 / 0.56 / 0.66, each with its incoming (r=0.45-0.80): six shots, 2 s apart
+   48.10 / 50.16 / 52.12 / 54.16 / 56.10 / 58.10 s  vanilla explosion (explode2/1/3/1/3/2, r=0.60/0.54/0.66/0.63/0.82/0.82, pitch 0.54-0.86)
+            each 5.15-5.20 s after its shot: the scream's impact (5.15 s into the file) falls on the blast. No sound of the 0.0.16 set was heard.
+
+## Later parts
+   63.06 s, 73.08 s  cannon_turning_done   (the cover and Arrow Cluster aims; short turns)
+   73.96 ... 83.98 s cannon_fire + incoming, six times 2 s apart (Arrow Cluster: 6 volleys)
+   93.98 s  cannon_fire + incoming r=0.99 (Cluster Strike, one round)
+   99.16 - 112.04 s  cluster_strike, 31 separate bomblets found (pitch 0.85-1.2, r >= 0.30; many more overlap and are not separable):
+            the crackle starts at the impact (93.98 + 5.15 = 99.13 s) and goes on for 12.9 s (the effect lasts 12 s, the last bomblet rings 0.45 s)
+  115.04 s  cannon_fire + incoming (Napalm Carpet, one round)
+  133.84 s  cannon_fire + incoming r=0.98 (Cryo Shell, one round)
+  157.64 s  cannon_fire + incoming r=0.98 (Gravity Well, one round)
+  171.66 / 173.60 / 175.60 / 177.60 s  cannon_fire + incoming (Shockwave, 4 rounds)
+  176.78 / 178.76 / 180.76 / 182.80 s  shockwave r=0.88/0.88/0.72/0.74: each 5.12-5.20 s after its shot, the owner's sound replaced the explosion
+  187.70 s  cannon_fire + incoming (Starshell)
+  226.78 s  cannon_fire (Bunker Buster)
+  231.90 s  bunker_buster r=0.69: 5.12 s after the shot. (Its incoming was played at pitch 0.92 in this run, so the scream would have hit
+            0.45 s late; found while reading this capture and fixed: the incoming always plays at pitch 1 now, see audio-standalone.txt.)
+
+## The attack alarm (beacon_attacked, 4 s, stereo, played to the player wherever they are)
+   75.94, 83.92, 91.98, 99.98, 108.04, 116.04, 124.08, 132.08, 140.12, 148.18, 156.18, 164.22, 172.24, 180.30, 188.30, 196.34, 204.40,
+   212.42, 220.44, 228.46, 236.50 s (r up to 1.00): every 8.0 s, as the rule says (ALARM_REPEAT_SECONDS) while the red banner stayed up.
+   It sounded through the whole fire-support test because the beacon really was under attack: slimes of the flat world, split into
+   smaller ones by the harness's own /kill, hopped into the beacon's 24-block reach (one is next to the beacon in
+   pack-attack-warning.png). The harness now removes monsters without killing them; the standalone run checks that no alarm sounds
+   before its alarm test.
+
+## Loudness in the capture (RMS / loudest 50 ms)
+   barrage blasts 48-59 s: -11.5 / -6.4 dB; Cluster crackle 99-111 s: -13.5 / -7.2 dB (nearly as loud as a barrage for 12 s);
+   shockwaves: -11.3 / -6.5 dB; Bunker Buster: -8.9 / -4.2 dB; alarm: -10.7 / -6.7 dB; turning loop (heard from about 25 blocks, the loop carries 32): -33.5 dB.
+   The cluster was not "a bit quieter" yet: Minecraft caps a sound's loudness at volume 1 and uses a higher volume only to make it carry
+   farther, so the code's 2.5 (against 6 for a shell) changed only its range. The bomblet file is now 6 dB quieter (tools/audio/import_sfx.py).

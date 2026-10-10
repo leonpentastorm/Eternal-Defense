@@ -85,69 +85,17 @@
   },
   "cannon.fire": {
     "sounds": [
-      "arsenal_beacon:sfx/cannon_fire"
+      {
+        "name": "arsenal_beacon:sfx/cannon_fire"
+      }
     ],
     "subtitle": "subtitles.arsenal_beacon.cannon.fire"
-  },
-  "cannon.traverse": {
-    "sounds": [
-      "arsenal_beacon:sfx/cannon_traverse"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.cannon.traverse"
-  },
-  "cannon.clank": {
-    "sounds": [
-      "arsenal_beacon:sfx/cannon_clank"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.cannon.clank"
-  },
-  "cannon.lock": {
-    "sounds": [
-      "arsenal_beacon:sfx/cannon_lock"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.cannon.lock"
   },
   "flare.signal": {
     "sounds": [
       "arsenal_beacon:sfx/flare_signal"
     ],
     "subtitle": "subtitles.arsenal_beacon.flare.signal"
-  },
-  "shell.whistle": {
-    "sounds": [
-      "arsenal_beacon:sfx/shell_whistle"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.shell.whistle"
-  },
-  "bomb.whistle": {
-    "sounds": [
-      "arsenal_beacon:sfx/bomb_whistle"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.bomb.whistle"
-  },
-  "shell.explosion": {
-    "sounds": [
-      "arsenal_beacon:sfx/shell_explosion"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.shell.explosion"
-  },
-  "bunker.impact": {
-    "sounds": [
-      "arsenal_beacon:sfx/bunker_impact"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.bunker.impact"
-  },
-  "bunker.dig": {
-    "sounds": [
-      "arsenal_beacon:sfx/bunker_dig"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.bunker.dig"
-  },
-  "fire.cluster": {
-    "sounds": [
-      "arsenal_beacon:sfx/cluster_pop"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.fire.cluster"
   },
   "fire.cryo": {
     "sounds": [
@@ -167,22 +115,66 @@
     ],
     "subtitle": "subtitles.arsenal_beacon.fire.gravity_hum"
   },
-  "fire.gravity_implode": {
-    "sounds": [
-      "arsenal_beacon:sfx/gravity_implode"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.fire.gravity_implode"
-  },
-  "fire.shockwave": {
-    "sounds": [
-      "arsenal_beacon:sfx/shockwave_blast"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.fire.shockwave"
-  },
   "fire.starshell": {
     "sounds": [
       "arsenal_beacon:sfx/starshell_pop"
     ],
     "subtitle": "subtitles.arsenal_beacon.fire.starshell"
+  },
+  "cannon.turning": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/cannon_turning"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.turning"
+  },
+  "cannon.turning_done": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/cannon_turning_done"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.cannon.turning_done"
+  },
+  "ordnance.incoming": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/ordnance_incoming"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.ordnance.incoming"
+  },
+  "bunker.buster": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/bunker_buster"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.bunker.buster"
+  },
+  "fire.cluster_strike": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/cluster_strike"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.cluster_strike"
+  },
+  "fire.shockwave": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/shockwave"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fire.shockwave"
+  },
+  "beacon.attacked": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:sfx/beacon_attacked"
+      }
+    ],
+    "subtitle": "subtitles.arsenal_beacon.beacon.attacked"
   }
 }

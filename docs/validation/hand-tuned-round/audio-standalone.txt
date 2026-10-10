@@ -1,0 +1,32 @@
+# What the game played: the sound effects found in the recorded audio of the STANDALONE run (checks-standalone.txt), 2026-10-10,
+# after the pack run's fixes. Same method as audio-pack.txt (tools/audio/find_sfx.py). Time = seconds into the capture (sound engine
+# started at 09:54:20). Nobody listened.
+
+## Cannon (Explosion Barrage; QA: lock at server tick 156, first shot at 174, exactly 18 ticks)
+   36.66 s  cannon_turning (loop)  r=0.87 (matched 3-4 s into the file)
+   43.56 s  cannon_turning_done    r=0.98   0.870 s long: ends at 44.43 s
+   44.48 s  cannon_fire            r=1.00   0.05 s after the clunk ends
+   44.50 s  ordnance_incoming      r=0.61
+   46.50 / 48.50 / 50.48 / 52.48 / 54.46 s  cannon_fire + incoming: six shots 2 s apart
+   49.66 / 51.66 / 53.64 / 55.64 / 57.65 / 59.64 s  vanilla explosion (explode2/4/3/3/2/3, r=0.52-0.84): each 5.14-5.18 s after its shot
+
+## Other parts
+   64.66 s  cannon_turning_done (the Arrow Cluster aim)
+   75.44 ... 85.42 s  cannon_fire + incoming, six times 2 s apart (Arrow Cluster: 6 volleys)
+   95.30 s  cannon_fire + incoming r=0.99 (Cluster Strike, one round); 100.42 s vanilla explosion (the cluster shell's burst, 5.12 s later)
+  100.92 - 112.28 s  cluster_strike: 42 separate bomblets found (r >= 0.30), the crackle lasts the effect's 12 s
+  116.16 s  Napalm Carpet shot; 134.90 s Cryo Shell shot; 158.76 s Gravity Well shot (each one round, each with its incoming, r=0.92-0.97)
+  172.56 / 174.52 / 176.52 / 178.52 s  Shockwave shots; 177.68 / 179.70 / 181.66 / 183.66 s  shockwave r=0.86-0.96 (5.12-5.18 s after each)
+  188.42 s  Starshell shot
+  227.36 s  Bunker Buster shot; 227.38 s ordnance_incoming r=0.97 AT PITCH 1 (the pack run's 0.92 is fixed);
+  232.56 s  bunker_buster r=0.74: 5.18 s after the shot; the incoming scream hits at 227.38 + 5.15 = 232.53 s
+
+## The attack alarm
+  235.54 s and 243.54 s, each 4 s long (matched every 0.5 s inside it): when the red banner came up and 8.0 s later, during the
+  alarm test's 10-second attack. NONE before it: with the monsters removed, nothing attacked the beacon in the fire tests (the QA probe
+  agrees, checks-standalone.txt). After the attack the banner went down and the alarm stopped.
+
+## Loudness in the capture (RMS / loudest 50 ms)
+   barrage blasts: -12.0 / -7.9 dB; Cluster crackle (12 s): -21.4 / -9.3 dB (was -13.5 / -7.2 in the pack run, before its file was
+   lowered 6 dB); shockwaves: -12.6 / -8.6 dB; Bunker Buster: -9.8 / -5.8 dB; alarm: -12.8 / -8.5 dB; napalm: -21.7 / -12.0 dB;
+   turning loop (heard from about 25 blocks, the loop carries 32): -32.8 / -23.5 dB.

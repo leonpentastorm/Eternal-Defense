@@ -13,10 +13,19 @@ final class SupportRules {
     static final float BUNKER_PLAYER_SHARE=0.5f;
     static final int PORTAL_LIFETIME_TICKS=600;
     /**
-     * Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. A shell is seen falling from high above
-     * the flare for BLAST_FLIGHT_TICKS after the cannon fires (1.5 seconds, long enough to hear it whistle in; 0.5 before 0.0.16).
+     * Fire support: every shell lands exactly on the flare and hurts hostile mobs inside the red box. A round takes BLAST_FLIGHT_TICKS from the
+     * shot to the impact: 5.15 seconds since 0.0.18, the moment the owner's incoming-shell sound (ordnance_incoming.ogg) hits (1.5 s in 0.0.16,
+     * 0.5 s before). It is seen falling from high above the flare the whole time.
      */
-    static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=30;
+    static final int FIRE_BLASTS=6,FIRE_INTERVAL_TICKS=40,FIRE_DAMAGE=25,BLAST_RADIUS=4,BLAST_FLIGHT_TICKS=103;
+    /**
+     * A fire support flare is underground (it needs Quantum tunneling) when at least this many solid blocks stand in the column above it. A pit
+     * open to the sky is not underground however deep it is, and neither is a spot under a thin roof or a tree (0.0.18; before, any spot the
+     * sky could not light counted).
+     */
+    static final int COVER_BLOCKS=3;
+    /** Pure: is a flare with {@code solidAbove} solid blocks over it underground? */
+    static boolean underground(int solidAbove){return solidAbove>=COVER_BLOCKS;}
     /** Seconds until supplies arrive, counted from the moment the flare lands. */
     static final int SUPPLY_SECONDS_OUTSIDE=12,SUPPLY_SECONDS_UNDERGROUND=7;
     static final int PARCEL_DROP_HEIGHT=40,PARCEL_MIN_DROP=8,PARCEL_LIFETIME_TICKS=36000;

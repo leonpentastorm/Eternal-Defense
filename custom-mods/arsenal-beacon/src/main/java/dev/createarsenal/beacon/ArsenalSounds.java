@@ -7,8 +7,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The mod's own sounds (files under {@code assets/arsenal_beacon/sounds}; the owner's raid songs are converted and every other sound is made by
- * {@code tools/audio}): the raid songs, the victory fanfare,
+ * The mod's own sounds (files under {@code assets/arsenal_beacon/sounds}; the owner's raid songs and effects are converted by {@code tools/audio}
+ * and the rest is made there): the raid songs, the victory fanfare,
  * the support cannon, the flares and the fire supports. Range follows the volume a sound is played at (16 blocks per unit of volume), so a
  * blast played at volume 8 is heard 128 blocks away.
  */
@@ -21,10 +21,10 @@ final class ArsenalSounds {
     static {for(var song:RaidPlaylist.SONGS)SONGS.put(song.id(),of("music."+song.id()));}
     /** The sound event of a raid song (null for an unknown id). */
     static SoundEvent song(String id){var event=SONGS.get(id);return event==null?null:event.get();}
-    static final RegistryObject<SoundEvent> CANNON_FIRE=of("cannon.fire"),CANNON_TRAVERSE=of("cannon.traverse"),CANNON_CLANK=of("cannon.clank"),CANNON_LOCK=of("cannon.lock");
-    static final RegistryObject<SoundEvent> FLARE_SIGNAL=of("flare.signal"),SHELL_WHISTLE=of("shell.whistle"),BOMB_WHISTLE=of("bomb.whistle"),SHELL_EXPLOSION=of("shell.explosion");
-    static final RegistryObject<SoundEvent> BUNKER_IMPACT=of("bunker.impact"),BUNKER_DIG=of("bunker.dig");
-    static final RegistryObject<SoundEvent> CLUSTER=of("fire.cluster"),CRYO=of("fire.cryo"),NAPALM=of("fire.napalm"),GRAVITY_HUM=of("fire.gravity_hum"),GRAVITY_IMPLODE=of("fire.gravity_implode"),
-        SHOCKWAVE=of("fire.shockwave"),STARSHELL=of("fire.starshell");
+    /** The owner's hand-tuned effects (0.0.18, converted by tools/audio/import_sfx.py): the cannon, the incoming round, the Bunker Buster, the cluster bomblets, the shockwave, the attack alarm. */
+    static final RegistryObject<SoundEvent> CANNON_FIRE=of("cannon.fire"),CANNON_TURNING=of("cannon.turning"),CANNON_TURNING_DONE=of("cannon.turning_done");
+    static final RegistryObject<SoundEvent> INCOMING=of("ordnance.incoming"),BUNKER_BUSTER=of("bunker.buster"),CLUSTER_STRIKE=of("fire.cluster_strike"),SHOCKWAVE=of("fire.shockwave"),BEACON_ATTACKED=of("beacon.attacked");
+    /** Made by tools/audio (0.0.16): the flare landing and the sounds of the fire supports that are not explosions. Explosions use the game's own explosion sound. */
+    static final RegistryObject<SoundEvent> FLARE_SIGNAL=of("flare.signal"),CRYO=of("fire.cryo"),NAPALM=of("fire.napalm"),GRAVITY_HUM=of("fire.gravity_hum"),STARSHELL=of("fire.starshell");
     private static RegistryObject<SoundEvent> of(String id){return SOUNDS.register(id,()->SoundEvent.createVariableRangeEvent(new ResourceLocation(ArsenalBeacon.ID,id)));}
 }

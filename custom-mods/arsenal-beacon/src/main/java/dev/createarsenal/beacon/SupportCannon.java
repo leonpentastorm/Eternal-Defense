@@ -66,8 +66,11 @@ final class SupportCannon {
     /** Ticks the turret needs to turn through {@code degrees} from rest (for tests and timing). */
     static int turnTicks(float degrees){return turnTicks(degrees,1f);}
     static int turnTicks(float degrees,float power){var s=new float[]{0,0};int n=0;while(n<2000&&(Math.abs(degrees-s[0])>0.01f||s[1]!=0)){spin(s,degrees,power);n++;}return n;}
-    /** Ticks the turret must sit still on target before it fires: the barrel settles, locks and the gun chambers a round. */
-    static final int SETTLE_TICKS=20;
+    /**
+     * Ticks the turret sits still on target before it fires: as long as the "turning done" lock sound (cannon_turning_done.ogg, 0.87 s), so the
+     * shot comes the moment that sound ends. While it turns, the turning sound loops (client, {@link CannonSoundsClient}).
+     */
+    static final int DONE_TICKS=18,SETTLE_TICKS=DONE_TICKS;
 
     static final class CannonBlock extends Block implements EntityBlock {
         CannonBlock(){super(Properties.of().strength(4,8).noOcclusion().dynamicShape().sound(SoundType.METAL));}
@@ -122,8 +125,10 @@ final class SupportCannon {
         int traverse,settled;
         /** Shots fired since the chunk loaded (not saved); handy for tests and debugging. */
         int shots;
-        /** Client only: how many grinding sounds this cannon has played (tests read it) and the highest turret speed it has shown. */
+        /** Client only: how many times the turning loop started (tests read it) and the highest turret speed it has shown. */
         int grinds;float peakSpeed;
+        /** Server: a call is waiting for this turret to lock on; the lock sound plays once it is still on target. */
+        boolean calling;
         private final float[] motor=new float[2];
         CannonEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.CANNON_ENTITY.get(),pos,s);}
         /** Server: face {@code point}; the turret takes the short way round and needs time to get there. */
@@ -132,8 +137,11 @@ final class SupportCannon {
             float next=(float)Math.toDegrees(radians);
             float diff=next-yaw;diff=((diff%360)+540)%360-180;
             float goal=yaw+diff;
-            if(Math.abs(goal-target)>0.01f){target=goal;settled=0;setChanged();level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
+            settled=0;calling=true;   // every call locks on again (and plays the lock sound), even when the turret already faces the flare
+            if(Math.abs(goal-target)>0.01f){target=goal;setChanged();level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         }
+        /** True while the turret is still turning (client and server run the same motor). */
+        boolean turning(){return Math.abs(speed)>0.01f||Math.abs(target-yaw)>0.6f;}
         /** True once the barrel points at the target and has stopped moving. */
         boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
         /** True once the turret has been still on target for {@link #SETTLE_TICKS}: only then does the gun fire. */
@@ -154,16 +162,12 @@ final class SupportCannon {
             if(level.isClientSide){
                 if(recoil>0)recoil--;
                 peakSpeed=Math.max(peakSpeed,Math.abs(speed));
-                if(Math.abs(speed)>0.2f){
-                    // heavy machinery: a grinding scrape of the traverse gear with the odd clank of a pawl
-                    long t=level.getGameTime();float load=Math.min(1f,Math.abs(speed)/MAX_SPEED);
-                    // a geared motor dragging tons of steel round: grinding gears under load, with the clank of the ratchet now and then
-                    if(t%9==0){grinds++;level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,ArsenalSounds.CANNON_TRAVERSE.get(),SoundSource.BLOCKS,1.6f,.8f+.35f*load,false);}
-                    if(t%23==0)level.playLocalSound(worldPosition.getX()+.5,worldPosition.getY()+1,worldPosition.getZ()+.5,ArsenalSounds.CANNON_CLANK.get(),SoundSource.BLOCKS,1.2f,.9f+.2f*level.random.nextFloat(),false);
-                }
+                // the turning sound loops for as long as the turret moves
+                net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->CannonSoundsClient.tick(this));
             }else{
                 settled=ready()?settled+1:0;
-                if(settled==1&&level instanceof ServerLevel server)server.playSound(null,worldPosition,ArsenalSounds.CANNON_LOCK.get(),SoundSource.BLOCKS,2f,1f);   // the turret locks onto its target
+                // the turret is still on target: the lock sound plays, and the gun fires the moment it ends (DONE_TICKS later)
+                if(settled==1&&calling&&level instanceof ServerLevel server){calling=false;server.playSound(null,worldPosition,ArsenalSounds.CANNON_TURNING_DONE.get(),SoundSource.BLOCKS,3f,1f);}
             }
         }
         @Override public boolean triggerEvent(int id,int param){if(id==1){recoil=RECOIL_TICKS;return true;}return super.triggerEvent(id,param);}

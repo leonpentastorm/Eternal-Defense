@@ -52,7 +52,7 @@ final class SupportTest {
     @Test void everyFireTypeHasItsOwnShellCount(){
         var u=CannonUpgrades.class;
         assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.EXPLOSION,0));
-        assertEquals(8,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"arrow cluster: 2 more");
+        assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"arrow cluster: six volleys since 0.0.18 (tipped arrows)");
         assertEquals(5,CannonUpgrades.volleys(CannonUpgrades.FireType.NARUKAMI,0),"narukami: 1 fewer");
         assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.BUNKER,0));
         assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.BUNKER,3),"the bunker buster ignores volley upgrades");
@@ -72,7 +72,7 @@ final class SupportTest {
         assertEquals(6000,CannonUpgrades.portalTicks(true));assertEquals(600,CannonUpgrades.portalTicks(false));
     }
     @Test void aHeavierTraverseTurnsFaster(){
-        int slow=SupportCannon.turnTicks(180),fast=SupportCannon.turnTicks(180,CannonUpgrades.turnSpeed(3));
+        int slow=SupportCannon.turnTicks(180,CannonUpgrades.turnSpeed(0)),fast=SupportCannon.turnTicks(180,CannonUpgrades.turnSpeed(3));
         assertTrue(fast<slow*0.7,"three levels cut the spin time a lot: "+slow+" -> "+fast);
     }
     @Test void theChoiceAndLevelsSurviveSaving(){
@@ -136,7 +136,7 @@ final class SupportTest {
     }
     @Test void theGunNeedsTimeToTurnBeforeAnyCallCanFire(){
         // a quarter turn at the slowest traverse, plus the settling pause, comes before the delivery time starts
-        int turn=SupportCannon.turnTicks(90)+SupportCannon.SETTLE_TICKS;
+        int turn=SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(0))+SupportCannon.SETTLE_TICKS;
         assertTrue(turn>=60,"turning and settling takes a few seconds: "+turn);
         assertTrue(SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(3))+SupportCannon.SETTLE_TICKS<turn,"Faster traverse shortens it");
         assertEquals(240+turn,SupportRules.supplyTicks(true)+turn,"the delivery delay is added on top of the turn");

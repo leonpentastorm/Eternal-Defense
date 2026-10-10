@@ -1,0 +1,69 @@
+# 0.0.18 real-client run, PACK edition (tools/qa/QaWorld.java.txt scenario r8, all parts), 2026-10-10. Development runtime, xvfb, 1280 x 720.
+# The sound engine started at 09:37:24; the audio capture (audio-pack.txt) counts from there.
+[09:37:53] QA_START spawn -6 -60 -1
+[09:37:59] Dev just called in EXPLOSION BARRAGE
+[09:38:07] QA_CHECK PASS cannon: the turning sound looped while the turret turned (started at least once) starts=1
+[09:38:07] QA_CHECK PASS cannon: it fires 18 ticks after the lock sound (the moment it ends) lock at 159, shot at 176
+[09:38:07] QA_NOTE cannon lock tick 159 shot tick 176
+[09:38:24] QA_CHECK PASS cover: an open well 5 blocks deep is not underground 
+[09:38:24] QA_CHECK PASS cover: under a 1-block roof is not underground 
+[09:38:24] QA_CHECK PASS cover: under a 3-block roof is underground 
+[09:38:24] QA_CHECK PASS cover: a flare under the 3-block roof is handed back flares=1
+[09:38:26] QA_CHECK PASS cover: a flare at the bottom of the open well is kept (the cannon will fire on it) flares here=1
+[09:38:29] QA_CHECK PASS beacon: the Vertical zone took 2 of each of the four parts 62/62/62/62
+[09:38:29] QA_CHECK PASS beacon: Defense took 8 reinforced plating and no coil plating=54
+[09:38:29] QA_CHECK PASS beacon: Reconnaissance stops at level 3 (attackers glow at once) level 3
+[09:38:31] QA_SHOT r8_beacon_upgrades
+[09:38:34] Dev just called in ARROW CLUSTER BOMB
+[09:38:35] QA_CHECK PASS ARROW: the flare is the chosen type ARROW
+[09:38:44] QA_SHOT r8_arrows
+[09:38:54] QA_CHECK PASS ARROW: 6 shot(s) fired shots=6
+[09:38:54] QA_CHECK PASS arrow: the arrows were tipped (coloured) 
+[09:38:54] QA_CHECK PASS arrow: zombies got a potion effect (slowness or weakness) 
+[09:38:56] Dev just called in CLUSTER STRIKE
+[09:38:58] QA_CHECK PASS CLUSTER: the flare is the chosen type CLUSTER
+[09:39:16] QA_CHECK PASS CLUSTER: 1 shot(s) fired shots=1
+[09:39:16] QA_CHECK PASS cluster: one shell rained bomblets until the zombies died alive=0
+[09:39:18] Dev just called in NAPALM CARPET
+[09:39:19] QA_CHECK PASS NAPALM: the flare is the chosen type NAPALM
+[09:39:25] QA_SHOT r8_napalm
+[09:39:35] QA_CHECK PASS NAPALM: 1 shot(s) fired shots=1
+[09:39:35] QA_CHECK PASS napalm: real fire covered the ground fire blocks=110
+[09:39:35] QA_CHECK PASS napalm: the fire is gone after it ends 
+[09:39:35] QA_CHECK PASS napalm: the zombies burned to death alive=0
+[09:39:37] Dev just called in CRYO SHELL
+[09:39:38] QA_CHECK PASS CRYO: the flare is the chosen type CRYO
+[09:39:44] QA_SHOT r8_cryo
+[09:39:58] QA_CHECK PASS CRYO: 1 shot(s) fired shots=1
+[09:39:58] QA_CHECK PASS cryo: snow covered the ground snow layers=110
+[09:39:58] QA_CHECK PASS cryo: the snow is gone after it ends 
+[09:39:58] QA_CHECK PASS cryo: zombies were slowed with Slowness V 
+[09:39:58] QA_CHECK PASS cryo: no damage lowest health 20.0
+[09:40:00] Dev just called in GRAVITY WELL
+[09:40:02] QA_CHECK PASS GRAVITY: the flare is the chosen type GRAVITY
+[09:40:07] QA_SHOT r8_gravity
+[09:40:12] QA_CHECK PASS GRAVITY: 1 shot(s) fired shots=1
+[09:40:12] QA_CHECK PASS gravity: the vortex sprite was up on the client 
+[09:40:12] QA_CHECK PASS gravity: the zombies were dragged into a crowd start=7.5 closest=4.247762159233633
+[09:40:12] QA_CHECK PASS gravity: no damage lowest health 20.0
+[09:40:14] Dev just called in SHOCKWAVE
+[09:40:16] QA_CHECK PASS SHOCKWAVE: the flare is the chosen type SHOCKWAVE
+[09:40:28] QA_CHECK PASS SHOCKWAVE: 4 shot(s) fired shots=4
+[09:40:28] QA_CHECK PASS shockwave: every zombie ended past the 8-block edge start=2.5000000000000004 farthest mean=10.606234710423243
+[09:40:28] QA_CHECK PASS shockwave: no damage lowest health 20.0
+[09:40:30] Dev just called in STARSHELL
+[09:40:32] QA_CHECK PASS STARSHELL: the flare is the chosen type STARSHELL
+[09:40:38] QA_SHOT r8_starshell
+[09:41:07] QA_CHECK PASS STARSHELL: 1 shot(s) fired shots=1
+[09:41:07] QA_CHECK PASS starshell: light blocks lit the area light blocks=81
+[09:41:07] QA_CHECK PASS starshell: the light is gone after it ends 
+[09:41:07] QA_CHECK PASS starshell: the player got Haste 
+[09:41:07] QA_CHECK PASS starshell: zombies glowed 
+[09:41:09] Dev just called in BUNKER BUSTER
+[09:41:11] QA_CHECK PASS BUNKER: the flare is the chosen type BUNKER
+[09:41:17] QA_CHECK PASS BUNKER: 1 shot(s) fired shots=1
+[09:41:17] QA_CHECK PASS bunker: the view shook near the impact 
+[09:41:18] QA_NOTE alarm started
+[09:41:19] QA_SHOT r8_attack_warning
+[09:41:22] QA_NOTE alarm over
+[09:41:37] QA_DONE pass=46 fail=0

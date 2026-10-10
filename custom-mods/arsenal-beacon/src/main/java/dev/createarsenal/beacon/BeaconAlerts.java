@@ -7,13 +7,31 @@ import net.minecraftforge.client.event.*;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** Independent from the nearby/tool status HUD; server state reaches every connected defender. */
+/**
+ * Independent from the nearby/tool status HUD; server state reaches every connected defender. The banner comes with the owner's alarm
+ * (beacon_attacked.ogg, 4 s), heard wherever the player is, when it appears and again every {@link #ALARM_REPEAT_SECONDS} while it stays up.
+ */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class BeaconAlerts {
     private static boolean attacking;
-    private static long received;
-    static void receive(boolean active){attacking=active;received=System.nanoTime();}
-    static void clear(){attacking=false;received=0;}
+    private static long received,alarmAt;
+    /** Seconds between two alarms while the beacon is still under attack (the alarm itself lasts 4). */
+    static final int ALARM_REPEAT_SECONDS=8;
+    static void receive(boolean active){attacking=active;received=System.nanoTime();if(!active)alarmAt=0;}
+    static void clear(){attacking=false;received=0;alarmAt=0;}
+    /** Pure: should the alarm sound now? {@code sinceLast} is seconds since the last alarm (negative: none yet in this attack). */
+    static boolean alarm(boolean showing,double sinceLast){return showing&&(sinceLast<0||sinceLast>=ALARM_REPEAT_SECONDS);}
+    @SubscribeEvent public static void tick(net.minecraftforge.event.TickEvent.ClientTickEvent e){
+        if(e.phase!=net.minecraftforge.event.TickEvent.Phase.END)return;var mc=Minecraft.getInstance();
+        boolean showing=mc.level!=null&&mc.player!=null&&attacking&&System.nanoTime()-received<=4_000_000_000L;
+        long now=System.nanoTime();
+        if(alarm(showing,alarmAt==0?-1:(now-alarmAt)/1e9)){
+            alarmAt=now;
+            mc.getSoundManager().play(new net.minecraft.client.resources.sounds.SimpleSoundInstance(ArsenalSounds.BEACON_ATTACKED.get().getLocation(),net.minecraft.sounds.SoundSource.BLOCKS,1f,1f,
+                net.minecraft.client.resources.sounds.SoundInstance.createUnseededRandom(),false,0,net.minecraft.client.resources.sounds.SoundInstance.Attenuation.NONE,0,0,0,true));
+        }
+        if(!showing)alarmAt=0;
+    }
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
     public static final class Registration {
         @SubscribeEvent public static void register(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_attack_warning",(gui,g,partial,w,h)->{if(Minecraft.getInstance().screen==null)render(g,w,h);});}

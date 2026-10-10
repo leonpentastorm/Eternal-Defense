@@ -31,6 +31,23 @@ final class Economy {
     /** Standalone beacon upgrades in Ardent Energy by the level being bought (0-based): quick at first, steeper later. */
     static final int[] BEACON_ARDENT={4,8,14,22,32};
     static int beaconAmount(int level){return standalone()?BEACON_ARDENT[Math.max(0,Math.min(4,level))]:Rules.upgradeCost(level);}
+    /** Pack edition: the factory part each beacon branch is paid in (0.0.18: Defense in plating instead of coils). The Vertical zone takes all four. */
+    static String beaconPart(String branch){
+        return switch(branch){case "core","defense"->"reinforced_plating";case "logistics"->"logistics_module";case "restoration"->"restoration_matrix";case "reconnaissance"->"resonance_coil";default->"";};
+    }
+    static final List<String> BEACON_PARTS=List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
+    /** One part of a beacon upgrade's price: an item id ({@code ardent_energy} in the standalone edition) and how many. */
+    record Part(String id,int amount){}
+    /**
+     * What buying the next level of a beacon branch costs. Standalone: Ardent Energy. Pack: 8, 16, 32... of the branch's part; the Vertical
+     * zone instead takes a quarter of that of every one of the four parts (2 of each at first; 0.0.18, it was 8 logistics modules).
+     */
+    static List<Part> beaconCost(String branch,int level){
+        if(standalone())return List.of(new Part("ardent_energy",beaconAmount(level)));
+        int amount=Rules.upgradeCost(level);
+        if(branch.equals("vertical"))return BEACON_PARTS.stream().map(id->new Part(id,amount/BEACON_PARTS.size())).toList();
+        return List.of(new Part(beaconPart(branch),amount));
+    }
     static int repairAmount(){return standalone()?6:8;}
     static final int[] KITCHEN_ARDENT={4,8,14},KITCHEN_PLATING={8,16,32};
     static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}

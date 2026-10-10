@@ -1,0 +1,83 @@
+# 0.0.18 real-client run, STANDALONE edition (tools/qa/QaWorld.java.txt scenario r8, all parts), 2026-10-10, after the fixes found in the pack run
+# (Bunker Buster incoming at pitch 1, cluster file 6 dB quieter, harness: monsters removed without /kill, fire tests 20 blocks farther, new gravity and alarm checks).
+# Development runtime, xvfb, 1280 x 720. The sound engine started at 09:54:20; the audio capture (audio-standalone.txt) counts from there.
+# 'beacon hit' lines: a harness probe that names the mobs near the beacon whenever it registers a hit; the only hits are the alarm test's own (no mob).
+[09:54:51] QA_START spawn -5 -60 -3
+[09:54:56] Dev just called in EXPLOSION BARRAGE
+[09:55:05] QA_CHECK PASS cannon: the turning sound looped while the turret turned (started at least once) starts=1
+[09:55:05] QA_CHECK PASS cannon: it fires 18 ticks after the lock sound (the moment it ends) lock at 156, shot at 174
+[09:55:05] QA_NOTE cannon lock tick 156 shot tick 174
+[09:55:21] QA_CHECK PASS cover: an open well 5 blocks deep is not underground 
+[09:55:21] QA_CHECK PASS cover: under a 1-block roof is not underground 
+[09:55:21] QA_CHECK PASS cover: under a 3-block roof is underground 
+[09:55:22] QA_CHECK PASS cover: a flare under the 3-block roof is handed back flares=1
+[09:55:24] QA_CHECK PASS cover: a flare at the bottom of the open well is kept (the cannon will fire on it) flares here=1
+[09:55:27] QA_CHECK PASS beacon: Reconnaissance stops at level 3 (attackers glow at once) level 3
+[09:55:29] QA_SHOT r8_beacon_upgrades
+[09:55:31] Dev just called in ARROW CLUSTER BOMB
+[09:55:33] QA_CHECK PASS ARROW: the flare is the chosen type ARROW
+[09:55:41] QA_SHOT r8_arrows
+[09:55:52] QA_CHECK PASS ARROW: 6 shot(s) fired shots=6
+[09:55:52] QA_CHECK PASS arrow: the arrows were tipped (coloured) 
+[09:55:52] QA_CHECK PASS arrow: zombies got a potion effect (slowness or weakness) 
+[09:55:54] Dev just called in CLUSTER STRIKE
+[09:55:55] QA_CHECK PASS CLUSTER: the flare is the chosen type CLUSTER
+[09:56:13] QA_CHECK PASS CLUSTER: 1 shot(s) fired shots=1
+[09:56:13] QA_CHECK PASS cluster: one shell rained bomblets until the zombies died alive=0
+[09:56:15] Dev just called in NAPALM CARPET
+[09:56:16] QA_CHECK PASS NAPALM: the flare is the chosen type NAPALM
+[09:56:22] QA_SHOT r8_napalm
+[09:56:32] QA_CHECK PASS NAPALM: 1 shot(s) fired shots=1
+[09:56:32] QA_CHECK PASS napalm: real fire covered the ground fire blocks=110
+[09:56:32] QA_CHECK PASS napalm: the fire is gone after it ends 
+[09:56:32] QA_CHECK PASS napalm: the zombies burned to death alive=0
+[09:56:34] Dev just called in CRYO SHELL
+[09:56:35] QA_CHECK PASS CRYO: the flare is the chosen type CRYO
+[09:56:41] QA_SHOT r8_cryo
+[09:56:55] QA_CHECK PASS CRYO: 1 shot(s) fired shots=1
+[09:56:55] QA_CHECK PASS cryo: snow covered the ground snow layers=110
+[09:56:55] QA_CHECK PASS cryo: the snow is gone after it ends 
+[09:56:55] QA_CHECK PASS cryo: zombies were slowed with Slowness V 
+[09:56:55] QA_CHECK PASS cryo: no damage lowest health 20.0
+[09:56:57] Dev just called in GRAVITY WELL
+[09:56:59] QA_CHECK PASS GRAVITY: the flare is the chosen type GRAVITY
+[09:57:04] QA_SHOT r8_gravity
+[09:57:09] QA_CHECK PASS GRAVITY: 1 shot(s) fired shots=1
+[09:57:09] QA_CHECK PASS gravity: the vortex sprite was up on the client 
+[09:57:09] QA_CHECK PASS gravity: zombies put 7 blocks out were pulled into the middle start=7.000000000000001 closest=0.42962451481340763 after 3 s=0.4503736938451974
+[09:57:09] QA_CHECK PASS gravity: no damage lowest health 20.0
+[09:57:11] Dev just called in SHOCKWAVE
+[09:57:13] QA_CHECK PASS SHOCKWAVE: the flare is the chosen type SHOCKWAVE
+[09:57:25] QA_CHECK PASS SHOCKWAVE: 4 shot(s) fired shots=4
+[09:57:25] QA_CHECK PASS shockwave: every zombie ended past the 8-block edge start=2.5 farthest mean=14.65988203322209
+[09:57:25] QA_CHECK PASS shockwave: no damage lowest health 20.0
+[09:57:27] Dev just called in STARSHELL
+[09:57:28] QA_CHECK PASS STARSHELL: the flare is the chosen type STARSHELL
+[09:57:34] QA_SHOT r8_starshell
+[09:58:04] QA_CHECK PASS STARSHELL: 1 shot(s) fired shots=1
+[09:58:04] QA_CHECK PASS starshell: light blocks lit the area light blocks=81
+[09:58:04] QA_CHECK PASS starshell: the light is gone after it ends 
+[09:58:04] QA_CHECK PASS starshell: the player got Haste 
+[09:58:04] QA_CHECK PASS starshell: zombies glowed 
+[09:58:06] Dev just called in BUNKER BUSTER
+[09:58:07] QA_CHECK PASS BUNKER: the flare is the chosen type BUNKER
+[09:58:14] QA_CHECK PASS BUNKER: 1 shot(s) fired shots=1
+[09:58:14] QA_CHECK PASS bunker: the view shook near the impact 
+[09:58:15] QA_CHECK PASS alarm: it never sounded before this attack (nothing hit the beacon in the tests before) alarms so far=0
+[09:58:15] QA_NOTE alarm started
+[09:58:15] QA_SHOT r8_attack_warning
+[09:58:16] QA_NOTE alarm sounded at tick 21
+[09:58:16] QA_NOTE beacon hit at game tick 4270; mobs within 6 blocks: none
+[09:58:17] QA_NOTE beacon hit at game tick 4290; mobs within 6 blocks: none
+[09:58:18] QA_NOTE beacon hit at game tick 4310; mobs within 6 blocks: none
+[09:58:19] QA_NOTE beacon hit at game tick 4330; mobs within 6 blocks: none
+[09:58:20] QA_NOTE beacon hit at game tick 4350; mobs within 6 blocks: none
+[09:58:21] QA_NOTE beacon hit at game tick 4370; mobs within 6 blocks: none
+[09:58:22] QA_NOTE beacon hit at game tick 4390; mobs within 6 blocks: none
+[09:58:23] QA_NOTE beacon hit at game tick 4410; mobs within 6 blocks: none
+[09:58:24] QA_NOTE alarm sounded at tick 182
+[09:58:24] QA_NOTE beacon hit at game tick 4431; mobs within 6 blocks: none
+[09:58:25] QA_NOTE beacon hit at game tick 4450; mobs within 6 blocks: none
+[09:58:30] QA_CHECK PASS alarm: it sounded when the banner came up and once more 8 s later (10 s attack, banner up 4 s after) alarms=2
+[09:58:30] QA_NOTE alarm over
+[09:58:38] QA_DONE pass=46 fail=0

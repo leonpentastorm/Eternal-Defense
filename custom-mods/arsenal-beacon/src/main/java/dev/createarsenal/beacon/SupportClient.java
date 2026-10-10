@@ -190,7 +190,7 @@ public final class SupportClient {
          */
         private void area(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             double r=e.radius();
-            AABB box=e.type()==CannonUpgrades.FireType.BUNKER||e.type()==CannonUpgrades.FireType.STARSHELL?new AABB(-r,-r,-r,r,r,r):new AABB(-r,-0.5,-r,r,r,r);
+            AABB box=SupportFlares.boxFor(e.type(),net.minecraft.world.phys.Vec3.ZERO,r);
             float[] c=switch(e.type()){case HEAL->new float[]{.2f,1f,.35f};case CURSE->new float[]{.7f,.25f,1f};case NARUKAMI->new float[]{1f,.85f,.2f};case ARROW->new float[]{1f,.55f,.15f};
                 case EXPLOSION,BUNKER->new float[]{1f,.1f,.1f};default->{int a=SupportHud.accent(e.type());yield new float[]{((a>>16)&255)/255f,((a>>8)&255)/255f,(a&255)/255f};}};
             float pulse=.75f+.25f*Mth.sin((e.tickCount+partial)*.2f);
@@ -223,10 +223,11 @@ public final class SupportClient {
      * a starshell is drawn as a burning star that sinks slowly after it bursts.
      */
     static final class OrdnanceRenderer extends EntityRenderer<Ordnance> {
-        static final ResourceLocation STAR=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/starshell.png");
+        static final ResourceLocation STAR=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/starshell.png"),VORTEX=new ResourceLocation(ArsenalBeacon.ID,"textures/entity/gravity_well.png");
         OrdnanceRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
         @Override public void render(Ordnance o,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
             float age=o.tickCount+partial;
+            if(o.style()==Ordnance.WELL){vortex(o,age,pose,buffer);return;}
             if(o.style()==Ordnance.STAR){
                 float size=1.3f+.15f*Mth.sin(age*.5f);
                 pose.pushPose();pose.translate(0,.2,0);pose.scale(size,size,size);
@@ -241,6 +242,27 @@ public final class SupportClient {
             float scale=bomb?1.3f:1f;pose.scale(scale,scale,scale);pose.translate(-.5,0,-.5);
             drawTinted(pose,buffer,RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS),bomb?BOMB:SHELL,light,OverlayTexture.NO_OVERLAY,((c>>16)&255)/255f,((c>>8)&255)/255f,(c&255)/255f);
             pose.popPose();
+        }
+        /**
+         * The gravity well: its vortex sprite lying on the ground, exactly as wide as the well's area, turning; a smaller copy turns the other
+         * way above it. It grows in over a second and fades out in its last second.
+         */
+        private static void vortex(Ordnance o,float age,PoseStack pose,MultiBufferSource buffer){
+            float r=o.size();if(r<=0)return;
+            float grow=Math.min(1f,age/20f),fade=Math.max(0f,Math.min(1f,(o.flight()-age)/20f));int alpha=(int)(230*Math.min(grow,fade));
+            if(alpha<=4)return;
+            var vc=buffer.getBuffer(RenderType.entityTranslucentEmissive(VORTEX));
+            for(int layer=0;layer<2;layer++){
+                float size=r*(layer==0?1f:.62f)*(.6f+.4f*grow),spin=age*(layer==0?4.5f:-7f);
+                pose.pushPose();pose.translate(0,.06+layer*.04,0);pose.mulPose(Axis.YP.rotationDegrees(spin));
+                var last=pose.last();var m=last.pose();var n=last.normal();int a=layer==0?alpha:alpha*3/4;
+                flat(vc,m,n,-size,-size,0f,0f,a);flat(vc,m,n,-size,size,0f,1f,a);flat(vc,m,n,size,size,1f,1f,a);flat(vc,m,n,size,-size,1f,0f,a);
+                flat(vc,m,n,size,-size,1f,0f,a);flat(vc,m,n,size,size,1f,1f,a);flat(vc,m,n,-size,size,0f,1f,a);flat(vc,m,n,-size,-size,0f,0f,a);   // seen from below too
+                pose.popPose();
+            }
+        }
+        private static void flat(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float z,float u,float v,int alpha){
+            vc.vertex(m,x,0f,z).color(255,255,255,alpha).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
         }
         private static void quad(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v){
             vc.vertex(m,x,y,0f).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();

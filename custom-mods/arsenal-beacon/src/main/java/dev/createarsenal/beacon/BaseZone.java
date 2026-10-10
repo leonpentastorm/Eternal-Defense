@@ -33,6 +33,14 @@ final class BaseZone {
         if(!data.inside(pos))return "outside";
         return null;
     }
+    /** The protected zone of a standing beacon in this dimension as a box, or null (napalm keeps its fire out of it). */
+    static net.minecraft.world.phys.AABB box(ServerLevel level){
+        if(level.dimension()!=Level.OVERWORLD)return null;
+        var data=CampaignData.get(level.getServer().overworld());
+        if(!data.installed())return null;
+        var b=data.beacon;int r=data.radius();
+        return new net.minecraft.world.phys.AABB(b.getX()-r,b.getY()-data.below(),b.getZ()-r,b.getX()+r+1,b.getY()+data.above()+1,b.getZ()+r+1);
+    }
     /** True when {@code box} overlaps the protected zone of a standing beacon in this dimension (a Bunker Buster is never allowed to dig there). */
     static boolean touches(ServerLevel level,net.minecraft.world.phys.AABB box){
         if(level.dimension()!=Level.OVERWORLD)return false;

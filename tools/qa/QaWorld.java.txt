@@ -988,6 +988,138 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(1,()->SAMPLERS.clear(),"stop watching");
         }
     }
+    // ======================= 0.0.18 QA: hand-tuned sounds and reworked fire supports (flag file /tmp/claude-0/qa-r8.flag) =======================
+    // parts: cannon cover beacon arrow cluster napalm cryo gravity shockwave starshell bunker alarm
+    static boolean part8(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r8.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static int r8Settled=-1,r8Shot=-1,r8Tick,r8Shots0,r8Grinds0;static boolean r8Calling;static int maxFire,maxSnow,maxLight;static boolean sawSlow5,sawHaste,sawGlow8,sawWell,sawTipped,sawShake,sawPotion;static float minHp;static double mean0,minMean8,maxMean8,meanWell3s=Double.NaN;static boolean armWell;static int wellTick=-1;static int alarms;static long lastAlarmAt;
+    /** The server's cannon, for code already running on the server thread (cannon() would wait on that same thread). */
+    static SupportCannon.CannonEntity gunSrv(){return SupportCalls.cannon(sl(),sp().getUUID());}
+    static SupportCannon.CannonEntity clientGun(){return mc().level==null?null:mc().level.getBlockEntity(at(8,0,6)) instanceof SupportCannon.CannonEntity c?c:null;}
+    static int countBlocks(Vec3 c,int r,net.minecraft.world.level.block.Block block){int n=0;var pos=new BlockPos.MutableBlockPos();for(int x=-r;x<=r;x++)for(int z=-r;z<=r;z++)for(int y=-2;y<=4;y++){pos.set((int)Math.floor(c.x)+x,(int)Math.floor(c.y)+y,(int)Math.floor(c.z)+z);if(sl().getBlockState(pos).is(block))n++;}return n;}
+    static double meanAll(Vec3 c){double s=0;int n=0;for(var e:sl().getEntities(null,new net.minecraft.world.phys.AABB(c,c).inflate(20,6,20)))if(e instanceof net.minecraft.world.entity.monster.Zombie z&&z.isAlive()){s+=Math.hypot(z.getX()-c.x,z.getZ()-c.z);n++;}return n==0?Double.NaN:s/n;}
+    static void watch8(){
+        maxFire=maxSnow=maxLight=0;sawSlow5=sawHaste=sawGlow8=sawWell=sawTipped=sawShake=sawPotion=false;minHp=99;minMean8=Double.MAX_VALUE;maxMean8=0;r8Tick=0;SAMPLERS.clear();
+        SAMPLERS.add(()->{r8Tick++;if(fireAt2==null)return;var c=fireAt2;
+            if(r8Tick%10==0)srv(()->{maxFire=Math.max(maxFire,countBlocks(c,12,net.minecraft.world.level.block.Blocks.FIRE));maxSnow=Math.max(maxSnow,countBlocks(c,12,net.minecraft.world.level.block.Blocks.SNOW));maxLight=Math.max(maxLight,countBlocks(c,24,net.minecraft.world.level.block.Blocks.LIGHT));});
+            srv(()->{double m=meanAll(c);if(!Double.isNaN(m)){minMean8=Math.min(minMean8,m);maxMean8=Math.max(maxMean8,m);}
+                for(var e:sl().getEntities(null,new net.minecraft.world.phys.AABB(c,c).inflate(20,6,20))){
+                    if(e instanceof net.minecraft.world.entity.monster.Zombie z&&z.isAlive()){minHp=Math.min(minHp,z.getHealth());var s=z.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);if(s!=null&&s.getAmplifier()==4)sawSlow5=true;if(z.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING))sawGlow8=true;
+                        if(z.hasEffect(net.minecraft.world.effect.MobEffects.WEAKNESS)||(s!=null&&s.getAmplifier()<4))sawPotion=true;}
+                    if(e instanceof net.minecraft.world.entity.projectile.Arrow a&&a.getColor()>0)sawTipped=true;}
+                if(sp().hasEffect(net.minecraft.world.effect.MobEffects.DIG_SPEED))sawHaste=true;});
+            if(mc().level!=null)for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o&&o.style()==Ordnance.WELL&&o.size()>0)sawWell=true;
+            if(armWell&&sawWell){armWell=false;wellTick=r8Tick;srv(()->{for(var e:sl().getEntities(null,new net.minecraft.world.phys.AABB(c,c).inflate(20,6,20)))if(e instanceof net.minecraft.world.entity.monster.Zombie z){double a=Math.atan2(z.getZ()-c.z,z.getX()-c.x);z.setPos(c.x+Math.cos(a)*7,z.getY(),c.z+Math.sin(a)*7);z.setDeltaMovement(Vec3.ZERO);}mean0=meanAll(c);minMean8=Double.MAX_VALUE;});}
+            if(wellTick>=0&&r8Tick==wellTick+60)srv(()->meanWell3s=meanAll(c));
+            try{var f=OrdnanceClient.class.getDeclaredField("startedAt");f.setAccessible(true);if((long)f.get(null)>=0)sawShake=true;}catch(Exception ex){}
+        });
+    }
+    static void zombies8(Vec3 c,boolean ai,int n){srv(()->{for(int i=0;i<n;i++){double a=i*Math.PI*2/n,d=1.5+i%3;var z=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());z.setNoAi(!ai);z.setPersistenceRequired();z.setPos(c.x+Math.cos(a)*d,c.y,c.z+Math.sin(a)*d);sl().addFreshEntity(z);}});}
+    /**
+     * One fire support thrown about 65 blocks south of the spawn (well outside the beacon zone, so napalm may light real fire), zombies on the
+     * flare. Far enough that the zombies, chasing the player, never come within the beacon's 24-block reach (closer, they attacked it and its
+     * alarm sounded through the whole run).
+     */
+    static void fire8(int idx,String label,int expectShots,boolean ai,Runnable extra,Runnable verify){fire8(idx,label,expectShots,ai,extra,verify,null,null);}
+    static void fire8(int idx,String label,int expectShots,boolean ai,Runnable extra,Runnable verify,java.util.function.BooleanSupplier ready,String pic){
+        step(3,()->{clearFlares();near();mc().setScreen(null);srv(()->{clearMonsters();});},label+": near");
+        step(8,()->{act(CannonControl.SELECT,idx);},label+": select");
+        step(10,()->{mc().setScreen(null);fireAt2=null;srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+50.5,0,-10);sp().setHealth(20);sp().setGameMode(net.minecraft.world.level.GameType.CREATIVE);});cmd("time set 18000");},label+": setup");
+        step(25,()->{shots0=cannon().shots;watch8();throwHeld();},label+": throw");
+        until(label+": landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80));return !f.isEmpty()&&f.get(0).landed();},()->{});
+        step(1,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80)).get(0);fireAt2=f.position();zombies8(fireAt2,ai,6);extra.run();},label+": zombies");
+        step(2,()->{var ff=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80));check(label+": the flare is the chosen type",!ff.isEmpty()&&ff.get(0).type().ordinal()==idx,ff.isEmpty()?"none":String.valueOf(ff.get(0).type()));},label+": type");
+        if(pic!=null){
+            until(label+": effect visible",1200,ready,()->{});
+            step(2,()->{mc().options.hideGui=true;srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();sp().teleportTo(sl(),fireAt2.x+9,fireAt2.y+7,fireAt2.z+9,135,32);});},label+": camera");
+            step(12,()->shot(pic),label+": picture");
+            step(1,()->mc().options.hideGui=false,label+": gui back");
+        }
+        until(label+": done",3000,()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80)).isEmpty(),()->{});
+        step(15,()->{check(label+": "+expectShots+" shot(s) fired",cannon().shots-shots0==expectShots,"shots="+(cannon().shots-shots0));verify.run();SAMPLERS.clear();srv(()->sp().setGameMode(net.minecraft.world.level.GameType.SURVIVAL));},label+": verify");
+    }
+    static void flareAt(BlockPos ground){srv(()->{
+        var base=SupportData.get(sl()).of(sp().getUUID());
+        var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],CannonUpgrades.FireType.EXPLOSION);
+        var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),cfg);
+        f.setPos(ground.getX()+.5,ground.getY()+1.6,ground.getZ()+.5);f.setDeltaMovement(0,-.3,0);sl().addFreshEntity(f);});}
+    static int r8flares;static boolean coverPit,coverRoof1,coverRoof3;
+    /** Removes every monster (no /kill: a killed slime splits, and the flat world's slimes then attacked the beacon through the whole first run). */
+    static void clearMonsters(){var gone=new java.util.ArrayList<net.minecraft.world.entity.Entity>();for(var e:sl().getAllEntities())if(e instanceof net.minecraft.world.entity.monster.Enemy&&!(e instanceof BeaconCombat.Objective))gone.add(e);gone.forEach(net.minecraft.world.entity.Entity::discard);}
+    static boolean r8Run;static int r8AlarmsTotal,r8Watch;static long r8SeenAlarm,r8LastAttack=-1;
+    static long alarmAt(){try{var f=BeaconAlerts.class.getDeclaredField("alarmAt");f.setAccessible(true);return (long)f.get(null);}catch(Exception ex){return -1;}}
+    static void scriptR8(){
+        r8Run=true;
+        step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("gamerule doFireTick false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
+        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(10,()->placeHeld(at(0,-1,0)),"place platform");
+        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(10,()->placeHeld(at(8,-1,6)),"place cannon");
+        step(20,()->{srv(()->{inv().clearContent();clearMonsters();});},"settle");
+        if(part8("cannon")){
+            // the turret turns (looping sound), locks on (the lock sound) and fires DONE_TICKS later: measured on the server, tick by tick
+            step(3,()->{clearFlares();near();act(CannonControl.SELECT,0);},"cannon: explosion barrage");
+            step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);});},"cannon: setup");
+            step(25,()->{r8Settled=-1;r8Shot=-1;r8Tick=0;var g=clientGun();r8Grinds0=g==null?0:g.grinds;r8Shots0=cannon().shots;SAMPLERS.clear();
+                r8Calling=false;
+                SAMPLERS.add(()->{r8Tick++;int st=srvGet(()->gunSrv().settled),sh=srvGet(()->gunSrv().shots);boolean calling=srvGet(()->gunSrv().calling);
+                    if(calling)r8Calling=true;
+                    if(r8Calling&&!calling&&r8Settled<0&&st>=1)r8Settled=r8Tick-st+1;if(r8Shot<0&&sh>r8Shots0)r8Shot=r8Tick;});
+                throwHeld();},"cannon: throw");
+            until("cannon: first shot",900,()->r8Shot>=0,()->{});
+            step(5,()->{var g=clientGun();int loops=g==null?-1:g.grinds-r8Grinds0;
+                check("cannon: the turning sound looped while the turret turned (started at least once)",loops>=1,"starts="+loops);
+                check("cannon: it fires "+SupportCannon.DONE_TICKS+" ticks after the lock sound (the moment it ends)",r8Settled>0&&Math.abs((r8Shot-r8Settled)-SupportCannon.DONE_TICKS)<=2,"lock at "+r8Settled+", shot at "+r8Shot);
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE cannon lock tick {} shot tick {}",r8Settled,r8Shot);SAMPLERS.clear();},"cannon: timing");
+            until("cannon: barrage done",3000,()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80)).isEmpty(),()->{});
+        }
+        if(part8("cover")){
+            // three test spots far from the zone: an open well 5 blocks deep, a 1-block roof, a 3-block roof
+            step(5,()->srv(()->{var s=net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+                for(int y=0;y<5;y++)for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)if(Math.abs(x)==2||Math.abs(z)==2)sl().setBlock(at(-40+x,y,40+z),s,3);       // the well's walls
+                for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++){sl().setBlock(at(-50+x,3,40+z),s,3);for(int y=3;y<6;y++)sl().setBlock(at(-60+x,y,40+z),s,3);}   // roofs
+                coverPit=SupportRules.underground(SupportFlares.cover(sl(),at(-40,0,40)));coverRoof1=SupportRules.underground(SupportFlares.cover(sl(),at(-50,0,40)));coverRoof3=SupportRules.underground(SupportFlares.cover(sl(),at(-60,0,40)));}),"build the well and the roofs");
+            step(5,()->{check("cover: an open well 5 blocks deep is not underground",!coverPit,"");check("cover: under a 1-block roof is not underground",!coverRoof1,"");check("cover: under a 3-block roof is underground",coverRoof3,"");
+                r8flares=count(sp(),"arsenal_beacon:fire_support_flare");flareAt(at(-60,-1,40));},"spot checks, flare under the thick roof");
+            step(40,()->{check("cover: a flare under the 3-block roof is handed back",count(sp(),"arsenal_beacon:fire_support_flare")==r8flares+1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-60,40,6)).isEmpty(),"flares="+count(sp(),"arsenal_beacon:fire_support_flare"));
+                flareAt(at(-40,-1,40));},"flare in the open well");
+            step(40,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-40,40,4));check("cover: a flare at the bottom of the open well is kept (the cannon will fire on it)",!f.isEmpty()&&f.get(0).landed(),"flares here="+f.size());clearFlares();},"well kept");
+        }
+        if(part8("beacon")){
+            step(5,()->{srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.vertical=0;d.defense=0;d.reconnaissance=0;d.setDirty();sp().teleportTo(sl(),sx+.5,sy,sz-6+.5,180,0);sp().setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+                inv().clearContent();for(var id:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix"))inv().add(stack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,id)),64));});if(BuildFlavor.STANDALONE)energy(200);},"parts for the upgrades");
+            step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"vertical")),"buy vertical");
+            step(5,()->{boolean pack=!BuildFlavor.STANDALONE;int p=count(sp(),"arsenal_beacon:reinforced_plating"),l=count(sp(),"arsenal_beacon:logistics_module"),c=count(sp(),"arsenal_beacon:resonance_coil"),m=count(sp(),"arsenal_beacon:restoration_matrix");
+                if(pack)check("beacon: the Vertical zone took 2 of each of the four parts",p==62&&l==62&&c==62&&m==62&&srvGet(()->CampaignData.get(sl()).vertical)==1,p+"/"+l+"/"+c+"/"+m);
+                srv(()->ArsenalBeacon.upgrade(sp(),"defense"));},"buy defense");
+            step(5,()->{if(!BuildFlavor.STANDALONE)check("beacon: Defense took 8 reinforced plating and no coil",count(sp(),"arsenal_beacon:reinforced_plating")==54&&count(sp(),"arsenal_beacon:resonance_coil")==62,"plating="+count(sp(),"arsenal_beacon:reinforced_plating"));
+                srv(()->{for(int i=0;i<4;i++)ArsenalBeacon.upgrade(sp(),"reconnaissance");});},"buy reconnaissance 4 times");
+            step(5,()->{int r=srvGet(()->CampaignData.get(sl()).reconnaissance);check("beacon: Reconnaissance stops at level 3 (attackers glow at once)",r==3&&Rules.revealTicks(r)==0,"level "+r);
+                srv(()->{var d=CampaignData.get(sl());d.reconnaissance=1;d.setDirty();BeaconNetwork.syncNearby(sl(),d);});},"recon back to 1 for the picture");
+            step(30,()->{var s=new BeaconClient.ControlScreen();s.tab=1;mc().setScreen(s);},"open upgrades");
+            step(20,()->{shot("r8_beacon_upgrades");mc().setScreen(null);},"upgrades picture");
+        }
+        if(part8("arrow"))fire8(1,"ARROW",6,false,()->{},()->{check("arrow: the arrows were tipped (coloured)",sawTipped,"");check("arrow: zombies got a potion effect (slowness or weakness)",sawPotion,"");},()->sawTipped,"r8_arrows");
+        if(part8("cluster"))fire8(6,"CLUSTER",1,false,()->{},()->{check("cluster: one shell rained bomblets until the zombies died",zombiesAlive(fireAt2,7)==0,"alive="+zombiesAlive(fireAt2,7));});
+        if(part8("napalm"))fire8(8,"NAPALM",1,false,()->{},()->{check("napalm: real fire covered the ground",maxFire>=20,"fire blocks="+maxFire);check("napalm: the fire is gone after it ends",srvGet(()->countBlocks(fireAt2,12,net.minecraft.world.level.block.Blocks.FIRE))==0,"");check("napalm: the zombies burned to death",zombiesAlive(fireAt2,6)==0,"alive="+zombiesAlive(fireAt2,6));},()->maxFire>=20,"r8_napalm");
+        if(part8("cryo"))fire8(7,"CRYO",1,false,()->{},()->{check("cryo: snow covered the ground",maxSnow>=20,"snow layers="+maxSnow);check("cryo: the snow is gone after it ends",srvGet(()->countBlocks(fireAt2,12,net.minecraft.world.level.block.Blocks.SNOW))==0,"");check("cryo: zombies were slowed with Slowness V",sawSlow5,"");check("cryo: no damage",minHp>=20,"lowest health "+minHp);},()->maxSnow>=20,"r8_cryo");
+        // the zombies (walking, chasing the player) are put 7 blocks from the flare the moment the well opens; the pull must crowd them in the middle
+        if(part8("gravity"))fire8(9,"GRAVITY",1,true,()->{armWell=true;wellTick=-1;meanWell3s=Double.NaN;},
+            ()->{check("gravity: the vortex sprite was up on the client",sawWell,"");check("gravity: zombies put 7 blocks out were pulled into the middle",wellTick>=0&&minMean8<2.5,"start="+mean0+" closest="+minMean8+" after 3 s="+meanWell3s);check("gravity: no damage",minHp>=20,"lowest health "+minHp);},()->sawWell,"r8_gravity");
+        if(part8("shockwave"))fire8(10,"SHOCKWAVE",4,true,()->{srv(()->mean0=meanAll(fireAt2));},()->{check("shockwave: every zombie ended past the 8-block edge",maxMean8>=8,"start="+mean0+" farthest mean="+maxMean8);check("shockwave: no damage",minHp>=20,"lowest health "+minHp);});
+        if(part8("starshell"))fire8(11,"STARSHELL",1,false,()->{srv(()->sp().teleportTo(sl(),fireAt2.x+3,fireAt2.y,fireAt2.z+3,0,0));},()->{check("starshell: light blocks lit the area",maxLight>=10,"light blocks="+maxLight);check("starshell: the light is gone after it ends",srvGet(()->countBlocks(fireAt2,24,net.minecraft.world.level.block.Blocks.LIGHT))==0,"");check("starshell: the player got Haste",sawHaste,"");check("starshell: zombies glowed",sawGlow8,"");},()->maxLight>=10,"r8_starshell");
+        if(part8("bunker"))fire8(3,"BUNKER",1,false,()->{srv(()->sp().teleportTo(sl(),fireAt2.x+14,fireAt2.y,fireAt2.z+3,90,0));},()->{check("bunker: the view shook near the impact",sawShake,"");});
+        if(part8("alarm")){
+            step(5,()->{SAMPLERS.clear();r8Tick=0;alarms=0;lastAlarmAt=alarmAt();srv(()->{clearMonsters();sp().teleportTo(sl(),sx+.5,sy,sz-6+.5,180,0);});
+                check("alarm: it never sounded before this attack (nothing hit the beacon in the tests before)",r8AlarmsTotal==0,"alarms so far="+r8AlarmsTotal);
+                SAMPLERS.add(()->{r8Tick++;if(r8Tick<=200&&r8Tick%20==0)srv(()->{var d=CampaignData.get(sl());d.lastAttackTick=sl().getGameTime();BeaconNetwork.syncNearby(sl(),d);});
+                    long a=alarmAt();if(a!=0&&a!=lastAlarmAt){alarms++;lastAlarmAt=a;com.mojang.logging.LogUtils.getLogger().info("QA_NOTE alarm sounded at tick {}",r8Tick);}});
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE alarm started");},"the beacon is attacked for 10 seconds");
+            step(60,()->shot("r8_attack_warning"),"warning picture");
+            step(240,()->{},"attack goes on");
+            step(160,()->{SAMPLERS.clear();check("alarm: it sounded when the banner came up and once more 8 s later (10 s attack, banner up 4 s after)",alarms==2,"alarms="+alarms);com.mojang.logging.LogUtils.getLogger().info("QA_NOTE alarm over");},"attack over");
+        }
+    }
     static boolean strangerMenu;static Vec3 landAt,portalAt,fireAt;static long throwStart,landTick,parcelAppeared;
 
     static int energyBefore,flaresBefore,shotsBefore;static float healthBefore;
@@ -1004,7 +1136,12 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
         for(var sm:SAMPLERS)try{sm.run();}catch(Throwable t){}
-        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
+        if(r8Run){long a=alarmAt();if(a>0&&a!=r8SeenAlarm){r8AlarmsTotal++;r8SeenAlarm=a;}
+            // who hits the beacon? (the first pack run heard the alarm through every fire test)
+            if(++r8Watch%20==0)srv(()->{var d=CampaignData.get(sl());if(d.lastAttackTick!=r8LastAttack&&d.beacon!=null){r8LastAttack=d.lastAttackTick;var b=Vec3.atCenterOf(d.beacon);var who=new StringBuilder();
+                for(var ent:sl().getEntities(null,new net.minecraft.world.phys.AABB(b,b).inflate(6)))if(ent instanceof net.minecraft.world.entity.Mob m&&!(ent instanceof BeaconCombat.Objective))who.append(m.getType().getDescriptionId()).append(m.isNoAi()?"(noAI)":"").append(String.format(" %.1f; ",Math.sqrt(m.distanceToSqr(b))));
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE beacon hit at game tick {}; mobs within 6 blocks: {}",d.lastAttackTick,who.length()==0?"none":who);}});}
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r8.flag").exists())scriptR8();else if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
         if(wait>0){wait--;return;}
         var head=STEPS.peek();
         if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}
