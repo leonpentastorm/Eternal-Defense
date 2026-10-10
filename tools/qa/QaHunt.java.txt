@@ -1,0 +1,228 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): boots a NORMAL world on the real client (real terrain and structures, so the Garrison lookup and the
+ * satellite scan meet the real thing), runs the hunt GameTests (HuntGameTests) and then walks through 0.0.20 like a player: the Command
+ * Table and Satellite Beacon, the board, a scan, the table screen (Region, Base, a card, Accept), the mission card on the HUD, the mission
+ * map, a Warlord warband out of its gates, the pay; then the cannon menu's new card, a real Starshell call (the effects a player gets, the
+ * incoming sound) and a raid on ground with no natural spawn spot (gate spawns, the speed burst, the chat line once).
+ * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_CHAT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaHunt {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,started,testsDone;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void cmd(String c){mc().player.connection.sendCommand(c);}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void shot(String name){File dir=new File("shots");dir.mkdirs();Screenshot.grab(dir,name+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",name);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static final BlockPos B=HuntGameTests.BEACON,TABLE=HuntGameTests.TABLE,SAT=HuntGameTests.SATELLITE,OBJ=HuntGameTests.OBJECTIVE;
+    static HuntData h(){return HuntData.get(sl());}
+    static CampaignData d(){return CampaignData.get(sl());}
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});}
+
+    // ---- what the client hears and reads -----------------------------------------------------------------------------------------------
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>()),CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {} at {} {} {}",s.getLocation(),Math.round(s.getX()),Math.round(s.getY()),Math.round(s.getZ()));
+    }
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){String t=e.getMessage().getString();CHAT.add(t);log("QA_CHAT {}",t);}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;
+                var settings=new LevelSettings("qa_hunt",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_hunt",settings,new WorldOptions(20201010L,true,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!started){
+            if(++tick<300)return;started=true;
+            cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("time set 6000");
+            srv(()->{MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());HuntGameTests.Runner.start(sl());});
+            return;
+        }
+        if(!testsDone){
+            if(HuntGameTests.Runner.lastPass<0)return;
+            testsDone=true;check("hunt GameTests",HuntGameTests.Runner.lastFail==0,"pass="+HuntGameTests.Runner.lastPass+" fail="+HuntGameTests.Runner.lastFail);
+            script();return;
+        }
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok){fail++;log("QA_CHECK FAIL timeout {}","" + head[2]);}}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static TacticalClient.TableScreen table(){return mc().screen instanceof TacticalClient.TableScreen s?s:null;}
+    static void press(String label){
+        var s=mc().screen;if(s==null)return;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals(label)){b.onPress();log("QA_NOTE pressed {}",label);return;}
+        log("QA_NOTE no button {}",label);
+    }
+    static long[] offerIds(){return srvGet(()->h().board.offers.stream().mapToLong(o->o.id).toArray());}
+
+    static void script(){
+        // ---- the blocks ------------------------------------------------------------------------------------------------------------------
+        step(5,()->{mc().options.hideGui=true;srv(()->{d().core=3;d().setDirty();});look(B.offset(-2,0,7),TABLE.getX()+1,TABLE.getY()+.8,TABLE.getZ()+.5);},"look at the table and satellite");
+        step(120,()->{},"let the client draw the base");
+        step(40,()->shot("h1_table_and_satellite"),"shot");
+        step(2,()->look(SAT.offset(3,1,4),SAT.getX()+.5,SAT.getY()+1,SAT.getZ()+.5),"close to the satellite");
+        step(30,()->shot("h2_satellite"),"shot");
+        // ---- a real board at Mk III (Garrison lookups in a normal world) ---------------------------------------------------------------
+        step(5,()->srv(()->{var h=h();Hunts.reset(sl());h.satelliteMk=3;h.table=TABLE;h.satellite=SAT;Hunts.fillIfLinked(sl());
+            for(var o:h.board.offers)log("QA_NOTE offer {} {} {} at {} {}, {} m {}",o.id,o.codename,o.kind.id,o.x,o.z,o.distance,TacticalRules.compass(o.bearing));}),"fill the board at Mk III");
+        step(10,()->{var n=srvGet(()->h().board.offers.size());check("a Mk III board has 4 offers",n==4,"offers="+n);
+            var minSep=srvGet(()->{double m=360;var b=h().board.bearings();for(int i=0;i<b.size();i++)for(int j=i+1;j<b.size();j++)m=Math.min(m,TacticalRules.angle(b.get(i),b.get(j)));return m;});
+            check("offers lie at least 40 degrees apart",minSep>=40,"closest="+minSep);
+            var dist=srvGet(()->h().board.offers.stream().allMatch(o->o.distance>=TacticalRules.minDistance(d().radius())&&o.distance<=1024));check("offers lie between the zone + 150 and 1024 blocks",dist,"");},"board checks");
+        // ---- a scan, then the table screen -----------------------------------------------------------------------------------------------
+        step(5,()->{look(TABLE.offset(-1,0,3),TABLE.getX()+.5,TABLE.getY()+.5,TABLE.getZ()+.5);srv(()->{h().scanReady=0;log("QA_NOTE scan start: {}",TacticalScan.start(sp(),sl(),d(),h()));});},"start a scan");
+        until("the scan ends",900,()->!srvGet(TacticalScan::running),()->{});
+        step(5,()->{mc().options.hideGui=false;TacticalClient.view=1;TacticalClient.selected=-1;srv(()->Hunts.open(sp(),TABLE));},"open the table");
+        step(40,()->{check("the Command Table screen opens",table()!=null,String.valueOf(mc().screen));check("the client has the scan image",TacticalClient.version>=0,"version="+TacticalClient.version);shot("h3_table_region");},"region shot");
+        step(2,()->{TacticalClient.view=0;var s=table();if(s!=null)s.resize(mc(),s.width,s.height);},"base view");
+        step(20,()->shot("h4_table_base"),"base shot");
+        step(2,()->{TacticalClient.view=1;long[] ids=offerIds();if(ids.length>1)TacticalClient.selected=ids[1];var s=table();if(s!=null)s.resize(mc(),s.width,s.height);},"select the second offer");
+        step(20,()->shot("h5_table_card"),"card shot");
+        step(2,()->press("Accept"),"press Accept");
+        step(30,()->{check("the mission runs after Accept",srvGet(()->h().board.running()),"");check("the player got the mission map",srvGet(()->Hunts.carriesMap(sp(),h().board.mission.offer.id)),"");
+            check("and a Return Flare",srvGet(()->sp().getInventory().items.stream().anyMatch(s->s.is(ArsenalBeacon.RETURN_FLARE.get()))),"");
+            check("the screen refreshed in place (no reopen)",table()!=null,"");shot("h6_table_accepted");},"accepted shot");
+        step(2,()->press("Abandon"),"Abandon once (arms the confirm)");
+        step(10,()->{check("Abandon asks to confirm first",srvGet(()->h().board.running()),"");shot("h7_table_abandon_confirm");},"confirm shot");
+        // ---- the HUD -----------------------------------------------------------------------------------------------------------------------
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());tp(B.getX()-120.5,B.getY()+40,B.getZ()+.5,-90,10);},"fly 120 blocks west");
+        step(40,()->{check("the client knows the mission",TacticalClient.missionActive(),"");shot("h8_hud_mission_away");},"away shot");
+        step(5,()->{hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
+        step(100,()->{shot("h9_hud_status_card");
+            try{var f=BeaconClient.class.getDeclaredField("state");f.setAccessible(true);var st=(net.minecraft.nbt.CompoundTag)f.get(null);var r=BeaconClient.class.getDeclaredField("receivedAt");r.setAccessible(true);
+                log("QA_NOTE beacon card state: phase={} near={} installed={} receivedAt={} now={} holding={}",st.getString("phase"),st.getBoolean("near"),st.getBoolean("installed"),r.get(null),mc().level.getGameTime(),mc().player.getMainHandItem().getItem());}catch(Exception ex){log("QA_NOTE no state: {}",ex.toString());}},"status card shot");
+        step(5,()->srv(()->{var inv=sp().getInventory();long id=h().board.mission.offer.id;for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(Items.FILLED_MAP)&&inv.items.get(i).hasTag()&&inv.items.get(i).getTag().getLong("arsenalMission")==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(0));inv.items.set(0,map);inv.selected=0;break;}sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+3.5,180,40);}),"hold the map");
+        step(40,()->shot("h10_mission_map"),"map shot");
+        // ---- a Warlord at the objective platform -----------------------------------------------------------------------------------------
+        step(5,()->srv(()->{var h=h();Hunts.abandon(sp(),sl(),d(),h);long id=h.board.nextId++;
+            var o=new HuntBoard.Offer(id,TacticalRules.Kind.WARLORD,TacticalRules.codename(id*7919),OBJ.getX(),OBJ.getZ(),HuntGameTests.OBJECTIVE_DISTANCE,90);h.board.offers.add(o);
+            log("QA_NOTE warlord accept: {}",Hunts.accept(sp(),sl(),d(),h,h.board.offers.indexOf(o)));}),"accept a Warlord at the objective platform");
+        step(5,()->{mc().options.hideGui=true;look(OBJ.offset(-30,3,0),OBJ.getX()+.5,OBJ.getY()+1,OBJ.getZ()+.5);},"walk up to the objective");
+        until("the warband starts",400,()->srvGet(()->h().board.mission!=null&&h().board.mission.engaged()),()->{});
+        step(12,()->{shot("h11_warband_gates");long gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(OBJ).inflate(40)).size());check("the warband comes out of red gates",gates>0,"gates="+gates);},"gates shot");
+        until("the warband is out",300,()->srvGet(()->h().board.mission.pending()==0),()->{});
+        step(60,()->{var m=srvGet(()->h().board.mission);
+            var captain=srvGet(()->HuntGameTests.mobs(sl(),m.offer.id).stream().filter(x->x.getPersistentData().getBoolean(HuntWarband.CAPTAIN)).findFirst().orElse(null));
+            check("one captain, glowing, named after the operation",captain!=null&&captain.isCurrentlyGlowing()&&captain.getCustomName()!=null&&captain.getCustomName().getString().equals(m.offer.codename),captain==null?"none":captain.getCustomName().getString());
+            check("the captain has twice a heavy's health",captain!=null&&Math.abs(captain.getMaxHealth()-RaidBalance.health("heavy",d().rewardTier)*2)<.01,captain==null?"":String.valueOf(captain.getMaxHealth()));
+            check("a Warlord is its captain and 10 to 14 escorts (plus extra players)",m.total>=11&&m.total<=15,"total="+m.total);
+            if(captain!=null)look(OBJ.offset(-30,3,0),captain.getX(),captain.getY()+1,captain.getZ());},"captain checks");
+        step(30,()->shot("h12_warlord_captain"),"captain shot");
+        step(5,()->{mc().options.hideGui=false;srv(()->{for(var mob:HuntGameTests.mobs(sl(),h().board.mission.offer.id))mob.kill();});},"kill the warband");
+        step(30,()->{check("the mission is cleared and paid",srvGet(()->h().board.mission==null),"");check("chat tells everyone",CHAT.stream().anyMatch(c->c.contains("cleared!")),"");
+            check("the mission-cleared jingle plays",SOUNDS.contains("music.mission_cleared"),"");shot("h13_cleared_chat");},"cleared shot");
+        // ---- the cannon menu's card and a real Starshell ---------------------------------------------------------------------------------
+        step(5,()->{mc().options.hideGui=true;hold(new ItemStack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get()));tp(B.getX()-8.5,B.getY(),B.getZ()-3.5,180,60);},"hold a platform");
+        step(10,()->srv(()->sp().gameMode.useItemOn(sp(),sl(),sp().getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(B.offset(-8,-1,-8)).add(0,.5,0),Direction.UP,B.offset(-8,-1,-8),false))),"place the platform");
+        step(5,()->{hold(new ItemStack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get()));tp(B.getX()-14.5,B.getY(),B.getZ()+10.5,180,60);},"hold a cannon");
+        step(10,()->srv(()->sp().gameMode.useItemOn(sp(),sl(),sp().getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(B.offset(-14,-1,6)).add(0,.5,0),Direction.UP,B.offset(-14,-1,6),false))),"place the cannon");
+        step(10,()->{var c=srvGet(()->SupportCalls.cannon(sl(),sp().getUUID()));check("the cannon is placed and ours",c!=null,"");
+            srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());if(cannon!=null){CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.STARSHELL.ordinal());}});},"choose the Starshell");
+        step(10,()->{mc().options.hideGui=false;srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.open(sp(),cannon.getBlockPos(),"");});},"open the cannon menu");
+        step(30,()->{check("the cannon menu opens",mc().screen instanceof CannonScreen,String.valueOf(mc().screen));shot("h14_cannon_card_starshell");},"card shot");
+        step(2,()->srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.BUNKER.ordinal());}),"choose the Bunker Buster (long text)");
+        // the mouse goes onto the card (as a player's would, to scroll it), so no row of the lists is hovered
+        step(5,()->{if(mc().screen instanceof CannonScreen s){double k=mc().getWindow().getGuiScale();org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc().getWindow().getWindow(),(s.cardX+20)*k,(s.cardY+20)*k);}},"mouse on the card");
+        step(20,()->{if(mc().screen instanceof CannonScreen s){check("the long card can scroll",s.cardMax>0,"max="+s.cardMax);shot("h15_cannon_card_bunker_top");s.mouseScrolled(s.cardX+10,s.cardY+10,-3);s.mouseScrolled(s.cardX+10,s.cardY+10,-3);
+            check("scrolling moves the card",s.cardScroll>0,"scroll="+s.cardScroll);}},"scroll the card");
+        step(10,()->{if(mc().screen instanceof CannonScreen s){log("QA_NOTE card scroll after a frame: {} of {}",s.cardScroll,s.cardMax);shot("h16_cannon_card_bunker_scrolled");}},"scrolled shot");
+        step(2,()->srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.STARSHELL.ordinal());}),"back to the Starshell");
+        step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(ArsenalBeacon.FIRE_FLARE.get()));inv.selected=0;for(var ef:List.copyOf(sp().getActiveEffects()))sp().removeEffect(ef.getEffect());
+            sp().teleportTo(sl(),B.getX()-11.5,B.getY(),B.getZ()+24.5,180,-15);});SOUNDS.clear();},"take a fire support flare");
+        step(10,()->srv(()->sp().getMainHandItem().getItem().use(sl(),sp(),InteractionHand.MAIN_HAND)),"throw it");
+        until("the flare lands",300,()->srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(SupportFlares.FlareEntity::landed)),()->{});
+        step(5,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).get(0);log("QA_NOTE starshell flare at {}",f.blockPosition());
+            check("the flare calls a Starshell",f.type()==CannonUpgrades.FireType.STARSHELL,String.valueOf(f.type()));
+            // stand in the star's reach, but look away from where the round will land: the incoming sound must still play
+            sp().teleportTo(sl(),f.getX()+4,f.getY(),f.getZ()+4,45,0);}),"stand by the flare, looking away");
+        until("the star burns",400,()->srvGet(()->sp().hasEffect(MobEffects.DIG_SPEED)||sp().hasEffect(MobEffects.REGENERATION)),()->{});
+        step(2,()->check("the incoming sound played while the player looked away",SOUNDS.contains("ordnance.incoming"),String.valueOf(SOUNDS)),"incoming sound");
+        step(60,()->{boolean haste=srvGet(()->sp().hasEffect(MobEffects.DIG_SPEED)),regen=srvGet(()->sp().hasEffect(MobEffects.REGENERATION));
+            var effects=srvGet(()->sp().getActiveEffects().stream().map(x->x.getEffect().getDescriptionId()+" "+(x.getAmplifier()+1)).toList());
+            log("QA_NOTE player effects in the star: {}",effects);
+            check("the Starshell gives Haste II",haste&&srvGet(()->sp().getEffect(MobEffects.DIG_SPEED).getAmplifier())==1,String.valueOf(effects));
+            check("the Starshell gives no Regeneration",!regen,String.valueOf(effects));
+            mc().options.hideGui=false;look(sp().blockPosition(),sp().getX()-4,sp().getY()+10,sp().getZ()-4);},"effects in the star");
+        step(20,()->shot("h17_starshell_effects"),"star shot");
+        // ---- a raid where no natural spawn ground exists: gates, the speed burst, the chat line once -----------------------------------------
+        // the objective platform's west edge lies on the outer spawn ring: take it away, so only the base platform (inside the ring) is left
+        step(5,()->srv(()->{var air=net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+            for(int cx=(OBJ.getX()>>4)-3;cx<=(OBJ.getX()>>4)+3;cx++)for(int cz=(OBJ.getZ()>>4)-3;cz<=(OBJ.getZ()>>4)+3;cz++){
+                var chunk=sl().getChunk(cx,cz);
+                for(int y=HuntGameTests.FLOOR;y<=HuntGameTests.TOP;y++){var sec=chunk.getSection(chunk.getSectionIndex(y));for(int x=0;x<16;x++)for(int z=0;z<16;z++)sec.setBlockState(x,y&15,z,air,false);}
+                net.minecraft.world.level.levelgen.Heightmap.primeHeightmaps(chunk,EnumSet.of(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR,net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE));
+                chunk.setUnsaved(true);sl().setChunkForced(cx,cz,false);
+            }}),"take the objective platform away");
+        step(5,()->{CHAT.clear();mc().options.hideGui=true;srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
+            var d=d();d.phase="preparation";d.rewardTier=3;d.setDirty();sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+2.5,0,0);ArsenalBeacon.begin(sl(),d);});},"start a raid");
+        until("the first reinforcement",1600,()->srvGet(()->!d().raiders.isEmpty()),()->{});
+        step(10,()->{var info=srvGet(()->{var out=new ArrayList<String>();for(var id:d().raiders){var e=sl().getEntity(id);if(e instanceof net.minecraft.world.entity.Mob m){
+                    boolean gate=!sl().getEntitiesOfClass(RaiderGate.class,m.getBoundingBox().inflate(4)).isEmpty();
+                    out.add(m.getType().getDescriptionId()+" at "+m.blockPosition().toShortString()+" dist "+Math.round(Math.sqrt(m.distanceToSqr(Vec3.atCenterOf(B))))+" speed="+m.hasEffect(MobEffects.MOVEMENT_SPEED)+" gate="+gate);}}return out;});
+            log("QA_NOTE raiders: {}",info);
+            check("a reinforcement with no natural ground came out of a gate",info.stream().anyMatch(s->s.endsWith("gate=true")),String.valueOf(info));
+            check("raid enemies get the speed burst",!info.isEmpty()&&info.stream().allMatch(s->s.contains("speed=true")),"");
+            var gate=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(B).inflate(200)).stream().findFirst().orElse(null));
+            if(gate!=null)look(BlockPos.containing(gate.getX()-6,gate.getY(),gate.getZ()-6),gate.getX(),gate.getY()+1,gate.getZ());},"look at a gate spawn");
+        step(15,()->shot("h18_raid_gate_spawn"),"gate shot");
+        step(400,()->{},"let the wave pour in");
+        step(5,()->{long told=CHAT.stream().filter(c->c.contains("red gates")).count();check("the gate line is said once in the wave",told==1,"times="+told);
+            check("the old repeating line is gone",CHAT.stream().noneMatch(c->c.contains("Reinforcements are waiting")),"");
+            mc().options.hideGui=false;tp(B.getX()+.5,B.getY()+1,B.getZ()+2.5,0,10);},"chat checks");
+        step(20,()->shot("h19_raid_chat"),"chat shot");
+        step(5,()->srv(()->{HuntGameTests.Runner.release();}),"done");
+    }
+}

@@ -64,17 +64,35 @@ public final class BeaconClient {
      * The raid music player sits right under it and stays for the whole raid, even where the card is hidden.
      */
     private static void hud(GuiGraphics g,int w,int h){
-        var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null||!current())return;
+        var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null)return;
+        if(!current()){if(mission())drawMission(g,w,h);return;}
         var card=card(w,h);
         if(Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))drawHud(g,card);
+        else if(mission())drawMission(g,w,h);   // away from the base on a mission: only the mission line
         RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
     }
+    /** A hunting mission is running (0.0.20): the card gets its line, in the Overworld. */
+    private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD;}
+    /** The mission alone, where the status card would be, when the card itself is hidden. */
+    private static void drawMission(GuiGraphics g,int w,int h){
+        var font=Minecraft.getInstance().font;Component title=Ui.t("hud.mission.title"),line=TacticalClient.missionLine();
+        int width=Math.min(Math.max(140,Math.max(font.width(title),font.width(line))+18),Math.max(96,w/3));
+        int lines=Math.min(2,Ui.lines(font,line,width-14)),height=20+lines*10,x=6,y=Math.max(8,(h-height)/2);
+        g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
+        g.fill(x,y,x+3,y+height,Ui.BRASS);g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
+        Ui.text(g,font,title,x+9,y+5,Ui.BRASS,width-14);
+        Ui.wrap(g,font,line,x+9,y+17,width-14,Ui.INK,2);
+    }
+    /** Lines the mission takes on the status card (it wraps to a second line on a narrow card). */
+    private static int missionLines(int width){return mission()?Math.min(2,Ui.lines(Minecraft.getInstance().font,TacticalClient.missionLine(),width-14)):0;}
     record Card(int x,int y,int width,int height){}
     /** Where the status card goes on a {@code w} by {@code h} screen (also when it is hidden, so the music player does not jump). */
     static Card card(int w,int h){
         var font=Minecraft.getInstance().font;boolean raid=state.getString("phase").equals("raid");
         Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
-        int width=Math.min(Math.max(Math.max(140,RaidMusic.playerWidth(font)),Math.max(font.width(title),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3)),height=48+(raid&&on("hardRaid")?14:0);
+        int missionWidth=mission()?font.width(TacticalClient.missionLine()):0;
+        int width=Math.min(Math.max(Math.max(140,RaidMusic.playerWidth(font)),Math.max(Math.max(font.width(title),missionWidth),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3));
+        int height=48+(raid&&on("hardRaid")?14:0)+missionLines(width)*11;
         return new Card(6,Math.max(8,(h-height-(raid?RaidMusic.PLAYER_HEIGHT+4:0))/2),width,height);
     }
     static void drawHud(GuiGraphics g,int w,int h){drawHud(g,card(w,h));}
@@ -90,6 +108,7 @@ public final class BeaconClient {
         Ui.bar(g,x+9,y+30,width-18,5,fraction,dead||fraction<=.25f?Ui.RED:Ui.CYAN);
         Ui.text(g,font,line,x+9,y+39,Ui.MUTED,width-14);
         if(raid&&on("hardRaid"))Ui.text(g,font,Ui.t("hud.boss"),x+9,y+50,Ui.BRASS,width-14);
+        int ml=missionLines(width);if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-ml*11-1,width-14,Ui.BRASS,ml);
     }
     static Component phase(String phase){
         return Ui.t("phase."+switch(phase){case "preparation","raid","disabled","restore","snapshot","decommissioning"->phase;default->"unplaced";});
@@ -526,6 +545,7 @@ public final class BeaconClient {
                 case "stations"->ArsenalBeacon.GUN_PLATFORM.get().asItem();
                 case "energy"->ArsenalBeacon.ARDENT_ENERGY.get();
                 case "support"->ArsenalBeacon.SUPPORT_CANNON_ITEM.get();
+                case "tactical"->ArsenalBeacon.COMMAND_TABLE_ITEM.get();
                 case "kitchen"->ArsenalBeacon.MESS_HALL_I.get().asItem();
                 case "mixes"->ArsenalBeacon.SANDWICH.get();
                 case "gear"->ArsenalBeacon.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:ArsenalBeacon.RACKS.get(0).get().asItem();
@@ -542,10 +562,10 @@ public final class BeaconClient {
         private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;cached=null;}
         @Override protected void init(){
             super.init();nav.clear();
-            // The guide may be taller than the other panels: 14 rows with full-size icons need the room.
+            // The guide may be taller than the other panels: 15 rows with full-size icons need the room.
             ph=Math.min(330,height-16);top=(height-ph)/2;
             int rows=IDS.length;
-            // The menu is a full-height strip beside the page. It never goes away: when 14 icon-and-title rows do not fit,
+            // The menu is a full-height strip beside the page. It never goes away: when 15 icon-and-title rows do not fit,
             // it becomes a two-column rail of icons and the names move to a tooltip.
             navX=left+10;navTop=top+32;navHeight=ph-40;
             int step=(navHeight-4)/rows;

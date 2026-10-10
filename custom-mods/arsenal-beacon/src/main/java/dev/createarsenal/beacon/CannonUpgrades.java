@@ -71,7 +71,8 @@ final class CannonUpgrades {
         return switch(type){
             case BUNKER->BUNKER_RADIUS+BUNKER_AOE_STEP*lv;
             case CLUSTER->(SupportRules.BLAST_RADIUS+AOE_STEP*lv)*CLUSTER_SPREAD;
-            case NAPALM,CRYO->(SupportRules.BLAST_RADIUS+AOE_STEP*lv)*GROUND_SPREAD;
+            case NAPALM->(SupportRules.BLAST_RADIUS+AOE_STEP*lv)*GROUND_SPREAD;
+            case CRYO->(SupportRules.BLAST_RADIUS+AOE_STEP*lv)*GROUND_SPREAD+CRYO_EXTRA;
             case GRAVITY->(SupportRules.BLAST_RADIUS+AOE_STEP*lv)*WELL_SPREAD;
             case SHOCKWAVE->Rules.radius(0)+AOE_STEP*lv;
             case STARSHELL->STAR_RADIUS+STAR_AOE_STEP*lv;
@@ -116,6 +117,8 @@ final class CannonUpgrades {
      * Fatigue III) for as long as it stays; a raid boss is slowed less (Slowness III).
      */
     static final int CRYO_TICKS=300,CRYO_STEP=100,CRYO_SLOW_AMPLIFIER=4,CRYO_BOSS_AMPLIFIER=2;
+    /** The Cryo Shell's frost reaches this many blocks further on every side than the napalm's (0.0.20, the owner's buff); not higher. */
+    static final double CRYO_EXTRA=3;
     /** Gravity Well: no damage; every hostile mob in its (twice as wide) box is dragged to the flare, into one crowd to shoot. */
     static final int GRAVITY_TICKS=100,GRAVITY_STEP=40;static final double GRAVITY_PULL=.16,WELL_SPREAD=2;
     /**
@@ -144,6 +147,24 @@ final class CannonUpgrades {
     }
     static int portalTicks(boolean longPortal){return longPortal?6000:SupportRules.PORTAL_LIFETIME_TICKS;}
     static final int AURA_AFTER_PICKUP_TICKS=600,AURA_RADIUS=6;
+
+    /**
+     * The numbers the cannon menu prints for one fire support with one player's upgrades (0.0.20): rounds, seconds between rounds, damage of
+     * one hit, the area's width and height in blocks, how long a lingering effect lasts (s), the type's own figure (an arrow, the Bunker
+     * Buster's blow, a bomblet pulse, a second of napalm) and a total (what a mob that takes every hit takes).
+     */
+    record Facts(int rounds,double every,double damage,double width,double height,double lasts,double special,double total){}
+    static Facts facts(Config c){
+        var t=c.type();double r=c.radius(),hit=SupportRules.FIRE_DAMAGE*c.damage(),lasts=c.lingerTicks()/20.0;
+        double height=t==FireType.BUNKER||t==FireType.STARSHELL?2*r:t.flat()?GROUND_HEIGHT:r+.5;
+        double special=switch(t){case ARROW->2.5*c.damage();case BUNKER->hit*2;case CLUSTER->clusterPulse(c.damage());case NAPALM->napalm(c.damage());default->hit;};
+        double total=switch(t){case CLUSTER->special*(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);case NAPALM->special*lasts;case EXPLOSION,NARUKAMI->hit*c.volleys();default->special;};
+        return new Facts(c.volleys(),c.interval()/20.0,hit,2*r,height,lasts,special,total);
+    }
+    /** Pure: a number for the menu: whole numbers without a decimal point, others with one decimal. */
+    static String number(double v){double rounded=Math.round(v*10)/10.0;return rounded==Math.rint(rounded)?String.valueOf((long)Math.rint(rounded)):String.valueOf(rounded);}
+    /** The arguments of a type's menu lines, in order (%1$s ... %8$s). */
+    static Object[] factArgs(Facts f){return new Object[]{f.rounds(),number(f.every()),number(f.damage()),number(f.width()),number(f.height()),number(f.lasts()),number(f.special()),number(f.total())};}
 
     /** Everything a thrown flare needs to know, frozen at the moment of the throw. */
     record Config(FireType type,int volleys,int interval,float damage,boolean tunnel,boolean slow,boolean longPortal,boolean aura,int aoe,int volleyLevel){

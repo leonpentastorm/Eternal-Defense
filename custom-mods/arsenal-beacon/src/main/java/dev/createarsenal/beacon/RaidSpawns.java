@@ -9,7 +9,10 @@ import java.util.*;
 /** Exterior staging only: no closer fallback, no forced chunks, no roofs or interiors. */
 final class RaidSpawns {
     static final int CLEARANCE=64,SPREAD=16;
-    private static final Map<ServerLevel,Long> WARNINGS=new WeakHashMap<>();
+    /** Since when no natural spawn ground was found (per level; gone again once some is found). */
+    private static final Map<ServerLevel,Long> FAILING=new WeakHashMap<>();
+    /** The wave the players were last told about a gate spawn (or about no ground at all), per level. */
+    private static final Map<ServerLevel,Long> TOLD=new WeakHashMap<>();
     static BlockPos ring(BlockPos origin,int radius,double angle,int extra){
         return ringAt(origin,radius+CLEARANCE+Math.max(0,Math.min(SPREAD,extra)),angle);
     }
@@ -195,10 +198,77 @@ final class RaidSpawns {
         order.addAll(all.stream().filter(c->!c.score().clean()).sorted(Comparator.comparingInt(c->c.score().violations())).toList());
         for(var c:order){
             if(!l.hasChunkAt(c.column()))continue;
-            var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,c.column());if(safe(l,d,p)){WARNINGS.remove(l);return p;}
+            var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,c.column());if(safe(l,d,p)){FAILING.remove(l);return p;}
         }
-        long now=l.getGameTime();if(d.waveTicks>=600&&now-WARNINGS.getOrDefault(l,now-600)>=600){WARNINGS.put(l,now);l.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal("[Create Arsenal] Reinforcements are waiting for clear, loaded outdoor ground at least 64 blocks beyond the protected boundary. They will not spawn closer or inside buildings."),false);}return null;
+        FAILING.putIfAbsent(l,l.getGameTime());return null;
     }
+
+    // ---- gate spawns: when no natural ground is left (0.0.20) ------------------------------------------------------------------------
+    /** Without natural ground for this long, reinforcements come through a red gate closer in. */
+    static final int GATE_AFTER_TICKS=200;
+    /**
+     * A gate spot is never inside the zone or within {@link #GATE_BEYOND_ZONE} blocks of its edge, never within {@link #GATE_PLAYER_DISTANCE}
+     * blocks of a player, never more than {@link #GATE_HEIGHT} blocks above or below the beacon, and it is outdoors (sky light at least
+     * {@link #GATE_SKY_LIGHT}) on ground nobody built.
+     */
+    static final int GATE_BEYOND_ZONE=12,GATE_PLAYER_DISTANCE=12,GATE_HEIGHT=32,GATE_SKY_LIGHT=13,GATE_RING_STEP=8;
+    /** Where a reinforcement appears, and whether it comes through a gate. */
+    record Place(BlockPos pos,boolean gate){}
+    /** Pure: it is time for gates ({@code failingSince}: when natural ground was last missed, MIN_VALUE when it was not). */
+    static boolean gateDue(long failingSince,long now){return failingSince!=Long.MIN_VALUE&&now-failingSince>=GATE_AFTER_TICKS;}
+    /** Pure: the ring distances a gate spot is tried at, from the outer edge of the active chunks in to the closest allowed. */
+    static List<Integer> gateRings(int zoneRadius,int farthest){
+        int near=zoneRadius+GATE_BEYOND_ZONE;var out=new ArrayList<Integer>();
+        for(int r=Math.max(near,farthest);r>near;r-=GATE_RING_STEP)out.add(r);
+        out.add(near);return out;
+    }
+    /**
+     * A reinforcement's place: natural ground ({@link #find}) whenever there is any; after {@link #GATE_AFTER_TICKS} without, the nearest
+     * outdoor ground that will do ({@link #findGate}), where it comes out of a red gate. The players are told once a wave (gates, or no
+     * ground at all). Null when there is nothing yet.
+     */
+    static Place place(ServerLevel l,CampaignData d){
+        var natural=find(l,d);if(natural!=null)return new Place(natural,false);
+        long now=l.getGameTime();
+        if(!gateDue(FAILING.getOrDefault(l,Long.MIN_VALUE),now))return null;
+        var gate=findGate(l,d,RaidRescue.players(l));
+        tell(l,d,gate!=null);
+        return gate==null?null:new Place(gate,true);
+    }
+    private static void tell(ServerLevel l,CampaignData d,boolean gates){
+        long wave=(d.campaignSerial*1_000_003L+d.raidsStarted)*64+d.wave;
+        if(Long.valueOf(wave).equals(TOLD.get(l)))return;TOLD.put(l,wave);
+        l.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal("[Create Arsenal] ").append(net.minecraft.network.chat.Component.translatable(gates?"gui.arsenal_beacon.raid.gate_spawn":"gui.arsenal_beacon.raid.no_ground")).withStyle(net.minecraft.ChatFormatting.GOLD),false);
+    }
+    static BlockPos findGate(ServerLevel l,CampaignData d,Collection<net.minecraft.world.phys.Vec3> players){
+        var placed=BaseScoring.Ledger.get(l).placed;
+        for(int distance:gateRings(d.radius(),farthest(l,d))){
+            int first=l.random.nextInt(WEDGES);double jitter=l.random.nextDouble()*WEDGE;
+            for(int i=0;i<WEDGES;i++){
+                var column=ringAt(d.beacon,distance,((first+i)%WEDGES)*WEDGE+jitter);
+                if(!l.hasChunkAt(column))continue;
+                var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,column);
+                if(gateSafe(l,d,p,players,placed))return p;
+            }
+        }
+        return null;
+    }
+    /** The relaxed rules of a gate spot: standing room on solid, natural, dry ground, outdoors, away from the zone and from players. */
+    static boolean gateSafe(ServerLevel l,CampaignData d,BlockPos p,Collection<net.minecraft.world.phys.Vec3> players,Set<Long> placed){
+        if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+GATE_BEYOND_ZONE)return false;
+        if(Math.abs(p.getY()-d.beacon.getY())>GATE_HEIGHT||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p))return false;
+        if(!farFromPlayers(net.minecraft.world.phys.Vec3.atBottomCenterOf(p),players,GATE_PLAYER_DISTANCE))return false;
+        var floor=p.below();var ground=l.getBlockState(floor);
+        if(placed.contains(floor.asLong())||l.getBlockEntity(floor)!=null||!l.getFluidState(floor).isEmpty()||!ground.isFaceSturdy(l,floor,net.minecraft.core.Direction.UP))return false;
+        if(ground.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)||ground.is(net.minecraft.world.level.block.Blocks.POWDER_SNOW))return false;
+        for(var cell:List.of(p,p.above()))if(!l.getBlockState(cell).getCollisionShape(l,cell).isEmpty()||!l.getFluidState(cell).isEmpty())return false;
+        return l.getBrightness(net.minecraft.world.level.LightLayer.SKY,p)>=GATE_SKY_LIGHT;
+    }
+    /** Every raid enemy starts with a burst of speed (Speed II for {@link #RUSH_SECONDS} seconds) so the long walk in from its spawn goes quicker. */
+    static final int RUSH_SECONDS=10,RUSH_AMPLIFIER=1;
+    static void rush(net.minecraft.world.entity.Mob mob){mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED,RUSH_SECONDS*20,RUSH_AMPLIFIER,false,false,false));}
+    /** A raid starts or ends: natural ground is looked for afresh. */
+    static void forgetGates(){FAILING.clear();}
 
     // ---- rescue: a new place for a raider that cannot get to the beacon ------------------------------------------------------------
     /** Pure: nobody (in {@code players}) is closer than {@code min} blocks to {@code p}. */

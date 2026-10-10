@@ -168,17 +168,13 @@
     ],
     "subtitle": "subtitles.arsenal_beacon.beacon.attacked"
   },
-  "shell.whistle": {
+  "ordnance.incoming": {
     "sounds": [
-      "arsenal_beacon:sfx/shell_whistle"
+      {
+        "name": "arsenal_beacon:sfx/ordnance_incoming"
+      }
     ],
-    "subtitle": "subtitles.arsenal_beacon.shell.whistle"
-  },
-  "bomb.whistle": {
-    "sounds": [
-      "arsenal_beacon:sfx/bomb_whistle"
-    ],
-    "subtitle": "subtitles.arsenal_beacon.bomb.whistle"
+    "subtitle": "subtitles.arsenal_beacon.ordnance.incoming"
   },
   "flare.chatter_1": {
     "sounds": [
@@ -215,5 +211,44 @@
       "arsenal_beacon:sfx/chatter_6"
     ],
     "subtitle": "subtitles.arsenal_beacon.flare.chatter"
+  },
+  "music.mission_cleared": {
+    "sounds": [
+      {
+        "name": "arsenal_beacon:music/victory",
+        "stream": true,
+        "volume": 0.85
+      }
+    ]
+  },
+  "tactical.accept": {
+    "sounds": [
+      "arsenal_beacon:sfx/tactical_accept"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.tactical.accept"
+  },
+  "tactical.refused": {
+    "sounds": [
+      "arsenal_beacon:sfx/tactical_refused"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.tactical.refused"
+  },
+  "tactical.scan": {
+    "sounds": [
+      "arsenal_beacon:sfx/tactical_scan"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.tactical.scan"
+  },
+  "tactical.scan_done": {
+    "sounds": [
+      "arsenal_beacon:sfx/tactical_scan_done"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.tactical.scan_done"
+  },
+  "tactical.contact": {
+    "sounds": [
+      "arsenal_beacon:sfx/tactical_contact"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.tactical.contact"
   }
 }

@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 0.0.19: the fire support radio answers a flare instead of the siren, and the falling round whistles again (the 0.0.16 whistle). */
+/** 0.0.19: the fire support radio answers a flare instead of the siren; the falling round's sound (the 0.0.16 whistle in 0.0.19, the incoming sound again in 0.0.20). */
 final class RadioAndWhistleTest {
     @Test void theRadioLinesAreShippedAndTheSirenIsGone() throws Exception{
         var sounds=json("/assets/arsenal_beacon/sounds.json");var lang=json("/assets/arsenal_beacon/lang/en_us.json");
@@ -41,25 +41,16 @@ final class RadioAndWhistleTest {
         assertEquals(0,SupportChatter.lines(SupportCalls.Kind.RETURN).length,"the return portal gets no radio line");
         assertEquals(7,SupportChatter.pick(new int[]{7},7,3),"a single line may repeat");
     }
-    @Test void theWhistleIsBackAndEndsAsTheRoundLands() throws Exception{
+    /** 0.0.20: the owner asked for the 0.0.18 incoming sound again; the 0.0.19 whistle was lost whenever its round left the player's view. */
+    @Test void theIncomingSoundIsBackAndPlaysWhereTheRoundLands() throws Exception{
         var sounds=json("/assets/arsenal_beacon/sounds.json");
-        for(String name:List.of("shell_whistle","bomb_whistle")){
-            assertTrue(sounds.has(name.replace('_','.')),name);
-            var file=HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/"+name+".ogg");
-            assertEquals(1,file.channels(),name+" rides on the round, so it is mono");
-            assertEquals(OrdnanceClient.WHISTLE_SECONDS,file.seconds(),.02,name);
-        }
-        assertFalse(sounds.has("ordnance.incoming"),"the 0.0.18 incoming sound is gone");
+        assertTrue(sounds.has("ordnance.incoming"),"the incoming sound is registered");
+        for(String gone:List.of("shell.whistle","bomb.whistle"))assertFalse(sounds.has(gone),gone+" is gone");
+        for(String name:List.of("shell_whistle","bomb_whistle"))assertNull(RadioAndWhistleTest.class.getResource("/assets/arsenal_beacon/sounds/sfx/"+name+".ogg"),name+".ogg is gone");
+        assertEquals(1,HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/ordnance_incoming.ogg").channels(),"it stands where the round lands, so it is mono");
         assertEquals(103,SupportRules.BLAST_FLIGHT_TICKS,"the pace the owner kept: 5.15 s from shot to impact");
-        for(boolean bomb:new boolean[]{false,true})for(int id=0;id<5000;id+=7){
-            float pitch=OrdnanceClient.whistlePitch(bomb,id);
-            assertTrue(bomb?pitch>=.9f&&pitch<=1f:pitch>=.92f&&pitch<=1.08f,"pitch "+pitch);
-            int start=OrdnanceClient.whistleStart(SupportRules.BLAST_FLIGHT_TICKS,pitch);
-            double ends=start+OrdnanceClient.WHISTLE_SECONDS*20/pitch;
-            assertEquals(SupportRules.BLAST_FLIGHT_TICKS+OrdnanceClient.BLAST_HEARD_AFTER_LANDING,ends,.5,"the whistle (pitch "+pitch+") ends as the round's blast is heard");
-            assertTrue(start>60,"it is heard for the last part of the fall only");
-        }
-        assertEquals(1,OrdnanceClient.whistleStart(10,1f),"a short fall whistles from its first tick");
+        assertFalse(OrdnanceClient.incomingDue(0));assertTrue(OrdnanceClient.incomingDue(1),"played the first tick a client sees the round");
+        assertTrue(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK));assertFalse(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK+1),"too late: it would end after the impact");
     }
     private static com.google.gson.JsonObject json(String path) throws Exception{
         try(var in=RadioAndWhistleTest.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in,path),StandardCharsets.UTF_8)).getAsJsonObject();}

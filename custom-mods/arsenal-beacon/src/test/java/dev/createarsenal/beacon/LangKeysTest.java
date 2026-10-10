@@ -50,7 +50,12 @@ final class LangKeysTest {
         for(String phase:List.of("unplaced","preparation","raid","disabled","restore","snapshot","decommissioning"))needed.add("phase."+phase);
         for(String b:List.of("core","logistics","defense","restoration","vertical"))needed.add("upgrade."+b+".now");
         needed.addAll(List.of("support.name.supply","support.name.return","support.called","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now","upgrade.reconnaissance.after","upgrade.reconnaissance.after_one","upgrade.reconnaissance.at_once","upgrade.buy_parts","upgrade.short_parts","rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
-        for(var t:CannonUpgrades.FireType.values()){needed.add("support.name."+t.callId());needed.add("cannon.type."+t.id);needed.add("cannon."+"type."+t.id+".desc");}
+        for(var t:CannonUpgrades.FireType.values()){needed.add("support.name."+t.callId());needed.add("cannon.type."+t.id);for(String part:List.of("effect","damage","area"))needed.add("cannon."+"type."+t.id+"."+part);}
+        // Tactical Operations (0.0.20): the keys the table, the satellite and the chat build from ids
+        for(var k:TacticalRules.Kind.values()){needed.add("tactical.class."+k.id);needed.add("tactical.card.note."+k.id);}
+        for(String r:List.of("accepted","gone","no_uplink","raid","raid_warning","busy","abandoned","no_mission","maxed","too_far","short","upgraded","reprinted","scan_busy","scan_cooldown","scan_started"))needed.add("tactical.result."+r);
+        for(String u:List.of("no_beacon","no_table","no_satellite","zone","too_far","no_sky"))needed.add("tactical.uplink."+u);
+        for(String st:List.of("no_uplink","raid","raid_warning","busy","ready"))needed.add("tactical.status."+st);
         for(var u:CannonUpgrades.Upgrade.values()){needed.add("cannon.up."+u.id);needed.add("cannon.up."+u.id+".desc");}
         for(String code:List.of("selected","bought","no_energy","maxed"))needed.add("cannon.msg."+code);
         for(String key:List.of("barrage","barrage.wait","preparing","heard"))needed.add("support.notice."+key);
@@ -215,7 +220,8 @@ final class LangKeysTest {
             Map.entry("universal_ammo_coin","Ammo Coins"),Map.entry("ardent_energy","Ardent Energy"),Map.entry("exchange_shop","Exchange Shop"),
             Map.entry("support_platform","Support Platform"),Map.entry("support_cannon","Support Cannon"),Map.entry("support_flare","Support Flare"),Map.entry("return_flare","Return Flare"),Map.entry("fire_support_flare","Fire Support Flare"),
             Map.entry("mess_hall_mk1","Mess Hall"),Map.entry("cook_pot","Cook Pot and stew"),Map.entry("prepared_sandwich","Sandwich"),Map.entry("bowl_dispenser","Bowl Dispenser"),
-            Map.entry("milk_dispenser","Milk Dispenser and Milk Bottle"),Map.entry("milk_bottle","Milk Dispenser and Milk Bottle"));
+            Map.entry("milk_dispenser","Milk Dispenser and Milk Bottle"),Map.entry("milk_bottle","Milk Dispenser and Milk Bottle"),
+            Map.entry("command_table","Command Table"),Map.entry("satellite_beacon","Satellite Beacon"));
         var ignored=Set.of("structure_part","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArsenalBeacon.java"));
         var registered=new TreeSet<String>();

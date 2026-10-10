@@ -79,6 +79,12 @@ public final class ArsenalBeacon {
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportPlatform.PlatformEntity>> SUPPORT_PLATFORM_ENTITY=ENTITIES.register("support_platform",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportPlatform.PlatformEntity::new,SUPPORT_PLATFORM.get()).build(null));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportCannon.CannonEntity>> CANNON_ENTITY=ENTITIES.register("support_cannon",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportCannon.CannonEntity::new,SUPPORT_CANNON.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<SupportPlatform.PlatformMenu>> SUPPORT_MENU=MENUS.register("support_platform",()->net.minecraftforge.common.extensions.IForgeMenuType.create(SupportPlatform.PlatformMenu::client));
+    // ---- Tactical Operations (0.0.20) -----------------------------------------------------------------------
+    public static final RegistryObject<Block> COMMAND_TABLE=BLOCKS.register("command_table",TacticalBlocks.TableBlock::new);
+    public static final RegistryObject<Item> COMMAND_TABLE_ITEM=ITEMS.register("command_table",()->new TacticalBlocks.TableItem(COMMAND_TABLE.get()));
+    public static final RegistryObject<Block> SATELLITE_BEACON=BLOCKS.register("satellite_beacon",TacticalBlocks.SatelliteBlock::new);
+    public static final RegistryObject<Item> SATELLITE_BEACON_ITEM=ITEMS.register("satellite_beacon",()->new TacticalBlocks.SatelliteItem(SATELLITE_BEACON.get()));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<TacticalBlocks.TableMenu>> TABLE_MENU=MENUS.register("command_table",()->net.minecraftforge.common.extensions.IForgeMenuType.create(TacticalBlocks.TableMenu::client));
     public static final RegistryObject<Item> SUPPLY_FLARE=ITEMS.register("support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.SUPPLY)),RETURN_FLARE=ITEMS.register("return_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.RETURN)),FIRE_FLARE=ITEMS.register("fire_support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.FIRE));
     public static final RegistryObject<Item> PLATING=part("reinforced_plating"),LOGISTICS=part("logistics_module"),COIL=part("resonance_coil"),REPAIR=part("restoration_matrix"),AMMO_COIN=part("universal_ammo_coin");
     public static final RegistryObject<Block> GUN_PLATFORM=platform("gun"),AMMO_PLATFORM=platform("ammo"),ATTACHMENT_PLATFORM=platform("attachment"),ARMOR_PLATFORM=platform("armor");
@@ -104,7 +110,7 @@ public final class ArsenalBeacon {
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,ArsenalClientConfig.SPEC,"arsenal-beacon-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
-        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
+        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
@@ -114,6 +120,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV6GameTests.KitchenV6Verification());
         if(Boolean.getBoolean("arsenal.stuckTests"))MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
         if(Boolean.getBoolean("arsenal.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
+        if(Boolean.getBoolean("arsenal.huntTests"))MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
         if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
@@ -161,6 +168,7 @@ public final class ArsenalBeacon {
         if(!d.phase.equals("unplaced"))d.participants.add(p.getUUID());d.setDirty();
         grantSupport(p);BeaconNetwork.sendState(p,"","","");
         grantStarter(p);
+        Hunts.login(p);   // a mission running: its map and Return Flare if missing, and the mission line
     }
     static void grantSupport(ServerPlayer p) {
         if(p.getPersistentData().getBoolean("arsenalSupportGranted03"))return;
@@ -226,9 +234,23 @@ public final class ArsenalBeacon {
             .then(Commands.literal("claim").executes(c->{claim(c.getSource().getPlayerOrException(),CampaignData.get(c.getSource().getServer().overworld()));return 1;}))
             .then(Commands.literal("upgrade").then(Commands.argument("branch",StringArgumentType.word()).suggests((c,b)->{for(String s:List.of("core","logistics","defense","restoration","reconnaissance","vertical"))b.suggest(s);return b.buildFuture();}).executes(c->upgrade(c.getSource().getPlayerOrException(),StringArgumentType.getString(c,"branch")))))
             .then(Commands.literal("repair").executes(c->repair(c.getSource().getPlayerOrException())))
+            .then(Hunts.command())
+            .then(Commands.literal("test-gate").requires(s->s.hasPermission(2)).executes(c->{testGate(c.getSource().getPlayerOrException());return 1;}))
             .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})
                 .then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}if(!d.phase.equals("preparation")){c.getSource().sendFailure(Component.literal("A raid can only be started during preparation."));return 0;}d.nextRaidType=t;d.setDirty();begin(l,d);if(d.introRaid)c.getSource().sendSuccess(()->Component.literal("The introduction raid is always an ordinary raid; finish it first, then run this again."),false);return 1;})))
             .then(Commands.literal("next-raid").requires(s->s.hasPermission(2)).then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}d.nextRaidType=t;d.setDirty();c.getSource().sendSuccess(()->Component.literal("Next raid: "+RaidTypes.name(t).getString()),true);return 1;}))));
+    }
+    /**
+     * {@code /arsenal test-gate} (operators): opens a red gate five blocks in front of the player and sends an ordinary zombie (not a raider)
+     * through it, the way a raid reinforcement or a hunt warband arrives, so the gate can be looked at any time.
+     */
+    static void testGate(ServerPlayer p){
+        var l=p.serverLevel();var look=p.getLookAngle();var at=BlockPos.containing(p.getX()+look.x*5,p.getY(),p.getZ()+look.z*5);
+        at=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,at);
+        RaiderGates.spawnGate(l,at);
+        var zombie=EntityType.ZOMBIE.create(l);
+        if(zombie!=null){zombie.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot()+180,0);l.addFreshEntity(zombie);}
+        p.sendSystemMessage(Component.translatable("gui.arsenal_beacon.raid.test_gate"));
     }
     static int feedback(ServerPlayer p,String text){
         if(BeaconActions.inAction())BeaconNetwork.sendState(p,"","",text);else p.sendSystemMessage(Component.literal(text));return 1;
@@ -278,6 +300,7 @@ public final class ArsenalBeacon {
         feedback(p,RewardCache.claim(p,d));
     }
     static void decommission(ServerLevel l,CampaignData d,ServerPlayer p) {
+        Hunts.cancel(l);   // the running hunting mission ends and its warband leaves
         RaidRescue.reset(l);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}
         net.minecraft.world.Containers.dropContents(l,d.beacon,d.rewardBox);   // the chest goes with the beacon: its contents spill out
         if(l.hasChunkAt(d.beacon)&&l.getBlockState(d.beacon).is(BEACON.get()))l.setBlock(d.beacon,Blocks.AIR.defaultBlockState(),3);
@@ -294,6 +317,7 @@ public final class ArsenalBeacon {
         if(event.phase!=TickEvent.Phase.END)return;
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
+        Hunts.tick(l,d,clock);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
             BeaconNetwork.syncNearby(l,d);
@@ -323,7 +347,7 @@ public final class ArsenalBeacon {
     }
     static void begin(ServerLevel l,CampaignData d) {
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
-        RaidAdaptation.begin(d);RaidRescue.reset(l);
+        RaidAdaptation.begin(d);RaidRescue.reset(l);RaidSpawns.forgetGates();
         RaidWarnings.reset();d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
         announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
     }
@@ -398,7 +422,13 @@ public final class ArsenalBeacon {
     }
     private static boolean spawn(ServerLevel l,CampaignData d) {
         String raidType=d.introRaid?"normal":d.raidType;boolean bossNow=d.hardRaid&&d.wave==Rules.waves(d.raidTier)&&!d.bossSpawned;
-        BlockPos spawnPos=raidType.equals("paratroopers")&&!bossNow?RaidTypes.dropPoint(l,d):RaidSpawns.find(l,d);
+        BlockPos spawnPos;
+        if(raidType.equals("paratroopers")&&!bossNow)spawnPos=RaidTypes.dropPoint(l,d);
+        else{
+            // natural ground far out first; with none for a while, the reinforcement comes through a red gate closer in (0.0.20)
+            var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();
+            if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos);
+        }
         if(spawnPos==null)return false;
         int x=spawnPos.getX(),y=spawnPos.getY(),z=spawnPos.getZ();
         if(bossNow)return HardRaids.spawn(l,d,spawnPos);
@@ -412,7 +442,7 @@ public final class ArsenalBeacon {
         if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false; // Let pack spawn handlers run first.
         mob.getPersistentData().putString("arsenalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
         if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
-        mob.setHealth(mob.getMaxHealth());
+        mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);
         d.raiders.add(mob.getUUID());RaidTypes.broadcast(l,d);
         return true;
     }

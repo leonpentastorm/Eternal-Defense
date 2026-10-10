@@ -59,7 +59,7 @@ final class SpecialForcesRaids {
             if(!l.noCollision(mob))return false;
             d.raiders.add(mob.getUUID()); // The join guard verifies ownership before allowing insertion.
             if(!l.addFreshEntity(mob)){d.raiders.remove(mob.getUUID());return false;}
-            balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());
+            balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);
             d.setDirty();
             if(warn)for(var player:l.players())if(ArsenalBeacon.near(player,d)){
                 player.sendSystemMessage(Component.literal("[Create Arsenal] SPECIAL FORCES INCOMING! Get behind sandbags and prepare for a shootout!"));

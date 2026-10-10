@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Support gear (platform, cannon, Exchange Shop) only exists inside the live zone of the Defense Beacon. It cannot be placed
+ * Support gear (platform, cannon, Exchange Shop, Command Table, Satellite Beacon) only exists inside the live zone of the Defense Beacon. It cannot be placed
  * outside it, stops working while the beacon is missing, and is moved for free with the Beacon Recovery Shovel.
  */
 final class BaseZone {
@@ -68,8 +68,9 @@ final class BaseZone {
             if(!c.getLevel().isClientSide){
                 String zone=problem(c.getLevel(),c.getClickedPos());
                 if(zone!=null){say(c.getPlayer(),"zone."+zone);return InteractionResult.FAIL;}
-                var state=getBlock().defaultBlockState();
-                if((ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
+                // the Command Table's footprint depends on which way it faces, so it is checked in the state it will be placed in
+                var state=getBlock() instanceof TacticalBlocks.TableBlock table?table.getStateForPlacement(c):getBlock().defaultBlockState();
+                if(state!=null&&(ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state)||ArsenalStructures.table(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
                 String extra=extra(c);
                 if(extra!=null){say(c.getPlayer(),extra);return InteractionResult.FAIL;}
             }
@@ -79,7 +80,7 @@ final class BaseZone {
             lines.add(Component.translatable("tooltip.arsenal_beacon.zone_only").withStyle(net.minecraft.ChatFormatting.GRAY));
             lines.add(Component.translatable("tooltip.arsenal_beacon.relocate").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
             var tag=stack.getTag();
-            if(tag!=null&&tag.contains("Mk"))lines.add(Component.translatable("tooltip.arsenal_beacon.platform_mk",tag.getInt("Mk")).withStyle(net.minecraft.ChatFormatting.GOLD));
+            if(tag!=null&&tag.contains("Mk"))lines.add(Component.translatable(this instanceof TacticalBlocks.SatelliteItem?"tooltip.arsenal_beacon.satellite_mk":"tooltip.arsenal_beacon.platform_mk",tag.getInt("Mk")).withStyle(net.minecraft.ChatFormatting.GOLD));
         }
     }
 
@@ -96,6 +97,8 @@ final class BaseZone {
             var entity=new CompoundTag();entity.put("Grid",be.gridTag());tag.put("BlockEntityTag",entity);
             be.grid.clearQuietly();
         }
+        else if(state.is(ArsenalBeacon.COMMAND_TABLE.get())){stack=new ItemStack(ArsenalBeacon.COMMAND_TABLE_ITEM.get());}
+        else if(state.is(ArsenalBeacon.SATELLITE_BEACON.get())){stack=new ItemStack(ArsenalBeacon.SATELLITE_BEACON_ITEM.get());stack.getOrCreateTag().putInt("Mk",state.getValue(TacticalBlocks.MK));}   // for the tooltip only: the Mk itself is kept in HuntData
         else if(state.is(ArsenalBeacon.SUPPORT_CANNON.get())&&level.getBlockEntity(root) instanceof SupportCannon.CannonEntity be){
             owner=be.owner;
             if(owner!=null&&!owner.equals(p.getUUID())){say(p,"not_yours",be.ownerName);return true;}

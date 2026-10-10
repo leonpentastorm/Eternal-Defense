@@ -10,7 +10,7 @@ import java.util.*;
 /** The beacon supplies starter installations; each installation owns its upgrades. */
 final class WorkshopFabrication {
     static final List<String> ITEMS=List.of("gun_platform","ammo_platform","attachment_platform","armor_platform",
-        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","support_platform","support_cannon","exchange_shop");
+        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon");
     static ListTag state(ServerPlayer p){
         var rows=new ListTag();for(String id:ITEMS){var row=new CompoundTag();row.putString("id",id);row.put("item",new ItemStack(item(id)).save(new CompoundTag()));row.put("costs",WeaponPlatform.costTags(p,Economy.fabrication(id)));rows.add(row);}return rows;
     }

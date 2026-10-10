@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"28-standalone":"28-pack",s->s.equals(BuildFlavor.STANDALONE?"28-standalone":"28-pack"),s->s.equals(BuildFlavor.STANDALONE?"28-standalone":"28-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"29-standalone":"29-pack",s->s.equals(BuildFlavor.STANDALONE?"29-standalone":"29-pack"),s->s.equals(BuildFlavor.STANDALONE?"29-standalone":"29-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -49,6 +49,11 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(13,SupportHud.Sync.class,SupportHud.Sync::encode,SupportHud.Sync::decode,SupportHud.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(14,RaidTypes.Marks.class,RaidTypes.Marks::encode,RaidTypes.Marks::decode,RaidTypes.Marks::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(16,MessHallMenu.Preview.class,MessHallMenu.Preview::encode,MessHallMenu.Preview::decode,MessHallMenu.Preview::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        // Tactical Operations (0.0.20, protocol 29): no new client-to-server packet (the table's buttons are vanilla menu buttons)
+        CHANNEL.registerMessage(17,Hunts.MissionSync.class,Hunts.MissionSync::encode,Hunts.MissionSync::decode,Hunts.MissionSync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(18,TacticalScan.ScanImage.class,TacticalScan.ScanImage::encode,TacticalScan.ScanImage::decode,TacticalScan.ScanImage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(19,TacticalScan.ScanProgress.class,TacticalScan.ScanProgress::encode,TacticalScan.ScanProgress::decode,TacticalScan.ScanProgress::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(20,Hunts.TableState.class,Hunts.TableState::encode,Hunts.TableState::decode,Hunts.TableState::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }

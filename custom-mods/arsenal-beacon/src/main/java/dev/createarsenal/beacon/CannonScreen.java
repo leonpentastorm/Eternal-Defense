@@ -52,7 +52,7 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         row=Math.max(13,Math.min(17,(ph-58-36)/CannonUpgrades.Upgrade.values().length));
         int colW=(pw-36)/2,x1=left+14,x2=left+22+colW;
         int total=CannonUpgrades.FireType.values().length;
-        visibleTypes=visibleRows(top+ph-34-typeTop(),row,46,total);
+        visibleTypes=visibleRows(top+ph-34-typeTop(),row,92,total);   // the card below keeps room for about eight lines (it scrolls for more)
         typeScroll=scrollTo(typeScroll,data.getInt("fire"),visibleTypes,total);
         for(int i=0;i<total;i++){
             int index=i;var r=new Ui.UiButton(x1,typeTop()+i*row,colW-6,row-1,Component.empty(),Ui.Look.ROW,b->BeaconNetwork.CHANNEL.sendToServer(new CannonControl.Act(pos,CannonControl.SELECT,index)));
@@ -74,6 +74,7 @@ final class CannonScreen extends BeaconClient.PanelScreen {
     private boolean overTypes(double mx,double my){int colW=(pw-36)/2;return mx>=left+14&&mx<left+14+colW&&my>=typeTop()&&my<typeTop()+visibleTypes*row;}
     @Override public boolean mouseScrolled(double mx,double my,double amount){
         if(overTypes(mx,my)){int total=types.size();typeScroll=Math.max(0,Math.min(total-visibleTypes,typeScroll-(int)Math.signum(amount)));layoutTypes();return true;}
+        if(cardMax>0&&mx>=cardX&&mx<cardX+cardW&&my>=cardY&&my<cardY+cardH){cardScroll=Math.max(0,Math.min(cardMax,cardScroll-(int)Math.signum(amount)*(font.lineHeight+2)));return true;}
         return super.mouseScrolled(mx,my,amount);
     }
     private void paintType(GuiGraphics g,Ui.UiButton r,int index,boolean hovered){
@@ -104,6 +105,40 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         int thumb=Math.max(10,h*visibleTypes/total),ty=y+(h-thumb)*typeScroll/Math.max(1,total-visibleTypes);
         g.fill(x,ty,x+3,ty+thumb,Ui.CYAN);
     }
+    // ---- the description card (0.0.20): what the hovered or chosen support does, its damage and its area, scrolled with the wheel ----
+    int cardScroll,cardMax;String cardKey="";
+    int cardX,cardY,cardW,cardH;
+    /** The card's lines for a fire support (Effect, Damage, Area, with this player's upgrades) or an upgrade (its description). */
+    private List<Ui.Block> cardBlocks(String key){
+        var out=new ArrayList<Ui.Block>();
+        if(key.startsWith("type.")){
+            var type=CannonUpgrades.FireType.valueOf(key.substring(5).toUpperCase(java.util.Locale.ROOT));
+            int[] levels=new int[CannonUpgrades.Upgrade.values().length];for(int i=0;i<levels.length;i++)levels[i]=level(i);
+            var args=CannonUpgrades.factArgs(CannonUpgrades.facts(CannonUpgrades.Config.of(levels,type)));
+            out.add(Ui.Block.line(Ui.t("cannon."+key),Ui.BRASS));
+            for(String part:List.of("effect","damage","area")){
+                out.add(Ui.Block.line(Ui.t("cannon.card."+part),Ui.CYAN));
+                out.add(Ui.Block.line(Ui.t("cannon."+key+"."+part,args),Ui.INK));
+            }
+        }else{out.add(Ui.Block.line(Ui.t("cannon."+key),Ui.BRASS));out.add(Ui.Block.line(Ui.t("cannon."+key+".desc"),Ui.INK));}
+        return out;
+    }
+    private void card(GuiGraphics g,String key,int x,int y,int w,int h){
+        if(!key.equals(cardKey)){cardKey=key;cardScroll=0;}
+        cardX=x;cardY=y;cardW=w;cardH=h;
+        Ui.card(g,x,y,w,h,Ui.CYAN);
+        int textW=w-16,lineH=font.lineHeight+2,total=0;var blocks=cardBlocks(key);
+        for(var b:blocks)total+=font.split(b.text(),textW).size()*lineH+(b.color()==Ui.CYAN?1:0);
+        cardMax=Math.max(0,total-(h-8));cardScroll=Math.max(0,Math.min(cardMax,cardScroll));
+        g.enableScissor(x+1,y+3,x+w-1,y+h-3);
+        int ty=y+4-cardScroll;
+        for(var b:blocks)for(var line:font.split(b.text(),textW)){g.drawString(font,line,x+7,ty,b.color(),false);ty+=lineH;}
+        g.disableScissor();
+        if(cardMax>0){   // a scroll bar shows there is more to read
+            int bx=x+w-5,bh=h-8,thumb=Math.max(8,bh*(h-8)/(h-8+cardMax)),by=y+4+(bh-thumb)*cardScroll/cardMax;
+            g.fill(bx,y+4,bx+2,y+4+bh,0xff1b2833);g.fill(bx,by,bx+2,by+thumb,Ui.CYAN);
+        }
+    }
     @Override public void render(GuiGraphics g,int mx,int my,float partial){
         panel(g);hover="";
         int colW=(pw-36)/2,x1=left+14,x2=left+22+colW;
@@ -116,9 +151,11 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         super.render(g,mx,my,partial);
         scrollbar(g);
         // the card under the type list explains whatever is hovered, or the chosen type
-        String key=hover.isEmpty()?"type."+CannonUpgrades.FireType.of(data.getInt("fire")).id:hover;
+        // the hovered row, or the chosen support; while the mouse is on the card (to scroll it) the card keeps what it shows
+        boolean onCard=!cardKey.isEmpty()&&mx>=cardX&&mx<cardX+cardW&&my>=cardY&&my<cardY+cardH;
+        String key=!hover.isEmpty()?hover:onCard?cardKey:"type."+CannonUpgrades.FireType.of(data.getInt("fire")).id;
         int cy=typeTop()+visibleTypes*row+3,ch=top+ph-34-cy;
-        if(ch>14){Ui.card(g,x1,cy,colW,ch,Ui.CYAN);Ui.wrap(g,font,Ui.t("cannon."+key+".desc"),x1+6,cy+4,colW-12,Ui.INK,Math.max(1,(ch-6)/10));}
+        if(ch>14)card(g,key,x1,cy,colW,ch);
         var energy=new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get());
         footerLine(g,top+ph-30);
         g.renderItem(energy,left+12,top+ph-18);

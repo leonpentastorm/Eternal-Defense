@@ -63,6 +63,11 @@ final class Economy {
             case "support_platform"->WeaponPlatform.purchaseCosts("support");
             case "exchange_shop"->WeaponPlatform.purchaseCosts("exchange");
             case "support_cannon"->List.of(WeaponPlatform.cost("arsenal_beacon:ardent_energy",12));
+            // Tactical Operations (0.0.20): the table and the satellite take the same plain materials in both editions, plus a part (pack) or Ardent Energy (standalone)
+            case "command_table"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",24),WeaponPlatform.cost("minecraft:copper_ingot",16),WeaponPlatform.cost("minecraft:redstone",16),WeaponPlatform.cost("minecraft:glass",8),
+                standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",COMMAND_TABLE_ARDENT):WeaponPlatform.cost("arsenal_beacon:reinforced_plating",COMMAND_TABLE_PLATING));
+            case "satellite_beacon"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",16),WeaponPlatform.cost("minecraft:copper_ingot",24),WeaponPlatform.cost("minecraft:redstone",8),WeaponPlatform.cost("minecraft:gold_ingot",4),
+                standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",SATELLITE_ARDENT):WeaponPlatform.cost("arsenal_beacon:resonance_coil",SATELLITE_COILS));
             case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
             case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "milk_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:copper_ingot",4));
@@ -99,6 +104,28 @@ final class Economy {
     static int have(net.minecraft.world.entity.player.Player p,Item item){
         int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;
     }
+
+    // ---- Tactical Operations (0.0.20) ---------------------------------------------------------------------------------------------
+    static final int COMMAND_TABLE_ARDENT=6,COMMAND_TABLE_PLATING=4,SATELLITE_ARDENT=4,SATELLITE_COILS=2;
+    /** Satellite Beacon upgrades by the Mk being bought (II, III): resonance coils (pack) or Ardent Energy (standalone). */
+    static final int[] SATELLITE_UPGRADE_COILS={16,32},SATELLITE_UPGRADE_ARDENT={10,20};
+    /** The price of the satellite's next Mk from {@code mk}, or null at Mk III. */
+    static Price satellite(int mk){
+        if(mk<1||mk>=TacticalRules.MAX_MK)return null;
+        return standalone()?new Price(null,SATELLITE_UPGRADE_ARDENT[mk-1]):new Price(ArsenalBeacon.COIL::get,SATELLITE_UPGRADE_COILS[mk-1]);
+    }
+    /** A raid's guaranteed Ardent Energy at reward tier t (capped at 10): standalone 2+2t, pack 1+t. A hunt pays a share of it. */
+    static int huntGuaranteed(int tier,boolean standalone){int t=Math.max(0,Math.min(10,tier));return standalone?2+2*t:1+t;}
+    /** The Exchange sells 16 Universal Ammo Coins for 3 Ardent Energy: coins in a hunt's pay are valued at that rate. */
+    static final double COINS_PER_ARDENT=16/3.0,HUNT_ARDENT_SHARE=.6,HUNT_COIN_SHARE=.4;
+    /** What a hunt pays into the beacon's reward chest. */
+    record HuntPay(int ardent,int coins){}
+    /** Pure: budget B = class share x guaranteed raid Ardent; Ardent = round(0.6 B), coins = round(0.4 B x 16/3). */
+    static HuntPay hunt(TacticalRules.Kind kind,int tier,boolean standalone){
+        double budget=kind.budget*huntGuaranteed(tier,standalone);
+        return new HuntPay((int)Math.round(HUNT_ARDENT_SHARE*budget),(int)Math.round(HUNT_COIN_SHARE*budget*COINS_PER_ARDENT));
+    }
+    static HuntPay hunt(TacticalRules.Kind kind,int tier){return hunt(kind,tier,standalone());}
 
     // ---- support gear (Ardent Energy in both editions) ----------------------------------------------------------------------
     // see SupportRules: cannon 12, supply flare 3, return flare 2, fire support flare 6.

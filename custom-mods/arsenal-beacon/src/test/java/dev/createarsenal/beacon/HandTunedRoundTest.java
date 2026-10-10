@@ -13,7 +13,7 @@ final class HandTunedRoundTest {
     @Test void theOwnersSoundsAreShippedAndMonoWhereTheyArePlacedInTheWorld() throws Exception{
         var sounds=json("/assets/arsenal_beacon/sounds.json");var lang=json("/assets/arsenal_beacon/lang/en_us.json");
         var files=Map.of("cannon.fire","cannon_fire","cannon.turning","cannon_turning","cannon.turning_done","cannon_turning_done",
-            "bunker.buster","bunker_buster","fire.cluster_strike","cluster_strike","fire.shockwave","shockwave","beacon.attacked","beacon_attacked");
+            "bunker.buster","bunker_buster","fire.cluster_strike","cluster_strike","fire.shockwave","shockwave","beacon.attacked","beacon_attacked","ordnance.incoming","ordnance_incoming");
         for(var e:files.entrySet()){
             var event=sounds.getAsJsonObject(e.getKey());assertNotNull(event,e.getKey());
             assertEquals("arsenal_beacon:sfx/"+e.getValue(),event.getAsJsonArray("sounds").get(0).getAsJsonObject().get("name").getAsString());
@@ -21,17 +21,24 @@ final class HandTunedRoundTest {
             int channels=ogg("/assets/arsenal_beacon/sounds/sfx/"+e.getValue()+".ogg").channels();
             assertEquals(e.getKey().equals("beacon.attacked")?2:1,channels,e.getValue()+": a sound placed in the world must be mono");
         }
-        // (the shell and bomb whistles came back in 0.0.19, RadioAndWhistleTest)
+        // the 0.0.19 whistles gave way to the incoming sound again in 0.0.20
         for(String gone:List.of("cannon.traverse","cannon.clank","cannon.lock","shell.explosion","bunker.impact","bunker.dig","fire.cluster","fire.gravity_implode",
-            "ordnance.incoming"))
+            "shell.whistle","bomb.whistle"))
             assertFalse(sounds.has(gone),gone+" was replaced");
     }
     @Test void theCannonFiresWhenTheLockSoundEnds() throws Exception{
         double done=ogg("/assets/arsenal_beacon/sounds/sfx/cannon_turning_done.ogg").seconds();
         assertEquals(Math.ceil(done*20),SupportCannon.DONE_TICKS,"the gun fires the tick the lock sound ends ("+done+" s)");
         assertEquals(SupportCannon.DONE_TICKS,SupportCannon.SETTLE_TICKS);
-        // the 0.0.18 incoming sound set this pace (its impact 5.15 s in); it gave way to the whistle in 0.0.19 and the owner kept the pace
+        // the incoming sound sets the pace (its impact 5.15 s in): back in 0.0.20 after the 0.0.19 whistle
         assertEquals(103,SupportRules.BLAST_FLIGHT_TICKS);
+        double incoming=ogg("/assets/arsenal_beacon/sounds/sfx/ordnance_incoming.ogg").seconds();
+        // the scream cuts off 0.2 s before the file ends (a short fade follows the impact)
+        assertEquals(incoming-.2,SupportRules.BLAST_FLIGHT_TICKS/20.0,.1,"the round lands as the incoming sound hits ("+incoming+" s)");
+        // any pitch but 1 stretches the sound and moves its impact off the landing (the Bunker Buster's bomb had .92 at first: 0.45 s late)
+        var play=java.util.regex.Pattern.compile("ArsenalSounds\\.INCOMING\\.get\\(\\),SoundSource\\.BLOCKS,INCOMING_VOLUME,([^,]+),")
+            .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/createarsenal/beacon/OrdnanceClient.java")));
+        assertTrue(play.find(),"the incoming sound is played");assertEquals("1f",play.group(1),"the incoming sound plays at pitch 1");
     }
     @Test void theAttackAlarmSoundsWhenTheWarningShowsAndRepeats(){
         assertTrue(BeaconAlerts.alarm(true,-1),"when the warning appears");
@@ -91,7 +98,7 @@ final class HandTunedRoundTest {
         assertTrue(CannonUpgrades.CLUSTER_PULSE_TICKS>=10,"pulses never fall inside a mob's hurt cooldown");
     }
     @Test void theAreasHaveTheirNewSizes(){
-        assertEquals(4.8,CannonUpgrades.radius(CannonUpgrades.FireType.NAPALM,0),1e-9);assertEquals(4.8,CannonUpgrades.radius(CannonUpgrades.FireType.CRYO,0),1e-9);
+        assertEquals(4.8,CannonUpgrades.radius(CannonUpgrades.FireType.NAPALM,0),1e-9);assertEquals(7.8,CannonUpgrades.radius(CannonUpgrades.FireType.CRYO,0),1e-9,"the frost reaches 3 blocks further every way (0.0.20)");assertEquals(9.6,CannonUpgrades.radius(CannonUpgrades.FireType.CRYO,1),1e-9);
         assertEquals(8,CannonUpgrades.radius(CannonUpgrades.FireType.GRAVITY,0),1e-9,"the well reaches twice as far");
         assertEquals(Rules.radius(0),CannonUpgrades.radius(CannonUpgrades.FireType.SHOCKWAVE,0),1e-9,"as wide as a level 1 beacon zone");
         assertEquals(12.5,CannonUpgrades.radius(CannonUpgrades.FireType.SHOCKWAVE,3),1e-9);

@@ -27,10 +27,17 @@ final class ArsenalSounds {
     static final RegistryObject<SoundEvent> BUNKER_BUSTER=of("bunker.buster"),CLUSTER_STRIKE=of("fire.cluster_strike"),SHOCKWAVE=of("fire.shockwave"),BEACON_ATTACKED=of("beacon.attacked");
     /** The owner's fire support radio lines (0.0.19, tools/audio/import_chatter.py), one event each: {@link SupportChatter} picks one when a flare lands. */
     static final List<RegistryObject<SoundEvent>> CHATTER=java.util.stream.IntStream.rangeClosed(1,SupportChatter.LINES).mapToObj(n->of("flare.chatter_"+n)).toList();
+    /** The owner's incoming-shell scream (0.0.18, back in 0.0.20 after the 0.0.19 whistle): played where a shell or bomb will land, see {@link OrdnanceClient}. */
+    static final RegistryObject<SoundEvent> INCOMING=of("ordnance.incoming");
+    /** Made by tools/audio (0.0.16): the sounds of the fire supports that are not explosions. Explosions use the game's own explosion sound. */
+    static final RegistryObject<SoundEvent> CRYO=of("fire.cryo"),NAPALM=of("fire.napalm"),GRAVITY_HUM=of("fire.gravity_hum"),STARSHELL=of("fire.starshell");
+    /** Tactical Operations (0.0.20, made by tools/audio/tactical.py): the table's confirm and refuse, the satellite scan, a warband's contact alert. */
+    static final RegistryObject<SoundEvent> TACTICAL_ACCEPT=of("tactical.accept"),TACTICAL_REFUSED=of("tactical.refused"),TACTICAL_SCAN=of("tactical.scan"),
+        TACTICAL_SCAN_DONE=of("tactical.scan_done"),TACTICAL_CONTACT=of("tactical.contact");
     /**
-     * Made by tools/audio (0.0.16): the whistle of a falling shell or bomb (back in 0.0.19, after the 0.0.18 incoming sound), and the sounds
-     * of the fire supports that are not explosions. Explosions use the game's own explosion sound.
+     * The jingle of a cleared mission. A placeholder until the owner's song arrives: its sounds.json entry plays the victory fanfare. Dropping
+     * the song in as {@code sounds/music/mission_cleared.ogg} and pointing the entry at it is all that is needed.
      */
-    static final RegistryObject<SoundEvent> SHELL_WHISTLE=of("shell.whistle"),BOMB_WHISTLE=of("bomb.whistle"),CRYO=of("fire.cryo"),NAPALM=of("fire.napalm"),GRAVITY_HUM=of("fire.gravity_hum"),STARSHELL=of("fire.starshell");
+    static final RegistryObject<SoundEvent> MISSION_CLEARED=of("music.mission_cleared");
     private static RegistryObject<SoundEvent> of(String id){return SOUNDS.register(id,()->SoundEvent.createVariableRangeEvent(new ResourceLocation(ArsenalBeacon.ID,id)));}
 }

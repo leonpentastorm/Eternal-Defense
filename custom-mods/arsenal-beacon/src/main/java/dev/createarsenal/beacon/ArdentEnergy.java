@@ -40,6 +40,7 @@ final class ArdentEnergy {
     @SubscribeEvent public void drops(LivingDropsEvent event){
         var entity=event.getEntity();
         if(!(entity.level() instanceof ServerLevel level)||!(entity instanceof Enemy))return;
+        if(HuntWarband.hunter(entity))return;   // a hunt pays once, into the reward chest: its mobs drop no Ardent Energy
         boolean credited=entity.getKillCredit() instanceof Player||event.getSource().getEntity() instanceof Player||entity.getPersistentData().getBoolean("arsenalRaider");
         if(!credited)return;
         boolean boss=entity.getPersistentData().getBoolean("arsenalBoss")||entity.getType().is(Tags.EntityTypes.BOSSES);

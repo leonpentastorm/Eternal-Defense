@@ -18,6 +18,8 @@ import net.minecraftforge.network.NetworkHooks;
 final class RaiderGate extends Entity {
     /** Server: this one is the exit at a channeler's destination (raiders come out of it; nobody joins it). */
     boolean exit;
+    /** Server: the game time a spawn gate closes by itself (0: {@link RaiderGates} closes it). */
+    long closeAt;
     RaiderGate(EntityType<? extends RaiderGate> type,Level level){super(type,level);noPhysics=true;}
     @Override protected void defineSynchedData(){}
     @Override protected void readAdditionalSaveData(CompoundTag tag){}
@@ -30,5 +32,6 @@ final class RaiderGate extends Entity {
     @Override public boolean isInvulnerable(){return true;}
     @Override public boolean hurt(DamageSource source,float amount){return false;}
     @Override public boolean shouldBeSaved(){return false;}
+    @Override public void tick(){super.tick();if(!level().isClientSide&&closeAt>0&&level().getGameTime()>=closeAt)discard();}
     @Override public Packet<ClientGamePacketListener> getAddEntityPacket(){return NetworkHooks.getEntitySpawningPacket(this);}
 }

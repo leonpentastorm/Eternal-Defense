@@ -1,5 +1,27 @@
 # Change log
 
+## 0.0.20 — Tactical Operations; gate spawns, the incoming sound back, the cannon menu card (2026-10-10)
+
+On `dev`. **Network protocol 29** (was 28): four new server-to-client packets (`MissionSync` 17, `ScanImage` 18, `ScanProgress` 19, `TableState` 20); no new client-to-server packet. Rules: GDD 0.0.20 (Part I, sections 5.2, 5.5, 5.9, 7); tests: `docs/TACTICAL-OPERATIONS-TESTING.md`.
+
+**Tactical Operations (new):**
+* **Command Table and Satellite Beacon** (the owner's models): bought at Workshop Fabrication, inside the zone only, one of each per base, moved free with the shovel. The satellite links when it stands within 8 blocks of the table under open sky; clicking it says why not. Satellite Mk I, II, III: 2, 3, 4 offers and 256, 512, 1024 blocks of reach; upgrade at the table (pack 16 and 32 resonance coils, standalone 10 and 20 Ardent Energy).
+* **Hunting missions:** Patrol (8 to 12 enemies), Garrison (14 to 20 around a real vanilla structure, from Mk II; the structure's loot is never touched), Warlord (a glowing named captain with twice the health and 10 to 14 escorts, Mk III); +2 per extra player online, at most +8. One shared mission; accepted at the table, never during a raid or the day before one. Everyone gets a map with a red X and one Return Flare. The warband comes out of red gates when someone gets within 64 blocks; the last kill pays Ardent Energy and ammo coins into the beacon's reward chest, once. Left alone for 5 minutes it scatters; Abandon (click twice) puts the offer back. A finished offer is replaced at the next dawn.
+* **Satellite scan** on the table: a radar of the land (Base and Region), live where chunks are loaded, older scans dimmed, the rest a hatched biome preview; never loads a chunk.
+* **Status card:** "OP IRON HOUND | Garrison | 640 m NE | 7/14 left", also out in the field.
+* **Sounds:** table confirm and refuse, scan sweep and done, contact alert (`tools/audio/tactical.py`). The mission-cleared jingle is a placeholder (the Victory Fanfare) until the owner's song comes.
+* Operator commands `/arsenal hunt status|reset|complete`; opt-in GameTests `-Darsenal.huntTests=true` and `/hunt-test`.
+
+**The owner's raid and fire support list:**
+* **No more repeating "Reinforcements are waiting..." line.** When there is no natural ground far out for 10 s, enemies come out of **red gates** closer in (never inside the zone or within 12 blocks of its edge, never within 12 blocks of a player, outdoors, on ground nobody built); chat says so once a wave.
+* **Every enemy the mod places anywhere but a natural spawn comes out of a red gate** (gate spawns, hunt warbands; stuck raiders already used gates). `/arsenal test-gate` shows one any time.
+* **Speed burst:** every raid enemy starts with Speed II for 10 seconds.
+* **The incoming sound is back** (your 0.0.18 scream, 5.15 s to the impact): it plays where the round lands, so it is heard whichever way you look. The 0.0.19 whistle is removed.
+* **Cannon menu:** the card now explains each fire support in three parts, Effect, Damage and Area, with the numbers of your own cannon, and scrolls. Texts checked against the code (the Healing Barrage does not hurt mobs; napalm fire is real and burns players).
+* **Cryo Shell:** 3 blocks further every way (7.8 instead of 4.8), not higher.
+* **Starshell:** the code gives players Haste II, and only the Healing Barrage and the parcel's Healing aura give Regeneration; the real-client run checked the effects a player gets in a Starshell (see the testing doc).
+* Unit tests: 200 (new `TacticalOperationsTest`, `RaidFixesTest`; `RadioAndWhistleTest` and `HandTunedRoundTest` follow the incoming sound back).
+
 ## 0.0.19 — Your songs only, no repeats, the whistle back, the radio answers (2026-10-10)
 
 On `dev`. **No packet was added or changed: the network protocol stays 28.** Rules: GDD 0.0.19 (Part A "Raid music and the music player", section 7 "UI and audio"); tests: `docs/NEW-SOUND-TESTING.md`.

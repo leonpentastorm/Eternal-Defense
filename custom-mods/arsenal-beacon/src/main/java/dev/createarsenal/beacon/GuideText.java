@@ -6,7 +6,7 @@ import java.util.function.Function;
 /** Field-guide page assembly without any Minecraft types, so both editions can be unit tested. */
 final class GuideText {
     private GuideText(){}
-    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","energy","support","kitchen","mixes","gear","coop","reference"};
+    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","energy","support","tactical","kitchen","mixes","gear","coop","reference"};
     static final String REFERENCE="reference";
     static final String PACK_ONLY="[pack] ",STANDALONE_ONLY="[standalone] ";
     /**

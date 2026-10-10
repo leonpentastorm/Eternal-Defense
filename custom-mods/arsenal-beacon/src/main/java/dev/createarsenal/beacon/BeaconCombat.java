@@ -50,7 +50,10 @@ final class BeaconCombat {
         var d=CampaignData.get(l);var target=objectives.get(l);if(target==null||!ArsenalStructures.anchor(l,hit.getBlockPos()).equals(d.beacon))return;
         target.hurt(l.damageSources().indirectMagic(shot,attacker),1);
     }
+    /** Whether a mob got the beacon goals (for the tests: a hunt warband never does). */
+    static boolean isAttached(Mob mob){return attached.contains(mob);}
     static void attach(Mob mob){
+        if(HuntWarband.hunter(mob))return;   // a hunt warband fights the team where it stands, never the beacon
         if(!attached.add(mob))return;
         mob.targetSelector.addGoal(0,new TargetBeacon(mob));
         if(RaidTypes.glider(mob))return; // vexes and phantoms are steered straight at their target by RaidTypes

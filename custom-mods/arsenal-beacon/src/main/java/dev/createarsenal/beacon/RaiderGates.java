@@ -147,6 +147,30 @@ final class RaiderGates {
         CHANNELS.remove(mob.getUUID());closeExit(l,ch.exit);
         RaidRescue.diagnose("CANCEL",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest(ch.destination),why,ch.gate);
     }
+    // ---- spawn gates (0.0.20) -------------------------------------------------------------------------------------------------------------
+    /** A spawn gate stays open this long after the last enemy came out of it. */
+    static final int SPAWN_GATE_LINGER_TICKS=60;
+    /** Enemies that appear anywhere but where they would spawn naturally share an open gate within this many blocks. */
+    static final double SPAWN_GATE_SHARE=3;
+    /**
+     * Every enemy this mod puts somewhere other than a natural spawn (a raid reinforcement that found no open ground far out, a hunt
+     * warband at its objective) comes out of a red gate: the gate opens on the spot, or an open one close by stays open longer, and the
+     * enemy steps out with the teleport particles and sound. The gate closes by itself {@link #SPAWN_GATE_LINGER_TICKS} after the last one.
+     */
+    static RaiderGate spawnGate(ServerLevel l,BlockPos at){
+        long close=l.getGameTime()+SPAWN_GATE_LINGER_TICKS;var c=Vec3.atBottomCenterOf(at);
+        RaiderGate gate=null;
+        for(var g:gates(l))if(g.exit&&g.closeAt>0&&g.isAlive()&&g.distanceToSqr(c)<=SPAWN_GATE_SHARE*SPAWN_GATE_SHARE){gate=g;break;}
+        if(gate==null){
+            gate=ArsenalBeacon.RAIDER_GATE.get().create(l);if(gate==null)return null;
+            gate.exit=true;gate.moveTo(c.x,c.y,c.z,l.random.nextFloat()*360,0);l.addFreshEntity(gate);KNOWN.add(gate.getUUID());
+            l.playSound(null,c.x,c.y,c.z,SoundEvents.PORTAL_TRIGGER,SoundSource.HOSTILE,.6f,1.4f);
+        }
+        gate.closeAt=close;EXITS.put(gate.getUUID(),close);
+        l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+1,c.z,40,.4,.8,.4,.1);l.playSound(null,c.x,c.y,c.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,1.1f);
+        return gate;
+    }
+
     /** Opens the red exit gate at a destination, standing on the spot the raider will appear at. */
     private static UUID openExit(ServerLevel l,BlockPos dest){
         var gate=ArsenalBeacon.RAIDER_GATE.get().create(l);if(gate==null)return null;

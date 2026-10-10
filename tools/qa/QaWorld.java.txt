@@ -1138,7 +1138,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             com.mojang.logging.LogUtils.getLogger().info("QA_SOUND {} {} pitch {}",now9(),id,String.format("%.3f",sound.getPitch()));
             if(id.getPath().endsWith("whistle")&&mc().level!=null)
                 for(var o:mc().level.getEntitiesOfClass(Ordnance.class,new net.minecraft.world.phys.AABB(sound.getX(),sound.getY(),sound.getZ(),sound.getX(),sound.getY(),sound.getZ()).inflate(3)))
-                    WHISTLE9.add(new long[]{o.getId(),now9(),Math.round((now9()+OrdnanceClient.WHISTLE_SECONDS*20/sound.getPitch())*100)});
+                    WHISTLE9.add(new long[]{o.getId(),now9(),Math.round((now9()+1.55/*the 0.0.19 whistle, gone in 0.0.20*/*20/sound.getPitch())*100)});
         });
     }
     static java.util.List<Heard> heardSince(int from,String path){var out=new java.util.ArrayList<Heard>();for(int i=from;i<HEARD.size();i++)if(HEARD.get(i).id().endsWith(path)||path.isEmpty())out.add(HEARD.get(i));return out;}
@@ -1146,7 +1146,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     /** Milliseconds from the end of each whistle (its start plus its length at its pitch) to the first blast heard after it (a blast 1 to 2.5 s after the whistle starts). */
     static java.util.List<Long> whistleGaps(String whistle,String blast){
         var out=new java.util.ArrayList<Long>();var blasts=heardSince(heard0,blast);
-        for(var w:heardSince(heard0,whistle)){long end=w.nanos()+Math.round(OrdnanceClient.WHISTLE_SECONDS/w.pitch()*1e9);Long best=null;
+        for(var w:heardSince(heard0,whistle)){long end=w.nanos()+Math.round(1.55/*the 0.0.19 whistle, gone in 0.0.20*//w.pitch()*1e9);Long best=null;
             for(var b:blasts){long d=b.nanos()-w.nanos();if(d<1_000_000_000L||d>2_500_000_000L)continue;long gap=(end-b.nanos())/1_000_000;if(best==null||Math.abs(gap)<Math.abs(best))best=gap;}
             out.add(best==null?Long.MIN_VALUE:best);}
         return out;

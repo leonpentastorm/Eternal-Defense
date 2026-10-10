@@ -39,7 +39,7 @@ final class HardRaids {
         mob.moveTo(pos.getX()+.5,pos.getY(),pos.getZ()+.5,0,0);mob.finalizeSpawn(l,l.getCurrentDifficultyAt(pos),MobSpawnType.EVENT,null,null);
         mob.setPersistenceRequired();mob.getPersistentData().putBoolean("arsenalRaider",true);mob.getPersistentData().putBoolean("arsenalBoss",true);mob.getPersistentData().putLong("arsenalBossSerial",d.campaignSerial);mob.getPersistentData().putInt("arsenalBossDefenders",d.wavePlayers);
         mob.setCustomName(Component.literal("Raid Boss — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);
-        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false;awaken(mob);balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());BeaconCombat.attach(mob);
+        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false;awaken(mob);balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);BeaconCombat.attach(mob);
         d.bossId=mob.getUUID();d.bossSpawned=true;d.raiders.add(mob.getUUID());d.setDirty();
         l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Create Arsenal] RAID BOSS INCOMING: ").append(mob.getType().getDescription()).append("! Defeat it and clear the wave for the hard-raid cache."),false);return true;
     }
