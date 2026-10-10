@@ -1,0 +1,42 @@
+# Optimize Path (0.0.15): real-client GameTest runs (flat world, pack edition, integrated server under Xvfb, software OpenGL)
+
+## Run 1 (first version of the test file; two test SETUPS were wrong, the code under test was not: see OPTIMIZE-PATH-TESTING.md)
+OPT_BENCH base_score blocks=49221 score=3252 legacy_median_ms=63.87 new_median_ms=21.20 speedup=3.0x
+OPT_CHECK TaCZ AmmoHitBlockEvent from a husk took 2 HP from the beacon through the typed listener
+OPT_BENCH special_forces_sweep mod_present=false entities=83 legacy_us=14.0 new_us=0.2 soldiers_seen=0
+OPT_TEST_PASS thebasescoreisfaster
+OPT_TEST_PASS agunhitonthebeaconstillcounts
+OPT_TEST_FAIL eventbustraffic: Attempted to set event phase to NORMAL when already NORMAL
+OPT_TEST_PASS thespecialforcessweepisskippedwithoutthemod
+OPT_TEST_FAIL thebasescoreisexactlythesame: the cap case really stops at the cap of 72 floors: 61
+OPT_TESTS_DONE pass=3 fail=2
+QA_SUMMARY pass=3 fail=2
+
+## Run 2 (final code and final tests)
+OPT_BENCH base_score blocks=49221 score=3252 legacy_median_ms=66.40 new_median_ms=25.65 speedup=2.6x
+OPT_CHECK TaCZ AmmoHitBlockEvent from a husk took 2 HP from the beacon through the typed listener
+OPT_BENCH event_bus server_events_per_tick=3167 other_thread_events_per_tick=236 legacy_listener_ns_per_event=17.0 (all posted events reached it)
+OPT_BENCH special_forces_sweep mod_present=false entities=84 legacy_us=11.7 new_us=0.2 soldiers_seen=0
+OPT_CHECK base score identical on 73 bases (6 seeds x 4 zone sizes x 3 placed sets, plus a floor-cap base)
+OPT_TEST_PASS thebasescoreisfaster
+OPT_TEST_PASS agunhitonthebeaconstillcounts
+OPT_TEST_PASS eventbustraffic
+OPT_TEST_PASS thespecialforcessweepisskippedwithoutthemod
+OPT_TEST_PASS thebasescoreisexactlythesame
+OPT_TESTS_DONE pass=5 fail=0
+QA_SUMMARY pass=5 fail=0
+
+## Regression: Raider Gates GameTests (tools/qa/QaStuck.java.txt) on the final code
+STUCK_TEST_PASS akillcancelsthechannelandtheemptygategoesaway
+STUCK_TEST_PASS damagedelaysthechannelbutthetotaldelayiscapped
+STUCK_TEST_PASS afterthreegatestheraideriswithdrawnandthewavecompleteswellbeforethetimeout
+STUCK_TEST_PASS ninestuckraidersshareonegateeightchannelandtheninthwaits
+STUCK_TEST_PASS flyersandparachutistsareleftalone
+STUCK_TEST_PASS abossgoesthroughgateaftergateandisneverwithdrawn
+STUCK_TEST_PASS asectorcrossingalakeisneverchosenwhilecleansectorsexist
+STUCK_TEST_PASS araidersealedinastonecellopensagatechannelsandcomesoutatthering
+STUCK_TEST_PASS wheneverysectorhasawatercrossingtheonewiththefewestviolationsisused
+STUCK_TEST_PASS lavamagmaachasmandawidelaketriggertheprobebutashortponddoesnot
+STUCK_TEST_PASS achannelingraiderstandsbesidearedgateandcannotmove
+STUCK_TESTS_DONE pass=11 fail=0
+QA_SUMMARY pass=11 fail=0

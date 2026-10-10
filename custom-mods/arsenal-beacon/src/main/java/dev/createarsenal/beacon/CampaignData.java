@@ -62,9 +62,11 @@ public final class CampaignData extends SavedData {
         if(!damage.isEmpty()||!destroyedTurrets.isEmpty())throw new IllegalStateException("Pending repairs must remain journaled");
         resetProgress();snapshot.clear();beacon=BlockPos.ZERO;phase="unplaced";setDirty();
     }
-    public boolean inside(BlockPos p){
-        long dx=p.getX()-beacon.getX(),dz=p.getZ()-beacon.getZ();
-        return Math.abs(dx)<=radius() && Math.abs(dz)<=radius() && p.getY()>=beacon.getY()-below() && p.getY()<=beacon.getY()+above();
+    public boolean inside(BlockPos p){return inside(p.getX(),p.getY(),p.getZ());}
+    /** {@link #inside(BlockPos)} without a position object (the base score asks this for every block it scores). */
+    public boolean inside(int x,int y,int z){
+        long dx=x-beacon.getX(),dz=z-beacon.getZ();
+        return Math.abs(dx)<=radius() && Math.abs(dz)<=radius() && y>=beacon.getY()-below() && y<=beacon.getY()+above();
     }
     public static CampaignData load(CompoundTag n) {
         CampaignData d=new CampaignData();d.raidLimit=n.contains("raidLimit")?Math.max(0,Math.min(10,n.getInt("raidLimit"))):10;d.rewardChest=n.contains("rewardChest")?BlockPos.of(n.getLong("rewardChest")):null;d.phase=n.getString("phase");d.beacon=BlockPos.of(n.getLong("beacon"));

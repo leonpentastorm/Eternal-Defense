@@ -1,8 +1,18 @@
 # Handoff: where the project stands
 
-Last updated for **Raider Gates**, project **0.0.14**, on branch **`feature/raider-gates`** (from `feature/stuck-raiders` 0.0.13 `eba977b`, which is from `dev` 0.0.12 `c01ad83`; nothing is merged). Network protocol **28-pack / 28-standalone** (unchanged: no packet was added or changed). The earlier states are described below.
+Last updated for the **Optimize Path**, project **0.0.15**, on branch **`feature/optimize-path`** (from `feature/raider-gates` 0.0.14 `256f83f`, which is from `feature/stuck-raiders` 0.0.13 and `dev` 0.0.12 `c01ad83`; nothing is merged). Network protocol **28-pack / 28-standalone** (unchanged: no packet was added or changed). The earlier states are described below.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Optimize Path (0.0.15)
+
+* **What it is.** The owner asked for a scan of all three mods for code that can run cheaper, with no feature change, leaving rendering and culling alone. The audit (every per-tick, per-event and per-entity path, what changed, what was left and why, rendering candidates for later) is `docs/OPTIMIZE-PATH.md`.
+* **Changes.** `BeaconCombat.gunBlockImpact` listens to TaCZ's `AmmoHitBlockEvent` (TaCZ is required in both editions) instead of every event; `BaseScoring.analyze` caches per-block classifications (`BaseScoring.Kind`), finds lights/furniture through a 12-block grid (`BaseScoring.Anchors`) and runs its cheap floor tests on packed positions, visiting the blocks in the same order (same floor cap); `SoundResourcePaths.plain` replaces a per-call regular expression; `SpecialForcesRaids.installed()` skips the once-a-second entity sweep without the `taczsf` mod; `ArsenalBeacon.died` looks the type id up only for deaths in the zone during a raid; `Rules` lookup tables are static and `CampaignData.inside(x,y,z)` exists.
+* **Rule for later rounds.** Keep `BaseScoring.analyze` iterating the map it is given in its own order: the floor cap makes the score depend on that order, which is also why the snapshot/survey maps stayed `HashMap<Long,BlockState>`. `OptimizePathGameTests.legacyAnalyze` is a verbatim copy of the old scoring for comparisons; if the scoring rules change on purpose, update both and say so.
+* **Opt-in switch.** `-Darsenal.optimizeTests=true` registers `OptimizePathGameTests` and `/optimize-path-test` (one test borrows the campaign of a beacon-less world: throwaway worlds only). Real-client run: `tools/qa/setup-qa.sh <dir> pack QaOptimize`, then `xvfb-run ./gradlew --no-daemon --offline :arsenal-beacon:runClient`; wait for `QA_SUMMARY`.
+* **Validation.** `docs/OPTIMIZE-PATH-TESTING.md`; evidence in `docs/validation/optimize-path/`. 146 beacon unit tests; 5/5 optimize GameTests (identical scores on 73 bases, 2.6 to 3x faster scoring, a real TaCZ impact still damages the beacon); Raider Gates GameTests 11/11 as regression.
+* **Bundle.** `python3 tools/release/package-optimize-path.py --backend-jar <TaCZ Attributes 1.4 jar>` (after `build releaseJars`) writes `dist/Arsenal-OptimizePath-0.0.15-test.zip` and its `.sha512`.
+* **Not tested / next.** A real pack and a lived-in base (timings are synthetic), the ModernFix path in the game, a dedicated server, multiplayer, the standalone edition in the game, the Special Forces mod installed. Next candidates (client rendering, measure first with a profiler): the beacon HUD and zone/damage outline handlers (early return on their render stage), `SupportClient.draw` nameplates, `BeaconPopups`/`BeaconAlerts` on every screen render.
 
 ## Raider Gates (0.0.14)
 

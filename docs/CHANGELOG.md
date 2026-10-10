@@ -1,5 +1,18 @@
 # Change log
 
+## 0.0.15 — Optimize Path: the same game, less work per tick (2026-10-10)
+
+Branch `feature/optimize-path` (from `feature/raider-gates`, 0.0.14). **No feature, number or packet changed: the network protocol stays 28.** Audit and changes: `docs/OPTIMIZE-PATH.md`; tests and measurements: `docs/OPTIMIZE-PATH-TESTING.md`.
+
+* **One listener no longer sees every event of the game.** The TaCZ block-impact hook of the beacon was subscribed to Forge's base event class, so Forge called it for every event posted on the main bus (entity ticks, render stages, input, sounds) on server and client; it now subscribes to TaCZ's `AmmoHitBlockEvent` itself (TaCZ is required in both editions) and reads the hit without reflection.
+* **Base score:** what a block counts as is worked out once per block type instead of once per scored block, and the "light or furniture within 12 blocks" test uses a 12-block grid instead of scanning the whole list for every floor candidate. Same blocks in the same order, same score.
+* **Resource loading:** the gun-pack resource path check is a character loop instead of a regular expression compiled on every call.
+* **Special Forces:** the once-a-second sweep over every Overworld entity is skipped when the optional Special Forces mod is not installed (no soldier can exist).
+* **Deaths:** the entity type id is only looked up for deaths inside the zone during a raid.
+* **Zone lookups:** `Rules` builds its small lookup tables (radius, height, health, platform score) once instead of on every call; `CampaignData.inside(x,y,z)` tests the zone without a position object.
+* Measured (real server, synthetic 49,221-block Mk-4 base): base score about 64 to 66 ms before, 21 to 26 ms after, identical on 73 bases; about 3,400 events per tick no longer reach the old listener (about 17 ns each); the Special Forces sweep 12 to 14 microseconds to 0.2 without the mod. The 11 Raider Gates GameTests still pass.
+* Tests: `OptimizePathTest` and an extended `SoundResourcePathsTest` (unit); `OptimizePathGameTests` (opt-in, real server) run the new code next to a verbatim copy of the old one and require the same answers. Rendering and HUD code was not changed (listed as candidates for a later round).
+
 ## 0.0.14 — Raider Gates, replacing stew in a pot, a lit Cook Pot board, fewer servings (2026-10-09)
 
 Branch `feature/raider-gates` (from `feature/stuck-raiders`, 0.0.13). **No packet was added or changed: the network protocol stays 28.** Rules: GDD section 5.2 (*Raider Gates*); tests: `docs/RAIDER-GATES-TESTING.md`.

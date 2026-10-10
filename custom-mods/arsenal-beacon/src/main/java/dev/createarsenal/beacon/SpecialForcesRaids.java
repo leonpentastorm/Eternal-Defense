@@ -16,7 +16,14 @@ import net.minecraftforge.eventbus.api.*;
 final class SpecialForcesRaids {
     static int count(int tier){return count(tier,1);}
     static int count(int tier,int players){return tier<4?0:Math.min(5,(tier<7?1:2)+Math.max(0,Math.min(4,players)-1));}
-    static boolean soldier(Entity e){return e.getClass().getName().equals("su.uTa4u.specialforces.entities.SwatEntity");}
+    static boolean soldier(Entity e){return installed()&&e.getClass().getName().equals("su.uTa4u.specialforces.entities.SwatEntity");}
+    private static volatile Boolean installed;
+    /** Is the optional Special Forces mod (taczsf) here? Without it no soldier can exist, so nothing has to be looked for. Asked once. */
+    static boolean installed(){
+        var known=installed;if(known!=null)return known;
+        var mods=net.minecraftforge.fml.ModList.get();if(mods==null)return false; // not booted yet (unit tests): ask again later
+        installed=known=mods.isLoaded("taczsf");return known;
+    }
     @SubscribeEvent public void start(ServerStartedEvent event){
         if(!net.minecraftforge.fml.ModList.get().isLoaded("taczsf"))return;
         try{MinecraftForge.EVENT_BUS.unregister(Class.forName("su.uTa4u.specialforces.capabilities.observation.ObservationManager"));}
@@ -80,6 +87,7 @@ final class SpecialForcesRaids {
         if(!mob.getPersistentData().contains("arsenalCorpseUntil"))mob.getPersistentData().putLong("arsenalCorpseUntil",l.getGameTime()+12000);
     }
     static void cleanup(ServerLevel l){
+        if(!installed())return; // runs every second over every entity of the Overworld: skip it when no soldier can exist
         for(Entity e:l.getAllEntities())if(corpse(e)&&l.getGameTime()>=e.getPersistentData().getLong("arsenalCorpseUntil"))e.discard();
     }
     static void balance(Mob mob,int tier){

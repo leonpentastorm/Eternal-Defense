@@ -111,6 +111,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV5GameTests.KitchenV5Verification());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV6GameTests.KitchenV6Verification());
         if(Boolean.getBoolean("arsenal.stuckTests"))MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
+        if(Boolean.getBoolean("arsenal.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
         if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
@@ -479,8 +480,8 @@ public final class ArsenalBeacon {
         if(event.getEntity().level() instanceof ServerLevel bossLevel)HardRaids.killed(bossLevel,event.getEntity());
         if(event.getEntity().level() instanceof ServerLevel l&&l.dimension()==Level.OVERWORLD) {
             CampaignData d=CampaignData.get(l);
-            String id=BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).toString();
-            if(d.phase.equals("raid")&&d.inside(event.getEntity().blockPosition())&&id.startsWith("tacz_turrets:")) {
+            // The type id is looked up only for deaths inside the zone during a raid (this runs for every death in the Overworld).
+            if(d.phase.equals("raid")&&d.inside(event.getEntity().blockPosition())&&BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).getNamespace().equals("tacz_turrets")) {
                 CompoundTag n=new CompoundTag();event.getEntity().save(n);n.putShort("DeathTime",(short)0);n.putShort("HurtTime",(short)0);
                 d.destroyedTurrets.add(n);d.setDirty();event.setCanceled(true);event.getEntity().discard();return;
             }

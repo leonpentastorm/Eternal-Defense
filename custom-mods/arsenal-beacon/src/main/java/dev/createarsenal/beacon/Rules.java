@@ -11,9 +11,11 @@ public final class Rules {
     public static int branchMaximum(String branch){return branch.equals("reconnaissance")?1:branch.equals("logistics")?5:branch.equals("core")?3:4;}
     public static int intervalDays(int tier) { return Math.max(2, 7 - Math.max(0, Math.min(5, tier))); }
     public static boolean hardRaid(int raidNumber){return raidNumber>0&&raidNumber%3==0;}
-    public static int bossHealth(int tier){return new int[]{100,160,240,360,500,650}[Math.max(0,Math.min(5,tier))];}
-    public static int radius(int core) { return new int[]{8,12,18,24}[Math.max(0,Math.min(3,core))]; }
-    public static int maximumHealth(int core) { return new int[]{1000,1250,1500,2000}[Math.max(0,Math.min(3,core))]; }
+    // Lookup tables are built once (0.0.15): these are asked thousands of times a tick (every zone test asks radius/below/above).
+    private static final int[] BOSS_HEALTH={100,160,240,360,500,650},RADIUS={8,12,18,24},MAXIMUM_HEALTH={1000,1250,1500,2000},BELOW={3,6,10,13,16},ABOVE={8,16,24,36,48},PLATFORM_SCORE={0,40,90,180,300,450};
+    public static int bossHealth(int tier){return BOSS_HEALTH[Math.max(0,Math.min(5,tier))];}
+    public static int radius(int core) { return RADIUS[Math.max(0,Math.min(3,core))]; }
+    public static int maximumHealth(int core) { return MAXIMUM_HEALTH[Math.max(0,Math.min(3,core))]; }
     public static int waves(int tier) { return 3 + Math.min(5, Math.max(0, tier)); }
     public static boolean highlightAttackers(int reconnaissance, long waveTicks) { return reconnaissance > 0 || waveTicks >= 1200L; }
     public static int enemies(int tier, int wave, int players) {
@@ -28,8 +30,8 @@ public final class Rules {
     public static int defensePercent(int level){return Math.max(0,Math.min(4,level))*15;}
     public static int healingPercent(int level){return 5+Math.max(0,Math.min(4,level))*5;}
     public static int contactDamage(int tier,int defense){return Math.max(1,(int)Math.ceil((2+tier*3)*(100-defensePercent(defense))/100.0));}
-    public static int below(int vertical){return new int[]{3,6,10,13,16}[Math.max(0,Math.min(4,vertical))];}
-    public static int above(int vertical){return new int[]{8,16,24,36,48}[Math.max(0,Math.min(4,vertical))];}
+    public static int below(int vertical){return BELOW[Math.max(0,Math.min(4,vertical))];}
+    public static int above(int vertical){return ABOVE[Math.max(0,Math.min(4,vertical))];}
     public static boolean showHud(String phase,boolean holdingController,boolean nearby){return nearby&&!phase.equals("unplaced")&&!phase.equals("decommissioning")&&(phase.equals("raid")||holdingController);}
     public static int upgradeCost(int currentLevel) { return 8 * (1 << Math.min(4, Math.max(0, currentLevel))); }
     public static int deathPenalty(int deaths, int threshold, int maximumHealth) {
@@ -43,5 +45,5 @@ public final class Rules {
         // architecture scores require real positions and geometry in BaseScoring.analyze.
         return 0;
     }
-    public static int platformScore(int age){return new int[]{0,40,90,180,300,450}[Math.max(0,Math.min(5,age))];}
+    public static int platformScore(int age){return PLATFORM_SCORE[Math.max(0,Math.min(5,age))];}
 }

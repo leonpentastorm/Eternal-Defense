@@ -36,11 +36,14 @@ final class BeaconCombat {
     static boolean hostile(Mob mob){return !SpecialForcesRaids.defeated(mob)&&!(mob instanceof Objective)&&(mob.getType().getCategory()==MobCategory.MONSTER||mob instanceof Monster||mob.getPersistentData().getBoolean("arsenalRaider"));}
     @SubscribeEvent public void join(EntityJoinLevelEvent event){if(!event.getLevel().isClientSide&&event.getEntity() instanceof Mob mob&&hostile(mob))attach(mob);}
     @SubscribeEvent public void projectile(net.minecraftforge.event.entity.ProjectileImpactEvent event){if(event.getRayTraceResult() instanceof BlockHitResult hit)blockImpact(event.getProjectile(),hit);}
-    /** TaCZ traces physical frames before entities; those real impacts hit the same bounded objective. */
-    @SubscribeEvent public void gunBlockImpact(net.minecraftforge.eventbus.api.Event event){
-        if(!event.getClass().getName().equals("com.tacz.guns.api.event.server.AmmoHitBlockEvent"))return;
-        try{var ammo=(net.minecraft.world.entity.projectile.Projectile)event.getClass().getMethod("getAmmo").invoke(event);var hit=(BlockHitResult)event.getClass().getMethod("getHitResult").invoke(event);blockImpact(ammo,hit);}
-        catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot read native TaCZ block impact",ex);}
+    /**
+     * TaCZ traces physical frames before entities; those real impacts hit the same bounded objective. TaCZ is a required mod, so this listens to
+     * its block-impact event itself: a listener on the base event class would be called for every event the game posts (every entity tick,
+     * every render pass), only to throw almost all of them away.
+     */
+    @SubscribeEvent public void gunBlockImpact(com.tacz.guns.api.event.server.AmmoHitBlockEvent event){
+        if(event.getClass()!=com.tacz.guns.api.event.server.AmmoHitBlockEvent.class)return; // TaCZ's own event only, as before (not a subclass)
+        blockImpact(event.getAmmo(),event.getHitResult());
     }
     static void blockImpact(net.minecraft.world.entity.projectile.Projectile shot,BlockHitResult hit){
         if(!(shot.level() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD||!(shot.getOwner() instanceof Mob attacker)||!hostile(attacker)||!ArsenalStructures.beacon(l,hit.getBlockPos()))return;
