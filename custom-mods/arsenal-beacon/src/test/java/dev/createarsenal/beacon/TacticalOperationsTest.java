@@ -116,7 +116,19 @@ final class TacticalOperationsTest {
     @Test void theMissionMapPutsTheBaseAndTheObjectiveOnOneSheet(){
         assertEquals(0,TacticalRules.mapScale(0,0,40,40));
         int s=TacticalRules.mapScale(0,0,600,0);assertTrue(s>=3,"600 blocks east needs a zoomed-out map");
-        int w=128<<s;assertEquals(Math.floorDiv(64,w),Math.floorDiv(600+64,w));
+        // the case the real client found: a beacon 344 blocks from a vanilla grid line (x 20008, the scale-4 line at 20352) and the
+        // red X 420 blocks east of it; on the grid no sheet holds both, centred between them every scale that fits does
+        var rnd=new java.util.Random(7);
+        for(int i=0;i<20000;i++){
+            int bx=rnd.nextInt(60001)-30000,bz=rnd.nextInt(60001)-30000;double a=rnd.nextDouble()*Math.PI*2;int dist=rnd.nextInt(1025);
+            int x=bx+(int)Math.round(Math.sin(a)*dist),z=bz-(int)Math.round(Math.cos(a)*dist);
+            int sc=TacticalRules.mapScale(bx,bz,x,z),half=64<<sc,cx=TacticalRules.mapCentre(bx,x),cz=TacticalRules.mapCentre(bz,z);
+            for(int[] p:new int[][]{{bx,bz},{x,z}})
+                assertTrue(Math.abs(p[0]-cx)+TacticalRules.MAP_MARGIN<=half&&Math.abs(p[1]-cz)+TacticalRules.MAP_MARGIN<=half,"both on the sheet: beacon "+bx+" "+bz+", X "+x+" "+z+", scale "+sc);
+            assertTrue(sc==0||Math.max(Math.max(Math.abs(bx-cx),Math.abs(x-cx)),Math.max(Math.abs(bz-cz),Math.abs(z-cz)))+TacticalRules.MAP_MARGIN>(64<<(sc-1)),"the smallest scale that holds both");
+        }
+        assertEquals(2,TacticalRules.mapScale(20008,8,20428,258),"the real client's case: 420 blocks apart fits scale 2 centred between");
+        assertEquals(4,TacticalRules.mapScale(0,0,1024,0),"the farthest offer (1024 blocks) still fits the widest map");
         assertEquals(4,TacticalRules.mapScale(0,0,5000,0),"too far for any map: the widest");
     }
 

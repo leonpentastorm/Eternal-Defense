@@ -248,12 +248,24 @@ final class Hunts {
     }
 
     // ---- the mission's map and flare -------------------------------------------------------------------------------------------------------
+    /**
+     * A vanilla filled map centred exactly on (x, z): {@code MapItem.create} would snap the centre to the map grid. The map data is built
+     * through vanilla's own loader with the centre we want (everything else as a fresh tracking map) and stored under a new map id.
+     */
+    static ItemStack centredMap(ServerLevel l,int x,int z,int scale){
+        var tag=new CompoundTag();tag.putString("dimension",l.dimension().location().toString());
+        tag.putInt("xCenter",x);tag.putInt("zCenter",z);tag.putByte("scale",(byte)scale);
+        tag.putBoolean("trackingPosition",true);tag.putBoolean("unlimitedTracking",true);tag.putBoolean("locked",false);
+        int id=l.getFreeMapId();l.setMapData(MapItem.makeKey(id),MapItemSavedData.load(tag));
+        var stack=new ItemStack(net.minecraft.world.item.Items.FILLED_MAP);stack.getOrCreateTag().putInt("map",id);
+        return stack;
+    }
     /** The mission's map: a vanilla filled map with a red X on the objective and the codename as its name (made once, copied after). */
     static ItemStack missionMap(ServerLevel l,CampaignData d,HuntData h){
         var o=h.board.mission.offer;
         if(h.missionMap==null||h.missionMap.getCompound("tag").getLong("arsenalMission")!=o.id){
             int scale=TacticalRules.mapScale(d.beacon.getX(),d.beacon.getZ(),o.x,o.z);
-            var map=MapItem.create(l,o.x,o.z,(byte)scale,true,true);
+            var map=centredMap(l,TacticalRules.mapCentre(d.beacon.getX(),o.x),TacticalRules.mapCentre(d.beacon.getZ(),o.z),scale);
             MapItem.renderBiomePreviewMap(l,map);
             MapItemSavedData.addTargetDecoration(map,new BlockPos(o.x,0,o.z),"+",MapDecoration.Type.RED_X);
             map.setHoverName(Component.literal(o.codename).withStyle(ChatFormatting.GOLD));

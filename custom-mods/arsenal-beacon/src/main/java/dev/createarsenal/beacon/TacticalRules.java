@@ -130,12 +130,21 @@ final class TacticalRules {
     static int regionScale(int mk){return Math.max(1,2*range(mk)/SCAN_SIZE);}
 
     // ---- the mission map ---------------------------------------------------------------------------------------------------------------------
+    /** Blocks kept between the beacon or the red X and the edge of the mission map. */
+    static final int MAP_MARGIN=16;
     /**
-     * Pure: the scale (0 to 4) of the vanilla map handed out for a mission: the smallest at which the beacon and the objective fall on the same
-     * map (vanilla maps sit on a fixed grid, 128 << scale blocks wide), so the player at the base is on it; 4 if none does.
+     * Pure: the centre of the mission map on one axis, halfway between the beacon and the objective. The map is made with this centre
+     * itself (a vanilla map would snap to its fixed grid, 128 << scale blocks wide, and a beacon near a grid line would fall off the sheet).
+     */
+    static int mapCentre(int beacon,int objective){return Math.floorDiv(beacon+objective,2);}
+    /**
+     * Pure: the scale (0 to 4) of the mission map: the smallest at which the beacon and the objective both lie on the sheet centred
+     * between them, {@link #MAP_MARGIN} blocks in from its edge, so the player at the base is on it; 4 (2048 blocks) if none does.
      */
     static int mapScale(int beaconX,int beaconZ,int x,int z){
-        for(int s=0;s<=4;s++){int w=128<<s;if(Math.floorDiv(beaconX+64,w)==Math.floorDiv(x+64,w)&&Math.floorDiv(beaconZ+64,w)==Math.floorDiv(z+64,w))return s;}
+        int cx=mapCentre(beaconX,x),cz=mapCentre(beaconZ,z);
+        int reach=Math.max(Math.max(Math.abs(beaconX-cx),Math.abs(x-cx)),Math.max(Math.abs(beaconZ-cz),Math.abs(z-cz)))+MAP_MARGIN;
+        for(int s=0;s<=4;s++)if(reach<=64<<s)return s;
         return 4;
     }
 }
