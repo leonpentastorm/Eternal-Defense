@@ -38,9 +38,10 @@
 * **`/arsenal test-gate`** opens a gate with a zombie standing in front of it (`-test_gate.jpg`).
 * **Garrison lookups over land** (10 areas of 2048 x 2048 blocks around 0/0, +-3000 and +-6000): 5 give a Garrison (two woodland mansions, two desert pyramids, one pillager outpost), each confirmed by generating that chunk after the lookup and reading its structure starts; the lookups loaded no chunk; the slowest took 29 ms.
 
-### Pack edition, real client, final code (`checks-pack.txt`): pending (the run of the final code is being written up)
+### Pack edition, real client, final code (`checks-pack.txt`, `audio-pack.txt`): 44 pass, 0 fail
 
-(Results follow in the next commit.)
+* The same walkthrough and the same results in the pack edition, with another board (one Patrol and three Warlords, closest 43.7 degrees apart): the scan sounds at the table, Accept and Abandon, the beacon card with the mission line (`pack-hud_status_card.jpg`), a Warlord out of 5 big gates (`pack-warband_gates.jpg`: two gates with the enemies stepping out in front), 12 in all, its captain with 152 health; the cannon card scrolls; the Starshell gives Haste II only; a raid reinforcement 43 blocks out came out of a gate with Speed II (`pack-raid_gate_spawn.jpg`); `/arsenal test-gate` (`pack-test_gate.jpg`); the same 5 of 10 Garrison areas, each confirmed, no chunk loaded, the slowest 28 ms.
+* In the recording the incoming sound starts at 169.22 s (r = 0.99) and the Starshell bursts 5.16 s later; the table, scan, contact and cleared sounds are where the client logged them.
 
 ### What the standalone run played (`audio-standalone.txt`)
 
