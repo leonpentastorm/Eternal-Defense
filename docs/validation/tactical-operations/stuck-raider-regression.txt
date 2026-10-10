@@ -1,0 +1,16 @@
+# Regression: the 0.0.14 stuck-raider GameTests (RaiderGateGameTests, tools/qa/QaStuck.java.txt, pack edition, flat world) on the 0.0.20 code, 2026-10-10: 11 pass, 0 fail.
+# (0.0.20 changed RaiderGates and RaidSpawns: spawn gates, the FAILING clock.)
+
+17:55:24 STUCK_TEST_PASS akillcancelsthechannelandtheemptygategoesaway
+17:55:24 STUCK_TEST_PASS damagedelaysthechannelbutthetotaldelayiscapped
+17:55:24 STUCK_TEST_PASS afterthreegatestheraideriswithdrawnandthewavecompleteswellbeforethetimeout
+17:55:24 STUCK_TEST_PASS ninestuckraidersshareonegateeightchannelandtheninthwaits
+17:55:24 STUCK_TEST_PASS flyersandparachutistsareleftalone
+17:55:24 STUCK_TEST_PASS abossgoesthroughgateaftergateandisneverwithdrawn
+17:55:24 STUCK_TEST_PASS asectorcrossingalakeisneverchosenwhilecleansectorsexist
+17:55:24 STUCK_TEST_PASS araidersealedinastonecellopensagatechannelsandcomesoutatthering
+17:55:24 STUCK_TEST_PASS wheneverysectorhasawatercrossingtheonewiththefewestviolationsisused
+17:55:24 STUCK_TEST_PASS lavamagmaachasmandawidelaketriggertheprobebutashortponddoesnot
+17:55:24 STUCK_TEST_PASS achannelingraiderstandsbesidearedgateandcannotmove
+17:55:24 STUCK_TESTS_DONE pass=11 fail=0
+17:55:24 QA_SUMMARY pass=11 fail=0

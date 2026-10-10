@@ -43,6 +43,10 @@
 * The same walkthrough and the same results in the pack edition, with another board (one Patrol and three Warlords, closest 43.7 degrees apart): the scan sounds at the table, Accept and Abandon, the beacon card with the mission line (`pack-hud_status_card.jpg`), a Warlord out of 5 big gates (`pack-warband_gates.jpg`: two gates with the enemies stepping out in front), 12 in all, its captain with 152 health; the cannon card scrolls; the Starshell gives Haste II only; a raid reinforcement 43 blocks out came out of a gate with Speed II (`pack-raid_gate_spawn.jpg`); `/arsenal test-gate` (`pack-test_gate.jpg`); the same 5 of 10 Garrison areas, each confirmed, no chunk loaded, the slowest 28 ms.
 * In the recording the incoming sound starts at 169.22 s (r = 0.99) and the Starshell bursts 5.16 s later; the table, scan, contact and cleared sounds are where the client logged them.
 
+### Regression: the 0.0.14 stuck-raider GameTests (`stuck-raider-regression.txt`): 11 pass, 0 fail
+
+0.0.20 changed `RaiderGates` (spawn gates) and `RaidSpawns` (the clock for gate spawns), which the stuck-raider rescue also uses, so `tools/qa/QaStuck.java.txt` was run again (pack edition): all eleven pass, from the sealed cell and the lava probe to nine raiders sharing one gate and the boss that is never withdrawn.
+
 ### What the standalone run played (`audio-standalone.txt`)
 
 * Every sound the client logged is in the recording at the same second: the table's refuse and accept, the scan sweep when SCAN MAP was pressed and the done pings 12.8 s later, the contact alert when a warband came out, and the mission-cleared placeholder at the last kill.
