@@ -1,22 +1,21 @@
-# What the game played: the sound effects found in the recorded audio of the STANDALONE run (checks-standalone.txt), 2026-10-10.
+# What the game played: the sound effects found in the recorded audio of the final STANDALONE run (checks-standalone.txt), 2026-10-10.
 # OpenAL Soft's wave backend wrote the client's real mixed output; tools/audio/find_sfx.py (normalised cross-correlation, r = 1.00 is
-# exactly that sound) found each effect. Time = seconds into the capture (sound engine started at 17:37:56). Nobody listened.
+# exactly that sound) found each effect. Time = seconds into the capture (sound engine started at 18:12:42). Nobody listened.
 
-## Command Table (the client logged each one as QA_SOUND at the same second)
-   71.76 s  tactical_contact      r=0.57   GameTest warband out (17:39:08)
-   77.29 - 77.85 s  tactical_refused x4 (r=0.45-0.97) and 78.10 s tactical_accept r=0.83: the uplink/raid GameTest refusals, then an accept (17:39:14)
-   91.30 s  tactical_contact      r=0.54   (17:39:28)
-   95.04 s  mission_cleared       r=0.67   the placeholder (the Victory Fanfare) at a GameTest's last kill (17:39:31)
-  122.78 s  tactical_scan         r=0.86   SCAN MAP pressed with the table open (17:39:59)
-  135.60 s  tactical_scan_done    r=0.91   12.8 s later, when the scan finished (17:40:12)
-  137.46 s  tactical_accept       r=0.93   Accept on the table (17:40:14)
-  147.92 s  tactical_contact      r=0.93   the Warlord's warband comes out of its gates (17:40:24)
-  154.24 s  mission_cleared       r=0.91   the Warlord's last kill (17:40:31)
+## Command Table (the client logged each as QA_SOUND at the same second)
+   81.12 / 81.30 s  tactical_refused (r=0.48, 0.72), 81.44 s tactical_accept r=0.67   the uplink/raid GameTest refusals, then an accept
+   98.28 s  mission_cleared       r=0.82   the placeholder (the Victory Fanfare), a GameTest's last kill (18:14:20)
+  126.50 s  tactical_scan         r=0.89   SCAN MAP pressed with the table open (18:14:48)
+  139.28 s  tactical_scan_done    r=0.98   12.8 s later, when the scan finished (18:15:01)
+  140.92 s  tactical_accept       r=0.98   Accept on the table
+  150.52 s  tactical_accept       r=0.94   the Warlord accepted
+  152.64 s  tactical_contact      r=0.98   the Warlord's warband comes out of its gates
+  158.88 s  mission_cleared       r=0.92   the Warlord's last kill (18:15:21)
 
 ## Fire support: the incoming sound is back
-  170.22 s  ordnance_incoming     r=0.99 (matched on its loud second half, --skip 3.0; the first 1.5 s is quiet under the cannon)
-  175.38 s  starshell_pop         r=0.96   5.16 s after the incoming sound started (the flight is 5.15 s): the scream ends on the burst.
+  174.88 s  ordnance_incoming     r=0.87 (matched on its loud second half, --skip 3.0; the first 1.5 s is quiet under the cannon) (18:15:37)
+  180.08 s  starshell_pop         r=0.88   5.20 s after the incoming sound started (the flight is 5.15 s): the scream ends on the burst (18:15:42).
   The player stood 17 blocks from the cannon looking away from the flare (the 0.0.19 whistle was only heard when looking at the
   shell). No shell or bomb whistle anywhere in the capture (the files are gone).
 
-## Earlier standalone run (qa run 3, before the gate and Garrison fixes): incoming at 155.80 s r=0.81, starshell pop 160.92 s (5.12 s).
+## Earlier standalone runs of this round: incoming 155.80 s / starshell 160.92 s (5.12 s); incoming 170.22 s / starshell 175.38 s (5.16 s).

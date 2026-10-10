@@ -1,18 +1,21 @@
-# What the game played: the sound effects found in the recorded audio of the PACK run (checks-pack.txt), 2026-10-10.
-# Same method as audio-standalone.txt (tools/audio/find_sfx.py). Time = seconds into the capture (sound engine started at 17:42:41).
+# What the game played: the sound effects found in the recorded audio of the final PACK run (checks-pack.txt), 2026-10-10.
+# Same method as audio-standalone.txt (tools/audio/find_sfx.py). Time = seconds into the capture (sound engine started at 18:17:09).
 # Nobody listened.
 
 ## Command Table
-   76.30 - 76.93 s  tactical_refused x4 (r=0.46-0.96), 77.14 s tactical_accept r=0.89   the uplink/raid GameTest refusals, then an accept
-   90.26 s  tactical_contact      r=0.50
-   94.12 s  mission_cleared       r=0.83   the placeholder (the Victory Fanfare), a GameTest's last kill (17:44:15)
-  121.84 s  tactical_scan         r=0.86   SCAN MAP pressed with the table open (17:44:43)
-  134.62 s  tactical_scan_done    r=0.93   12.8 s later (17:44:55)
-  136.48 s  tactical_accept       r=0.97   Accept on the table
-  146.62 s  tactical_contact      r=0.91   the Warlord's warband comes out
-  152.98 s  mission_cleared       r=0.92   the Warlord's last kill (17:45:14)
+   76.06 - 76.43 s  tactical_refused x3 (r=0.47-0.84), 76.40 s tactical_accept r=0.61   the uplink/raid GameTest refusals, then an accept
+   89.46 s  tactical_contact      r=0.56
+   93.30 s  mission_cleared       r=0.84   the placeholder (the Victory Fanfare), a GameTest's last kill (18:18:42)
+  121.16 s  tactical_scan         r=0.85   SCAN MAP pressed with the table open (18:19:10)
+  133.96 s  tactical_scan_done    r=0.77   12.8 s later (18:19:23)
+  135.74 s  tactical_accept       r=0.65   Accept on the table
+  145.20 s  tactical_accept       r=0.96   the Warlord accepted
+  147.18 s  tactical_contact      r=0.78   the Warlord's warband comes out
+  153.92 s  mission_cleared       r=0.89   the Warlord's last kill (18:19:42)
 
 ## Fire support
-  169.22 s  ordnance_incoming     r=0.99 (loud second half matched, --skip 3.0)   (client log 17:45:30)
-  174.38 s  starshell_pop         r=0.96   5.16 s after the incoming sound started (17:45:35); the player looked away from the flare.
+  169.90 s  ordnance_incoming     r=0.77 (loud second half matched, --skip 3.0)   (client log 18:19:58)
+  175.08 s  starshell_pop         r=0.69   5.18 s after the incoming sound started (18:20:04); the player looked away from the flare.
   No shell or bomb whistle in the capture.
+
+## Earlier pack run of this round: incoming 169.22 s / starshell 174.38 s (5.16 s).

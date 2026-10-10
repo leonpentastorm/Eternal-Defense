@@ -26,31 +26,35 @@
 8. the scan reads only loaded chunks (48 far chunks watched under the image: none loaded by the scan) and keeps one job at a time;
 9. a Garrison lookup never loads a chunk.
 
-### Standalone edition, real client, final code (`docs/validation/tactical-operations/checks-standalone.txt`): 44 pass, 0 fail
+### Standalone edition, real client, final code (`docs/validation/tactical-operations/checks-standalone.txt`): 45 pass, 0 fail
 
-* **The board** (satellite Mk III, a real normal world): 4 offers, at least 40 degrees apart (closest 48.9), between the zone + 150 and 1024 blocks; Patrols and Warlords mixed (`QA_NOTE offer` lines). Around this beacon (forest and ocean) no Garrison candidate passed the biome filter, so Garrison offers fell back to Patrols there; see the Garrison lines below for land where they are found.
+* **The board** (satellite Mk III, a real normal world): 4 offers, at least 40 degrees apart (closest 44.9), between the zone + 150 and 1024 blocks; it filled over a few passes, one Garrison lookup per server tick. Around this beacon (forest and ocean) no Garrison candidate passes the biome filter, so Garrison rolls fall back to Patrols here (this run's board: four Patrols; the pack run's: three Patrols and a Warlord; earlier runs: two and two, one and three). See the Garrison lines below for land where they are found.
 * **The table** (`standalone-table_region.jpg`, `-table_base.jpg`, `-table_card.jpg`): the screen opens with the scan image (Region and Base views), the offer rows and the side card; pressing **SCAN MAP** with the table open plays the sweep, and the done pings when the scan finishes; **Accept** starts the mission, hands the player the mission map and a Return Flare, and refreshes the screen in place (`-table_accepted.jpg`); **Abandon** asks first (`-table_abandon_confirm.jpg`).
-* **The status card:** away from the base the mission line shows alone (`-hud_mission_away.jpg`: "OP BROKEN EMBER | Warlord | 775 m SW | not found yet"); at the beacon with the shovel it sits under the beacon card (`-hud_status_card.jpg`).
-* **A Warlord** at the objective: the warband comes out of red gates (5 gates, all drawn as big spawn gates on the client: `-warband_gates.jpg`), one glowing captain named after the operation with 152 health (twice a heavy's), 13 in all; killing it clears and pays the mission, chat tells everyone, and the mission-cleared jingle plays (`-cleared_chat.jpg`).
+* **The status card:** away from the base the mission line shows alone (`-hud_mission_away.jpg`: "OP GHOST SPEAR | Patrol | 378 m E | not found yet"); at the beacon with the shovel it sits under the beacon card (`-hud_status_card.jpg`).
+* **The mission map** (`-mission_map.jpg`): the beacon and the red X on one sheet (scale 2), the red X at the objective (read from the map's data on the server).
+* **A Warlord** at the objective: the warband comes out of red gates (4 gates, all drawn as big spawn gates on the client: `-warband_gates.jpg`), one glowing captain named after the operation with 152 health (twice a heavy's), 11 in all; killing it clears and pays the mission, chat tells everyone, and the mission-cleared jingle plays (`-cleared_chat.jpg`).
 * **The cannon menu** (`-cannon_card_starshell.jpg`, `-cannon_card_bunker_top.jpg`, `-cannon_card_bunker_scrolled.jpg`): the card shows Effect, Damage and Area; the Bunker Buster's is longer than the box and scrolls (101 px of text to scroll; one wheel step moved it 22).
-* **A Starshell** called by a real flare: the incoming sound started on the client while the player looked away; a player in the Starshell's light gets **Haste II and no Regeneration** (the effects read from the server player: `effect.minecraft.haste 2` only; `-starshell_effects.jpg`).
-* **A raid with no natural ground** (the QA removes the ground far out): after 10 s the first reinforcement came out of a gate 48 blocks from the beacon with Speed II (`-raid_gate_spawn.jpg`: the zombie in front of its gate); every raid enemy had the speed burst; chat said the gate line once in the wave and never the old "Reinforcements are waiting" line.
+* **A Starshell** called by a real flare: the incoming sound started on the client while the player looked away; a player in the Starshell's light gets **Haste II and no Regeneration** (the effects read from the server's player: `effect.minecraft.haste 2` only; `-starshell_effects.jpg`).
+* **A raid with no natural ground** (the QA removes the ground far out): after 10 s the first reinforcement came out of a gate 44 blocks from the beacon with Speed II (`-raid_gate_spawn.jpg`: the zombie in front of its gate); every raid enemy had the speed burst; chat said the gate line once in the wave and never the old "Reinforcements are waiting" line.
 * **`/arsenal test-gate`** opens a gate with a zombie standing in front of it (`-test_gate.jpg`).
-* **Garrison lookups over land** (10 areas of 2048 x 2048 blocks around 0/0, +-3000 and +-6000): 5 give a Garrison (two woodland mansions, two desert pyramids, one pillager outpost), each confirmed by generating that chunk after the lookup and reading its structure starts; the lookups loaded no chunk; the slowest took 29 ms.
+* **Garrison lookups over land** (10 areas of 2048 x 2048 blocks around 0/0, +-3000 and +-6000): 5 give a Garrison (two woodland mansions, two desert pyramids, one pillager outpost), each confirmed by generating that chunk after the lookup and reading its structure starts; the lookups loaded no chunk; the slowest took 39 ms.
 
-### Pack edition, real client, final code (`checks-pack.txt`, `audio-pack.txt`): 44 pass, 0 fail
+### Pack edition, real client, final code (`checks-pack.txt`, `audio-pack.txt`): 45 pass, 0 fail
 
-* The same walkthrough and the same results in the pack edition, with another board (one Patrol and three Warlords, closest 43.7 degrees apart): the scan sounds at the table, Accept and Abandon, the beacon card with the mission line (`pack-hud_status_card.jpg`), a Warlord out of 5 big gates (`pack-warband_gates.jpg`: two gates with the enemies stepping out in front), 12 in all, its captain with 152 health; the cannon card scrolls; the Starshell gives Haste II only; a raid reinforcement 43 blocks out came out of a gate with Speed II (`pack-raid_gate_spawn.jpg`); `/arsenal test-gate` (`pack-test_gate.jpg`); the same 5 of 10 Garrison areas, each confirmed, no chunk loaded, the slowest 28 ms.
-* In the recording the incoming sound starts at 169.22 s (r = 0.99) and the Starshell bursts 5.16 s later; the table, scan, contact and cleared sounds are where the client logged them.
+* The same walkthrough and the same results in the pack edition, with another board (three Patrols and a Warlord, closest 51.3 degrees apart): the scan sounds at the table, Accept and Abandon, the beacon card with the mission line (`pack-hud_status_card.jpg`), the map with both on one sheet (scale 3, `pack-mission_map.jpg`), a Warlord out of 6 big gates (`pack-warband_gates.jpg`), 14 in all, its captain with 152 health; the cannon card scrolls; the Starshell gives Haste II only; a raid reinforcement 45 blocks out came out of a gate with Speed II (`pack-raid_gate_spawn.jpg`); `/arsenal test-gate` (`pack-test_gate.jpg`); the same 5 of 10 Garrison areas, each confirmed, no chunk loaded, the slowest 36 ms.
+
+### Earlier runs of this round
+
+`checks-standalone-first-run.txt` (31/31 on the code before the gate and Garrison fixes) and `checks-pack-first-run.txt` (32 pass, 2 fail: the Garrison lookups). Between them and the final runs, runs of 44/44 in each edition (the gate and Garrison fixes), one run of 44 of 45 that found the map leaving the base off the sheet, and a run with the two editions side by side in which one lookup took 62 ms (the cost limits below). These logs are not kept; the findings are listed below.
 
 ### Regression: the 0.0.14 stuck-raider GameTests (`stuck-raider-regression.txt`): 11 pass, 0 fail
 
 0.0.20 changed `RaiderGates` (spawn gates) and `RaidSpawns` (the clock for gate spawns), which the stuck-raider rescue also uses, so `tools/qa/QaStuck.java.txt` was run again (pack edition): all eleven pass, from the sealed cell and the lava probe to nine raiders sharing one gate and the boss that is never withdrawn.
 
-### What the standalone run played (`audio-standalone.txt`)
+### What the final runs played (`audio-standalone.txt`, `audio-pack.txt`)
 
 * Every sound the client logged is in the recording at the same second: the table's refuse and accept, the scan sweep when SCAN MAP was pressed and the done pings 12.8 s later, the contact alert when a warband came out, and the mission-cleared placeholder at the last kill.
-* **The incoming sound is back and is heard looking away:** it starts at 170.22 s (r = 0.99) and the Starshell bursts at 175.38 s, 5.16 s later (the flight is 5.15 s). The player stood 17 blocks from the cannon looking away from the flare. No shell or bomb whistle anywhere.
+* **The incoming sound is back and is heard looking away:** it starts 5.20 s (standalone) and 5.18 s (pack) before the Starshell bursts (the flight is 5.15 s; earlier runs 5.12 and 5.16 s). The player stood 17 blocks from the cannon looking away from the flare. No shell or bomb whistle anywhere.
 
 ### Found by the real-client runs and fixed in this round
 
