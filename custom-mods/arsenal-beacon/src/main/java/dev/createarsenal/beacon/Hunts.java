@@ -120,7 +120,10 @@ final class Hunts {
             for(var c:candidates){
                 if(checks>=GARRISON_CHECKS)break;
                 checks++;
-                if(l.structureManager().checkStructurePresence(c.chunk(),c.structure().value(),false)==StructureCheckResult.START_PRESENT){log(started,checks,true);return c.spot();}
+                // START_PRESENT: the chunk's saved data has the structure; CHUNK_LOAD_NEEDED: the chunk was never generated and vanilla's
+                // simulation of the generator says the structure starts there (vanilla's /locate would load the chunk to be sure; we do not)
+                var found=l.structureManager().checkStructurePresence(c.chunk(),c.structure().value(),false);
+                if(found==StructureCheckResult.START_PRESENT||found==StructureCheckResult.CHUNK_LOAD_NEEDED){log(started,checks,true);return c.spot();}
             }
             log(started,checks,false);
         }catch(RuntimeException ex){com.mojang.logging.LogUtils.getLogger().warn("[hunts] Garrison structure lookup failed; the offer becomes a Patrol",ex);}

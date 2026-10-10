@@ -100,6 +100,8 @@ public final class QaHunt {
         wait=(int)step[0];
     }
 
+    /** The client's beacon state (private in BeaconClient), read for the status-card check. */
+    static final class BeaconClientState{static boolean near(){try{var f=BeaconClient.class.getDeclaredField("state");f.setAccessible(true);return ((net.minecraft.nbt.CompoundTag)f.get(null)).getBoolean("near");}catch(Exception e){return false;}}}
     static TacticalClient.TableScreen table(){return mc().screen instanceof TacticalClient.TableScreen s?s:null;}
     static void press(String label){
         var s=mc().screen;if(s==null)return;
@@ -129,6 +131,11 @@ public final class QaHunt {
         step(40,()->{check("the Command Table screen opens",table()!=null,String.valueOf(mc().screen));check("the client has the scan image",TacticalClient.version>=0,"version="+TacticalClient.version);shot("h3_table_region");},"region shot");
         step(2,()->{TacticalClient.view=0;var s=table();if(s!=null)s.resize(mc(),s.width,s.height);},"base view");
         step(20,()->shot("h4_table_base"),"base shot");
+        // the SCAN MAP button with the table open: the sweep and the done pings are heard by the players at the table
+        step(5,()->{SOUNDS.clear();srv(()->{h().scanReady=0;Hunts.refresh(sl());});},"scan cooldown over");
+        step(10,()->press(Ui.t("tactical.scan").getString()),"press SCAN MAP");
+        until("the button's scan ends",900,()->!srvGet(TacticalScan::running)&&SOUNDS.contains("tactical.scan_done"),()->{});
+        step(2,()->{check("the scan sweep is heard at the table",SOUNDS.contains("tactical.scan"),String.valueOf(SOUNDS));check("and the scan-done pings",SOUNDS.contains("tactical.scan_done"),String.valueOf(SOUNDS));},"scan sounds");
         step(2,()->{TacticalClient.view=1;long[] ids=offerIds();if(ids.length>1)TacticalClient.selected=ids[1];var s=table();if(s!=null)s.resize(mc(),s.width,s.height);},"select the second offer");
         step(20,()->shot("h5_table_card"),"card shot");
         step(2,()->press("Accept"),"press Accept");
@@ -140,8 +147,10 @@ public final class QaHunt {
         // ---- the HUD -----------------------------------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());tp(B.getX()-120.5,B.getY()+40,B.getZ()+.5,-90,10);},"fly 120 blocks west");
         step(40,()->{check("the client knows the mission",TacticalClient.missionActive(),"");shot("h8_hud_mission_away");},"away shot");
-        step(5,()->{hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
-        step(100,()->{shot("h9_hud_status_card");
+        // the beacon state is synced once a second: give it two before the shot (a step's wait comes after its action)
+        step(45,()->{hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
+        step(5,()->{shot("h9_hud_status_card");check("the beacon card shows next to the mission line (near, holding the shovel)",BeaconClientState.near(),"");
+            log("QA_NOTE beacon card server: player={} beacon={} radius={} near={} sent={}",srvGet(()->sp().blockPosition().toShortString()),srvGet(()->d().beacon.toShortString()),srvGet(()->d().radius()),srvGet(()->ArsenalBeacon.near(sp(),d())),srvGet(()->BeaconNetwork.state(sp(),d()).getBoolean("near")));
             try{var f=BeaconClient.class.getDeclaredField("state");f.setAccessible(true);var st=(net.minecraft.nbt.CompoundTag)f.get(null);var r=BeaconClient.class.getDeclaredField("receivedAt");r.setAccessible(true);
                 log("QA_NOTE beacon card state: phase={} near={} installed={} receivedAt={} now={} holding={}",st.getString("phase"),st.getBoolean("near"),st.getBoolean("installed"),r.get(null),mc().level.getGameTime(),mc().player.getMainHandItem().getItem());}catch(Exception ex){log("QA_NOTE no state: {}",ex.toString());}},"status card shot");
         step(5,()->srv(()->{var inv=sp().getInventory();long id=h().board.mission.offer.id;for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(Items.FILLED_MAP)&&inv.items.get(i).hasTag()&&inv.items.get(i).getTag().getLong("arsenalMission")==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(0));inv.items.set(0,map);inv.selected=0;break;}sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+3.5,180,40);}),"hold the map");
@@ -152,7 +161,10 @@ public final class QaHunt {
             log("QA_NOTE warlord accept: {}",Hunts.accept(sp(),sl(),d(),h,h.board.offers.indexOf(o)));}),"accept a Warlord at the objective platform");
         step(5,()->{mc().options.hideGui=true;look(OBJ.offset(-30,3,0),OBJ.getX()+.5,OBJ.getY()+1,OBJ.getZ()+.5);},"walk up to the objective");
         until("the warband starts",400,()->srvGet(()->h().board.mission!=null&&h().board.mission.engaged()),()->{});
-        step(12,()->{shot("h11_warband_gates");long gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(OBJ).inflate(40)).size());check("the warband comes out of red gates",gates>0,"gates="+gates);},"gates shot");
+        step(20,()->{},"let the first gates open (they grow for 12 ticks)");
+        step(12,()->{shot("h11_warband_gates");
+            var big=mc().level.getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(OBJ).inflate(40));
+            check("the client draws them as big spawn gates",!big.isEmpty()&&big.stream().allMatch(RaiderGate::big),"client gates="+big.size());long gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(OBJ).inflate(40)).size());check("the warband comes out of red gates",gates>0,"gates="+gates);},"gates shot");
         until("the warband is out",300,()->srvGet(()->h().board.mission.pending()==0),()->{});
         step(60,()->{var m=srvGet(()->h().board.mission);
             var captain=srvGet(()->HuntGameTests.mobs(sl(),m.offer.id).stream().filter(x->x.getPersistentData().getBoolean(HuntWarband.CAPTAIN)).findFirst().orElse(null));
@@ -223,6 +235,29 @@ public final class QaHunt {
             check("the old repeating line is gone",CHAT.stream().noneMatch(c->c.contains("Reinforcements are waiting")),"");
             mc().options.hideGui=false;tp(B.getX()+.5,B.getY()+1,B.getZ()+2.5,0,10);},"chat checks");
         step(20,()->shot("h19_raid_chat"),"chat shot");
+        step(5,()->{mc().options.hideGui=true;srv(()->{for(var id:new ArrayList<>(d().raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d().raiders.clear();d().phase="preparation";d().setDirty();});
+            tp(B.getX()+.5,B.getY(),B.getZ()-30.5,180,5);},"end the raid, stand outside the zone");
+        step(10,()->cmd("arsenal test-gate"),"/arsenal test-gate");
+        step(25,()->{},"the gate opens");
+        step(5,()->{shot("h20_test_gate");var gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,sp().getBoundingBox().inflate(10)).stream().map(g->g.position()).toList());
+            var me=srvGet(()->sp().position());var zombie=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)).stream().map(z->z.position()).findFirst().orElse(null));
+            check("/arsenal test-gate opens a gate with a zombie in front of it",!gates.isEmpty()&&zombie!=null&&gates.get(0).distanceTo(me)>zombie.distanceTo(me),"gates="+gates+" zombie="+zombie);
+            srv(()->{for(var z:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)))z.discard();});mc().options.hideGui=false;},"test gate shot");
+        // ---- Garrison lookups over land (the test beacon's own region may have no structure): never a chunk loaded, and the answer is true ----
+        step(5,()->{int[][] centres={{0,0},{3000,0},{-3000,0},{0,3000},{0,-3000},{6000,6000},{-6000,6000},{6000,-6000},{-6000,-6000},{9000,0}};int found=0;long loads=0,slowest=0;
+            for(var c:centres){var r=srvGet(()->{int before=sl().getChunkSource().getLoadedChunksCount();long t=System.nanoTime();var spot=Hunts.garrison(sl(),c[0],c[1],18,1024,new ArrayList<>(),new Random(c[0]*31L+c[1]));
+                long ms=(System.nanoTime()-t)/1_000_000;int after=sl().getChunkSource().getLoadedChunksCount();return new long[]{spot==null?Long.MIN_VALUE:spot.x(),spot==null?0:spot.z(),ms,after-before};});
+                slowest=Math.max(slowest,r[2]);loads+=Math.max(0,r[3]);
+                if(r[0]==Long.MIN_VALUE){log("QA_NOTE garrison around {} {}: none ({} ms)",c[0],c[1],r[2]);continue;}
+                found++;int cx=(int)r[0]>>4,cz=(int)r[1]>>4;
+                // the truth: generate that chunk to its structure starts (only now, after the lookup) and read what really starts there
+                var starts=srvGet(()->sl().getChunk(cx,cz,net.minecraft.world.level.chunk.ChunkStatus.STRUCTURE_STARTS,true).getAllStarts().keySet().stream().map(st->String.valueOf(sl().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE).getKey(st))).toList());
+                boolean real=starts.stream().anyMatch(n->Hunts.GARRISON_STRUCTURES.stream().anyMatch(g->g.toString().equals(n)));
+                log("QA_NOTE garrison around {} {}: {} {} ({} ms, chunk {} {} starts {})",c[0],c[1],r[0],r[1],r[2],cx,cz,starts);
+                check("the Garrison structure is really there ("+r[0]+" "+r[1]+")",real,String.valueOf(starts));}
+            check("Garrison lookups over land find structures",found>=3,"found="+found+" of "+centres.length);
+            check("a Garrison lookup loads no chunk",loads==0,"chunks loaded by the lookups="+loads);
+            check("a Garrison lookup stays under 50 ms",slowest<50,"slowest="+slowest+" ms");},"Garrison lookups over land");
         step(5,()->srv(()->{HuntGameTests.Runner.release();}),"done");
     }
 }

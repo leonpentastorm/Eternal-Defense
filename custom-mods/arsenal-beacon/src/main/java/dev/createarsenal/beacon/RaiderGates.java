@@ -149,26 +149,38 @@ final class RaiderGates {
     }
     // ---- spawn gates (0.0.20) -------------------------------------------------------------------------------------------------------------
     /** A spawn gate stays open this long after the last enemy came out of it. */
-    static final int SPAWN_GATE_LINGER_TICKS=60;
+    static final int SPAWN_GATE_LINGER_TICKS=100;
     /** Enemies that appear anywhere but where they would spawn naturally share an open gate within this many blocks. */
     static final double SPAWN_GATE_SHARE=3;
     /**
-     * Every enemy this mod puts somewhere other than a natural spawn (a raid reinforcement that found no open ground far out, a hunt
-     * warband at its objective) comes out of a red gate: the gate opens on the spot, or an open one close by stays open longer, and the
-     * enemy steps out with the teleport particles and sound. The gate closes by itself {@link #SPAWN_GATE_LINGER_TICKS} after the last one.
+     * A spawn gate stands this many blocks behind the spot its enemy appears at (away from where the enemy is heading), so the enemy is seen
+     * stepping out of it instead of hiding it: on the spot, an enemy covers most of the sprite.
      */
-    static RaiderGate spawnGate(ServerLevel l,BlockPos at){
-        long close=l.getGameTime()+SPAWN_GATE_LINGER_TICKS;var c=Vec3.atBottomCenterOf(at);
+    static final double SPAWN_GATE_BEHIND=1.2;
+    /**
+     * Every enemy this mod puts somewhere other than a natural spawn (a raid reinforcement that found no open ground far out, a hunt
+     * warband at its objective) comes out of a red gate: the gate opens just behind the spot (seen from {@code toward}, where the enemy is
+     * heading and the players are), drawn bigger than a channel gate, or an open one close by stays open longer, and the enemy steps out with
+     * the teleport particles and sound. The gate closes by itself {@link #SPAWN_GATE_LINGER_TICKS} after the last one.
+     */
+    static RaiderGate spawnGate(ServerLevel l,BlockPos at,Vec3 toward){
+        long close=l.getGameTime()+SPAWN_GATE_LINGER_TICKS;var c=Vec3.atBottomCenterOf(at);var stand=behind(c,toward,SPAWN_GATE_BEHIND);
         RaiderGate gate=null;
-        for(var g:gates(l))if(g.exit&&g.closeAt>0&&g.isAlive()&&g.distanceToSqr(c)<=SPAWN_GATE_SHARE*SPAWN_GATE_SHARE){gate=g;break;}
+        for(var g:gates(l))if(g.exit&&g.closeAt>0&&g.isAlive()&&g.distanceToSqr(stand)<=SPAWN_GATE_SHARE*SPAWN_GATE_SHARE){gate=g;break;}
         if(gate==null){
             gate=ArsenalBeacon.RAIDER_GATE.get().create(l);if(gate==null)return null;
-            gate.exit=true;gate.moveTo(c.x,c.y,c.z,l.random.nextFloat()*360,0);l.addFreshEntity(gate);KNOWN.add(gate.getUUID());
-            l.playSound(null,c.x,c.y,c.z,SoundEvents.PORTAL_TRIGGER,SoundSource.HOSTILE,.6f,1.4f);
+            gate.exit=true;gate.setBig(true);gate.moveTo(stand.x,stand.y,stand.z,l.random.nextFloat()*360,0);l.addFreshEntity(gate);KNOWN.add(gate.getUUID());
+            l.playSound(null,stand.x,stand.y,stand.z,SoundEvents.PORTAL_TRIGGER,SoundSource.HOSTILE,.6f,1.4f);
         }
         gate.closeAt=close;EXITS.put(gate.getUUID(),close);
         l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+1,c.z,40,.4,.8,.4,.1);l.playSound(null,c.x,c.y,c.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,1.1f);
         return gate;
+    }
+    /** {@code spot} moved {@code by} blocks level away from {@code from}; unmoved when {@code from} is missing or right above or below it. */
+    static Vec3 behind(Vec3 spot,Vec3 from,double by){
+        if(from==null)return spot;
+        double dx=spot.x-from.x,dz=spot.z-from.z,len=Math.sqrt(dx*dx+dz*dz);
+        return len<1e-6?spot:new Vec3(spot.x+dx/len*by,spot.y,spot.z+dz/len*by);
     }
 
     /** Opens the red exit gate at a destination, standing on the spot the raider will appear at. */

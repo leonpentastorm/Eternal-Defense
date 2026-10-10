@@ -247,7 +247,7 @@ public final class ArsenalBeacon {
     static void testGate(ServerPlayer p){
         var l=p.serverLevel();var look=p.getLookAngle();var at=BlockPos.containing(p.getX()+look.x*5,p.getY(),p.getZ()+look.z*5);
         at=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,at);
-        RaiderGates.spawnGate(l,at);
+        RaiderGates.spawnGate(l,at,p.position());
         var zombie=EntityType.ZOMBIE.create(l);
         if(zombie!=null){zombie.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot()+180,0);l.addFreshEntity(zombie);}
         p.sendSystemMessage(Component.translatable("gui.arsenal_beacon.raid.test_gate"));
@@ -427,7 +427,7 @@ public final class ArsenalBeacon {
         else{
             // natural ground far out first; with none for a while, the reinforcement comes through a red gate closer in (0.0.20)
             var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();
-            if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos);
+            if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos,net.minecraft.world.phys.Vec3.atCenterOf(d.beacon));   // the gate stands behind it, seen from the base
         }
         if(spawnPos==null)return false;
         int x=spawnPos.getX(),y=spawnPos.getY(),z=spawnPos.getZ();

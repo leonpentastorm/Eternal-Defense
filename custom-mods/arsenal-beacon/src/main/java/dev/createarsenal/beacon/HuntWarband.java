@@ -100,7 +100,7 @@ final class HuntWarband {
             var spot=spots.get(l.random.nextInt(spots.size()));
             if(!l.isPositionEntityTicking(spot))return;   // the team left before it was all out: the rest comes when they are back
             boolean captain=o.kind==TacticalRules.Kind.WARLORD&&m.spawned==0;
-            if(spawn(l,d,m,spot,captain)){b.spawnedOne();h.setDirty();RaiderGates.spawnGate(l,spot);}else spots.remove(spot);
+            if(spawn(l,d,m,spot,captain)){b.spawnedOne();h.setDirty();var seen=l.getNearestPlayer(spot.getX()+.5,spot.getY(),spot.getZ()+.5,128,false);RaiderGates.spawnGate(l,spot,seen==null?null:seen.position());}else spots.remove(spot);
         }
         if(m.pending()==0)Hunts.sync(l,h,null);
     }

@@ -1,0 +1,124 @@
+# Tactical Operations 0.0.20, PACK edition, first real-client run (tools/qa/QaHunt.java.txt), 2026-10-10: 32 pass, 2 fail (Garrison lookups found nothing: fixed, see the testing doc); hunt GameTests 9/9
+# Extracted from the client log (lines with QA_CHECK, HUNT_TEST, the board, Garrison lookups, the sounds the client started and the chat it showed).
+
+17:31:26 [hunts] OP GHOST FALCON: contact, 8 mobs (patrol) at 20232 8
+17:31:26 QA_CHAT [Tactical] Contact! OP GHOST FALCON: 8 hostiles at the objective.
+17:31:26 QA_SOUND arsenal_beacon:tactical.contact at 20233 291 9
+17:31:28 [hunts] OP GHOST FALCON: nobody within 128 blocks for 6000 ticks; the warband scattered
+17:31:28 QA_CHAT [Tactical] Nobody stayed near OP GHOST FALCON, so the warband scattered. Go back to the red X to find it again.
+17:31:32 QA_SOUND arsenal_beacon:tactical.refused at 20009 292 9
+17:31:32 QA_SOUND arsenal_beacon:tactical.refused at 20009 292 9
+17:31:32 QA_SOUND arsenal_beacon:tactical.refused at 20009 292 9
+17:31:34 QA_CHAT [Tactical] Dev accepted OP THUNDER WOLF (Patrol, 224 m E of the beacon). Check your map for the red X.
+17:31:34 QA_SOUND arsenal_beacon:tactical.accept at 20009 292 9
+17:31:34 QA_SOUND arsenal_beacon:tactical.refused at 20009 292 9
+17:31:34 QA_CHAT [Tactical] Dev abandoned OP THUNDER WOLF. The warband is gone and the offer is back on the board.
+17:31:34 [hunts] Garrison structure lookup took 8 ms (0 checks, none, Patrol instead)
+17:31:34 [hunts] garrison test: 8 ms, no structure, 4141 chunks loaded before, 4141 after
+17:31:45 [hunts] satellite scan 1 finished
+17:31:45 [hunts] scan test: 48 watched chunks under the image, 0 of them loaded after the scan; 4141 chunks loaded in all before, 4672 after (the player's own view loads some)
+17:31:46 QA_CHAT [Tactical] Dev accepted OP RUSTED MANTIS (Garrison, 224 m E of the beacon). Check your map for the red X.
+17:31:46 QA_SOUND arsenal_beacon:tactical.accept at 20009 292 9
+17:31:46 [hunts] OP RUSTED MANTIS: contact, 18 mobs (garrison) at 20232 8
+17:31:46 QA_CHAT [Tactical] Contact! OP RUSTED MANTIS: 18 hostiles at the objective.
+17:31:46 QA_SOUND arsenal_beacon:tactical.contact at 20233 292 9
+17:31:46 QA_CHAT [Tactical] Dev abandoned OP RUSTED MANTIS. The warband is gone and the offer is back on the board.
+17:31:46 QA_CHAT [Tactical] Dev accepted OP RUSTED MANTIS (Garrison, 224 m E of the beacon). Check your map for the red X.
+17:31:46 QA_SOUND arsenal_beacon:tactical.accept at 20233 291 9
+17:31:46 QA_CHAT [Tactical] Dev abandoned OP RUSTED MANTIS. The warband is gone and the offer is back on the board.
+17:31:49 [hunts] OP STEEL SHIELD: contact, 8 mobs (patrol) at 20232 8
+17:31:49 QA_CHAT [Tactical] Contact! OP STEEL SHIELD: 8 hostiles at the objective.
+17:31:49 QA_SOUND arsenal_beacon:tactical.contact at 20233 292 9
+17:31:50 [hunts] OP STEEL SHIELD cleared: 1 Ardent Energy and 4 coins queued for the reward chest
+17:31:50 HUNT_TEST_PASS awarbandleftalonescatters
+17:31:50 HUNT_TEST_PASS huntmobsdonotburnneverattackthebeaconanddropnoardent
+17:31:50 HUNT_TEST_PASS theblocksonlygoinsidethezoneandoneofeachperbase
+17:31:50 HUNT_TEST_PASS thetablerefuseswithoutuplinkduringaraidandinthewarningwindow
+17:31:50 HUNT_TEST_PASS agarrisonlookupneverloadsachunk
+17:31:50 HUNT_TEST_PASS thescanreadsonlyloadedchunksandkeepsonejobatatime
+17:31:50 HUNT_TEST_PASS astalehuntmobisdiscardedwhenitschunkloads
+17:31:50 HUNT_TEST_PASS abandoningsendsthewarbandawayandnevergivesasecondflare
+17:31:50 HUNT_TEST_PASS awarbandspawnsonapproachanditslastdeathpaysonce
+17:31:50 HUNT_TESTS_DONE pass=9 fail=0
+17:31:50 QA_CHAT [Tactical] OP STEEL SHIELD cleared! 1 Ardent Energy and 4 ammo coins are in the beacon's reward chest.
+17:31:50 QA_SOUND arsenal_beacon:music.mission_cleared at 20233 292 9
+17:31:50 QA_CHECK PASS hunt GameTests pass=9 fail=0
+17:32:00 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:32:00 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:32:00 QA_NOTE offer 7 OP COPPER HAMMER patrol at 19627 -47, 385 m W
+17:32:00 QA_NOTE offer 8 OP BROKEN EMBER patrol at 20536 -639, 835 m NE
+17:32:00 QA_NOTE offer 9 OP RUSTED WOLF warlord at 19586 386, 566 m SW
+17:32:00 QA_NOTE offer 10 OP SILENT BASTION patrol at 19943 710, 705 m S
+17:32:00 QA_CHECK PASS a Mk III board has 4 offers offers=4
+17:32:00 QA_CHECK PASS offers lie at least 40 degrees apart closest=42.85005921272068
+17:32:00 QA_CHECK PASS offers lie between the zone + 150 and 1024 blocks
+17:32:01 QA_NOTE scan start: tactical.result.scan_started
+17:32:13 [hunts] satellite scan 2 finished
+17:32:14 QA_CHECK PASS the Command Table screen opens dev.createarsenal.beacon.TacticalClient$TableScreen@29866f6d
+17:32:14 QA_CHECK PASS the client has the scan image version=2
+17:32:19 QA_CHECK PASS the mission runs after Accept
+17:32:19 QA_CHECK PASS the player got the mission map
+17:32:19 QA_CHECK PASS and a Return Flare
+17:32:19 QA_CHECK PASS the screen refreshed in place (no reopen)
+17:32:19 QA_CHAT [Tactical] Dev accepted OP BROKEN EMBER (Patrol, 835 m NE of the beacon). Check your map for the red X.
+17:32:19 QA_SOUND arsenal_beacon:tactical.accept at 20011 291 12
+17:32:20 QA_CHECK PASS Abandon asks to confirm first
+17:32:21 QA_CHECK PASS the client knows the mission
+17:32:23 QA_NOTE beacon card server: player=20008, 291, 11 beacon=20008, 291, 8 radius=24 near=true sent=true
+17:32:23 QA_NOTE beacon card state: phase=preparation near=false installed=true receivedAt=1419 now=1431 holding=beacon_controller
+17:32:31 QA_CHAT [Tactical] Dev abandoned OP BROKEN EMBER. The warband is gone and the offer is back on the board.
+17:32:31 QA_CHAT [Tactical] Dev accepted OP WINTER BADGER (Warlord, 224 m E of the beacon). Check your map for the red X.
+17:32:31 QA_SOUND arsenal_beacon:tactical.accept at 20009 291 12
+17:32:31 [hunts] OP WINTER BADGER: contact, 11 mobs (warlord) at 20232 8
+17:32:31 QA_CHAT [Tactical] Contact! OP WINTER BADGER: 11 hostiles at the objective.
+17:32:31 QA_SOUND arsenal_beacon:tactical.contact at 20203 293 9
+17:32:32 QA_CHECK PASS the warband comes out of red gates gates=6
+17:32:32 QA_CHECK PASS one captain, glowing, named after the operation OP WINTER BADGER
+17:32:32 QA_CHECK PASS the captain has twice a heavy's health 152.0
+17:32:32 QA_CHECK PASS a Warlord is its captain and 10 to 14 escorts (plus extra players) total=11
+17:32:37 [hunts] OP WINTER BADGER cleared: 4 Ardent Energy and 15 coins queued for the reward chest
+17:32:37 QA_CHAT [Tactical] OP WINTER BADGER cleared! 4 Ardent Energy and 15 ammo coins are in the beacon's reward chest.
+17:32:37 QA_SOUND arsenal_beacon:music.mission_cleared at 20203 291 9
+17:32:37 QA_CHECK PASS the mission is cleared and paid
+17:32:37 QA_CHECK PASS chat tells everyone
+17:32:37 QA_CHECK PASS the mission-cleared jingle plays
+17:32:40 QA_CHECK PASS the cannon is placed and ours
+17:32:42 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@368d76d7
+17:32:44 QA_CHECK PASS the long card can scroll max=101
+17:32:44 QA_CHECK PASS scrolling moves the card scroll=22
+17:32:47 QA_NOTE starshell flare at BlockPos{x=19996, y=291, z=17}
+17:32:47 QA_CHECK PASS the flare calls a Starshell STARSHELL
+17:32:53 QA_SOUND arsenal_beacon:ordnance.incoming at 19996 306 17
+17:32:58 QA_SOUND arsenal_beacon:fire.starshell at 19996 305 17
+17:32:59 QA_CHECK PASS the incoming sound played while the player looked away [flare.chatter_1, cannon.turning, cannon.turning_done, cannon.fire, ordnance.incoming, fire.starshell]
+17:32:59 QA_CHECK PASS the Starshell gives Haste II [effect.minecraft.haste 2]
+17:32:59 QA_CHECK PASS the Starshell gives no Regeneration [effect.minecraft.haste 2]
+17:33:14 QA_CHAT [Create Arsenal] No open ground far out for the enemies, so they are coming out of red gates closer in, outside the zone.
+17:33:14 QA_CHECK PASS a reinforcement with no natural ground came out of a gate [entity.minecraft.zombie at 19968, 291, 23 dist 43 speed=true gate=true]
+17:33:14 QA_CHECK PASS raid enemies get the speed burst
+17:33:35 QA_CHECK PASS the gate line is said once in the wave times=1
+17:33:35 QA_CHECK PASS the old repeating line is gone
+17:33:36 [hunts] Garrison structure lookup took 18 ms (1 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 0 0: none (19 ms)
+17:33:36 [hunts] Garrison structure lookup took 18 ms (1 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 3000 0: none (18 ms)
+17:33:36 [hunts] Garrison structure lookup took 52 ms (4 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around -3000 0: none (52 ms)
+17:33:36 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 0 3000: none (1 ms)
+17:33:36 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 0 -3000: none (1 ms)
+17:33:36 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 6000 6000: none (1 ms)
+17:33:36 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around -6000 6000: none (1 ms)
+17:33:36 [hunts] Garrison structure lookup took 16 ms (1 checks, none, Patrol instead)
+17:33:36 QA_NOTE garrison around 6000 -6000: none (16 ms)
+17:33:37 [hunts] Garrison structure lookup took 21 ms (2 checks, none, Patrol instead)
+17:33:37 QA_NOTE garrison around -6000 -6000: none (21 ms)
+17:33:37 [hunts] Garrison structure lookup took 13 ms (1 checks, none, Patrol instead)
+17:33:37 QA_NOTE garrison around 9000 0: none (13 ms)
+17:33:37 QA_CHECK FAIL Garrison lookups over land find structures found=0 of 10
+17:33:37 QA_CHECK PASS a Garrison lookup loads no chunk chunks loaded by the lookups=0
+17:33:37 QA_CHECK FAIL a Garrison lookup stays under 50 ms slowest=52 ms
+17:33:37 QA_DONE pass=32 fail=2

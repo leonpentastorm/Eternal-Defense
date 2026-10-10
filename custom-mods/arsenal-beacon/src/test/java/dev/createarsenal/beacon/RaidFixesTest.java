@@ -24,10 +24,24 @@ final class RaidFixesTest {
         String base="src/main/java/dev/createarsenal/beacon/";
         for(String file:List.of("ArsenalBeacon.java","HardRaids.java","SpecialForcesRaids.java"))
             assertTrue(java.nio.file.Files.readString(java.nio.file.Path.of(base+file)).contains("RaidSpawns.rush(mob)"),file+" gives its raiders the speed burst");
-        assertTrue(java.nio.file.Files.readString(java.nio.file.Path.of(base+"ArsenalBeacon.java")).contains("RaiderGates.spawnGate(l,spawnPos)"),"a gate spawn opens a gate");
-        assertTrue(java.nio.file.Files.readString(java.nio.file.Path.of(base+"HuntWarband.java")).contains("RaiderGates.spawnGate(l,spot)"),"a hunt warband comes out of gates");
+        assertTrue(java.nio.file.Files.readString(java.nio.file.Path.of(base+"ArsenalBeacon.java")).contains("RaiderGates.spawnGate(l,spawnPos,"),"a gate spawn opens a gate");
+        assertTrue(java.nio.file.Files.readString(java.nio.file.Path.of(base+"HuntWarband.java")).contains("RaiderGates.spawnGate(l,spot,"),"a hunt warband comes out of gates");
         assertFalse(java.nio.file.Files.readString(java.nio.file.Path.of(base+"RaidSpawns.java")).contains("Reinforcements are waiting"),"the old repeating line is gone");
     }
+    @Test void aSpawnGateStandsBehindItsEnemyIsBiggerAndStaysLongEnoughToSee(){
+        var spot=new net.minecraft.world.phys.Vec3(10.5,64,0.5);
+        var g=RaiderGates.behind(spot,new net.minecraft.world.phys.Vec3(0.5,70,0.5),RaiderGates.SPAWN_GATE_BEHIND);
+        assertEquals(10.5+RaiderGates.SPAWN_GATE_BEHIND,g.x,1e-9,"further from the base than its enemy");assertEquals(0.5,g.z,1e-9);assertEquals(64,g.y,1e-9,"level, on the ground");
+        var eye=new net.minecraft.world.phys.Vec3(13.5,64,4.5);
+        assertEquals(spot.distanceTo(eye)+2,RaiderGates.behind(spot,eye,2).distanceTo(eye),1e-9,"straight away from the one looking");
+        assertSame(spot,RaiderGates.behind(spot,null,2),"nobody to be seen from: on the spot");assertSame(spot,RaiderGates.behind(spot,new net.minecraft.world.phys.Vec3(10.5,90,0.5),2));
+        assertTrue(RaiderGates.SPAWN_GATE_BEHIND>0.6,"an enemy is 0.6 blocks wide: the gate shows beside it");
+        assertTrue(RaiderGates.SPAWN_GATE_LINGER_TICKS>=100,"open 5 seconds after the last one");
+        assertTrue(SupportClientScale.SPAWN>1.5f,"drawn bigger than a 1 x 2 channel gate");
+    }
+    /** The renderer's scale, read without loading the client class. */
+    static final class SupportClientScale{static final float SPAWN;static{try{var src=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/createarsenal/beacon/SupportClient.java"));
+        var m=java.util.regex.Pattern.compile("SPAWN_SCALE=([0-9.]+)f").matcher(src);SPAWN=m.find()?Float.parseFloat(m.group(1)):0;}catch(java.io.IOException e){throw new RuntimeException(e);}}}
     @Test void theCryoShellReachesThreeBlocksFurtherEveryWayButNotHigher(){
         assertEquals(4.8+3,CannonUpgrades.radius(CannonUpgrades.FireType.CRYO,0),1e-9);
         assertEquals(4.8,CannonUpgrades.radius(CannonUpgrades.FireType.NAPALM,0),1e-9,"napalm is unchanged");

@@ -14,13 +14,13 @@ On `dev`. **Network protocol 29** (was 28): four new server-to-client packets (`
 
 **The owner's raid and fire support list:**
 * **No more repeating "Reinforcements are waiting..." line.** When there is no natural ground far out for 10 s, enemies come out of **red gates** closer in (never inside the zone or within 12 blocks of its edge, never within 12 blocks of a player, outdoors, on ground nobody built); chat says so once a wave.
-* **Every enemy the mod places anywhere but a natural spawn comes out of a red gate** (gate spawns, hunt warbands; stuck raiders already used gates). `/arsenal test-gate` shows one any time.
+* **Every enemy the mod places anywhere but a natural spawn comes out of a red gate** (gate spawns, hunt warbands; stuck raiders already used gates). The gate stands just behind the enemy (seen from the base, or from the nearest player for a warband), 1.6 times the size of a stuck raider's gate, and stays open 5 seconds after the last one: on the spot, the enemy hid most of it (found in this round's screenshots). `/arsenal test-gate` shows one any time.
 * **Speed burst:** every raid enemy starts with Speed II for 10 seconds.
 * **The incoming sound is back** (your 0.0.18 scream, 5.15 s to the impact): it plays where the round lands, so it is heard whichever way you look. The 0.0.19 whistle is removed.
 * **Cannon menu:** the card now explains each fire support in three parts, Effect, Damage and Area, with the numbers of your own cannon, and scrolls. Texts checked against the code (the Healing Barrage does not hurt mobs; napalm fire is real and burns players).
 * **Cryo Shell:** 3 blocks further every way (7.8 instead of 4.8), not higher.
 * **Starshell:** the code gives players Haste II, and only the Healing Barrage and the parcel's Healing aura give Regeneration; the real-client run checked the effects a player gets in a Starshell (see the testing doc).
-* Unit tests: 200 (new `TacticalOperationsTest`, `RaidFixesTest`; `RadioAndWhistleTest` and `HandTunedRoundTest` follow the incoming sound back).
+* Unit tests: 202 (new `TacticalOperationsTest`, `RaidFixesTest`; `RadioAndWhistleTest` and `HandTunedRoundTest` follow the incoming sound back).
 
 ## 0.0.19 — Your songs only, no repeats, the whistle back, the radio answers (2026-10-10)
 

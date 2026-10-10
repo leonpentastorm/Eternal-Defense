@@ -270,11 +270,17 @@ public final class SupportClient {
         @Override public ResourceLocation getTextureLocation(Ordnance o){return TextureAtlas.LOCATION_BLOCKS;}
     }
 
-    /** The gate a stuck raider channels beside: the Return portal sprite in red, at about half the speed. Nothing else is drawn. */
+    /**
+     * The gate a stuck raider channels beside, and the spawn gate enemies come out of: the Return portal sprite in red, at about half the speed;
+     * a spawn gate is drawn {@link #SPAWN_SCALE} times as big, so it shows around the enemy stepping out of it. Nothing else is drawn.
+     */
     static final class GateRenderer extends EntityRenderer<RaiderGate> {
+        static final float SPAWN_SCALE=1.6f;
         GateRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
         @Override public void render(RaiderGate e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
+            pose.pushPose();if(e.big())pose.scale(SPAWN_SCALE,SPAWN_SCALE,SPAWN_SCALE);
             drawPortal(pose,buffer,entityRenderDispatcher,e.tickCount+partial,7f,255,45,45,235);
+            pose.popPose();
         }
         @Override public ResourceLocation getTextureLocation(RaiderGate e){return FlareRenderer.PORTAL;}
     }
