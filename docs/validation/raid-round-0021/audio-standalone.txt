@@ -1,0 +1,18 @@
+# beacon_attacked.ogg (0.6 s) in the standalone client's recorded output (302.800000 s), last 20 s: tools/audio/find_sfx.py
+# capture 20.0 s from 282.8 s; threshold 0.45; first 1.5 s of each sound matched
+  282.96 s  alarm                  r=0.84  pitch 1.000
+  284.06 s  alarm                  r=0.85  pitch 1.000
+  285.40 s  alarm                  r=0.86  pitch 1.000
+  286.48 s  alarm                  r=0.85  pitch 1.000
+  287.56 s  alarm                  r=0.86  pitch 1.000
+  288.70 s  alarm                  r=0.84  pitch 1.000
+  289.78 s  alarm                  r=0.83  pitch 1.000
+  290.86 s  alarm                  r=0.83  pitch 1.000
+  291.98 s  alarm                  r=0.87  pitch 1.000
+  293.06 s  alarm                  r=0.80  pitch 1.000
+  294.18 s  alarm                  r=0.83  pitch 1.000
+  295.28 s  alarm                  r=0.86  pitch 1.000
+  296.38 s  alarm                  r=0.82  pitch 1.000
+  297.48 s  alarm                  r=0.82  pitch 1.000
+  298.58 s  alarm                  r=0.83  pitch 1.000
+  299.78 s  alarm                  r=0.56  pitch 1.000

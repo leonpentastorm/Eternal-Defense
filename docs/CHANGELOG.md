@@ -1,5 +1,31 @@
 # Change log
 
+## 0.0.21 — Armed skeletons, night raids, one-block arrival, the shop gets iron (2026-10-11)
+
+On `dev`. **Network protocol 30** (was 29): `MissionSync` (17) now carries the mission id, so the client knows which map in hand belongs to the running mission. Rules: GDD 0.0.21 (Part B, Part C, Part I, sections 5.2, 5.4, 5.5, 5.9, 7); tests: `docs/RAID-ROUND-0021-TESTING.md`.
+
+**Raids:**
+* **Raid skeletons get their bow, pillagers their crossbow.** Raid mobs were made without the game's spawn equipment, so skeletons had no bow: they got the ranged attack goal, could not use it, walked like zombies, stopped short and were sent through gate after gate as "stuck". `RaidBalance.arm` gives the weapon before the mob joins the world; a skeleton or pillager without its weapon now gets the melee beacon attack instead of a ranged one it cannot use.
+* **Raids only at night** (day time 13000 to 21000), every raid but the introduction. A due raid waits for the night. **Start raid** by day books the raid for nightfall: the button reads "Raid at nightfall" and greys out; the raid starts at dusk if someone is near the beacon.
+* **Raid interval** 10 active days at reward tier 0, one day sooner per tier, down to 3 days from tier 7 (was 7 down to 2).
+* **During a raid cover no longer hides the beacon:** every hostile mob within 48 blocks of the zone's edge comes for it, so a raid also draws the night's ordinary monsters. Between raids the rule stays: within 24 blocks and in sight.
+* **Alarm:** the clip is cut to its first double beep (0.6 s) and starts again after a 0.5 s pause while the red warning shows ("beep beep - pause - beep beep").
+
+**Tactical Operations:**
+* The mission line on the status card shows only while a player holds the mission map or the Recovery Shovel (either hand).
+* The mission map **burns** when the mission is cleared or found unreachable (and any stale map at login or within 5 s).
+* Command Table: the selected X is red; the classes are blue (Patrol), purple (Garrison) and gold (Warlord), like item rarities.
+* Objectives never lie on an ocean or a river (the generator's biome at the spot and 12 blocks around, read without loading a chunk). Old offers on water are replaced, one a minute.
+* **Arrival on one block:** the warband needs only one block to stand on within 16 blocks of the X. A small glowing zone (6 blocks) forms around it; enemies come out of red gates 8 to 12 blocks out, one a tick, and rush to its middle. This replaces the 240-try spot search that ran when players arrived (the likely cause of the lag on arrival).
+* **No ground at all:** every player there gets a return gate home (5 minutes, owner only, no support cannon needed); the offer is replaced at once.
+* Warband enemies carry the red exclamation mark, like raid enemies.
+
+**Side quests:**
+* **Starshell:** Haste II now lasts 30 s from each pulse (it lasted 3 s and was renewed every 2 s, so the icon blinked as if ending and the effect was gone 3 s after leaving the light). Nothing in this repository removes it; another mod in a full pack could.
+* **Exchange:** the pack edition also sells the standalone edition's rare materials (gold x8 for 2, blaze rod 3, ender pearl 3, diamond 6) and 16 iron ingots for 1; both editions sell **16 iron blocks for 8** Ardent Energy (144 ingots, one energy cheaper than nine lots of 16 ingots). A shop file that is still exactly the 0.0.20 default of its edition is replaced by the new default; an edited file is kept.
+* Unit tests: 219 (new `RaidRoundTest`). Hunt GameTests 13/13 (four new: one block is enough, no ground opens a return gate and burns the map, armed raiders walk at the beacon, raid cover). Real client of each edition on a normal world: 68/68 (`docs/RAID-ROUND-0021-TESTING.md`).
+
+
 ## 0.0.20 — Tactical Operations; gate spawns, the incoming sound back, the cannon menu card (2026-10-10)
 
 On `dev`. **Network protocol 29** (was 28): four new server-to-client packets (`MissionSync` 17, `ScanImage` 18, `ScanProgress` 19, `TableState` 20); no new client-to-server packet. Rules: GDD 0.0.20 (Part I, sections 5.2, 5.5, 5.9, 7); tests: `docs/TACTICAL-OPERATIONS-TESTING.md`.
