@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.27 — Forward Operating Bases, slice 4 of 4: the Tactical Enchanting Table (2026-10-11)
+
+On `dev`. **Network protocol 34** (a new menu; the table-state packet also refreshes the enchanting screen). Rules: GDD 0.0.27 (Part J, section 5.10); tests: `docs/FOB-SLICE-4-TESTING.md`.
+
+* **Tactical Enchanting Table** (new block, the owner's enchanting bench model and texture, unchanged; 2 wide, 2 tall, 1 deep like the weapon benches): one per base in the zone, bought at Workshop Fabrication (12 iron, 4 obsidian, 3 books, and 2 resonance coils in the pack or 8 Ardent Energy standalone). Put a weapon, tool or armor in its slot and buy any vanilla enchant that fits, level by level, for Ardent Energy: no experience, lapis, books or anvil. Curses are never sold.
+* **The level gate:** level L of an enchant with M levels needs ceil(5 (L - 1) / (M - 1)) ACTIVE FOBs. Level I is always open, the top level needs all five, and a DOWN FOB does not count.
+* **Prices:** the enchant's rarity times the level (2, 3, 5, 8 Ardent Energy per level standalone; the pack pays half, rounded up), twice that for treasure enchants. Mk I, II, III table upgrades (8, 16, 32 resonance coils, or 6, 12, 24 Ardent Energy) give 10, 20, 30 percent off for everyone.
+* **Warlord Seal** (new item, our own icon): a cleared Warlord hunt adds one to its pay. Spent at the table, it unlocks a treasure enchant for the whole team (Mending, Frost Walker, Soul Speed, Swift Sneak; the last two take one more seal for each of levels II and III).
+* Field Guide: the table's card on the FOB page and the seal's card on the Tactical Operations page, with both editions' prices. Vanilla enchanting, librarians and anvils are unchanged.
+* Unit tests: 271 (7 new in `EnchantTest`). New GameTests `fob_18` to `fob_20` (the table's placement and the shovel, the level gate, prices, conflicts, treasure and the Mk discount, a Warlord's seal).
+
 ## 0.0.26 — The owner's fixes: the Return Flare needs the cannon, ammo parts really apply (2026-10-11)
 
 On `dev`. **No packet changed: the network protocol stays 33.** Rules: GDD 0.0.26 (sections 5.4 and 5.5); tests: `docs/ROUND-0026-TESTING.md`.

@@ -22,6 +22,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
@@ -673,6 +675,117 @@ public final class FobGameTests {
                 l.setBlock(gun,Blocks.AIR.defaultBlockState(),3);l.setBlock(pad,Blocks.AIR.defaultBlockState(),3);
                 base.platform=null;base.cannon=oldCannon;sd.setDirty();
             }
+        }).thenSucceed();
+    }
+    // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
+    /** Where the enchanting table goes in the hunt tests' base zone (facing north: its second column east of it). */
+    static final BlockPos ENCHANT=HuntGameTests.BEACON.offset(-4,0,4);
+    static void clearEnchanting(ServerLevel l){
+        for(int dx=-1;dx<=2;dx++)for(int dy=0;dy<=1;dy++)for(int dz=-1;dz<=1;dz++){var at=ENCHANT.offset(dx,dy,dz);var s=l.getBlockState(at);
+            if(s.is(ArsenalBeacon.ENCHANTING_TABLE.get())||s.is(ArsenalBeacon.STRUCTURE_PART.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);}
+        var d=TacticalEnchanting.EnchantData.get(l);d.table=null;d.mk=0;d.seals.clear();d.setDirty();
+    }
+    /** {@code n} ACTIVE FOB records (no blocks: only their count matters to the table). */
+    static void activeFobs(ServerLevel l,int n){
+        var d=FobData.get(l);d.fobs.clear();d.sosFob=0;
+        for(int i=0;i<n;i++){var f=d.add(VILLAGE.offset(400+i*100,0,0),i,0);f.state=FobRules.State.ACTIVE;f.activated=true;}
+        d.setDirty();
+    }
+    static Enchantment enchantment(String id){return net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.get(new net.minecraft.resources.ResourceLocation(id));}
+    static int buy(ServerPlayer p,TacticalEnchanting.EnchantMenu menu,String id,int level){
+        int index=TacticalEnchanting.catalogue().indexOf(enchantment(id));TacticalEnchanting.button(p,menu,TacticalEnchanting.buyButton(index,level));return index;
+    }
+    /** The table stands only in the zone, one per base, as an anchor and three parts; the shovel takes it back. */
+    @GameTest(template="empty3x3x3",batch="fob_18",timeoutTicks=300)
+    public static void theEnchantingTableIsOnePerBaseInTheZone(GameTestHelper h){
+        var hf=HuntGameTests.fixture(h);var l=hf.l();var p=HuntGameTests.player(h);
+        h.startSequence().thenExecute(()->{
+            clearEnchanting(l);HuntGameTests.goTo(p,l,ENCHANT.south(3));
+            var item=new ItemStack(ArsenalBeacon.ENCHANTING_TABLE_ITEM.get());
+            var hit=new BlockHitResult(Vec3.atCenterOf(ENCHANT.below()),Direction.UP,ENCHANT.below(),false);
+            h.assertTrue(((BlockItem)item.getItem()).place(new BlockPlaceContext(l,p,InteractionHand.MAIN_HAND,item.copy(),hit)).consumesAction(),"placed in the zone");
+            var state=l.getBlockState(ENCHANT);h.assertTrue(state.is(ArsenalBeacon.ENCHANTING_TABLE.get()),"the table stands");
+            for(var cell:ArsenalStructures.cells(ENCHANT,state))h.assertTrue(l.getBlockState(cell).is(ArsenalBeacon.STRUCTURE_PART.get()),"its part at "+cell);
+            h.assertTrue(ArsenalStructures.cells(ENCHANT,state).size()==3,"2 wide, 2 tall, 1 deep: the anchor and three parts");
+            h.assertTrue(ENCHANT.equals(TacticalEnchanting.EnchantData.get(l).table),"the base knows its table");
+            var second=ENCHANT.offset(-4,0,0);var hit2=new BlockHitResult(Vec3.atCenterOf(second.below()),Direction.UP,second.below(),false);
+            h.assertTrue(((BlockItem)item.getItem()).place(new BlockPlaceContext(l,p,InteractionHand.MAIN_HAND,item.copy(),hit2))==InteractionResult.FAIL,"a second table refused");
+            var far=HuntGameTests.BEACON.offset(80,0,0);var hit3=new BlockHitResult(Vec3.atCenterOf(far.below()),Direction.UP,far.below(),false);
+            clearEnchanting(l);
+            h.assertTrue(((BlockItem)item.getItem()).place(new BlockPlaceContext(l,p,InteractionHand.MAIN_HAND,item.copy(),hit3))==InteractionResult.FAIL,"outside the zone refused");
+            h.assertTrue(((BlockItem)item.getItem()).place(new BlockPlaceContext(l,p,InteractionHand.MAIN_HAND,item.copy(),hit)).consumesAction(),"placed again");
+            int before=count(p,ArsenalBeacon.ENCHANTING_TABLE_ITEM.get());
+            h.assertTrue(BaseZone.relocate(p,l,ENCHANT.above()),"the shovel on its upper part");
+            h.assertTrue(l.getBlockState(ENCHANT).isAir()&&count(p,ArsenalBeacon.ENCHANTING_TABLE_ITEM.get())==before+1,"takes it back as an item");
+            h.assertTrue(TacticalEnchanting.EnchantData.get(l).table==null,"and the base forgets it");
+            clearEnchanting(l);
+        }).thenSucceed();
+    }
+    /** Enchants for Ardent Energy, levels gated by ACTIVE FOBs, conflicts refused, curses never offered, the discount, the treasure seals. */
+    @GameTest(template="empty3x3x3",batch="fob_19",timeoutTicks=300)
+    public static void enchantsFollowTheFobLevelGate(GameTestHelper h){
+        var hf=HuntGameTests.fixture(h);var l=hf.l();var p=HuntGameTests.player(h);var mode=p.gameMode.getGameModeForPlayer();
+        h.startSequence().thenExecute(()->{
+            clearEnchanting(l);activeFobs(l,0);HuntGameTests.goTo(p,l,ENCHANT.south(2));
+            l.setBlock(ENCHANT,ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState(),3);
+            p.setGameMode(GameType.SURVIVAL);
+            try{
+                p.getInventory().clearContent();p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),64));
+                TacticalEnchanting.open(p,ENCHANT);h.assertTrue(p.containerMenu instanceof TacticalEnchanting.EnchantMenu,"the screen opens");
+                var menu=(TacticalEnchanting.EnchantMenu)p.containerMenu;
+                for(var e:TacticalEnchanting.catalogue())h.assertTrue(!e.isCurse(),"never a curse: "+TacticalEnchanting.id(e));
+                h.assertTrue(TacticalEnchanting.catalogue().contains(enchantment("minecraft:mending")),"the four treasure enchants are listed (locked until a seal)");
+                h.assertTrue(!TacticalEnchanting.catalogue().contains(enchantment("minecraft:binding_curse")),"curses are not");
+                h.assertTrue(!TacticalEnchanting.enchantable(new ItemStack(Items.BOOK)),"no books");
+                var sword=new ItemStack(Items.DIAMOND_SWORD);menu.gear.setItem(0,sword);
+                int before=ardent(p);var sharp=enchantment("minecraft:sharpness");
+                buy(p,menu,"minecraft:sharpness",1);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(sharp,menu.gear.getItem(0))==1,"Sharpness I with no FOB");
+                h.assertTrue(ardent(p)==before-TacticalEnchanting.price(sharp,1,0),"paid its price: "+(before-ardent(p)));
+                before=ardent(p);buy(p,menu,"minecraft:sharpness",2);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(sharp,menu.gear.getItem(0))==1&&ardent(p)==before,"Sharpness II needs "+EnchantRules.fobsFor(2,5)+" ACTIVE FOBs: refused, nothing taken");
+                activeFobs(l,2);buy(p,menu,"minecraft:sharpness",2);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(sharp,menu.gear.getItem(0))==2,"with 2 ACTIVE FOBs: Sharpness II");
+                buy(p,menu,"minecraft:sharpness",5);h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(sharp,menu.gear.getItem(0))==2,"Sharpness V needs all five");
+                activeFobs(l,5);buy(p,menu,"minecraft:sharpness",5);h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(sharp,menu.gear.getItem(0))==5,"with five: Sharpness V");
+                before=ardent(p);buy(p,menu,"minecraft:smite",1);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:smite"),menu.gear.getItem(0))==0&&ardent(p)==before,"Smite conflicts with Sharpness: refused");
+                buy(p,menu,"minecraft:protection",1);h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:protection"),menu.gear.getItem(0))==0,"Protection does not fit a sword");
+                // the treasure: Mending needs a seal
+                before=ardent(p);buy(p,menu,"minecraft:mending",1);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:mending"),menu.gear.getItem(0))==0&&ardent(p)==before,"Mending is locked without a seal");
+                TacticalEnchanting.button(p,menu,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending"));
+                h.assertTrue(TacticalEnchanting.EnchantData.get(l).seals("minecraft:mending")==0,"no seal carried: nothing unlocked");
+                p.getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()));
+                TacticalEnchanting.button(p,menu,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending"));
+                h.assertTrue(TacticalEnchanting.EnchantData.get(l).seals("minecraft:mending")==1&&count(p,ArsenalBeacon.WARLORD_SEAL.get())==0,"a seal unlocks Mending for the team and is used up");
+                before=ardent(p);buy(p,menu,"minecraft:mending",1);
+                h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:mending"),menu.gear.getItem(0))==1,"then it is bought like any other");
+                h.assertTrue(ardent(p)==before-TacticalEnchanting.price(enchantment("minecraft:mending"),1,0),"at its treasure price");
+                // the table's Mk: a discount for everyone
+                var price=Economy.enchantingUpgrade(1);
+                if(price.ardent())p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),price.amount()));else p.getInventory().add(new ItemStack(price.item(),price.amount()));
+                TacticalEnchanting.button(p,menu,TacticalEnchanting.UPGRADE);
+                h.assertTrue(TacticalEnchanting.EnchantData.get(l).mk==1,"upgraded to Mk I");
+                h.assertTrue(TacticalEnchanting.price(sharp,5,1)<TacticalEnchanting.price(sharp,5,0),"cheaper after it");
+                // taking the gear out: the menu gives it back when it closes
+                p.closeContainer();
+                h.assertTrue(p.getInventory().items.stream().anyMatch(s->s.is(Items.DIAMOND_SWORD)&&EnchantmentHelper.getItemEnchantmentLevel(sharp,s)==5),"the sword comes back enchanted when the screen closes");
+            }finally{p.setGameMode(mode);activeFobs(l,0);clearEnchanting(l);}
+        }).thenSucceed();
+    }
+    /** A cleared Warlord pays a Warlord Seal into the reward chest; a Patrol does not. */
+    @GameTest(template="empty3x3x3",batch="fob_20",timeoutTicks=200)
+    public static void aWarlordPaysASeal(GameTestHelper h){
+        var hf=HuntGameTests.fixture(h);var l=hf.l();var d=hf.d();var hd=hf.h();
+        h.startSequence().thenExecute(()->{
+            int seals=HuntGameTests.rewards(d,ArsenalBeacon.WARLORD_SEAL.get());
+            var o=HuntGameTests.offer(hf,TacticalRules.Kind.PATROL);h.assertTrue(hd.board.accept(o.id,null)==null,"a Patrol accepted");
+            var m=hd.board.mission;m.state=HuntBoard.State.ENGAGED;m.remaining=0;Hunts.complete(l,d,hd);
+            h.assertTrue(HuntGameTests.rewards(d,ArsenalBeacon.WARLORD_SEAL.get())==seals,"a Patrol pays no seal");
+            var w=HuntGameTests.offer(hf,TacticalRules.Kind.WARLORD);h.assertTrue(hd.board.accept(w.id,null)==null,"a Warlord accepted");
+            m=hd.board.mission;m.state=HuntBoard.State.ENGAGED;m.remaining=0;Hunts.complete(l,d,hd);
+            h.assertTrue(HuntGameTests.rewards(d,ArsenalBeacon.WARLORD_SEAL.get())==seals+1,"a cleared Warlord pays one Warlord Seal into the reward chest");
         }).thenSucceed();
     }
     static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){

@@ -1,8 +1,17 @@
 # Handoff: where the project stands
 
-Last updated for **0.0.26 (the owner's fixes: the Return Flare needs the Support Cannon again; the Universal Ammo Platform sets the 0.0.22 ammo parts itself, weak special rounds keep the old price)**, on **`dev`**. Network protocol **33-pack / 33-standalone** (unchanged). The earlier states are described below.
+Last updated for **0.0.27 (Forward Operating Bases, slice 4 of 4: the Tactical Enchanting Table and the Warlord Seal; all four FOB slices are built)**, on **`dev`**. Network protocol **34-pack / 34-standalone**. The earlier states are described below.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Forward Operating Bases, slice 4 (0.0.27)
+
+* **What it is.** The last slice of the owner's FOB brief: the Tactical Enchanting Table at home, whose higher enchant levels need ACTIVE FOBs, and the Warlord Seal that unlocks treasure enchants. Rules: GDD 0.0.27 (Part J, section 5.10).
+* **Art.** The owner's `enchanting_platform` model and texture from `docs/art/Create-Arsenal-FOB-Mixer-Enchanting/` are copied unchanged. We wrote the blockstate (turned by facing), the item model (the owner's suggested `parent`) and the seal's 16 x 16 icon (`tools/fob/make_seal_icon.py`, our own drawing).
+* **Code map.** `EnchantRules` (pure: the level gate `fobsFor`, `maxLevel`, the price by rarity, level and treasure, both editions, the Mk discount, the treasure list and the seals, `problem`), `TacticalEnchanting` (the team's record `EnchantData`, SavedData `arsenal_beacon_enchanting_v1`; the block, its item, the seal item, the menu with one gear slot; the catalogue; buy, upgrade, unlock), `EnchantClient` (the screen). Hooked into `ArsenalBeacon` (registrations), `ArsenalStructures` (the 2 x 2 x 1 footprint), `BaseZone` (zone placement and the shovel), `Economy` (prices), `WorkshopFabrication`, `CreativeCatalog`, `Hunts.complete` (a Warlord's seal) and `TacticalClient` (refresh, key `enchant`). Protocol 34.
+* **Decisions and interpretations to confirm with the owner.** (1) The price of a level is its full price, whatever is on the gear already (buying V over III pays for V). (2) The pack pays half the standalone Ardent Energy, rounded up, as elsewhere, where Ardent Energy is scarcer. (3) Only vanilla (`minecraft`) enchants are sold; modded ones are left to their own tables. (4) The table's record (Mk and seals) belongs to the base and survives moving the table with the shovel. (5) A broken table drops itself; the Mk and seals stay in the record.
+* **Validation.** 271 unit tests pass (7 new in `EnchantTest`). The real-client QA of both editions (`fob_01` to `fob_20`, `QaFob` with slice 4) was running at the first commit of 0.0.27; see `docs/FOB-SLICE-4-TESTING.md`.
+* **Not tested / next.** Balance in play (the prices against a real campaign's income); a dedicated server; two players at one table (each has their own gear slot, the server checks every purchase); a modded enchant on gear. **Next:** the bundle with all four slices and the playtest scripts.
 
 ## The owner's fixes (0.0.26)
 

@@ -378,6 +378,7 @@ final class Hunts {
         var stacks=new ArrayList<ItemStack>();
         if(pay.ardent()>0)stacks.add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),pay.ardent()));
         if(pay.coins()>0)stacks.add(new ItemStack(ArsenalBeacon.AMMO_COIN.get(),pay.coins()));
+        if(m.offer.kind==TacticalRules.Kind.WARLORD)stacks.add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()));   // 0.0.27: it unlocks a treasure enchant
         if(d.installed())RaidRewards.queue(d,stacks);
         HuntWarband.discard(l,m.offer.id);   // a mob spawned again after being lost, still around: the mission is over
         h.missionMap=null;h.board.settle();h.setDirty();sync(l,h,null);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -23,16 +23,17 @@ for edition in ('pack','standalone'):
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
 # 0.0.26: the pack's ammo recipe script (the cases and propellant per batch); copy it over the pack's own
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file() and (folder in ('fob-slice-3','fob-slice-2','fob-slice-1') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (folder in ('fob-slice-4','fob-slice-3','fob-slice-2','fob-slice-1') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 33 (32 in 0.0.24, 31 in 0.0.23, 30 in 0.0.21 and 0.0.22): the FOB
-screens, the supply gate screen and the status card ride on existing packets that now carry more, so an older client cannot join
-this server or the other way round. Install this build on the client AND the server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 34 (33 in 0.0.25 and 0.0.26, 32 in 0.0.24, 31 in 0.0.23): the
+Tactical Enchanting Table has a new menu, and the FOB screens, the supply gate screen and the status card ride on existing
+packets that now carry more, so an older client cannot join this server or the other way round. Install this build on the
+client AND the server.
 
 Start a FRESH world. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
@@ -43,7 +44,22 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.26: YOUR TWO FIXES
+WHAT IS NEW IN 0.0.27: FORWARD OPERATING BASES, SLICE 4 OF 4, THE TACTICAL ENCHANTING TABLE
+* Your enchanting bench model: the Tactical Enchanting Table, bought at Workshop Fabrication (12 iron, 4 obsidian, 3 books, plus
+  2 resonance coils in the pack edition or 8 Ardent Energy in the standalone one). One per base, in your zone; the Recovery
+  Shovel moves it.
+* Put a weapon, tool or armor in its slot: every vanilla enchant that fits is listed, a button per level with its price in
+  Ardent Energy. No experience, no lapis, no books. Curses are never sold. Vanilla tables, librarians and anvils still work.
+* Level I is always open. Higher levels need ACTIVE FOBs: Sharpness II needs 2, III 3, IV 4, V all five. A DOWN FOB does not
+  count. A locked level's tooltip says why.
+* Price per level: 2 (common), 3 (uncommon), 5 (rare), 8 (very rare) Ardent Energy times the level in the standalone edition,
+  half that (rounded up) in the pack. Upgrade the table to Mk I, II, III (pack 8, 16, 32 resonance coils; standalone 6, 12, 24
+  Ardent Energy) for 10, 20, 30 percent off, for everyone.
+* Warlord Seal (new item): a cleared Warlord hunt pays one into the reward chest. Spend it at the table to unlock a treasure
+  enchant for the whole team: Mending, Frost Walker, Soul Speed or Swift Sneak (the last two take one more seal for each of
+  levels II and III).
+
+WHAT WAS NEW IN 0.0.26: YOUR TWO FIXES
 * The Return Flare needs your Support Cannon again, like every flare. Only the return gate an operation opens when there is no
   ground stays free.
 * Pack edition: the Universal Ammo Platform now charges the 0.0.22 ammo parts itself (2 x the propellant, 20 percent more cases):
@@ -135,6 +151,18 @@ PLAYTEST SCRIPT FOR SLICE 3 (an ACTIVE FOB with its gates; about 20 minutes)
    trades and the FOB is ACTIVE again.
 5. Try calling an SOS while one is open (refused), and take a FOB back with the shovel during an SOS (it is called off).
 6. Tell us: are 10 to 12 hours between calls and 7 days to answer right? Are the repair prices fair?
+
+PLAYTEST SCRIPT FOR SLICE 4 (at home, with some Ardent Energy; about 15 minutes)
+1. At Workshop Fabrication buy the Tactical Enchanting Table (FOBs page of the Field Guide: price and rules). Place it in your
+   zone; try a second one (refused) and one outside the zone (refused).
+2. Click it, put a sword in the slot. Read the list: level I buttons open, higher ones locked; hover a locked one.
+3. Buy Sharpness I. With 2 ACTIVE FOBs buy Sharpness II (as an operator, /arsenal fob complete near a planted FOB makes it ACTIVE).
+   Try Smite on the same sword (refused: it conflicts).
+4. Upgrade the table to Mk I: the prices drop by 10 percent.
+5. Clear a Warlord hunt (Satellite Beacon Mk III), take the Warlord Seal from the reward chest, and unlock Mending at the table.
+   Buy it. (As an operator: /give @s arsenal_beacon:warlord_seal.)
+6. Close the screen: the sword is back in your inventory. Move the table with the Recovery Shovel: the Mk and the unlocks stay.
+7. Tell us: are the prices fair against your Ardent Energy income? Is "more FOBs, higher levels" the right pull?
 
 WHAT WAS NEW IN 0.0.22
 * Your radio lines: a supply flare answers with one of your two supply lines, a return flare with one of your three recall lines

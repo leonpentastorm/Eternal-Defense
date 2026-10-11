@@ -74,6 +74,9 @@ final class Economy {
             // the supply rail (0.0.24): the same plain materials for both gates, plus a logistics module (pack) or Ardent Energy (standalone)
             case "supply_delivery_gate","supply_receiving_gate"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",GATE_IRON),WeaponPlatform.cost("minecraft:copper_ingot",GATE_COPPER),WeaponPlatform.cost("minecraft:redstone",GATE_REDSTONE),
                 standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",GATE_ARDENT):WeaponPlatform.cost("arsenal_beacon:logistics_module",GATE_LOGISTICS));
+            // the Tactical Enchanting Table (0.0.27): iron, obsidian and books, plus resonance coils (pack) or Ardent Energy (standalone)
+            case "tactical_enchanting_table"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",ENCHANT_IRON),WeaponPlatform.cost("minecraft:obsidian",ENCHANT_OBSIDIAN),WeaponPlatform.cost("minecraft:book",ENCHANT_BOOKS),
+                standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",ENCHANT_ARDENT):WeaponPlatform.cost("arsenal_beacon:resonance_coil",ENCHANT_COILS));
             case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
             case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "milk_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:copper_ingot",4));
@@ -124,6 +127,14 @@ final class Economy {
     static final int[] FOB_REPAIR_VILLAGER_STANDALONE={1,2,3,4,5},FOB_REPAIR_VILLAGER_PACK={1,1,2,2,3};
     static int fobRepairBase(){return standalone()?FOB_REPAIR_BASE_STANDALONE:FOB_REPAIR_BASE_PACK;}
     static int fobRepairVillager(int level){return SosRules.villagerCost(standalone()?FOB_REPAIR_VILLAGER_STANDALONE:FOB_REPAIR_VILLAGER_PACK,level);}
+    /** The Tactical Enchanting Table at the Workshop, and its Mk I to III (a permanent discount): resonance coils (pack) or Ardent Energy (standalone). */
+    static final int ENCHANT_IRON=12,ENCHANT_OBSIDIAN=4,ENCHANT_BOOKS=3,ENCHANT_COILS=2,ENCHANT_ARDENT=8;
+    static final int[] ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24};
+    /** The price of the table's Mk {@code mk} (1 to 3), or null past Mk III. */
+    static Price enchantingUpgrade(int mk){
+        if(mk<1||mk>EnchantRules.MAX_MK)return null;
+        return standalone()?new Price(null,ENCHANT_UPGRADE_ARDENT[mk-1]):new Price(ArsenalBeacon.COIL::get,ENCHANT_UPGRADE_COILS[mk-1]);
+    }
     /** The flares of the FOB shop cost what they cost at the Support Platform. */
     static int fobFlare(String id){return switch(id){case "supply"->SupportRules.SUPPLY_FLARE_PRICE;case "return"->SupportRules.RETURN_FLARE_PRICE;default->SupportRules.FIRE_FLARE_PRICE;};}
 

@@ -69,8 +69,8 @@ final class BaseZone {
                 String zone=problem(c.getLevel(),c.getClickedPos());
                 if(zone!=null){say(c.getPlayer(),"zone."+zone);return InteractionResult.FAIL;}
                 // the Command Table's footprint depends on which way it faces, so it is checked in the state it will be placed in
-                var state=getBlock() instanceof TacticalBlocks.TableBlock table?table.getStateForPlacement(c):getBlock().defaultBlockState();
-                if(state!=null&&(ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state)||ArsenalStructures.table(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
+                var state=getBlock() instanceof TacticalBlocks.TableBlock table?table.getStateForPlacement(c):getBlock() instanceof TacticalEnchanting.TableBlock bench?bench.getStateForPlacement(c):getBlock().defaultBlockState();
+                if(state!=null&&(ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state)||ArsenalStructures.table(state)||ArsenalStructures.enchanting(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
                 String extra=extra(c);
                 if(extra!=null){say(c.getPlayer(),extra);return InteractionResult.FAIL;}
             }
@@ -98,6 +98,7 @@ final class BaseZone {
             be.grid.clearQuietly();
         }
         else if(state.is(ArsenalBeacon.COMMAND_TABLE.get())){stack=new ItemStack(ArsenalBeacon.COMMAND_TABLE_ITEM.get());}
+        else if(state.is(ArsenalBeacon.ENCHANTING_TABLE.get())){stack=new ItemStack(ArsenalBeacon.ENCHANTING_TABLE_ITEM.get());}   // its Mk and unlocks live in the base's record
         else if(state.is(ArsenalBeacon.SATELLITE_BEACON.get())){stack=new ItemStack(ArsenalBeacon.SATELLITE_BEACON_ITEM.get());stack.getOrCreateTag().putInt("Mk",state.getValue(TacticalBlocks.MK));}   // for the tooltip only: the Mk itself is kept in HuntData
         else if(state.is(ArsenalBeacon.SUPPORT_CANNON.get())&&level.getBlockEntity(root) instanceof SupportCannon.CannonEntity be){
             owner=be.owner;

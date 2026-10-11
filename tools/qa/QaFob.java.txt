@@ -30,7 +30,7 @@ import java.util.*;
 
 /**
  * QA ONLY (never part of a release): boots a NORMAL world on the real client, runs the FOB GameTests (FobGameTests, on a sky platform), then
- * plays slices 1 to 3 of the Forward Operating Bases (0.0.23 to 0.0.25) in a real generated village: the FOB Beacon planted with a right-click (the client's
+ * plays slices 1 to 4 of the Forward Operating Bases (0.0.23 to 0.0.27) in a real generated village and at home: the FOB Beacon planted with a right-click (the client's
  * own click, sent to the server), the model, the raid bar, the FOB screen before and after the raid, a purchase, the status card, the FOB
  * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
@@ -67,6 +67,9 @@ public final class QaFob {
         for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals(label)){b.onPress();log("QA_NOTE pressed {}",label);return;}
         log("QA_NOTE no button {}",label);
     }
+    static net.minecraft.world.item.enchantment.Enchantment enchant(String id){return net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.get(new net.minecraft.resources.ResourceLocation(id));}
+    /** The level of an enchant on the gear in the open enchanting table's slot (server side). */
+    static int gearLevel(String id){return sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m?net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchant(id),m.gear.getItem(0)):-1;}
     static FobData.Fob fob(){return srvGet(()->{var d=FobData.get(sl());return d.fobs.isEmpty()?null:d.fobs.values().iterator().next();});}
     static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){String t=e.getMessage().getString();CHAT.add(t);log("QA_CHAT {}",t);}
@@ -308,6 +311,34 @@ public final class QaFob {
             check("everyone reads the repair",chatHas("repaired"),"");
             shot("f23_fob_screen_repaired");},"repaired");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
+        // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
+        step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+.5,0,10);},"home for the enchanting table");
+        step(40,()->{var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()-.5,at.getZ()+.5);hold(new ItemStack(ArsenalBeacon.ENCHANTING_TABLE_ITEM.get()));},"hold the table");
+        step(20,()->click(FobGameTests.ENCHANT.below(),Direction.UP),"place it with a right-click");
+        step(10,()->{var at=FobGameTests.ENCHANT;
+            check("the table stands in the zone, its parts with it",srvGet(()->sl().getBlockState(at).is(ArsenalBeacon.ENCHANTING_TABLE.get())&&ArsenalStructures.cells(at,sl().getBlockState(at)).stream().allMatch(c->sl().getBlockState(c).is(ArsenalBeacon.STRUCTURE_PART.get()))),"");
+            hold(ItemStack.EMPTY);mc().options.hideGui=true;look(at.south(4).west(1),at.getX(),at.getY()+1,at.getZ()+.5);},"placed");
+        step(50,()->shot("f24_enchanting_table"),"the owner's model");
+        step(5,()->{mc().options.hideGui=false;var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()+.8,at.getZ()+.5);},"face it");
+        step(10,()->click(FobGameTests.ENCHANT,Direction.SOUTH),"open it");
+        step(20,()->{check("the enchanting screen opens",mc().screen instanceof EnchantClient.EnchantScreen,String.valueOf(mc().screen));
+            srv(()->{if(sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m){m.gear.setItem(0,new ItemStack(Items.DIAMOND_SWORD));m.broadcastChanges();}});},"put a sword in");
+        step(30,()->shot("f25_enchanting_list"),"the list: level I open, higher levels locked by FOBs");
+        step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),1)),"buy Sharpness I (the menu button the screen sends)");
+        step(20,()->{check("Sharpness I applied",srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
+            mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),2));},"try Sharpness II");
+        step(20,()->{int fobs=srvGet(()->FobData.get(sl()).count(FobRules.State.ACTIVE));
+            check("Sharpness II stays locked with "+fobs+" ACTIVE FOB (it needs 2)",fobs<2&&srvGet(()->gearLevel("minecraft:sharpness"))==1,"");shot("f26_enchanting_locked");},"locked by the FOBs");
+        step(5,()->srv(()->sp().getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()))),"a Warlord Seal");
+        step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending")),"unlock Mending");
+        step(20,()->{check("Mending unlocked for the team",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).seals("minecraft:mending"))==1,"");check("everyone reads it",chatHas("spent a Warlord Seal"),"");
+            mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:mending")),1));},"buy Mending");
+        step(20,()->{check("Mending applied",srvGet(()->gearLevel("minecraft:mending"))==1,"");mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UPGRADE);},"upgrade the table");
+        step(20,()->{check("the table is Mk I",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).mk)==1,"");shot("f27_enchanting_mk1");},"Mk I");
+        step(5,()->{mc().player.closeContainer();},"close the screen");
+        step(10,()->check("the sword comes back enchanted",srvGet(()->sp().getInventory().items.stream().anyMatch(st->st.is(Items.DIAMOND_SWORD)&&net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchant("minecraft:mending"),st)==1)),""),"the gear back");
+        step(5,()->{var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");
+        step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"face the FOB Beacon");
         // ---- take it back with the shovel -----------------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
         step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use the shovel on the FOB Beacon");

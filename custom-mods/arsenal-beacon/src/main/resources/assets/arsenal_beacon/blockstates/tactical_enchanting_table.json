@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "arsenal_beacon:block/enchanting_platform",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "arsenal_beacon:block/enchanting_platform",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "arsenal_beacon:block/enchanting_platform",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "arsenal_beacon:block/enchanting_platform",
+      "y": 270
+    }
+  }
+}
