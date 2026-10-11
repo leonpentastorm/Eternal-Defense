@@ -8,7 +8,9 @@
 
 ## Results
 
-RESULTS29_TBD
+* **Unit tests:** 276 pass, 0 fail (`EnchantTest` with the new prices).
+* **FOB GameTests:** 21 pass, 0 fail, in both editions; `fob_19` buys Sharpness I, II and V and Mending and each purchase takes exactly its new price.
+* **Real client:** 71 pass, 0 fail, in both editions (`docs/validation/round-0029/checks-*.txt`), the same script as in 0.0.28.
 
 ## Not tested
 

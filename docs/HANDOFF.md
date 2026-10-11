@@ -7,7 +7,7 @@ Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbe
 ## Enchanting prices doubled (0.0.29)
 
 * **What it is.** The owner, after 0.0.28: "Double both pack and standalone cost." `EnchantRules.PER_LEVEL_STANDALONE` is 4, 6, 10, 16 (was 2, 3, 5, 8); the pack factor (x2) and the Mk discounts (17, 33, 50 percent) are unchanged. A Mk III table now charges the 0.0.27 standalone price in the standalone edition.
-* **Validation.** VALIDATION29_TBD
+* **Validation.** `docs/ROUND-0029-TESTING.md`: 276 unit tests; FOB GameTests 21/21 and the real client 71/71 in both editions (`fob_19` pays each new price exactly). Bundles `dist/Arsenal-Dev-0.0.29-{pack,standalone}-test.zip`, linked on GitHub.
 * **Not tested / next.** Balance in play, as before.
 
 ## The owner's list after the four FOB slices (0.0.28)
