@@ -367,7 +367,8 @@ public final class QaFob {
         step(10,()->{var at=FobGameTests.SHOP;look(at.south(3),at.getX()+.5,at.getY()+.8,at.getZ()+.5);},"face it");
         step(10,()->click(FobGameTests.SHOP,Direction.SOUTH),"open it");
         step(20,()->{check("the Exchange opens",mc().screen instanceof ExchangeScreen,String.valueOf(mc().screen));
-            if(mc().screen!=null)for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(Ui.t("exchange.tab.sell").getString()))b.onPress();},"the Sell tab");
+            // a copy: pressing the tab rebuilds the screen's widgets
+            if(mc().screen!=null)for(var c:new ArrayList<>(mc().screen.children()))if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(Ui.t("exchange.tab.sell").getString())){b.onPress();break;}},"the Sell tab");
         step(20,()->{int value=-1;
             try{var f=ExchangeScreen.class.getDeclaredField("data");f.setAccessible(true);var data=(net.minecraft.nbt.CompoundTag)f.get(mc().screen);
                 for(var t:data.getList("sell",net.minecraft.nbt.Tag.TAG_COMPOUND)){var row=(net.minecraft.nbt.CompoundTag)t;if(ItemStack.of(row.getCompound("item")).is(ArsenalBeacon.WARLORD_SEAL.get()))value=row.getInt("cost");}}catch(Exception e){log("QA_NOTE {}",e);}
