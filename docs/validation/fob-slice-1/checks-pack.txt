@@ -1,0 +1,72 @@
+QA_CHAT [FOB] Dev planted FOB ASHEN SPEAR in a village of 4 villagers.
+QA_CHAT [FOB] Raid on FOB ASHEN SPEAR! Keep at least 2 of its 4 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB ASHEN SPEAR is DOWN: too many villagers died.
+QA_CHAT [FOB] Dev planted FOB STEEL MANTIS in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB STEEL MANTIS! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB STEEL MANTIS is ACTIVE: its shop is open and meals last there.
+[fob-test] the raid was won after 38 raiders, 5 waves
+QA_CHAT [FOB] Dev planted FOB BLACK MANTIS in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB BLACK MANTIS! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB BLACK MANTIS is ACTIVE: its shop is open and meals last there.
+QA_CHAT [FOB] Dev planted FOB STEEL BASTION in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB STEEL BASTION! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB STEEL BASTION is ACTIVE: its shop is open and meals last there.
+QA_CHAT [FOB] Dev planted FOB WINTER HOUND in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB WINTER HOUND! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB WINTER HOUND is ACTIVE: its shop is open and meals last there.
+QA_CHAT [FOB] Dev planted FOB COBALT BADGER in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB COBALT BADGER! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB COBALT BADGER is now called North Gate.
+QA_CHAT [FOB] Dev planted FOB COPPER SPEAR in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB COPPER SPEAR! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] The raid at FOB COPPER SPEAR ended without a result. Call it again from the FOB Beacon.
+QA_CHAT [FOB] Raid on FOB COPPER SPEAR! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHAT [FOB] FOB COPPER SPEAR is ACTIVE: its shop is open and meals last there.
+QA_CHAT [FOB] Dev took back FOB COPPER SPEAR.
+FOB_TEST_PASS theraidislostwhenhalfthevillagersdie
+FOB_TEST_PASS winningthevanillaraidmakesthefobactive
+FOB_TEST_PASS activevillagersareimmortalandvillageraiderspaynoardent
+FOB_TEST_PASS anactivefobzonekeepsmealslikehome
+FOB_TEST_PASS theshopsellsflaresonlywhileactive
+FOB_TEST_PASS arenamednametagrenamesthefob
+FOB_TEST_PASS theraidcanbecalledagainandtheshoveltakesthefobback
+FOB_TEST_PASS plantingfollowstherulesandcallstheraid
+FOB_TESTS_DONE pass=8 fail=0
+QA_CHAT [FOB] Dev planted FOB SABLE HAMMER in a village of 3 villagers.
+QA_CHAT [FOB] Raid on FOB SABLE HAMMER! Keep at least 2 of its 3 villagers alive and beat every wave.
+QA_CHECK PASS FOB GameTests pass=8 fail=0
+QA_CHECK PASS the world has a village BlockPos{x=-1088, y=0, z=720}
+QA_NOTE village at -1088, 0, 720
+QA_CHECK PASS a spot in the village where the FOB rules allow planting spot=BlockPos{x=-1090, y=66, z=721}, problem where the player stands=null, villagers in the zone=4
+QA_CHAT [FOB] Dev planted FOB BLACK COBRA in a village of 4 villagers.
+QA_CHAT [FOB] Raid on FOB BLACK COBRA! Keep at least 2 of its 4 villagers alive and beat every wave.
+QA_CHECK PASS the FOB is planted where the player clicked -1090, 66, 721
+QA_CHECK PASS it is PLANTED with a generated name PLANTED FOB BLACK COBRA
+QA_CHECK PASS planting started a vanilla raid raid=11, villagers at its start=4
+QA_CHECK PASS everyone reads the announcement 
+QA_CHECK PASS the block stands two tall 
+QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@16d7b13
+QA_CHECK PASS the status card has the FOB line with the shovel in hand FOB BLACK COBRA | PLANTED | RAID | 4 villagers
+QA_CHAT [FOB] FOB BLACK COBRA is ACTIVE: its shop is open and meals last there.
+QA_CHECK PASS the FOB is ACTIVE ACTIVE
+QA_CHECK PASS everyone reads that it is ACTIVE 
+QA_CHECK PASS the FOB screen opens again 
+QA_NOTE pressed Buy
+QA_CHECK PASS the shop hands over a Supply Flare 
+QA_CHECK PASS the screen says so in place 
+QA_CHECK PASS the client shows the FOB Zone effect 
+QA_CHECK PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+QA_CHAT [FOB] FOB BLACK COBRA is now called North Gate.
+QA_CHECK PASS the FOB is renamed North Gate
+QA_CHECK PASS everyone reads the new name 
+QA_CHECK PASS the Field Guide has the FOB page 
+QA_CHECK PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@608df685
+QA_CHECK PASS nothing is removed yet 
+QA_NOTE pressed Take it back
+QA_CHAT [FOB] Dev took back North Gate.
+QA_CHECK PASS the FOB is deleted 
+QA_CHECK PASS its block is gone 
+QA_CHECK PASS the FOB Beacon came back 
+QA_CHECK PASS everyone reads who took it back 
+QA_CHECK PASS the Workshop lists the FOB Beacon 
+QA_DONE pass=27 fail=0

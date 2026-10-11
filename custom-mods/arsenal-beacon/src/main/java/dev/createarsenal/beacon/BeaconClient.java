@@ -31,12 +31,13 @@ public final class BeaconClient {
         state=packet.data();Minecraft mc=Minecraft.getInstance();receivedAt=mc.level==null?0:mc.level.getGameTime();
         BeaconAlerts.receive(state.getBoolean("underAttack"));
         if(BeaconStartup.defer(packet))return;
-        if(mc.screen instanceof PanelScreen screen&&!packet.message().isEmpty())screen.message=packet.message();
+        if(mc.screen instanceof PanelScreen screen&&!packet.message().isEmpty()&&!packet.screen().equals("fob_remove"))screen.message=packet.message();
         switch(packet.screen()){
             case "menu" -> mc.setScreen(new ControlScreen());
             case "rewards" -> mc.setScreen(new RaidRewardScreen(mc.screen,state));
             case "guide" -> mc.setScreen(new GuideScreen(mc.screen instanceof ControlScreen?mc.screen:null));
-            case "place","remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token()));
+            case "place","remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),""));
+            case "fob_remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),packet.message()));   // 0.0.23: the message is the FOB's name
             case "close" -> {if(mc.screen instanceof PanelScreen)mc.setScreen(null);}
         }
     }
@@ -65,24 +66,49 @@ public final class BeaconClient {
      */
     private static void hud(GuiGraphics g,int w,int h){
         var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null)return;
-        if(!current()){if(mission())drawMission(g,w,h);return;}
+        if(!current()){if(mission()||fobLine()!=null)drawMission(g,w,h);return;}
         var card=card(w,h);
         if(Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))drawHud(g,card);
-        else if(mission())drawMission(g,w,h);   // away from the base on a mission: only the mission line
+        else if(mission()||fobLine()!=null)drawMission(g,w,h);   // away from the base: only the mission and FOB lines
         RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
     }
     /** A hunting mission is running (0.0.20) and this player holds its map or the shovel (0.0.21): the card gets its line, in the Overworld. */
     private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&TacticalClient.holdingMissionItem();}
-    /** The mission alone, where the status card would be, when the card itself is hidden. */
-    private static void drawMission(GuiGraphics g,int w,int h){
-        var font=Minecraft.getInstance().font;Component title=Ui.t("hud.mission.title"),line=TacticalClient.missionLine();
-        int width=Math.min(Math.max(140,Math.max(font.width(title),font.width(line))+18),Math.max(96,w/3));
-        int lines=Math.min(2,Ui.lines(font,line,width-14)),height=20+lines*10,x=6,y=Math.max(8,(h-height)/2);
-        g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
-        g.fill(x,y,x+3,y+height,Ui.BRASS);g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
-        Ui.text(g,font,title,x+9,y+5,Ui.BRASS,width-14);
-        Ui.wrap(g,font,line,x+9,y+17,width-14,Ui.INK,2);
+    /**
+     * The FOB line (0.0.23): the FOB this player stands in (its state, villagers, a raid), else while holding the shovel how many FOBs are
+     * placed and active; null when neither. Overworld only, from the last state the server sent.
+     */
+    static Component fobLine(){
+        var mc=Minecraft.getInstance();
+        if(mc.level==null||mc.level.dimension()!=Level.OVERWORLD||mc.level.getGameTime()-receivedAt>=STALE_TICKS)return null;
+        if(state.contains("fobHere")){var f=state.getCompound("fobHere");
+            return Ui.t(f.getBoolean("raid")?"hud.fob.here.raid":"hud.fob.here",f.getString("name"),Ui.t("fob.state."+f.getString("state")),f.getInt("villagers"));}
+        if(holding()&&n("fobPlaced")>0)return Ui.t("hud.fob.count",n("fobPlaced"),FobRules.MAX_FOBS,n("fobActive"));
+        return null;
     }
+    private static int fobColor(){return state.contains("fobHere")&&state.getCompound("fobHere").getBoolean("raid")?Ui.RED:FobClient.OLIVE;}
+    /** The mission and FOB lines alone, where the status card would be, when the card itself is hidden. */
+    private static void drawMission(GuiGraphics g,int w,int h){
+        var font=Minecraft.getInstance().font;
+        var parts=new ArrayList<Component[]>();var colors=new ArrayList<Integer>();
+        if(mission()){parts.add(new Component[]{Ui.t("hud.mission.title"),TacticalClient.missionLine()});colors.add(Ui.BRASS);}
+        var fob=fobLine();if(fob!=null){parts.add(new Component[]{Ui.t("hud.fob.title"),fob});colors.add(fobColor());}
+        if(parts.isEmpty())return;
+        int widest=0;for(var p:parts)widest=Math.max(widest,Math.max(font.width(p[0]),font.width(p[1])));
+        int width=Math.min(Math.max(140,widest+18),Math.max(96,w/3));
+        int height=4;for(var p:parts)height+=16+Math.min(2,Ui.lines(font,p[1],width-14))*10;
+        int x=6,y=Math.max(8,(h-height)/2);
+        g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
+        g.fill(x,y,x+3,y+height,colors.get(0));g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
+        int cy=y+5;
+        for(int i=0;i<parts.size();i++){
+            Ui.text(g,font,parts.get(i)[0],x+9,cy,colors.get(i),width-14);
+            int lines=Math.min(2,Ui.lines(font,parts.get(i)[1],width-14));Ui.wrap(g,font,parts.get(i)[1],x+9,cy+12,width-14,Ui.INK,2);
+            cy+=16+lines*10;
+        }
+    }
+    /** Lines the FOB line takes on the status card. */
+    private static int fobLines(int width){var line=fobLine();return line==null?0:Math.min(2,Ui.lines(Minecraft.getInstance().font,line,width-14));}
     /** Lines the mission takes on the status card (it wraps to a second line on a narrow card). */
     private static int missionLines(int width){return mission()?Math.min(2,Ui.lines(Minecraft.getInstance().font,TacticalClient.missionLine(),width-14)):0;}
     record Card(int x,int y,int width,int height){}
@@ -90,9 +116,9 @@ public final class BeaconClient {
     static Card card(int w,int h){
         var font=Minecraft.getInstance().font;boolean raid=state.getString("phase").equals("raid");
         Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
-        int missionWidth=mission()?font.width(TacticalClient.missionLine()):0;
+        int missionWidth=Math.max(mission()?font.width(TacticalClient.missionLine()):0,fobLine()==null?0:font.width(fobLine()));
         int width=Math.min(Math.max(Math.max(140,RaidMusic.playerWidth(font)),Math.max(Math.max(font.width(title),missionWidth),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3));
-        int height=48+(raid&&on("hardRaid")?14:0)+missionLines(width)*11;
+        int height=48+(raid&&on("hardRaid")?14:0)+missionLines(width)*11+fobLines(width)*11;
         return new Card(6,Math.max(8,(h-height-(raid?RaidMusic.PLAYER_HEIGHT+4:0))/2),width,height);
     }
     static void drawHud(GuiGraphics g,int w,int h){drawHud(g,card(w,h));}
@@ -108,7 +134,9 @@ public final class BeaconClient {
         Ui.bar(g,x+9,y+30,width-18,5,fraction,dead||fraction<=.25f?Ui.RED:Ui.CYAN);
         Ui.text(g,font,line,x+9,y+39,Ui.MUTED,width-14);
         if(raid&&on("hardRaid"))Ui.text(g,font,Ui.t("hud.boss"),x+9,y+50,Ui.BRASS,width-14);
-        int ml=missionLines(width);if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-ml*11-1,width-14,Ui.BRASS,ml);
+        int ml=missionLines(width),fl=fobLines(width);
+        if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-(ml+fl)*11-1,width-14,Ui.BRASS,ml);
+        if(fl>0)Ui.wrap(g,font,fobLine(),x+9,y+height-fl*11-1,width-14,fobColor(),fl);
     }
     static Component phase(String phase){
         return Ui.t("phase."+switch(phase){case "preparation","raid","disabled","restore","snapshot","decommissioning"->phase;default->"unplaced";});
@@ -493,21 +521,23 @@ public final class BeaconClient {
     }
 
     static final class ConfirmScreen extends PanelScreen {
-        final String kind,token;
+        final String kind,token,fob;
         private RichText text;
-        ConfirmScreen(String kind,String token){super(Ui.t("confirm.title"));this.kind=kind;this.token=token;}
+        ConfirmScreen(String kind,String token,String fob){super(Ui.t("confirm.title"));this.kind=kind;this.token=token;this.fob=fob;}
         private boolean place(){return kind.equals("place");}
+        /** Taking a FOB Beacon back (0.0.23): its own warning, with the FOB's name. */
+        private boolean fob(){return kind.equals("fob_remove");}
         @Override Component subtitle(){return Ui.t("confirm.subtitle");}
         @Override protected void init(){
             super.init();pw=Math.min(460,width-16);
-            String raw=place()?Ui.plain("confirm.place.body",state.getBoolean("introCompleted")?Ui.plain("confirm.place.intro_done"):Ui.plain("confirm.place.intro_new")):Ui.plain("confirm.remove.body");
+            String raw=place()?Ui.plain("confirm.place.body",state.getBoolean("introCompleted")?Ui.plain("confirm.place.intro_done"):Ui.plain("confirm.place.intro_new")):fob()?Ui.plain("confirm.fob_remove.body",fob):Ui.plain("confirm.remove.body");
             text=RichText.layout(font,ControlHints.guide(raw),pw-28-10,place()?Ui.CYAN:Ui.RED);
             // Sized to its copy: a short warning should not float in a tall empty panel.
             ph=Math.min(height-16,Math.max(150,34+22+8+text.height+10+44));left=(width-pw)/2;top=(height-ph)/2;
             int half=(pw-36)/2;
             // Cancel comes first and is the default focus so Enter never destroys a campaign.
             var cancel=button(Ui.t("confirm.cancel"),left+14,top+ph-34,half,Ui.Look.PRIMARY,b->onClose());
-            button(place()?Ui.t("confirm.place.go"):Ui.t("confirm.remove.go"),left+22+half,top+ph-34,half,place()?Ui.Look.NORMAL:Ui.Look.DANGER,b->BeaconNetwork.action("confirm",token));
+            button(place()?Ui.t("confirm.place.go"):fob()?Ui.t("confirm.fob_remove.go"):Ui.t("confirm.remove.go"),left+22+half,top+ph-34,half,place()?Ui.Look.NORMAL:Ui.Look.DANGER,b->BeaconNetwork.action("confirm",token));
             setInitialFocus(cancel);
         }
         @Override public void onClose(){BeaconNetwork.action("cancel",token);super.onClose();}
@@ -515,7 +545,7 @@ public final class BeaconClient {
             panel(g);int x=left+14,w=pw-28,y=top+34;
             if(place()){g.fill(x,y,x+w,y+22,Ui.CYAN_FILL);g.fill(x,y+21,x+w,y+22,Ui.CYAN);}
             else Ui.hazard(g,x,y,w,22,0xff2b1214,0xff5c2226);
-            Ui.text(g,font,place()?Ui.t("confirm.place.head"):Ui.t("confirm.remove.head"),x+8,y+7,place()?Ui.CYAN:Ui.RED,w-16);
+            Ui.text(g,font,place()?Ui.t("confirm.place.head"):fob()?Ui.t("confirm.fob_remove.head",fob):Ui.t("confirm.remove.head"),x+8,y+7,place()?Ui.CYAN:Ui.RED,w-16);
             int top0=y+30,bottom=top+ph-42;
             g.enableScissor(x,top0,x+w,bottom);text.draw(g,font,x+4,top0,0,top0,bottom);g.disableScissor();
             super.render(g,mx,my,partial);footer(g);
@@ -547,6 +577,7 @@ public final class BeaconClient {
                 case "energy"->ArsenalBeacon.ARDENT_ENERGY.get();
                 case "support"->ArsenalBeacon.SUPPORT_CANNON_ITEM.get();
                 case "tactical"->ArsenalBeacon.COMMAND_TABLE_ITEM.get();
+                case "fob"->ArsenalBeacon.FOB_BEACON_ITEM.get();
                 case "kitchen"->ArsenalBeacon.MESS_HALL_I.get().asItem();
                 case "mixes"->ArsenalBeacon.SANDWICH.get();
                 case "gear"->ArsenalBeacon.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:ArsenalBeacon.RACKS.get(0).get().asItem();

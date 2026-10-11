@@ -115,7 +115,11 @@ public final class TacticalClient {
 
     // ---- the table screen ----------------------------------------------------------------------------------------------------------------
     /** The open table's fresh state (after a button or a change on the board), see {@link Hunts.TableState}. */
-    static void state(CompoundTag data){if(Minecraft.getInstance().screen instanceof TableScreen screen)screen.update(data);}
+    static void state(CompoundTag data){
+        var screen=Minecraft.getInstance().screen;
+        if(data.contains("fobId")){if(screen instanceof FobClient.FobScreen fob)fob.update(data);return;}   // the same packet refreshes the FOB screen (0.0.23)
+        if(screen instanceof TableScreen table)table.update(data);
+    }
     /** Kept while the table is reopened: which view and which offer. */
     static int view=1;static long selected=-1;
 

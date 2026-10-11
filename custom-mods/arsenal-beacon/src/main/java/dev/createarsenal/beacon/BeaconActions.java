@@ -38,11 +38,18 @@ final class BeaconActions {
         String token=UUID.randomUUID().toString();
         pending.put(p.getUUID(),new Pending("remove",token,null,InteractionHand.MAIN_HAND,p.server.overworld().getGameTime()+1200,d.campaignSerial));BeaconNetwork.open(p,"remove",token);
     }
+    /** The Recovery Shovel on a FOB Beacon (0.0.23): the beacon's confirm screen, with the FOB's name; the FOB is found again by its id. */
+    static void requestFobRemoval(ServerPlayer p,long fobId,String name){
+        String token=UUID.randomUUID().toString();
+        pending.put(p.getUUID(),new Pending("fob_remove",token,null,InteractionHand.MAIN_HAND,p.server.overworld().getGameTime()+1200,fobId));
+        BeaconNetwork.sendState(p,"fob_remove",token,name);
+    }
     static boolean close(ServerPlayer p,BlockPos pos){return p.level().dimension()==Level.OVERWORLD&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
     static boolean holding(ServerPlayer p){return p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get());}
     static boolean confirm(ServerPlayer p,String token){
         Pending request=pending.remove(p.getUUID());
         if(request==null||!request.token.equals(token)||request.expires<p.server.overworld().getGameTime()||p.level().dimension()!=Level.OVERWORLD)return false;
+        if(request.kind.equals("fob_remove"))return holding(p)&&Fobs.remove(p,request.serial);
         var l=p.server.overworld();var d=CampaignData.get(l);
         if(request.kind.equals("place")){
             if(!d.phase.equals("unplaced")||!close(p,request.hit.getBlockPos())||!p.getItemInHand(request.hand).is(ArsenalBeacon.BEACON_ITEM.get()))return false;

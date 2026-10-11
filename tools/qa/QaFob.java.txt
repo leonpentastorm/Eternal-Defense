@@ -1,0 +1,215 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): boots a NORMAL world on the real client, runs the FOB GameTests (FobGameTests, on a sky platform), then
+ * plays slice 1 of the Forward Operating Bases (0.0.23) in a real generated village: the FOB Beacon planted with a right-click (the client's
+ * own click, sent to the server), the model, the raid bar, the FOB screen before and after the raid, a purchase, the status card, the FOB
+ * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation.
+ * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaFob {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,started,testsDone;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void cmd(String c){mc().player.connection.sendCommand(c);}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void shot(String name){File dir=new File("shots");dir.mkdirs();Screenshot.grab(dir,name+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",name);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    /** The client's own right-click on a block face (what the mouse does), sent to the server. */
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(String label){
+        var s=mc().screen;if(s==null)return;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals(label)){b.onPress();log("QA_NOTE pressed {}",label);return;}
+        log("QA_NOTE no button {}",label);
+    }
+    static FobData.Fob fob(){return srvGet(()->{var d=FobData.get(sl());return d.fobs.isEmpty()?null:d.fobs.values().iterator().next();});}
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){String t=e.getMessage().getString();CHAT.add(t);log("QA_CHAT {}",t);}
+    static boolean chatHas(String part){synchronized(CHAT){for(var c:CHAT)if(c.contains(part))return true;}return false;}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;
+                var settings=new LevelSettings("qa_fob",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_fob",settings,new WorldOptions(20201010L,true,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!started){
+            if(++tick<300)return;started=true;
+            cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("time set 6000");
+            srv(()->{MinecraftForge.EVENT_BUS.register(new FobGameTests.Runner());FobGameTests.Runner.start(sl());});
+            return;
+        }
+        if(!testsDone){
+            if(FobGameTests.Runner.lastPass<0)return;
+            testsDone=true;check("FOB GameTests",FobGameTests.Runner.lastFail==0,"pass="+FobGameTests.Runner.lastPass+" fail="+FobGameTests.Runner.lastFail);
+            srv(FobGameTests.Runner::release);
+            script();return;
+        }
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok){fail++;log("QA_CHECK FAIL timeout {}","" + head[2]);}}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    /** The village found, the spot the FOB Beacon goes on (the air block above solid ground) and where the player stands to plant it. */
+    static BlockPos village,spot,stand;
+    static long lastSearch=-1000;
+    /** The nearest spot (to the player) the FOB rules allow, on sturdy ground, with two free blocks, nobody in them and free ground 3 south. */
+    static BlockPos findSpot(){
+        var l=sl();var from=sp().blockPosition();
+        if(FobZone.sections(l,from).isEmpty())return null;   // not a village (yet) where the player stands
+        var candidates=new ArrayList<BlockPos>();
+        for(int dx=-20;dx<=20;dx++)for(int dz=-20;dz<=20;dz++){
+            int x=from.getX()+dx,z=from.getZ()+dz,y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);var at=new BlockPos(x,y,z);
+            if(!l.getBlockState(at.below()).isFaceSturdy(l,at.below(),Direction.UP)||!l.getBlockState(at).isAir()||!l.getBlockState(at.above()).isAir())continue;
+            var side=at.relative(Direction.SOUTH,3);if(!l.getBlockState(side).isAir()||!l.getBlockState(side.above()).isAir())continue;
+            if(!l.getEntitiesOfClass(net.minecraft.world.entity.Entity.class,new net.minecraft.world.phys.AABB(at).inflate(1)).isEmpty())continue;
+            candidates.add(at);
+        }
+        candidates.sort(Comparator.comparingDouble(p->p.distSqr(from)));
+        for(var at:candidates)if(Fobs.plantProblem(l,at)==null)return at;
+        return null;
+    }
+
+    static void script(){
+        // ---- find a real village -----------------------------------------------------------------------------------------------------------
+        step(5,()->{
+            mc().setScreen(null);   // nothing a GameTest left open stays over the pictures
+            village=srvGet(()->sl().findNearestMapStructure(net.minecraft.tags.StructureTags.VILLAGE,sl().getSharedSpawnPos(),100,false));
+            check("the world has a village",village!=null,String.valueOf(village));
+            if(village!=null){log("QA_NOTE village at {}",village.toShortString());tp(village.getX()+.5,200,village.getZ()+.5,0,60);}
+        },"locate a village");
+        step(200,()->{if(village!=null)srv(()->{int y=sl().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,village.getX(),village.getZ());sp().teleportTo(sl(),village.getX()+.5,y+1,village.getZ()+.5,0,20);});},"land in the village");
+        step(200,()->{},"let the village load");
+        // vanilla counts a village only where villagers have claimed beds, workstations or a bell: give a fresh village time to settle
+        until("the village has claimed points of interest and a spot to plant",400,()->{
+            if(village==null)return true;
+            long now=srvGet(()->sl().getGameTime());if(now-lastSearch<40)return false;lastSearch=now;
+            spot=srvGet(QaFob::findSpot);return spot!=null;
+        },()->{
+            var problem=srvGet(()->Fobs.plantProblem(sl(),sp().blockPosition()));
+            int villagers=srvGet(()->FobZone.villagers(sl(),FobZone.sections(sl(),sp().blockPosition())).size());
+            check("a spot in the village where the FOB rules allow planting",spot!=null,"spot="+spot+", problem where the player stands="+problem+", villagers in the zone="+villagers);
+            if(spot!=null){stand=spot.relative(Direction.SOUTH,3);look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);}
+        });
+        // ---- plant it with a real right-click --------------------------------------------------------------------------------------------
+        step(10,()->{if(spot!=null)hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));},"hold the FOB Beacon");
+        step(30,()->{if(spot!=null)click(spot.below(),Direction.UP);},"right-click the ground");
+        step(5,()->{
+            var f=fob();
+            check("the FOB is planted where the player clicked",f!=null&&spot!=null&&f.pos.equals(spot),f==null?"no FOB":f.pos.toShortString());
+            if(f==null)return;
+            check("it is PLANTED with a generated name",f.state==FobRules.State.PLANTED&&f.name.startsWith("FOB "),f.state+" "+f.name);
+            check("planting started a vanilla raid",f.raidRunning()&&srvGet(()->sl().getRaids().get(f.raidId)!=null),"raid="+f.raidId+", villagers at its start="+f.raidVillagers);
+            check("everyone reads the announcement",chatHas("[FOB]")&&chatHas(f.name),"");
+            check("the block stands two tall",srvGet(()->sl().getBlockState(spot).is(ArsenalBeacon.FOB_BEACON.get())&&sl().getBlockState(spot.above()).is(ArsenalBeacon.STRUCTURE_PART.get())),"");
+            hold(ItemStack.EMPTY);mc().options.hideGui=true;
+        },"planted");
+        step(60,()->shot("f1_fob_model_front"),"the model, from the front");
+        step(2,()->{if(spot!=null)look(spot.relative(Direction.EAST,3).relative(Direction.NORTH,2),spot.getX()+.5,spot.getY()+.8,spot.getZ()+.5);},"from the side");
+        step(40,()->shot("f2_fob_model_side"),"the model, from the side");
+        step(2,()->{if(stand!=null)look(stand,spot.getX()+.5,spot.getY()+.8,spot.getZ()+.5);mc().options.hideGui=false;},"back in front");
+        step(60,()->shot("f3_raid_bar"),"the raid bar and the chat");
+        // ---- the FOB screen ---------------------------------------------------------------------------------------------------------------
+        step(10,()->{if(spot!=null)click(spot,Direction.SOUTH);},"right-click the FOB Beacon");
+        step(30,()->{check("the FOB screen opens",mc().screen instanceof FobClient.FobScreen,String.valueOf(mc().screen));shot("f4_fob_screen_planted");},"FOB screen, PLANTED, raid running");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
+        step(50,()->{var line=BeaconClient.fobLine();var f=fob();check("the status card has the FOB line with the shovel in hand",line!=null&&f!=null&&line.getString().contains(f.name),line==null?"none":line.getString());shot("f5_status_card");},"status card");
+        // ---- the raid is won (operator command), the shop opens ----------------------------------------------------------------------------
+        step(10,()->{hold(ItemStack.EMPTY);cmd("arsenal fob complete");},"/arsenal fob complete");
+        step(10,()->{var f=fob();check("the FOB is ACTIVE",f!=null&&f.state==FobRules.State.ACTIVE&&f.activated,f==null?"":f.state.toString());check("everyone reads that it is ACTIVE",chatHas("is ACTIVE"),"");},"active");
+        step(10,()->{if(spot!=null)click(spot,Direction.SOUTH);},"open it again");
+        step(30,()->{check("the FOB screen opens again",mc().screen instanceof FobClient.FobScreen,"");shot("f6_fob_screen_active");},"FOB screen, ACTIVE");
+        step(20,()->press("Buy"),"buy the first flare (Supply)");
+        step(5,()->{
+            boolean bought=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.SUPPLY_FLARE.get()))return true;return false;});
+            check("the shop hands over a Supply Flare",bought,"");
+            check("the screen says so in place",mc().screen instanceof FobClient.FobScreen,"");shot("f7_fob_screen_bought");
+        },"bought");
+        // ---- meals in the FOB zone -------------------------------------------------------------------------------------------------------
+        step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();PlayerMeals.eat(sp(),new MealData(false,List.of(new MealData.Bonus(MealRules.Effect.MIGHT,1),new MealData.Bonus(MealRules.Effect.FORTUNE,1)),MealRules.FIELD_TICKS));});},"eat a meal in the FOB zone");
+        step(30,()->{
+            check("the client shows the FOB Zone effect",mc().player.hasEffect(MealEffects.FOB.get())&&!mc().player.hasEffect(MealEffects.HOME.get()),"");
+            var might=mc().player.getEffect(MealEffects.of(MealRules.Effect.MIGHT));check("the meal does not run down there",might!=null&&might.isInfiniteDuration(),String.valueOf(might));
+            mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));
+        },"open the inventory");
+        step(30,()->shot("f8_fob_zone_effect"),"the FOB Zone effect");
+        // ---- rename with a Name Tag --------------------------------------------------------------------------------------------------------
+        step(5,()->{mc().setScreen(null);var tag=new ItemStack(Items.NAME_TAG);tag.setHoverName(Component.literal("North Gate"));hold(tag);},"hold a renamed Name Tag");
+        step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use it on the FOB Beacon");
+        step(10,()->{var f=fob();check("the FOB is renamed",f!=null&&f.name.equals("North Gate"),f==null?"":f.name);check("everyone reads the new name",chatHas("is now called North Gate"),"");},"renamed");
+        // ---- the Field Guide card and the Workshop row ----------------------------------------------------------------------------------------
+        step(5,()->{hold(ItemStack.EMPTY);var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
+        step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("fob");g.scroll=0;}},"the FOB page");
+        step(30,()->{check("the Field Guide has the FOB page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("fob"),"");shot("f9_guide_fob");},"guide shot");
+        // ---- take it back with the shovel -----------------------------------------------------------------------------------------------------
+        step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
+        step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use the shovel on the FOB Beacon");
+        step(20,()->{check("the shovel asks first",mc().screen instanceof BeaconClient.ConfirmScreen,String.valueOf(mc().screen));check("nothing is removed yet",fob()!=null,"");shot("f10_confirm_remove");},"confirmation");
+        step(30,()->press("Take it back"),"confirm");
+        step(5,()->{
+            check("the FOB is deleted",fob()==null,"");
+            check("its block is gone",spot!=null&&srvGet(()->sl().getBlockState(spot).isAir()&&sl().getBlockState(spot.above()).isAir()),"");
+            boolean back=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.FOB_BEACON_ITEM.get()))return true;return false;});
+            check("the FOB Beacon came back",back,"");check("everyone reads who took it back",chatHas("took back North Gate"),"");
+            mc().setScreen(null);
+        },"removed");
+        step(5,()->{var b=HuntGameTests.BEACON;tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);srv(()->HuntGameTests.ground(sl()));},"go home");
+        step(60,()->{var s=new BeaconClient.ControlScreen();s.tab=2;mc().setScreen(s);},"open Workshop Fabrication");
+        step(30,()->{check("the Workshop lists the FOB Beacon",WorkshopFabrication.ITEMS.contains("fob_beacon"),"");shot("f11_workshop");},"workshop shot");
+        step(5,()->{mc().setScreen(null);srv(()->HuntGameTests.release(sl()));},"done");
+    }
+}

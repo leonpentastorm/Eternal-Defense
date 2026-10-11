@@ -31,8 +31,8 @@ final class ArsenalStructures {
     static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(ArsenalBeacon.BEACON.get());}
     /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
     static boolean big(BlockState state){return state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.BEACON.get())&&state.getValue(MK)==4;}
-    /** The Support Platform, the Exchange Shop and the Satellite Beacon are two blocks tall: the upper cell is a structure part. */
-    static boolean tallSupport(BlockState state){return state.is(ArsenalBeacon.SUPPORT_PLATFORM.get())||state.is(ArsenalBeacon.EXCHANGE_SHOP.get())||state.is(ArsenalBeacon.SATELLITE_BEACON.get());}
+    /** The Support Platform, the Exchange Shop, the Satellite Beacon and the FOB Beacon (0.0.23) are two blocks tall: the upper cell is a structure part. */
+    static boolean tallSupport(BlockState state){return state.is(ArsenalBeacon.SUPPORT_PLATFORM.get())||state.is(ArsenalBeacon.EXCHANGE_SHOP.get())||state.is(ArsenalBeacon.SATELLITE_BEACON.get())||state.is(ArsenalBeacon.FOB_BEACON.get());}
     /** The Command Table (0.0.20): 2 wide (clockwise of its facing) x 2 tall x 2 deep (behind), its anchor the front right block. */
     static boolean table(BlockState state){return state.is(ArsenalBeacon.COMMAND_TABLE.get());}
     /** Blocks that are broken as one piece and rebuild a damaged footprint. */
@@ -91,6 +91,9 @@ final class ArsenalStructures {
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}
         @Override public RenderShape getRenderShape(BlockState state){return RenderShape.INVISIBLE;}
         @Override public PushReaction getPistonPushReaction(BlockState state){return PushReaction.BLOCK;}
+        /** The upper cell of a FOB Beacon cannot be mined (breaking it would take the beacon with it) or broken by withers. */
+        @Override public float getDestroyProgress(BlockState state,Player p,BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(ArsenalBeacon.FOB_BEACON.get())?0:super.getDestroyProgress(state,p,level,pos);}
+        @Override public boolean canEntityDestroy(BlockState state,BlockGetter level,BlockPos pos,net.minecraft.world.entity.Entity e){return !level.getBlockState(anchor(level,pos)).is(ArsenalBeacon.FOB_BEACON.get())&&super.canEntityDestroy(state,level,pos,e);}
         @Override public VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){var root=anchor(level,pos);var owner=level.getBlockState(root);if(!owns(owner))return Shapes.empty();return cell(owner,state.getValue(X)-1,state.getValue(Y),state.getValue(Z)-1);}
         @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){var root=anchor(level,pos);var owner=level.getBlockState(root);return owner.use(level,p,hand,new BlockHitResult(hit.getLocation(),hit.getDirection(),root,hit.isInside()));}
         @Override public void playerWillDestroy(Level level,BlockPos pos,BlockState state,Player p){var root=anchor(level,pos);if(!level.isClientSide&&selfHealing(level.getBlockState(root)))level.destroyBlock(root,!p.isCreative(),p);super.playerWillDestroy(level,pos,state,p);}

@@ -25,6 +25,7 @@ final class BeaconItems {
         Controller(){super(Tiers.IRON,-3f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
         @Override public InteractionResult useOn(UseOnContext context) {
             if(context.getPlayer() instanceof ServerPlayer p){
+                if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&server.getBlockState(ArsenalStructures.anchor(server,context.getClickedPos())).is(ArsenalBeacon.FOB_BEACON.get())){Fobs.requestRemoval(p,context.getClickedPos());return InteractionResult.CONSUME;}
                 if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&BaseZone.relocate(p,server,context.getClickedPos()))return InteractionResult.CONSUME;
                 if(ArsenalStructures.beacon(context.getLevel(),context.getClickedPos()))BeaconActions.requestRemoval(p);
                 else return super.useOn(context);

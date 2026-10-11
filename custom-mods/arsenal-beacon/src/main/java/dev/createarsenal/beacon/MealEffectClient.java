@@ -22,12 +22,12 @@ final class MealEffectClient implements IClientMobEffectExtensions {
     @Override public boolean renderInventoryText(MobEffectInstance instance,EffectRenderingInventoryScreen<?> screen,GuiGraphics g,int x,int y,int blit){
         var mc=Minecraft.getInstance();var font=mc.font;int left=x+28,width=88;
         if(home){
-            line(g,font,Component.translatable(instance.getEffect().getDescriptionId()),left,y+4,width,0xffe8c17b,true);
+            line(g,font,Component.translatable(instance.getEffect().getDescriptionId()),left,y+4,width,0xff000000|instance.getEffect().getColor(),true);
             int row=y+14;for(var part:font.split(Component.translatable(instance.getDescriptionId()+".description"),(int)(width/.8f)).stream().limit(3).toList()){
                 g.pose().pushPose();g.pose().translate(left,row,0);g.pose().scale(.8f,.8f,1f);g.drawString(font,part,0,0,0xffb7c8d0,false);g.pose().popPose();row+=7;}
             return true;
         }
-        var effect=source.get();var bonus=MealData.Bonus.ofAmplifier(effect,instance.getAmplifier());boolean enhanced=mc.player!=null&&mc.player.hasEffect(MealEffects.HOME.get());
+        var effect=source.get();var bonus=MealData.Bonus.ofAmplifier(effect,instance.getAmplifier());boolean enhanced=mc.player!=null&&MealEffects.enhanced(mc.player);
         Component name=Component.translatable(instance.getEffect().getDescriptionId()).append(" "+ROMAN[bonus.strength()-1]);
         if(bonus.pair())name=name.copy().append(Component.literal(" \u00d72").withStyle(net.minecraft.ChatFormatting.GOLD));
         line(g,font,name,left,y+3,width,0xffffffff,true);

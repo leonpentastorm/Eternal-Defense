@@ -1,5 +1,19 @@
 # Change log
 
+## 0.0.23 — Forward Operating Bases, slice 1 of 4 (2026-10-11)
+
+On `dev`. **Network protocol 31** (was 30): the State packet opens the FOB removal confirmation and the table-state packet refreshes the FOB screen; no new packet. Rules: GDD 0.0.23 (Part J, section 5.10); tests: `docs/FOB-SLICE-1-TESTING.md`.
+
+* **FOB Beacon** (the owner's FOB station model, installed unchanged; 1 x 2 x 1, its upper cell a structure part): Workshop Fabrication and the creative tab; 16 iron, 16 copper, 8 redstone, 4 glass, plus 2 logistics modules and 2 reinforced plating (pack) or 8 Ardent Energy (standalone). Unbreakable; only the Recovery Shovel takes it back, after the beacon's confirmation screen.
+* **Planting** in a vanilla village in the Overworld, refused (with the reason) with no beacon planted, with 5 FOBs placed, on Peaceful or with raids off, outside a village, in a village that has a FOB, with fewer than 3 villagers, or with no room. The zone is vanilla's village (sections near beds, workstations and bells), worked out on demand and never saved.
+* **The activation raid** is a vanilla raid called at once with Bad Omen I. Won: ACTIVE. Lost (vanilla's loss, or fewer than half of the villagers counted at its start alive, our own rule): DOWN. No result: still PLANTED, with Call the raid on the FOB screen.
+* **Villagers** of a FOB cannot be hurt outside its own raid (a damage event; `/kill` and the void still work), and lightning does not turn them into witches.
+* **ACTIVE:** the FOB shop (Supply, Return and Fire Support Flares at the Support Platform's prices; the screen notes a missing platform or cannon and sells anyway) and the meal timer frozen in its village with the home bonus, shown as the new FOB Zone effect (`MealZone`; `BaseZone.problem` unchanged).
+* **Raiders of vanilla village raids drop no Ardent Energy** (a raider with a wave and without the beacon's raid tag); the beacon's raid mobs still do.
+* **Names:** generated ("FOB IRON HOUND"), renamed with a Name Tag renamed at an anvil, at most 32 characters, unique in any case. **FOB screen**, **status card line**, Field Guide page **FOBs**, tooltips, chat lines for planting, the raid, the result, renaming and removal. Operator commands `/arsenal fob list|status|complete|reset`.
+* The owner's two art bundles (`Create-Arsenal-FOB-Mixer-Enchanting`, `Create-Arsenal-Supply-Rail-Gates`) are kept in `docs/art/`; only the FOB station is used in this slice.
+* Unit tests: 241 (new `FobTest`, 15, among them a check that no two event handlers share the class Forge generates for them: the first client run crashed on exactly that, fixed before release). New opt-in GameTests `fob_01` to `fob_08` (`-Darsenal.fobTests=true`, `/fob-test`), a QA client script `tools/qa/QaFob.java.txt`.
+
 ## 0.0.22 — Your supply and recall radio lines, ammo parts, hunt pay fixed (2026-10-11)
 
 On `dev`. **No packet changed: the network protocol stays 30.** Rules: GDD 0.0.22 (Part D, Part E, section 5.9, section 7); tests: `docs/ROUND-0022-TESTING.md`.

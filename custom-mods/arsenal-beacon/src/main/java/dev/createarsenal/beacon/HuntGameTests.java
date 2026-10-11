@@ -50,7 +50,7 @@ public final class HuntGameTests {
         if(built)return;
         platform(l,BEACON,2);platform(l,OBJECTIVE,3);built=true;
     }
-    private static void platform(ServerLevel l,BlockPos center,int chunks){
+    static void platform(ServerLevel l,BlockPos center,int chunks){
         var stone=Blocks.STONE.defaultBlockState();
         for(int cx=(center.getX()>>4)-chunks;cx<=(center.getX()>>4)+chunks;cx++)for(int cz=(center.getZ()>>4)-chunks;cz<=(center.getZ()>>4)+chunks;cz++){
             l.setChunkForced(cx,cz,true);LevelChunk chunk=l.getChunk(cx,cz);

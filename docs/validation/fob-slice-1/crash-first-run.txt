@@ -1,0 +1,20 @@
+First real-client run of 0.0.23 (standalone, before the fix). Transcribed from run-client/crash-reports/crash-2026-10-11_10.11.36-server.txt
+(the throwaway QA tree was rebuilt afterwards, so the file itself is gone).
+
+Description: Ticking entity
+java.lang.ClassCastException: class dev.createarsenal.beacon.Fobs$Events cannot be cast to class dev.createarsenal.beacon.RaidAdaptation$Events
+	at dev.createarsenal.beacon.__Events_attack_LivingAttackEvent.invoke(.dynamic)
+	at net.minecraftforge.eventbus.ASMEventHandler.invoke(ASMEventHandler.java:55)
+	at net.minecraftforge.eventbus.EventBus.post(EventBus.java:312)
+	at net.minecraftforge.common.ForgeHooks.onLivingAttack(ForgeHooks.java:270)
+	at net.minecraft.world.entity.LivingEntity.hurt(LivingEntity.java:1059)
+	at net.minecraft.world.entity.animal.Animal.hurt(Animal.java:76)
+	at net.minecraft.world.entity.LivingEntity.baseTick(LivingEntity.java:348)
+	... (a village cat, the first living thing hurt after the world loaded)
+
+Cause: Forge's event bus names the class it generates for a @SubscribeEvent method "<package>.__<simple class name>_<method>_<event simple name>".
+Fobs.Events.attack(LivingAttackEvent) and RaidAdaptation.Events.attack(LivingAttackEvent) got the same name; the second handler was given the
+first one's class. Fix: Fobs.FobEvents. Guard: FobTest.noTwoEventHandlersShareTheBusGeneratedName.
+
+The same run's FOB GameTests failed 0/8 for a second, separate reason: the test village's villagers had no AI and never claimed the beds,
+workstations and bell, and vanilla counts a village only around claimed points of interest. Fix: FobGameTests.occupy.

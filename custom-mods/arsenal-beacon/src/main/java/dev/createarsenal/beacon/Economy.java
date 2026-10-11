@@ -68,6 +68,9 @@ final class Economy {
                 standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",COMMAND_TABLE_ARDENT):WeaponPlatform.cost("arsenal_beacon:reinforced_plating",COMMAND_TABLE_PLATING));
             case "satellite_beacon"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",16),WeaponPlatform.cost("minecraft:copper_ingot",24),WeaponPlatform.cost("minecraft:redstone",8),WeaponPlatform.cost("minecraft:gold_ingot",4),
                 standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",SATELLITE_ARDENT):WeaponPlatform.cost("arsenal_beacon:resonance_coil",SATELLITE_COILS));
+            // Forward Operating Bases (0.0.23): plain materials in both editions, plus logistics modules and plating (pack) or Ardent Energy (standalone)
+            case "fob_beacon"->standalone()?List.of(WeaponPlatform.cost("minecraft:iron_ingot",FOB_IRON),WeaponPlatform.cost("minecraft:copper_ingot",FOB_COPPER),WeaponPlatform.cost("minecraft:redstone",FOB_REDSTONE),WeaponPlatform.cost("minecraft:glass",FOB_GLASS),WeaponPlatform.cost("arsenal_beacon:ardent_energy",FOB_ARDENT))
+                :List.of(WeaponPlatform.cost("minecraft:iron_ingot",FOB_IRON),WeaponPlatform.cost("minecraft:copper_ingot",FOB_COPPER),WeaponPlatform.cost("minecraft:redstone",FOB_REDSTONE),WeaponPlatform.cost("minecraft:glass",FOB_GLASS),WeaponPlatform.cost("arsenal_beacon:logistics_module",FOB_LOGISTICS),WeaponPlatform.cost("arsenal_beacon:reinforced_plating",FOB_PLATING));
             case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
             case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "milk_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:copper_ingot",4));
@@ -104,6 +107,12 @@ final class Economy {
     static int have(net.minecraft.world.entity.player.Player p,Item item){
         int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;
     }
+
+    // ---- Forward Operating Bases (0.0.23) ------------------------------------------------------------------------------------------
+    /** The FOB Beacon at the Workshop: the same materials in both editions, then parts (pack) or Ardent Energy (standalone). */
+    static final int FOB_IRON=16,FOB_COPPER=16,FOB_REDSTONE=8,FOB_GLASS=4,FOB_LOGISTICS=2,FOB_PLATING=2,FOB_ARDENT=8;
+    /** The flares of the FOB shop cost what they cost at the Support Platform. */
+    static int fobFlare(String id){return switch(id){case "supply"->SupportRules.SUPPLY_FLARE_PRICE;case "return"->SupportRules.RETURN_FLARE_PRICE;default->SupportRules.FIRE_FLARE_PRICE;};}
 
     // ---- Tactical Operations (0.0.20) ---------------------------------------------------------------------------------------------
     static final int COMMAND_TABLE_ARDENT=6,COMMAND_TABLE_PLATING=4,SATELLITE_ARDENT=4,SATELLITE_COILS=2;

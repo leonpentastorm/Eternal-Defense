@@ -16,6 +16,8 @@ final class PlayerMeals extends SavedData {
     static final String NAME="arsenal_beacon_meals_v1";
     static final class State {
         final MealData meal;int remaining;boolean home;boolean applied;
+        /** Which zone made {@link #home} true (0.0.23: the Home Zone or an ACTIVE FOB's zone; shown as its own effect). */
+        MealZone.Kind zone=MealZone.Kind.NONE;
         State(MealData meal,int remaining){this.meal=meal;this.remaining=remaining;}
     }
     final Map<UUID,State> players=new HashMap<>();
@@ -67,16 +69,21 @@ final class PlayerMeals extends SavedData {
             boolean ok=current!=null&&current.getAmplifier()==bonus.amplifier()&&(s.home?current.isInfiniteDuration():!current.isInfiniteDuration()&&Math.abs(current.getDuration()-s.remaining)<=40);
             if(!ok){p.removeEffect(effect);var shown=new MobEffectInstance(effect,s.home?MobEffectInstance.INFINITE_DURATION:s.remaining,bonus.amplifier(),false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);}
         }
-        var home=MealEffects.HOME.get();boolean wanted=s!=null&&s.home;
-        if(wanted&&!p.hasEffect(home)){var shown=new MobEffectInstance(home,MobEffectInstance.INFINITE_DURATION,0,false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);}
-        else if(!wanted&&p.hasEffect(home))p.removeEffect(home);
+        // the Home Zone effect at home, the FOB Zone effect (0.0.23) in an ACTIVE FOB's zone: same bonus, its own name and icon
+        zoneEffect(p,MealEffects.HOME.get(),s!=null&&s.home&&s.zone!=MealZone.Kind.FOB);
+        zoneEffect(p,MealEffects.FOB.get(),s!=null&&s.home&&s.zone==MealZone.Kind.FOB);
     }
-    static void eat(ServerPlayer p,MealData meal){var d=get(p.serverLevel());var s=new State(meal,meal.duration());s.home=BaseZone.problem(p.level(),p.blockPosition())==null;d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();syncEffects(p,s);}
+    private static void zoneEffect(ServerPlayer p,net.minecraft.world.effect.MobEffect effect,boolean wanted){
+        if(wanted&&!p.hasEffect(effect)){var shown=new MobEffectInstance(effect,MobEffectInstance.INFINITE_DURATION,0,false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);}
+        else if(!wanted&&p.hasEffect(effect))p.removeEffect(effect);
+    }
+    static void place(State s,MealZone.Kind zone){s.zone=zone;s.home=zone.home();}
+    static void eat(ServerPlayer p,MealData meal){var d=get(p.serverLevel());var s=new State(meal,meal.duration());place(s,MealZone.at(p));d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();syncEffects(p,s);}
     static void clear(ServerPlayer p){var d=get(p.serverLevel());d.players.remove(p.getUUID());removeModifiers(p);d.setDirty();syncEffects(p,null);}
-    static void refresh(ServerPlayer p){var s=get(p.serverLevel()).players.get(p.getUUID());if(s!=null){s.home=BaseZone.problem(p.level(),p.blockPosition())==null;applyModifiers(p,s);}else removeModifiers(p);syncEffects(p,s);}
+    static void refresh(ServerPlayer p){var s=get(p.serverLevel()).players.get(p.getUUID());if(s!=null){place(s,MealZone.at(p));applyModifiers(p,s);}else removeModifiers(p);syncEffects(p,s);}
     static void tick(ServerPlayer p){
         var d=get(p.serverLevel());var s=d.players.get(p.getUUID());if(s==null)return;
-        boolean home=BaseZone.problem(p.level(),p.blockPosition())==null,changed=s.home!=home||!s.applied;s.home=home;
+        var zone=MealZone.at(p);boolean home=zone.home(),changed=s.home!=home||s.zone!=zone||!s.applied;place(s,zone);
         s.remaining=MealRules.remaining(s.remaining,home);
         if(!home)d.setDirty();
         if(s.remaining==0){clear(p);return;}if(changed)applyModifiers(p,s);

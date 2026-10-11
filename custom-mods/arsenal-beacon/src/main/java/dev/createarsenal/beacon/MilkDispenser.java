@@ -44,7 +44,7 @@ final class MilkDispenser {
     record Cleansed(List<Component> effects,Component meal){int count(){return effects.size()+(meal==null?0:1);}}
     static Cleansed cleanse(ServerPlayer player){
         var names=new ArrayList<Component>();var state=PlayerMeals.get(player.serverLevel()).players.get(player.getUUID());Component meal=state==null?null:state.meal.name();
-        for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&effect.getEffect()!=MealEffects.HOME.get())names.add(effect.getEffect().getDisplayName());
+        for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&effect.getEffect()!=MealEffects.HOME.get()&&effect.getEffect()!=MealEffects.FOB.get())names.add(effect.getEffect().getDisplayName());
         PlayerMeals.clear(player);player.removeAllEffects();return new Cleansed(names,meal);
     }
     /** "Strength, Speed and your Stew of Firepower": at most three names, then a count. */

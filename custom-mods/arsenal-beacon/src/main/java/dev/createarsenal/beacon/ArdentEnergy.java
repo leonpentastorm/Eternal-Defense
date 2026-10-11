@@ -19,6 +19,12 @@ final class ArdentEnergy {
         if(roll>=p)return 0;
         return maxHealth>=60?2:1;
     }
+    /**
+     * Pure (0.0.23): a raider that came in a wave of a vanilla raid (a FOB's raid or any Bad Omen raid) and is not one of the beacon's own raid
+     * mobs drops no Ardent Energy, so village raids cannot be farmed. Vanilla sets the wave only when a raider joins a raid, and keeps it after
+     * the raider dies; the beacon's own raid mobs never join one (wave 0) and carry the {@code arsenalRaider} tag.
+     */
+    static boolean vanillaRaider(boolean raider,int wave,boolean ours){return raider&&wave>0&&!ours;}
     /** The standalone edition has no factory to fall back on, so target farming pays a little better there. */
     static final double STANDALONE_DROP_FACTOR=1.3;
     static int balance(Player p){
@@ -41,6 +47,7 @@ final class ArdentEnergy {
         var entity=event.getEntity();
         if(!(entity.level() instanceof ServerLevel level)||!(entity instanceof Enemy))return;
         if(HuntWarband.hunter(entity))return;   // a hunt pays once, into the reward chest: its mobs drop no Ardent Energy
+        if(entity instanceof net.minecraft.world.entity.raid.Raider r&&vanillaRaider(true,r.getWave(),r.getPersistentData().getBoolean("arsenalRaider")))return;
         boolean credited=entity.getKillCredit() instanceof Player||event.getSource().getEntity() instanceof Player||entity.getPersistentData().getBoolean("arsenalRaider");
         if(!credited)return;
         boolean boss=entity.getPersistentData().getBoolean("arsenalBoss")||entity.getType().is(Tags.EntityTypes.BOSSES);

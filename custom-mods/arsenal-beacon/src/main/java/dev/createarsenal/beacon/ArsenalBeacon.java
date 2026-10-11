@@ -85,6 +85,10 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Block> SATELLITE_BEACON=BLOCKS.register("satellite_beacon",TacticalBlocks.SatelliteBlock::new);
     public static final RegistryObject<Item> SATELLITE_BEACON_ITEM=ITEMS.register("satellite_beacon",()->new TacticalBlocks.SatelliteItem(SATELLITE_BEACON.get()));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<TacticalBlocks.TableMenu>> TABLE_MENU=MENUS.register("command_table",()->net.minecraftforge.common.extensions.IForgeMenuType.create(TacticalBlocks.TableMenu::client));
+    // ---- Forward Operating Bases (0.0.23) -------------------------------------------------------------------
+    public static final RegistryObject<Block> FOB_BEACON=BLOCKS.register("fob_beacon",FobBlocks.FobBlock::new);
+    public static final RegistryObject<Item> FOB_BEACON_ITEM=ITEMS.register("fob_beacon",()->new FobBlocks.FobItem(FOB_BEACON.get()));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<FobBlocks.FobMenu>> FOB_MENU=MENUS.register("fob_beacon",()->net.minecraftforge.common.extensions.IForgeMenuType.create(FobBlocks.FobMenu::client));
     public static final RegistryObject<Item> SUPPLY_FLARE=ITEMS.register("support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.SUPPLY)),RETURN_FLARE=ITEMS.register("return_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.RETURN)),FIRE_FLARE=ITEMS.register("fire_support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.FIRE));
     public static final RegistryObject<Item> PLATING=part("reinforced_plating"),LOGISTICS=part("logistics_module"),COIL=part("resonance_coil"),REPAIR=part("restoration_matrix"),AMMO_COIN=part("universal_ammo_coin");
     public static final RegistryObject<Block> GUN_PLATFORM=platform("gun"),AMMO_PLATFORM=platform("ammo"),ATTACHMENT_PLATFORM=platform("attachment"),ARMOR_PLATFORM=platform("armor");
@@ -110,7 +114,7 @@ public final class ArsenalBeacon {
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,ArsenalClientConfig.SPEC,"arsenal-beacon-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
-        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());
+        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
@@ -121,6 +125,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.stuckTests"))MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
         if(Boolean.getBoolean("arsenal.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
         if(Boolean.getBoolean("arsenal.huntTests"))MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());
+        if(Boolean.getBoolean("arsenal.fobTests"))MinecraftForge.EVENT_BUS.register(new FobGameTests.Runner());
         if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
         if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
@@ -235,6 +240,7 @@ public final class ArsenalBeacon {
             .then(Commands.literal("upgrade").then(Commands.argument("branch",StringArgumentType.word()).suggests((c,b)->{for(String s:List.of("core","logistics","defense","restoration","reconnaissance","vertical"))b.suggest(s);return b.buildFuture();}).executes(c->upgrade(c.getSource().getPlayerOrException(),StringArgumentType.getString(c,"branch")))))
             .then(Commands.literal("repair").executes(c->repair(c.getSource().getPlayerOrException())))
             .then(Hunts.command())
+            .then(Fobs.command())
             .then(Commands.literal("test-gate").requires(s->s.hasPermission(2)).executes(c->{testGate(c.getSource().getPlayerOrException());return 1;}))
             .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})
                 .then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}if(!d.phase.equals("preparation")){c.getSource().sendFailure(Component.literal("A raid can only be started during preparation."));return 0;}d.nextRaidType=t;d.setDirty();begin(l,d);if(d.introRaid)c.getSource().sendSuccess(()->Component.literal("The introduction raid is always an ordinary raid; finish it first, then run this again."),false);return 1;})))
@@ -318,6 +324,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
         Hunts.tick(l,d,clock);
+        Fobs.tick(l,clock);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
             BeaconNetwork.syncNearby(l,d);
