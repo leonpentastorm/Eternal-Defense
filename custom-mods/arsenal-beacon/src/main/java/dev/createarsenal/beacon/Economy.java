@@ -120,10 +120,12 @@ final class Economy {
     static final double COINS_PER_ARDENT=16/3.0,HUNT_ARDENT_SHARE=.6,HUNT_COIN_SHARE=.4;
     /** What a hunt pays into the beacon's reward chest. */
     record HuntPay(int ardent,int coins){}
-    /** Pure: budget B = class share x guaranteed raid Ardent; Ardent = round(0.6 B), coins = round(0.4 B x 16/3). */
+    /** 0.0.22 (owner): a hunt always pays at least this much, whatever the reward tier (a pack Patrol at tier 0 paid 0 and 1). */
+    static final int HUNT_MIN_ARDENT=1,HUNT_MIN_COINS=2;
+    /** Pure: budget B = class share x guaranteed raid Ardent; Ardent = round(0.6 B), coins = round(0.4 B x 16/3); never below the minimum. */
     static HuntPay hunt(TacticalRules.Kind kind,int tier,boolean standalone){
         double budget=kind.budget*huntGuaranteed(tier,standalone);
-        return new HuntPay((int)Math.round(HUNT_ARDENT_SHARE*budget),(int)Math.round(HUNT_COIN_SHARE*budget*COINS_PER_ARDENT));
+        return new HuntPay(Math.max(HUNT_MIN_ARDENT,(int)Math.round(HUNT_ARDENT_SHARE*budget)),Math.max(HUNT_MIN_COINS,(int)Math.round(HUNT_COIN_SHARE*budget*COINS_PER_ARDENT)));
     }
     static HuntPay hunt(TacticalRules.Kind kind,int tier){return hunt(kind,tier,standalone());}
 

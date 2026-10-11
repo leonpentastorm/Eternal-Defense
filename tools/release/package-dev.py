@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.21: armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.22: the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -21,15 +21,15 @@ for edition in ('pack','standalone'):
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
-for name in ['STANDALONE.md','PACK-EDITION.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file() and (folder in ('raid-round-0021','tactical-operations') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (folder in ('round-0022','raid-round-0021') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 30 (was 29): the mission line packet now carries the mission's
-id. Install this build on the client AND the server: a client and a server of different builds refuse each other.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 30, the same as 0.0.21 (no packet changed in 0.0.22). Install
+this build on the client AND the server all the same: the new radio lines are client files.
 
 Start a FRESH world. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
@@ -40,7 +40,14 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.21 (since the 0.0.20 bundle)
+WHAT IS NEW IN 0.0.22 (since the 0.0.21 bundle)
+* Your radio lines: a supply flare answers with one of your two supply lines, a return flare with one of your three recall lines
+  (it had none). Fire support flares keep their six. No line plays twice in a row.
+* Pack edition: every ammo recipe takes twice the propellant and 20 percent more cartridge cases, rounded up (a batch of 8 rounds
+  or fewer: 2 cases and 2 propellant; 32 rounds: 5 cases, 4 propellant; 64 rounds: 10 cases, 8 propellant). Standalone unchanged.
+* Tactical Operations: a mission always pays at least 1 Ardent Energy and 2 ammo coins.
+
+WHAT WAS NEW IN 0.0.21
 * Raid skeletons have their bows again and pillagers their crossbows: they shoot from range instead of walking up like zombies,
   and no longer open gate after gate. A skeleton without a bow fights in melee.
 * Raids only come at night (all but the first). Start raid by day books the raid for nightfall ("Raid at nightfall").
@@ -94,7 +101,8 @@ EVERYTHING ELSE ON DEV SINCE 0.0.12
 0.0.13 stuck raiders, 0.0.14 Raider Gates, 0.0.15 Optimize Path, 0.0.16 Beautify Path, 0.0.17 raid music player.
 
 WHAT TO LOOK FOR
-Walk to a mission with the map in hand and watch the arrival (does it still lag on your machine?). Let a raid come at night and
+Throw a supply flare and a return flare and listen to your new lines. In the pack edition, craft ammo and check the cases and
+propellant it takes. Walk to a mission with the map in hand and watch the arrival (does it still lag on your machine?). Let a raid come at night and
 watch the skeletons shoot. Stand in a Starshell and walk out. Build a Command Table and a Satellite Beacon, press SCAN MAP,
 accept a mission and hunt it down with a friend. Play a raid near
 forest, water or mountains and watch for the red gates. Throw a fire flare and look away: the incoming scream should still play.
@@ -103,8 +111,8 @@ Open the cannon menu and scroll the card.
 LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
 Apocalypse gunpack and AppleSkin were not used in these rounds and are not redistributed.
 
-See docs/RAID-ROUND-0021-TESTING.md, docs/TACTICAL-OPERATIONS-TESTING.md, docs/NEW-SOUND-TESTING.md, docs/HAND-TUNED-ROUND-TESTING.md, docs/MUSIC-PLAYER-TESTING.md, docs/BEAUTIFY-PATH-TESTING.md, docs/OPTIMIZE-PATH-TESTING.md, docs/RAIDER-GATES-TESTING.md and
-docs/STUCK-RAIDERS-TESTING.md for the checks that were actually run (screenshots of rounds before 0.0.20 are in the repository's
+See docs/ROUND-0022-TESTING.md, docs/RAID-ROUND-0021-TESTING.md, docs/TACTICAL-OPERATIONS-TESTING.md, docs/NEW-SOUND-TESTING.md, docs/HAND-TUNED-ROUND-TESTING.md, docs/MUSIC-PLAYER-TESTING.md, docs/BEAUTIFY-PATH-TESTING.md, docs/OPTIMIZE-PATH-TESTING.md, docs/RAIDER-GATES-TESTING.md and
+docs/STUCK-RAIDERS-TESTING.md for the checks that were actually run (screenshots of rounds before 0.0.21 are in the repository's
 docs/validation, not in this ZIP) and what was not tested (nothing was listened to: the test
 machine has no sound device; the game's audio output was recorded and analysed instead).
 JAR versions remain 0.21.0 / 1.1.0; use SHA512SUMS to identify this build.
@@ -127,7 +135,7 @@ Arsenal display artwork remains All Rights Reserved by its creator.
 All the music is by leonpentastorm, made with Suno, supplied by the project owner: the ten raid songs (Barren Gap, Line Holder,
 Phase One Assault, Silent Trigger, Acid Redeemer, Assault Loop, Breach Core, Rolling Wave, Boss Battle, Anomaly Protocol) and the
 Victory Fanfare; All Rights Reserved by their creator. The project owner's sound effects (0.0.18: cannon turning, cannon turning
-done, cannon fire, cluster strike, Bunker Buster, shockwave, beacon attacked; 0.0.21 cuts the alarm to its first 0.6 s) and fire support radio lines (0.0.19, six), and the Command Table and Satellite Beacon models and textures (0.0.20) are treated the same way.
+done, cannon fire, cluster strike, Bunker Buster, shockwave, beacon attacked; 0.0.21 cuts the alarm to its first 0.6 s) and flare radio lines (0.0.19, six fire support; 0.0.22, two supply and three recall), and the Command Table and Satellite Beacon models and textures (0.0.20) are treated the same way.
 The napalm, frost, gravity-hum and starshell sounds and the five Command Table sounds (0.0.20) are original to this project
 (tools/audio).
 '''

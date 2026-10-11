@@ -25,8 +25,14 @@ final class ArsenalSounds {
     /** The owner's hand-tuned effects (0.0.18, converted by tools/audio/import_sfx.py): the cannon, the Bunker Buster, the cluster bomblets, the shockwave, the attack alarm. */
     static final RegistryObject<SoundEvent> CANNON_FIRE=of("cannon.fire"),CANNON_TURNING=of("cannon.turning"),CANNON_TURNING_DONE=of("cannon.turning_done");
     static final RegistryObject<SoundEvent> BUNKER_BUSTER=of("bunker.buster"),CLUSTER_STRIKE=of("fire.cluster_strike"),SHOCKWAVE=of("fire.shockwave"),BEACON_ATTACKED=of("beacon.attacked");
-    /** The owner's fire support radio lines (0.0.19, tools/audio/import_chatter.py), one event each: {@link SupportChatter} picks one when a flare lands. */
-    static final List<RegistryObject<SoundEvent>> CHATTER=java.util.stream.IntStream.rangeClosed(1,SupportChatter.LINES).mapToObj(n->of("flare.chatter_"+n)).toList();
+    /**
+     * The owner's flare radio lines (tools/audio/import_chatter.py), one event each, per flare kind: six fire support lines (0.0.19), two
+     * supply and three recall lines (0.0.22). {@link SupportChatter} picks one when a flare's call is taken.
+     */
+    private static final java.util.Map<SupportCalls.Kind,List<RegistryObject<SoundEvent>>> CHATTER=new java.util.EnumMap<>(SupportCalls.Kind.class);
+    static {for(var kind:SupportCalls.Kind.values())CHATTER.put(kind,java.util.stream.IntStream.rangeClosed(1,SupportChatter.count(kind)).mapToObj(n->of(SupportChatter.event(kind,n))).toList());}
+    /** The sound of one radio line (1-based) of a flare kind. */
+    static SoundEvent chatter(SupportCalls.Kind kind,int line){return CHATTER.get(kind).get(line-1).get();}
     /** The owner's incoming-shell scream (0.0.18, back in 0.0.20 after the 0.0.19 whistle): played where a shell or bomb will land, see {@link OrdnanceClient}. */
     static final RegistryObject<SoundEvent> INCOMING=of("ordnance.incoming");
     /** Made by tools/audio (0.0.16): the sounds of the fire supports that are not explosions. Explosions use the game's own explosion sound. */

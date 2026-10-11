@@ -36,7 +36,7 @@ import java.util.*;
  * 0.0.21 on top: the mission line only with the map or the shovel in hand, the arrival on one block (anchor, red marks, server tick time),
  * the map burning once the mission is cleared, the Starshell's Haste lasting after the player leaves the light, a due raid waiting for the
  * night and Start raid booking it by day, armed raid skeletons and pillagers, an ordinary monster drawn from 40 blocks out during the raid,
- * and the alarm's rhythm (a start every 22 client ticks).
+ * and the alarm's rhythm (a start every 22 client ticks). 0.0.22: a supply and a return flare answer with the owner's own radio lines.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_CHAT, QA_DONE.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
@@ -273,6 +273,18 @@ public final class QaHunt {
         step(5,()->{var left=srvGet(()->sp().hasEffect(MobEffects.DIG_SPEED)?sp().getEffect(MobEffects.DIG_SPEED).getDuration():-1);
             var inLight=srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(f->f.distanceTo(sp())<=CannonUpgrades.STAR_RADIUS+8));
             check("10 s after leaving the light the Haste is still on (0.0.21)",left>0&&!inLight,"ticks left="+left+" inLight="+inLight);},"haste after leaving");
+        // ---- 0.0.22: the supply and the return flare answer with the owner's own radio lines ---------------------------------------------------
+        for(var flare:List.of(new Object[]{"supply",ArsenalBeacon.SUPPLY_FLARE,"flare.supply_chatter_"},new Object[]{"return",ArsenalBeacon.RETURN_FLARE,"flare.recall_chatter_"})){
+            String what=(String)flare[0],prefix=(String)flare[2];@SuppressWarnings("unchecked") var item=(net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item>)flare[1];
+            step(5,()->{SOUNDS.clear();srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
+                var inv=sp().getInventory();inv.setItem(0,new ItemStack(item.get()));inv.selected=0;});mc().player.getInventory().selected=0;},"take a "+what+" flare");
+            step(10,()->srv(()->sp().getMainHandItem().getItem().use(sl(),sp(),InteractionHand.MAIN_HAND)),"throw the "+what+" flare");
+            until("the "+what+" flare's radio answers",300,()->SOUNDS.stream().anyMatch(x->x.startsWith(prefix)),()->{});
+            step(5,()->{List<String> heard;synchronized(SOUNDS){heard=new ArrayList<>(SOUNDS);}log("QA_NOTE sounds after the {} flare: {}",what,heard);
+                check("a "+what+" flare answers with one of the owner's "+what+" lines (0.0.22)",heard.stream().anyMatch(x->x.startsWith(prefix)),String.valueOf(heard));
+                check("and not with a fire support line",heard.stream().noneMatch(x->x.startsWith("flare.chatter_")),String.valueOf(heard));},what+" flare line");
+        }
+        step(5,()->srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();}),"clear the flares");
         // ---- a raid where no natural spawn ground exists: gates, the speed burst, the chat line once -----------------------------------------
         // the objective platform's west edge lies on the outer spawn ring: take it away, so only the base platform (inside the ring) is left
         step(5,()->srv(()->{var air=net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();

@@ -189,8 +189,8 @@ public final class WeaponPlatform {
         String id=switch(e.gate.age){case 1,2->"kubejs:pressed_receiver";case 3,4->"kubejs:hardened_receiver";default->"kubejs:exotic_receiver";};
         if(e.gate.kind.equals("gun"))addUnlessPresent(costs,cost(id,e.gate.age==2?2:1));
         else if(e.gate.kind.equals("ammo")){
-            addUnlessPresent(costs,cost("kubejs:cartridge_case",Math.max(1,(e.output.getCount()+7)/8)));
-            addUnlessPresent(costs,cost("kubejs:propellant",Math.max(1,(e.output.getCount()+15)/16)));
+            addUnlessPresent(costs,cost("kubejs:cartridge_case",AmmoInputs.casings(e.output.getCount())));
+            addUnlessPresent(costs,cost("kubejs:propellant",AmmoInputs.propellant(e.output.getCount())));
         }else addUnlessPresent(costs,cost("create:iron_sheet",2));
         return InventoryPayment.consolidate(costs);
     }

@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.*;
 final class RadioAndWhistleTest {
     @Test void theRadioLinesAreShippedAndTheSirenIsGone() throws Exception{
         var sounds=json("/assets/arsenal_beacon/sounds.json");var lang=json("/assets/arsenal_beacon/lang/en_us.json");
-        for(int n=1;n<=SupportChatter.LINES;n++){
-            var event=sounds.getAsJsonObject("flare.chatter_"+n);assertNotNull(event,"line "+n);
-            assertEquals("arsenal_beacon:sfx/chatter_"+n,event.getAsJsonArray("sounds").get(0).getAsString());
-            assertTrue(lang.has(event.get("subtitle").getAsString()),"a subtitle for line "+n);
-            var file=HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/chatter_"+n+".ogg");
-            assertEquals(1,file.channels(),"line "+n+" follows the player, so it is mono");
-            assertTrue(file.seconds()>3&&file.seconds()<5,"line "+n+" is "+file.seconds()+" s");
+        for(var kind:SupportCalls.Kind.values())for(int n:SupportChatter.lines(kind)){
+            String name=SupportChatter.event(kind,n);var event=sounds.getAsJsonObject(name);assertNotNull(event,name);
+            assertEquals("arsenal_beacon:sfx/"+name.substring("flare.".length()),event.getAsJsonArray("sounds").get(0).getAsString());
+            assertTrue(lang.has(event.get("subtitle").getAsString()),"a subtitle for "+name);
+            var file=HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/"+name.substring("flare.".length())+".ogg");
+            assertEquals(1,file.channels(),name+" follows the player, so it is mono");
+            assertTrue(file.seconds()>2.5&&file.seconds()<5,name+" is "+file.seconds()+" s");
         }
         assertFalse(sounds.has("flare.signal"),"the siren is gone");
         assertNull(RadioAndWhistleTest.class.getResource("/assets/arsenal_beacon/sounds/sfx/flare_signal.ogg"));
@@ -25,7 +25,7 @@ final class RadioAndWhistleTest {
     @Test void theRadioPicksAnyLineButNeverTheSameTwiceInARow(){
         for(var kind:SupportCalls.Kind.values()){
             int[] lines=SupportChatter.lines(kind);
-            for(int n:lines)assertTrue(n>=1&&n<=SupportChatter.LINES);
+            for(int n:lines)assertTrue(n>=1&&n<=SupportChatter.count(kind));
             var heard=new HashSet<Integer>();var random=new Random(kind.ordinal());int last=0;
             for(int call=0;call<500;call++){
                 int line=SupportChatter.pick(lines,last,random.nextInt());
@@ -37,8 +37,8 @@ final class RadioAndWhistleTest {
             assertEquals(lines.length,heard.size(),kind+": every line it can use comes up");
         }
         assertEquals(6,SupportChatter.lines(SupportCalls.Kind.FIRE).length,"a fire support flare can get any of the six lines");
-        assertArrayEquals(new int[]{1,4},SupportChatter.lines(SupportCalls.Kind.SUPPLY),"a delivery: \"payload incoming\", \"stay out of the drop zone\"");
-        assertEquals(0,SupportChatter.lines(SupportCalls.Kind.RETURN).length,"the return portal gets no radio line");
+        assertEquals(2,SupportChatter.lines(SupportCalls.Kind.SUPPLY).length,"0.0.22: a supply flare gets the owner's two supply lines");
+        assertEquals(3,SupportChatter.lines(SupportCalls.Kind.RETURN).length,"0.0.22: a return flare gets the owner's three recall lines");
         assertEquals(7,SupportChatter.pick(new int[]{7},7,3),"a single line may repeat");
     }
     /** 0.0.20: the owner asked for the 0.0.18 incoming sound again; the 0.0.19 whistle was lost whenever its round left the player's view. */
