@@ -1,0 +1,11 @@
+# The new radio lines in the standalone client's recorded output, final run (each line left to finish before the next flare). tools/audio/find_sfx.py, threshold 0.6
+# client log: 09:04:17 QA_SOUND arsenal_beacon:flare.supply_chatter_2 at 20036 291 17
+# client log: 09:04:23 QA_SOUND arsenal_beacon:flare.recall_chatter_3 at 20036 291 17
+# capture 318.8 s from 0.0 s; threshold 0.6; first 1.5 s of each sound matched
+  230.04 s  supply_2               r=0.94  pitch 1.000
+
+# recall_chatter_3 does not reach 0.6: it plays while the cannon turns to the supply flare and clunks into lock (client log: cannon.turning_done
+# the same second). Looked for alone between 230 and 245 s at threshold 0.3, it is where the client log puts it, 6.3 s after the supply line:
+# capture 15.0 s from 230.0 s; threshold 0.3; first 1.5 s of each sound matched
+  236.38 s  recall_3               r=0.36  pitch 1.000
+# (In the first run a recall line played with nothing on top of it: recall_2 matched at 0.81, audio-standalone-first-run.txt.)
