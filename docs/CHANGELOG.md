@@ -1,5 +1,13 @@
 # Change log
 
+## 0.0.26 — The owner's fixes: the Return Flare needs the cannon, ammo parts really apply (2026-10-11)
+
+On `dev`. **No packet changed: the network protocol stays 33.** Rules: GDD 0.0.26 (sections 5.4 and 5.5); tests: `docs/ROUND-0026-TESTING.md`.
+
+* **Return Flare** (owner: "the return flare also needs the cannon, only the return portal we spawn automatically when an operation fails because there is not enough room doesn't"): a handheld Return Flare is refused without the thrower's Support Cannon, like the other flares. The return gate of an operation with no ground opens as before, cannon or not. The FOB shop's note and the FOB guide page say so.
+* **Ammo parts** (owner: the 0.0.22 change did not show on the Universal Ammo Platform and ammo was too cheap; flare ammo should stay at 1 case and 1 propellant): the platform now sets every ammo batch's cartridge cases and propellant itself from `AmmoInputs`, replacing what the recipe lists. The owner's pack still ran the older KubeJS script, which wrote the old amounts into the recipes, and the platform charged what the recipe said. Weak special rounds (an ammo id with flare, bean_bag, pepperball, water or medkit in it) keep one case per 8 rounds and one propellant per 16. The pack bundle now carries the updated KubeJS script (`pack/kubejs/server_scripts/20_guns_and_ammo.js`) so the recipe view shows the same amounts.
+* Unit tests: 264. New GameTest `fob_17` (the Return Flare refused without the cannon, allowed with it, an operation's return gate opening without one).
+
 ## 0.0.25 — Forward Operating Bases, slice 3 of 4: SOS, DOWN, repair (2026-10-11)
 
 On `dev`. **Network protocol 33** (was 32): the FOB screen's state and the status card carry the SOS and the repair; no new packet. Rules: GDD 0.0.25 (Part J, section 5.10); tests: `docs/FOB-SLICE-3-TESTING.md`.

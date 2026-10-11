@@ -58,12 +58,12 @@ final class SupportCalls {
         var platform=platform(overworld,p.getUUID());
         if(platform==null)return "no_platform";
         if(BaseZone.problem(overworld,platform.getBlockPos())!=null)return "disabled";
-        if(kind!=Kind.RETURN){
-            if(base==null||base.cannon==null)return "no_cannon";
-            overworld.getChunkAt(base.cannon);   // a base far from every player (or a player in another dimension) still has its cannon
-            if(!overworld.getBlockState(base.cannon).is(ArsenalBeacon.SUPPORT_CANNON.get()))return "no_cannon";
-            if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
-        }
+        // every flare needs the cannon, the Return Flare too (owner, 0.0.26); the return gate an operation opens when there is no ground
+        // ({@link Hunts#returnGate}) carries its own destination and never comes here
+        if(base==null||base.cannon==null)return "no_cannon";
+        overworld.getChunkAt(base.cannon);   // a base far from every player (or a player in another dimension) still has its cannon
+        if(!overworld.getBlockState(base.cannon).is(ArsenalBeacon.SUPPORT_CANNON.get()))return "no_cannon";
+        if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
         if(kind==Kind.SUPPLY&&!platform.hasItems())return "empty_grid";
         if(kind==Kind.RETURN&&returnSpot(overworld,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING))==null)return "return_blocked";
         return null;

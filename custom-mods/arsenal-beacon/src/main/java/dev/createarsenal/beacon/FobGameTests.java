@@ -649,6 +649,32 @@ public final class FobGameTests {
             clear(l);
         }).thenSucceed();
     }
+    // ---- 0.0.26 (owner): the handheld Return Flare needs the Support Cannon; an operation's return gate does not ---------------------------------
+    @GameTest(template="empty3x3x3",batch="fob_17",timeoutTicks=200)
+    public static void theReturnFlareNeedsTheCannonButAnOperationsGateDoesNot(GameTestHelper h){
+        var hf=HuntGameTests.fixture(h);var l=hf.l();var p=HuntGameTests.player(h);
+        BlockPos pad=HuntGameTests.BEACON.offset(0,0,-6),gun=HuntGameTests.BEACON.offset(-5,0,-5);
+        h.startSequence().thenExecute(()->{
+            var sd=SupportData.get(l);sd.setPlatform(p.getUUID(),pad);var base=sd.of(p.getUUID());BlockPos oldCannon=base.cannon;
+            try{
+                l.setBlock(pad,ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState(),3);
+                if(l.getBlockEntity(pad) instanceof SupportPlatform.PlatformEntity be){be.owner=p.getUUID();be.ownerName=p.getGameProfile().getName();}
+                base.cannon=null;sd.setDirty();
+                HuntGameTests.goTo(p,l,HuntGameTests.BEACON.offset(2,0,2));
+                h.assertTrue("no_cannon".equals(SupportCalls.problem(p,SupportCalls.Kind.RETURN)),"a Return Flare without the cannon is refused: "+SupportCalls.problem(p,SupportCalls.Kind.RETURN));
+                l.setBlock(gun,ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState(),3);sd.setCannon(p.getUUID(),gun);
+                h.assertTrue(SupportCalls.problem(p,SupportCalls.Kind.RETURN)==null,"with the cannon it goes: "+SupportCalls.problem(p,SupportCalls.Kind.RETURN));
+                // an operation with no ground opens its own return gate, cannon or not
+                base.cannon=null;sd.setDirty();
+                h.assertTrue(Hunts.returnGate(l,hf.d(),p,"OP TEST"),"the operation's return gate opens without a cannon");
+                h.assertTrue(!l.getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(p.blockPosition()).inflate(4)).isEmpty(),"its portal stands in front of the player");
+            }finally{
+                for(var f:l.getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(p.blockPosition()).inflate(8)))f.discard();
+                l.setBlock(gun,Blocks.AIR.defaultBlockState(),3);l.setBlock(pad,Blocks.AIR.defaultBlockState(),3);
+                base.platform=null;base.cannon=oldCannon;sd.setDirty();
+            }
+        }).thenSucceed();
+    }
     static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){
         var hit=new BlockHitResult(Vec3.atCenterOf(rail).add(0,.5,0),Direction.UP,rail,false);
         return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack.copy(),hit));

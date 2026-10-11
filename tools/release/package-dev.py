@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.25: Forward Operating Bases, slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -21,7 +21,9 @@ for edition in ('pack','standalone'):
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
-for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+# 0.0.26: the pack's ammo recipe script (the cases and propellant per batch); copy it over the pack's own
+files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
 for folder in ('fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
@@ -41,7 +43,16 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.25: FORWARD OPERATING BASES, SLICE 3 OF 4, SOS AND REPAIRS
+WHAT IS NEW IN 0.0.26: YOUR TWO FIXES
+* The Return Flare needs your Support Cannon again, like every flare. Only the return gate an operation opens when there is no
+  ground stays free.
+* Pack edition: the Universal Ammo Platform now charges the 0.0.22 ammo parts itself (2 x the propellant, 20 percent more cases):
+  your pack still ran the old KubeJS script, which is why you saw the old amounts. Weak special rounds (flares, bean bags,
+  pepperballs, water, medkits) keep 1 case and 1 propellant for a small batch.
+  Copy pack/kubejs/server_scripts/20_guns_and_ammo.js from this ZIP over your pack's kubejs/server_scripts/20_guns_and_ammo.js
+  so JEI's gun smith recipes show the same amounts (the platform does not need it).
+
+WHAT WAS NEW IN 0.0.25: FORWARD OPERATING BASES, SLICE 3 OF 4, SOS AND REPAIRS
 * Every 10 to 12 hours of play (counted only while someone is online, never during your beacon's raid or the day before one) one
   ACTIVE FOB calls for help: a chat line and a bell, a red SOS line on your status card, and a map with a red X on the FOB.
 * Go there within 7 days of play: the village raid starts as soon as someone stands in the village (Bad Omen I). Win it: nothing
@@ -75,7 +86,7 @@ WHAT WAS NEW IN 0.0.23: FORWARD OPERATING BASES, SLICE 1 OF 4
   Recovery Shovel and plant it again to retry (repairs come in slice 3).
 * Outside its own raid a FOB's villagers cannot be hurt (only /kill and the void get through).
 * ACTIVE FOB: a shop with Support (supply drop), Return and Fire Support Flares at the Support Platform's prices (3, 2, 6 Ardent
-  Energy); the flares work as at home (they need your own Support Platform, and all but the Return Flare your cannon). Meals do not run down in its
+  Energy); the flares work as at home (they need your own Support Platform and your cannon). Meals do not run down in its
   village and give the home bonus (the new FOB Zone effect).
 * Raiders of village raids drop no Ardent Energy; your beacon's raiders still do.
 * Right-click the FOB Beacon: its screen (state, villagers, the raid, the shop, Call the raid). A Name Tag renamed at an anvil

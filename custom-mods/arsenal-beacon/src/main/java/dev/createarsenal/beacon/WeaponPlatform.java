@@ -189,11 +189,16 @@ public final class WeaponPlatform {
         String id=switch(e.gate.age){case 1,2->"kubejs:pressed_receiver";case 3,4->"kubejs:hardened_receiver";default->"kubejs:exotic_receiver";};
         if(e.gate.kind.equals("gun"))addUnlessPresent(costs,cost(id,e.gate.age==2?2:1));
         else if(e.gate.kind.equals("ammo")){
-            addUnlessPresent(costs,cost("kubejs:cartridge_case",AmmoInputs.casings(e.output.getCount())));
-            addUnlessPresent(costs,cost("kubejs:propellant",AmmoInputs.propellant(e.output.getCount())));
+            // 0.0.26: the platform sets the cases and propellant itself, whatever the recipe (or an older pack script) lists
+            String ammo=e.output.hasTag()&&e.output.getTag().contains("AmmoId")?e.output.getTag().getString("AmmoId"):e.gate.id;
+            costs=new ArrayList<>(costs);costs.removeIf(c->is(c,"kubejs:cartridge_case")||is(c,"kubejs:propellant"));
+            costs.add(cost("kubejs:cartridge_case",AmmoInputs.casings(e.output.getCount(),ammo)));
+            costs.add(cost("kubejs:propellant",AmmoInputs.propellant(e.output.getCount(),ammo)));
         }else addUnlessPresent(costs,cost("create:iron_sheet",2));
         return InventoryPayment.consolidate(costs);
     }
+    /** Does this cost ask for the item {@code id} (false when the item does not exist, as in a run without KubeJS)? */
+    private static boolean is(Cost c,String id){var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id));return item!=net.minecraft.world.item.Items.AIR&&c.ingredient.test(new ItemStack(item));}
     private static void addUnlessPresent(List<Cost> list,Cost cost){if(list.stream().noneMatch(c->Arrays.stream(cost.ingredient.getItems()).anyMatch(c.ingredient::test)))list.add(cost);}
     /** Plan on copies, including output capacity; commit once, never consume partial inputs. */
     static boolean transact(ServerPlayer p,List<Cost> costs,ItemStack output){

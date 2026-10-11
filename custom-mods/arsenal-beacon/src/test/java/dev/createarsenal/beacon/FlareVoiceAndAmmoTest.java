@@ -45,13 +45,37 @@ final class FlareVoiceAndAmmoTest {
     @Test void bothPlacesThatSetAmmoPartsUseTheSameNumbers() throws Exception{
         String js=Files.readString(Path.of("../../pack-integration/kubejs/server_scripts/20_guns_and_ammo.js"));
         assertTrue(js.contains("Java.loadClass('dev.createarsenal.beacon.AmmoInputs')"));
-        assertTrue(js.contains("count:Number(ammoInputs.casings(batch))")&&js.contains("count:Number(ammoInputs.propellant(batch))"),"the KubeJS recipes");
+        assertTrue(js.contains("count:Number(ammoInputs.casings(batch,id))")&&js.contains("count:Number(ammoInputs.propellant(batch,id))"),"the KubeJS recipes (0.0.26: with the ammo id, for the specials)");
         assertFalse(js.contains("Math.ceil(batch/16)")||js.contains("Math.ceil(batch/8)"),"the old amounts are gone");
         String platform=source("WeaponPlatform.java");
-        assertTrue(platform.contains("cost(\"kubejs:cartridge_case\",AmmoInputs.casings(e.output.getCount()))")&&platform.contains("cost(\"kubejs:propellant\",AmmoInputs.propellant(e.output.getCount()))"),"the Ammo Platform without KubeJS");
+        assertTrue(platform.contains("costs.add(cost(\"kubejs:cartridge_case\",AmmoInputs.casings(e.output.getCount(),ammo)));")&&platform.contains("costs.add(cost(\"kubejs:propellant\",AmmoInputs.propellant(e.output.getCount(),ammo)));"),"the Ammo Platform");
+        assertTrue(platform.contains("costs.removeIf(c->is(c,\"kubejs:cartridge_case\")||is(c,\"kubejs:propellant\"));"),"0.0.26: whatever the recipe (or an older pack script) lists is replaced, so the platform always charges these amounts");
         assertFalse(source("StandaloneBalance.java").contains("AmmoInputs"),"the standalone edition's ammo (vanilla materials) is not changed");
         assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getModifiers()),"KubeJS can only load a public class");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class).getModifiers()),m+" is public");
+        for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class,String.class).getModifiers()),m+"(batch, id) is public");
+    }
+    // ---- 0.0.26 (owner): weak special rounds keep one case and one propellant -----------------------------------------------------------------------
+    @Test void weakSpecialRoundsKeepTheirOldPrice(){
+        for(String id:List.of("hamster:flares_ammo","ronmc:bean_bag","ronmc:68pepperball","daffas_arsenal:water","bf1:medkit")){
+            assertTrue(AmmoInputs.special(id),id+" is a weak special");
+            assertEquals(1,AmmoInputs.casings(1,id),id+": one case");assertEquals(1,AmmoInputs.propellant(1,id),id+": one propellant");
+            assertEquals(1,AmmoInputs.casings(8,id));assertEquals(1,AmmoInputs.propellant(16,id),"the old price: one case per 8 rounds, one propellant per 16");
+        }
+        for(String id:List.of("tacz:9mm","tacz:556x45","tacz:12g","tacz:50bmg","tacz:rpg_rocket","hamster:compact_ammo","ea:9x39","zeta:railgun_ammo","")){
+            assertFalse(AmmoInputs.special(id),id+" is ordinary ammo");
+            for(int batch:new int[]{1,8,30,64})assertTrue(AmmoInputs.casings(batch,id)==AmmoInputs.casings(batch)&&AmmoInputs.propellant(batch,id)==AmmoInputs.propellant(batch),id+": the 0.0.22 amounts");
+        }
+        assertEquals(2,AmmoInputs.casings(1,"tacz:9mm"),"ordinary ammo is never as cheap as a flare");assertEquals(2,AmmoInputs.propellant(1,"tacz:9mm"));
+        assertFalse(AmmoInputs.special(null));
+    }
+    // ---- 0.0.26 (owner): every flare needs the cannon, the Return Flare too ---------------------------------------------------------------------------
+    @Test void theReturnFlareNeedsTheCannon() throws Exception{
+        String calls=source("SupportCalls.java");
+        assertFalse(calls.contains("if(kind!=Kind.RETURN){"),"no flare is spared the cannon check");
+        assertTrue(calls.indexOf("if(base==null||base.cannon==null)return \"no_cannon\";")<calls.indexOf("if(kind==Kind.SUPPLY&&!platform.hasItems())"),"the cannon check comes for every kind");
+        String hunts=source("Hunts.java");int gate=hunts.indexOf("static boolean returnGate(");
+        assertTrue(gate>0&&!hunts.substring(gate,hunts.indexOf("\n    }",gate)).contains("SupportCalls.problem"),"an operation's return gate asks for no cannon");
     }
 
     // ---- the owner's report: every operation paid 0 Ardent Energy and 1 coin --------------------------------------------------------------------
