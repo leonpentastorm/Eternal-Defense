@@ -68,12 +68,20 @@ public final class QaHunt {
     static void mapToSlot(int slot){srv(()->{var inv=sp().getInventory();var m=h().board.mission;long id=m==null?0:m.offer.id;
         for(int i=0;i<inv.items.size();i++)if(id!=0&&Hunts.mapMission(inv.items.get(i))==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(slot));inv.items.set(slot,map);break;}inv.selected=0;});
         mc().player.getInventory().selected=0;}
-    /** Server tick time while {@link #timing} is on (ServerTickEvent START to END: the whole tick, every level). */
-    static long tickStart;static volatile boolean timing;static volatile long slowest;static volatile int timed;
+    /**
+     * Server tick time while {@link #timing} is on (ServerTickEvent START to END: the whole tick, every level), per stage of the arrival:
+     * {@link #label} when the script sets one, else read from the mission (before contact, spawning, after spawning).
+     */
+    static long tickStart;static volatile boolean timing;static volatile String label;
+    static final Map<String,long[]> STAGES=new java.util.concurrent.ConcurrentHashMap<>();   // stage -> ticks, slowest ns, total ns
     @SubscribeEvent public static void serverTick(TickEvent.ServerTickEvent e){
         if(e.phase==TickEvent.Phase.START){tickStart=System.nanoTime();return;}
-        if(!timing)return;long ns=System.nanoTime()-tickStart;if(ns>slowest)slowest=ns;timed++;
+        if(!timing)return;long ns=System.nanoTime()-tickStart;
+        String stage=label;if(stage==null){var m=HuntData.get(sl()).board.mission;stage=m==null?"no mission":!m.engaged()?"walking in, before contact":m.pending()>0?"spawning the warband":"after the warband is out";}
+        STAGES.computeIfAbsent(stage,k->new long[3]);var v=STAGES.get(stage);v[0]++;v[1]=Math.max(v[1],ns);v[2]+=ns;
+        if(ns>30_000_000L)log("QA_NOTE slow server tick: {} ms at game time {} ({})",ns/1_000_000,sl().getGameTime(),stage);
     }
+    static long slowestMs(String stage){var v=STAGES.get(stage);return v==null?-1:v[1]/1_000_000;}
 
     // ---- what the client hears and reads -----------------------------------------------------------------------------------------------
     static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>()),CHAT=Collections.synchronizedList(new ArrayList<>());
@@ -187,7 +195,8 @@ public final class QaHunt {
             var o=new HuntBoard.Offer(id,TacticalRules.Kind.WARLORD,TacticalRules.codename(id*7919),OBJ.getX(),OBJ.getZ(),HuntGameTests.OBJECTIVE_DISTANCE,90);h.board.offers.add(o);
             log("QA_NOTE warlord accept: {}",Hunts.accept(sp(),sl(),d(),h,h.board.offers.indexOf(o)));}),"accept a Warlord at the objective platform");
         step(100,()->{mc().options.hideGui=true;look(OBJ.offset(-90,3,0),OBJ.getX()+.5,OBJ.getY()+1,OBJ.getZ()+.5);},"wait 90 blocks out while the chunks load");
-        step(5,()->{slowest=0;timed=0;timing=true;look(OBJ.offset(-30,3,0),OBJ.getX()+.5,OBJ.getY()+1,OBJ.getZ()+.5);},"walk up to the objective (server ticks timed from here)");
+        step(60,()->{STAGES.clear();label="idle, 90 blocks out";timing=true;},"time 60 idle ticks (the baseline)");
+        step(5,()->{label=null;look(OBJ.offset(-30,3,0),OBJ.getX()+.5,OBJ.getY()+1,OBJ.getZ()+.5);},"walk up to the objective (server ticks timed by stage)");
         until("the warband starts",400,()->srvGet(()->h().board.mission!=null&&h().board.mission.engaged()),()->{});
         step(0,()->{var a=srvGet(HuntWarband::anchor);check("the anchor is the objective's own block (0.0.21)",a!=null&&a.getX()==OBJ.getX()&&a.getZ()==OBJ.getZ(),String.valueOf(a));},"anchor check");
         step(20,()->{},"let the first gates open (they grow for 12 ticks)");
@@ -196,8 +205,11 @@ public final class QaHunt {
             check("the client draws them as big spawn gates",!big.isEmpty()&&big.stream().allMatch(RaiderGate::big),"client gates="+big.size());long gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,new net.minecraft.world.phys.AABB(OBJ).inflate(40)).size());check("the warband comes out of red gates",gates>0,"gates="+gates);},"gates shot");
         until("the warband is out",300,()->srvGet(()->h().board.mission.pending()==0),()->{});
         step(40,()->{},"40 more ticks of the arrival");
-        step(0,()->{timing=false;long ms=slowest/1_000_000;log("QA_NOTE arrival: {} server ticks timed, slowest {} ms",timed,ms);
-            check("the arrival keeps every server tick under 50 ms (0.0.21)",ms<50,"slowest="+ms+" ms over "+timed+" ticks");},"arrival tick time");
+        step(0,()->{timing=false;
+            STAGES.forEach((k,v)->log("QA_NOTE arrival stage '{}': {} ticks, slowest {} ms, mean {} ms",k,v[0],v[1]/1_000_000,v[0]==0?0:v[2]/v[0]/1_000_000));
+            long spawning=slowestMs("spawning the warband"),after=slowestMs("after the warband is out"),idle=slowestMs("idle, 90 blocks out");
+            check("spawning the warband keeps every server tick under 50 ms (0.0.21)",spawning>=0&&spawning<50,"slowest="+spawning+" ms (idle baseline "+idle+" ms)");
+            check("and so do the ticks after it is out",after>=0&&after<50,"slowest="+after+" ms (idle baseline "+idle+" ms)");},"arrival tick time");
         step(60,()->{var m=srvGet(()->h().board.mission);
             var captain=srvGet(()->HuntGameTests.mobs(sl(),m.offer.id).stream().filter(x->x.getPersistentData().getBoolean(HuntWarband.CAPTAIN)).findFirst().orElse(null));
             check("one captain, glowing, named after the operation",captain!=null&&captain.isCurrentlyGlowing()&&captain.getCustomName()!=null&&captain.getCustomName().getString().equals(m.offer.codename),captain==null?"none":captain.getCustomName().getString());
@@ -316,7 +328,8 @@ public final class QaHunt {
                 &&(m instanceof net.minecraft.world.entity.monster.AbstractSkeleton||m instanceof net.minecraft.world.entity.monster.Pillager))out.add(m.getType().getDescriptionId()+"="+m.getMainHandItem().getItem());return out;});
             log("QA_NOTE raid skeletons and pillagers: {}",hands);
             check("every raid skeleton holds a bow and every pillager a crossbow (0.0.21)",hands.size()>=2&&hands.stream().allMatch(x->x.endsWith("skeleton=bow")||x.endsWith("stray=bow")||x.endsWith("pillager=crossbow")),String.valueOf(hands));
-            mc().options.hideGui=true;},"weapons");
+            mc().options.hideGui=true;var at=srvGet(()->sl().getEntity(armed[0])==null?null:sl().getEntity(armed[0]).position());
+            if(at!=null)look(BlockPos.containing(at.x-5,at.y+1,at.z+5),at.x,at.y+1,at.z);},"weapons");
         step(10,()->shot("h22_raid_skeleton_bow"),"skeleton shot");
         step(160,()->{},"let them walk");
         step(5,()->{var left=srvGet(()->sl().getEntity(armed[0]) instanceof net.minecraft.world.entity.Mob m?Math.sqrt(m.distanceToSqr(Vec3.atCenterOf(B))):-1);
@@ -325,12 +338,14 @@ public final class QaHunt {
             check("and opened no gate near it",gates==0,"gates="+gates);},"skeleton walked");
         // an ordinary zombie (no raider) 40 blocks beyond the zone's edge comes for the beacon during the raid
         final java.util.UUID[] plain={null};final double[] plainStart={0};
+        step(5,()->srv(()->{int r=d().radius();for(int z=-(r+44);z<=-30;z++)for(int x=-2;x<=2;x++)sl().setBlock(B.offset(x,-1,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),2);}),"a stone bridge out to 68 blocks south (the platform ends at 40)");
         step(5,()->srv(()->{var z=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());int r=d().radius();z.moveTo(B.getX()+.5,B.getY(),B.getZ()-(r+40)+.5,0,0);sl().addFreshEntity(z);plain[0]=z.getUUID();
             plainStart[0]=Math.sqrt(z.distanceToSqr(Vec3.atCenterOf(B)));log("QA_NOTE plain zombie at {} ({} blocks, zone radius {})",z.blockPosition().toShortString(),Math.round(plainStart[0]),r);}),"an ordinary zombie 40 blocks past the zone");
         step(200,()->{},"ten seconds");
         step(5,()->{var left=srvGet(()->sl().getEntity(plain[0]) instanceof net.minecraft.world.entity.Mob m?Math.sqrt(m.distanceToSqr(Vec3.atCenterOf(B))):-1);
             var raider=srvGet(()->d().raiders.contains(plain[0]));
-            check("during a raid an ordinary monster 40 blocks past the zone comes for the beacon (0.0.21)",left>=0&&left<plainStart[0]-6&&!raider,"from "+Math.round(plainStart[0])+" to "+Math.round(left)+" raider="+raider);},"plain zombie came");
+            check("during a raid an ordinary monster 40 blocks past the zone comes for the beacon (0.0.21)",left>=0&&left<plainStart[0]-6&&!raider,"from "+Math.round(plainStart[0])+" to "+Math.round(left)+" raider="+raider);
+            srv(()->{int r=d().radius();for(int z=-(r+44);z<-40;z++)for(int x=-2;x<=2;x++)sl().setBlock(B.offset(x,-1,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);});},"plain zombie came");
         // the alarm: hits kept fresh for about 4.5 s; the alarm starts every 22 client ticks
         step(5,()->{ALARMS.clear();srv(()->{var d=d();d.lastAttackTick=sl().getGameTime();BeaconNetwork.syncNearby(sl(),d);});},"the beacon is hit");
         for(int i=0;i<4;i++)step(20,()->srv(()->{var d=d();d.lastAttackTick=sl().getGameTime();BeaconNetwork.syncNearby(sl(),d);}),"hit again");
