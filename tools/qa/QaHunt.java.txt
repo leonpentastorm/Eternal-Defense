@@ -277,7 +277,10 @@ public final class QaHunt {
         for(var flare:List.of(new Object[]{"supply",ArsenalBeacon.SUPPLY_FLARE,"flare.supply_chatter_"},new Object[]{"return",ArsenalBeacon.RETURN_FLARE,"flare.recall_chatter_"})){
             String what=(String)flare[0],prefix=(String)flare[2];@SuppressWarnings("unchecked") var item=(net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item>)flare[1];
             step(5,()->{SOUNDS.clear();srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
-                var inv=sp().getInventory();inv.setItem(0,new ItemStack(item.get()));inv.selected=0;});mc().player.getInventory().selected=0;},"take a "+what+" flare");
+                var inv=sp().getInventory();inv.setItem(0,new ItemStack(item.get()));inv.selected=0;
+                // a supply call with an empty grid is refused (and a refused call has no answer): put something in the platform's grid
+                var grid=SupportCalls.platform(sl(),sp().getUUID());if(grid!=null&&what.equals("supply")){grid.grid.items[0]=new ItemStack(Items.BREAD,4);grid.setChanged();}});
+                mc().player.getInventory().selected=0;},"take a "+what+" flare");
             step(10,()->srv(()->sp().getMainHandItem().getItem().use(sl(),sp(),InteractionHand.MAIN_HAND)),"throw the "+what+" flare");
             until("the "+what+" flare's radio answers",300,()->SOUNDS.stream().anyMatch(x->x.startsWith(prefix)),()->{});
             step(5,()->{List<String> heard;synchronized(SOUNDS){heard=new ArrayList<>(SOUNDS);}log("QA_NOTE sounds after the {} flare: {}",what,heard);

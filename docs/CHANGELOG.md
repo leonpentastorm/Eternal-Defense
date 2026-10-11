@@ -1,5 +1,15 @@
 # Change log
 
+## 0.0.22 — Your supply and recall radio lines, ammo parts, a hunt's minimum pay (2026-10-11)
+
+On `dev`. **No packet changed: the network protocol stays 30.** Rules: GDD 0.0.22 (Part D, Part E, section 5.9, section 7); tests: `docs/ROUND-0022-TESTING.md`.
+
+* **Supply and recall radio lines:** the owner's `More flare sound` lines (`tools/audio/import_chatter.py`: -18 LUFS, mono, 48 kHz). A supply flare answers with one of two supply lines (it borrowed fire support lines 1 and 4 before); a return flare answers with one of three recall lines (it had none). Fire support flares keep their six. Each flare kind keeps its own last line per player, so no line plays twice in a row. Subtitles "Supply radio answers" and "Recall radio answers"; a Field Guide line.
+* **Ammo parts (pack edition):** every ammo recipe takes twice the propellant and 20 percent more cartridge cases, rounded up: a batch of 8 rounds or fewer 2 cases and 2 propellant (was 1 and 1), 32 rounds 5 and 4 (was 4 and 2), 64 rounds 10 and 8 (was 8 and 4). One place sets them (`AmmoInputs`), used by the KubeJS script that rewrites the gunpacks' recipes and by the Ammo Platform where KubeJS did not run. The standalone edition's ammo (vanilla materials) is unchanged.
+* **Tactical Operations:** a mission always pays at least 1 Ardent Energy and 2 ammo coins, at any reward tier (only a pack Patrol at tier 0, which paid 0 and 1, changes). Field Guide line.
+* **Branches:** the five feature branches merged into `dev` in 0.0.17 (`feature/beautify-path`, `music-player`, `optimize-path`, `raider-gates`, `stuck-raiders`) were deleted locally; deleting them on GitHub was refused by this session's git proxy (HTTP 403), so they are still on the remote.
+* Unit tests: 225 (new `FlareVoiceAndAmmoTest`; `RadioAndWhistleTest` follows the new lines).
+
 ## 0.0.21 — Armed skeletons, night raids, one-block arrival, the shop gets iron (2026-10-11)
 
 On `dev`. **Network protocol 30** (was 29): `MissionSync` (17) now carries the mission id, so the client knows which map in hand belongs to the running mission. Rules: GDD 0.0.21 (Part B, Part C, Part I, sections 5.2, 5.4, 5.5, 5.9, 7); tests: `docs/RAID-ROUND-0021-TESTING.md`.
