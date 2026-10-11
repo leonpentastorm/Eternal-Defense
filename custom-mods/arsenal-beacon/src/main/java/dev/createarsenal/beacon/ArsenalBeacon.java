@@ -147,7 +147,7 @@ public final class ArsenalBeacon {
                 player.sendSystemMessage(Component.literal("One shared beacon per world, placed in the Overworld."));return;
             }
             d.beacon=pos.immutable();d.phase="preparation";d.campaignSerial++;d.participants.add(player.getUUID());d.health=d.maximumHealth();d.setDirty();
-            if(!d.introCompleted){announce(server,"INTRODUCTORY RAID: starts now at reward tier 0. Survive to earn your Weapon Platform.");begin(server,d);}else announce(server,"Beacon planted. Scheduled raids resume after seven active days. Right-click for the control panel.");BeaconNetwork.syncNearby(server,d);
+            if(!d.introCompleted){announce(server,"INTRODUCTORY RAID: starts now at reward tier 0. Survive to earn your Weapon Platform.");begin(server,d);}else announce(server,"Beacon planted. Scheduled raids resume after ten active days, at night. Right-click for the control panel.");BeaconNetwork.syncNearby(server,d);
         }
         @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player player,net.minecraft.world.InteractionHand hand,BlockHitResult hit) {
             if(player.getItemInHand(hand).getItem() instanceof BlockItem)return InteractionResult.PASS;
@@ -328,10 +328,10 @@ public final class ArsenalBeacon {
         if(l.getServer().getPlayerList().getPlayers().isEmpty())return;
         switch(d.phase) {
             case "preparation" -> {
-                if(RaidRespite.waitTick(d))break;
+                if(!d.raidRequested&&RaidRespite.waitTick(d))break;   // a raid booked for nightfall ends purchased break time, as starting one did
                 d.preparationTicks++;RaidWarnings.tick(l,d);
-                long time=l.getDayTime()%24000;
-                if(d.preparationTicks>=Rules.intervalDays(d.rewardTier)*24000L&&time>=13000&&time<21000&&l.players().stream().anyMatch(p->near(p,d)))begin(l,d);
+                // a raid that is due (or was asked for by day) starts only at night, with a defender near the beacon
+                if((d.preparationTicks>=Rules.intervalDays(d.rewardTier)*24000L||d.raidRequested)&&Rules.raidHour(l.getDayTime())&&l.players().stream().anyMatch(p->near(p,d)))begin(l,d);
                 if(clock%1200==0)d.setDirty();
             }
             case "snapshot" -> scan(l,d);
@@ -348,7 +348,7 @@ public final class ArsenalBeacon {
     static void begin(ServerLevel l,CampaignData d) {
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
         RaidAdaptation.begin(d);RaidRescue.reset(l);RaidSpawns.forgetGates();
-        RaidWarnings.reset();d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
+        RaidWarnings.reset();d.raidRequested=false;d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
         announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
     }
     private static void scan(ServerLevel l,CampaignData d) {
@@ -430,21 +430,26 @@ public final class ArsenalBeacon {
             if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos,net.minecraft.world.phys.Vec3.atCenterOf(d.beacon));   // the gate stands behind it, seen from the base
         }
         if(spawnPos==null)return false;
-        int x=spawnPos.getX(),y=spawnPos.getY(),z=spawnPos.getZ();
         if(bossNow)return HardRaids.spawn(l,d,spawnPos);
         int soldiers=SpecialForcesRaids.count(d.raidTier,d.wavePlayers);
         if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&net.minecraftforge.fml.ModList.get().isLoaded("taczsf"))return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
         String role=d.introRaid?"grunt":RaidTypes.role(raidType,d.raidTier,l.random.nextInt(100));
         EntityType<?> type=d.introRaid?EntityType.HUSK:RaidTypes.type(raidType,d.raidTier,role,l);
-        Entity entity=type.create(l);if(!(entity instanceof Mob mob))return false;
-        mob.moveTo(x+0.5,y,z+0.5,l.random.nextFloat()*360,0);mob.setPersistenceRequired();mob.getPersistentData().putBoolean("arsenalRaider",true);
-        mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
-        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false; // Let pack spawn handlers run first.
+        if(raider(l,d,type,role,raidType,spawnPos)==null)return false;
+        RaidTypes.broadcast(l,d);
+        return true;
+    }
+    /** One ordinary raider of this wave at {@code at}: armed, tagged, balanced for the raid tier, with the speed burst; null if it did not fit. */
+    static Mob raider(ServerLevel l,CampaignData d,EntityType<?> type,String role,String raidType,BlockPos at){
+        Entity entity=type.create(l);if(!(entity instanceof Mob mob))return null;
+        mob.moveTo(at.getX()+0.5,at.getY(),at.getZ()+0.5,l.random.nextFloat()*360,0);mob.setPersistenceRequired();mob.getPersistentData().putBoolean("arsenalRaider",true);
+        mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));RaidBalance.arm(mob);   // armed before it joins: its beacon goal depends on the weapon
+        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return null; // Let pack spawn handlers run first.
         mob.getPersistentData().putString("arsenalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
         if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
         mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);
-        d.raiders.add(mob.getUUID());RaidTypes.broadcast(l,d);
-        return true;
+        d.raiders.add(mob.getUUID());
+        return mob;
     }
     static void balanceEarly(Mob mob,int tier,int wave) {
         for(EquipmentSlot slot:EquipmentSlot.values()){
@@ -457,7 +462,7 @@ public final class ArsenalBeacon {
         var health=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
         if(health!=null){float current=mob.getHealth();health.removeModifiers();health.setBaseValue(20+Math.min(3,wave)*2+tier*8);mob.setHealth(Math.min(current,mob.getMaxHealth()));}
         var damage=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);if(damage!=null){damage.removeModifiers();damage.setBaseValue(2+tier);}
-        mob.setCanPickUpLoot(false);if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
+        mob.setCanPickUpLoot(false);RaidBalance.arm(mob);if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
     }
     private static void breach(ServerLevel l,CampaignData d,Mob mob) {
         Vec3 dir=Vec3.atCenterOf(d.beacon).subtract(mob.position()).normalize();BlockPos ahead=BlockPos.containing(mob.getX()+dir.x*1.4,mob.getY(),mob.getZ()+dir.z*1.4);

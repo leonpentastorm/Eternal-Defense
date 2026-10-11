@@ -99,6 +99,7 @@ final class RaidTypes {
     static void broadcast(ServerLevel l,CampaignData d){
         var raiders=new it.unimi.dsi.fastutil.ints.IntArrayList();var chuted=new it.unimi.dsi.fastutil.ints.IntArrayList();
         if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("arsenalChute"))chuted.add(m.getId());}
+        for(int id:HuntWarband.markIds(l))raiders.add(id);   // a hunt warband carries the same red mark (0.0.21)
         if(raiders.isEmpty()&&!marked)return;marked=!raiders.isEmpty();
         BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray()));
     }

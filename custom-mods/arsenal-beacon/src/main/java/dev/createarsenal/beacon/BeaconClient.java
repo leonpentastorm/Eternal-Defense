@@ -71,8 +71,8 @@ public final class BeaconClient {
         else if(mission())drawMission(g,w,h);   // away from the base on a mission: only the mission line
         RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
     }
-    /** A hunting mission is running (0.0.20): the card gets its line, in the Overworld. */
-    private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD;}
+    /** A hunting mission is running (0.0.20) and this player holds its map or the shovel (0.0.21): the card gets its line, in the Overworld. */
+    private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&TacticalClient.holdingMissionItem();}
     /** The mission alone, where the status card would be, when the card itself is hidden. */
     private static void drawMission(GuiGraphics g,int w,int h){
         var font=Minecraft.getInstance().font;Component title=Ui.t("hud.mission.title"),line=TacticalClient.missionLine();
@@ -467,7 +467,8 @@ public final class BeaconClient {
             }
             if(lay.roomy()&&breakH>=76)Ui.wrap(g,font,Ui.t("raid.note"),x+10,by+50,w-20,Ui.MUTED,2);
             boolean controls=ready()&&state.getString("phase").equals("preparation")&&on("introCompleted");
-            respite.active=startRaid.active=controls;lowerTier.active=controls&&n("raidLimit")>0;higherTier.active=controls&&n("raidLimit")<10;
+            respite.active=startRaid.active=controls;
+            startRaid.setMessage(Ui.t(on("raidRequested")?"raid.start.booked":"raid.start"));if(on("raidRequested"))startRaid.active=false;lowerTier.active=controls&&n("raidLimit")>0;higherTier.active=controls&&n("raidLimit")<10;
         }
         // ---- Settings: "What is protected?" ---------------------------------------------------
         private void settingsTab(GuiGraphics g,int x,int w){

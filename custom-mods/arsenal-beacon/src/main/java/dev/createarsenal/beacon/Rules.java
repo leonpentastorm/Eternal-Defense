@@ -9,7 +9,13 @@ public final class Rules {
     }
     public static int buildingTier(int score){return Math.min(5,Math.max(0,score)/500);}
     public static int branchMaximum(String branch){return branch.equals("reconnaissance")?3:branch.equals("logistics")?5:branch.equals("core")?3:4;}
-    public static int intervalDays(int tier) { return Math.max(2, 7 - Math.max(0, Math.min(5, tier))); }
+    /** Active days between raids: 10 at reward tier 0, one less each tier, never below 3 (tier 7 and up). Was 7 down to 2 before 0.0.21. */
+    public static int intervalDays(int tier) { return Math.max(3, 10 - Math.max(0, Math.min(10, tier))); }
+    /** The night window a raid may start in (game time of day): dusk at 13000 to 21000, so a raid has the night to run. Only the introduction ignores it. */
+    public static final int RAID_HOUR_FROM=13000,RAID_HOUR_UNTIL=21000;
+    public static boolean raidHour(long dayTime){long t=Math.floorMod(dayTime,24000L);return t>=RAID_HOUR_FROM&&t<RAID_HOUR_UNTIL;}
+    /** Game ticks until the next raid window opens (0 inside it). */
+    public static long untilRaidHour(long dayTime){long t=Math.floorMod(dayTime,24000L);return raidHour(dayTime)?0:Math.floorMod(RAID_HOUR_FROM-t,24000L);}
     public static boolean hardRaid(int raidNumber){return raidNumber>0&&raidNumber%3==0;}
     // Lookup tables are built once (0.0.15): these are asked thousands of times a tick (every zone test asks radius/below/above).
     private static final int[] BOSS_HEALTH={100,160,240,360,500,650},RADIUS={8,12,18,24},MAXIMUM_HEALTH={1000,1250,1500,2000},BELOW={3,6,10,13,16},ABOVE={8,16,24,36,48},PLATFORM_SCORE={0,40,90,180,300,450};

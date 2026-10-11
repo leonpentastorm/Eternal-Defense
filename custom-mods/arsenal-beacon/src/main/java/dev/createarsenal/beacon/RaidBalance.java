@@ -37,9 +37,18 @@ final class RaidBalance {
         float current=mob.getHealth();set(mob,Attributes.MAX_HEALTH,health(role,tier));mob.setHealth(Math.min(current,mob.getMaxHealth()));
         set(mob,Attributes.ATTACK_DAMAGE,(heavy?5:role.equals("specialist")?3:2)+Math.max(0,Math.min(10,tier))/3);
         set(mob,Attributes.MOVEMENT_SPEED,heavy?.22:role.equals("specialist")?.28:.23);
-        mob.setCanPickUpLoot(false);
+        mob.setCanPickUpLoot(false);arm(mob);
         if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
         if(heavy){mob.setCustomName(Component.literal("HEAVY — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);}
+    }
+    /**
+     * The weapon a ranged raider needs: a skeleton or stray gets a bow, a pillager a crossbow. Raid mobs are made without vanilla's
+     * {@code finalizeSpawn} (which would add random gear), so without this a skeleton had no bow: it fought like a zombie and, as its
+     * beacon goal is a bow attack, never walked to the beacon. Called before the mob joins the world, so the beacon goals see the weapon.
+     */
+    static void arm(Mob mob){
+        if(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton&&!(mob.getMainHandItem().getItem() instanceof BowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.BOW));
+        else if(mob instanceof net.minecraft.world.entity.monster.Pillager&&!(mob.getMainHandItem().getItem() instanceof CrossbowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.CROSSBOW));
     }
     private static void set(Mob mob,net.minecraft.world.entity.ai.attributes.Attribute attribute,double value){var a=mob.getAttribute(attribute);if(a!=null){a.removeModifiers();a.setBaseValue(value);}}
     static boolean canSpawn(ServerLevel level,CampaignData d){

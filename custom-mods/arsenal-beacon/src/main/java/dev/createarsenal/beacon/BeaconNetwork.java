@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"29-standalone":"29-pack",s->s.equals(BuildFlavor.STANDALONE?"29-standalone":"29-pack"),s->s.equals(BuildFlavor.STANDALONE?"29-standalone":"29-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"30-standalone":"30-pack",s->s.equals(BuildFlavor.STANDALONE?"30-standalone":"30-pack"),s->s.equals(BuildFlavor.STANDALONE?"30-standalone":"30-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -67,7 +67,7 @@ final class BeaconNetwork {
         n.putInt("defenders",d.phase.equals("raid")?d.wavePlayers:RaidBalance.defenders(p.server.overworld(),d));n.putInt("veteranPercent",(d.phase.equals("raid")?d.waveVeteran:Rules.veteranPressure(prospective,d.victories))*10);
         n.putInt("platformScore",PlatformRegistry.get(p.server.overworld()).score(d));
         n.putLong("untilRaid",Math.max(0,Rules.intervalDays(d.rewardTier)*24000L-d.preparationTicks)+d.respiteTicks);n.putLong("respiteTicks",d.respiteTicks);n.putInt("respitePurchases",d.respitePurchases);n.putInt("nextRaidBonus",d.nextRaidBonus);n.putBoolean("introCompleted",d.introCompleted);n.put("respiteCosts",WeaponPlatform.costTags(p,RaidRespite.costs(d)));n.putInt("interval",Rules.intervalDays(d.rewardTier));
-        n.putInt("raidLimit",d.raidLimit);n.putBoolean("rewardChest",!d.rewardBox.isEmpty());n.putInt("core",d.core);n.putInt("logistics",d.logistics);n.putInt("defense",d.defense);n.putInt("restoration",d.restoration);n.putInt("reconnaissance",d.reconnaissance);
+        n.putInt("raidLimit",d.raidLimit);n.putBoolean("raidRequested",d.raidRequested);n.putBoolean("rewardChest",!d.rewardBox.isEmpty());n.putInt("core",d.core);n.putInt("logistics",d.logistics);n.putInt("defense",d.defense);n.putInt("restoration",d.restoration);n.putInt("reconnaissance",d.reconnaissance);
         n.putInt("mk",ArsenalStructures.actualMark(p.server.overworld(),d.beacon));n.putBoolean("hurtbox",d.showHurtbox);n.putBoolean("expansionBlocked",d.installed()&&ArsenalStructures.actualMark(p.server.overworld(),d.beacon)!=ArsenalStructures.mark(d.core));n.putBoolean("beam",d.showBeam);n.putBoolean("underAttack",d.underAttack(p.server.overworld().getGameTime()));n.putBoolean("outline",d.showBoundary);n.putBoolean("near",ArsenalBeacon.near(p,d));n.putBoolean("installed",d.installed());n.putBoolean("active",d.active());
         n.putInt("rewards",d.rewards.size());n.putString("raidType",d.raidType);n.putString("nextRaidType",d.nextRaidType);
         n.putBoolean("controller",p.getMainHandItem().is(ArsenalBeacon.CONTROLLER.get())||p.getOffhandItem().is(ArsenalBeacon.CONTROLLER.get()));

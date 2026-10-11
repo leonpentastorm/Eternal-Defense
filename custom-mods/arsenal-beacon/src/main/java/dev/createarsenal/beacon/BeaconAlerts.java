@@ -9,28 +9,32 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * Independent from the nearby/tool status HUD; server state reaches every connected defender. The banner comes with the owner's alarm
- * (beacon_attacked.ogg, 4 s), heard wherever the player is, when it appears and again every {@link #ALARM_REPEAT_SECONDS} while it stays up.
+ * (beacon_attacked.ogg: one double beep, a 0.6 s clip), heard wherever the player is: when it appears, then again after a 0.5 s pause,
+ * "beep beep - pause - beep beep", for as long as it stays up ({@link #ALARM_PERIOD_TICKS}).
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class BeaconAlerts {
     private static boolean attacking;
-    private static long received,alarmAt;
-    /** Seconds between two alarms while the beacon is still under attack (the alarm itself lasts 4). */
-    static final int ALARM_REPEAT_SECONDS=8;
-    static void receive(boolean active){attacking=active;received=System.nanoTime();if(!active)alarmAt=0;}
-    static void clear(){attacking=false;received=0;alarmAt=0;}
-    /** Pure: should the alarm sound now? {@code sinceLast} is seconds since the last alarm (negative: none yet in this attack). */
-    static boolean alarm(boolean showing,double sinceLast){return showing&&(sinceLast<0||sinceLast>=ALARM_REPEAT_SECONDS);}
+    private static long received;
+    /** Client ticks since the alarm last started (-1: not in this attack yet). */
+    private static int sinceAlarm=-1;
+    /** The alarm clip (0.6 s) and the pause after it (0.5 s): it starts again every 22 client ticks while the banner shows. */
+    static final double ALARM_CLIP_SECONDS=0.6,ALARM_PAUSE_SECONDS=0.5;
+    static final int ALARM_PERIOD_TICKS=(int)Math.round((ALARM_CLIP_SECONDS+ALARM_PAUSE_SECONDS)*20);
+    static void receive(boolean active){attacking=active;received=System.nanoTime();if(!active)sinceAlarm=-1;}
+    static void clear(){attacking=false;received=0;sinceAlarm=-1;}
+    /** Pure: should the alarm start now? {@code ticksSinceLast} counts client ticks since it last started (negative: none yet in this attack). */
+    static boolean alarm(boolean showing,int ticksSinceLast){return showing&&(ticksSinceLast<0||ticksSinceLast>=ALARM_PERIOD_TICKS);}
     @SubscribeEvent public static void tick(net.minecraftforge.event.TickEvent.ClientTickEvent e){
         if(e.phase!=net.minecraftforge.event.TickEvent.Phase.END)return;var mc=Minecraft.getInstance();
         boolean showing=mc.level!=null&&mc.player!=null&&attacking&&System.nanoTime()-received<=4_000_000_000L;
-        long now=System.nanoTime();
-        if(alarm(showing,alarmAt==0?-1:(now-alarmAt)/1e9)){
-            alarmAt=now;
+        if(sinceAlarm>=0)sinceAlarm++;
+        if(alarm(showing,sinceAlarm)){
+            sinceAlarm=0;
             mc.getSoundManager().play(new net.minecraft.client.resources.sounds.SimpleSoundInstance(ArsenalSounds.BEACON_ATTACKED.get().getLocation(),net.minecraft.sounds.SoundSource.BLOCKS,1f,1f,
                 net.minecraft.client.resources.sounds.SoundInstance.createUnseededRandom(),false,0,net.minecraft.client.resources.sounds.SoundInstance.Attenuation.NONE,0,0,0,true));
         }
-        if(!showing)alarmAt=0;
+        if(!showing)sinceAlarm=-1;
     }
     @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
     public static final class Registration {

@@ -132,9 +132,11 @@ final class CannonUpgrades {
     static final double BOSS_MOVE=.35;
     /**
      * Starshell: bursts high over the flare and burns for 30 seconds, sinking slowly. It lights the whole cube (hidden light blocks every
-     * STAR_LIGHT_SPACING blocks, taken away when it goes out); hostile mobs in it glow, players in it work faster (Haste II).
+     * STAR_LIGHT_SPACING blocks, taken away when it goes out); hostile mobs in it glow, players in it work faster (Haste II). Haste lasts
+     * {@code STAR_HASTE_TICKS} (30 s) from each pulse: it stays while the star burns and for 30 s after (0.0.21; at 3 s its icon blinked
+     * as if ending and it was gone a moment after a player stepped out of the light).
      */
-    static final int STAR_TICKS=600,STAR_GLOW_TICKS=100,STAR_HASTE_TICKS=60,STAR_PULSE_TICKS=40,STAR_LIGHT_SPACING=4;static final double STAR_RADIUS=16,STAR_AOE_STEP=2,STAR_BURST_HEIGHT=14;
+    static final int STAR_TICKS=600,STAR_GLOW_TICKS=100,STAR_HASTE_TICKS=600,STAR_PULSE_TICKS=40,STAR_LIGHT_SPACING=4;static final double STAR_RADIUS=16,STAR_AOE_STEP=2,STAR_BURST_HEIGHT=14;
 
     /** Pure: the damage of one hit worth {@code share} of a shell, with the Damage upgrade's multiplier. */
     static float hit(float share,float multiplier){return SupportRules.FIRE_DAMAGE*share*multiplier;}

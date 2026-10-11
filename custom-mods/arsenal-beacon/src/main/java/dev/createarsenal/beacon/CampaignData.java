@@ -19,6 +19,8 @@ public final class CampaignData extends SavedData {
     public int reconnaissance,raidsStarted,vertical,respitePurchases,nextRaidBonus;
     public long respiteTicks;
     public boolean introCompleted,introRaid;
+    /** Start raid was pressed by day: the raid starts when night falls (0.0.21, raids only come at night). */
+    public boolean raidRequested;
     public boolean hardRaid,bossSpawned,bossKilled;
     public UUID bossId;
     public int spawnRemaining,spawnCooldown,breachClock,scanCursor;
@@ -53,7 +55,7 @@ public final class CampaignData extends SavedData {
     public boolean installed(){return !phase.equals("unplaced")&&!phase.equals("decommissioning");}
     public void resetProgress() {
         rewardChest=null;raidLimit=10;raidsStarted=0;hardRaid=bossSpawned=bossKilled=false;bossId=null;
-        core=logistics=defense=restoration=reconnaissance=vertical=victories=rewardTier=raidTier=score=wave=deaths=0;respiteTicks=0;respitePurchases=nextRaidBonus=0;introRaid=false;
+        core=logistics=defense=restoration=reconnaissance=vertical=victories=rewardTier=raidTier=score=wave=deaths=0;respiteTicks=0;respitePurchases=nextRaidBonus=0;introRaid=false;raidRequested=false;
         wavePlayers=1;waveVeteran=0;preparationTicks=raidTicks=waveTicks=0;spawnRemaining=spawnCooldown=breachClock=scanCursor=0;
         health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();rewardBox.clearContent();raidType=nextRaidType="normal";participants.clear();raiders.clear();baseCounts.clear();
         trapFirstWave.clear();setDirty();
@@ -70,7 +72,7 @@ public final class CampaignData extends SavedData {
     }
     public static CampaignData load(CompoundTag n) {
         CampaignData d=new CampaignData();d.raidLimit=n.contains("raidLimit")?Math.max(0,Math.min(10,n.getInt("raidLimit"))):10;d.rewardChest=n.contains("rewardChest")?BlockPos.of(n.getLong("rewardChest")):null;d.phase=n.getString("phase");d.beacon=BlockPos.of(n.getLong("beacon"));
-        d.vertical=n.contains("vertical")?Math.max(0,Math.min(4,n.getInt("vertical"))):4;d.introCompleted=!n.contains("introCompleted")||n.getBoolean("introCompleted");d.introRaid=n.getBoolean("introRaid");d.respiteTicks=Math.max(0,n.getLong("respiteTicks"));d.respitePurchases=Math.max(0,Math.min(1000,n.getInt("respitePurchases")));d.nextRaidBonus=Math.max(0,Math.min(3,n.getInt("nextRaidBonus")));
+        d.vertical=n.contains("vertical")?Math.max(0,Math.min(4,n.getInt("vertical"))):4;d.introCompleted=!n.contains("introCompleted")||n.getBoolean("introCompleted");d.introRaid=n.getBoolean("introRaid");d.raidRequested=n.getBoolean("raidRequested");d.respiteTicks=Math.max(0,n.getLong("respiteTicks"));d.respitePurchases=Math.max(0,Math.min(1000,n.getInt("respitePurchases")));d.nextRaidBonus=Math.max(0,Math.min(3,n.getInt("nextRaidBonus")));
         d.wavePlayers=Math.max(1,Math.min(8,n.getInt("wavePlayers")));d.waveVeteran=Math.max(0,Math.min(3,n.getInt("waveVeteran")));
         d.health=n.getInt("health");d.core=Math.max(0,Math.min(3,n.getInt("core")));d.logistics=n.getInt("logistics");d.defense=n.getInt("defense");d.restoration=n.getInt("restoration");
         d.victories=n.getInt("victories");d.rewardTier=n.getInt("rewardTier");d.raidTier=n.getInt("raidTier");d.score=n.getInt("score");d.wave=n.getInt("wave");d.deaths=n.getInt("deaths");
@@ -97,7 +99,7 @@ public final class CampaignData extends SavedData {
     }
     @Override public CompoundTag save(CompoundTag n) {
         n.putInt("raidLimit",raidLimit);if(rewardChest!=null)n.putLong("rewardChest",rewardChest.asLong());n.putString("phase",phase);n.putLong("beacon",beacon.asLong());
-        n.putInt("vertical",vertical);n.putBoolean("introCompleted",introCompleted);n.putBoolean("introRaid",introRaid);n.putLong("respiteTicks",respiteTicks);n.putInt("respitePurchases",respitePurchases);n.putInt("nextRaidBonus",nextRaidBonus);
+        n.putInt("vertical",vertical);n.putBoolean("introCompleted",introCompleted);n.putBoolean("introRaid",introRaid);n.putBoolean("raidRequested",raidRequested);n.putLong("respiteTicks",respiteTicks);n.putInt("respitePurchases",respitePurchases);n.putInt("nextRaidBonus",nextRaidBonus);
         n.putInt("wavePlayers",wavePlayers);n.putInt("waveVeteran",waveVeteran);
         n.putInt("health",health);n.putInt("core",core);n.putInt("logistics",logistics);n.putInt("defense",defense);n.putInt("restoration",restoration);
         n.putInt("victories",victories);n.putInt("rewardTier",rewardTier);n.putInt("raidTier",raidTier);n.putInt("score",score);n.putInt("wave",wave);n.putInt("deaths",deaths);

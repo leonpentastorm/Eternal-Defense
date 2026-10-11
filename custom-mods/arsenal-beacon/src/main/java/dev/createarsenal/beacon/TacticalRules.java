@@ -1,6 +1,7 @@
 package dev.createarsenal.beacon;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -115,8 +116,24 @@ final class TacticalRules {
         int base=kind.min+Math.floorMod(roll,kind.max-kind.min+1);
         return base+Math.min(EXTRA_MAX,EXTRA_PER_PLAYER*Math.max(0,onlinePlayers-1));
     }
-    /** A player within this many blocks of the objective brings the warband; it spawns within {@link #SPAWN_RADIUS} of it and stays within {@link #LEASH}. */
-    static final int APPROACH=64,SPAWN_RADIUS=24,LEASH=32;
+    /**
+     * Arrival (0.0.21): the warband needs one block to stand on. The first standable column found from the objective outwards (within
+     * {@link #ANCHOR_SEARCH}) is the anchor; a small zone of {@link #MINI_ZONE} blocks around it is marked like a beacon's, and the warband
+     * comes out of gates on a ring just outside it ({@link #RING_FROM} to {@link #RING_TO} blocks) and rushes in to the anchor. No such column
+     * at all: the team gets a return gate for {@link #RETURN_GATE_TICKS} and the offer is replaced.
+     */
+    static final int MINI_ZONE=6,RING_FROM=MINI_ZONE+2,RING_TO=MINI_ZONE+6,ANCHOR_SEARCH=16,RETURN_GATE_TICKS=6000;
+    /** A player within this many blocks of the objective brings the warband; it spawns within {@link #SPAWN_RADIUS} of it and stays within {@link #LEASH} of its anchor. */
+    static final int APPROACH=64,SPAWN_RADIUS=ANCHOR_SEARCH+RING_TO,LEASH=32;
+    /** Pure: the columns around an objective within {@code radius}, nearest first (ties in a fixed order), as {dx, dz}: where an anchor is looked for. */
+    static List<int[]> anchorOrder(int radius){
+        var out=new ArrayList<int[]>();
+        for(int dx=-radius;dx<=radius;dx++)for(int dz=-radius;dz<=radius;dz++)if(dx*dx+dz*dz<=radius*radius)out.add(new int[]{dx,dz});
+        out.sort(Comparator.<int[]>comparingInt(o->o[0]*o[0]+o[1]*o[1]).thenComparingInt(o->o[0]).thenComparingInt(o->o[1]));
+        return out;
+    }
+    /** Pure: a column on the spawn ring around the anchor, at {@code angle} (radians) and a distance between {@link #RING_FROM} and {@link #RING_TO} ({@code t} 0 to 1). */
+    static int[] ringOffset(double angle,double t){double r=RING_FROM+Math.max(0,Math.min(1,t))*(RING_TO-RING_FROM);return new int[]{(int)Math.round(Math.cos(angle)*r),(int)Math.round(Math.sin(angle)*r)};}
     /** An engaged warband with no player within {@link #AWAY} blocks for {@link #AWAY_TICKS} scatters (nothing is paid; approach again for a new one). */
     static final int AWAY=128,AWAY_TICKS=6000;
     static final int CAPTAIN_HEALTH_FACTOR=2;

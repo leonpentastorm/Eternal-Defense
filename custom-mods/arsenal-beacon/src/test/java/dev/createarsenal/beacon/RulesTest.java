@@ -46,11 +46,14 @@ class RulesTest {
         assertTrue(Rules.highlightAttackers(3,0),"from the start of the wave at level 3");
         assertEquals(3,Rules.branchMaximum("reconnaissance"));assertEquals(0,Rules.revealTicks(9),"levels past the top stay at the top");
     }
-    @Test void earlyCampaignRemainsWeekly() {
-        assertEquals(7, Rules.intervalDays(Rules.rewardTier(0,0)));
-        assertEquals(7, Rules.intervalDays(Rules.rewardTier(0,499)));
-        assertEquals(6, Rules.intervalDays(Rules.rewardTier(1,0)));
-        assertEquals(2, Rules.intervalDays(99));
+    @Test void raidsComeEveryTenDaysAtFirstAndEveryThreeAtTheTop() {
+        // 0.0.21: 10 active days at the lowest tier, one less per tier, never below 3 (was 7 down to 2)
+        assertEquals(10, Rules.intervalDays(Rules.rewardTier(0,0)));
+        assertEquals(10, Rules.intervalDays(Rules.rewardTier(0,499)));
+        assertEquals(9, Rules.intervalDays(Rules.rewardTier(1,0)));
+        int[] expected={10,9,8,7,6,5,4,3,3,3,3};
+        for(int tier=0;tier<=10;tier++)assertEquals(expected[tier],Rules.intervalDays(tier),"tier "+tier);
+        assertEquals(3, Rules.intervalDays(99));assertEquals(10,Rules.intervalDays(-5));
     }
     @Test void defensesStayBoundedForCoop() {
         assertTrue(Rules.enemies(5,8,30)<=144);

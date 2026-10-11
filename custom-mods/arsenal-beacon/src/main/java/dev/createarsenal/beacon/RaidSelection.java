@@ -18,6 +18,9 @@ final class RaidSelection {
         if(!d.installed()||!ArsenalBeacon.near(p,d)||!d.phase.equals("preparation")||d.health<=0)return "Start a raid near an enabled beacon between raids.";
         if(!d.introCompleted)return "Finish the introductory raid first.";
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty())return "Wait for pending base restoration before starting another raid.";
+        // raids only come at night (0.0.21): by day the raid is booked for nightfall
+        if(!Rules.raidHour(l.getDayTime())){d.raidRequested=true;d.setDirty();
+            return "Raids only come at night. Your raid starts at nightfall (in about "+Math.max(1,(Rules.untilRaidHour(l.getDayTime())+1199)/1200)+" min) if someone is near the beacon.";}
         ArsenalBeacon.begin(l,d);return "Raid requested at your selected level. Purchased break time ends when the snapshot finishes. Defend the beacon!";
     }
 }

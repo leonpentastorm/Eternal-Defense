@@ -17,6 +17,20 @@ import java.util.*;
 /** A real attackable objective lets native melee, arrows, crossbows and TaCZ bullets hit the beacon. */
 final class BeaconCombat {
     static final int AMBIENT_RANGE=24;
+    /**
+     * During a raid (0.0.21) cover no longer hides the beacon: an ordinary hostile this many blocks past the zone's edge, seen or not,
+     * goes for it too, alongside the raiders. Natural mobs spawn at least 24 blocks from players, who stand at the beacon in a raid, so
+     * the reach has to go past 24 for the rule to matter.
+     */
+    static final int RAID_ATTRACT_BEYOND=48;
+    /**
+     * Pure: does a hostile go for the beacon? A raider always does. Otherwise, between raids: within {@link #AMBIENT_RANGE} and in sight
+     * (cover hides the beacon); during a raid: within the zone radius plus {@link #RAID_ATTRACT_BEYOND}, seen or not.
+     */
+    static boolean attracted(boolean raider,boolean raid,double distance,int zoneRadius,boolean seen){
+        if(raider)return true;
+        return raid?distance<=zoneRadius+RAID_ATTRACT_BEYOND:distance<=AMBIENT_RANGE&&seen;
+    }
     private static final Map<ServerLevel,Objective> objectives=new WeakHashMap<>();
     private static final Set<Mob> attached=Collections.newSetFromMap(new WeakHashMap<>());
     static Objective objective(ServerLevel level){return objectives.get(level);}
@@ -30,7 +44,7 @@ final class BeaconCombat {
             if(target!=null)target.discard();target=ArsenalBeacon.OBJECTIVE.get().create(l);if(target==null)return;
             target.serial=d.campaignSerial;target.refreshDimensions();target.moveTo(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5,0,0);l.addFreshEntity(target);objectives.put(l,target);
         }
-        target.setMark(ArsenalStructures.actualMark(l,d.beacon));target.setPos(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5);
+        target.setMark(ArsenalStructures.actualMark(l,d.beacon));target.raid=d.phase.equals("raid");target.zoneRadius=d.radius();target.setPos(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5);
         if(l.getGameTime()%20==0){int range=d.radius()+96;for(Mob mob:l.getEntitiesOfClass(Mob.class,new AABB(d.beacon).inflate(range),BeaconCombat::hostile)){attach(mob);if(d.phase.equals("raid")&&l.getGameTime()%40==0&&(!mob.getPersistentData().getBoolean("arsenalRaider")&&mob.getTarget()!=null)&&(mob.horizontalCollision||mob.getNavigation().isDone()||mob.getTarget() instanceof Objective&&!mob.hasLineOfSight(mob.getTarget()))&&needsBreach(mob,d))RaidBreaching.breach(l,d,mob);}}
     }
     static boolean hostile(Mob mob){return !SpecialForcesRaids.defeated(mob)&&!(mob instanceof Objective)&&(mob.getType().getCategory()==MobCategory.MONSTER||mob instanceof Monster||mob.getPersistentData().getBoolean("arsenalRaider"));}
@@ -60,12 +74,19 @@ final class BeaconCombat {
         mob.goalSelector.addGoal(-1,new RaiderGates.ChannelGoal(mob)); // outranks everything: a raider channeling at a gate cannot move
         Goal nativeRanged=mob.goalSelector.getAvailableGoals().stream().map(WrappedGoal::getGoal).filter(g->{String name=g.getClass().getName();return name.endsWith(".GunAttackGoal")||name.endsWith("$GuardianAttackGoal")||name.endsWith("$BlazeAttackGoal")||name.endsWith("$GhastShootFireballGoal");}).findFirst().orElse(null);
         if(nativeRanged!=null)mob.goalSelector.addGoal(0,new RangedBeacon(mob,nativeRanged));
-        else if(mob instanceof AbstractSkeleton skeleton)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedBowAttackGoal<>(skeleton,1,40,10)));
-        else if(mob instanceof Pillager pillager)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedCrossbowAttackGoal<>(pillager,1,10)));
+        // a bow or crossbow attack never starts without the weapon: an unarmed skeleton or pillager walks in and hits instead of standing still
+        else if(mob instanceof AbstractSkeleton skeleton&&skeleton.getMainHandItem().getItem() instanceof net.minecraft.world.item.BowItem)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedBowAttackGoal<>(skeleton,1,40,10)));
+        else if(mob instanceof Pillager pillager&&pillager.getMainHandItem().getItem() instanceof net.minecraft.world.item.CrossbowItem)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedCrossbowAttackGoal<>(pillager,1,10)));
+        else if(mob instanceof AbstractSkeleton||mob instanceof Pillager)mob.goalSelector.addGoal(0,new MeleeBeacon(mob));
         else if(mob instanceof RangedAttackMob ranged)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedAttackGoal(ranged,1,60,10)));
         else mob.goalSelector.addGoal(0,new MeleeBeacon(mob));
     }
-    static boolean inDetectionRange(Mob mob,Objective target){return !SpecialForcesRaids.defeated(mob)&&(mob.getPersistentData().getBoolean("arsenalRaider")||mob.distanceToSqr(target)<=AMBIENT_RANGE*AMBIENT_RANGE&&mob.hasLineOfSight(target));}
+    static boolean inDetectionRange(Mob mob,Objective target){
+        if(SpecialForcesRaids.defeated(mob))return false;
+        boolean raider=mob.getPersistentData().getBoolean("arsenalRaider");double distance=Math.sqrt(mob.distanceToSqr(target));
+        // the sight check (a ray cast) only when it can matter: between raids and within reach
+        return attracted(raider,target.raid,distance,target.zoneRadius,!raider&&!target.raid&&distance<=AMBIENT_RANGE&&mob.hasLineOfSight(target));
+    }
     static boolean needsBreach(Mob mob,CampaignData d){boolean ranged=mob.goalSelector.getAvailableGoals().stream().anyMatch(g->g.getGoal() instanceof RangedBeacon);return mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+1,d.beacon.getZ()+.5)>(ranged?196:9)||ranged&&mob.getTarget() instanceof Objective target&&!mob.hasLineOfSight(target);}
     static final class TargetBeacon extends Goal {
         final Mob mob;Objective target;
@@ -133,6 +154,8 @@ final class BeaconCombat {
         // Solid cover placed over or around it still participates in vanilla sight checks.
         @Override protected float getStandingEyeHeight(net.minecraft.world.entity.Pose pose,net.minecraft.world.entity.EntityDimensions size){return size.height+.05f;}
         long serial;final Map<UUID,Long> lastHit=new HashMap<>();
+        /** Set each tick from the campaign: a raid runs (cover no longer hides the beacon) and the zone's radius. */
+        boolean raid;int zoneRadius;
         Objective(EntityType<? extends Mob> type,Level level){super(type,level);setNoAi(true);setNoGravity(true);setInvisible(true);noPhysics=true;}
         @Override public boolean shouldBeSaved(){return false;}
         @Override public boolean isPushable(){return false;}

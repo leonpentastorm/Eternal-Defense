@@ -34,9 +34,18 @@ public final class TacticalClient {
     @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(ArsenalBeacon.TABLE_MENU.get(),TableScreen::new));}
 
     // ---- the mission line ----------------------------------------------------------------------------------------------------------------
-    static Hunts.MissionSync mission=new Hunts.MissionSync(false,"","",0,0,0,0,false);
+    static Hunts.MissionSync mission=new Hunts.MissionSync(false,"","",0,0,0,0,false,0);
     static void mission(Hunts.MissionSync m){mission=m;}
     static boolean missionActive(){return mission.active();}
+    /** An offer's class as a rarity on the table: Patrol blue, Garrison purple, Warlord gold (the chosen X is red). */
+    static int kindColor(String kind){return switch(kind){case "garrison"->Ui.EPIC_PURPLE;case "warlord"->Ui.LEGEND_GOLD;default->Ui.RARE_BLUE;};}
+    /** The mission's map or the Recovery Shovel in either hand: the Tactical Operations line shows only then (0.0.21). */
+    static boolean holdingMissionItem(){
+        var p=Minecraft.getInstance().player;if(p==null)return false;
+        for(var s:List.of(p.getMainHandItem(),p.getOffhandItem()))
+            if(s.is(ArsenalBeacon.CONTROLLER.get())||Hunts.mapMission(s)==mission.id()&&mission.id()!=0)return true;
+        return false;
+    }
     /** "OP IRON HOUND | Garrison | 640 m NE | 7/14 left": distance and bearing from where this player stands. */
     static Component missionLine(){
         var p=Minecraft.getInstance().player;if(p==null||!mission.active())return Component.empty();
@@ -249,7 +258,8 @@ public final class TacticalClient {
             long pulse=net.minecraft.Util.getMillis()/300%2;
             for(var o:offers()){
                 float[] at=toScreen(o.getInt("x")+.5,o.getInt("z")+.5);boolean active=o.getBoolean("active"),chosen=o.getLong("id")==selected;
-                int color=kindColor(o.getString("kind"));
+                // the selected offer's X is red; the others show their class (blue, purple, gold)
+                int color=chosen?Ui.RED:kindColor(o.getString("kind"));
                 float cx=Mth.clamp(at[0],x0+4,x1-5),cy=Mth.clamp(at[1],y0+4,y1-5);boolean edge=cx!=at[0]||cy!=at[1];
                 if(edge){g.fill((int)cx-2,(int)cy-2,(int)cx+3,(int)cy+3,0xff000000);g.fill((int)cx-1,(int)cy-1,(int)cx+2,(int)cy+2,color);continue;}
                 cross(g,(int)cx,(int)cy,active&&pulse==0?0xffffffff:color,chosen||active?4:3);
@@ -270,7 +280,7 @@ public final class TacticalClient {
             for(int i=-arm;i<=arm;i++){g.fill(x+i-1,y+i-1,x+i+2,y+i+2,0xaa000000);g.fill(x+i-1,y-i-1,x+i+2,y-i+2,0xaa000000);}
             for(int i=-arm;i<=arm;i++){g.fill(x+i,y+i,x+i+1,y+i+1,color);g.fill(x+i,y-i,x+i+1,y-i+1,color);}
         }
-        static int kindColor(String kind){return switch(kind){case "garrison"->Ui.ORANGE;case "warlord"->Ui.RED;default->Ui.CYAN;};}
+
 
         private void paintRow(GuiGraphics g,Ui.UiButton row,CompoundTag o){
             int x=row.getX(),y=row.getY();

@@ -40,10 +40,13 @@ final class HandTunedRoundTest {
             .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/createarsenal/beacon/OrdnanceClient.java")));
         assertTrue(play.find(),"the incoming sound is played");assertEquals("1f",play.group(1),"the incoming sound plays at pitch 1");
     }
-    @Test void theAttackAlarmSoundsWhenTheWarningShowsAndRepeats(){
+    @Test void theAttackAlarmSoundsWhenTheWarningShowsAndRepeats() throws Exception{
         assertTrue(BeaconAlerts.alarm(true,-1),"when the warning appears");
-        assertFalse(BeaconAlerts.alarm(true,3));assertTrue(BeaconAlerts.alarm(true,BeaconAlerts.ALARM_REPEAT_SECONDS));
+        // 0.0.21: one double beep (0.6 s), a 0.5 s pause, again: "beep beep - pause - beep beep"
+        assertEquals(22,BeaconAlerts.ALARM_PERIOD_TICKS,"0.6 s clip + 0.5 s pause");
+        assertFalse(BeaconAlerts.alarm(true,BeaconAlerts.ALARM_PERIOD_TICKS-1),"not while the clip and the pause run");assertTrue(BeaconAlerts.alarm(true,BeaconAlerts.ALARM_PERIOD_TICKS));
         assertFalse(BeaconAlerts.alarm(false,-1));assertFalse(BeaconAlerts.alarm(false,99));
+        assertEquals(BeaconAlerts.ALARM_CLIP_SECONDS,ogg("/assets/arsenal_beacon/sounds/sfx/beacon_attacked.ogg").seconds(),.01,"the clip is cut to 0.6 s");
     }
 
     // ---- the cannon ------------------------------------------------------------------------------------------------------

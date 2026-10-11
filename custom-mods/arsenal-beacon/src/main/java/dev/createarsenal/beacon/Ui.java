@@ -23,6 +23,8 @@ final class Ui {
         CYAN=0xff5ae2df,CYAN_DIM=0xff2f8d8c,CYAN_FILL=0xff17424a,MUTED=0xff9fb3bc,INK=0xffedf5f8,
         BRASS=0xffc9a24b,BRASS_DK=0xff7d6428,ORANGE=0xffffa36c,RED=0xffed7369,RED_FILL=0xff4a1f21,
         TRACK=0xff354c59,DISABLED=0xff74888f,SHADOW=0xff05090d;
+    /** Rarity, as in loot games: blue, purple, gold (the Tactical Operations classes, 0.0.21). */
+    static final int RARE_BLUE=0xff4f9dff,EPIC_PURPLE=0xffb57bff,LEGEND_GOLD=0xffffc23d;
     /** Age accents are always printed beside the written Age name; colour is never the only cue. */
     static final int[] AGE={0xffedf5f8,0xffe8c17b,0xffa7ca8b,0xff6cd4ef,0xffc29aff,0xffff86bd,0xffedf5f8,0xffe8b85c,0xffffa36c,0xffb7e3b2,0xffedf5f8,0xff6cd4ef};
 

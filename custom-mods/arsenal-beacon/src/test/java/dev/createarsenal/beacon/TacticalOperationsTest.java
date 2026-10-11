@@ -20,7 +20,10 @@ final class TacticalOperationsTest {
     }
     @Test void theConstantsAreTheOnesTheSpecAsksFor(){
         assertEquals(8,TacticalRules.UPLINK_DISTANCE);assertEquals(150,TacticalRules.BEYOND_ZONE);assertEquals(40,TacticalRules.SEPARATION,1e-9);
-        assertEquals(24000,TacticalRules.WARNING_TICKS);assertEquals(64,TacticalRules.APPROACH);assertEquals(24,TacticalRules.SPAWN_RADIUS);assertEquals(32,TacticalRules.LEASH);
+        assertEquals(24000,TacticalRules.WARNING_TICKS);assertEquals(64,TacticalRules.APPROACH);assertEquals(32,TacticalRules.LEASH);
+        // 0.0.21 arrival: one block within 16 of the X, a 6-block zone, the ring 8 to 12 out, so a warband appears within 28 of the X
+        assertEquals(16,TacticalRules.ANCHOR_SEARCH);assertEquals(6,TacticalRules.MINI_ZONE);assertEquals(8,TacticalRules.RING_FROM);assertEquals(12,TacticalRules.RING_TO);
+        assertEquals(28,TacticalRules.SPAWN_RADIUS);assertEquals(6000,TacticalRules.RETURN_GATE_TICKS,"a return gate for 5 minutes");
         assertEquals(128,TacticalRules.AWAY);assertEquals(6000,TacticalRules.AWAY_TICKS);assertEquals(2,TacticalRules.CAPTAIN_HEALTH_FACTOR);
         assertEquals(256,TacticalRules.SCAN_SIZE);assertEquals(128,TacticalRules.BASE_HALF);assertEquals(600,TacticalRules.SCAN_COOLDOWN_TICKS,"30 second cooldown");
         assertEquals(2,TacticalRules.EXTRA_PER_PLAYER);assertEquals(8,TacticalRules.EXTRA_MAX);
@@ -279,7 +282,8 @@ final class TacticalOperationsTest {
                 "adds "+TacticalRules.EXTRA_PER_PLAYER+" enemies, up to "+TacticalRules.EXTRA_MAX+" more","8 to 12 enemies","14 to 20 enemies","10 to 14 escorts",
                 "resonance coils: "+Economy.SATELLITE_UPGRADE_COILS[0]+" for Mk II and "+Economy.SATELLITE_UPGRADE_COILS[1]+" for Mk III",
                 "Ardent Energy: "+Economy.SATELLITE_UPGRADE_ARDENT[0]+" for Mk II and "+Economy.SATELLITE_UPGRADE_ARDENT[1]+" for Mk III",
-                "at least "+TacticalRules.BEYOND_ZONE+" blocks beyond","within "+TacticalRules.LEASH+" blocks of the objective",TacticalRules.SCAN_COOLDOWN_TICKS/20+" seconds after a scan ends",
+                "at least "+TacticalRules.BEYOND_ZONE+" blocks beyond","within "+TacticalRules.ANCHOR_SEARCH+" blocks of the X","Its zone is "+TacticalRules.MINI_ZONE+" blocks wide",
+                TacticalRules.RING_FROM+" to "+TacticalRules.RING_TO+" blocks from the middle","within "+TacticalRules.LEASH+" blocks of it",TacticalRules.SCAN_COOLDOWN_TICKS/20+" seconds after a scan ends",
                 "8 glass and "+Economy.COMMAND_TABLE_PLATING+" reinforced plating","8 glass and "+Economy.COMMAND_TABLE_ARDENT+" Ardent Energy",
                 "4 gold and "+Economy.SATELLITE_COILS+" resonance coils","4 gold and "+Economy.SATELLITE_ARDENT+" Ardent Energy"))
             assertTrue(all.contains(expected),"the Tactical Ops page does not say '"+expected+"'");
@@ -294,7 +298,7 @@ final class TacticalOperationsTest {
     // ---- the packets ---------------------------------------------------------------------------------------------------------------------------
     @Test void thePacketsRoundTrip(){
         var buf=new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
-        var sync=new Hunts.MissionSync(true,"OP IRON HOUND","garrison",-640,321,14,7,true);
+        var sync=new Hunts.MissionSync(true,"OP IRON HOUND","garrison",-640,321,14,7,true,4242L);
         Hunts.MissionSync.encode(sync,buf);assertEquals(sync,Hunts.MissionSync.decode(buf));
         var progress=new TacticalScan.ScanProgress(3,true,true,129);
         TacticalScan.ScanProgress.encode(progress,buf);assertEquals(progress,TacticalScan.ScanProgress.decode(buf));
