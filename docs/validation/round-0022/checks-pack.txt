@@ -1,138 +1,144 @@
-08:48:46 [hunts] OP GHOST FALCON: contact, 10 mobs (patrol) at 20232 8
-08:48:49 [hunts] OP GHOST FALCON: nobody within 128 blocks for 6000 ticks; the warband scattered
-08:48:53 [hunts] Garrison structure lookup took 20 ms (0 checks, none, Patrol instead)
-08:48:53 [hunts] garrison test: 21 ms, no structure, 3916 chunks loaded before, 3916 after
-08:49:06 [hunts] satellite scan 1 finished
-08:49:06 [hunts] scan test: 48 watched chunks under the image, 0 of them loaded after the scan; 3916 chunks loaded in all before, 4386 after (the player's own view loads some)
-08:49:07 [hunts] OP STEEL SHIELD: contact, 10 mobs (patrol) at 20262 38
-08:49:07 [hunts] one-block test: anchor 20262, 291, 38, 10 mobs
-08:49:07 [hunts] OP STEEL SHIELD cleared: 1 Ardent Energy and 4 coins queued for the reward chest
-08:49:08 [hunts] OP CRIMSON MANTIS: contact, 18 mobs (garrison) at 20232 8
-08:49:20 [hunts] armed-raider test: the skeleton is 11 blocks from the beacon after 10 s (started 30)
-08:49:23 [hunts] OP NORTHERN VIPER: contact, 9 mobs (patrol) at 20232 8
-08:49:24 [hunts] OP NORTHERN VIPER cleared: 1 Ardent Energy and 4 coins queued for the reward chest
-08:49:25 [hunts] OP GHOST WOLF: no block to stand on within 16 blocks of the objective; 1 return gates, the offer is replaced
-08:49:25 [hunts] no-ground test: gate at 20238, 291, -20, 1 offers on the board
-08:49:25 QA_CHECK PASS hunt GameTests pass=13 fail=0
-08:49:35 [hunts] Garrison structure lookup took 4 ms (0 checks, none, Patrol instead)
-08:49:36 QA_NOTE offer 12 OP BROKEN COBRA patrol at 19228 -34, 781 m W
-08:49:36 QA_NOTE offer 13 OP ASHEN BASTION patrol at 20637 -169, 653 m E
-08:49:36 QA_NOTE offer 14 OP SABLE SENTINEL patrol at 19254 612, 966 m SW
-08:49:36 QA_NOTE offer 15 OP NORTHERN RAVEN warlord at 19624 -545, 673 m NW
-08:49:36 QA_CHECK PASS a Mk III board has 4 offers offers=4
-08:49:36 QA_CHECK PASS offers lie at least 40 degrees apart closest=41.8054171033416
-08:49:36 QA_CHECK PASS offers lie between the zone + 150 and 1024 blocks 
-08:49:36 QA_NOTE scan start: tactical.result.scan_started
-08:49:49 [hunts] satellite scan 2 finished
-08:49:50 QA_CHECK PASS the Command Table screen opens dev.createarsenal.beacon.TacticalClient$TableScreen@41e67819
-08:49:50 QA_CHECK PASS the client has the scan image version=2
-08:49:53 QA_NOTE pressed SCAN MAP
-08:50:06 [hunts] satellite scan 3 finished
-08:50:06 QA_CHECK PASS the scan sweep is heard at the table [tactical.scan, tactical.scan_done]
-08:50:06 QA_CHECK PASS and the scan-done pings [tactical.scan, tactical.scan_done]
-08:50:08 QA_NOTE pressed Accept
-08:50:08 QA_CHECK PASS the mission runs after Accept 
-08:50:08 QA_CHECK PASS the player got the mission map 
-08:50:08 QA_CHECK PASS and a Return Flare 
-08:50:08 QA_CHECK PASS the screen refreshed in place (no reopen) 
-08:50:09 QA_NOTE pressed Abandon
-08:50:09 QA_CHECK PASS Abandon asks to confirm first 
-08:50:10 QA_CHECK PASS the client knows the mission 
-08:50:10 QA_CHECK PASS with an empty hand the mission line is hidden (0.0.21) hand=air
-08:50:13 QA_CHECK PASS with the mission map in hand it shows hand=filled_map
-08:50:16 QA_CHECK PASS the beacon card shows next to the mission line (near, holding the shovel) 
-08:50:16 QA_CHECK PASS the shovel shows the mission line too 
-08:50:16 QA_NOTE beacon card server: player=20008, 291, 11 beacon=20008, 291, 8 radius=24 near=true sent=true
-08:50:16 QA_NOTE beacon card state: phase=preparation near=true installed=true receivedAt=2059 now=2065 holding=beacon_controller
-08:50:18 QA_CHECK PASS the map has the red X at the objective and the beacon on the same sheet red X at the objective, scale 3, beacon and objective on the sheet
-08:50:19 QA_NOTE warlord accept: tactical.result.accepted
-08:50:27 [hunts] OP BROKEN RAVEN: contact, 13 mobs (warlord) at 20232 8
-08:50:28 QA_CHECK PASS the anchor is the objective's own block (0.0.21) BlockPos{x=20232, y=291, z=8}
-08:50:29 QA_CHECK PASS the client draws them as big spawn gates client gates=12
-08:50:29 QA_CHECK PASS the warband comes out of red gates gates=12
-08:50:31 QA_NOTE arrival stage 'spawning the warband': 12 ticks, slowest 92 ms, mean 43 ms
-08:50:31 QA_NOTE arrival stage 'idle, 90 blocks out': 63 ticks, slowest 83 ms, mean 30 ms
-08:50:31 QA_NOTE arrival stage 'after the warband is out': 70 ticks, slowest 54 ms, mean 29 ms
-08:50:31 QA_NOTE arrival stage 'walking in, before contact': 1 ticks, slowest 17 ms, mean 17 ms
-08:50:31 QA_CHECK PASS spawning the warband adds under 15 ms to the mean server tick (0.0.21) idle mean 30.5 ms (slowest 83), spawning mean 43.7 ms (slowest 92), after mean 29.4 ms (slowest 54)
-08:50:31 QA_CHECK PASS no tick while it spawns reaches 100 ms (a visible hitch) idle mean 30.5 ms (slowest 83), spawning mean 43.7 ms (slowest 92), after mean 29.4 ms (slowest 54)
-08:50:31 QA_CHECK PASS once it is out the mean tick is within 5 ms of idle idle mean 30.5 ms (slowest 83), spawning mean 43.7 ms (slowest 92), after mean 29.4 ms (slowest 54)
-08:50:31 QA_CHECK PASS one captain, glowing, named after the operation OP BROKEN RAVEN
-08:50:31 QA_CHECK PASS the captain has twice a heavy's health 152.0
-08:50:31 QA_CHECK PASS a Warlord is its captain and 10 to 14 escorts (plus extra players) total=13
-08:50:31 QA_CHECK PASS the client marks every warband mob with the red ! (0.0.21) band=13 marked=13
-08:50:31 QA_CHECK PASS the warband keeps near its small zone farthest=5
-08:50:36 QA_CHECK PASS the player carries the Warlord's map 
-08:50:36 [hunts] OP BROKEN RAVEN cleared: 4 Ardent Energy and 15 coins queued for the reward chest
-08:50:36 QA_CHECK PASS the mission is cleared and paid 
-08:50:36 QA_CHECK PASS its map burned (0.0.21) 
-08:50:36 QA_CHECK PASS chat tells everyone 
-08:50:36 QA_CHECK PASS the mission-cleared jingle plays 
-08:50:39 QA_CHECK PASS the cannon is placed and ours 
-08:50:41 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@6f8cd739
-08:50:42 QA_CHECK PASS the long card can scroll max=101
-08:50:42 QA_CHECK PASS scrolling moves the card scroll=22
-08:50:44 QA_NOTE card scroll after a frame: 22 of 101
-08:50:45 QA_NOTE starshell flare at BlockPos{x=19996, y=291, z=17}
-08:50:45 QA_CHECK PASS the flare calls a Starshell STARSHELL
-08:50:58 QA_CHECK PASS the incoming sound played while the player looked away [flare.chatter_1, cannon.turning, cannon.turning_done, cannon.fire, ordnance.incoming, fire.starshell]
-08:50:58 QA_NOTE player effects in the star: [effect.minecraft.haste 2]
-08:50:58 QA_CHECK PASS the Starshell gives Haste II [effect.minecraft.haste 2]
-08:50:58 QA_CHECK PASS the Starshell gives no Regeneration [effect.minecraft.haste 2]
-08:51:02 QA_CHECK PASS the Starshell's Haste runs for about 30 s (0.0.21) ticks left=593
-08:51:12 QA_CHECK PASS 10 s after leaving the light the Haste is still on (0.0.21) ticks left=386 inLight=false
-08:51:13 QA_NOTE sounds after the supply flare: [flare.supply_chatter_2, cannon.turning]
-08:51:13 QA_CHECK PASS a supply flare answers with one of the owner's supply lines (0.0.22) [flare.supply_chatter_2, cannon.turning]
-08:51:13 QA_CHECK PASS and not with a fire support line [flare.supply_chatter_2, cannon.turning]
-08:51:15 QA_NOTE sounds after the return flare: [flare.recall_chatter_3]
-08:51:15 QA_CHECK PASS a return flare answers with one of the owner's return lines (0.0.22) [flare.recall_chatter_3]
-08:51:15 QA_CHECK PASS and not with a fire support line [flare.recall_chatter_3]
-08:51:26 QA_NOTE raiders: [entity.minecraft.skeleton at 19968, 291, 38 dist 50 speed=true gate=true]
-08:51:26 QA_CHECK PASS a reinforcement with no natural ground came out of a gate [entity.minecraft.skeleton at 19968, 291, 38 dist 50 speed=true gate=true]
-08:51:26 QA_CHECK PASS raid enemies get the speed burst 
-08:51:47 QA_CHECK PASS the gate line is said once in the wave times=1
-08:51:47 QA_CHECK PASS the old repeating line is gone 
-08:51:51 QA_CHECK PASS /arsenal test-gate opens a gate with a zombie in front of it gates=[(20008.5, 291.0, -28.7)] zombie=(20008.5, 291.0, -27.5)
-08:51:57 QA_CHECK PASS a due raid waits while it is day (0.0.21) phase=preparation
-08:51:58 QA_NOTE pressed Start raid
-08:51:58 QA_CHECK PASS Start raid by day books the raid for nightfall requested=true phase=preparation
-08:51:58 QA_CHECK PASS the screen says it starts at nightfall Raids only come at night. Your raid starts at nightfall (in about 6 min) if someone is near the beacon.
-08:51:58 QA_CHECK PASS the button reads Raid at nightfall and is greyed out 
-08:52:01 QA_CHECK PASS the raid began and the booking is spent phase=snapshot
-08:52:01 QA_NOTE raid skeletons and pillagers: [entity.minecraft.pillager=crossbow, entity.minecraft.skeleton=bow]
-08:52:01 QA_CHECK PASS every raid skeleton holds a bow and every pillager a crossbow (0.0.21) [entity.minecraft.pillager=crossbow, entity.minecraft.skeleton=bow]
-08:52:12 QA_CHECK PASS the raid skeleton walks at the beacon (no gate spam) from 30 to 11
-08:52:12 QA_CHECK PASS and opened no gate near it gates=0
-08:52:12 QA_NOTE plain zombie at 20008, 291, -56 (64 blocks, zone radius 24)
-08:52:23 QA_CHECK PASS during a raid an ordinary monster 40 blocks past the zone comes for the beacon (0.0.21) from 64 to 33 raider=false
-08:52:27 QA_NOTE alarm starts at client ticks [5216, 5238, 5260, 5282] gaps [22, 22, 22]
-08:52:27 QA_CHECK PASS the alarm repeats every 22 client ticks: 0.6 s beeps, 0.5 s pause (0.0.21) gaps=[22, 22, 22]
-08:52:28 [hunts] Garrison structure lookup took 23 ms (1 checks, found)
-08:52:28 QA_NOTE garrison around 0 0: 784 496 (24 ms, chunk 49 31 starts [minecraft:mansion])
-08:52:28 QA_CHECK PASS the Garrison structure is really there (784 496) [minecraft:mansion]
-08:52:28 [hunts] Garrison structure lookup took 20 ms (1 checks, found)
-08:52:28 QA_NOTE garrison around 3000 0: 3088 -976 (20 ms, chunk 193 -61 starts [minecraft:desert_pyramid])
-08:52:28 QA_CHECK PASS the Garrison structure is really there (3088 -976) [minecraft:desert_pyramid]
-08:52:28 [hunts] Garrison structure lookup took 35 ms (2 checks, found)
-08:52:29 QA_NOTE garrison around -3000 0: -3536 48 (35 ms, chunk -221 3 starts [minecraft:desert_pyramid])
-08:52:29 QA_CHECK PASS the Garrison structure is really there (-3536 48) [minecraft:desert_pyramid]
-08:52:29 [hunts] Garrison structure lookup took 2 ms (0 checks, none, Patrol instead)
-08:52:29 QA_NOTE garrison around 0 3000: none (2 ms)
-08:52:29 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
-08:52:29 QA_NOTE garrison around 0 -3000: none (1 ms)
-08:52:29 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
-08:52:29 QA_NOTE garrison around 6000 6000: none (1 ms)
-08:52:29 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
-08:52:29 QA_NOTE garrison around -6000 6000: none (1 ms)
-08:52:29 [hunts] Garrison structure lookup took 15 ms (1 checks, found)
-08:52:29 QA_NOTE garrison around 6000 -6000: 5744 -5040 (15 ms, chunk 359 -315 starts [minecraft:mansion])
-08:52:29 QA_CHECK PASS the Garrison structure is really there (5744 -5040) [minecraft:mansion]
-08:52:29 [hunts] Garrison structure lookup took 24 ms (2 checks, found)
-08:52:29 QA_NOTE garrison around -6000 -6000: -6400 -5408 (24 ms, chunk -400 -338 starts [minecraft:pillager_outpost])
-08:52:29 QA_CHECK PASS the Garrison structure is really there (-6400 -5408) [minecraft:pillager_outpost]
-08:52:29 [hunts] Garrison structure lookup took 15 ms (1 checks, none, Patrol instead)
-08:52:29 QA_NOTE garrison around 9000 0: none (16 ms)
-08:52:29 QA_CHECK PASS Garrison lookups over land find structures found=5 of 10
-08:52:29 QA_CHECK PASS a Garrison lookup loads no chunk chunks loaded by the lookups=0
-08:52:29 QA_CHECK PASS a Garrison lookup stays under 50 ms slowest=35 ms
-08:52:29 QA_DONE pass=72 fail=0
+09:08:12 [hunts] OP GHOST FALCON: contact, 9 mobs (patrol) at 20232 8
+09:08:13 [hunts] OP GHOST FALCON: nobody within 128 blocks for 6000 ticks; the warband scattered
+09:08:17 [hunts] Garrison structure lookup took 13 ms (0 checks, none, Patrol instead)
+09:08:17 [hunts] garrison test: 14 ms, no structure, 3910 chunks loaded before, 3910 after
+09:08:18 [hunts] Garrison structure lookup took 7 ms (0 checks, none, Patrol instead)
+09:08:30 [hunts] satellite scan 1 finished
+09:08:30 [hunts] scan test: 48 watched chunks under the image, 0 of them loaded after the scan; 3910 chunks loaded in all before, 4339 after (the player's own view loads some)
+09:08:30 [hunts] OP STEEL SHIELD: contact, 11 mobs (patrol) at 20262 38
+09:08:30 [hunts] one-block test: anchor 20262, 291, 38, 11 mobs
+09:08:30 [hunts] OP STEEL SHIELD cleared: 1 Ardent Energy and 2 coins queued for the reward chest
+09:08:30 [hunts] OP AMBER SPEAR cleared: 2 Ardent Energy and 6 coins queued for the reward chest
+09:08:30 [hunts] pay test: next payout tier 5, last paid tier 0: a Patrol paid 2 Ardent Energy and 6 coins
+09:08:31 [hunts] OP NORTHERN VIPER: contact, 17 mobs (garrison) at 20232 8
+09:08:43 [hunts] armed-raider test: the skeleton is 11 blocks from the beacon after 10 s (started 30)
+09:08:46 [hunts] OP GHOST WOLF: contact, 11 mobs (patrol) at 20232 8
+09:08:47 [hunts] OP GHOST WOLF cleared: 1 Ardent Energy and 2 coins queued for the reward chest
+09:08:47 [hunts] OP WINTER BADGER: no block to stand on within 16 blocks of the objective; 1 return gates, the offer is replaced
+09:08:47 [hunts] no-ground test: gate at 20238, 291, -20, 1 offers on the board
+09:08:48 QA_CHECK PASS hunt GameTests pass=14 fail=0
+09:08:58 [hunts] Garrison structure lookup took 4 ms (0 checks, none, Patrol instead)
+09:08:58 [hunts] Garrison structure lookup took 9 ms (0 checks, none, Patrol instead)
+09:08:58 QA_NOTE offer 13 OP ASHEN BASTION patrol at 20425 538, 674 m SE
+09:08:58 QA_NOTE offer 14 OP SABLE SENTINEL warlord at 20028 -350, 359 m N
+09:08:58 QA_NOTE offer 15 OP NORTHERN RAVEN warlord at 19777 627, 661 m S
+09:08:58 QA_NOTE offer 16 OP WINTER HOUND patrol at 19083 280, 964 m W
+09:08:58 QA_CHECK PASS a Mk III board has 4 offers offers=4
+09:08:58 QA_CHECK PASS offers lie at least 40 degrees apart closest=53.18267390459033
+09:08:58 QA_CHECK PASS offers lie between the zone + 150 and 1024 blocks 
+09:08:59 QA_NOTE scan start: tactical.result.scan_started
+09:09:11 [hunts] satellite scan 2 finished
+09:09:12 QA_CHECK PASS the Command Table screen opens dev.createarsenal.beacon.TacticalClient$TableScreen@51d84d7f
+09:09:12 QA_CHECK PASS the client has the scan image version=2
+09:09:15 QA_NOTE pressed SCAN MAP
+09:09:28 [hunts] satellite scan 3 finished
+09:09:28 QA_CHECK PASS the scan sweep is heard at the table [tactical.scan, tactical.scan_done]
+09:09:28 QA_CHECK PASS and the scan-done pings [tactical.scan, tactical.scan_done]
+09:09:30 QA_NOTE pressed Accept
+09:09:30 QA_CHECK PASS the mission runs after Accept 
+09:09:30 QA_CHECK PASS the player got the mission map 
+09:09:30 QA_CHECK PASS and a Return Flare 
+09:09:30 QA_CHECK PASS the screen refreshed in place (no reopen) 
+09:09:31 QA_NOTE pressed Abandon
+09:09:32 QA_CHECK PASS Abandon asks to confirm first 
+09:09:32 QA_CHECK PASS the client knows the mission 
+09:09:32 QA_CHECK PASS with an empty hand the mission line is hidden (0.0.21) hand=air
+09:09:36 QA_CHECK PASS with the mission map in hand it shows hand=filled_map
+09:09:38 QA_CHECK PASS the beacon card shows next to the mission line (near, holding the shovel) 
+09:09:38 QA_CHECK PASS the shovel shows the mission line too 
+09:09:38 QA_NOTE beacon card server: player=20008, 291, 11 beacon=20008, 291, 8 radius=24 near=true sent=true
+09:09:38 QA_NOTE beacon card state: phase=preparation near=true installed=true receivedAt=1940 now=1946 holding=beacon_controller
+09:09:40 QA_CHECK PASS the map has the red X at the objective and the beacon on the same sheet red X at the objective, scale 2, beacon and objective on the sheet
+09:09:41 QA_NOTE warlord accept: tactical.result.accepted
+09:09:49 [hunts] OP AMBER BASTION: contact, 13 mobs (warlord) at 20232 8
+09:09:50 QA_CHECK PASS the anchor is the objective's own block (0.0.21) BlockPos{x=20232, y=291, z=8}
+09:09:51 QA_CHECK PASS the client draws them as big spawn gates client gates=11
+09:09:51 QA_CHECK PASS the warband comes out of red gates gates=11
+09:09:53 QA_NOTE arrival stage 'spawning the warband': 12 ticks, slowest 68 ms, mean 50 ms
+09:09:53 QA_NOTE arrival stage 'idle, 90 blocks out': 62 ticks, slowest 61 ms, mean 31 ms
+09:09:53 QA_NOTE arrival stage 'after the warband is out': 70 ticks, slowest 80 ms, mean 31 ms
+09:09:53 QA_NOTE arrival stage 'walking in, before contact': 2 ticks, slowest 41 ms, mean 37 ms
+09:09:53 QA_CHECK FAIL spawning the warband adds under 15 ms to the mean server tick (0.0.21) idle mean 31.8 ms (slowest 61), spawning mean 50.9 ms (slowest 68), after mean 31.2 ms (slowest 80)
+09:09:53 QA_CHECK PASS no tick while it spawns reaches 100 ms (a visible hitch) idle mean 31.8 ms (slowest 61), spawning mean 50.9 ms (slowest 68), after mean 31.2 ms (slowest 80)
+09:09:53 QA_CHECK PASS once it is out the mean tick is within 5 ms of idle idle mean 31.8 ms (slowest 61), spawning mean 50.9 ms (slowest 68), after mean 31.2 ms (slowest 80)
+09:09:53 QA_CHECK PASS one captain, glowing, named after the operation OP AMBER BASTION
+09:09:53 QA_CHECK PASS the captain has twice a heavy's health 128.0
+09:09:53 QA_CHECK PASS a Warlord is its captain and 10 to 14 escorts (plus extra players) total=13
+09:09:53 QA_CHECK PASS the client marks every warband mob with the red ! (0.0.21) band=13 marked=13
+09:09:53 QA_CHECK PASS the warband keeps near its small zone farthest=5
+09:09:58 QA_CHECK PASS the player carries the Warlord's map 
+09:09:58 [hunts] OP AMBER BASTION cleared: 1 Ardent Energy and 4 coins queued for the reward chest
+09:09:58 QA_CHECK PASS the mission is cleared and paid 
+09:09:58 QA_NOTE warlord pay: 1 Ardent Energy and 4 coins at hunt tier 0 (beacon Next payout tier 0, last paid tier 3)
+09:09:58 QA_CHECK PASS the Warlord pays at the beacon's Next payout tier (0.0.22) paid 1+4, expected HuntPay[ardent=1, coins=4] at tier 0
+09:09:58 QA_CHECK PASS its map burned (0.0.21) 
+09:09:58 QA_CHECK PASS chat tells everyone 
+09:09:58 QA_CHECK PASS the mission-cleared jingle plays 
+09:10:02 QA_CHECK PASS the cannon is placed and ours 
+09:10:03 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@67dd1ef
+09:10:05 QA_CHECK PASS the long card can scroll max=101
+09:10:05 QA_CHECK PASS scrolling moves the card scroll=22
+09:10:06 QA_NOTE card scroll after a frame: 22 of 101
+09:10:08 QA_NOTE starshell flare at BlockPos{x=19996, y=291, z=16}
+09:10:08 QA_CHECK PASS the flare calls a Starshell STARSHELL
+09:10:19 QA_CHECK PASS the incoming sound played while the player looked away [flare.chatter_1, cannon.turning, cannon.turning_done, cannon.fire, ordnance.incoming, fire.starshell]
+09:10:20 QA_NOTE player effects in the star: [effect.minecraft.haste 2]
+09:10:20 QA_CHECK PASS the Starshell gives Haste II [effect.minecraft.haste 2]
+09:10:20 QA_CHECK PASS the Starshell gives no Regeneration [effect.minecraft.haste 2]
+09:10:24 QA_CHECK PASS the Starshell's Haste runs for about 30 s (0.0.21) ticks left=592
+09:10:34 QA_CHECK PASS 10 s after leaving the light the Haste is still on (0.0.21) ticks left=386 inLight=false
+09:10:35 QA_NOTE sounds after the supply flare: [flare.supply_chatter_2, cannon.turning]
+09:10:35 QA_CHECK PASS a supply flare answers with one of the owner's supply lines (0.0.22) [flare.supply_chatter_2, cannon.turning]
+09:10:35 QA_CHECK PASS and not with a fire support line [flare.supply_chatter_2, cannon.turning]
+09:10:42 QA_NOTE sounds after the return flare: [flare.recall_chatter_3, cannon.turning_done, cannon.turning]
+09:10:42 QA_CHECK PASS a return flare answers with one of the owner's return lines (0.0.22) [flare.recall_chatter_3, cannon.turning_done, cannon.turning]
+09:10:42 QA_CHECK PASS and not with a fire support line [flare.recall_chatter_3, cannon.turning_done, cannon.turning]
+09:10:58 QA_NOTE raiders: [entity.minecraft.skeleton at 19968, 291, 31 dist 46 speed=true gate=true]
+09:10:58 QA_CHECK PASS a reinforcement with no natural ground came out of a gate [entity.minecraft.skeleton at 19968, 291, 31 dist 46 speed=true gate=true]
+09:10:58 QA_CHECK PASS raid enemies get the speed burst 
+09:11:19 QA_CHECK PASS the gate line is said once in the wave times=1
+09:11:19 QA_CHECK PASS the old repeating line is gone 
+09:11:23 QA_CHECK PASS /arsenal test-gate opens a gate with a zombie in front of it gates=[(20008.5, 291.0, -28.7)] zombie=(20008.5, 291.0, -27.5)
+09:11:29 QA_CHECK PASS a due raid waits while it is day (0.0.21) phase=preparation
+09:11:30 QA_NOTE pressed Start raid
+09:11:30 QA_CHECK PASS Start raid by day books the raid for nightfall requested=true phase=preparation
+09:11:30 QA_CHECK PASS the screen says it starts at nightfall Raids only come at night. Your raid starts at nightfall (in about 6 min) if someone is near the beacon.
+09:11:30 QA_CHECK PASS the button reads Raid at nightfall and is greyed out 
+09:11:33 QA_CHECK PASS the raid began and the booking is spent phase=snapshot
+09:11:34 QA_NOTE raid skeletons and pillagers: [entity.minecraft.pillager=crossbow, entity.minecraft.skeleton=bow]
+09:11:34 QA_CHECK PASS every raid skeleton holds a bow and every pillager a crossbow (0.0.21) [entity.minecraft.pillager=crossbow, entity.minecraft.skeleton=bow]
+09:11:44 QA_CHECK PASS the raid skeleton walks at the beacon (no gate spam) from 30 to 11
+09:11:44 QA_CHECK PASS and opened no gate near it gates=0
+09:11:44 QA_NOTE plain zombie at 20008, 291, -56 (64 blocks, zone radius 24)
+09:11:55 QA_CHECK PASS during a raid an ordinary monster 40 blocks past the zone comes for the beacon (0.0.21) from 64 to 33 raider=false
+09:11:59 QA_NOTE alarm starts at client ticks [5373, 5395, 5417, 5439] gaps [22, 22, 22]
+09:11:59 QA_CHECK PASS the alarm repeats every 22 client ticks: 0.6 s beeps, 0.5 s pause (0.0.21) gaps=[22, 22, 22]
+09:12:00 [hunts] Garrison structure lookup took 34 ms (1 checks, found)
+09:12:00 QA_NOTE garrison around 0 0: 784 496 (35 ms, chunk 49 31 starts [minecraft:mansion])
+09:12:00 QA_CHECK PASS the Garrison structure is really there (784 496) [minecraft:mansion]
+09:12:00 [hunts] Garrison structure lookup took 21 ms (1 checks, found)
+09:12:00 QA_NOTE garrison around 3000 0: 3088 -976 (21 ms, chunk 193 -61 starts [minecraft:desert_pyramid])
+09:12:00 QA_CHECK PASS the Garrison structure is really there (3088 -976) [minecraft:desert_pyramid]
+09:12:01 [hunts] Garrison structure lookup took 64 ms (2 checks, found)
+09:12:01 QA_NOTE garrison around -3000 0: -3536 48 (64 ms, chunk -221 3 starts [minecraft:desert_pyramid])
+09:12:01 QA_CHECK PASS the Garrison structure is really there (-3536 48) [minecraft:desert_pyramid]
+09:12:01 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+09:12:01 QA_NOTE garrison around 0 3000: none (2 ms)
+09:12:01 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+09:12:01 QA_NOTE garrison around 0 -3000: none (1 ms)
+09:12:01 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+09:12:01 QA_NOTE garrison around 6000 6000: none (1 ms)
+09:12:01 [hunts] Garrison structure lookup took 1 ms (0 checks, none, Patrol instead)
+09:12:01 QA_NOTE garrison around -6000 6000: none (1 ms)
+09:12:01 [hunts] Garrison structure lookup took 16 ms (1 checks, found)
+09:12:01 QA_NOTE garrison around 6000 -6000: 5744 -5040 (17 ms, chunk 359 -315 starts [minecraft:mansion])
+09:12:01 QA_CHECK PASS the Garrison structure is really there (5744 -5040) [minecraft:mansion]
+09:12:01 [hunts] Garrison structure lookup took 27 ms (2 checks, found)
+09:12:01 QA_NOTE garrison around -6000 -6000: -6400 -5408 (28 ms, chunk -400 -338 starts [minecraft:pillager_outpost])
+09:12:01 QA_CHECK PASS the Garrison structure is really there (-6400 -5408) [minecraft:pillager_outpost]
+09:12:01 [hunts] Garrison structure lookup took 16 ms (1 checks, none, Patrol instead)
+09:12:01 QA_NOTE garrison around 9000 0: none (17 ms)
+09:12:01 QA_CHECK PASS Garrison lookups over land find structures found=5 of 10
+09:12:01 QA_CHECK PASS a Garrison lookup loads no chunk chunks loaded by the lookups=0
+09:12:01 QA_CHECK FAIL a Garrison lookup stays under 50 ms slowest=64 ms
+09:12:01 QA_DONE pass=71 fail=2

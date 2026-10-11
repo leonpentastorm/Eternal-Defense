@@ -45,6 +45,9 @@ WHAT IS NEW IN 0.0.22 (since the 0.0.21 bundle)
   (it had none). Fire support flares keep their six. No line plays twice in a row.
 * Pack edition: every ammo recipe takes twice the propellant and 20 percent more cartridge cases, rounded up (a batch of 8 rounds
   or fewer: 2 cases and 2 propellant; 32 rounds: 5 cases, 4 propellant; 64 rounds: 10 cases, 8 propellant). Standalone unchanged.
+* Bug fix (your report): operations paid at the tier of the last raid you WON, so until you won a raid above tier 0 every one
+  paid like tier 0 (a Patrol: 0 Ardent Energy and 1 coin). They now pay, and fight, at the "Next payout" tier your beacon shows.
+  The satellite's Mk does not raise a class's pay: it unlocks Garrison (Mk II) and Warlord (Mk III), which pay more.
 * Tactical Operations: a mission always pays at least 1 Ardent Energy and 2 ammo coins.
 
 WHAT WAS NEW IN 0.0.21

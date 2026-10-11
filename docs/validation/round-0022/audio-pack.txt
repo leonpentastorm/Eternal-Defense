@@ -1,8 +1,10 @@
-# The new radio lines in the pack client's recorded output. tools/audio/find_sfx.py.
-# client log: 08:51:13 QA_SOUND arsenal_beacon:flare.supply_chatter_2 at 20036 291 17
-# client log: 08:51:14 QA_SOUND arsenal_beacon:flare.recall_chatter_3 at 20036 291 17
-# The QA threw the return flare about a second after the supply flare's line began, so the two lines overlap (with the cannon turning
-# and the game's music under them): no match reaches 0.6; at threshold 0.3 both lines are found where the client log puts them, 1.16 s apart.
-# capture 317.5 s from 0.0 s; threshold 0.3; first 1.5 s of each sound matched
-  239.42 s  supply_2               r=0.51  pitch 1.000
-  240.58 s  recall_3               r=0.48  pitch 1.000
+# The new radio lines in the pack client's recorded output, final run (each line left to finish before the next flare). tools/audio/find_sfx.py, threshold 0.6
+# client log: 09:10:35 QA_SOUND arsenal_beacon:flare.supply_chatter_2 at 20036 291 17
+# client log: 09:10:41 QA_SOUND arsenal_beacon:flare.recall_chatter_3 at 20036 291 17
+# capture 322.5 s from 0.0 s; threshold 0.6; first 1.5 s of each sound matched
+  233.60 s  supply_2               r=0.95  pitch 1.000
+
+# recall_chatter_3 does not reach 0.6: it plays while the cannon turns to the supply flare and clunks into lock (client log: cannon.turning_done
+# and cannon.turning in the same second). Looked for alone around it at threshold 0.3:
+# capture 17.0 s from 233.0 s; threshold 0.3; first 1.5 s of each sound matched
+  239.84 s  recall_3               r=0.35  pitch 1.000
