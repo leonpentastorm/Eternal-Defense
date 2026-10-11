@@ -16,14 +16,14 @@
 * `bothPlacesThatSetAmmoPartsUseTheSameNumbers`: the KubeJS script passes the ammo id. `WeaponPlatform.costs` removes the recipe's cases and propellant and adds the `AmmoInputs` amounts. Both new methods are public, so KubeJS can call them.
 * `theReturnFlareNeedsTheCannon`: no flare kind skips the cannon check in `SupportCalls`, and `Hunts.returnGate` never calls `SupportCalls.problem`.
 
-### FOB GameTests: 17 pass, 0 fail (standalone; the pack run is in progress)
+### FOB GameTests: 17 pass, 0 fail, in both editions
 
 `fob_01` to `fob_16` as in slice 3, and `fob_17` (`theReturnFlareNeedsTheCannonButAnOperationsGateDoesNot`):
 * A player with a Support Platform and no cannon is refused the Return Flare ("no_cannon").
 * With a cannon placed, the same check passes.
 * With the cannon taken away again, `Hunts.returnGate` (an operation with no ground) still opens its portal in front of the player.
 
-### Real client: 59 pass, 0 fail, standalone (`docs/validation/round-0026/checks-standalone.txt`); the pack run is in progress
+### Real client: 59 pass, 0 fail, each edition (`docs/validation/round-0026/checks-standalone.txt`, `checks-pack.txt`)
 
 The whole `QaFob` script (slices 1 to 3) passes the same 59 checks as in 0.0.25, so nothing else changed.
 
