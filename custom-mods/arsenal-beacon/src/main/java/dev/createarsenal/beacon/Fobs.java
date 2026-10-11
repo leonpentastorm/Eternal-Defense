@@ -39,7 +39,7 @@ final class Fobs {
     /** Persistent data key on a villager: the id of the FOB whose village it lives in (it stays protected wherever it walks). */
     static final String VILLAGER_TAG="arsenalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
-    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4;
+    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5;
     /** The flares the FOB shop sells, at the Support Platform's prices ({@link SupportRules}). */
     static final List<String> SHOP=List.of("supply","return","fire");
 
@@ -136,7 +136,9 @@ final class Fobs {
             long id=v.getPersistentData().getLong(VILLAGER_TAG);
             if(id!=f.id&&(id==0||d.byId(id)==null))v.getPersistentData().putLong(VILLAGER_TAG,f.id);
         }
-        return livingVillagers(l,f);
+        int alive=livingVillagers(l,f);
+        if(alive!=f.workers){Routes.accrue(d,f);f.workers=alive;d.setDirty();}   // the stockpile counts up to now at the old rate (0.0.24)
+        return alive;
     }
 
     // ---- the villagers are immortal, except during a raid at their FOB ---------------------------------------------------------------------------
@@ -144,12 +146,15 @@ final class Fobs {
     static boolean protect(boolean fobExists,boolean raidRunning,boolean bypassesInvulnerability){return fobExists&&!raidRunning&&!bypassesInvulnerability;}
 
     // ---- the shop, renaming, removal ------------------------------------------------------------------------------------------------------------
-    static void open(ServerPlayer p,BlockPos pos){open(p,pos,"");}
-    static void open(ServerPlayer p,BlockPos pos,String message){
+    /** A click on the FOB Beacon: always a fresh screen (a menu the server still thinks open may be gone on the client). */
+    static void open(ServerPlayer p,BlockPos pos){open(p,pos,"",true);}
+    /** After a button or a change: the open screen is refreshed in place. */
+    static void open(ServerPlayer p,BlockPos pos,String message){open(p,pos,message,false);}
+    static void open(ServerPlayer p,BlockPos pos,String message,boolean fresh){
         var l=p.serverLevel();var f=FobData.get(l).at(pos);
         if(f==null){say(p,"fob.unregistered");return;}
         var state=state(p,f,message);
-        if(p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.pos.equals(pos)){BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
+        if(!fresh&&p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.pos.equals(pos)){BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
         NetworkHooks.openScreen(p,new SimpleMenuProvider((id,inv,who)->new FobBlocks.FobMenu(id,inv,pos,new CompoundTag()),Component.literal(f.name)),buf->{buf.writeBlockPos(pos);buf.writeNbt(state);});
     }
     /** Everything the FOB screen shows, for one player. */
@@ -167,6 +172,8 @@ final class Fobs {
         n.putInt("energy",ArdentEnergy.balance(p));n.putBoolean("creative",p.isCreative());
         var base=SupportData.get(l).of(p.getUUID());n.putBoolean("hasPlatform",base!=null&&base.platform!=null);n.putBoolean("hasCannon",base!=null&&base.cannon!=null);
         for(String id:SHOP)n.putInt("price."+id,price(id));
+        // the second listing (0.0.24): this FOB's Supply Delivery Gate, one per FOB
+        n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(p,Economy.fabrication("supply_delivery_gate")));
         n.putString("message",message);
         return n;
     }
@@ -177,6 +184,7 @@ final class Fobs {
         var l=p.serverLevel();var f=FobData.get(l).at(pos);
         if(f==null||!(p.containerMenu instanceof FobBlocks.FobMenu menu)||!menu.stillValid(p))return;
         if(id==CALL_RAID){String problem=callRaid(l,f,p);open(p,pos,problem==null?"fob.result.raid_called":"fob.raid."+problem);return;}
+        if(id==BUY_GATE){String result=Routes.buyGate(p,f);log("{}: {} asked for the Delivery Gate: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
         int index=id-BUY_SUPPLY;if(index<0||index>=SHOP.size())return;
         String item=SHOP.get(index);
         if(!FobRules.working(f.state)){open(p,pos,"fob.result.closed");return;}
@@ -192,7 +200,7 @@ final class Fobs {
         if(!tag.hasCustomHoverName()){say(p,"fob.rename.blank");return;}
         String name=FobRules.clean(tag.getHoverName().getString());String problem=FobRules.nameProblem(name,d.names(f.id));
         if(problem!=null){say(p,"fob.rename."+problem,name);return;}
-        String old=f.name;f.name=name;d.setDirty();
+        String old=f.name;f.name=name;d.setDirty();Routes.refreshNames(l,f);
         if(!p.isCreative())tag.shrink(1);
         announce(l,Component.translatable("gui.arsenal_beacon.fob.renamed",old,name));
         refreshScreens(l,f);
@@ -208,7 +216,7 @@ final class Fobs {
         var l=p.server.overworld();var d=FobData.get(l);var f=d.byId(id);
         if(f==null||p.level()!=l||p.distanceToSqr(f.pos.getX()+.5,f.pos.getY()+.5,f.pos.getZ()+.5)>64)return false;
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
-        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);
+        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);   // its gates turn UNLINKED by themselves
         if(l.getBlockState(f.pos).is(ArsenalBeacon.FOB_BEACON.get()))l.removeBlock(f.pos,false);
         give(p);
         announce(l,Component.translatable("gui.arsenal_beacon.fob.removed",p.getDisplayName(),f.name));
@@ -219,7 +227,7 @@ final class Fobs {
     static void blockGone(ServerLevel l,BlockPos pos){
         var d=FobData.get(l);var f=d.at(pos);if(f==null)return;
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
-        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);log("{}: its block was removed; the FOB is deleted",f.name);
+        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);log("{}: its block was removed; the FOB is deleted",f.name);
     }
     private static void give(ServerPlayer p){var stack=new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get());if(!p.getInventory().add(stack))p.drop(stack,false);}
     static void refreshScreens(ServerLevel l,FobData.Fob f){
@@ -238,7 +246,10 @@ final class Fobs {
     }
 
     // ---- operator commands ----------------------------------------------------------------------------------------------------------------------
-    /** {@code /arsenal fob list|status|complete|reset} (operators): status, complete and reset act on the FOB nearest to the player. */
+    /**
+     * {@code /arsenal fob list|status|complete|reset|deliver|overdue} (operators): all but list act on the FOB nearest to the player. deliver brings
+     * its next delivery by itself forward to now (0.0.24); overdue lets its route inspection run out within a second.
+     */
     static LiteralArgumentBuilder<CommandSourceStack> command(){
         return Commands.literal("fob").requires(s->s.hasPermission(2))
             .then(Commands.literal("list").executes(c->{
@@ -258,13 +269,22 @@ final class Fobs {
                 if(f==null){c.getSource().sendFailure(Component.literal("No FOBs placed."));return 0;}
                 if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
                 f.raidId=0;f.state=FobRules.State.PLANTED;f.activated=false;FobData.get(l).setDirty();refreshScreens(l,f);
-                c.getSource().sendSuccess(()->Component.literal(f.name+" is PLANTED again: call its raid from the FOB Beacon."),true);return 1;}));
+                c.getSource().sendSuccess(()->Component.literal(f.name+" is PLANTED again: call its raid from the FOB Beacon."),true);return 1;}))
+            .then(Commands.literal("deliver").executes(c->{
+                var l=c.getSource().getServer().overworld();var d=FobData.get(l);var f=nearest(l,BlockPos.containing(c.getSource().getPosition()));
+                if(f==null||f.nextPassive==0){c.getSource().sendFailure(Component.literal(f==null?"No FOBs placed.":f.name+" delivers nothing by itself now (no route, inspection overdue, FOB not ACTIVE or the reward chest backed up)."));return 0;}
+                f.nextPassive=d.onlineTicks;d.setDirty();c.getSource().sendSuccess(()->Component.literal(f.name+": its next delivery comes within a second."),true);return 1;}))
+            .then(Commands.literal("overdue").executes(c->{
+                var l=c.getSource().getServer().overworld();var f=nearest(l,BlockPos.containing(c.getSource().getPosition()));
+                if(f==null||!f.commissioned||f.clock<=0){c.getSource().sendFailure(Component.literal(f==null?"No FOBs placed.":f.name+" has no running inspection."));return 0;}
+                f.clock=20;FobData.get(l).setDirty();c.getSource().sendSuccess(()->Component.literal(f.name+": its route inspection runs out within a second (while the FOB is ACTIVE)."),true);return 1;}));
     }
     static String describe(ServerLevel l,FobData.Fob f){
         boolean loaded=l.isPositionEntityTicking(f.pos);
         return f.name+" (#"+f.id+") "+f.state+(f.activated?"":" (never won)")+" at "+f.pos.toShortString()
             +(loaded?", "+FobZone.villagers(l,FobZone.of(l,f)).size()+" villagers, zone "+FobZone.of(l,f).size()+" sections":", not loaded")
-            +(f.raidRunning()?", raid "+f.raidId+" running ("+f.raidVillagers+" villagers at its start)":"");
+            +(f.raidRunning()?", raid "+f.raidId+" running ("+f.raidVillagers+" villagers at its start)":"")
+            +(f.hasRoute()?", route "+(f.commissioned?"open (T "+f.baseline+" ticks, inspection "+f.clock+" ticks)":"not ridden yet"):f.deliveryGate!=null||f.receivingGate!=null?", one gate placed":"");
     }
 
     // ---- small helpers ----------------------------------------------------------------------------------------------------------------------------

@@ -313,16 +313,19 @@ public final class BeaconClient {
         private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
         private static final String[] FAB_GROUP={"tables","kitchen","support"};
         private record FabCell(int x,int y,int w,int h){}
-        private int fabricationRowHeight(){return Math.max(20,Math.min(34,(ph-54-14-3*12)/6-2));}
+        /** Rows a group takes (two cells a row): the groups grow with their items (0.0.24: the Supply Receiving Gate makes the third group four rows). */
+        private static int groupRows(int group){int end=group==2?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
+        private int fabricationRowHeight(){return Math.max(18,Math.min(34,(ph-54-14-3*12)/(groupRows(0)+groupRows(1)+groupRows(2))-2));}
+        private int groupTop(int group){int y=contentTop();for(int g=0;g<group;g++)y+=12+groupRows(g)*(fabricationRowHeight()+2);return y;}
         private FabCell fabricationCell(int index,int x,int w){
             int group=index>=FAB_GROUP_START[2]?2:index>=FAB_GROUP_START[1]?1:0,inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
-            int cw=(w-6)/2,y=contentTop()+group*(12+2*(rowH+2))+12+(inGroup/2)*(rowH+2);
+            int cw=(w-6)/2,y=groupTop(group)+12+(inGroup/2)*(rowH+2);
             return new FabCell(x+(inGroup%2)*(cw+6),y,cw,rowH);
         }
         private void fabricationTab(GuiGraphics g,int mx,int my,int x,int w){
             var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);boolean here=on("installed")&&on("near");
             for(int group=0;group<3;group++){
-                int y=contentTop()+group*(12+2*(fabricationRowHeight()+2));var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
+                int y=groupTop(group);var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
                 Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],w/2);Ui.rule(g,x+font.width(label)+6,y+5,w-font.width(label)-6);
             }
             for(int i=0;i<fabricationButtons.size();i++){

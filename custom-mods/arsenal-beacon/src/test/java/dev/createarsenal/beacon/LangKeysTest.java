@@ -222,8 +222,8 @@ final class LangKeysTest {
             Map.entry("mess_hall_mk1","Mess Hall"),Map.entry("cook_pot","Cook Pot and stew"),Map.entry("prepared_sandwich","Sandwich"),Map.entry("bowl_dispenser","Bowl Dispenser"),
             Map.entry("milk_dispenser","Milk Dispenser and Milk Bottle"),Map.entry("milk_bottle","Milk Dispenser and Milk Bottle"),
             Map.entry("command_table","Command Table"),Map.entry("satellite_beacon","Satellite Beacon"),
-            Map.entry("fob_beacon","FOB Beacon"));
-        var ignored=Set.of("structure_part","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
+            Map.entry("fob_beacon","FOB Beacon"),Map.entry("supply_delivery_gate","Supply Delivery Gate"),Map.entry("supply_receiving_gate","Supply Receiving Gate"));
+        var ignored=Set.of("structure_part","gate_part","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArsenalBeacon.java"));
         var registered=new TreeSet<String>();
         for(String regex:List.of("(?:BLOCKS|ITEMS)\\.register\\(\"([a-z0-9_]+)\"","part\\(\"([a-z_]+)\"\\)","kitchen\\(\"([a-z0-9_]+)\"")){Matcher m=Pattern.compile(regex).matcher(source);while(m.find())registered.add(m.group(1));}

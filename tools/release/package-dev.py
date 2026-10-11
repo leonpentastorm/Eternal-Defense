@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.23: Forward Operating Bases, slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.24: Forward Operating Bases, slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -21,16 +21,16 @@ for edition in ('pack','standalone'):
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
-for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file() and (folder in ('fob-slice-1','round-0022') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (folder in ('fob-slice-2','fob-slice-1') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 31 (was 30 in 0.0.21 and 0.0.22): the FOB removal confirmation
-and the FOB screen ride on two existing packets, so a 0.0.22 client cannot join a 0.0.23 server or the other way round. Install
-this build on the client AND the server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 32 (31 in 0.0.23, 30 in 0.0.21 and 0.0.22): the FOB screens and
+the supply gate screen ride on existing packets that now carry more, so an older client cannot join this server or the other way
+round. Install this build on the client AND the server.
 
 Start a FRESH world. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
@@ -41,7 +41,22 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.23 (since the 0.0.22 bundle): FORWARD OPERATING BASES, SLICE 1 OF 4
+WHAT IS NEW IN 0.0.24: FORWARD OPERATING BASES, SLICE 2 OF 4, THE SUPPLY RAIL
+* Your two gate models: the Supply Delivery Gate (bought at an ACTIVE FOB's shop, one per FOB) and the Supply Receiving Gate
+  (Workshop Fabrication). Each costs 16 iron, 8 copper, 8 redstone, plus 1 logistics module (pack) or 4 Ardent Energy
+  (standalone). Use one on a straight rail: the arch stands across it. The Delivery Gate goes in the FOB's village and links
+  itself; the Receiving Gate goes in your base zone and asks which FOB it serves. Both signs show the FOB's name.
+* An ACTIVE FOB's villagers make goods (redstone, gunpowder, flint, bread, carrots, potatoes, leather, paper) into a stockpile.
+* Sit in a plain minecart and ride from the Receiving Gate through the Delivery Gate once (they must be 128+ blocks apart): the
+  route opens and that ride's time is measured. From then on the FOB sends goods to your beacon's reward chest by itself, with
+  no cart and no rail needed, as long as its inspection lasts (8 hours of play). Ride a full round trip (home, FOB, home) to
+  bring twice as much at once and renew the inspection.
+* The light on each gate: GREEN all good; AMBER a ride under way, the inspection running out, or the reward chest backed up
+  (200 stacks waiting); RED something is missing. Click a gate: what it needs, with a tick or a cross and the fix.
+* Your gate models and textures are used unchanged. The lamps are lit by a small overlay we added (a new texture
+  supply_gate_signal.png and three overlay models), switched by a "signal" block state; docs/HANDOFF.md lists it.
+
+WHAT WAS NEW IN 0.0.23: FORWARD OPERATING BASES, SLICE 1 OF 4
 * FOB Beacon (your FOB station model): buy it at Workshop Fabrication (16 iron, 16 copper, 8 redstone, 4 glass, plus 2 logistics
   modules and 2 reinforced plating in the pack edition, or 8 Ardent Energy in the standalone one) and plant it in a vanilla village.
   It needs your Defense Beacon planted, a village with at least 3 villagers and no FOB yet; up to 5 FOBs, Overworld only.
@@ -55,7 +70,8 @@ WHAT IS NEW IN 0.0.23 (since the 0.0.22 bundle): FORWARD OPERATING BASES, SLICE 
 * Raiders of village raids drop no Ardent Energy; your beacon's raiders still do.
 * Right-click the FOB Beacon: its screen (state, villagers, the raid, the shop, Call the raid). A Name Tag renamed at an anvil
   renames the FOB (names are unique). The status card shows the FOB you stand in, and with the shovel in hand how many you have.
-  The Recovery Shovel takes a FOB Beacon back after a confirmation. Operators: /arsenal fob list|status|complete|reset.
+  The Recovery Shovel takes a FOB Beacon back after a confirmation. Operators: /arsenal fob list|status|complete|reset
+  (0.0.24 adds deliver and overdue).
 
 PLAYTEST SCRIPT FOR SLICE 1 (a fresh world; about 20 minutes)
 1. Plant your Defense Beacon. At Workshop Fabrication buy a FOB Beacon (FOBs page of the Field Guide: price and rules).
@@ -69,6 +85,24 @@ PLAYTEST SCRIPT FOR SLICE 1 (a fresh world; about 20 minutes)
 8. Hold the Recovery Shovel: the status card line. Use the shovel on the FOB Beacon: the confirmation, then it is back in your
    inventory and the villagers can be hurt again.
 9. Tell us: did the raid feel right for a first FOB? Was half of the villagers a fair line? Anything confusing in the texts?
+
+PLAYTEST SCRIPT FOR SLICE 2 (after slice 1, with an ACTIVE FOB; about 30 minutes)
+1. Open the FOB Beacon and buy the Supply Delivery Gate. Lay a straight rail in the village and use the gate on it: the arch
+   stands across the rail and its sign shows the FOB's name. Try to buy a second one: refused.
+2. At home buy a Supply Receiving Gate (Workshop Fabrication), lay a rail in your zone (at least 128 blocks from the FOB's gate)
+   and use the gate on it: pick the FOB. Both signs show its name; both lights are red. Click a gate: read the checklist.
+3. Lay a rail between the gates (or part of the way and ride the rest: only the passes count). Sit in a plain minecart, roll
+   through the Receiving Gate (the action bar says the ride started), ride to the FOB through the Delivery Gate: "Route open".
+   The lights: amber while you ride, green after.
+4. Pick up the rail and the cart. Wait (or play elsewhere): tribute arrives in the beacon reward chest with a chat line.
+5. Ride a full round trip (home, FOB, home): "Round trip complete: N items delivered; inspection renewed for 8 h". Compare
+   with what came by itself.
+6. Fill the reward chest queue past 200 stacks (or leave it full): the light turns amber and nothing arrives; empty it.
+7. Let the inspection run out (8 hours of play, or as an operator /arsenal fob overdue near the FOB): the light turns red,
+   deliveries stop, the stockpile keeps filling. A round trip brings it back. (/arsenal fob deliver brings the next delivery by
+   itself forward to now.)
+8. Take a gate back with the Recovery Shovel and place it again: it remembers its FOB; the route needs a new ride.
+9. Tell us: is the rail worth building? Too much or too little tribute? Is the gate screen clear?
 
 WHAT WAS NEW IN 0.0.22
 * Your radio lines: a supply flare answers with one of your two supply lines, a return flare with one of your three recall lines

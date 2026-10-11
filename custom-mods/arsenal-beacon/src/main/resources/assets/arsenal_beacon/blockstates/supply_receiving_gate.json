@@ -1,0 +1,160 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_receiving_gate",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_receiving_gate",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_receiving_gate",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_receiving_gate",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "signal": "red"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_red",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "signal": "amber"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_amber",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "signal": "green"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_green",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "signal": "red"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_red",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "signal": "amber"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_amber",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "signal": "green"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_green",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "signal": "red"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_red",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "signal": "amber"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_amber",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "signal": "green"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_green",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "signal": "red"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_red",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "signal": "amber"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_amber",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "signal": "green"
+      },
+      "apply": {
+        "model": "arsenal_beacon:block/supply_gate_signal_green",
+        "y": 270
+      }
+    }
+  ]
+}

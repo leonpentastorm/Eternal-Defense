@@ -32,7 +32,7 @@ public final class FobClient {
         private CompoundTag data;
         private int colW,leftX,rightX,bodyY;
         private Ui.UiButton callButton;
-        private final List<Ui.UiButton> buy=new ArrayList<>();
+        private final List<Ui.UiButton> buy=new ArrayList<>();private Ui.UiButton gateButton;
         FobScreen(FobBlocks.FobMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;}
         void update(CompoundTag next){data=next;rebuildWidgets();}
         private String state(){return data.getString("state");}
@@ -53,7 +53,13 @@ public final class FobClient {
                 boolean afford=data.getBoolean("creative")||data.getInt("energy")>=price;
                 button.active=active()&&afford;button.warning=active()&&!afford;buy.add(button);
             }
+            // the second listing (0.0.24): this FOB's Supply Delivery Gate
+            boolean has=data.getBoolean("hasGate"),enough=data.getBoolean("creative")||enough(data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND));
+            gateButton=addRenderableWidget(new Ui.UiButton(rightX+colW-46,gateRowY()+3,44,18,has?Ui.t("fob.shop.placed"):Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_GATE)));
+            gateButton.active=active()&&!has&&enough;gateButton.warning=active()&&!has&&!enough;
         }
+        private int gateRowY(){return bodyY+16+Fobs.SHOP.size()*26;}
+        private static boolean enough(net.minecraft.nbt.ListTag costs){for(var c:costs){var t=(CompoundTag)c;if(t.getInt("have")<t.getInt("count"))return false;}return true;}
         private void click(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
 
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
@@ -100,7 +106,15 @@ public final class FobClient {
                 boolean afford=data.getBoolean("creative")||data.getInt("energy")>=price;
                 Ui.text(g,font,Component.literal(Integer.toString(price)),x+37,ry+14,afford?Ui.CYAN:Ui.ORANGE,30);
             }
-            int ny=y+16+Fobs.SHOP.size()*26+4,bottom=topPos+imageHeight-20;
+            // the Supply Delivery Gate row: its materials, like the Workshop
+            int gy=gateRowY();Ui.card(g,x,gy,w,24,active()?OLIVE:Ui.EDGE);
+            g.renderItem(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()),x+7,gy+4);
+            Ui.text(g,font,new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),x+27,gy+3,active()?Ui.INK:Ui.MUTED,w-27-50);
+            int cx=x+27;
+            for(var e:data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND)){var c=(CompoundTag)e;var icon=ItemStack.of(c.getCompound("item"));boolean short_=!data.getBoolean("creative")&&c.getInt("have")<c.getInt("count");
+                g.pose().pushPose();g.pose().translate(cx,gy+13,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                var n=Component.literal(Integer.toString(c.getInt("count")));Ui.text(g,font,n,cx+9,gy+14,short_?Ui.ORANGE:Ui.MUTED,30);cx+=12+font.width(n);}
+            int ny=gy+28,bottom=topPos+imageHeight-20;
             Ui.text(g,font,data.getBoolean("creative")?Ui.t("fob.shop.creative"):Ui.t("fob.shop.energy",data.getInt("energy")),x,ny,Ui.MUTED,w);ny+=12;
             if(!active()){Ui.wrap(g,font,Ui.t("fob.shop.closed"),x,ny,w,Ui.ORANGE,Math.max(1,(bottom-ny)/10));return;}
             if(!data.getBoolean("hasPlatform"))ny=Ui.wrap(g,font,Ui.t("fob.shop.no_platform"),x,ny,w,Ui.ORANGE,3)+2;
@@ -111,6 +125,7 @@ public final class FobClient {
             renderBackground(g);super.render(g,mx,my,partial);
             // a shop row: the flare's own tooltip
             for(int i=0;i<Fobs.SHOP.size();i++){int ry=bodyY+16+i*26;if(Ui.inside(mx,my,rightX,ry,colW-50,24)){g.renderTooltip(font,new ItemStack(flare(Fobs.SHOP.get(i))),mx,my);return;}}
+            if(Ui.inside(mx,my,rightX,gateRowY(),colW-50,24)){g.renderComponentTooltip(font,List.of(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),Ui.t(data.getBoolean("hasGate")?"fob.shop.gate.placed":"fob.shop.gate.tip")),mx,my);return;}
             for(int i=0;i<buy.size();i++)if(buy.get(i).isHovered()&&!buy.get(i).active){g.renderComponentTooltip(font,List.of(Ui.t(active()?"fob.result.no_energy":"fob.shop.closed")),mx,my);return;}
         }
     }

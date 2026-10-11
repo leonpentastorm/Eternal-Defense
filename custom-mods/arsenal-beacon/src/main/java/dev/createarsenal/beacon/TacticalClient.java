@@ -118,6 +118,7 @@ public final class TacticalClient {
     static void state(CompoundTag data){
         var screen=Minecraft.getInstance().screen;
         if(data.contains("fobId")){if(screen instanceof FobClient.FobScreen fob)fob.update(data);return;}   // the same packet refreshes the FOB screen (0.0.23)
+        if(data.contains("gate")){GateClient.state(data);return;}   // and a gate screen (0.0.24)
         if(screen instanceof TableScreen table)table.update(data);
     }
     /** Kept while the table is reopened: which view and which offer. */

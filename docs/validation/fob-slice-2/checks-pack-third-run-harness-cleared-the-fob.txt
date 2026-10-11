@@ -1,0 +1,52 @@
+FOB_TEST_PASS theraidislostwhenhalfthevillagersdie
+FOB_TEST_PASS winningthevanillaraidmakesthefobactive
+FOB_TEST_PASS activevillagersareimmortalandvillageraiderspaynoardent
+FOB_TEST_PASS anactivefobzonekeepsmealslikehome
+FOB_TEST_PASS theshopsellsflaresonlywhileactive
+FOB_TEST_PASS arenamednametagrenamesthefob
+FOB_TEST_PASS theraidcanbecalledagainandtheshoveltakesthefobback
+FOB_TEST_PASS ariddenminecartopenstherouteandaroundtripdelivers
+FOB_TEST_PASS passivetributearrivesandstopswhentheclockrunsout
+FOB_TEST_PASS thebacklogpausesdeliveriesbutaridestillrenews
+FOB_TEST_PASS gatesareplacedandsoldbytherules
+FOB_TEST_PASS plantingfollowstherulesandcallstheraid
+FOB_TESTS_DONE pass=12 fail=0
+QA_CHECK PASS FOB GameTests pass=12 fail=0
+QA_CHECK PASS the world has a village BlockPos{x=-1088, y=0, z=720}
+QA_CHECK PASS a spot in the village where the FOB rules allow planting spot=BlockPos{x=-1088, y=65, z=718}, problem where the player stands=null, villagers in the zone=4
+QA_CHECK PASS the FOB is planted where the player clicked -1088, 65, 718
+QA_CHECK PASS it is PLANTED with a generated name PLANTED FOB NORTHERN HOUND
+QA_CHECK PASS planting started a vanilla raid raid=15, villagers at its start=4
+QA_CHECK PASS everyone reads the announcement 
+QA_CHECK PASS the block stands two tall 
+QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@7c7afce7
+QA_CHECK PASS the status card has the FOB line with the shovel in hand FOB NORTHERN HOUND | PLANTED | RAID | 4 villagers
+QA_CHECK PASS the FOB is ACTIVE ACTIVE
+QA_CHECK PASS everyone reads that it is ACTIVE 
+QA_CHECK PASS the FOB screen opens again 
+QA_CHECK PASS the shop hands over a Supply Flare 
+QA_CHECK PASS the screen says so in place 
+QA_CHECK PASS the client shows the FOB Zone effect 
+QA_CHECK PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+QA_CHECK PASS the FOB is renamed North Gate
+QA_CHECK PASS everyone reads the new name 
+QA_CHECK PASS the Field Guide has the FOB page 
+QA_CHECK PASS the FOB shop sells its Supply Delivery Gate 
+QA_CHECK PASS a spot for a gate in the village BlockPos{x=-1085, y=64, z=718}
+QA_CHECK PASS the Delivery Gate stands over the rail 
+QA_CHECK PASS and links to the FOB by itself BlockPos{x=-1085, y=65, z=718}
+QA_CHECK PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
+QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@6b4f1780
+QA_CHECK FAIL the Receiving Gate serves the FOB 
+QA_CHECK FAIL the route is open and its round trip delivered 
+QA_CHECK FAIL the light at home turns green 
+QA_CHECK PASS the gate screen opens by clicking the arch 
+QA_CHECK FAIL the shovel asks first null
+QA_CHECK FAIL nothing is removed yet 
+QA_CHECK PASS the FOB is deleted 
+QA_CHECK PASS its block is gone 
+QA_CHECK PASS the FOB Beacon came back 
+QA_CHECK FAIL everyone reads who took it back 
+QA_CHECK PASS its FOB gone, the Receiving Gate reads UNLINKED and is red 
+QA_CHECK PASS the Workshop lists the FOB Beacon 
+QA_DONE pass=32 fail=6

@@ -102,6 +102,7 @@ public final class FobGameTests {
         var raid=l.getRaidAt(VILLAGE);if(raid!=null)raid.stop();
         for(var e:l.getEntitiesOfClass(Entity.class,new AABB(VILLAGE).inflate(100,40,100),e->!(e instanceof Player)))e.discard();
         for(var at:List.of(PLANT,PLANT2))if(l.getBlockState(at).is(ArsenalBeacon.FOB_BEACON.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
+        for(var at:List.of(VILLAGE.offset(-70,1,30),VILLAGE.offset(70,1,30),VILLAGE.offset(8,1,-9)))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
     }
     static void goTo(ServerPlayer p,ServerLevel l,BlockPos at){p.teleportTo(l,at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot(),p.getXRot());}
     /** The player plants a FOB Beacon on the block below {@code at}, as the item does it (the player's own placement checks and placer). */
@@ -346,6 +347,176 @@ public final class FobGameTests {
             var v=f.villagers().get(0);float hp=v.getHealth();v.hurt(l.damageSources().playerAttack(p),2);
             h.assertTrue(v.getHealth()<hp,"its villagers can be hurt again");
         }).thenExecute(()->{p.setItemInHand(InteractionHand.MAIN_HAND,hand);clear(l);}).thenSucceed();
+    }
+
+    // ---- the supply rail (0.0.24, FOB slice 2) ---------------------------------------------------------------------------------------------------
+    /** A straight rail along X, 30 blocks south of the village, 150 blocks long; the Receiving Gate at its west end, the Delivery Gate at its east end. */
+    static final int RAIL_Z=38,RAIL_FROM=-78,RAIL_TO=78;
+    static final BlockPos RECEIVING=VILLAGE.offset(-70,1,RAIL_Z-VILLAGE.getZ()),DELIVERY=VILLAGE.offset(70,1,RAIL_Z-VILLAGE.getZ());
+    /** An ACTIVE FOB with a rail and both gates linked to it (no ride yet). */
+    static FobData.Fob route(Fixture f){
+        var l=f.l();
+        for(int x=RAIL_FROM-2;x<=RAIL_TO+2;x++)for(int dz=-1;dz<=1;dz++)for(int y=0;y<3;y++){
+            var at=new BlockPos(VILLAGE.getX()+x,VILLAGE.getY()+y,RAIL_Z+dz);
+            if(!l.getBlockState(at.below()).isSolid()&&y==0)l.setBlock(at.below(),Blocks.STONE.defaultBlockState(),2);
+            var want=y==0&&dz==0?Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST):Blocks.AIR.defaultBlockState();
+            if(l.getBlockState(at)!=want&&!(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)&&!(l.getBlockState(at).getBlock() instanceof RailGates.Part))l.setBlock(at,want,2);
+        }
+        var fob=fob(l);var d=FobData.get(l);
+        for(var kind:RailGates.Kind.values()){
+            var at=kind==RailGates.Kind.DELIVERY?DELIVERY:RECEIVING;
+            var block=(kind==RailGates.Kind.DELIVERY?ArsenalBeacon.DELIVERY_GATE:ArsenalBeacon.RECEIVING_GATE).get();
+            if(!l.getBlockState(at).is(block))l.setBlock(at,block.defaultBlockState().setValue(RailGates.FACING,Direction.EAST),3);
+            Routes.link(l,d,fob,kind,at,(RailGates.GateEntity)l.getBlockEntity(at));
+        }
+        return fob;
+    }
+    static void clearRoute(ServerLevel l){
+        for(var at:List.of(RECEIVING,DELIVERY))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
+        Routes.clear();
+    }
+    static RailGates.Lamp lamp(ServerLevel l,BlockPos at){return l.getBlockState(at).getValue(RailGates.SIGNAL);}
+    static int queued(ServerLevel l){return CampaignData.get(l.getServer().overworld()).rewards.size();}
+    static void trimRewards(ServerLevel l,int size){var d=CampaignData.get(l.getServer().overworld());while(d.rewards.size()>size)d.rewards.remove(d.rewards.size()-1);d.setDirty();}
+
+    /** The owner's test: a vanilla plain minecart with a seated player rolls through both gates without touching them; the ride opens the route and the way back delivers. */
+    @GameTest(template="empty3x3x3",batch="fob_09",timeoutTicks=2400)
+    public static void aRiddenMinecartOpensTheRouteAndARoundTripDelivers(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];int[] dir={1};int before[]={0};
+        double[] slowest={9};
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            var fob=route(f);for(int i=0;i<fob.stock.length;i++)fob.stock[i]=8;fob.workers=3;
+            h.assertTrue(fob.hasRoute()&&!fob.commissioned&&lamp(l,RECEIVING)==RailGates.Lamp.RED,"both gates linked, no route yet: red");
+            // a chest minecart rolling through counts for nothing (it cannot carry a rider)
+            var chest=new net.minecraft.world.entity.vehicle.MinecartChest(l,RECEIVING.getX()-3.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(chest);chest.setDeltaMovement(.4,0,0);
+            var c=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);c.setPos(RECEIVING.getX()-5.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(c);cart[0]=c;
+            goTo(p,l,RECEIVING.offset(-5,-1,0));p.startRiding(c,true);before[0]=queued(l);
+        }).thenIdle(20).thenExecute(()->h.assertTrue(Routes.RUNS.isEmpty(),"the chest minecart started nothing"))
+        .thenExecute(()->h.onEachTick(()->{var c=cart[0];if(c==null||!c.isAlive())return;
+            if(dir[0]>0&&c.getX()>DELIVERY.getX()+4)dir[0]=-1;
+            c.setDeltaMovement(.4*dir[0],c.getDeltaMovement().y,0);
+            // the speed through and between the gates (not at the start or the turn): a gate in the way would stop the cart
+            if(c.getX()>RECEIVING.getX()-1&&c.getX()<DELIVERY.getX()+1&&c.tickCount>40)slowest[0]=Math.min(slowest[0],Math.abs(c.getX()-c.xo));}))
+        .thenWaitUntil(()->h.assertTrue(fob(l).commissioned,"the ride through the Delivery Gate opens the route"))
+        .thenExecute(()->{
+            var fob=fob(l);
+            h.assertTrue(fob.baseline>=Math.ceil(fob.separation()/RouteRules.MAX_SPEED)&&fob.clock==RouteRules.CLOCK,"the one-way time is the route's T ("+fob.baseline+" ticks), the inspection full");
+            h.assertTrue(Routes.RUNS.containsKey(fob.id)&&Routes.RUNS.get(fob.id).stage==RouteRules.Stage.RETURN,"the ride goes on home with a load");
+        }).thenIdle(25).thenExecute(()->h.assertTrue(lamp(l,DELIVERY)==RailGates.Lamp.AMBER&&lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"both lights amber while the ride is under way"))
+        .thenWaitUntil(()->h.assertTrue(Routes.RUNS.isEmpty()&&"ride".equals(fob(l).lastKind),"back through the Receiving Gate: the round trip delivers"))
+        .thenExecute(()->{
+            var fob=fob(l);
+            h.assertTrue(queued(l)>before[0],"the tribute is in the reward chest's queue: "+(queued(l)-before[0])+" stacks");
+            h.assertTrue(fob.lastItems==Math.min(RouteRules.activeCapacity(fob.separation()),64)&&fob.clock==RouteRules.CLOCK,"it carried a ride's load ("+fob.lastItems+") and renewed the inspection");
+            h.assertTrue(p.getVehicle()==cart[0],"the rider stayed seated the whole way");
+            h.assertTrue(slowest[0]>.25,"the cart never slowed against the gates (slowest step "+slowest[0]+" blocks; vanilla moves a ridden cart 0.75 of its speed, 0.3 here)");
+        }).thenIdle(25).thenExecute(()->{
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN&&lamp(l,DELIVERY)==RailGates.Lamp.GREEN,"after the round trip both lights are green");
+            p.stopRiding();if(cart[0]!=null)cart[0].discard();trimRewards(l,before[0]);clearRoute(l);clear(l);goTo(p,l,STAND);
+        }).thenSucceed();
+    }
+    /** Passive tribute arrives in the reward chest with its chat line, and stops when the inspection runs out. */
+    @GameTest(template="empty3x3x3",batch="fob_10",timeoutTicks=1200)
+    public static void passiveTributeArrivesAndStopsWhenTheClockRunsOut(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();int[] before={0},after={0};
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            var fob=route(f);var d=FobData.get(l);
+            fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.nextPassive=0;fob.workers=3;for(int i=0;i<fob.stock.length;i++)fob.stock[i]=10;
+            fob.lastNoteAt=d.onlineTicks-RouteRules.NOTE_TICKS;before[0]=queued(l);
+        }).thenWaitUntil(()->h.assertTrue("passive".equals(fob(l).lastKind),"a delivery by itself every 2T/0.8 = "+RouteRules.period(60)+" ticks of play"))
+        .thenIdle(25).thenExecute(()->{
+            var fob=fob(l);
+            h.assertTrue(queued(l)>before[0],"tribute queued for the reward chest");
+            h.assertTrue(fob.lastItems==RouteRules.capacity(fob.separation()),"a passive trip carries C = "+RouteRules.capacity(fob.separation())+": "+fob.lastItems);
+            int notes=0;for(int n:fob.note)notes+=n;h.assertTrue(notes==0,"the chat line went out and the note was cleared");
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"green while it runs");
+            command(l,p,"arsenal fob overdue");h.assertTrue(fob.clock==20,"/arsenal fob overdue: the inspection runs out within a second");
+        }).thenIdle(60).thenExecute(()->{
+            h.assertTrue(fob(l).clock==0&&lamp(l,RECEIVING)==RailGates.Lamp.RED&&lamp(l,DELIVERY)==RailGates.Lamp.RED,"the inspection ran out: both lights red");
+            after[0]=queued(l);
+        }).thenIdle(300).thenExecute(()->{
+            h.assertTrue(queued(l)==after[0],"no delivery while the inspection is overdue");
+            trimRewards(l,before[0]);clearRoute(l);clear(l);
+        }).thenSucceed();
+    }
+    /** A round trip renews the inspection even when the reward chest is backed up, but carries nothing; passive deliveries wait (amber). */
+    @GameTest(template="empty3x3x3",batch="fob_11",timeoutTicks=600)
+    public static void theBacklogPausesDeliveriesButARideStillRenews(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();int[] before={0};
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            var fob=route(f);fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.workers=3;for(int i=0;i<fob.stock.length;i++)fob.stock[i]=10;
+            before[0]=queued(l);var campaign=CampaignData.get(l.getServer().overworld());
+            for(int i=queued(l);i<RouteRules.BACKLOG_CAP;i++)RaidRewards.queue(campaign,List.of(new ItemStack(Items.DIRT)));
+        }).thenIdle(25).thenExecute(()->{
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"amber: deliveries wait on the backlog");
+            var fob=fob(l);fob.lastKind="";
+            var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);cart.setPos(RECEIVING.getX()-2.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(cart);p.startRiding(cart,true);
+            var d=FobData.get(l);
+            Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);Routes.pass(l,d,fob,RailGates.Kind.DELIVERY,p,cart);Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);
+            h.assertTrue(fob.clock==RouteRules.CLOCK,"the round trip renewed the inspection");
+            h.assertTrue(fob.lastKind.isEmpty()&&queued(l)==RouteRules.BACKLOG_CAP,"and delivered nothing while the chest is backed up");
+            p.stopRiding();cart.discard();
+        }).thenIdle(200).thenExecute(()->{
+            h.assertTrue(queued(l)==RouteRules.BACKLOG_CAP&&fob(l).lastKind.isEmpty(),"no passive delivery either");
+            trimRewards(l,before[0]);
+        }).thenIdle(25).thenExecute(()->{
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"chest emptied: green again");
+            clearRoute(l);clear(l);
+        }).thenSucceed();
+    }
+    /** The Delivery Gate is sold once per FOB, stands only over a rail in the FOB's village, the Receiving Gate only at home; a FOB's removal unlinks its gates. */
+    @GameTest(template="empty3x3x3",batch="fob_12",timeoutTicks=600)
+    public static void gatesArePlacedAndSoldByTheRules(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
+        BlockPos rail=VILLAGE.offset(8,0,-9);
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");
+            p.setGameMode(GameType.SURVIVAL);
+            try{
+                for(var s:List.of(new ItemStack(Items.IRON_INGOT,64),new ItemStack(Items.COPPER_INGOT,64),new ItemStack(Items.REDSTONE,64),new ItemStack(ArsenalBeacon.LOGISTICS.get(),8),new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),16)))p.getInventory().add(s);
+                Fobs.open(p,PLANT);
+                Fobs.button(p,PLANT,Fobs.BUY_GATE);
+                h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==0,"a PLANTED FOB sells no gate");
+                command(l,p,"arsenal fob complete");
+                Fobs.button(p,PLANT,Fobs.BUY_GATE);
+                h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==1,"an ACTIVE FOB sells its Supply Delivery Gate");
+                p.closeContainer();
+                for(int i=0;i<p.getInventory().items.size();i++)if(p.getInventory().items.get(i).is(ArsenalBeacon.DELIVERY_GATE_ITEM.get()))p.getInventory().items.set(i,ItemStack.EMPTY);   // it goes on the rail below
+                l.setBlock(rail,Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),2);
+                var gate=new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get());
+                h.assertTrue(useOn(f,gate,VILLAGE.offset(10,-1,-4))==InteractionResult.FAIL,"not over a rail: refused");
+                h.assertTrue(useOn(f,gate,rail).consumesAction(),"over the rail in the village: placed");
+                var anchor=rail.above();
+                h.assertTrue(l.getBlockState(anchor).is(ArsenalBeacon.DELIVERY_GATE.get())&&fob(l).deliveryGate!=null&&fob(l).deliveryGate.equals(anchor),"it stands over the rail and links to the FOB by itself");
+                for(var part:RailGates.parts(anchor,l.getBlockState(anchor).getValue(RailGates.FACING)))h.assertTrue(l.getBlockState(part).is(ArsenalBeacon.GATE_PART.get()),"its frame at "+part);
+                h.assertTrue(l.getBlockState(rail).is(Blocks.RAIL),"the rail stays the player's");
+                Fobs.open(p,PLANT);Fobs.button(p,PLANT,Fobs.BUY_GATE);p.closeContainer();
+                h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==0,"a second gate for the same FOB is refused");
+                var home=new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get());
+                l.setBlock(rail.offset(0,0,-6),Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),2);
+                h.assertTrue(useOn(f,home,rail.offset(0,0,-6))==InteractionResult.FAIL,"a Receiving Gate outside the base zone: refused");
+                // the shovel takes it back, and the item remembers its FOB
+                Routes.pickUp(p,anchor);
+                h.assertTrue(l.getBlockState(anchor).isAir()&&fob(l).deliveryGate==null,"the shovel takes the gate back");
+                var back=p.getInventory().items.stream().filter(s->s.is(ArsenalBeacon.DELIVERY_GATE_ITEM.get())).findFirst().orElse(ItemStack.EMPTY);
+                h.assertTrue(back.hasTag()&&back.getTag().getLong("Fob")==fob(l).id,"the item remembers its FOB");
+                // a FOB's removal turns its gates UNLINKED
+                var fob=route(f);
+                FobData.get(l).fobs.remove(fob.id);
+            }finally{p.setGameMode(mode);}
+        }).thenIdle(30).thenExecute(()->{
+            h.assertTrue(l.getBlockEntity(RECEIVING) instanceof RailGates.GateEntity be&&be.fobId==0,"its FOB gone, the gate is UNLINKED");
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.RED,"and red");
+            l.setBlock(rail,Blocks.AIR.defaultBlockState(),2);l.setBlock(rail.offset(0,0,-6),Blocks.AIR.defaultBlockState(),2);
+            clearRoute(l);clear(l);
+        }).thenSucceed();
+    }
+    static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){
+        var hit=new BlockHitResult(Vec3.atCenterOf(rail).add(0,.5,0),Direction.UP,rail,false);
+        return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack.copy(),hit));
     }
 
     public static final class Runner {

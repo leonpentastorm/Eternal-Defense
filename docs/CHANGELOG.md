@@ -1,5 +1,17 @@
 # Change log
 
+## 0.0.24 — Forward Operating Bases, slice 2 of 4: the supply rail (2026-10-11)
+
+On `dev`. **Network protocol 32** (was 31): the table-state packet also opens and refreshes the supply gate screen; no new packet. Rules: GDD 0.0.24 (Part J, section 5.10); tests: `docs/FOB-SLICE-2-TESTING.md`.
+
+* **Supply Delivery Gate and Supply Receiving Gate** (the owner's gate models and textures, installed unchanged): 3 x 3 x 1 arches over a straight rail (an anchor and seven invisible parts with the model's own collision per cell; the opening over the rail is empty). 16 iron, 8 copper, 8 redstone, plus 1 logistics module (pack) or 4 Ardent Energy (standalone). The Delivery Gate is sold once per FOB at its FOB shop and placed in its village (it links itself); the Receiving Gate comes from Workshop Fabrication, goes in the base zone and asks which FOB it serves. Both sign plates show the FOB's name (UNLINKED once it is gone); the Recovery Shovel takes either back and it remembers its FOB.
+* **The light** (red, amber, green, a lit overlay on the owner's lamp housing: a new texture and three overlay models, the owner's files untouched): one rule for both gates and the screens.
+* **Tribute.** An ACTIVE FOB's villagers fill a stockpile (redstone, gunpowder, flint, bread, carrots, potatoes, leather, paper; 6.5 items per villager and hour of play, 20 villagers at most, 8 hours of stock). One minecart ride from the Receiving Gate through the Delivery Gate (128 blocks apart at least) opens the route and measures T; the route then delivers by itself every 2T / 0.8 (round(d / 200) items, 1 to 20) into the beacon's reward chest, with no cart or rail. A round trip ridden by one player in one cart carries twice that and renews the inspection clock (8 hours of play). Overdue: red, nothing by itself. 200 stacks waiting in the reward chest: deliveries wait (amber).
+* **Rides** answer every pass on the action bar with a sound; a ride ends with a message on dismount, logout, death, another dimension, a gate removed, the FOB not ACTIVE, a restart, or a leg longer than max(10 minutes, 3 T).
+* **Gate screen**: a picture strip of what to do, the light and its reason, a checklist with the fix beside every cross, the stockpile, the next delivery and its size, what a ride carries, the last delivery; the FOB list on a Receiving Gate.
+* A click on the FOB Beacon or a gate always opens a fresh screen (a screen the client had lost stayed shut). Operator commands `/arsenal fob deliver` and `/arsenal fob overdue`; `list` and `status` show the route.
+* Unit tests: 254 (new `RouteTest`, 13). New opt-in GameTests `fob_09` to `fob_12` (a ridden plain minecart through both gates, a chest minecart counting for nothing, passive tribute and the clock, the backlog, the shop, placement, the shovel); the QA client script places both gates in a real village and at home.
+
 ## 0.0.23 — Forward Operating Bases, slice 1 of 4 (2026-10-11)
 
 On `dev`. **Network protocol 31** (was 30): the State packet opens the FOB removal confirmation and the table-state packet refreshes the FOB screen; no new packet. Rules: GDD 0.0.23 (Part J, section 5.10); tests: `docs/FOB-SLICE-1-TESTING.md`.
