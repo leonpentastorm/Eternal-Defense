@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.30 — The owner's 4-wide gates, where a FOB counts, two screens (2026-10-11)
+
+On `dev`. **Network protocol 35** (a new packet, `FobOutline.Sync`, id 21: the FOB zone outlines and the planting preview). Rules: GDD 0.0.30; tests: `docs/ROUND-0030-TESTING.md`.
+
+* **Supply gates, the owner's 4 wide x 2 tall x 1 deep models** (`docs/art/Create-Arsenal-Supply-Rail-Gates-4wide/`, installed unchanged by `tools/fob/install_gates_4wide.py`): two side-by-side rail lanes, so a line runs out on one rail and home on the other through the same gates; one rail through either lane still works. Each gate is two half models drawn by two blocks: the anchor (the right column) and a new left-column block per gate; the beam is four invisible parts that collide only as the beam over the lanes (a seated rider passes under it). Using the item on a rail puts the gate across it and the cell beside it; a second straight rail beside the clicked one decides the side. Live lamps on both columns (twelve overlay models and `supply_gate_lamps.png`; the 0.0.24 overlay and the 3 x 3 models are gone). The FOB's name moved to the new nameplate. The pass plane spans both lanes; a loaded rider coming back through the Delivery Gate's other lane within 10 s gets no hint. A gate from before 0.0.30 is not converted: take it back with the shovel and place it again.
+* **Both gates at Workshop Fabrication** (the Delivery Gate still also at the FOB shop; still one per FOB).
+* **Where a FOB counts.** Holding a FOB Beacon: a see-through FOB where it would stand, the village part it would take outlined (green or orange) and a line under the crosshair with its villagers, beds and workstations or why not. A planted FOB's zone shows as an olive outline to players within 160 blocks; a Zone outline switch on the FOB screen turns it off for everyone (saved per FOB, on by default).
+* **Tactical Enchanting Table screen** 440 x 260 (was 384 x 236), every line of the left column in its own band (the owner saw the empty slot's line run into "ACTIVE FOBs").
+* **Workshop Fabrication scrolls** (mouse wheel, or drag its bar) instead of squeezing its rows.
+* **Tests.** `RouteTest` rewritten for the new models, lanes and two-lane passes; new `Round0030Test`; FOB GameTests: `fob_09` rides a two-lane loop (out on lane A, home on lane B), `fob_12` places a gate across two rails and on a lone rail, new `fob_22` (preview and outline).
+
 ## 0.0.29 — Enchanting prices doubled (2026-10-11)
 
 On `dev`. **No packet changed: protocol 34.** Rules: GDD 0.0.29; tests: `docs/ROUND-0029-TESTING.md`.

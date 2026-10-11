@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,19 +25,21 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
+# six screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
+BUNDLED_SHOTS={'standalone-f0_fob_preview.png','standalone-f2b_fob_zone_outline.png','standalone-f12a_rider_before_the_gate.png','standalone-f16_receiving_gate_green.png','standalone-f24b_enchanting_empty.png','standalone-f11b_workshop_scrolled.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file() and (folder in ('round-0028','fob-slice-4') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 34, unchanged in 0.0.28 and 0.0.29 (33 in 0.0.25 and 0.0.26, 32 in 0.0.24): the
-Tactical Enchanting Table has a new menu, and the FOB screens, the supply gate screen and the status card ride on existing
-packets that now carry more, so an older client cannot join this server or the other way round. Install this build on the
-client AND the server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 35 since 0.0.30 (34 in 0.0.27 to 0.0.29): 0.0.30 adds a packet for
+the FOB zone outlines and the planting preview, so an older client cannot join this server or the other way round. Install this
+build on the client AND the server.
 
-Start a FRESH world. Keep existing worlds separate from this test instance.
+Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
+(or right after) and place it again. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
 versions. Never mix pack and standalone editions or keep duplicate mod IDs.
 TaCZ Attributes 1.4 is a required backend and is INCLUDED separately (unchanged since v4).
@@ -46,7 +48,33 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.29: ENCHANTING PRICES DOUBLED
+WHAT IS NEW IN 0.0.30: YOUR 4-WIDE GATES, WHERE A FOB COUNTS, TWO SCREENS
+* Supply Delivery and Receiving Gates: your new 4 wide x 2 tall x 1 deep models, across two rails side by side. Use the gate on
+  one of the two rails: it stands across both (the second rail decides the side). On a single rail it still works; click the
+  half of the rail on the side where the empty lane should go. Best build: a loop, two rails through both gates joined by a
+  curve at each end, so the cart goes out on one rail and comes home on the other. A seated rider passes under the beam.
+  Both columns show the signal. The FOB's name is on the nameplate.
+* Both gates are sold at Workshop Fabrication (the Delivery Gate still also at the FOB shop; still one per FOB).
+* Holding a FOB Beacon and looking at the ground: a see-through FOB where it would stand, an outline of the village part it
+  would take (green: you can plant it; orange: not), and a line under the crosshair with its villagers, beds and workstations,
+  or why not.
+* A planted FOB's zone (meal bonus, FOB shop) shows as an olive outline when you are near it. The FOB screen has a Zone outline
+  switch to turn it off (for everyone).
+* Tactical Enchanting Table: a bigger screen (440 x 260), every line in its own place; nothing overlaps with the slot empty.
+* Workshop Fabrication scrolls (mouse wheel or the bar on the right) instead of squeezing its rows.
+
+PLAYTEST SCRIPT FOR 0.0.30 (about 15 minutes)
+1. Plant your Defense Beacon. Buy a FOB Beacon at Workshop Fabrication (scroll the list). Walk into a village holding it and look
+   at the ground: the ghost, the outline and the line under the crosshair. Find a green spot and plant it.
+2. Win or complete its raid (/arsenal fob complete). Walk around: the olive outline is where meals double. Open the FOB screen
+   and switch Zone outline off and on.
+3. Lay two rails side by side through the village and use the Supply Delivery Gate on one of them. Lay two rails at home and
+   place the Supply Receiving Gate the same way; pick the FOB on its screen. Join the two lines into a loop (a curve at each end,
+   at least 128 blocks between the gates).
+4. Sit in a minecart and ride the loop once round: the route opens on the way out, the round trip delivers on the way home.
+5. Open the Tactical Enchanting Table with its slot empty: nothing overlaps.
+
+WHAT WAS NEW IN 0.0.29: ENCHANTING PRICES DOUBLED
 * Tactical Enchanting Table, both editions doubled: standalone 4, 6, 10, 16 Ardent Energy per level by rarity, the pack
   8, 12, 20, 32 (treasure enchants twice that). Mk I, II, III still take 17, 33, 50 percent off, so a Mk III table halves every
   price (Sharpness V: standalone 20, or 10 at Mk III; pack 40, or 20 at Mk III).

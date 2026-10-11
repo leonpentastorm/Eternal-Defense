@@ -144,7 +144,10 @@ public final class QaFob {
         var l=sl();var ew=net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST);
         for(int pass=0;pass<2;pass++)for(int a=-half;a<=half;a++)for(int side=0;side<=1;side++){
             var c=rail.offset(a,0,side);var here=l.getBlockState(c);
-            if(!here.canBeReplaced()&&!here.is(net.minecraft.world.level.block.Blocks.RAIL))continue;   // never through a wall, a bed or a workstation of the village
+            // never through a bed, a workstation, a block entity or our own blocks; anything else in the way goes (QA only)
+            boolean keep=here.hasBlockEntity()||here.getBlock() instanceof net.minecraft.world.level.block.BedBlock||net.minecraft.world.entity.ai.village.poi.PoiTypes.forState(here).isPresent()||!net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(here.getBlock()).getNamespace().equals("minecraft");
+            if(keep)continue;
+            if(pass==0)for(int up=0;up<=2;up++){var above=c.above(up);var st=l.getBlockState(above);if(!st.isAir()&&!st.hasBlockEntity()&&!net.minecraft.world.entity.ai.village.poi.PoiTypes.forState(st).isPresent()&&!(st.getBlock() instanceof net.minecraft.world.level.block.BedBlock)&&net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(st.getBlock()).getNamespace().equals("minecraft"))l.setBlock(above,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);}
             if(pass==0&&!l.getBlockState(c.below()).isFaceSturdy(l,c.below(),Direction.UP))l.setBlock(c.below(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),2);
             l.setBlock(c,ew,pass==0?2:2|16);
         }
@@ -209,8 +212,9 @@ public final class QaFob {
         });
         // ---- plant it with a real right-click --------------------------------------------------------------------------------------------
         step(10,()->{if(spot!=null){hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));look(stand,spot.getX()+.5,spot.getY()+.01,spot.getZ()+.5);}},"hold the FOB Beacon, look at the spot");
-        // 0.0.30: where it would stand and what it would take, before it is planted
-        step(40,()->{
+        // 0.0.30: where it would stand and what it would take, before it is planted (the server looks every 10 ticks)
+        step(40,()->{},"wait for the preview");
+        step(20,()->{
             var pv=FobOutlineClient.preview;
             check("holding the FOB Beacon, the spot looked at is previewed",pv!=null&&spot!=null&&BlockPos.of(pv.getLong("pos")).equals(spot)&&pv.getString("problem").isEmpty(),String.valueOf(pv));
             check("the preview outlines the village part it would take",pv!=null&&pv.getLongArray("sections").length>0,pv==null?"":pv.getLongArray("sections").length+" sections");
@@ -253,10 +257,10 @@ public final class QaFob {
             check("the shop hands over a Supply Flare",bought,"");
             check("the screen says so in place",mc().screen instanceof FobClient.FobScreen,"");shot("f7_fob_screen_bought");
         },"bought");
-        step(10,()->pressStart("Zone outline"),"turn the zone outline off");
-        step(50,()->{var f=fob();check("the outline is off for the FOB",f!=null&&!f.showZone,"");check("and gone from the client",FobOutlineClient.zones.isEmpty(),FobOutlineClient.zones.toString());shot("f7b_fob_screen_outline_off");},"outline off");
-        step(10,()->pressStart("Zone outline"),"and on again");
-        step(50,()->{var f=fob();check("the outline is back",f!=null&&f.showZone&&!FobOutlineClient.zones.isEmpty(),"");},"outline on");
+        step(60,()->pressStart("Zone outline"),"turn the zone outline off (the outlines go out every 40 ticks)");
+        step(10,()->{var f=fob();check("the outline is off for the FOB",f!=null&&!f.showZone,"");check("and gone from the client",FobOutlineClient.zones.isEmpty(),FobOutlineClient.zones.toString());shot("f7b_fob_screen_outline_off");},"outline off");
+        step(60,()->pressStart("Zone outline"),"and on again");
+        step(5,()->{var f=fob();check("the outline is back",f!=null&&f.showZone&&!FobOutlineClient.zones.isEmpty(),"");},"outline on");
         // ---- meals in the FOB zone -------------------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();PlayerMeals.eat(sp(),new MealData(false,List.of(new MealData.Bonus(MealRules.Effect.MIGHT,1),new MealData.Bonus(MealRules.Effect.FORTUNE,1)),MealRules.FIELD_TICKS));});},"eat a meal in the FOB zone");
         step(30,()->{
@@ -296,17 +300,19 @@ public final class QaFob {
                         ||net.minecraft.world.entity.ai.village.poi.PoiTypes.forState(st).isPresent()||st.getBlock() instanceof net.minecraft.world.level.block.BedBlock)continue;
                     if(up<=6||st.is(net.minecraft.tags.BlockTags.LEAVES)||st.is(net.minecraft.tags.BlockTags.LOGS))l.setBlock(c,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);}
                 sp().getAbilities().flying=true;sp().onUpdateAbilities();});
-            if(fobGate!=null)look(fobGate.relative(Direction.EAST,8),fobGate.getX()+.5,fobGate.getY()+1.1,fobGate.getZ()+1);
+            if(fobGate!=null)look(fobGate.offset(6,1,1),fobGate.getX()+.5,fobGate.getY()+1,fobGate.getZ()+1);
         },"placed");
         step(60,()->shot("f12_delivery_gate_front"),"the Delivery Gate, its nameplate and its light");
-        step(2,()->{if(fobGate!=null)look(fobGate.relative(Direction.WEST,8),fobGate.getX()+.5,fobGate.getY()+1.1,fobGate.getZ()+1);},"from behind");
+        step(2,()->{if(fobGate!=null)look(fobGate.offset(-6,1,1),fobGate.getX()+.5,fobGate.getY()+1,fobGate.getZ()+1);},"from behind");
         step(40,()->shot("f13_delivery_gate_back"),"the back nameplate");
-        // a seated rider rolls through lane A under the beam (the GameTest rides the whole loop; this is the picture of it)
+        // a seated rider rolls through lane A under the beam (the GameTest rides the whole loop; these are the pictures of it)
         step(5,()->{if(fobGate!=null)srv(()->{var l=sl();var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);
             cart.setPos(fobGate.getX()-3.5,fobGate.getY(),fobGate.getZ()+.5);cart.setYRot(-90);l.addFreshEntity(cart);sp().getAbilities().flying=false;sp().onUpdateAbilities();
-            sp().teleportTo(l,cart.getX(),cart.getY(),cart.getZ(),-90,-12);sp().startRiding(cart,true);cart.setDeltaMovement(.4,0,0);});},"sit in a minecart on lane A, rolling east");
-        step(7,()->shot("f12a_rider_under_the_beam"),"the beam overhead");
-        step(25,()->{
+            sp().teleportTo(l,cart.getX(),cart.getY(),cart.getZ(),-90,-5);sp().startRiding(cart,true);cart.setDeltaMovement(.4,0,0);});},"sit in a minecart on lane A, rolling east");
+        step(3,()->{check("the cart rolls on the rail",srvGet(()->sp().getVehicle()!=null&&sl().getBlockState(sp().getVehicle().blockPosition()).getBlock() instanceof net.minecraft.world.level.block.BaseRailBlock),"");shot("f12a_rider_before_the_gate");},"the lanes ahead");
+        step(4,()->{srv(()->{var v=sp().getVehicle();if(v!=null)v.setDeltaMovement(.4,0,0);});mc().player.setXRot(-45);},"look up");
+        step(4,()->shot("f12c_rider_under_the_beam"),"the beam passes over the rider's head");
+        step(20,()->{
             double x=srvGet(()->sp().getVehicle()==null?-1e9:sp().getVehicle().getX());
             check("the cart rolled on through the gate with its rider seated",fobGate!=null&&x>fobGate.getX()+1.5,"x="+x+" gate x="+(fobGate==null?0:fobGate.getX()));
             srv(()->{var v=sp().getVehicle();sp().stopRiding();if(v!=null)v.discard();});

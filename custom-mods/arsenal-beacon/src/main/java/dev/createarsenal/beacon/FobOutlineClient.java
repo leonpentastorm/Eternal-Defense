@@ -73,9 +73,10 @@ public final class FobOutlineClient {
         pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);
         double time=mc.level.getGameTime()+e.getPartialTick();
         VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());
-        for(var z:zones)outline(lines,pose.last(),z.sections(),OLIVE,time,holding?110:150);
+        double band=mc.player.getY()+.05;
+        for(var z:zones)outline(lines,pose.last(),z.sections(),OLIVE,time,holding?110:150,band);
         BlockPos at=holding?target():null;
-        if(holding&&preview!=null&&!previewSections.isEmpty())outline(lines,pose.last(),previewSections,previewGood()?GOOD:BAD,time,210);
+        if(holding&&preview!=null&&!previewSections.isEmpty())outline(lines,pose.last(),previewSections,previewGood()?GOOD:BAD,time,210,band);
         if(at!=null){
             int[] c=preview==null?OLIVE:previewGood()?GOOD:BAD;
             LevelRenderer.renderLineBox(pose,lines,new AABB(at.getX(),at.getY(),at.getZ(),at.getX()+1,at.getY()+FobBlocks.TALL,at.getZ()+1).inflate(.002),c[0]/255f,c[1]/255f,c[2]/255f,.9f);
@@ -86,9 +87,10 @@ public final class FobOutlineClient {
     }
     /**
      * The outer walls of a set of 16-block sections: every side face with no zone section beyond it, its edges, a slow moving grid every
-     * four blocks and a scan line climbing the zone's whole height; the top and bottom faces get their edges only.
+     * four blocks and a scan line climbing the zone's whole height, and a bright band at {@code band} (the player's feet), so the edge reads
+     * on the ground where the player walks; the top and bottom faces get their edges only.
      */
-    static void outline(VertexConsumer v,PoseStack.Pose p,Set<Long> sections,int[] rgb,double time,int alpha){
+    static void outline(VertexConsumer v,PoseStack.Pose p,Set<Long> sections,int[] rgb,double time,int alpha,double band){
         if(sections.isEmpty())return;
         int lowY=Integer.MAX_VALUE,highY=Integer.MIN_VALUE;for(long s:sections){lowY=Math.min(lowY,SectionPos.y(s));highY=Math.max(highY,SectionPos.y(s));}
         double bottom=lowY*16,top=(highY+1)*16,scan=bottom+(time*.12)%(top-bottom),shift=(time*.025)%4;
@@ -103,6 +105,7 @@ public final class FobOutlineClient {
                 for(double d=shift;d<16;d+=4){double fx=w[0]+(w[2]-w[0])*d/16,fz=w[1]+(w[3]-w[1])*d/16;line(v,p,fx,y0,fz,fx,y1,fz,rgb,alpha/3);}
                 for(double y=y0+shift;y<y1;y+=4)line(v,p,w[0],y,w[1],w[2],y,w[3],rgb,alpha/3);
                 if(scan>=y0&&scan<y1)line(v,p,w[0],scan,w[1],w[2],scan,w[3],rgb,Math.min(255,alpha+40));
+                if(band>=y0&&band<y1)for(double b:new double[]{band,band+.5,band+1})line(v,p,w[0],b,w[1],w[2],b,w[3],rgb,255);
             }
             if(!sections.contains(SectionPos.asLong(sx,sy+1,sz)))square(v,p,x0,y1,z0,x1,z1,rgb,alpha/2);
             if(!sections.contains(SectionPos.asLong(sx,sy-1,sz)))square(v,p,x0,y0,z0,x1,z1,rgb,alpha/2);

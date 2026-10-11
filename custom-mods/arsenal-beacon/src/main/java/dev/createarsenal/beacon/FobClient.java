@@ -53,9 +53,9 @@ public final class FobClient {
             super.init();clearWidgets();buy.clear();
             colW=(imageWidth-36)/2;leftX=leftPos+12;rightX=leftX+colW+12;bodyY=topPos+34;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
-            outlineButton=addRenderableWidget(new Ui.UiButton(leftX,bodyY+OUTLINE_Y,colW,18,Ui.t("fob.screen.outline",data.getInt("sections")),Ui.Look.TOGGLE,b->click(Fobs.OUTLINE)));
+            outlineButton=addRenderableWidget(new Ui.UiButton(leftX,bodyY+OUTLINE_Y,colW,18,Ui.t("fob.screen.outline"),Ui.Look.TOGGLE,b->click(Fobs.OUTLINE)));
             outlineButton.on=data.getBoolean("showZone");
-            outlineButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.outline.tip")));
+            outlineButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.outline.tip",data.getInt("sections"))));
             // the raid call, only while the FOB waits for its first won raid
             callButton=addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-50,colW,20,Ui.t("fob.screen.call"),Ui.Look.PRIMARY,b->click(Fobs.CALL_RAID)));
             callButton.visible=state().equals("planted");callButton.active=data.getBoolean("mayCallRaid")&&data.getBoolean("raidsPossible");
