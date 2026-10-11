@@ -46,16 +46,20 @@ final class TacticalOperationsTest {
         assertEquals(8,Economy.huntGuaranteed(3,true));assertEquals(4,Economy.huntGuaranteed(3,false));
         assertEquals(22,Economy.huntGuaranteed(10,true));assertEquals(22,Economy.huntGuaranteed(50,true),"the tier is capped at 10");assertEquals(2,Economy.huntGuaranteed(-3,true));
         // tier 3, standalone: g = 8; B = 4, 8, 14
-        assertEquals(new Economy.HuntPay(2,9),Economy.hunt(TacticalRules.Kind.PATROL,3,true));
+        assertEquals(new Economy.HuntPay(4,18),Economy.hunt(TacticalRules.Kind.PATROL,3,true),"0.0.28 (owner): a Patrol pays twice (2 and 9 before)");
         assertEquals(new Economy.HuntPay(5,17),Economy.hunt(TacticalRules.Kind.GARRISON,3,true));
         assertEquals(new Economy.HuntPay(8,30),Economy.hunt(TacticalRules.Kind.WARLORD,3,true));
         // tier 3, pack: g = 4; B = 2, 4, 7
-        assertEquals(new Economy.HuntPay(1,4),Economy.hunt(TacticalRules.Kind.PATROL,3,false));
+        assertEquals(new Economy.HuntPay(2,8),Economy.hunt(TacticalRules.Kind.PATROL,3,false),"0.0.28 (owner): twice (1 and 4 before)");
         assertEquals(new Economy.HuntPay(2,9),Economy.hunt(TacticalRules.Kind.GARRISON,3,false));
         assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3,false));
         for(boolean standalone:new boolean[]{true,false})for(int t=0;t<=10;t++){
             var p=Economy.hunt(TacticalRules.Kind.PATROL,t,standalone);var g=Economy.hunt(TacticalRules.Kind.GARRISON,t,standalone);var w=Economy.hunt(TacticalRules.Kind.WARLORD,t,standalone);
-            assertTrue(p.coins()<=g.coins()&&g.coins()<=w.coins()&&p.ardent()<=g.ardent()&&g.ardent()<=w.ardent(),"a harder class never pays less (tier "+t+")");
+            assertTrue(g.coins()<=w.coins()&&g.ardent()<=w.ardent(),"a Warlord never pays less than a Garrison (tier "+t+")");
+            // 0.0.28 (owner): a Patrol pays exactly twice what the shared formula gives it (the minimum included), at every tier
+            double b=TacticalRules.Kind.PATROL.budget*Economy.huntGuaranteed(t,standalone);
+            assertEquals(2*Math.max(Economy.HUNT_MIN_ARDENT,(int)Math.round(Economy.HUNT_ARDENT_SHARE*b)),p.ardent(),"Patrol Ardent doubled, tier "+t);
+            assertEquals(2*Math.max(Economy.HUNT_MIN_COINS,(int)Math.round(Economy.HUNT_COIN_SHARE*b*Economy.COINS_PER_ARDENT)),p.coins(),"Patrol coins doubled, tier "+t);
             // the whole pay, valued at the Exchange's coin price, stays at the class's share of a raid's guaranteed Ardent (rounding aside)
             double value=w.ardent()+w.coins()/Economy.COINS_PER_ARDENT;
             assertEquals(1.75*Economy.huntGuaranteed(t,standalone),value,1.0);

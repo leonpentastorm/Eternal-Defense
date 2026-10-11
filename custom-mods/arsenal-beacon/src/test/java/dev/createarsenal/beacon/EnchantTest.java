@@ -39,19 +39,21 @@ final class EnchantTest {
         assertEquals(10,price(Rarity.RARE,1,true,true),"Mending (treasure: twice)");
         for(var r:Rarity.values())for(int level=1;level<=5;level++)for(boolean t:new boolean[]{false,true}){
             int sa=price(r,level,t,true),pk=price(r,level,t,false);
-            assertEquals((sa+1)/2,pk,"pack pays half, rounded up (its Ardent is half as plentiful)");
+            assertEquals(2*sa,pk,"0.0.28 (owner): the pack pays twice (its Ardent Energy pays for little else)");
+            assertEquals(sa,discounted(pk,MAX_MK),"a pack table at Mk III charges the standalone price");
             assertTrue(level==1||price(r,level,t,true)>price(r,level-1,t,true),"a higher level costs more");
         }
     }
     @Test void theTableMkIsAPermanentDiscount(){
-        assertArrayEquals(new int[]{0,10,20,30},DISCOUNT);assertEquals(3,MAX_MK);
-        assertEquals(10,discounted(10,0));assertEquals(9,discounted(10,1));assertEquals(8,discounted(10,2));assertEquals(7,discounted(10,3));
+        assertArrayEquals(new int[]{0,17,33,50},DISCOUNT);assertEquals(3,MAX_MK);
+        assertEquals(10,discounted(10,0));assertEquals(8,discounted(10,1));assertEquals(6,discounted(10,2));assertEquals(5,discounted(10,3));
         assertEquals(1,discounted(1,3),"never below 1");
         for(int p=1;p<=80;p++)for(int mk=1;mk<=3;mk++){
             assertTrue(discounted(p,mk)<=discounted(p,mk-1),"each Mk is at least as cheap");
             if(p>=2)assertTrue(discounted(p,mk)<p,"every Mk takes something off a price of 2 or more ("+p+" at Mk "+mk+")");
         }
-        assertEquals(4,discounted(price(Rarity.COMMON,5,false,false),1),"the pack's Sharpness V, 5, is 4 at Mk I (rounded up it stayed 5)");
+        assertArrayEquals(new int[]{20,16,13,10},new int[]{discounted(20,0),discounted(20,1),discounted(20,2),discounted(20,3)},"the pack's Sharpness V by Mk");
+        assertEquals(20,price(Rarity.COMMON,5,false,false),"the pack's Sharpness V");
         String economy=source("Economy.java");
         assertTrue(economy.contains("ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24}"),"Mk I to III: resonance coils (pack) or Ardent Energy (standalone)");
     }
@@ -99,7 +101,8 @@ final class EnchantTest {
         assertTrue(lang.contains("12 iron, 4 obsidian, 3 books and 8 Ardent Energy. Mk I, II and III: 6, 12 and 24 Ardent Energy."),"standalone price in the guide");
         assertTrue(lang.contains("2 for common enchants, 3 for uncommon, 5 for rare and 8 for very rare")&&Arrays.equals(PER_LEVEL_STANDALONE,new int[]{2,3,5,8}),"per level by rarity");
         assertTrue(lang.contains("Sharpness II needs 2, III needs 3, IV needs 4 and V needs 5")&&fobsFor(2,5)==2&&fobsFor(3,5)==3&&fobsFor(4,5)==4&&fobsFor(5,5)==5,"the level gate's example");
-        assertTrue(lang.contains("10, 20 and 30 percent off"),"the discounts");
+        assertTrue(lang.contains("17, 33 and 50 percent off"),"the discounts");
+        assertTrue(lang.contains("[pack] - The pack edition pays twice that"),"the pack's factor");
     }
     private static String sha(Path p) throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));}
     static String source(String name){try{return Files.readString(Path.of(SRC+name));}catch(Exception e){return "";}}

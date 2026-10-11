@@ -95,9 +95,10 @@ final class FlareVoiceAndAmmoTest {
             var pay=Economy.hunt(kind,t,standalone);
             assertTrue(pay.ardent()>=1&&pay.coins()>=2,kind+" at tier "+t+(standalone?" standalone":" pack")+" pays "+pay);
         }
-        assertEquals(new Economy.HuntPay(1,2),Economy.hunt(TacticalRules.Kind.PATROL,0,false),"a pack Patrol at tier 0 paid 0 and 1 before 0.0.22");
-        assertEquals(new Economy.HuntPay(1,2),Economy.hunt(TacticalRules.Kind.PATROL,0,true),"already at the minimum");
+        assertEquals(new Economy.HuntPay(2,4),Economy.hunt(TacticalRules.Kind.PATROL,0,false),"a pack Patrol at tier 0 paid 0 and 1 before 0.0.22, the minimum 1 and 2 since, twice that since 0.0.28");
+        assertEquals(new Economy.HuntPay(2,4),Economy.hunt(TacticalRules.Kind.PATROL,0,true),"the minimum, doubled for a Patrol (0.0.28)");
+        assertEquals(new Economy.HuntPay(1,2),Economy.hunt(TacticalRules.Kind.GARRISON,0,false),"other classes keep the plain minimum");
         assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3,false),"above the minimum nothing changes");
-        assertTrue(RaidFixesTest.lang().get("gui.arsenal_beacon.guide.tactical.detail").contains("Every mission pays at least "+Economy.HUNT_MIN_ARDENT+" Ardent Energy and "+Economy.HUNT_MIN_COINS+" ammo coins."));
+        assertTrue(RaidFixesTest.lang().get("gui.arsenal_beacon.guide.tactical.detail").contains("Every mission pays at least "+Economy.HUNT_MIN_ARDENT+" Ardent Energy and "+Economy.HUNT_MIN_COINS+" ammo coins, a Patrol at least "+Economy.PATROL_PAY_FACTOR*Economy.HUNT_MIN_ARDENT+" and "+Economy.PATROL_PAY_FACTOR*Economy.HUNT_MIN_COINS+"."));
     }
 }

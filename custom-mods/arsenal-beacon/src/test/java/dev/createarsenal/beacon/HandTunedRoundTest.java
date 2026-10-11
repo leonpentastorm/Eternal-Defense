@@ -76,7 +76,9 @@ final class HandTunedRoundTest {
         }
         var vertical=Economy.beaconCost("vertical",0);
         assertEquals(4,vertical.size());
-        for(var part:vertical)assertEquals(2,part.amount(),part.id()+": two of every part at first");
+        for(var part:vertical)assertEquals(part.id().equals("restoration_matrix")?1:2,part.amount(),part.id()+": two of every part at first (one matrix since 0.0.28: matrix prices are halved)");
+        assertEquals(List.of(new Economy.Part("restoration_matrix",4)),Economy.beaconCost("restoration",0),"0.0.28: the Restoration branch takes half (8 before)");
+        assertEquals(List.of(new Economy.Part("reinforced_plating",8)),Economy.beaconCost("core",0),"other parts are unchanged");
         assertEquals(Set.copyOf(Economy.BEACON_PARTS),vertical.stream().map(Economy.Part::id).collect(java.util.stream.Collectors.toSet()));
         assertEquals(16,Economy.beaconCost("vertical",3).get(0).amount());
         assertEquals(List.of(new Economy.Part("reinforced_plating",8)),Economy.beaconCost("defense",0));
@@ -88,16 +90,23 @@ final class HandTunedRoundTest {
         assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,0));assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,3),"volley does nothing for the cluster");
         assertEquals(200,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.NAPALM,0));assertEquals(440,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.NAPALM,3));
         assertEquals(300,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CRYO,0));assertEquals(600,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CRYO,3));
-        assertEquals(100,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.GRAVITY,0));assertEquals(220,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.GRAVITY,3));
+        assertEquals(120,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.GRAVITY,0));assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.GRAVITY,3),"0.0.28 (owner): 12 s at the top level");
+        assertEquals(600,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.STARSHELL,0));assertEquals(1200,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.STARSHELL,3),"0.0.28 (owner): the starshell burns a full minute at the top level");
+        assertEquals(CannonUpgrades.Upgrade.VOLLEY.max(),3,"the top Volley level is 3");
         assertEquals(0,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.EXPLOSION,3));
         var levels=new int[CannonUpgrades.Upgrade.values().length];levels[CannonUpgrades.Upgrade.VOLLEY.ordinal()]=2;
         assertEquals(360,CannonUpgrades.Config.of(levels,CannonUpgrades.FireType.NAPALM).lingerTicks(),"the config carries the volley level");
     }
-    @Test void theClusterDealsEightyPercentOfAFullBarrage(){
+    /** 0.0.28 (owner): a mob that stays the whole strike takes six barrage shells (it was 80 percent of six); the Bunker Buster five, at every Damage level. */
+    @Test void theClusterDealsSixShellsAndTheBunkerBusterFive(){
         int pulses=CannonUpgrades.CLUSTER_TICKS/CannonUpgrades.CLUSTER_PULSE_TICKS;
-        float barrage=SupportRules.FIRE_DAMAGE*CannonUpgrades.volleys(CannonUpgrades.FireType.EXPLOSION,0);
-        assertEquals(barrage*.8f,CannonUpgrades.clusterPulse(1f)*pulses,1e-3);
-        assertEquals(barrage*.8f*1.5f,CannonUpgrades.clusterPulse(1.5f)*pulses,1e-3,"the Damage upgrade scales it");
+        for(int level=0;level<=3;level++){float m=CannonUpgrades.damage(level),shell=SupportRules.FIRE_DAMAGE*m;
+            assertEquals(6*shell,CannonUpgrades.clusterPulse(m)*pulses,1e-3,"cluster: six shells at Damage "+level);
+            var levels=new int[CannonUpgrades.Upgrade.values().length];levels[CannonUpgrades.Upgrade.DAMAGE.ordinal()]=level;
+            assertEquals(5*shell,CannonUpgrades.facts(CannonUpgrades.Config.of(levels,CannonUpgrades.FireType.BUNKER)).special(),1e-3,"bunker: five shells at Damage "+level);
+        }
+        String flares=SosTest.source("SupportFlares.java");
+        assertTrue(flares.contains("e.hurt(level.damageSources().explosion(this,getOwner()),dmg*CannonUpgrades.BUNKER_HITS);"),"the blow the menu shows is the blow dealt");
         assertTrue(CannonUpgrades.CLUSTER_PULSE_TICKS>=10,"pulses never fall inside a mob's hurt cooldown");
     }
     @Test void theAreasHaveTheirNewSizes(){

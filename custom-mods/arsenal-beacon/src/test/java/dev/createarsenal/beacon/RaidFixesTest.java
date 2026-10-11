@@ -53,11 +53,11 @@ final class RaidFixesTest {
         var e=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.EXPLOSION));
         assertEquals(6,e.rounds());assertEquals(2,e.every(),1e-9);assertEquals(25,e.damage(),1e-9);assertEquals(150,e.total(),1e-9);assertEquals(8,e.width(),1e-9);assertEquals(4.5,e.height(),1e-9);
         var c=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.CLUSTER));
-        assertEquals(5,c.special(),1e-9);assertEquals(120,c.total(),1e-9,"the guide's 120");assertEquals(12,c.lasts(),1e-9);assertEquals(14,c.width(),1e-9);
+        assertEquals(6.25,c.special(),1e-9);assertEquals(150,c.total(),1e-9,"the guide's 150 (0.0.28: six shells)");assertEquals(12,c.lasts(),1e-9);assertEquals(14,c.width(),1e-9);
         var n=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.NAPALM));
         assertEquals(5,n.special(),1e-9);assertEquals(50,n.total(),1e-9);assertEquals(10,n.lasts(),1e-9);
         var b=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.BUNKER));
-        assertEquals(50,b.special(),1e-9);assertEquals(16,b.width(),1e-9);assertEquals(16,b.height(),1e-9,"a cube");
+        assertEquals(125,b.special(),1e-9,"0.0.28: five shells");assertEquals(16,b.width(),1e-9);assertEquals(16,b.height(),1e-9,"a cube");
         var s=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.STARSHELL));
         assertEquals(30,s.lasts(),1e-9);assertEquals(32,s.width(),1e-9);
         assertEquals(5,CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.NARUKAMI)).rounds(),"one volley fewer");
@@ -78,7 +78,8 @@ final class RaidFixesTest {
             assertFalse(lang.get(key).matches(".*(?<!%)%(?![0-9%]).*"),key+": a percent sign must be written %%");
             assertFalse(lang.containsKey("gui.arsenal_beacon.cannon.type."+t.id+".desc"),"the old one-line description is gone");
         }
-        assertTrue(lang.get("gui.arsenal_beacon.cannon.type.starshell.effect").contains("Haste II"),"the starshell gives Haste");
+        assertTrue(lang.get("gui.arsenal_beacon.cannon.type.starshell.effect").contains("Speed II"),"the starshell gives Speed (0.0.28; Haste before)");
+        assertTrue(SosTest.source("SupportFlares.java").contains("new MobEffectInstance(MobEffects.MOVEMENT_SPEED,CannonUpgrades.STAR_SPEED_TICKS,1,true,false,true)"),"and the server gives Speed II");
         assertFalse(lang.get("gui.arsenal_beacon.cannon.type.starshell.effect").contains("Regeneration"));
         assertTrue(lang.get("gui.arsenal_beacon.cannon.type.heal.damage").startsWith("None"),"the Healing Barrage does not hurt mobs");
         for(String key:List.of("raid.gate_spawn","raid.no_ground","raid.test_gate","cannon.card.effect","cannon.card.damage","cannon.card.area"))assertTrue(lang.containsKey("gui.arsenal_beacon."+key),key);

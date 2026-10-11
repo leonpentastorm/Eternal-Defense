@@ -42,8 +42,32 @@ public final class UniversalWood {
         if(form==null)return ingredient;
         Ingredient expanded=Ingredient.of(TagKey.create(Registries.ITEM,new ResourceLocation(form)));return expanded.isEmpty()?ingredient:expanded;
     }
+    /**
+     * The name a cost row shows for a wood ingredient ("Wood (any log)"), or "" when it is not one. 0.0.28 (owner): a gun that needs dark oak logs
+     * showed "Dark Oak Log" although any log pays. The expanded tag held logs the catalogue does not list (a modded log, a nether stem), and every
+     * item had to be listed; now an item counts when the catalogue lists it or it is in the form's own tag, and a tag ingredient is read directly.
+     */
     static String label(Ingredient ingredient){
-        String form=null;for(var item:ingredient.getItems()){String next=FORMS.get(BuiltInRegistries.ITEM.getKey(item.getItem()).toString());if(next==null||(form!=null&&!form.equals(next)))return "";form=next;}
-        return form==null?"":"Any "+form.substring(form.indexOf(':')+1).replace("wooden_","wood ").replace('_',' ');
+        String form=tagForm(ingredient);
+        if(form==null){
+            for(var item:ingredient.getItems()){String next=FORMS.get(BuiltInRegistries.ITEM.getKey(item.getItem()).toString());if(next!=null){if(form!=null&&!form.equals(next))return "";form=next;}}
+            if(form==null)return "";
+            var tag=TagKey.create(Registries.ITEM,new ResourceLocation(form));
+            for(var item:ingredient.getItems())if(!FORMS.containsKey(BuiltInRegistries.ITEM.getKey(item.getItem()).toString())&&!item.is(tag))return "";
+        }
+        return name(form);
+    }
+    /** The wood form of an ingredient that is a single tag (as the pack's script and {@link #normalize} write it), or null. */
+    private static String tagForm(Ingredient ingredient){
+        try{
+            var json=ingredient.toJson();
+            if(json.isJsonObject()&&json.getAsJsonObject().has("tag")){String tag=json.getAsJsonObject().get("tag").getAsString();return FORMS.containsValue(tag)?tag:TAGS.get(tag);}
+        }catch(RuntimeException ignored){}
+        return null;
+    }
+    /** Pure: what a wood form is called on a cost row: logs are "Wood (any log)", planks "Planks (any wood)", the rest "Any wood stairs" and so on. */
+    static String name(String form){
+        String path=form.substring(form.indexOf(':')+1);
+        return switch(path){case "logs"->"Wood (any log)";case "planks"->"Planks (any wood)";default->"Any "+path.replace("wooden_","wood ").replace('_',' ');};
     }
 }

@@ -177,18 +177,20 @@ public final class GateClient {
             if(ok)return y+12;
             return Ui.wrap(g,font,fix,x+9,y+10,w-9,Ui.MUTED,fixLines)+3;
         }
+        /** Goods per row of the stockpile grid (0.0.28: five, so the nine goods take two rows as the eight did). */
+        static final int STOCK_COLS=5;
         /** The stockpile, the next delivery, what a ride carries, the last delivery. */
         private void drawStock(GuiGraphics g){
             int x=rightX,w=colW,y=bodyY+48;
             Ui.text(g,font,Ui.t("gate.stock.title",data.getInt("workers")),x,y,Ui.BRASS,w);y+=12;
             var stock=data.getList("stock",Tag.TAG_COMPOUND);
             for(int i=0;i<stock.size();i++){
-                var row=stock.getCompound(i);int cx=x+(i%4)*(w/4),cy=y+(i/4)*20;
+                var row=stock.getCompound(i);int cx=x+(i%STOCK_COLS)*(w/STOCK_COLS),cy=y+(i/STOCK_COLS)*20;
                 var item=BuiltInRegistries.ITEM.get(new ResourceLocation(row.getString("id")));
                 g.renderItem(new ItemStack(item),cx,cy);
-                Ui.text(g,font,Component.literal(Integer.toString(row.getInt("amount"))),cx+17,cy+5,row.getInt("amount")>=row.getInt("cap")?Ui.ORANGE:Ui.INK,w/4-18);
+                Ui.text(g,font,Component.literal(Integer.toString(row.getInt("amount"))),cx+17,cy+5,row.getInt("amount")>=row.getInt("cap")?Ui.ORANGE:Ui.INK,w/STOCK_COLS-18);
             }
-            y+=((stock.size()+3)/4)*20+4;
+            y+=((stock.size()+STOCK_COLS-1)/STOCK_COLS)*20+4;
             long next=data.getLong("nextIn");
             Ui.wrap(g,font,next>=0?Ui.t("gate.next",time(next),data.getInt("capacity")):Ui.t("gate.next.paused"),x,y,w,next>=0?Ui.INK:Ui.MUTED,2);y+=22;
             Ui.wrap(g,font,Ui.t("gate.ride",data.getInt("active")),x,y,w,Ui.MUTED,2);y+=22;
@@ -200,7 +202,7 @@ public final class GateClient {
             renderBackground(g);super.render(g,mx,my,partial);
             if(!choosing()){
                 var stock=data.getList("stock",Tag.TAG_COMPOUND);int y=bodyY+60;
-                for(int i=0;i<stock.size();i++){int cx=rightX+(i%4)*(colW/4),cy=y+(i/4)*20;
+                for(int i=0;i<stock.size();i++){int cx=rightX+(i%STOCK_COLS)*(colW/STOCK_COLS),cy=y+(i/STOCK_COLS)*20;
                     if(Ui.inside(mx,my,cx,cy,16,16)){var row=stock.getCompound(i);var item=BuiltInRegistries.ITEM.get(new ResourceLocation(row.getString("id")));
                         g.renderComponentTooltip(font,List.of(item.getDescription(),Ui.t("gate.stock.tip",row.getInt("amount"),row.getInt("cap"))),mx,my);}}
             }

@@ -54,6 +54,39 @@ final class ExchangeShop {
      */
     static final String PACK="""
         [sell]
+        arsenal_beacon:warlord_seal = 4
+        arsenal_beacon:reinforced_plating x2 = 1
+        arsenal_beacon:logistics_module x2 = 1
+        arsenal_beacon:resonance_coil x2 = 1
+        arsenal_beacon:restoration_matrix = 1
+        create:brass_ingot x16 = 1
+        create:andesite_alloy x32 = 1
+        create:precision_mechanism x2 = 1
+        create:electron_tube x8 = 1
+        kubejs:cartridge_case x32 = 1
+        kubejs:propellant x32 = 1
+
+        [buy]
+        arsenal_beacon:universal_ammo_coin x16 = 3
+        arsenal_beacon:reinforced_plating = 2
+        arsenal_beacon:logistics_module = 2
+        arsenal_beacon:resonance_coil = 3
+        arsenal_beacon:restoration_matrix = 4
+        create:precision_mechanism = 3
+        create:brass_ingot x8 = 3
+        create:andesite_alloy x16 = 2
+        kubejs:cartridge_case x16 = 2
+        kubejs:propellant x16 = 2
+        minecraft:iron_ingot x16 = 1
+        minecraft:iron_block x16 = 8
+        minecraft:gold_ingot x8 = 2
+        minecraft:blaze_rod = 3
+        minecraft:ender_pearl = 3
+        minecraft:diamond = 6
+        """;
+    /** The pack edition's default from 0.0.21 to 0.0.27 (before the Warlord Seal could be sold): an untouched file gets the new default. */
+    static final String PACK_0021="""
+        [sell]
         arsenal_beacon:reinforced_plating x2 = 1
         arsenal_beacon:logistics_module x2 = 1
         arsenal_beacon:resonance_coil x2 = 1
@@ -112,6 +145,33 @@ final class ExchangeShop {
     /** Standalone edition: rare vanilla materials; since 0.0.21 also iron in bulk (16 blocks, a little cheaper per ingot than nine lots of 16 ingots). */
     static final String STANDALONE="""
         [sell]
+        arsenal_beacon:warlord_seal = 8
+        minecraft:diamond = 2
+        minecraft:blaze_rod = 1
+        minecraft:ender_pearl = 1
+        minecraft:ghast_tear = 2
+        minecraft:netherite_scrap = 3
+        minecraft:shulker_shell = 4
+        minecraft:nether_star = 20
+        minecraft:emerald x2 = 1
+        minecraft:gold_ingot x8 = 1
+        minecraft:quartz x16 = 1
+
+        [buy]
+        arsenal_beacon:universal_ammo_coin x16 = 3
+        minecraft:iron_ingot x16 = 1
+        minecraft:iron_block x16 = 8
+        minecraft:copper_ingot x16 = 1
+        minecraft:gunpowder x16 = 1
+        minecraft:redstone x16 = 1
+        minecraft:gold_ingot x8 = 2
+        minecraft:blaze_rod = 3
+        minecraft:ender_pearl = 3
+        minecraft:diamond = 6
+        """;
+    /** The standalone edition's default from 0.0.21 to 0.0.27 (see {@link #PACK_0021}). */
+    static final String STANDALONE_0021="""
+        [sell]
         minecraft:diamond = 2
         minecraft:blaze_rod = 1
         minecraft:ender_pearl = 1
@@ -165,7 +225,10 @@ final class ExchangeShop {
     /** Pure: the file's text with each line's trailing spaces and the blank lines at its end dropped (to compare a file with a template). */
     static String normal(String text){return text.lines().map(String::stripTrailing).collect(java.util.stream.Collectors.joining("\n")).strip();}
     /** Pure: is this file the untouched default of an earlier version for that edition (so it may be replaced by the current one)? */
-    static boolean oldDefault(String text,boolean standalone){return normal(text).equals(normal(HEADER+"\n"+(standalone?STANDALONE_BEFORE_0021:PACK_BEFORE_0021)));}
+    static boolean oldDefault(String text,boolean standalone){
+        for(String old:standalone?List.of(STANDALONE_BEFORE_0021,STANDALONE_0021):List.of(PACK_BEFORE_0021,PACK_0021))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
+        return false;
+    }
 
     /** Splits the file's lines into its [sell] and [buy] sections (anything before a header is ignored). */
     static java.util.Map<String,List<String>> sections(List<String> lines){
@@ -187,7 +250,7 @@ final class ExchangeShop {
                 com.mojang.logging.LogUtils.getLogger().warn("{} used the old single-list format; it was kept as an .old file and replaced with buy and sell sections",FILE);
             }
             if(!lines.isEmpty()&&oldDefault(String.join("\n",lines),BuildFlavor.STANDALONE)){
-                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.21 default (iron in bulk, and rare vanilla materials in the pack edition)",FILE);
+                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.28 default (the Warlord Seal sells for Ardent Energy)",FILE);
             }
             if(lines.isEmpty()){Files.writeString(file,template());lines=Files.readAllLines(file);}
             var parts=sections(lines);java.util.function.Predicate<String> exists=id->{var rl=ResourceLocation.tryParse(id);return rl!=null&&BuiltInRegistries.ITEM.containsKey(rl)&&BuiltInRegistries.ITEM.get(rl)!=net.minecraft.world.item.Items.AIR;};

@@ -128,9 +128,9 @@ final class RaidRoundTest {
 
     // ---- the Starshell ----------------------------------------------------------------------------------------------------------------
     @Test void theStarshellHasteLastsLongEnoughToUse(){
-        assertEquals(600,CannonUpgrades.STAR_HASTE_TICKS,"30 s from each pulse: steady while it burns, 30 s after");
-        assertTrue(CannonUpgrades.STAR_HASTE_TICKS>200,"over 10 s, so its icon does not blink as if ending");
-        assertTrue(CannonUpgrades.STAR_HASTE_TICKS>CannonUpgrades.STAR_PULSE_TICKS);
+        assertEquals(600,CannonUpgrades.STAR_SPEED_TICKS,"30 s from each pulse: steady while it burns, 30 s after");
+        assertTrue(CannonUpgrades.STAR_SPEED_TICKS>200,"over 10 s, so its icon does not blink as if ending");
+        assertTrue(CannonUpgrades.STAR_SPEED_TICKS>CannonUpgrades.STAR_PULSE_TICKS);
     }
     // ---- the Exchange Shop (side quest) -----------------------------------------------------------------------------------------------
     static List<TextTable.Row> buys(String template){return TextTable.parse(ExchangeShop.sections(List.of(template.split("\n"))).get("buy"),id->true,64,9999).rows();}

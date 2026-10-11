@@ -168,7 +168,7 @@ public final class WeaponPlatform {
         case 1->List.of(cost("minecraft:iron_ingot",64),cost("create:andesite_alloy",32),cost("create:cogwheel",16),cost("kubejs:pressed_receiver",16));
         case 2->List.of(cost("kubejs:hardened_receiver",16),cost("create:precision_mechanism",32),cost("minecraft:blaze_rod",8),cost("create:brass_sheet",32));
         case 3->List.of(cost("kubejs:hardened_receiver",64),cost("create:precision_mechanism",64),cost("minecraft:netherite_scrap",16),cost("arsenal_beacon:resonance_coil",16));
-        case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("arsenal_beacon:restoration_matrix",16));
+        case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("arsenal_beacon:restoration_matrix",8));   // 0.0.28: 16 matrices before (halved with the matrix recipe doubled)
         default->List.of();};}
     static Cost cost(String id,int amount){if(BuildFlavor.STANDALONE)id=StandaloneBalance.material(id);return new Cost(Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id))),amount);}
     static List<Cost> costs(Entry e)throws ReflectiveOperationException{

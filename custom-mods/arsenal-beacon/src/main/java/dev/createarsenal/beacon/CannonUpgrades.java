@@ -47,6 +47,8 @@ final class CannonUpgrades {
     static final int SHELL_BASE=SupportRules.FIRE_BLASTS,VOLLEY_STEP=2;
     /** Half-width of the area of a Bunker Buster, in blocks: a cube this far each way that is dug out completely. */
     static final int BUNKER_RADIUS=8;
+    /** 0.0.28 (owner): the Bunker Buster's blow is worth this many Explosion Barrage shells at every Damage level (2 before). */
+    static final int BUNKER_HITS=5;
     /** Every Area of Effect level widens the area by this much (a Bunker Buster, which digs a whole cube, grows one block a level). */
     static final double AOE_STEP=1.5,BUNKER_AOE_STEP=1;
 
@@ -84,25 +86,26 @@ final class CannonUpgrades {
     /**
      * How long a lingering type keeps working after its round lands (ticks), with {@code volleyLevel} levels of the Volley upgrade:
      * Cluster Strike 12 s (the Volley upgrade does nothing for it), Napalm Carpet 10 s + 4 s a level, Cryo Shell 15 s + 5 s, Gravity Well
-     * 5 s + 2 s; the starshell burns 30 s. 0 for the others.
+     * 6 s + 2 s (12 s at the top level; 0.0.28, owner), the starshell 30 s + 10 s (a full minute at the top level; 0.0.28, owner). 0 for the others.
      */
     static int lingerTicks(FireType type,int volleyLevel){
         int lv=Math.max(0,volleyLevel);
         return switch(type){
             case CLUSTER->CLUSTER_TICKS;case NAPALM->NAPALM_TICKS+NAPALM_STEP*lv;case CRYO->CRYO_TICKS+CRYO_STEP*lv;case GRAVITY->GRAVITY_TICKS+GRAVITY_STEP*lv;
-            case STARSHELL->STAR_TICKS;default->0;
+            case STARSHELL->STAR_TICKS+STAR_STEP*lv;default->0;
         };
     }
     /**
      * Cluster Strike: one shell that bursts over the box and keeps a rain of bomblets going for CLUSTER_TICKS; every CLUSTER_PULSE_TICKS a few
-     * go off and every hostile mob in the box is hurt. Over the whole strike a mob that stays inside takes CLUSTER_SHARE of what the six shells of
-     * an Explosion Barrage would deal (80 percent: 120 before the Damage upgrade). The box is CLUSTER_SPREAD times as wide as a barrage's.
+     * go off and every hostile mob in the box is hurt. Over the whole strike a mob that stays inside takes what CLUSTER_HITS shells of an
+     * Explosion Barrage would deal (0.0.28, owner: six, 150 before the Damage upgrade; it was 80 percent of six, 120). The box is CLUSTER_SPREAD
+     * times as wide as a barrage's.
      */
-    static final int CLUSTER_TICKS=240,CLUSTER_PULSE_TICKS=10,BOMBLETS_PER_PULSE=3;static final double CLUSTER_SPREAD=1.75;static final float CLUSTER_SHARE=.8f;
+    static final int CLUSTER_TICKS=240,CLUSTER_PULSE_TICKS=10,BOMBLETS_PER_PULSE=3,CLUSTER_HITS=6;static final double CLUSTER_SPREAD=1.75;
     /** Height over the flare at which a Cluster Strike shell bursts. */
     static final double CLUSTER_BURST_HEIGHT=6;
     /** Pure: what one bomblet pulse deals to every hostile mob in the box. */
-    static float clusterPulse(float multiplier){return SupportRules.FIRE_DAMAGE*SupportRules.FIRE_BLASTS*CLUSTER_SHARE*multiplier/(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);}
+    static float clusterPulse(float multiplier){return SupportRules.FIRE_DAMAGE*CLUSTER_HITS*multiplier/(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);}
     /** Napalm Carpet and Cryo Shell cover a flat box, 2 blocks high, GROUND_SPREAD times as wide as a barrage's. */
     static final double GROUND_SPREAD=1.2,GROUND_HEIGHT=2;
     /**
@@ -120,7 +123,7 @@ final class CannonUpgrades {
     /** The Cryo Shell's frost reaches this many blocks further on every side than the napalm's (0.0.20, the owner's buff); not higher. */
     static final double CRYO_EXTRA=3;
     /** Gravity Well: no damage; every hostile mob in its (twice as wide) box is dragged to the flare, into one crowd to shoot. */
-    static final int GRAVITY_TICKS=100,GRAVITY_STEP=40;static final double GRAVITY_PULL=.16,WELL_SPREAD=2;
+    static final int GRAVITY_TICKS=120,GRAVITY_STEP=40;static final double GRAVITY_PULL=.16,WELL_SPREAD=2;
     /**
      * Shockwave: no damage. Its box is as wide as a level 1 beacon zone (8 blocks each way); for SHOCK_PUSH_TICKS after every shell, every hostile
      * mob inside is shoved outward until it is past the edge, whatever its knockback resistance, a raid boss too.
@@ -131,12 +134,12 @@ final class CannonUpgrades {
     /** A raid boss is moved by a gravity well this much less (on top of its own knockback resistance). */
     static final double BOSS_MOVE=.35;
     /**
-     * Starshell: bursts high over the flare and burns for 30 seconds, sinking slowly. It lights the whole cube (hidden light blocks every
-     * STAR_LIGHT_SPACING blocks, taken away when it goes out); hostile mobs in it glow, players in it work faster (Haste II). Haste lasts
-     * {@code STAR_HASTE_TICKS} (30 s) from each pulse: it stays while the star burns and for 30 s after (0.0.21; at 3 s its icon blinked
-     * as if ending and it was gone a moment after a player stepped out of the light).
+     * Starshell: bursts high over the flare and burns for 30 seconds (+10 s per Volley level, a full minute at the top level; 0.0.28, owner),
+     * sinking slowly. It lights the whole cube (hidden light blocks every STAR_LIGHT_SPACING blocks, taken away when it goes out); hostile mobs
+     * in it glow, players in it move faster (Speed II; 0.0.28, owner: it was Haste II). Speed lasts {@code STAR_SPEED_TICKS} (30 s) from each
+     * pulse: it stays while the star burns and for 30 s after.
      */
-    static final int STAR_TICKS=600,STAR_GLOW_TICKS=100,STAR_HASTE_TICKS=600,STAR_PULSE_TICKS=40,STAR_LIGHT_SPACING=4;static final double STAR_RADIUS=16,STAR_AOE_STEP=2,STAR_BURST_HEIGHT=14;
+    static final int STAR_TICKS=600,STAR_STEP=200,STAR_GLOW_TICKS=100,STAR_SPEED_TICKS=600,STAR_PULSE_TICKS=40,STAR_LIGHT_SPACING=4;static final double STAR_RADIUS=16,STAR_AOE_STEP=2,STAR_BURST_HEIGHT=14;
 
     /** Pure: the damage of one hit worth {@code share} of a shell, with the Damage upgrade's multiplier. */
     static float hit(float share,float multiplier){return SupportRules.FIRE_DAMAGE*share*multiplier;}
@@ -159,7 +162,7 @@ final class CannonUpgrades {
     static Facts facts(Config c){
         var t=c.type();double r=c.radius(),hit=SupportRules.FIRE_DAMAGE*c.damage(),lasts=c.lingerTicks()/20.0;
         double height=t==FireType.BUNKER||t==FireType.STARSHELL?2*r:t.flat()?GROUND_HEIGHT:r+.5;
-        double special=switch(t){case ARROW->2.5*c.damage();case BUNKER->hit*2;case CLUSTER->clusterPulse(c.damage());case NAPALM->napalm(c.damage());default->hit;};
+        double special=switch(t){case ARROW->2.5*c.damage();case BUNKER->hit*BUNKER_HITS;case CLUSTER->clusterPulse(c.damage());case NAPALM->napalm(c.damage());default->hit;};
         double total=switch(t){case CLUSTER->special*(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);case NAPALM->special*lasts;case EXPLOSION,NARUKAMI->hit*c.volleys();default->special;};
         return new Facts(c.volleys(),c.interval()/20.0,hit,2*r,height,lasts,special,total);
     }

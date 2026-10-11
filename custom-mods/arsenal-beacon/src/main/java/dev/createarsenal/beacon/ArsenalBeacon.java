@@ -282,7 +282,7 @@ public final class ArsenalBeacon {
         String[] branches={"core","logistics","defense","restoration","reconnaissance","vertical"};int[] grades={d.core,d.logistics,d.defense,d.restoration,d.reconnaissance,d.vertical};
         for(int i=0;i<branches.length;i++) {
             String branch=branches[i];int grade=grades[i],limit=Rules.branchMaximum(branch);
-            p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconAmount(grade)+(Economy.standalone()?" Ardent Energy":" components"):" - complete")+"]")
+            p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconCost(branch,grade).stream().mapToInt(Economy.Part::amount).sum()+(Economy.standalone()?" Ardent Energy":" components"):" - complete")+"]")
                 .withStyle(style->style.withColor(ChatFormatting.AQUA).withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,"/arsenal upgrade "+branch))));
         }
     }

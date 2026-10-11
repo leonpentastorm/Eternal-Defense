@@ -382,7 +382,7 @@ final class SupportFlares {
                 }
                 case BUNKER->{
                     Blasts.bunker(level,c,r);
-                    for(LivingEntity e:enemies(level,box))e.hurt(level.damageSources().explosion(this,getOwner()),dmg*2);
+                    for(LivingEntity e:enemies(level,box))e.hurt(level.damageSources().explosion(this,getOwner()),dmg*CannonUpgrades.BUNKER_HITS);
                     // the one support that hurts players: half their health, armor or not
                     for(Player p:level.getEntitiesOfClass(Player.class,box,Player::isAlive))p.hurt(level.damageSources().indirectMagic(this,getOwner()),p.getMaxHealth()*SupportRules.BUNKER_PLAYER_SHARE);
                     beginCarve(level);
@@ -536,7 +536,7 @@ final class SupportFlares {
         private void starPulse(ServerLevel l){
             var area=box();
             for(LivingEntity e:enemies(l,area))e.addEffect(new MobEffectInstance(MobEffects.GLOWING,CannonUpgrades.STAR_GLOW_TICKS,0,true,false));
-            for(Player p:l.getEntitiesOfClass(Player.class,area,Player::isAlive))p.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED,CannonUpgrades.STAR_HASTE_TICKS,1,true,false,true));
+            for(Player p:l.getEntitiesOfClass(Player.class,area,Player::isAlive))p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,CannonUpgrades.STAR_SPEED_TICKS,1,true,false,true));
         }
 
         // ---- blocks a lingering effect puts in the world (and takes away again) -----------------------------------------------------

@@ -52,7 +52,7 @@ final class BeautifyPathTest {
         assertEquals(7,CannonUpgrades.radius(CannonUpgrades.FireType.CLUSTER,0),1e-9);
         assertEquals(16,CannonUpgrades.radius(CannonUpgrades.FireType.STARSHELL,0),1e-9);assertEquals(22,CannonUpgrades.radius(CannonUpgrades.FireType.STARSHELL,3),1e-9);
         String text=SupportTest.guide("support.detail")+SupportTest.guide("support.body");
-        for(String expected:java.util.List.of("1.75 times","12 seconds","5 damage","120 in all","15 seconds (+5 per More volley level)","10 seconds (+4 per More volley level)","5 seconds (+2 per More volley level)","within 8 blocks","burns 30 seconds","within 16 blocks","adds 2 blocks","5 seconds from the shot to the impact","Haste II","3 or more solid blocks"))
+        for(String expected:java.util.List.of("1.75 times","12 seconds","5 damage","150 in all","15 seconds (+5 per More volley level)","10 seconds (+4 per More volley level)","6 seconds (+2 per More volley level, 12 at the top level)","within 8 blocks","burns 30 seconds","within 16 blocks","adds 2 blocks","5 seconds from the shot to the impact","Speed II","a full minute at the top level","3 or more solid blocks"))
             assertTrue(text.contains(expected),"guide does not mention '"+expected+"'");
     }
     @Test void gravityMovesBossesLess(){

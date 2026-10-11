@@ -9,7 +9,9 @@ ServerEvents.recipes(event => {
     event.recipes.create.pressing(l,l)
   ]).transitionalItem(l).loops(2).id('kubejs:beacon/logistics');
   event.recipes.create.mixing('4x arsenal_beacon:resonance_coil',['create:precision_mechanism','minecraft:ender_pearl','4x minecraft:redstone','2x create:golden_sheet']).heated().id('kubejs:beacon/defense');
-  event.recipes.create.mechanical_crafting('4x arsenal_beacon:restoration_matrix',[' B B ','BPEPB',' EHE ','BPEPB',' B B '],{
-    B:'create:brass_sheet',P:'create:precision_mechanism',E:'minecraft:ender_pearl',H:'kubejs:hardened_receiver'
+  // 0.0.28 (owner): 8 matrices per craft (was 4) and a Brass Receiver in the middle (was a Hardened Receiver); every price the mod asks in
+  // matrices is halved as well (Economy.matrices, the cannon's Quantum, Aura and Dimension upgrades, the platform's last era).
+  event.recipes.create.mechanical_crafting('8x arsenal_beacon:restoration_matrix',[' B B ','BPEPB',' EHE ','BPEPB',' B B '],{
+    B:'create:brass_sheet',P:'create:precision_mechanism',E:'minecraft:ender_pearl',H:'kubejs:brass_receiver'
   }).id('kubejs:beacon/restoration');
 });

@@ -1,5 +1,19 @@
 # Change log
 
+## 0.0.28 — The owner's list after the four FOB slices (2026-10-11)
+
+On `dev`. **No packet changed: the network protocol stays 34.** Rules: GDD 0.0.28; tests: `docs/ROUND-0028-TESTING.md`.
+
+* **Tactical Enchanting Table:** the pack edition pays twice the standalone price (4, 6, 10, 16 Ardent Energy per level by rarity; it paid half before), and the standalone price stays (2, 3, 5, 8). Mk I, II and III now take 17, 33 and 50 percent off (were 10, 20, 30), so a pack table at Mk III charges the standalone price.
+* **Warlord Seal** sells at the Exchange Shop: 4 Ardent Energy (pack), 8 (standalone). A world whose exchange file is still an untouched default gets the new default by itself; an edited file needs the line `arsenal_beacon:warlord_seal = 4` (or `= 8`) under `[sell]`.
+* **Wood:** platform cost rows say "Wood (any log)" where any log pays. The owner's pack showed "Dark Oak Log": its logs tag holds logs the wood catalogue does not list, and the label wanted every one listed.
+* **Patrol** pay doubled at every tier, the minimum included (tier 3: standalone 4 Ardent Energy and 18 coins, pack 2 and 8).
+* **Pack, Beacon Restoration Matrix:** the recipe makes 8 (was 4) and takes a Brass Receiver (was a Hardened Receiver); every price in matrices is halved: the Restoration branch 4 to 64, the Vertical zone's share 1 to 16, Quantum tunneling 6, Healing aura 4, Dimensional link 10, the platform's last era 8. The pack bundle carries the updated `15_beacon_recipes.js`.
+* **Pack: every won raid gives one Pressed Receiver.**
+* **Fire support:** the Bunker Buster deals five Explosion Barrage shells' damage (125 before the Damage upgrade; was two), the Cluster Strike six over its 12 s (150; was 120), the Gravity Well lasts 6 s + 2 s per Volley level (12 s at the top), the Starshell burns 30 s + 10 s per Volley level (a full minute at the top) and gives Speed II instead of Haste II.
+* **FOB tribute** adds emeralds: a quarter per villager-hour. The gate screen shows the nine goods in two rows of five.
+* Unit tests: 276 (5 new in `OwnerList0028Test`; 13 updated to the new numbers). New GameTest `fob_21` (the wood label, a seal sold at the Exchange, a Patrol's pay).
+
 ## 0.0.27 — Forward Operating Bases, slice 4 of 4: the Tactical Enchanting Table (2026-10-11)
 
 On `dev`. **Network protocol 34** (a new menu; the table-state packet also refreshes the enchanting screen). Rules: GDD 0.0.27 (Part J, section 5.10); tests: `docs/FOB-SLICE-4-TESTING.md`.

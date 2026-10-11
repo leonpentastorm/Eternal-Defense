@@ -15,7 +15,8 @@ final class RouteRules {
     /** A tribute good and how much of it one villager makes in an hour of play. Nothing the Exchange buys (see FobTest), so tribute never becomes Ardent. */
     record Good(String id,double perVillagerHour){}
     static final List<Good> GOODS=List.of(new Good("minecraft:redstone",1.5),new Good("minecraft:gunpowder",1.0),new Good("minecraft:flint",1.5),
-        new Good("minecraft:bread",1.0),new Good("minecraft:carrot",.5),new Good("minecraft:potato",.5),new Good("minecraft:leather",.25),new Good("minecraft:paper",.25));
+        new Good("minecraft:bread",1.0),new Good("minecraft:carrot",.5),new Good("minecraft:potato",.5),new Good("minecraft:leather",.25),new Good("minecraft:paper",.25),
+        new Good("minecraft:emerald",.25));   // 0.0.28 (owner): emeralds too, the villagers' own currency (the standalone Exchange buys 2 for 1 Ardent Energy)
     /** Villagers beyond this many make nothing more. */
     static final int MAX_WORKERS=20;
     /** The stockpile holds this many hours of play of production (at least {@link #MIN_CAP} of each good). */

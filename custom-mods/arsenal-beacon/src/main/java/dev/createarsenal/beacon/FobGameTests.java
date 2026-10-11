@@ -788,6 +788,40 @@ public final class FobGameTests {
             h.assertTrue(HuntGameTests.rewards(d,ArsenalBeacon.WARLORD_SEAL.get())==seals+1,"a cleared Warlord pays one Warlord Seal into the reward chest");
         }).thenSucceed();
     }
+    // ---- 0.0.28: the owner's list, the parts that need a world (run with the FOB tests) -----------------------------------------------------
+    /** Where the Exchange Shop goes in the hunt tests' base zone for the seal sale. */
+    static final BlockPos SHOP=HuntGameTests.BEACON.offset(4,0,-4);
+    @GameTest(template="empty3x3x3",batch="fob_21",timeoutTicks=200)
+    public static void theOwnersListFor0028(GameTestHelper h){
+        var hf=HuntGameTests.fixture(h);var l=hf.l();var d=hf.d();var hd=hf.h();var p=HuntGameTests.player(h);var mode=p.gameMode.getGameModeForPlayer();
+        h.startSequence().thenExecute(()->{
+            // a wood cost reads "Wood (any log)" whether the recipe names dark oak logs or the logs tag, and any log pays it
+            var darkOak=UniversalWood.normalize(net.minecraft.world.item.crafting.Ingredient.of(Items.DARK_OAK_LOG));
+            h.assertTrue("Wood (any log)".equals(UniversalWood.label(darkOak)),"dark oak logs: "+UniversalWood.label(darkOak));
+            h.assertTrue(darkOak.test(new ItemStack(Items.BIRCH_LOG))&&darkOak.test(new ItemStack(Items.CRIMSON_STEM)),"any log pays it");
+            h.assertTrue("Wood (any log)".equals(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.LOGS))),"the logs tag");
+            h.assertTrue(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(Items.IRON_INGOT)).isEmpty(),"no label for iron");
+            // a Warlord Seal sells at the Exchange Shop: 4 Ardent Energy (pack) or 8 (standalone)
+            p.setGameMode(GameType.SURVIVAL);
+            try{
+                HuntGameTests.goTo(p,l,SHOP.south(2));
+                l.setBlock(SHOP,ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState(),3);
+                p.getInventory().clearContent();p.getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()));
+                var sell=ExchangeShop.offers().sell();int index=-1;for(int i=0;i<sell.size();i++)if(sell.get(i).id().equals("arsenal_beacon:warlord_seal"))index=i;
+                h.assertTrue(index>=0,"the shop buys Warlord Seals");
+                int value=sell.get(index).value();h.assertTrue(value==(BuildFlavor.STANDALONE?8:4),"for "+value);
+                ExchangeShop.buy(p,SHOP,index,true);
+                h.assertTrue(count(p,ArsenalBeacon.WARLORD_SEAL.get())==0&&ardent(p)==value,"sold: the seal gone, "+ardent(p)+" Ardent Energy");
+            }finally{p.setGameMode(mode);l.setBlock(SHOP,Blocks.AIR.defaultBlockState(),3);ArsenalStructures.remove(l,SHOP);p.getInventory().clearContent();}
+            // a cleared Patrol pays twice what the shared formula gives it
+            int before=HuntGameTests.rewards(d,ArsenalBeacon.ARDENT_ENERGY.get()),coinsBefore=HuntGameTests.rewards(d,ArsenalBeacon.AMMO_COIN.get());
+            var o=HuntGameTests.offer(hf,TacticalRules.Kind.PATROL);h.assertTrue(hd.board.accept(o.id,null)==null,"a Patrol accepted");
+            var m=hd.board.mission;m.state=HuntBoard.State.ENGAGED;m.remaining=0;Hunts.complete(l,d,hd);
+            var pay=Economy.hunt(TacticalRules.Kind.PATROL,Hunts.tier(l,d));
+            h.assertTrue(HuntGameTests.rewards(d,ArsenalBeacon.ARDENT_ENERGY.get())-before==pay.ardent()&&HuntGameTests.rewards(d,ArsenalBeacon.AMMO_COIN.get())-coinsBefore==pay.coins(),"the Patrol paid "+pay);
+            h.assertTrue(pay.ardent()%2==0&&pay.coins()%2==0&&pay.ardent()>=2&&pay.coins()>=4,"twice the formula: "+pay);
+        }).thenSucceed();
+    }
     static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){
         var hit=new BlockHitResult(Vec3.atCenterOf(rail).add(0,.5,0),Direction.UP,rail,false);
         return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack.copy(),hit));

@@ -24,17 +24,25 @@ final class EnchantRules {
     /** Standalone Ardent Energy per level, by rarity; treasure enchants (unlocked by Warlord Seals) cost twice that. */
     static final int[] PER_LEVEL_STANDALONE={2,3,5,8};
     static final int TREASURE_FACTOR=2;
-    /** Pure: the full price of level {@code level} (before a table upgrade): rarity x level (x2 for treasure); the pack edition pays half, rounded up (its Ardent is half as plentiful). */
+    /**
+     * The pack edition pays twice the standalone price (owner, 0.0.28): there Ardent Energy pays for little else, Create parts buy the other
+     * upgrades; in the standalone edition it pays for everything. Until 0.0.27 the pack paid half.
+     */
+    static final int PACK_FACTOR=2;
+    /** Pure: the full price of level {@code level} (before a table upgrade): rarity x level (x2 for treasure), x2 in the pack edition. */
     static int price(Rarity rarity,int level,boolean treasure,boolean standalone){
         int p=PER_LEVEL_STANDALONE[rarity.ordinal()]*Math.max(1,level)*(treasure?TREASURE_FACTOR:1);
-        return standalone?p:(p+1)/2;
+        return standalone?p:p*PACK_FACTOR;
     }
     /** Levels and the table's Mk as players read them. */
     static final String[] ROMAN={"I","II","III","IV","V","VI","VII"};
     static String roman(int n){return n>=1&&n<=ROMAN.length?ROMAN[n-1]:String.valueOf(n);}
-    /** Table upgrades: Mk I to III, each a permanent discount on every enchant (percent). */
+    /**
+     * Table upgrades: Mk I to III, each a permanent discount on every enchant (percent). 0.0.28 (owner): Mk III takes half off, so a pack table
+     * at Mk III charges exactly the standalone price (the 0.0.27 price), and Mk I and II are evenly between.
+     */
     static final int MAX_MK=3;
-    static final int[] DISCOUNT={0,10,20,30};
+    static final int[] DISCOUNT={0,17,33,50};
     /**
      * Pure: the price after the table's discount, rounded down, never below 1. Rounded down so every Mk takes at least 1 off any price of 2 or
      * more (rounded up, Mk I took nothing off the pack's small prices: Sharpness V, 5, stayed 5).

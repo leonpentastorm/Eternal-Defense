@@ -45,9 +45,14 @@ final class Economy {
     static List<Part> beaconCost(String branch,int level){
         if(standalone())return List.of(new Part("ardent_energy",beaconAmount(level)));
         int amount=Rules.upgradeCost(level);
-        if(branch.equals("vertical"))return BEACON_PARTS.stream().map(id->new Part(id,amount/BEACON_PARTS.size())).toList();
-        return List.of(new Part(beaconPart(branch),amount));
+        if(branch.equals("vertical"))return BEACON_PARTS.stream().map(id->new Part(id,matrices(id,amount/BEACON_PARTS.size()))).toList();
+        return List.of(new Part(beaconPart(branch),matrices(beaconPart(branch),amount)));
     }
+    /**
+     * 0.0.28 (owner): every pack price paid in Beacon Restoration Matrices is half what it was (rounded up), and the matrix recipe makes 8 instead
+     * of 4 (pack-integration/kubejs/server_scripts/15_beacon_recipes.js). Pure: {@code amount} of part {@code id}, halved when it is the matrix.
+     */
+    static int matrices(String id,int amount){return id.endsWith("restoration_matrix")?(amount+1)/2:amount;}
     static int repairAmount(){return standalone()?6:8;}
     static final int[] KITCHEN_ARDENT={4,8,14},KITCHEN_PLATING={8,16,32};
     static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}
@@ -97,8 +102,8 @@ final class Economy {
     }
     static final java.util.Map<CannonUpgrades.Upgrade,int[]> PACK_AMOUNTS=new java.util.EnumMap<>(java.util.Map.of(
         CannonUpgrades.Upgrade.TRAVERSE,new int[]{6,12,24},CannonUpgrades.Upgrade.RATE,new int[]{5,10,20},CannonUpgrades.Upgrade.VOLLEY,new int[]{6,12,24},
-        CannonUpgrades.Upgrade.DAMAGE,new int[]{6,12,24},CannonUpgrades.Upgrade.QUANTUM,new int[]{12},CannonUpgrades.Upgrade.SLOW,new int[]{10},
-        CannonUpgrades.Upgrade.PORTAL,new int[]{10},CannonUpgrades.Upgrade.AURA,new int[]{8},CannonUpgrades.Upgrade.AOE,new int[]{5,10,20},CannonUpgrades.Upgrade.DIMENSION,new int[]{20}));
+        CannonUpgrades.Upgrade.DAMAGE,new int[]{6,12,24},CannonUpgrades.Upgrade.QUANTUM,new int[]{6},CannonUpgrades.Upgrade.SLOW,new int[]{10},
+        CannonUpgrades.Upgrade.PORTAL,new int[]{10},CannonUpgrades.Upgrade.AURA,new int[]{4},CannonUpgrades.Upgrade.AOE,new int[]{5,10,20},CannonUpgrades.Upgrade.DIMENSION,new int[]{10}));
     /** The price of the next level, or null when maxed. */
     static Price cannon(CannonUpgrades.Upgrade u,int level){
         if(level<0||level>=u.max())return null;
@@ -155,10 +160,15 @@ final class Economy {
     record HuntPay(int ardent,int coins){}
     /** 0.0.22 (owner): a hunt always pays at least this much, whatever the reward tier (a pack Patrol at tier 0 paid 0 and 1). */
     static final int HUNT_MIN_ARDENT=1,HUNT_MIN_COINS=2;
-    /** Pure: budget B = class share x guaranteed raid Ardent; Ardent = round(0.6 B), coins = round(0.4 B x 16/3); never below the minimum. */
+    /** 0.0.28 (owner): a Patrol pays twice what it did, at every tier (the minimum too): some bases are offered almost nothing but Patrols. */
+    static final int PATROL_PAY_FACTOR=2;
+    /**
+     * Pure: budget B = class share x guaranteed raid Ardent; Ardent = round(0.6 B), coins = round(0.4 B x 16/3); never below the minimum; a
+     * Patrol's pay then doubled.
+     */
     static HuntPay hunt(TacticalRules.Kind kind,int tier,boolean standalone){
-        double budget=kind.budget*huntGuaranteed(tier,standalone);
-        return new HuntPay(Math.max(HUNT_MIN_ARDENT,(int)Math.round(HUNT_ARDENT_SHARE*budget)),Math.max(HUNT_MIN_COINS,(int)Math.round(HUNT_COIN_SHARE*budget*COINS_PER_ARDENT)));
+        double budget=kind.budget*huntGuaranteed(tier,standalone);int factor=kind==TacticalRules.Kind.PATROL?PATROL_PAY_FACTOR:1;
+        return new HuntPay(factor*Math.max(HUNT_MIN_ARDENT,(int)Math.round(HUNT_ARDENT_SHARE*budget)),factor*Math.max(HUNT_MIN_COINS,(int)Math.round(HUNT_COIN_SHARE*budget*COINS_PER_ARDENT)));
     }
     static HuntPay hunt(TacticalRules.Kind kind,int tier){return hunt(kind,tier,standalone());}
 

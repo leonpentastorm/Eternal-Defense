@@ -1,8 +1,24 @@
 # Handoff: where the project stands
 
-Last updated for **0.0.27 (Forward Operating Bases, slice 4 of 4: the Tactical Enchanting Table and the Warlord Seal; all four FOB slices are built)**, on **`dev`**. Network protocol **34-pack / 34-standalone**. The earlier states are described below.
+Last updated for **0.0.28 (the owner's list after the four FOB slices: enchanting prices by edition, the Warlord Seal at the Exchange, the wood label, Patrol pay, the restoration matrix, a Pressed Receiver per raid, four fire supports, emerald tribute)**, on **`dev`**. Network protocol **34-pack / 34-standalone** (unchanged). The earlier states are described below.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## The owner's list after the four FOB slices (0.0.28)
+
+* **What it is.** Ten requests in one message, plus a follow-up on the enchanting prices ("the pack should be the one that's double, standalone should have the cheaper rate because Ardent is used for everything in the standalone pack"). Rules: GDD 0.0.28.
+* **Decisions and interpretations to confirm with the owner.**
+  1. Enchanting: the standalone rate stays (2, 3, 5, 8 per level); the pack pays twice that. Mk I, II and III take 17, 33 and 50 percent off in both editions, so a pack table at Mk III charges the standalone price, and a standalone table at Mk III charges half its price.
+  2. "Reward raid give you one singular Pressed Receiver" is read as: every won raid gives exactly one Pressed Receiver (pack; the standalone edition has no receivers). It is added after the hard raid's bonus, so a hard raid gives one too.
+  3. Restoration matrix: the recipe (pack) makes 8 and takes a Brass Receiver; every price in matrices is halved in the pack edition only (the standalone edition's matrix recipe is a plain crafting recipe of iron, gold, redstone and a diamond, unchanged).
+  4. Patrol: exactly twice the old pay, the minimum too. A Patrol now pays about what a Garrison does (tier 3 standalone: Patrol 4 + 18, Garrison 5 + 17).
+  5. Starshell: the Volley upgrade now makes it burn longer (30 s + 10 s a level, 60 s at level 3). Speed II replaces Haste II (same level).
+  6. Gravity Well: 6 s + 2 s per Volley level (12 s at level 3).
+  7. Seal at the Exchange: 4 Ardent Energy (pack) or 8 (standalone), about a tier 3 Warlord's own Ardent pay.
+  8. Emerald tribute: a quarter per villager-hour. The standalone Exchange buys emeralds (2 for 1 Ardent Energy), so a FOB of 20 villagers can bring at most 2.5 Ardent Energy an hour that way. That breaks the old "tribute never turns into Ardent Energy" rule on purpose.
+* **Why "nothing but Patrols".** The Satellite Beacon's Mk, not the Defense Beacon's, sets the classes: Mk I offers Patrols only, Mk II Patrols and Garrisons, Mk III all three. A Garrison needs a vanilla structure (pillager outpost, desert or jungle temple, swamp hut, igloo, mansion) within range, else it becomes a Patrol. So a Mk II satellite in a place with none of those offers only Patrols. The Field Guide now says so. Not changed otherwise; a fallback camp for Garrisons with no structure would be a design change for the owner to ask for.
+* **Validation.** VALIDATION28_TBD
+* **Not tested / next.** The pack's restoration matrix recipe (KubeJS and Create are not in the development runtime: the script is checked by a unit test that reads it); the Pressed Receiver in a real raid's prizes (checked in the code by a unit test: the pack's raid rewards need the gunpacks' tactical supplies, which the development runtime does not have); firing the four changed fire supports in a world (their numbers are unit-tested from the same constants the flares use, and a unit test reads the server's Speed effect and the Bunker Buster's blow).
 
 ## Forward Operating Bases, slice 4 (0.0.27)
 

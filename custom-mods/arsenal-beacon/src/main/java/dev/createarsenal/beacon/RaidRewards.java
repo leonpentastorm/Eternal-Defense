@@ -36,6 +36,7 @@ final class RaidRewards {
         add(list,"arsenal_beacon:ardent_energy",1+t);   // the floor of the Ardent Energy income: farming and exchange sell-offs add to it
         // Bonus resources are 50% of the completion cache, rounded up; wave iron stays unchanged.
         if(hard){for(var s:list)s.setCount(s.getCount()+(s.getCount()+1)/2);if(t>=5)add(list,"minecraft:nether_star",1+extra/3);}
+        add(list,"kubejs:pressed_receiver",1);   // 0.0.28 (owner): every won raid gives one Pressed Receiver, a hard raid too (after the bonus)
         supply(list,l,"ConsumableId","carfak",1+t+(hard?2+t:0));
         if(t>=1||hard)supply(list,l,"ThrowableId","m67",2*t+(hard?4+2*t:0));
         if(t>=2||hard)supply(list,l,"ThrowableId","smoke_grenade",t+(hard?2+t:0));

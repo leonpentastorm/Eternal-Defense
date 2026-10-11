@@ -117,13 +117,22 @@ final class RouteTest {
             for(int i=0;i<stock.length;i++)assertTrue(taken[i]<=stock[i]+1e-9,"never more of a good than is there");
         }
     }
-    /** Tribute is free: if the Exchange bought any of it, every delivery would be Ardent Energy. Checked against both editions' default lists. */
+    /**
+     * Tribute is free: if the Exchange bought much of it, every delivery would be Ardent Energy. Checked against both editions' default lists.
+     * The one exception is the emerald (owner, 0.0.28): the standalone Exchange buys 2 for 1 Ardent Energy, so the most a FOB's emeralds
+     * can bring (20 villagers) stays a trickle: 2.5 Ardent Energy an hour of play.
+     */
     @Test void noTributeGoodCanBeSoldAtTheExchange(){
         for(String list:List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE)){
             String sell=list.substring(list.indexOf("[sell]"),list.indexOf("[buy]"));
-            for(var g:GOODS)assertFalse(sell.contains(g.id()),g.id()+" is bought by the Exchange");
+            for(var g:GOODS)if(!g.id().equals("minecraft:emerald"))assertFalse(sell.contains(g.id()),g.id()+" is bought by the Exchange");
         }
-        for(var g:GOODS)assertFalse(g.id().contains("emerald")||g.id().contains("ardent")||g.id().contains("coin"),"no currency: "+g.id());
+        assertFalse(ExchangeShop.PACK.contains("minecraft:emerald"),"the pack Exchange buys no emeralds");
+        assertTrue(ExchangeShop.STANDALONE.contains("minecraft:emerald x2 = 1"));
+        var emerald=GOODS.stream().filter(g->g.id().equals("minecraft:emerald")).findFirst().orElseThrow();
+        assertEquals(.25,emerald.perVillagerHour(),1e-9,"a quarter of an emerald per villager-hour");
+        assertEquals(2.5,produced(emerald,20,HOUR)/2,1e-9,"at most 2.5 Ardent Energy an hour through the standalone Exchange");
+        for(var g:GOODS)assertFalse(g.id().contains("ardent")||g.id().contains("coin"),"no currency of the mod: "+g.id());
     }
 
     // ---- the saved data --------------------------------------------------------------------------------------------------------------------------
