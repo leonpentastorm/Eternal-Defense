@@ -23,9 +23,10 @@ for edition in ('pack','standalone'):
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
 for name in ['STANDALONE.md','PACK-EDITION.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
+# screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
 for folder in ('raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file():files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (folder in ('raid-round-0021','tactical-operations') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
 Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 30 (was 29): the mission line packet now carries the mission's
 id. Install this build on the client AND the server: a client and a server of different builds refuse each other.
@@ -103,7 +104,8 @@ LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
 Apocalypse gunpack and AppleSkin were not used in these rounds and are not redistributed.
 
 See docs/RAID-ROUND-0021-TESTING.md, docs/TACTICAL-OPERATIONS-TESTING.md, docs/NEW-SOUND-TESTING.md, docs/HAND-TUNED-ROUND-TESTING.md, docs/MUSIC-PLAYER-TESTING.md, docs/BEAUTIFY-PATH-TESTING.md, docs/OPTIMIZE-PATH-TESTING.md, docs/RAIDER-GATES-TESTING.md and
-docs/STUCK-RAIDERS-TESTING.md for the checks that were actually run and what was not tested (nothing was listened to: the test
+docs/STUCK-RAIDERS-TESTING.md for the checks that were actually run (screenshots of rounds before 0.0.20 are in the repository's
+docs/validation, not in this ZIP) and what was not tested (nothing was listened to: the test
 machine has no sound device; the game's audio output was recorded and analysed instead).
 JAR versions remain 0.21.0 / 1.1.0; use SHA512SUMS to identify this build.
 Branch: dev. This is not a public release.

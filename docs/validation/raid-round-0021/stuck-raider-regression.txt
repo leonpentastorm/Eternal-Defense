@@ -1,0 +1,16 @@
+# Regression: the 0.0.14 stuck-raider GameTests (RaiderGateGameTests, tools/qa/QaStuck.java.txt, pack edition, flat world) on the 0.0.21 code, 2026-10-11: 11 pass, 0 fail.
+# (0.0.21 arms raid skeletons and pillagers and gives an unarmed one the melee beacon goal instead of the ranged one.)
+
+06:34:51 STUCK_TEST_PASS akillcancelsthechannelandtheemptygategoesaway
+06:34:51 STUCK_TEST_PASS damagedelaysthechannelbutthetotaldelayiscapped
+06:34:51 STUCK_TEST_PASS afterthreegatestheraideriswithdrawnandthewavecompleteswellbeforethetimeout
+06:34:51 STUCK_TEST_PASS ninestuckraidersshareonegateeightchannelandtheninthwaits
+06:34:51 STUCK_TEST_PASS flyersandparachutistsareleftalone
+06:34:51 STUCK_TEST_PASS abossgoesthroughgateaftergateandisneverwithdrawn
+06:34:51 STUCK_TEST_PASS asectorcrossingalakeisneverchosenwhilecleansectorsexist
+06:34:51 STUCK_TEST_PASS araidersealedinastonecellopensagatechannelsandcomesoutatthering
+06:34:51 STUCK_TEST_PASS wheneverysectorhasawatercrossingtheonewiththefewestviolationsisused
+06:34:51 STUCK_TEST_PASS lavamagmaachasmandawidelaketriggertheprobebutashortponddoesnot
+06:34:51 STUCK_TEST_PASS achannelingraiderstandsbesidearedgateandcannotmove
+06:34:51 STUCK_TESTS_DONE pass=11 fail=0
+06:34:51 QA_SUMMARY pass=11 fail=0

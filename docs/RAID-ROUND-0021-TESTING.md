@@ -48,9 +48,9 @@ Both editions, the same checks:
 * **Alarm:** with the beacon hit, the alarm started at client ticks 22 apart in every run (`[5057, 5079, 5101, 5123]` in the final standalone run). In the recorded audio (`audio-pack.txt`, `audio-standalone.txt`) the alarm's starts are 1.06 to 1.14 s apart (once 1.34 s in the standalone run: client ticks run late on this machine, and the period is counted in client ticks); `*-raid_alarm.jpg` shows the banner during the night raid.
 * The 0.0.20 checks all pass again (board, table, scan, Accept, Abandon, the map's red X and scale, the Warlord's captain, the clear and its jingle, the cannon card, the Starshell flare and incoming sound, gate spawns, the speed burst, the chat line once, `/arsenal test-gate`, Garrison lookups: 5 of 10 areas, each confirmed, no chunk loaded, slowest 32 to 35 ms; 63 ms in the first run).
 
-### Regression: the stuck-raider GameTests (`stuck-raider-regression.txt`)
+### Regression: the stuck-raider GameTests (`stuck-raider-regression.txt`): 11 pass, 0 fail
 
-See the file (pack edition, flat world).
+0.0.21 changes which attack goal a raid skeleton or pillager gets, so `tools/qa/QaStuck.java.txt` was run again (pack edition, flat world): all eleven pass, from the sealed cell and the lava probe to nine raiders sharing a gate and a boss going through gate after gate.
 
 ## Not tested
 
