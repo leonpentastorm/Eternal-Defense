@@ -338,6 +338,114 @@ public final class HuntGameTests {
         helper.succeed();
     }
 
+    // ---- 0.0.21: arrival on one block, no ground, armed raiders, raids ignore cover ---------------------------------------------------------
+    /** Water pools on the objective platform (radius 17, so nothing within the 16-block anchor search but what is left dry). */
+    static final BlockPos POOL_ONE=OBJECTIVE.offset(30,0,30),POOL_NONE=OBJECTIVE.offset(30,0,-30);
+    static final int POOL=17;
+    /** Turns the platform's top layer around {@code center} to water (a stone block left in the middle with {@code pillar}), or back to stone. */
+    static void pool(ServerLevel l,BlockPos center,boolean water,boolean pillar){
+        var fill=water?Blocks.WATER.defaultBlockState():Blocks.STONE.defaultBlockState();
+        for(int dx=-POOL;dx<=POOL;dx++)for(int dz=-POOL;dz<=POOL;dz++){
+            if(dx*dx+dz*dz>POOL*POOL||pillar&&dx==0&&dz==0)continue;
+            l.setBlock(new BlockPos(center.getX()+dx,TOP,center.getZ()+dz),fill,2);
+        }
+    }
+    static HuntBoard.Offer offerAt(Fixture f,TacticalRules.Kind kind,BlockPos at){
+        long id=f.h().board.nextId++;int distance=(int)Math.round(Math.hypot(at.getX()-BEACON.getX(),at.getZ()-BEACON.getZ()));
+        var o=new HuntBoard.Offer(id,kind,TacticalRules.codename(id*7919),at.getX(),at.getZ(),distance,90);
+        f.h().board.offers.add(o);f.h().setDirty();return o;
+    }
+    @GameTest(template="empty3x3x3",batch="hunt_10",timeoutTicks=1200)
+    public static void oneBlockOfGroundIsEnoughForAWarband(GameTestHelper helper){
+        var f=fixture(helper);var l=f.l();var h=f.h();var p=player(helper);
+        pool(l,POOL_ONE,true,true);
+        var o=offerAt(f,TacticalRules.Kind.PATROL,POOL_ONE);
+        helper.assertTrue(h.board.accept(o.id,null)==null,"the offer is accepted");
+        goTo(p,l,POOL_ONE.offset(-24,0,0));   // on the platform, beside the pool
+        helper.startSequence()
+            .thenWaitUntil(()->{var m=h.board.mission;helper.assertTrue(m!=null&&m.engaged()&&m.pending()==0,"the warband is out");})
+            .thenExecute(()->{
+                var anchor=HuntWarband.anchor();
+                helper.assertTrue(POOL_ONE.equals(anchor),"the one dry block is the anchor: "+anchor);
+                var band=mobs(l,o.id);var marks=new HashSet<Integer>();for(int id:HuntWarband.markIds(l))marks.add(id);
+                helper.assertTrue(band.size()==h.board.mission.total,"the whole warband came out of one block: "+band.size()+" of "+h.board.mission.total);
+                for(var mob:band){
+                    helper.assertTrue(mob.getPersistentData().getLong(HuntWarband.ANCHOR)==anchor.asLong(),"knows its anchor");
+                    helper.assertTrue(marks.contains(mob.getId()),"carries the red mark");
+                    helper.assertTrue(mob.goalSelector.getAvailableGoals().stream().anyMatch(g->g.getGoal() instanceof HuntWarband.RushAnchor),"rushes to the anchor");
+                }
+                com.mojang.logging.LogUtils.getLogger().info("[hunts] one-block test: anchor {}, {} mobs",anchor.toShortString(),band.size());
+                for(var mob:band)mob.kill();
+            })
+            .thenWaitUntil(()->helper.assertTrue(h.board.mission==null,"cleared and settled"))
+            .thenExecute(()->{pool(l,POOL_ONE,false,false);goTo(p,l,BEACON.above());})
+            .thenSucceed();
+    }
+    @GameTest(template="empty3x3x3",batch="hunt_11",timeoutTicks=600)
+    public static void noGroundOpensAReturnGateBurnsTheMapAndReplacesTheOffer(GameTestHelper helper){
+        var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);
+        pool(l,POOL_NONE,true,false);
+        var o=offerAt(f,TacticalRules.Kind.PATROL,POOL_NONE);
+        helper.assertTrue(h.board.accept(o.id,null)==null,"the offer is accepted");
+        dropMissionItems(p);Hunts.give(p,Hunts.missionMap(l,d,h));
+        helper.assertTrue(Hunts.carriesMap(p,o.id),"the player carries its map");
+        goTo(p,l,POOL_NONE.offset(-24,0,0));
+        helper.startSequence()
+            .thenWaitUntil(()->helper.assertTrue(h.board.mission==null,"the mission ended"))
+            .thenExecute(()->{
+                helper.assertTrue(h.board.offer(o.id)==null,"the offer left the board");
+                var gates=l.getEntitiesOfClass(SupportFlares.FlareEntity.class,p.getBoundingBox().inflate(4),g->g.kind()==SupportCalls.Kind.RETURN&&g.open()&&g.getOwner()==p);
+                helper.assertTrue(gates.size()==1,"one open return gate in front of the player: "+gates.size());
+                helper.assertFalse(Hunts.carriesMap(p,o.id),"the map burned");
+                helper.assertTrue(mobs(l,o.id).isEmpty(),"no warband");
+                com.mojang.logging.LogUtils.getLogger().info("[hunts] no-ground test: gate at {}, {} offers on the board",gates.isEmpty()?"-":gates.get(0).blockPosition().toShortString(),h.board.offers.size());
+                for(var g:gates)g.discard();
+                pool(l,POOL_NONE,false,false);goTo(p,l,BEACON.above());dropMissionItems(p);
+            })
+            .thenSucceed();
+    }
+    @GameTest(template="empty3x3x3",batch="hunt_12",timeoutTicks=600)
+    public static void raidSkeletonsAndPillagersAreArmedAndWalkAtTheBeacon(GameTestHelper helper){
+        var f=fixture(helper);var l=f.l();var d=f.d();var p=player(helper);goTo(p,l,BEACON.above());
+        var start=BEACON.offset(-30,0,0);
+        d.raidTier=3;d.wave=1;
+        var skeleton=ArsenalBeacon.raider(l,d,EntityType.SKELETON,"grunt","normal",start);
+        var pillager=ArsenalBeacon.raider(l,d,EntityType.PILLAGER,"specialist","normal",start.offset(0,0,4));
+        d.raidTier=1;var early=ArsenalBeacon.raider(l,d,EntityType.SKELETON,"grunt","normal",start.offset(0,0,-4));d.raidTier=3;
+        helper.assertTrue(skeleton!=null&&pillager!=null&&early!=null,"they spawned");
+        helper.assertTrue(skeleton.getMainHandItem().is(Items.BOW),"a tier 3 raid skeleton holds a bow");
+        helper.assertTrue(early.getMainHandItem().is(Items.BOW),"a tier 1 raid skeleton holds a bow");
+        helper.assertTrue(pillager.getMainHandItem().is(Items.CROSSBOW),"a raid pillager holds a crossbow");
+        for(var mob:List.of(skeleton,pillager,early))
+            helper.assertTrue(mob.goalSelector.getAvailableGoals().stream().anyMatch(g->g.getGoal() instanceof BeaconCombat.RangedBeacon),mob.getType().getDescriptionId()+" gets the ranged beacon attack it can use");
+        helper.startSequence().thenIdle(200).thenExecute(()->{
+            double left=Math.sqrt(skeleton.distanceToSqr(Vec3.atCenterOf(BEACON)));
+            com.mojang.logging.LogUtils.getLogger().info("[hunts] armed-raider test: the skeleton is {} blocks from the beacon after 10 s (started 30)",Math.round(left));
+            helper.assertTrue(left<=24,"the skeleton walked at the beacon: "+Math.round(left)+" blocks left of 30");
+            helper.assertTrue(RaiderGates.channel(skeleton.getUUID())==null&&RaiderGates.gates(l).stream().noneMatch(g->g.distanceToSqr(skeleton)<64),"and opened no gate");
+            for(var mob:List.of(skeleton,pillager,early)){d.raiders.remove(mob.getUUID());mob.discard();}
+        }).thenSucceed();
+    }
+    @GameTest(template="empty3x3x3",batch="hunt_13",timeoutTicks=200)
+    public static void duringARaidCoverNoLongerHidesTheBeacon(GameTestHelper helper){
+        var f=fixture(helper);var l=f.l();var d=f.d();var p=player(helper);goTo(p,l,BEACON.above());
+        helper.startSequence().thenIdle(25).thenExecute(()->{
+            var target=BeaconCombat.objective(l);helper.assertTrue(target!=null,"the beacon is a target");
+            var near=EntityType.ZOMBIE.create(l);near.moveTo(BEACON.getX()-19.5,BEACON.getY(),BEACON.getZ()+.5,0,0);l.addFreshEntity(near);
+            var far=EntityType.ZOMBIE.create(l);far.moveTo(BEACON.getX()-36.5,BEACON.getY(),BEACON.getZ()+.5,0,0);l.addFreshEntity(far);
+            target.raid=false;target.zoneRadius=d.radius();
+            helper.assertTrue(BeaconCombat.inDetectionRange(near,target),"between raids a hostile 19 blocks away that sees the beacon comes");
+            for(int dz=-3;dz<=3;dz++)for(int dy=0;dy<4;dy++)l.setBlock(BEACON.offset(-16,dy,dz),Blocks.STONE.defaultBlockState(),3);
+            helper.assertFalse(BeaconCombat.inDetectionRange(near,target),"a wall hides it between raids");
+            helper.assertFalse(BeaconCombat.inDetectionRange(far,target),"36 blocks is too far between raids");
+            target.raid=true;
+            helper.assertTrue(BeaconCombat.inDetectionRange(near,target),"during a raid the wall no longer hides it");
+            helper.assertTrue(BeaconCombat.inDetectionRange(far,target),"and it reaches 48 blocks past the zone");
+            near.discard();far.discard();
+            for(int dz=-3;dz<=3;dz++)for(int dy=0;dy<4;dy++)l.setBlock(BEACON.offset(-16,dy,dz),Blocks.AIR.defaultBlockState(),3);
+        }).thenSucceed();
+    }
+
     // ---- the runner ----------------------------------------------------------------------------------------------------------------------
     public static final class Runner {
         private static Collection<GameTestInfo> infos=List.of();private static MultipleTestTracker tracker;private static ServerLevel level;

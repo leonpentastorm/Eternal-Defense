@@ -47,7 +47,11 @@ final class ExchangeShop {
         # Buying always costs more than selling, so trading in circles never pays. Lines starting with # are ignored.
         # Changes apply the next time a player opens the shop. Delete this file to get the defaults back.
         """;
-    /** Pack edition: sell the surplus of a factory, buy parts at a premium when farming instead. */
+    /**
+     * Pack edition: sell the surplus of a factory, buy parts at a premium when farming instead; since 0.0.21 also the standalone edition's
+     * rare vanilla materials (gold, blaze rods, ender pearls, diamonds) and its iron at the same prices, plus iron in bulk (16 blocks, a little
+     * cheaper per ingot than nine lots of 16 ingots).
+     */
     static final String PACK="""
         [sell]
         arsenal_beacon:reinforced_plating x2 = 1
@@ -72,9 +76,67 @@ final class ExchangeShop {
         create:andesite_alloy x16 = 2
         kubejs:cartridge_case x16 = 2
         kubejs:propellant x16 = 2
+        minecraft:iron_ingot x16 = 1
+        minecraft:iron_block x16 = 8
+        minecraft:gold_ingot x8 = 2
+        minecraft:blaze_rod = 3
+        minecraft:ender_pearl = 3
+        minecraft:diamond = 6
         """;
-    /** Standalone edition: rare vanilla materials. */
+    /** The pack edition's default before 0.0.21: a world whose file is still exactly this gets the new default (an edited file is kept). */
+    static final String PACK_BEFORE_0021="""
+        [sell]
+        arsenal_beacon:reinforced_plating x2 = 1
+        arsenal_beacon:logistics_module x2 = 1
+        arsenal_beacon:resonance_coil x2 = 1
+        arsenal_beacon:restoration_matrix = 1
+        create:brass_ingot x16 = 1
+        create:andesite_alloy x32 = 1
+        create:precision_mechanism x2 = 1
+        create:electron_tube x8 = 1
+        kubejs:cartridge_case x32 = 1
+        kubejs:propellant x32 = 1
+
+        [buy]
+        arsenal_beacon:universal_ammo_coin x16 = 3
+        arsenal_beacon:reinforced_plating = 2
+        arsenal_beacon:logistics_module = 2
+        arsenal_beacon:resonance_coil = 3
+        arsenal_beacon:restoration_matrix = 4
+        create:precision_mechanism = 3
+        create:brass_ingot x8 = 3
+        create:andesite_alloy x16 = 2
+        kubejs:cartridge_case x16 = 2
+        kubejs:propellant x16 = 2
+        """;
+    /** Standalone edition: rare vanilla materials; since 0.0.21 also iron in bulk (16 blocks, a little cheaper per ingot than nine lots of 16 ingots). */
     static final String STANDALONE="""
+        [sell]
+        minecraft:diamond = 2
+        minecraft:blaze_rod = 1
+        minecraft:ender_pearl = 1
+        minecraft:ghast_tear = 2
+        minecraft:netherite_scrap = 3
+        minecraft:shulker_shell = 4
+        minecraft:nether_star = 20
+        minecraft:emerald x2 = 1
+        minecraft:gold_ingot x8 = 1
+        minecraft:quartz x16 = 1
+
+        [buy]
+        arsenal_beacon:universal_ammo_coin x16 = 3
+        minecraft:iron_ingot x16 = 1
+        minecraft:iron_block x16 = 8
+        minecraft:copper_ingot x16 = 1
+        minecraft:gunpowder x16 = 1
+        minecraft:redstone x16 = 1
+        minecraft:gold_ingot x8 = 2
+        minecraft:blaze_rod = 3
+        minecraft:ender_pearl = 3
+        minecraft:diamond = 6
+        """;
+    /** The standalone edition's default before 0.0.21 (see {@link #PACK_BEFORE_0021}). */
+    static final String STANDALONE_BEFORE_0021="""
         [sell]
         minecraft:diamond = 2
         minecraft:blaze_rod = 1
@@ -100,6 +162,10 @@ final class ExchangeShop {
         """;
     static final List<TextTable.Row> DEFAULT_BUY=List.of(new TextTable.Row("arsenal_beacon:universal_ammo_coin",16,3));
     static String template(){return HEADER+"\n"+(BuildFlavor.STANDALONE?STANDALONE:PACK);}
+    /** Pure: the file's text with each line's trailing spaces and the blank lines at its end dropped (to compare a file with a template). */
+    static String normal(String text){return text.lines().map(String::stripTrailing).collect(java.util.stream.Collectors.joining("\n")).strip();}
+    /** Pure: is this file the untouched default of an earlier version for that edition (so it may be replaced by the current one)? */
+    static boolean oldDefault(String text,boolean standalone){return normal(text).equals(normal(HEADER+"\n"+(standalone?STANDALONE_BEFORE_0021:PACK_BEFORE_0021)));}
 
     /** Splits the file's lines into its [sell] and [buy] sections (anything before a header is ignored). */
     static java.util.Map<String,List<String>> sections(List<String> lines){
@@ -119,6 +185,9 @@ final class ExchangeShop {
             if(!lines.isEmpty()&&lines.stream().noneMatch(l->l.trim().equalsIgnoreCase("[sell]")||l.trim().equalsIgnoreCase("[buy]"))){
                 Files.move(file,file.resolveSibling(FILE.replace(".txt",".old.txt")),StandardCopyOption.REPLACE_EXISTING);lines=List.of();
                 com.mojang.logging.LogUtils.getLogger().warn("{} used the old single-list format; it was kept as an .old file and replaced with buy and sell sections",FILE);
+            }
+            if(!lines.isEmpty()&&oldDefault(String.join("\n",lines),BuildFlavor.STANDALONE)){
+                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.21 default (iron in bulk, and rare vanilla materials in the pack edition)",FILE);
             }
             if(lines.isEmpty()){Files.writeString(file,template());lines=Files.readAllLines(file);}
             var parts=sections(lines);java.util.function.Predicate<String> exists=id->{var rl=ResourceLocation.tryParse(id);return rl!=null&&BuiltInRegistries.ITEM.containsKey(rl)&&BuiltInRegistries.ITEM.get(rl)!=net.minecraft.world.item.Items.AIR;};
