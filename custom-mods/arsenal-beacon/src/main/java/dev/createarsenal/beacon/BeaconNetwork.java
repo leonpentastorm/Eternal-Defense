@@ -63,7 +63,7 @@ final class BeaconNetwork {
         CompoundTag n=new CompoundTag();n.putBoolean("standalone",BuildFlavor.STANDALONE);n.putString("phase",d.phase);n.putLong("beacon",d.beacon.asLong());
         n.putInt("health",d.health);n.putInt("maximum",d.maximumHealth());n.putInt("radius",d.radius());n.putInt("below",d.below());n.putInt("above",d.above());n.putInt("vertical",d.vertical);
         n.putInt("tier",d.rewardTier);n.putInt("score",d.score);n.putInt("wave",d.wave);n.putInt("waves",Rules.waves(d.raidTier));n.putInt("attackers",d.raiders.size()+d.spawnRemaining);
-        var survey=BaseSurvey.get(p.server.overworld());var score=survey.score;int live=d.active()||score==null?d.score:score.total(),prospective=d.phase.equals("raid")||d.phase.equals("restore")?d.raidTier:d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,live));n.putBoolean("creative",p.isCreative());n.putInt("buildingTier",Rules.buildingTier(live));n.putInt("liveScore",live);n.putInt("prospectiveTier",prospective);n.putInt("nextScore",Rules.buildingTier(live)>=5?0:(Rules.buildingTier(live)+1)*500);n.putInt("surveyPercent",survey.percent());n.putBoolean("surveyBusy",survey.scanning||score==null);n.putBoolean("surveyIncomplete",survey.incomplete);if(score!=null)n.put("scoreBreakdown",score.tag());n.putInt("raidsStarted",d.raidsStarted);n.putBoolean("nextHard",HardRaids.isHard(d.raidsStarted+1));n.putBoolean("hardRaid",d.hardRaid&&d.active());
+        var survey=BaseSurvey.get(p.server.overworld());var score=survey.score;int live=liveScore(p.server,d),prospective=prospectiveTier(p.server,d);n.putBoolean("creative",p.isCreative());n.putInt("buildingTier",Rules.buildingTier(live));n.putInt("liveScore",live);n.putInt("prospectiveTier",prospective);n.putInt("nextScore",Rules.buildingTier(live)>=5?0:(Rules.buildingTier(live)+1)*500);n.putInt("surveyPercent",survey.percent());n.putBoolean("surveyBusy",survey.scanning||score==null);n.putBoolean("surveyIncomplete",survey.incomplete);if(score!=null)n.put("scoreBreakdown",score.tag());n.putInt("raidsStarted",d.raidsStarted);n.putBoolean("nextHard",HardRaids.isHard(d.raidsStarted+1));n.putBoolean("hardRaid",d.hardRaid&&d.active());
         n.putInt("defenders",d.phase.equals("raid")?d.wavePlayers:RaidBalance.defenders(p.server.overworld(),d));n.putInt("veteranPercent",(d.phase.equals("raid")?d.waveVeteran:Rules.veteranPressure(prospective,d.victories))*10);
         n.putInt("platformScore",PlatformRegistry.get(p.server.overworld()).score(d));
         n.putLong("untilRaid",Math.max(0,Rules.intervalDays(d.rewardTier)*24000L-d.preparationTicks)+d.respiteTicks);n.putLong("respiteTicks",d.respiteTicks);n.putInt("respitePurchases",d.respitePurchases);n.putInt("nextRaidBonus",d.nextRaidBonus);n.putBoolean("introCompleted",d.introCompleted);n.put("respiteCosts",WeaponPlatform.costTags(p,RaidRespite.costs(d)));n.putInt("interval",Rules.intervalDays(d.rewardTier));
@@ -83,6 +83,15 @@ final class BeaconNetwork {
         if(p instanceof net.minecraftforge.common.util.FakePlayer)return;
         var n=state(p,CampaignData.get(p.server.overworld()));if(screen.equals("rewards"))n.put("rewardTiers",RaidRewards.previews(p.server.overworld()));
         CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new State(n,screen,token,message));
+    }
+    /** The base score now: the raid's snapshot while a raid runs, else the live survey (the last snapshot until the first survey). */
+    static int liveScore(net.minecraft.server.MinecraftServer server,CampaignData d){var score=BaseSurvey.get(server.overworld()).score;return d.active()||score==null?d.score:score.total();}
+    /**
+     * The tier the beacon shows as "Next payout": the running raid's tier, else the live preview (Logistics, the live score, the raid
+     * level cap and a bought break's bonus), 0 before the introduction raid is won. Hunts pay and fight at this tier too (0.0.22).
+     */
+    static int prospectiveTier(net.minecraft.server.MinecraftServer server,CampaignData d){
+        return d.phase.equals("raid")||d.phase.equals("restore")?d.raidTier:d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,liveScore(server,d)));
     }
     static void syncNearby(ServerLevel l,CampaignData d){for(ServerPlayer p:l.getServer().getPlayerList().getPlayers())sendState(p,"","","");}
 }

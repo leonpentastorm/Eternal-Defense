@@ -119,7 +119,7 @@ public final class HuntGameTests {
         var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);
         var o=offer(f,TacticalRules.Kind.PATROL);
         helper.assertTrue(h.board.accept(o.id,null)==null,"the offer is accepted");
-        var pay=Economy.hunt(o.kind,d.rewardTier);
+        var pay=Economy.hunt(o.kind,Hunts.tier(l,d));
         int ardent=rewards(d,ArsenalBeacon.ARDENT_ENERGY.get()),coins=rewards(d,ArsenalBeacon.AMMO_COIN.get());
         goTo(p,l,BEACON.above());
         helper.startSequence()
@@ -444,6 +444,29 @@ public final class HuntGameTests {
             near.discard();far.discard();
             for(int dz=-3;dz<=3;dz++)for(int dy=0;dy<4;dy++)l.setBlock(BEACON.offset(-16,dy,dz),Blocks.AIR.defaultBlockState(),3);
         }).thenSucceed();
+    }
+
+    // ---- 0.0.22: a hunt pays at the beacon's "Next payout" tier ---------------------------------------------------------------------------------
+    @GameTest(template="empty3x3x3",batch="hunt_14",timeoutTicks=200)
+    public static void aHuntPaysAtTheBeaconsNextPayoutTier(GameTestHelper helper){
+        var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);goTo(p,l,BEACON.above());
+        int logistics=d.logistics,limit=d.raidLimit;
+        // the owner's case: only the first raid won (last paid tier 0), but Logistics upgrades put the next payout at tier 5
+        d.rewardTier=0;d.logistics=5;d.raidLimit=10;d.introRaid=false;
+        int shown=BeaconNetwork.state(p,d).getInt("prospectiveTier");
+        helper.assertTrue(shown>=5,"the beacon shows Next payout: Tier "+shown);
+        helper.assertTrue(Hunts.tier(l,d)==shown,"a hunt uses the tier the beacon shows: "+Hunts.tier(l,d)+" vs "+shown);
+        var o=offer(f,TacticalRules.Kind.PATROL);
+        helper.assertTrue(h.board.accept(o.id,null)==null,"accepted");
+        int ardent=rewards(d,ArsenalBeacon.ARDENT_ENERGY.get()),coins=rewards(d,ArsenalBeacon.AMMO_COIN.get());
+        var m=h.board.mission;m.state=HuntBoard.State.ENGAGED;m.remaining=0;Hunts.complete(l,d,h);
+        var pay=Economy.hunt(TacticalRules.Kind.PATROL,shown);
+        int gotArdent=rewards(d,ArsenalBeacon.ARDENT_ENERGY.get())-ardent,gotCoins=rewards(d,ArsenalBeacon.AMMO_COIN.get())-coins;
+        com.mojang.logging.LogUtils.getLogger().info("[hunts] pay test: next payout tier {}, last paid tier {}: a Patrol paid {} Ardent Energy and {} coins",shown,d.rewardTier,gotArdent,gotCoins);
+        helper.assertTrue(gotArdent==pay.ardent()&&gotCoins==pay.coins(),"paid "+gotArdent+" and "+gotCoins+", expected "+pay);
+        helper.assertTrue(gotArdent>0&&gotCoins>1,"more than the tier-0 pay the owner saw (0 and 1)");
+        d.logistics=logistics;d.raidLimit=limit;d.setDirty();
+        helper.succeed();
     }
 
     // ---- the runner ----------------------------------------------------------------------------------------------------------------------

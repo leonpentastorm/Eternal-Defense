@@ -219,7 +219,7 @@ public final class QaHunt {
         step(60,()->{var m=srvGet(()->h().board.mission);
             var captain=srvGet(()->HuntGameTests.mobs(sl(),m.offer.id).stream().filter(x->x.getPersistentData().getBoolean(HuntWarband.CAPTAIN)).findFirst().orElse(null));
             check("one captain, glowing, named after the operation",captain!=null&&captain.isCurrentlyGlowing()&&captain.getCustomName()!=null&&captain.getCustomName().getString().equals(m.offer.codename),captain==null?"none":captain.getCustomName().getString());
-            check("the captain has twice a heavy's health",captain!=null&&Math.abs(captain.getMaxHealth()-RaidBalance.health("heavy",d().rewardTier)*2)<.01,captain==null?"":String.valueOf(captain.getMaxHealth()));
+            check("the captain has twice a heavy's health",captain!=null&&Math.abs(captain.getMaxHealth()-RaidBalance.health("heavy",srvGet(()->Hunts.tier(sl(),d())))*2)<.01,captain==null?"":String.valueOf(captain.getMaxHealth()));
             check("a Warlord is its captain and 10 to 14 escorts (plus extra players)",m.total>=11&&m.total<=15,"total="+m.total);
             var ids=srvGet(()->HuntGameTests.mobs(sl(),m.offer.id).stream().map(x->x.getId()).toList());
             check("the client marks every warband mob with the red ! (0.0.21)",!ids.isEmpty()&&RaidTypes.RAIDERS.containsAll(ids),"band="+ids.size()+" marked="+ids.stream().filter(RaidTypes.RAIDERS::contains).count());
@@ -227,10 +227,15 @@ public final class QaHunt {
             check("the warband keeps near its small zone",far>=0&&far<=TacticalRules.RING_TO+6,"farthest="+Math.round(far));
             if(captain!=null)look(OBJ.offset(-30,3,0),captain.getX(),captain.getY()+1,captain.getZ());},"captain checks");
         step(30,()->shot("h12_warlord_captain"),"captain shot");
-        final long[] warlord={0};
-        step(5,()->{mc().options.hideGui=false;warlord[0]=srvGet(()->h().board.mission.offer.id);check("the player carries the Warlord's map",srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");
+        final long[] warlord={0};final int[] chest={0,0,0};
+        step(5,()->{mc().options.hideGui=false;warlord[0]=srvGet(()->h().board.mission.offer.id);
+            chest[0]=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.ARDENT_ENERGY.get()));chest[1]=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.AMMO_COIN.get()));chest[2]=srvGet(()->Hunts.tier(sl(),d()));check("the player carries the Warlord's map",srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");
             srv(()->{for(var mob:HuntGameTests.mobs(sl(),h().board.mission.offer.id))mob.kill();});},"kill the warband");
-        step(30,()->{check("the mission is cleared and paid",srvGet(()->h().board.mission==null),"");check("its map burned (0.0.21)",!srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");check("chat tells everyone",CHAT.stream().anyMatch(c->c.contains("cleared!")),"");
+        step(30,()->{check("the mission is cleared and paid",srvGet(()->h().board.mission==null),"");
+            int gotArdent=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.ARDENT_ENERGY.get()))-chest[0],gotCoins=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.AMMO_COIN.get()))-chest[1];
+            var expected=Economy.hunt(TacticalRules.Kind.WARLORD,chest[2]);int shown=srvGet(()->BeaconNetwork.state(sp(),d()).getInt("prospectiveTier")),paid=srvGet(()->d().rewardTier);
+            log("QA_NOTE warlord pay: {} Ardent Energy and {} coins at hunt tier {} (beacon Next payout tier {}, last paid tier {})",gotArdent,gotCoins,chest[2],shown,paid);
+            check("the Warlord pays at the beacon's Next payout tier (0.0.22)",chest[2]==shown&&gotArdent==expected.ardent()&&gotCoins==expected.coins(),"paid "+gotArdent+"+"+gotCoins+", expected "+expected+" at tier "+shown);check("its map burned (0.0.21)",!srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");check("chat tells everyone",CHAT.stream().anyMatch(c->c.contains("cleared!")),"");
             check("the mission-cleared jingle plays",SOUNDS.contains("music.mission_cleared"),"");shot("h13_cleared_chat");},"cleared shot");
         // ---- the cannon menu's card and a real Starshell ---------------------------------------------------------------------------------
         step(5,()->{mc().options.hideGui=true;hold(new ItemStack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get()));tp(B.getX()-8.5,B.getY(),B.getZ()-3.5,180,60);},"hold a platform");
@@ -286,6 +291,7 @@ public final class QaHunt {
             step(5,()->{List<String> heard;synchronized(SOUNDS){heard=new ArrayList<>(SOUNDS);}log("QA_NOTE sounds after the {} flare: {}",what,heard);
                 check("a "+what+" flare answers with one of the owner's "+what+" lines (0.0.22)",heard.stream().anyMatch(x->x.startsWith(prefix)),String.valueOf(heard));
                 check("and not with a fire support line",heard.stream().noneMatch(x->x.startsWith("flare.chatter_")),String.valueOf(heard));},what+" flare line");
+            step(100,()->{},"let the line finish (the recording matches each line on its own)");
         }
         step(5,()->srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();}),"clear the flares");
         // ---- a raid where no natural spawn ground exists: gates, the speed burst, the chat line once -----------------------------------------

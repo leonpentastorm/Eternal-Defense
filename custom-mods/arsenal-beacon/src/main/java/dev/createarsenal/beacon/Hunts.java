@@ -209,7 +209,7 @@ final class Hunts {
         n.putLong("beacon",d.beacon.asLong());n.putString("phase",d.phase);n.putLong("untilRaid",TacticalRules.untilRaid(d.rewardTier,d.preparationTicks,d.respiteTicks));
         n.putString("blocked",Objects.requireNonNullElse(blocked(l,d,h),""));
         n.putLong("now",l.getGameTime());n.putLong("scannedAt",h.scannedAt);n.putLong("scanReady",h.scanReady);n.putBoolean("scanning",TacticalScan.running());n.putInt("scanVersion",h.scanVersion);n.putInt("scannedRange",h.scannedRange);
-        var offers=new ListTag();int tier=d.rewardTier;
+        var offers=new ListTag();int tier=tier(l,d);
         for(int i=0;i<h.board.offers.size();i++){
             var o=h.board.offers.get(i);var c=HuntData.offer(o);var pay=Economy.hunt(o.kind,tier);
             c.putInt("index",i);c.putInt("danger",TacticalRules.danger(o.kind,tier));c.putInt("ardent",pay.ardent());c.putInt("coins",pay.coins());c.putInt("min",TacticalRules.warband(o.kind,0,1));c.putInt("max",TacticalRules.warband(o.kind,o.kind.max-o.kind.min,1));
@@ -341,6 +341,12 @@ final class Hunts {
         return null;
     }
     /** The mission id an OP map belongs to (0: not a mission map). */
+    /**
+     * The reward tier a hunt pays and fights at: the beacon's "Next payout" tier ({@link BeaconNetwork#prospectiveTier}). Until 0.0.22 it was
+     * the tier of the last raid won ({@code CampaignData.rewardTier}), so a campaign that had won only its first raid paid tier 0 whatever
+     * its base and level (the owner's report: every operation paid 0 Ardent Energy and 1 coin).
+     */
+    static int tier(ServerLevel l,CampaignData d){return Math.max(0,Math.min(10,BeaconNetwork.prospectiveTier(l.getServer(),d)));}
     static long mapMission(ItemStack s){return s.is(net.minecraft.world.item.Items.FILLED_MAP)&&s.hasTag()?s.getTag().getLong("arsenalMission"):0;}
     /**
      * Pure: an OP map is good while its operation is running or still on the board (abandoned offers can be taken again); any other is
@@ -368,7 +374,7 @@ final class Hunts {
     /** The warband is dead: CLEARED first (once), then the pay goes into the beacon's reward chest. */
     static void complete(ServerLevel l,CampaignData d,HuntData h){
         var m=h.board.mission;if(m==null||!h.board.clear())return;   // clear() is true only once: no double payout
-        var pay=Economy.hunt(m.offer.kind,d.rewardTier);
+        var pay=Economy.hunt(m.offer.kind,tier(l,d));
         var stacks=new ArrayList<ItemStack>();
         if(pay.ardent()>0)stacks.add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),pay.ardent()));
         if(pay.coins()>0)stacks.add(new ItemStack(ArsenalBeacon.AMMO_COIN.get(),pay.coins()));

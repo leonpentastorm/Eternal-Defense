@@ -199,7 +199,7 @@ final class HuntWarband {
     }
     /** One mob of the warband: a raid role and type at the current reward tier, balanced by {@link RaidBalance}; the captain is twice as tough. */
     static boolean spawn(ServerLevel l,CampaignData d,HuntBoard.Mission m,BlockPos spot,BlockPos anchor,boolean captain){
-        int tier=Math.max(0,Math.min(10,d.rewardTier));
+        int tier=Hunts.tier(l,d);
         String role=captain?"heavy":RaidBalance.role(tier,l.random.nextInt(100));
         EntityType<?> type=RaidBalance.type(l,tier,role);
         if(!(type.create(l) instanceof Mob mob))return false;

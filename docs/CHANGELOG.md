@@ -1,14 +1,15 @@
 # Change log
 
-## 0.0.22 — Your supply and recall radio lines, ammo parts, a hunt's minimum pay (2026-10-11)
+## 0.0.22 — Your supply and recall radio lines, ammo parts, hunt pay fixed (2026-10-11)
 
 On `dev`. **No packet changed: the network protocol stays 30.** Rules: GDD 0.0.22 (Part D, Part E, section 5.9, section 7); tests: `docs/ROUND-0022-TESTING.md`.
 
 * **Supply and recall radio lines:** the owner's `More flare sound` lines (`tools/audio/import_chatter.py`: -18 LUFS, mono, 48 kHz). A supply flare answers with one of two supply lines (it borrowed fire support lines 1 and 4 before); a return flare answers with one of three recall lines (it had none). Fire support flares keep their six. Each flare kind keeps its own last line per player, so no line plays twice in a row. Subtitles "Supply radio answers" and "Recall radio answers"; a Field Guide line.
 * **Ammo parts (pack edition):** every ammo recipe takes twice the propellant and 20 percent more cartridge cases, rounded up: a batch of 8 rounds or fewer 2 cases and 2 propellant (was 1 and 1), 32 rounds 5 and 4 (was 4 and 2), 64 rounds 10 and 8 (was 8 and 4). One place sets them (`AmmoInputs`), used by the KubeJS script that rewrites the gunpacks' recipes and by the Ammo Platform where KubeJS did not run. The standalone edition's ammo (vanilla materials) is unchanged.
+* **Bug fix (owner's report: "operation no matter the reward level or the satellite beacon level only give 0 ardent energy and 1 coin"):** a hunt paid, and fought, at the tier of the last raid *won* (`CampaignData.rewardTier`, the beacon's "Paid: Tier"), not at the beacon's *Next payout* tier; a campaign that has only won its introduction raid stays at tier 0 there, and a pack Patrol at tier 0 pays exactly 0 Ardent Energy and 1 coin. Hunts now use the Next payout tier (`Hunts.tier`, the same `BeaconNetwork.prospectiveTier` the Overview shows) for the pay, the offer cards, the danger pips and the warband's strength. The satellite's Mk never raised the pay of a class: it unlocks Garrison (Mk II) and Warlord (Mk III), which pay more. GameTest `hunt_14`; the QA checks a Warlord's pay against the Next payout tier.
 * **Tactical Operations:** a mission always pays at least 1 Ardent Energy and 2 ammo coins, at any reward tier (only a pack Patrol at tier 0, which paid 0 and 1, changes). Field Guide line.
 * **Branches:** the five feature branches merged into `dev` in 0.0.17 (`feature/beautify-path`, `music-player`, `optimize-path`, `raider-gates`, `stuck-raiders`) were deleted locally; deleting them on GitHub was refused by this session's git proxy (HTTP 403), so they are still on the remote.
-* Unit tests: 225 (new `FlareVoiceAndAmmoTest`; `RadioAndWhistleTest` follows the new lines).
+* Unit tests: 226 (new `FlareVoiceAndAmmoTest`; `RadioAndWhistleTest` follows the new lines). Hunt GameTests 14 (new `hunt_14`).
 
 ## 0.0.21 — Armed skeletons, night raids, one-block arrival, the shop gets iron (2026-10-11)
 

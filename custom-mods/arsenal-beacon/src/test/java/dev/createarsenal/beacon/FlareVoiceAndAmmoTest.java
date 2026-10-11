@@ -54,6 +54,17 @@ final class FlareVoiceAndAmmoTest {
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class).getModifiers()),m+" is public");
     }
 
+    // ---- the owner's report: every operation paid 0 Ardent Energy and 1 coin --------------------------------------------------------------------
+    @Test void huntsPayAndFightAtTheBeaconsNextPayoutTier() throws Exception{
+        String hunts=source("Hunts.java"),warband=source("HuntWarband.java"),network=source("BeaconNetwork.java");
+        assertTrue(hunts.contains("static int tier(ServerLevel l,CampaignData d){return Math.max(0,Math.min(10,BeaconNetwork.prospectiveTier(l.getServer(),d)));}"));
+        assertTrue(hunts.contains("var pay=Economy.hunt(m.offer.kind,tier(l,d));"),"the pay at the clear");
+        assertTrue(hunts.contains("var offers=new ListTag();int tier=tier(l,d);"),"the pay and danger on the offer cards");
+        assertTrue(warband.contains("int tier=Hunts.tier(l,d);"),"the warband's strength");
+        for(String s:List.of(hunts,warband))assertFalse(s.contains("Economy.hunt(m.offer.kind,d.rewardTier)")||s.contains("Math.min(10,d.rewardTier))"),"no hunt reads the last won raid's tier");
+        assertTrue(network.contains("prospective=prospectiveTier(p.server,d)"),"the beacon's Next payout uses the same function");
+    }
+
     // ---- a hunt always pays something ---------------------------------------------------------------------------------------------------------
     @Test void aHuntPaysAtLeastOneArdentAndTwoCoins() throws Exception{
         for(boolean standalone:new boolean[]{false,true})for(var kind:TacticalRules.Kind.values())for(int t=-2;t<=12;t++){
