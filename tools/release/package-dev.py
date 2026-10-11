@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.24: Forward Operating Bases, slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.25: Forward Operating Bases, slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -21,16 +21,16 @@ for edition in ('pack','standalone'):
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
-for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # screenshots of the two latest rounds only (each ZIP must stay under 30 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
-        if evidence.is_file() and (folder in ('fob-slice-2','fob-slice-1') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
+        if evidence.is_file() and (folder in ('fob-slice-3','fob-slice-2','fob-slice-1') or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 32 (31 in 0.0.23, 30 in 0.0.21 and 0.0.22): the FOB screens and
-the supply gate screen ride on existing packets that now carry more, so an older client cannot join this server or the other way
-round. Install this build on the client AND the server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 33 (32 in 0.0.24, 31 in 0.0.23, 30 in 0.0.21 and 0.0.22): the FOB
+screens, the supply gate screen and the status card ride on existing packets that now carry more, so an older client cannot join
+this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
@@ -41,7 +41,17 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-WHAT IS NEW IN 0.0.24: FORWARD OPERATING BASES, SLICE 2 OF 4, THE SUPPLY RAIL
+WHAT IS NEW IN 0.0.25: FORWARD OPERATING BASES, SLICE 3 OF 4, SOS AND REPAIRS
+* Every 10 to 12 hours of play (counted only while someone is online, never during your beacon's raid or the day before one) one
+  ACTIVE FOB calls for help: a chat line and a bell, a red SOS line on your status card, and a map with a red X on the FOB.
+* Go there within 7 days of play: the village raid starts as soon as someone stands in the village (Bad Omen I). Win it: nothing
+  changes. Lose it, or stay away: the FOB is DOWN (no shop, no tribute, the supply route stops; its gates turn red).
+* Villagers killed in a FOB's raid are remembered. Repair a DOWN FOB at its FOB Beacon: each lost villager is listed with its
+  price; they come back with their trades. Standalone 6 Ardent Energy plus 1 to 5 per villager (by level), pack 3 plus 1 to 3.
+  A FOB that never won its first raid starts that raid again after the repair.
+* Operators: /arsenal fob sos (an SOS now at the nearest ACTIVE FOB), /arsenal fob sos expire (let it run out).
+
+WHAT WAS NEW IN 0.0.24: FORWARD OPERATING BASES, SLICE 2 OF 4, THE SUPPLY RAIL
 * Your two gate models: the Supply Delivery Gate (bought at an ACTIVE FOB's shop, one per FOB) and the Supply Receiving Gate
   (Workshop Fabrication). Each costs 16 iron, 8 copper, 8 redstone, plus 1 logistics module (pack) or 4 Ardent Energy
   (standalone). Use one on a straight rail: the arch stands across it. The Delivery Gate goes in the FOB's village and links
@@ -103,6 +113,17 @@ PLAYTEST SCRIPT FOR SLICE 2 (after slice 1, with an ACTIVE FOB; about 30 minutes
    itself forward to now.)
 8. Take a gate back with the Recovery Shovel and place it again: it remembers its FOB; the route needs a new ride.
 9. Tell us: is the rail worth building? Too much or too little tribute? Is the gate screen clear?
+
+PLAYTEST SCRIPT FOR SLICE 3 (an ACTIVE FOB with its gates; about 20 minutes)
+1. As an operator, at home: /arsenal fob sos. Read the chat line; look at the status card (the SOS line) and the map you got.
+2. Ride or walk to the village: the raid starts when you arrive. Fight it. Let a villager or two die if you want to see the repair.
+   Win: the SOS ends, the map burns, the FOB stays ACTIVE. Open the FOB Beacon: lost villagers can be brought back.
+3. Go home and call another: /arsenal fob sos, then ignore it (/arsenal fob sos expire to skip the 7 days). The FOB is DOWN: the
+   gates turn red and say why; the FOB shop is closed; nothing is delivered.
+4. Go to the FOB Beacon: the repair list (each lost villager, its price, the total). Pay: the villagers come back with their
+   trades and the FOB is ACTIVE again.
+5. Try calling an SOS while one is open (refused), and take a FOB back with the shovel during an SOS (it is called off).
+6. Tell us: are 10 to 12 hours between calls and 7 days to answer right? Are the repair prices fair?
 
 WHAT WAS NEW IN 0.0.22
 * Your radio lines: a supply flare answers with one of your two supply lines, a return flare with one of your three recall lines

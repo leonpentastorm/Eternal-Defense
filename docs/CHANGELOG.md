@@ -1,5 +1,17 @@
 # Change log
 
+## 0.0.25 — Forward Operating Bases, slice 3 of 4: SOS, DOWN, repair (2026-10-11)
+
+On `dev`. **Network protocol 33** (was 32): the FOB screen's state and the status card carry the SOS and the repair; no new packet. Rules: GDD 0.0.25 (Part J, section 5.10); tests: `docs/FOB-SLICE-3-TESTING.md`.
+
+* **SOS.** One clock for the server, in ticks of play: 10 to 12 hours of play after the last SOS, paused while no FOB is ACTIVE, during a raid at the beacon, in the day before one, and while an SOS is open. It calls one ACTIVE FOB at random: a chat line and a bell for everyone, a red line on every status card, and a map with a red X on the FOB for every player (and for anyone logging in while it is open; the maps burn when it ends).
+* **The answer.** 7 days of play. The first player standing in the village starts a vanilla raid there (Bad Omen I; a Bad Omen they carry is replaced, never stacked); refused, with a message, while the beacon's own raid runs. Won: the FOB stays ACTIVE and the clock starts again. Lost (vanilla's loss or fewer than half of the villagers), or nobody came: DOWN. A raid with no result leaves the SOS open. The shovel on the FOB calls it off.
+* **DOWN** stops the shop, tribute and the supply route (its inspection pauses; the gates are red and their screens say "repair it"); the villagers stay protected.
+* **Lost villagers.** A FOB villager killed during a raid at its FOB is recorded: name (its name tag or a stable name), profession, level and its saved data.
+* **Repair** on the FOB screen: each lost villager with its price, the base price, the total. Standalone 6 Ardent Energy plus 1 to 5 per villager by level; pack 3 plus 1 to 3. Paid: the villagers come back beside the FOB Beacon with their trades and experience, and the FOB is ACTIVE again, or PLANTED with its raid called again if it never won one. An ACTIVE FOB can bring back villagers lost in a won raid at their own price.
+* Operator commands `/arsenal fob sos` and `/arsenal fob sos expire`; `list` shows the SOS clock. The FOB page of the Field Guide explains the SOS and the repair.
+* Unit tests: 262 (new `SosTest`, 8). New opt-in GameTests `fob_13` to `fob_16`; the QA client script plays an SOS won, an SOS left alone and the repair in a real village.
+
 ## 0.0.24 — Forward Operating Bases, slice 2 of 4: the supply rail (2026-10-11)
 
 On `dev`. **Network protocol 32** (was 31): the table-state packet also opens and refreshes the supply gate screen; no new packet. Rules: GDD 0.0.24 (Part J, section 5.10); tests: `docs/FOB-SLICE-2-TESTING.md`.

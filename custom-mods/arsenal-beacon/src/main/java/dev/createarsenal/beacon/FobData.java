@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Where the truth of the Forward Operating Bases lives (0.0.23): one record per FOB Beacon placed, shared by every player of the server. The
  * Home beacon's {@link CampaignData} is never touched. The FOB zone (the vanilla village) is worked out when needed and never saved.
- * Slices 2 and 3 fill the stockpile, route and dead-villager records; loading keeps whatever is there.
+ * Slice 2 (0.0.24) fills the stockpile and the route, slice 3 (0.0.25) the dead-villager records and the server's SOS; loading keeps whatever is there.
  */
 final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     static final String NAME="arsenal_beacon_fobs_v1";
@@ -51,6 +51,11 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     final Map<Long,Fob> fobs=new LinkedHashMap<>();
     /** Ticks of play: grows by 20 a second while at least one player is online (the stockpile, the clocks and passive deliveries use it). */
     long onlineTicks;
+    /**
+     * Slice 3 (0.0.25), one SOS for the server ({@link FobSos}): ticks of play until the next one (0: not set yet), the FOB that calls now (0:
+     * none) and the ticks of play left to answer it, a serial that marks its maps, and its map (made once per SOS).
+     */
+    long sosClock,sosFob,sosLeft,sosSerial;CompoundTag sosMap;
 
     static FobData get(ServerLevel any){return any.getServer().overworld().getDataStorage().computeIfAbsent(FobData::load,FobData::new,NAME);}
 
@@ -66,6 +71,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     // ---- save / load: one bad entry is skipped, never the whole list -----------------------------------------------------------------------
     static FobData load(CompoundTag n){
         var d=new FobData();d.nextId=Math.max(1,n.getLong("nextId"));d.onlineTicks=Math.max(0,n.getLong("onlineTicks"));
+        d.sosClock=Math.max(0,n.getLong("sosClock"));d.sosFob=n.getLong("sosFob");d.sosLeft=Math.max(0,n.getLong("sosLeft"));d.sosSerial=n.getLong("sosSerial");
+        if(n.contains("sosMap",Tag.TAG_COMPOUND))d.sosMap=n.getCompound("sosMap");
         for(var t:n.getList("fobs",Tag.TAG_COMPOUND)){
             try{
                 var c=(CompoundTag)t;if(!c.contains("id")||!c.contains("pos"))continue;
@@ -82,6 +89,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
                 d.fobs.put(f.id,f);d.nextId=Math.max(d.nextId,f.id+1);
             }catch(RuntimeException ex){com.mojang.logging.LogUtils.getLogger().warn("[fob] skipped a broken FOB record: {}",ex.toString());}
         }
+        if(d.sosFob!=0&&(!d.fobs.containsKey(d.sosFob)||d.sosLeft<=0)){d.sosFob=0;d.sosLeft=0;d.sosMap=null;}   // an SOS of a FOB that is gone is dropped
         return d;
     }
     /** Slice 2 fields from the route and stockpile tags (missing keys read as nothing; goods are keyed by item id, so the list may grow). */
@@ -111,7 +119,9 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     /** The FOB whose Delivery or Receiving Gate stands at {@code anchor}, or null. */
     Fob byGate(BlockPos anchor){for(var f:fobs.values())if(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate))return f;return null;}
     @Override public CompoundTag save(CompoundTag n){
-        n.putLong("nextId",nextId);n.putLong("onlineTicks",onlineTicks);var list=new ListTag();
+        n.putLong("nextId",nextId);n.putLong("onlineTicks",onlineTicks);
+        n.putLong("sosClock",sosClock);n.putLong("sosFob",sosFob);n.putLong("sosLeft",sosLeft);n.putLong("sosSerial",sosSerial);if(sosMap!=null)n.put("sosMap",sosMap);
+        var list=new ListTag();
         for(var f:fobs.values()){
             var c=new CompoundTag();c.putLong("id",f.id);c.putString("name",f.name);c.putLong("pos",f.pos.asLong());c.putLong("village",f.villageSection);
             c.putInt("state",f.state.ordinal());c.putBoolean("activated",f.activated);c.putLong("placed",f.placedAt);

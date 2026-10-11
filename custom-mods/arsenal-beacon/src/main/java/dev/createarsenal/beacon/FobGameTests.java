@@ -36,7 +36,7 @@ import net.minecraftforge.gametest.GameTestHolder;
 import java.util.*;
 
 /**
- * Forward Operating Bases, slice 1 (0.0.23), on a real server level. Opt-in: start the game with {@code -Darsenal.fobTests=true}, then
+ * Forward Operating Bases, slices 1 to 3 (0.0.23 to 0.0.25), on a real server level. Opt-in: start the game with {@code -Darsenal.fobTests=true}, then
  * {@code /fob-test}, or let tools/qa QaFob start them. THROWAWAY WORLDS ONLY: the tests clear the world's FOB records, need the campaign's
  * beacon (they borrow the hunt tests' base when none is planted) and move the first online player, because a FOB is planted, raided and
  * shopped at by a real player. A small village (a bell, three composters, two beds and NoAI villagers) is built on a stone platform high in
@@ -98,7 +98,7 @@ public final class FobGameTests {
     static void clear(ServerLevel l){
         var d=FobData.get(l);
         for(var f:List.copyOf(d.fobs.values()))if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
-        d.fobs.clear();d.setDirty();FobZone.clear();
+        d.fobs.clear();d.sosFob=0;d.sosLeft=0;d.sosClock=0;d.sosMap=null;d.setDirty();FobZone.clear();
         var raid=l.getRaidAt(VILLAGE);if(raid!=null)raid.stop();
         for(var e:l.getEntitiesOfClass(Entity.class,new AABB(VILLAGE).inflate(100,40,100),e->!(e instanceof Player)))e.discard();
         for(var at:List.of(PLANT,PLANT2))if(l.getBlockState(at).is(ArsenalBeacon.FOB_BEACON.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
@@ -512,6 +512,141 @@ public final class FobGameTests {
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.RED,"and red");
             l.setBlock(rail,Blocks.AIR.defaultBlockState(),2);l.setBlock(rail.offset(0,0,-6),Blocks.AIR.defaultBlockState(),2);
             clearRoute(l);clear(l);
+        }).thenSucceed();
+    }
+    // ---- slice 3 (0.0.25): SOS, DOWN, repair --------------------------------------------------------------------------------------------------
+    static int ardent(ServerPlayer p){return count(p,ArsenalBeacon.ARDENT_ENERGY.get());}
+    static boolean carriesSosMap(ServerPlayer p){var d=FobData.get(p.serverLevel());return FobSos.carries(p,d.sosSerial);}
+    /** An SOS is called (operator command), the map handed out; a player in the village starts the raid; winning it ends the SOS and restarts the clock. */
+    @GameTest(template="empty3x3x3",batch="fob_13",timeoutTicks=1200)
+    public static void anSosIsAnsweredAndWon(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            goTo(p,l,AWAY);
+            var d=FobData.get(l);var fob=fob(l);
+            h.assertTrue(command(l,p,"arsenal fob sos")==1&&d.sosFob==fob.id&&d.sosLeft==SosRules.RESPONSE_TICKS,"/arsenal fob sos calls an SOS at the FOB, 7 days to answer");
+            h.assertTrue(carriesSosMap(p),"the SOS map with the red X is handed out");
+            var card=new CompoundTag();Fobs.status(p,card);
+            h.assertTrue(card.contains("fobSos")&&card.getCompound("fobSos").getString("name").equals(fob.name),"every status card names the FOB that calls");
+            h.assertTrue(command(l,p,"arsenal fob sos")==0&&d.sosFob==fob.id,"a second SOS is impossible while one is open");
+            h.assertTrue(!fob.raidRunning(),"nothing happens while nobody is there");
+        }).thenIdle(45).thenExecute(()->{
+            var d=FobData.get(l);
+            h.assertTrue(d.sosLeft<SosRules.RESPONSE_TICKS&&d.sosLeft>=SosRules.RESPONSE_TICKS-60,"the response timer runs down by the second: "+d.sosLeft);
+            goTo(p,l,STAND);
+        }).thenWaitUntil(()->h.assertTrue(fob(l).raidRunning(),"a player in the village starts the SOS raid"))
+        .thenExecute(()->{
+            var fob=fob(l);var raid=l.getRaids().get(fob.raidId);
+            h.assertTrue(raid!=null&&raid.getBadOmenLevel()==1,"a vanilla raid at Bad Omen I");
+            h.assertTrue(!p.hasEffect(MobEffects.BAD_OMEN),"the Bad Omen went into the raid");
+            h.assertTrue(fob.raidVillagers==3,"the villagers counted at its start");
+            long left=FobData.get(l).sosLeft;
+            command(l,p,"arsenal fob complete");
+            var d=FobData.get(l);
+            h.assertTrue(d.sosFob==0&&fob(l).state==FobRules.State.ACTIVE,"won: the SOS is over, the FOB stays ACTIVE");
+            h.assertTrue(d.sosClock>=SosRules.SOS_MIN&&d.sosClock<=SosRules.SOS_MAX,"the clock starts again (10 to 12 hours of play): "+d.sosClock);
+            h.assertTrue(!carriesSosMap(p),"the SOS map burnt");
+        }).thenExecute(()->clear(l)).thenSucceed();
+    }
+    /** Nobody answers: DOWN (no shop, no tribute, the route's clock paused, the lights red); the repair's base price brings it back ACTIVE. */
+    @GameTest(template="empty3x3x3",batch="fob_14",timeoutTicks=1200)
+    public static void anUnansweredSosPutsItDownAndARepairBringsItBack(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();long[] clock={0};
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            var fob=route(f);fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.workers=3;
+            goTo(p,l,AWAY);
+            command(l,p,"arsenal fob sos");h.assertTrue(command(l,p,"arsenal fob sos expire")==1,"/arsenal fob sos expire");
+        }).thenIdle(30).thenExecute(()->{
+            var fob=fob(l);var d=FobData.get(l);
+            h.assertTrue(fob.state==FobRules.State.DOWN&&fob.activated,"nobody came in time: DOWN (it had won before)");
+            h.assertTrue(d.sosFob==0&&d.sosClock>=SosRules.SOS_MIN,"the SOS is over, the clock runs again");
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.RED&&lamp(l,DELIVERY)==RailGates.Lamp.RED,"both gates red");
+            clock[0]=fob.clock;
+            goTo(p,l,STAND);
+        }).thenIdle(45).thenExecute(()->{
+            var fob=fob(l);
+            h.assertTrue(fob.clock==clock[0],"the route's inspection clock is paused while DOWN");
+            h.assertTrue(!fob.raidRunning(),"no raid starts at a DOWN FOB");
+            p.setGameMode(GameType.SURVIVAL);
+            try{
+                p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),32));int before=ardent(p);
+                Fobs.open(p,PLANT);Fobs.button(p,PLANT,Fobs.BUY_SUPPLY);
+                h.assertTrue(count(p,ArsenalBeacon.SUPPLY_FLARE.get())==0&&ardent(p)==before,"the shop sells nothing while DOWN");
+                var state=Fobs.state(p,fob,"");
+                h.assertTrue(state.getBoolean("mayRepair")&&state.getInt("repairTotal")==Economy.fobRepairBase()&&state.getList("lost",10).isEmpty(),"the screen offers the repair at its base price: "+state.getInt("repairTotal"));
+                Fobs.button(p,PLANT,Fobs.REPAIR);p.closeContainer();
+                h.assertTrue(fob(l).state==FobRules.State.ACTIVE&&ardent(p)==before-Economy.fobRepairBase(),"paid: ACTIVE again");
+            }finally{p.setGameMode(mode);}
+        }).thenIdle(25).thenExecute(()->{
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"the route as it was: green");
+            h.assertTrue(fob(l).clock<clock[0],"and its clock runs again");
+            clearRoute(l);clear(l);
+        }).thenSucceed();
+    }
+    /** A villager killed during a FOB's raid is recorded; the repair pays for it and brings it back with its name, profession, level and trades. */
+    @GameTest(template="empty3x3x3",batch="fob_15",timeoutTicks=1200)
+    public static void villagersLostInARaidComeBackWithTheirTrades(GameTestHelper h){
+        var f=village(h,4);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
+        var trained=f.villagers().get(0);
+        trained.setVillagerData(trained.getVillagerData().setProfession(net.minecraft.world.entity.npc.VillagerProfession.FARMER).setLevel(3));trained.setVillagerXp(70);
+        trained.setCustomName(Component.literal("Bertha"));
+        trained.getOffers().add(new net.minecraft.world.item.trading.MerchantOffer(new ItemStack(Items.EMERALD,3),new ItemStack(Items.BREAD,7),10,5,.05f));
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction()&&fob(l).raidRunning(),"planted: its raid runs");
+            for(int i=0;i<3;i++){var v=f.villagers().get(i);v.hurt(l.damageSources().playerAttack(p),1000f);}
+            h.assertTrue(!trained.isAlive(),"during the raid a villager can die");
+        }).thenWaitUntil(()->h.assertTrue(fob(l).state==FobRules.State.DOWN,"1 of 4 alive: DOWN"))
+        .thenExecute(()->{
+            var fob=fob(l);
+            h.assertTrue(fob.deadVillagers.size()==3,"three lost villagers recorded: "+fob.deadVillagers.size());
+            var r=fob.deadVillagers.getCompound(0);
+            h.assertTrue(r.getString("name").equals("Bertha")&&r.getString("profession").equals("minecraft:farmer")&&r.getInt("level")==3,"its name, profession and level: "+r);
+            h.assertTrue(!fob.deadVillagers.getCompound(1).getString("name").isEmpty(),"one without a name tag gets a name");
+            p.setGameMode(GameType.SURVIVAL);
+            try{
+                p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),64));int before=ardent(p);
+                Fobs.open(p,PLANT);var state=Fobs.state(p,fob,"");
+                int expect=Economy.fobRepairBase()+Economy.fobRepairVillager(3)+2*Economy.fobRepairVillager(1);
+                h.assertTrue(state.getList("lost",10).size()==3&&state.getInt("repairTotal")==expect,"the list prices each villager, the total is the sum: "+state.getInt("repairTotal")+" = "+expect);
+                Fobs.button(p,PLANT,Fobs.REPAIR);p.closeContainer();
+                h.assertTrue(ardent(p)==before-expect,"paid the total");
+            }finally{p.setGameMode(mode);}
+            var back=l.getEntitiesOfClass(Villager.class,new AABB(PLANT).inflate(8),v->v.isAlive()&&v.hasCustomName()&&v.getCustomName().getString().equals("Bertha"));
+            h.assertTrue(back.size()==1,"Bertha is back");
+            var b=back.get(0);
+            h.assertTrue(b.getVillagerData().getProfession()==net.minecraft.world.entity.npc.VillagerProfession.FARMER&&b.getVillagerData().getLevel()==3&&b.getVillagerXp()==70,"a level 3 farmer with her experience");
+            h.assertTrue(b.getOffers().stream().anyMatch(o->o.getResult().is(Items.BREAD)&&o.getResult().getCount()==7),"with her trades");
+            h.assertTrue(b.getHealth()==b.getMaxHealth()&&b.getPersistentData().getLong(Fobs.VILLAGER_TAG)==fob(l).id,"healthy, and the FOB's again");
+            h.assertTrue(fob(l).deadVillagers.isEmpty(),"the records are used up");
+            h.assertTrue(fob(l).state==FobRules.State.PLANTED&&fob(l).raidRunning(),"it had never won: PLANTED, and its raid starts again");
+        }).thenExecute(()->clear(l)).thenSucceed();
+    }
+    /** The shovel during an SOS calls it off and restarts the clock; the clock waits in the Home raid's warning day. */
+    @GameTest(template="empty3x3x3",batch="fob_16",timeoutTicks=1200)
+    public static void theSosClockAndItsEdgeCases(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();long[] at={0};
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            goTo(p,l,AWAY);command(l,p,"arsenal fob sos");
+            var d=FobData.get(l);var fob=fob(l);h.assertTrue(d.sosFob==fob.id,"an SOS is open");
+            goTo(p,l,STAND);h.assertTrue(Fobs.remove(p,fob.id),"the shovel takes the FOB back (confirmed)");
+            h.assertTrue(d.sosFob==0&&d.sosClock>=SosRules.SOS_MIN&&d.sosClock<=SosRules.SOS_MAX,"the SOS is called off and the clock starts again");
+            h.assertTrue(!carriesSosMap(p),"its map burnt");
+            p.getInventory().clearContent();
+        }).thenIdle(5).thenExecute(()->{
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted again");command(l,p,"arsenal fob complete");
+            var d=FobData.get(l);var c=CampaignData.get(l.getServer().overworld());
+            c.phase="preparation";c.preparationTicks=Rules.intervalDays(c.rewardTier)*24000L-TacticalRules.WARNING_TICKS;c.respiteTicks=0;c.setDirty();
+            at[0]=d.sosClock;
+        }).thenIdle(45).thenExecute(()->{
+            var d=FobData.get(l);var c=CampaignData.get(l.getServer().overworld());
+            h.assertTrue(d.sosClock==at[0],"the Home raid's warning day: the SOS clock waits");
+            c.preparationTicks=0;c.setDirty();
+        }).thenIdle(45).thenExecute(()->{
+            h.assertTrue(FobData.get(l).sosClock<at[0],"and runs again after it");
+            clear(l);
         }).thenSucceed();
     }
     static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){

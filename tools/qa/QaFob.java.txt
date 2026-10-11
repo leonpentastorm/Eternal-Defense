@@ -30,7 +30,7 @@ import java.util.*;
 
 /**
  * QA ONLY (never part of a release): boots a NORMAL world on the real client, runs the FOB GameTests (FobGameTests, on a sky platform), then
- * plays slice 1 of the Forward Operating Bases (0.0.23) in a real generated village: the FOB Beacon planted with a right-click (the client's
+ * plays slices 1 to 3 of the Forward Operating Bases (0.0.23 to 0.0.25) in a real generated village: the FOB Beacon planted with a right-click (the client's
  * own click, sent to the server), the model, the raid bar, the FOB screen before and after the raid, a purchase, the status card, the FOB
  * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
@@ -259,8 +259,55 @@ public final class QaFob {
         step(5,()->{mc().options.hideGui=false;if(homeGate!=null)look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);},"face it");
         step(10,()->{if(homeGate!=null)click(homeGate.above(2),Direction.SOUTH);},"open its screen through the beam");
         step(25,()->{check("the gate screen opens by clicking the arch",mc().screen instanceof GateClient.GateScreen,"");shot("f17_gate_screen_running");},"the gate screen, running");
+        // ---- slice 3 (0.0.25): an SOS answered and won, an SOS left alone (DOWN), the repair --------------------------------------------------------
+        step(45,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(ItemStack.EMPTY);cmd("arsenal fob sos");},"/arsenal fob sos (at home); the status card syncs once a second");
+        step(30,()->{
+            var d=srvGet(()->FobData.get(sl()));var f=fob();
+            check("the SOS calls the FOB",f!=null&&d.sosFob==f.id&&d.sosLeft>0,"sos="+d.sosFob+" left="+d.sosLeft);
+            check("everyone reads the SOS",chatHas("SOS from"),"");
+            check("the SOS map is handed out",srvGet(()->FobSos.carries(sp(),FobData.get(sl()).sosSerial)),"");
+            var line=BeaconClient.fobLine();check("the status card leads with the SOS",line!=null&&line.getString().startsWith("SOS"),line==null?"none":line.getString());
+            shot("f19_sos_status_card");
+            srv(()->{var inv=sp().getInventory();for(int i=0;i<inv.items.size();i++)if(FobSos.serial(inv.items.get(i))!=0){var map=inv.items.get(i);inv.items.set(i,inv.items.get(0));inv.items.set(0,map);inv.selected=0;break;}});
+            mc().player.getInventory().selected=0;
+        },"the SOS on the card");
+        step(40,()->shot("f20_sos_map"),"the SOS map in hand");
+        step(5,()->{hold(ItemStack.EMPTY);var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"answer it: back to the village");
+        until("the SOS raid starts when a player stands in the village",200,()->{var f=fob();return f!=null&&f.raidRunning();},()->{
+            check("the SOS raid starts on arrival",fob()!=null&&fob().raidRunning(),"");check("everyone reads who answered",chatHas("answered the SOS"),"");
+            // one villager falls in the raid: it is recorded for the repair
+            srv(()->{var f=FobData.get(sl()).fobs.values().iterator().next();
+                for(var v:sl().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,new net.minecraft.world.phys.AABB(f.pos).inflate(64),v->v.getPersistentData().getLong(Fobs.VILLAGER_TAG)==f.id)){
+                    v.setVillagerData(v.getVillagerData().setProfession(net.minecraft.world.entity.npc.VillagerProfession.LIBRARIAN).setLevel(2));v.setCustomName(Component.literal("Ottilie"));
+                    v.hurt(sl().damageSources().playerAttack(sp()),1000f);break;}});
+        });
+        step(10,()->{var f=fob();check("a villager lost in the raid is recorded",f!=null&&f.deadVillagers.size()==1&&f.deadVillagers.getCompound(0).getString("name").equals("Ottilie"),f==null?"":f.deadVillagers.toString().substring(0,Math.min(80,f.deadVillagers.toString().length())));
+            cmd("arsenal fob complete");},"the SOS raid is won");
+        step(30,()->{var d=srvGet(()->FobData.get(sl()));var f=fob();
+            check("won: the SOS is over and the FOB stays ACTIVE",d.sosFob==0&&f!=null&&f.state==FobRules.State.ACTIVE,"");
+            check("the SOS clock starts again",d.sosClock>=SosRules.SOS_MIN&&d.sosClock<=SosRules.SOS_MAX,String.valueOf(d.sosClock));
+            check("its map burnt",!srvGet(()->FobSos.carries(sp(),d.sosSerial)),"");check("everyone reads that it held",chatHas("held!"),"");},"SOS won");
+        // a second SOS nobody answers
+        step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);},"home again");
+        step(40,()->{cmd("arsenal fob sos");cmd("arsenal fob sos expire");},"an SOS left alone");
+        until("nobody answered: DOWN",100,()->{var f=fob();return f!=null&&f.state==FobRules.State.DOWN;},()->{
+            check("the unanswered SOS puts the FOB DOWN",fob()!=null&&fob().state==FobRules.State.DOWN,"");check("everyone reads it",chatHas("Nobody answered"),"");});
+        step(30,()->{check("the gate at home is red",homeGate!=null&&srvGet(()->sl().getBlockState(homeGate.above()).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");
+            if(homeGate!=null){look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);}},"the gate goes red");
+        step(10,()->{if(homeGate!=null)click(homeGate.above(2),Direction.SOUTH);},"open the gate screen");
+        step(25,()->{check("the gate screen opens",mc().screen instanceof GateClient.GateScreen,"");shot("f21_gate_screen_fob_down");},"the gate screen says repair it");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");
-        step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"face the FOB Beacon");
+        step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);check("no raid starts at a DOWN FOB",fob()!=null&&!fob().raidRunning(),"");},"face the FOB Beacon");
+        step(10,()->{if(spot!=null)click(spot,Direction.SOUTH);},"open the FOB screen");
+        step(30,()->{check("the FOB screen opens DOWN",mc().screen instanceof FobClient.FobScreen,"");shot("f22_fob_screen_repair");},"the repair list");
+        step(10,()->{var f=fob();int total=srvGet(()->FobSos.cost(FobData.get(sl()).fobs.values().iterator().next()));
+            check("the repair costs the base and the lost villager",total==Economy.fobRepairBase()+Economy.fobRepairVillager(2),"total="+total);press("Repair ("+total+")");},"pay the repair");
+        step(30,()->{var f=fob();
+            check("repaired: ACTIVE again",f!=null&&f.state==FobRules.State.ACTIVE&&f.deadVillagers.isEmpty(),f==null?"":f.state.toString());
+            check("the lost villager is back",srvGet(()->!sl().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,new net.minecraft.world.phys.AABB(spot).inflate(12),v->v.isAlive()&&v.hasCustomName()&&v.getCustomName().getString().equals("Ottilie")&&v.getVillagerData().getLevel()==2).isEmpty()),"");
+            check("everyone reads the repair",chatHas("repaired"),"");
+            shot("f23_fob_screen_repaired");},"repaired");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
         // ---- take it back with the shovel -----------------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
         step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use the shovel on the FOB Beacon");

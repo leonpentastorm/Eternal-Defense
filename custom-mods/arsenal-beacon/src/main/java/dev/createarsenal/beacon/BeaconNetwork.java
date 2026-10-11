@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    /** Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"32-standalone":"32-pack",s->s.equals(BuildFlavor.STANDALONE?"32-standalone":"32-pack"),s->s.equals(BuildFlavor.STANDALONE?"32-standalone":"32-pack"));
+    /** Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"33-standalone":"33-pack",s->s.equals(BuildFlavor.STANDALONE?"33-standalone":"33-pack"),s->s.equals(BuildFlavor.STANDALONE?"33-standalone":"33-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -55,7 +55,7 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(18,TacticalScan.ScanImage.class,TacticalScan.ScanImage::encode,TacticalScan.ScanImage::decode,TacticalScan.ScanImage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(19,TacticalScan.ScanProgress.class,TacticalScan.ScanProgress::encode,TacticalScan.ScanProgress::decode,TacticalScan.ScanProgress::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         // Forward Operating Bases (0.0.23, protocol 31): no new packet; id 20 refreshes the open FOB screen too (its state carries "fobId");
-        // the supply rail (0.0.24, protocol 32): id 20 also refreshes the open gate screen (its state carries "gate")
+        // the supply rail (0.0.24, protocol 32): id 20 also refreshes the open gate screen (its state carries "gate"); SOS and repair (0.0.25, protocol 33): no new packet
         CHANNEL.registerMessage(20,Hunts.TableState.class,Hunts.TableState::encode,Hunts.TableState::decode,Hunts.TableState::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));

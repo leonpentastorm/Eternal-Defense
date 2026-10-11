@@ -116,6 +116,14 @@ final class Economy {
     static final int FOB_IRON=16,FOB_COPPER=16,FOB_REDSTONE=8,FOB_GLASS=4,FOB_LOGISTICS=2,FOB_PLATING=2,FOB_ARDENT=8;
     /** Each supply gate (0.0.24): bought at the FOB shop (Delivery) or the Workshop (Receiving). */
     static final int GATE_IRON=16,GATE_COPPER=8,GATE_REDSTONE=8,GATE_LOGISTICS=1,GATE_ARDENT=4;
+    /**
+     * A FOB's repair (0.0.25): a base price while it is DOWN, plus each villager lost in its raids by level (Novice to Master), in Ardent Energy
+     * in both editions; the pack edition's Ardent is half as plentiful (a raid pays 1+t against 2+2t), so its prices are lower.
+     */
+    static final int FOB_REPAIR_BASE_STANDALONE=6,FOB_REPAIR_BASE_PACK=3;
+    static final int[] FOB_REPAIR_VILLAGER_STANDALONE={1,2,3,4,5},FOB_REPAIR_VILLAGER_PACK={1,1,2,2,3};
+    static int fobRepairBase(){return standalone()?FOB_REPAIR_BASE_STANDALONE:FOB_REPAIR_BASE_PACK;}
+    static int fobRepairVillager(int level){return SosRules.villagerCost(standalone()?FOB_REPAIR_VILLAGER_STANDALONE:FOB_REPAIR_VILLAGER_PACK,level);}
     /** The flares of the FOB shop cost what they cost at the Support Platform. */
     static int fobFlare(String id){return switch(id){case "supply"->SupportRules.SUPPLY_FLARE_PRICE;case "return"->SupportRules.RETURN_FLARE_PRICE;default->SupportRules.FIRE_FLARE_PRICE;};}
 

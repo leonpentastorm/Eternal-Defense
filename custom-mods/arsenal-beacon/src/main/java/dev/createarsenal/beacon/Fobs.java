@@ -39,7 +39,7 @@ final class Fobs {
     /** Persistent data key on a villager: the id of the FOB whose village it lives in (it stays protected wherever it walks). */
     static final String VILLAGER_TAG="arsenalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
-    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5;
+    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6;
     /** The flares the FOB shop sells, at the Support Platform's prices ({@link SupportRules}). */
     static final List<String> SHOP=List.of("supply","return","fire");
 
@@ -110,13 +110,14 @@ final class Fobs {
             }
             if(loaded&&clock%FobRules.ZONE_REFRESH_TICKS==0)tagVillagers(l,f);
         }
+        FobSos.second(l,d);   // the SOS clock, the open SOS and its raid (0.0.25)
     }
     /** A raid at the FOB ended: won makes it ACTIVE, lost makes it DOWN, no result leaves it as it was (the raid can be called again). */
     static void end(ServerLevel l,FobData.Fob f,FobRules.Outcome outcome,boolean villagersLost){
         var d=FobData.get(l);var before=f.state;f.raidId=0;f.state=FobRules.after(f.state,outcome);
         if(outcome==FobRules.Outcome.WON)f.activated=true;
         d.setDirty();
-        switch(outcome){
+        if(!FobSos.raidEnded(l,f,outcome))switch(outcome){   // an SOS raid is told by the SOS (0.0.25)
             case WON->announce(l,Component.translatable("gui.arsenal_beacon.fob.won",f.name));
             case LOST->announce(l,Component.translatable(villagersLost?"gui.arsenal_beacon.fob.lost_villagers":"gui.arsenal_beacon.fob.lost",f.name));
             default->announce(l,Component.translatable("gui.arsenal_beacon.fob.raid_over",f.name));
@@ -174,6 +175,7 @@ final class Fobs {
         for(String id:SHOP)n.putInt("price."+id,price(id));
         // the second listing (0.0.24): this FOB's Supply Delivery Gate, one per FOB
         n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(p,Economy.fabrication("supply_delivery_gate")));
+        FobSos.state(FobData.get(l),f,n);   // the SOS, the lost villagers and the repair (0.0.25)
         n.putString("message",message);
         return n;
     }
@@ -185,6 +187,7 @@ final class Fobs {
         if(f==null||!(p.containerMenu instanceof FobBlocks.FobMenu menu)||!menu.stillValid(p))return;
         if(id==CALL_RAID){String problem=callRaid(l,f,p);open(p,pos,problem==null?"fob.result.raid_called":"fob.raid."+problem);return;}
         if(id==BUY_GATE){String result=Routes.buyGate(p,f);log("{}: {} asked for the Delivery Gate: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
+        if(id==REPAIR){String result=FobSos.repair(p,f);open(p,pos,result);return;}
         int index=id-BUY_SUPPLY;if(index<0||index>=SHOP.size())return;
         String item=SHOP.get(index);
         if(!FobRules.working(f.state)){open(p,pos,"fob.result.closed");return;}
@@ -216,6 +219,7 @@ final class Fobs {
         var l=p.server.overworld();var d=FobData.get(l);var f=d.byId(id);
         if(f==null||p.level()!=l||p.distanceToSqr(f.pos.getX()+.5,f.pos.getY()+.5,f.pos.getZ()+.5)>64)return false;
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
+        FobSos.removed(l,f);   // an SOS of this FOB is called off (0.0.25)
         d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);   // its gates turn UNLINKED by themselves
         if(l.getBlockState(f.pos).is(ArsenalBeacon.FOB_BEACON.get()))l.removeBlock(f.pos,false);
         give(p);
@@ -227,6 +231,7 @@ final class Fobs {
     static void blockGone(ServerLevel l,BlockPos pos){
         var d=FobData.get(l);var f=d.at(pos);if(f==null)return;
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
+        FobSos.removed(l,f);
         d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);log("{}: its block was removed; the FOB is deleted",f.name);
     }
     private static void give(ServerPlayer p){var stack=new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get());if(!p.getInventory().add(stack))p.drop(stack,false);}
@@ -239,6 +244,7 @@ final class Fobs {
     static void status(ServerPlayer p,CompoundTag n){
         if(p.level().dimension()!=Level.OVERWORLD)return;
         var l=p.serverLevel();var d=FobData.get(l);if(d.fobs.isEmpty())return;
+        FobSos.status(d,n);   // an open SOS is on every card (0.0.25)
         n.putInt("fobPlaced",d.fobs.size());n.putInt("fobActive",d.count(FobRules.State.ACTIVE));
         var f=zoneAt(l,p.blockPosition());if(f==null)return;
         var here=new CompoundTag();here.putString("name",f.name);here.putString("state",f.state.id());here.putBoolean("raid",f.raidRunning());
@@ -247,15 +253,17 @@ final class Fobs {
 
     // ---- operator commands ----------------------------------------------------------------------------------------------------------------------
     /**
-     * {@code /arsenal fob list|status|complete|reset|deliver|overdue} (operators): all but list act on the FOB nearest to the player. deliver brings
-     * its next delivery by itself forward to now (0.0.24); overdue lets its route inspection run out within a second.
+     * {@code /arsenal fob list|status|complete|reset|deliver|overdue|sos [expire]} (operators): all but list act on the FOB nearest to the player.
+     * deliver brings its next delivery by itself forward to now (0.0.24); overdue lets its route inspection run out within a second; sos calls
+     * an SOS now at the nearest ACTIVE FOB, sos expire lets the open SOS run out within a second (0.0.25).
      */
     static LiteralArgumentBuilder<CommandSourceStack> command(){
         return Commands.literal("fob").requires(s->s.hasPermission(2))
             .then(Commands.literal("list").executes(c->{
                 var l=c.getSource().getServer().overworld();var d=FobData.get(l);
                 if(d.fobs.isEmpty()){c.getSource().sendSuccess(()->Component.literal("No FOBs placed."),false);return 1;}
-                for(var f:d.fobs.values()){String line=describe(l,f);c.getSource().sendSuccess(()->Component.literal(line),false);}return d.fobs.size();}))
+                for(var f:d.fobs.values()){String line=describe(l,f);c.getSource().sendSuccess(()->Component.literal(line),false);}
+                String sos=FobSos.describe(l,d);c.getSource().sendSuccess(()->Component.literal(sos),false);return d.fobs.size();}))
             .then(Commands.literal("status").executes(c->{
                 var l=c.getSource().getServer().overworld();var f=nearest(l,BlockPos.containing(c.getSource().getPosition()));
                 String line=f==null?"No FOBs placed.":describe(l,f);c.getSource().sendSuccess(()->Component.literal(line),false);return f==null?0:1;}))
@@ -277,7 +285,20 @@ final class Fobs {
             .then(Commands.literal("overdue").executes(c->{
                 var l=c.getSource().getServer().overworld();var f=nearest(l,BlockPos.containing(c.getSource().getPosition()));
                 if(f==null||!f.commissioned||f.clock<=0){c.getSource().sendFailure(Component.literal(f==null?"No FOBs placed.":f.name+" has no running inspection."));return 0;}
-                f.clock=20;FobData.get(l).setDirty();c.getSource().sendSuccess(()->Component.literal(f.name+": its route inspection runs out within a second (while the FOB is ACTIVE)."),true);return 1;}));
+                f.clock=20;FobData.get(l).setDirty();c.getSource().sendSuccess(()->Component.literal(f.name+": its route inspection runs out within a second (while the FOB is ACTIVE)."),true);return 1;}))
+            .then(Commands.literal("sos").executes(c->{
+                var l=c.getSource().getServer().overworld();var d=FobData.get(l);var at=BlockPos.containing(c.getSource().getPosition());
+                FobData.Fob f=null;double best=Double.MAX_VALUE;
+                for(var o:d.fobs.values())if(o.state==FobRules.State.ACTIVE&&o.pos.distSqr(at)<best){best=o.pos.distSqr(at);f=o;}
+                if(d.sosFob!=0){var open=d.byId(d.sosFob);c.getSource().sendFailure(Component.literal("An SOS is already open"+(open==null?"":" at "+open.name)+": only one at a time."));return 0;}
+                if(f==null){c.getSource().sendFailure(Component.literal("No ACTIVE FOB can call."));return 0;}
+                var called=FobSos.fire(l,d,f);String name=called==null?"":called.name;
+                if(called==null){c.getSource().sendFailure(Component.literal("No SOS could be called."));return 0;}
+                c.getSource().sendSuccess(()->Component.literal("SOS called at "+name+"."),true);return 1;})
+                .then(Commands.literal("expire").executes(c->{
+                    var l=c.getSource().getServer().overworld();var d=FobData.get(l);
+                    if(d.sosFob==0){c.getSource().sendFailure(Component.literal("No SOS is open."));return 0;}
+                    d.sosLeft=20;d.setDirty();c.getSource().sendSuccess(()->Component.literal("The open SOS runs out within a second (unless its raid is running)."),true);return 1;})));
     }
     static String describe(ServerLevel l,FobData.Fob f){
         boolean loaded=l.isPositionEntityTicking(f.pos);
@@ -315,5 +336,13 @@ final class Fobs {
             if(protect(f!=null,f!=null&&f.raidRunning(),false))e.setCanceled(true);
         }
         @SubscribeEvent public void started(net.minecraftforge.event.server.ServerStartedEvent e){FobZone.clear();}
+        /** A FOB's villager killed while a raid runs at its FOB is recorded for the repair (0.0.25). */
+        @SubscribeEvent(priority=EventPriority.LOWEST) public void death(net.minecraftforge.event.entity.living.LivingDeathEvent e){
+            if(e.isCanceled()||!(e.getEntity() instanceof Villager v)||!(v.level() instanceof ServerLevel l))return;
+            long id=v.getPersistentData().getLong(VILLAGER_TAG);if(id==0)return;
+            var f=FobData.get(l).byId(id);if(f!=null&&f.raidRunning())FobSos.lost(l,f,v);
+        }
+        /** Someone logging in while an SOS is open gets its map; maps of an SOS that ended burn. */
+        @SubscribeEvent public void fobLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e){if(e.getEntity() instanceof ServerPlayer p)FobSos.login(p);}
     }
 }

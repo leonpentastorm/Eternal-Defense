@@ -157,7 +157,7 @@ public final class GateClient {
             int x=leftX,w=colW,y=bodyY+48;
             Ui.text(g,font,Ui.t("gate.check.title"),x,y,Ui.BRASS,w);y+=12;
             boolean fob=linked()&&data.getString("state").equals("active");
-            y=line(g,x,y,w,fob,Ui.t("gate.check.fob"),linked()?Ui.t("gate.fix.fob"):Ui.t(receiving()?"gate.fix.link":"gate.fix.unlinked"));
+            y=line(g,x,y,w,fob,Ui.t("gate.check.fob"),!linked()?Ui.t(receiving()?"gate.fix.link":"gate.fix.unlinked"):Ui.t(data.getString("state").equals("down")?"gate.fix.fob.down":"gate.fix.fob"));
             y=line(g,x,y,w,data.getBoolean("partner"),Ui.t("gate.check.partner"),Ui.t(receiving()?"gate.fix.partner.receiving":"gate.fix.partner.delivery"));
             // the distance only means something once both gates stand
             if(data.getBoolean("partner")){boolean far=data.getInt("distance")>=data.getInt("minDistance");

@@ -81,12 +81,14 @@ public final class BeaconClient {
     static Component fobLine(){
         var mc=Minecraft.getInstance();
         if(mc.level==null||mc.level.dimension()!=Level.OVERWORLD||mc.level.getGameTime()-receivedAt>=STALE_TICKS)return null;
+        if(state.contains("fobSos")){var sos=state.getCompound("fobSos");   // an open SOS comes first, on every card (0.0.25)
+            return sos.getBoolean("raid")?Ui.t("hud.fob.sos.raid",sos.getString("name")):Ui.t("hud.fob.sos",sos.getString("name"),FobClient.sosTime(sos.getLong("left")));}
         if(state.contains("fobHere")){var f=state.getCompound("fobHere");
             return Ui.t(f.getBoolean("raid")?"hud.fob.here.raid":"hud.fob.here",f.getString("name"),Ui.t("fob.state."+f.getString("state")),f.getInt("villagers"));}
         if(holding()&&n("fobPlaced")>0)return Ui.t("hud.fob.count",n("fobPlaced"),FobRules.MAX_FOBS,n("fobActive"));
         return null;
     }
-    private static int fobColor(){return state.contains("fobHere")&&state.getCompound("fobHere").getBoolean("raid")?Ui.RED:FobClient.OLIVE;}
+    private static int fobColor(){return state.contains("fobSos")||state.contains("fobHere")&&state.getCompound("fobHere").getBoolean("raid")?Ui.RED:FobClient.OLIVE;}
     /** The mission and FOB lines alone, where the status card would be, when the card itself is hidden. */
     private static void drawMission(GuiGraphics g,int w,int h){
         var font=Minecraft.getInstance().font;
