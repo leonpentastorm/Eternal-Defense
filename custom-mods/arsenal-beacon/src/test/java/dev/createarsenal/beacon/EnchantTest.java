@@ -32,11 +32,14 @@ final class EnchantTest {
         for(int fobs=0;fobs<=5;fobs++)for(int max=1;max<=5;max++){int top=maxLevel(max,fobs);assertTrue(fobsFor(top,max)<=fobs&&(top==max||fobsFor(top+1,max)>fobs),"the highest level allowed, "+fobs+" FOBs, max "+max);}
     }
     @Test void pricesFollowRarityAndLevelAndEdition(){
-        assertEquals(2,price(Rarity.COMMON,1,false,true));assertEquals(10,price(Rarity.COMMON,5,false,true),"Sharpness V, standalone");
-        assertEquals(9,price(Rarity.UNCOMMON,3,false,true),"Unbreaking III");
-        assertEquals(15,price(Rarity.RARE,3,false,true),"Fortune III");
-        assertEquals(8,price(Rarity.VERY_RARE,1,false,true),"Silk Touch");
-        assertEquals(10,price(Rarity.RARE,1,true,true),"Mending (treasure: twice)");
+        // 0.0.29 (owner): doubled in both editions
+        assertEquals(4,price(Rarity.COMMON,1,false,true));assertEquals(20,price(Rarity.COMMON,5,false,true),"Sharpness V, standalone");
+        assertEquals(18,price(Rarity.UNCOMMON,3,false,true),"Unbreaking III");
+        assertEquals(30,price(Rarity.RARE,3,false,true),"Fortune III");
+        assertEquals(16,price(Rarity.VERY_RARE,1,false,true),"Silk Touch");
+        assertEquals(20,price(Rarity.RARE,1,true,true),"Mending (treasure: twice)");
+        assertEquals(40,price(Rarity.COMMON,5,false,false),"Sharpness V, pack");
+        for(var r:Rarity.values())assertEquals(new int[]{2,3,5,8}[r.ordinal()],discounted(price(r,1,false,true),MAX_MK),"a table at Mk III charges the 0.0.27 standalone price");
         for(var r:Rarity.values())for(int level=1;level<=5;level++)for(boolean t:new boolean[]{false,true}){
             int sa=price(r,level,t,true),pk=price(r,level,t,false);
             assertEquals(2*sa,pk,"0.0.28 (owner): the pack pays twice (its Ardent Energy pays for little else)");
@@ -52,8 +55,8 @@ final class EnchantTest {
             assertTrue(discounted(p,mk)<=discounted(p,mk-1),"each Mk is at least as cheap");
             if(p>=2)assertTrue(discounted(p,mk)<p,"every Mk takes something off a price of 2 or more ("+p+" at Mk "+mk+")");
         }
-        assertArrayEquals(new int[]{20,16,13,10},new int[]{discounted(20,0),discounted(20,1),discounted(20,2),discounted(20,3)},"the pack's Sharpness V by Mk");
-        assertEquals(20,price(Rarity.COMMON,5,false,false),"the pack's Sharpness V");
+        assertArrayEquals(new int[]{40,33,26,20},new int[]{discounted(40,0),discounted(40,1),discounted(40,2),discounted(40,3)},"the pack's Sharpness V by Mk");
+        assertEquals(40,price(Rarity.COMMON,5,false,false),"the pack's Sharpness V");
         String economy=source("Economy.java");
         assertTrue(economy.contains("ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24}"),"Mk I to III: resonance coils (pack) or Ardent Energy (standalone)");
     }
@@ -99,7 +102,7 @@ final class EnchantTest {
         assertTrue(economy.contains("ENCHANT_IRON=12,ENCHANT_OBSIDIAN=4,ENCHANT_BOOKS=3,ENCHANT_COILS=2,ENCHANT_ARDENT=8"));
         assertTrue(lang.contains("12 iron, 4 obsidian, 3 books and 2 resonance coils. Mk I, II and III: 8, 16 and 32 resonance coils."),"pack price in the guide");
         assertTrue(lang.contains("12 iron, 4 obsidian, 3 books and 8 Ardent Energy. Mk I, II and III: 6, 12 and 24 Ardent Energy."),"standalone price in the guide");
-        assertTrue(lang.contains("2 for common enchants, 3 for uncommon, 5 for rare and 8 for very rare")&&Arrays.equals(PER_LEVEL_STANDALONE,new int[]{2,3,5,8}),"per level by rarity");
+        assertTrue(lang.contains("4 for common enchants, 6 for uncommon, 10 for rare and 16 for very rare")&&Arrays.equals(PER_LEVEL_STANDALONE,new int[]{4,6,10,16}),"per level by rarity");
         assertTrue(lang.contains("Sharpness II needs 2, III needs 3, IV needs 4 and V needs 5")&&fobsFor(2,5)==2&&fobsFor(3,5)==3&&fobsFor(4,5)==4&&fobsFor(5,5)==5,"the level gate's example");
         assertTrue(lang.contains("17, 33 and 50 percent off"),"the discounts");
         assertTrue(lang.contains("[pack] - The pack edition pays twice that"),"the pack's factor");

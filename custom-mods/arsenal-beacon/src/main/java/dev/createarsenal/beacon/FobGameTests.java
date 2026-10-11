@@ -730,7 +730,7 @@ public final class FobGameTests {
             l.setBlock(ENCHANT,ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState(),3);
             p.setGameMode(GameType.SURVIVAL);
             try{
-                p.getInventory().clearContent();p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),64));
+                p.getInventory().clearContent();for(int s=0;s<3;s++)p.getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),64));   // 0.0.29: the pack's buys here take 104
                 TacticalEnchanting.open(p,ENCHANT);h.assertTrue(p.containerMenu instanceof TacticalEnchanting.EnchantMenu,"the screen opens");
                 var menu=(TacticalEnchanting.EnchantMenu)p.containerMenu;
                 for(var e:TacticalEnchanting.catalogue())h.assertTrue(!e.isCurse(),"never a curse: "+TacticalEnchanting.id(e));

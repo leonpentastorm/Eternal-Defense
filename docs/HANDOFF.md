@@ -1,8 +1,14 @@
 # Handoff: where the project stands
 
-Last updated for **0.0.28 (the owner's list after the four FOB slices: enchanting prices by edition, the Warlord Seal at the Exchange, the wood label, Patrol pay, the restoration matrix, a Pressed Receiver per raid, four fire supports, emerald tribute)**, on **`dev`**. Network protocol **34-pack / 34-standalone** (unchanged). The earlier states are described below.
+Last updated for **0.0.29 (enchanting prices doubled in both editions)**, on **`dev`**. Network protocol **34-pack / 34-standalone** (unchanged). The earlier states are described below.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## Enchanting prices doubled (0.0.29)
+
+* **What it is.** The owner, after 0.0.28: "Double both pack and standalone cost." `EnchantRules.PER_LEVEL_STANDALONE` is 4, 6, 10, 16 (was 2, 3, 5, 8); the pack factor (x2) and the Mk discounts (17, 33, 50 percent) are unchanged. A Mk III table now charges the 0.0.27 standalone price in the standalone edition.
+* **Validation.** VALIDATION29_TBD
+* **Not tested / next.** Balance in play, as before.
 
 ## The owner's list after the four FOB slices (0.0.28)
 

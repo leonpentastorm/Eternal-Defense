@@ -21,8 +21,11 @@ final class EnchantRules {
     // ---- prices ----------------------------------------------------------------------------------------------------------------------------------
     /** Vanilla's rarity of an enchant (its weight on the enchanting table): COMMON 10, UNCOMMON 5, RARE 2, VERY_RARE 1. */
     enum Rarity{COMMON,UNCOMMON,RARE,VERY_RARE}
-    /** Standalone Ardent Energy per level, by rarity; treasure enchants (unlocked by Warlord Seals) cost twice that. */
-    static final int[] PER_LEVEL_STANDALONE={2,3,5,8};
+    /**
+     * Standalone Ardent Energy per level, by rarity; treasure enchants (unlocked by Warlord Seals) cost twice that. 0.0.29 (owner): doubled in
+     * both editions (2, 3, 5, 8 before), so a table at Mk III charges the 0.0.27 standalone price.
+     */
+    static final int[] PER_LEVEL_STANDALONE={4,6,10,16};
     static final int TREASURE_FACTOR=2;
     /**
      * The pack edition pays twice the standalone price (owner, 0.0.28): there Ardent Energy pays for little else, Create parts buy the other

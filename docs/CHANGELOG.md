@@ -1,5 +1,11 @@
 # Change log
 
+## 0.0.29 — Enchanting prices doubled (2026-10-11)
+
+On `dev`. **No packet changed: protocol 34.** Rules: GDD 0.0.29; tests: `docs/ROUND-0029-TESTING.md`.
+
+* **Tactical Enchanting Table** (owner: "double both pack and standalone cost"): standalone 4, 6, 10, 16 Ardent Energy per level by rarity (was 2, 3, 5, 8), the pack twice that, 8, 12, 20, 32 (was 4, 6, 10, 16); treasure enchants twice that again. Mk I, II, III still take 17, 33, 50 percent off: at Mk III a standalone table charges the 0.0.27 price, a pack table the standalone Mk 0 price. Examples, Sharpness V: standalone 20 (10 at Mk III), pack 40 (20 at Mk III).
+
 ## 0.0.28 — The owner's list after the four FOB slices (2026-10-11)
 
 On `dev`. **No packet changed: the network protocol stays 34.** Rules: GDD 0.0.28; tests: `docs/ROUND-0028-TESTING.md`.
