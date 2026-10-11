@@ -315,38 +315,85 @@ public final class BeaconClient {
         private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
         private static final String[] FAB_GROUP={"tables","kitchen","support"};
         private record FabCell(int x,int y,int w,int h){}
-        /** Rows a group takes (two cells a row): the groups grow with their items (0.0.24: the Supply Receiving Gate makes the third group four rows). */
+        /** Rows a group takes (two cells a row): the groups grow with their items. */
         private static int groupRows(int group){int end=group==2?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
-        private int fabricationRowHeight(){return Math.max(18,Math.min(34,(ph-54-14-3*12)/(groupRows(0)+groupRows(1)+groupRows(2))-2));}
-        private int groupTop(int group){int y=contentTop();for(int g=0;g<group;g++)y+=12+groupRows(g)*(fabricationRowHeight()+2);return y;}
+        /** 0.0.30: the list scrolls (the mouse wheel, or dragging its bar) instead of squeezing its rows, so more installations fit later. */
+        static final int FAB_ROW=28,FAB_HEADER=12,FAB_BAR=6;
+        int fabScroll;private boolean fabDragging;
+        private int fabricationRowHeight(){return FAB_ROW;}
+        private int fabViewTop(){return contentTop();}
+        private int fabViewBottom(){return top+ph-22;}
+        private int fabContentHeight(){int h=0;for(int g=0;g<3;g++)h+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return h;}
+        int fabMaxScroll(){return Math.max(0,fabContentHeight()-(fabViewBottom()-fabViewTop()));}
+        private void scrollFabrication(int to){fabScroll=Math.max(0,Math.min(fabMaxScroll(),to));}
+        /** The list's width: the scroll bar takes the right edge when the list is longer than the panel. */
+        private int fabListWidth(int w){return fabMaxScroll()>0?w-FAB_BAR-4:w;}
+        private int groupTop(int group){int y=contentTop()-fabScroll;for(int g=0;g<group;g++)y+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return y;}
         private FabCell fabricationCell(int index,int x,int w){
             int group=index>=FAB_GROUP_START[2]?2:index>=FAB_GROUP_START[1]?1:0,inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
-            int cw=(w-6)/2,y=groupTop(group)+12+(inGroup/2)*(rowH+2);
+            int lw=fabListWidth(w),cw=(lw-6)/2,y=groupTop(group)+FAB_HEADER+(inGroup/2)*(rowH+2);
             return new FabCell(x+(inGroup%2)*(cw+6),y,cw,rowH);
         }
+        /** Whether a cell is wholly inside the list's window (its Make button shows only then). */
+        private boolean fabShown(FabCell cell){return cell.y>=fabViewTop()&&cell.y+cell.h<=fabViewBottom();}
         private void fabricationTab(GuiGraphics g,int mx,int my,int x,int w){
             var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);boolean here=on("installed")&&on("near");
+            scrollFabrication(fabScroll);int lw=fabListWidth(w),viewTop=fabViewTop(),viewBottom=fabViewBottom();
+            boolean inView=my>=viewTop&&my<viewBottom;
+            g.enableScissor(x-2,viewTop,x+lw+2,viewBottom);
             for(int group=0;group<3;group++){
                 int y=groupTop(group);var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
-                Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],w/2);Ui.rule(g,x+font.width(label)+6,y+5,w-font.width(label)-6);
+                Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],lw/2);Ui.rule(g,x+font.width(label)+6,y+5,lw-font.width(label)-6);
             }
             for(int i=0;i<fabricationButtons.size();i++){
-                var button=fabricationButtons.get(i);button.visible=i<rows.size();if(!button.visible)continue;
+                var button=fabricationButtons.get(i);var cell=fabricationCell(i,x,w);
+                button.setX(cell.x+cell.w-41);button.setY(cell.y+(cell.h-18)/2);
+                button.visible=i<rows.size()&&fabShown(cell);if(i>=rows.size())continue;
                 var row=rows.getCompound(i);var id=row.getString("id");var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
                 boolean enough=on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count"));
-                int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;var cell=fabricationCell(i,x,w);
+                int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;
+                if(cell.y+cell.h<viewTop||cell.y>viewBottom)continue;
                 Ui.card(g,cell.x,cell.y,cell.w,cell.h,enough&&here?FAB_ACCENT[group]:Ui.EDGE);
                 g.renderItem(item,cell.x+7,cell.y+(cell.h-16)/2);
-                Ui.text(g,font,Ui.t("fabrication.name."+id),cell.x+27,cell.y+(cell.h>=26?4:2),enough&&here?Ui.INK:Ui.MUTED,cell.w-27-44);
-                int costX=cell.x+27,costY=cell.y+cell.h-(cell.h>=26?12:10);
+                Ui.text(g,font,Ui.t("fabrication.name."+id),cell.x+27,cell.y+4,enough&&here?Ui.INK:Ui.MUTED,cell.w-27-44);
+                int costX=cell.x+27,costY=cell.y+cell.h-12;
                 for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));int need=cost.getInt("count"),have=cost.getInt("have");boolean short_=!on("creative")&&have<need;
                     g.pose().pushPose();g.pose().translate(costX,costY-1,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
                     var count=Component.literal(Integer.toString(need));g.drawString(font,count,costX+9,costY,short_?Ui.ORANGE:Ui.MUTED,false);costX+=12+font.width(count);
                 }
                 button.active=here&&enough;button.warning=!enough&&here;
-                if(Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h))upgradeHoverCosts=costs;
+                if(inView&&Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h))upgradeHoverCosts=costs;
+            }
+            g.disableScissor();
+            int max=fabMaxScroll();
+            if(max>0){
+                // the scroll bar, and a fade at the edge that hides more rows
+                int barX=x+w-FAB_BAR,trackH=viewBottom-viewTop,thumbH=Math.max(18,trackH*trackH/fabContentHeight()),thumbY=viewTop+(trackH-thumbH)*fabScroll/max;
+                g.fill(barX,viewTop,barX+FAB_BAR,viewBottom,0x40000000);
+                g.fill(barX+1,thumbY,barX+FAB_BAR-1,thumbY+thumbH,fabDragging||Ui.inside(mx,my,barX,viewTop,FAB_BAR,trackH)?Ui.CYAN:Ui.MUTED);
+                if(fabScroll<max)g.fillGradient(x,viewBottom-10,x+lw,viewBottom,0x00000000,0x80000000);
+                if(fabScroll>0)g.fillGradient(x,viewTop,x+lw,viewTop+10,0x80000000,0x00000000);
             }
             if(!here)hint(g,Ui.t(on("installed")?"fabrication.near":"fabrication.plant"),Ui.ORANGE);
+            else if(max>0&&fabScroll==0)hint(g,Ui.t("fabrication.scroll"));
+        }
+        @Override public boolean mouseScrolled(double mx,double my,double amount){
+            if(tab==2&&fabMaxScroll()>0){scrollFabrication(fabScroll-(int)(amount*(FAB_ROW+2)));return true;}
+            return super.mouseScrolled(mx,my,amount);
+        }
+        @Override public boolean mouseClicked(double mx,double my,int button){
+            int barX=left+14+(pw-28)-FAB_BAR;
+            if(tab==2&&button==0&&fabMaxScroll()>0&&mx>=barX&&mx<barX+FAB_BAR&&my>=fabViewTop()&&my<fabViewBottom()){fabDragging=true;dragFabrication(my);return true;}
+            return super.mouseClicked(mx,my,button);
+        }
+        @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){
+            if(fabDragging){dragFabrication(my);return true;}
+            return super.mouseDragged(mx,my,button,dx,dy);
+        }
+        @Override public boolean mouseReleased(double mx,double my,int button){fabDragging=false;return super.mouseReleased(mx,my,button);}
+        private void dragFabrication(double my){
+            int trackH=fabViewBottom()-fabViewTop(),thumbH=Math.max(18,trackH*trackH/fabContentHeight());
+            scrollFabrication((int)Math.round((my-fabViewTop()-thumbH/2.0)*fabMaxScroll()/Math.max(1,trackH-thumbH)));
         }
         // ---- Overview: "How is my base doing?" ------------------------------------------------
         private void overview(GuiGraphics g,int x,int w){

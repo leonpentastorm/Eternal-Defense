@@ -39,7 +39,9 @@ public final class FobClient {
     static final class FobScreen extends AbstractContainerScreen<FobBlocks.FobMenu> {
         private CompoundTag data;
         private int colW,leftX,rightX,bodyY;
-        private Ui.UiButton callButton,repairButton;
+        private Ui.UiButton callButton,repairButton,outlineButton;
+        /** The zone outline's switch sits where the zone line was (0.0.30). */
+        static final int OUTLINE_Y=39;
         private final List<Ui.UiButton> buy=new ArrayList<>();private Ui.UiButton gateButton;
         FobScreen(FobBlocks.FobMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;}
         void update(CompoundTag next){data=next;rebuildWidgets();}
@@ -51,6 +53,9 @@ public final class FobClient {
             super.init();clearWidgets();buy.clear();
             colW=(imageWidth-36)/2;leftX=leftPos+12;rightX=leftX+colW+12;bodyY=topPos+34;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
+            outlineButton=addRenderableWidget(new Ui.UiButton(leftX,bodyY+OUTLINE_Y,colW,18,Ui.t("fob.screen.outline",data.getInt("sections")),Ui.Look.TOGGLE,b->click(Fobs.OUTLINE)));
+            outlineButton.on=data.getBoolean("showZone");
+            outlineButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.outline.tip")));
             // the raid call, only while the FOB waits for its first won raid
             callButton=addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-50,colW,20,Ui.t("fob.screen.call"),Ui.Look.PRIMARY,b->click(Fobs.CALL_RAID)));
             callButton.visible=state().equals("planted");callButton.active=data.getBoolean("mayCallRaid")&&data.getBoolean("raidsPossible");
@@ -95,7 +100,7 @@ public final class FobClient {
             Ui.chip(g,font,Ui.t("fob.state."+state),x,y,stateColor(state),w);y+=17;
             Ui.text(g,font,Ui.t("fob.screen.villagers",data.getInt("villagers")),x,y,Ui.INK,w);y+=11;
             Ui.text(g,font,Ui.t("fob.screen.places",data.getInt("beds"),data.getInt("jobs")),x,y,Ui.MUTED,w);y+=11;
-            Ui.text(g,font,Ui.t("fob.screen.zone",data.getInt("sections")),x,y,Ui.MUTED,w);y+=15;
+            y=bodyY+OUTLINE_Y+22;   // the zone outline switch
             int bottom=topPos+imageHeight-(callButton.visible||repairButton.visible&&!down()?54:20);
             if(data.getBoolean("sos")&&!data.getBoolean("raid")){   // an SOS from this FOB, no raid yet (0.0.25)
                 Ui.card(g,x,y,w,Math.min(48,bottom-y),Ui.RED);

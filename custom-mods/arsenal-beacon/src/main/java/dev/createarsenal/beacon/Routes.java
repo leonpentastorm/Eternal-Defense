@@ -55,8 +55,8 @@ final class Routes {
                     var gate=kind==RailGates.Kind.DELIVERY?f.deliveryGate:f.receivingGate;
                     if(gate==null||Math.abs(gate.getX()-now.x)>8||Math.abs(gate.getZ()-now.z)>8||!l.hasChunkAt(gate))continue;
                     var state=l.getBlockState(gate);if(!(state.getBlock() instanceof RailGates.GateBlock))continue;
-                    var rail=gate.below();boolean alongX=state.getValue(RailGates.FACING).getAxis()==net.minecraft.core.Direction.Axis.X;
-                    if(RouteRules.crossing(last.x(),last.y(),last.z(),now.x,now.y,now.z,rail.getX(),rail.getY(),rail.getZ(),alongX,SLACK)!=0)pass(l,d,f,kind,p,cart);
+                    var facing=state.getValue(RailGates.FACING);var lanes=RailGates.laneCorner(gate,facing);boolean alongX=facing.getAxis()==net.minecraft.core.Direction.Axis.X;
+                    if(RouteRules.crossing(last.x(),last.y(),last.z(),now.x,now.y,now.z,lanes.getX(),lanes.getY(),lanes.getZ(),alongX,RailGates.LANES,SLACK)!=0)pass(l,d,f,kind,p,cart);
                 }
             }
         }
@@ -75,7 +75,7 @@ final class Routes {
             case RESTARTED->{run.start=run.legStart=now;say(p,"route.pass.restarted",f.name);sound(p,SoundEvents.NOTE_BLOCK_BELL.value(),1.2f);}
             case BUSY->{say(p,"route.pass.busy",f.name);sound(p,SoundEvents.VILLAGER_NO,1f);}
             case START_AT_HOME->{say(p,"route.pass.start_at_home",f.name);sound(p,SoundEvents.VILLAGER_NO,1f);}
-            case WRONG_GATE->say(p,"route.pass.wrong_gate");
+            case WRONG_GATE->{if(now-run.legStart>RouteRules.WRONG_GATE_QUIET)say(p,"route.pass.wrong_gate");}   // not on the way back through the gate's other lane
             case TOO_CLOSE->{RUNS.remove(f.id);say(p,"route.pass.too_close",(int)distance,RouteRules.MIN_SEPARATION);sound(p,SoundEvents.VILLAGER_NO,1f);}
             case COMMISSIONED->{
                 accrue(d,f);
@@ -181,11 +181,11 @@ final class Routes {
 
     // ---- the gates ------------------------------------------------------------------------------------------------------------------------------
     /** Why a gate cannot stand here: a key under {@code gate.refused.}, or null. */
-    static String placeProblem(ServerLevel l,BlockPos anchor,RailGates.Kind kind,net.minecraft.core.Direction look,ItemStack stack){
+    static String placeProblem(ServerLevel l,RailGates.Spot spot,RailGates.Kind kind,ItemStack stack){
         if(l.dimension()!=Level.OVERWORLD)return "overworld";
-        var facing=RailGates.facingOver(l.getBlockState(anchor.below()),look);
-        if(facing==null)return "rail";
-        if(!RailGates.available(l,anchor,facing))return "no_room";
+        if(spot==null)return "rail";
+        var anchor=spot.anchor();
+        if(!RailGates.available(l,anchor,spot.facing()))return "no_room";
         if(kind==RailGates.Kind.DELIVERY){
             var f=Fobs.zoneAt(l,anchor);if(f==null)return "not_fob";
             if(f.deliveryGate!=null&&!f.deliveryGate.equals(anchor))return "has_gate";
@@ -228,8 +228,7 @@ final class Routes {
         boolean linked=f!=null&&(pos.equals(f.deliveryGate)||pos.equals(f.receivingGate));
         if(be.fobId!=0&&!linked)be.link(0);
         var signal=signal(l,d,linked?f:null);
-        var lamp=RailGates.Lamp.of(signal);
-        if(state.getValue(RailGates.SIGNAL)!=lamp)l.setBlock(pos,state.setValue(RailGates.SIGNAL,lamp),2|16);
+        RailGates.light(l,pos,state,RailGates.Lamp.of(signal));
     }
     static RouteRules.Signal signal(ServerLevel l,FobData d,FobData.Fob f){
         if(f==null)return RouteRules.Signal.RED;

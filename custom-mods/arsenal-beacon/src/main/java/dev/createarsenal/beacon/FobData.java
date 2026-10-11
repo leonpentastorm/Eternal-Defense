@@ -43,6 +43,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         String lastKind="";int lastItems;long lastAt;
         /** The stockpile (whole and part items per good), when it was last brought up to date (ticks of play), the villagers counted then. */
         double[] stock=new double[RouteRules.GOODS.size()];long accruedAt;int workers;
+        /** 0.0.30: the zone outline is shown to players near the FOB (its screen turns it off for everyone). */
+        boolean showZone=true;
         boolean hasRoute(){return deliveryGate!=null&&receivingGate!=null;}
         double separation(){return deliveryGate==null||receivingGate==null?0:Math.sqrt(Math.pow(deliveryGate.getX()-receivingGate.getX(),2)+Math.pow(deliveryGate.getZ()-receivingGate.getZ(),2));}
     }
@@ -79,7 +81,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
                 var f=new Fob(c.getLong("id"));if(f.id<=0||d.fobs.containsKey(f.id))continue;
                 f.pos=BlockPos.of(c.getLong("pos"));f.villageSection=c.getLong("village");
                 f.state=FobRules.State.of(c.getInt("state"));f.activated=c.getBoolean("activated");f.placedAt=c.getLong("placed");
-                f.raidId=c.getInt("raid");f.raidVillagers=c.getInt("raidVillagers");
+                f.raidId=c.getInt("raid");f.raidVillagers=c.getInt("raidVillagers");f.showZone=!c.contains("showZone")||c.getBoolean("showZone");
                 String name=FobRules.clean(c.getString("name"));
                 f.name=name.isEmpty()||FobRules.contains(d.names(f.id),name)?FobRules.freeCodename(f.id,d.names(f.id)):name;
                 if(c.contains("dead",Tag.TAG_LIST))f.deadVillagers=c.getList("dead",Tag.TAG_COMPOUND);
@@ -125,7 +127,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         for(var f:fobs.values()){
             var c=new CompoundTag();c.putLong("id",f.id);c.putString("name",f.name);c.putLong("pos",f.pos.asLong());c.putLong("village",f.villageSection);
             c.putInt("state",f.state.ordinal());c.putBoolean("activated",f.activated);c.putLong("placed",f.placedAt);
-            c.putInt("raid",f.raidId);c.putInt("raidVillagers",f.raidVillagers);
+            c.putInt("raid",f.raidId);c.putInt("raidVillagers",f.raidVillagers);c.putBoolean("showZone",f.showZone);
             writeRoute(f);c.put("dead",f.deadVillagers);c.put("stockpile",f.stockpile);c.put("route",f.route);
             list.add(c);
         }

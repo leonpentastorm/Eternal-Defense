@@ -29,7 +29,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -104,7 +106,8 @@ public final class FobGameTests {
         var raid=l.getRaidAt(VILLAGE);if(raid!=null)raid.stop();
         for(var e:l.getEntitiesOfClass(Entity.class,new AABB(VILLAGE).inflate(100,40,100),e->!(e instanceof Player)))e.discard();
         for(var at:List.of(PLANT,PLANT2))if(l.getBlockState(at).is(ArsenalBeacon.FOB_BEACON.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
-        for(var at:List.of(VILLAGE.offset(-70,1,30),VILLAGE.offset(70,1,30),VILLAGE.offset(8,1,-9)))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
+        for(var at:List.of(RECEIVING,DELIVERY))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
+        for(var at:BlockPos.betweenClosed(GATE_RAIL.offset(-3,0,-3),GATE_RAIL.offset(3,0,3)))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at.immutable(),Blocks.AIR.defaultBlockState(),3);
     }
     static void goTo(ServerPlayer p,ServerLevel l,BlockPos at){p.teleportTo(l,at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot(),p.getXRot());}
     /** The player plants a FOB Beacon on the block below {@code at}, as the item does it (the player's own placement checks and placer). */
@@ -352,18 +355,36 @@ public final class FobGameTests {
     }
 
     // ---- the supply rail (0.0.24, FOB slice 2) ---------------------------------------------------------------------------------------------------
-    /** A straight rail along X, 30 blocks south of the village, 150 blocks long; the Receiving Gate at its west end, the Delivery Gate at its east end. */
-    static final int RAIL_Z=38,RAIL_FROM=-78,RAIL_TO=78;
-    static final BlockPos RECEIVING=VILLAGE.offset(-70,1,RAIL_Z-VILLAGE.getZ()),DELIVERY=VILLAGE.offset(70,1,RAIL_Z-VILLAGE.getZ());
-    /** An ACTIVE FOB with a rail and both gates linked to it (no ride yet). */
+    /**
+     * The owner's round trip (0.0.30): two rails side by side along X, 30 blocks south of the village, 156 blocks long, joined by a curve at
+     * each end, so a cart goes out on lane A (z 38) and comes home on lane B (z 39) without stopping. The Receiving Gate stands across both
+     * near the west end, the Delivery Gate near the east end, both facing east: the anchor (right column) north of lane A, the left column south
+     * of lane B.
+     */
+    static final int RAIL_Z=38,LANE_A=RAIL_Z,LANE_B=RAIL_Z+1,RAIL_FROM=-78,RAIL_TO=78;
+    static final BlockPos RECEIVING=new BlockPos(VILLAGE.getX()-70,VILLAGE.getY(),LANE_A-1),DELIVERY=new BlockPos(VILLAGE.getX()+70,VILLAGE.getY(),LANE_A-1);
+    /** The rail fob_12 places a Delivery Gate on. */
+    static final BlockPos GATE_RAIL=VILLAGE.offset(8,0,-9);
+    static BlockState rail(RailShape shape){return Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,shape);}
+    /** The loop's rail at (x, lane): straight along X, and the two curves of each U-turn. */
+    static BlockState loopRail(int x,int z){
+        if(x==RAIL_TO)return rail(z==LANE_A?RailShape.SOUTH_WEST:RailShape.NORTH_WEST);
+        if(x==RAIL_FROM)return rail(z==LANE_A?RailShape.SOUTH_EAST:RailShape.NORTH_EAST);
+        return rail(RailShape.EAST_WEST);
+    }
+    /** An ACTIVE FOB with the loop and both gates linked to it (no ride yet). */
     static FobData.Fob route(Fixture f){
         var l=f.l();
-        for(int x=RAIL_FROM-2;x<=RAIL_TO+2;x++)for(int dz=-1;dz<=1;dz++)for(int y=0;y<3;y++){
-            var at=new BlockPos(VILLAGE.getX()+x,VILLAGE.getY()+y,RAIL_Z+dz);
+        for(int x=RAIL_FROM-2;x<=RAIL_TO+2;x++)for(int z=LANE_A-2;z<=LANE_B+2;z++)for(int y=0;y<3;y++){
+            var at=new BlockPos(VILLAGE.getX()+x,VILLAGE.getY()+y,z);
             if(!l.getBlockState(at.below()).isSolid()&&y==0)l.setBlock(at.below(),Blocks.STONE.defaultBlockState(),2);
-            var want=y==0&&dz==0?Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST):Blocks.AIR.defaultBlockState();
-            if(l.getBlockState(at)!=want&&!(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)&&!(l.getBlockState(at).getBlock() instanceof RailGates.Part))l.setBlock(at,want,2);
+            boolean lane=y==0&&(z==LANE_A||z==LANE_B)&&x>=RAIL_FROM&&x<=RAIL_TO;
+            var want=lane?loopRail(x,z):Blocks.AIR.defaultBlockState();
+            var b=l.getBlockState(at).getBlock();
+            if(l.getBlockState(at)!=want&&!(b instanceof RailGates.GateBlock)&&!(b instanceof RailGates.Part)&&!(b instanceof RailGates.Column))l.setBlock(at,want,2);
         }
+        // vanilla shapes a rail by its neighbours as it is placed (two lanes side by side would join up): the shapes are set again, unshaped
+        for(int x=RAIL_FROM;x<=RAIL_TO;x++)for(int z:new int[]{LANE_A,LANE_B}){var at=new BlockPos(VILLAGE.getX()+x,VILLAGE.getY(),z);if(l.getBlockState(at)!=loopRail(x,z))l.setBlock(at,loopRail(x,z),2|16);}
         var fob=fob(l);var d=FobData.get(l);
         for(var kind:RailGates.Kind.values()){
             var at=kind==RailGates.Kind.DELIVERY?DELIVERY:RECEIVING;
@@ -381,40 +402,52 @@ public final class FobGameTests {
     static int queued(ServerLevel l){return CampaignData.get(l.getServer().overworld()).rewards.size();}
     static void trimRewards(ServerLevel l,int size){var d=CampaignData.get(l.getServer().overworld());while(d.rewards.size()>size)d.rewards.remove(d.rewards.size()-1);d.setDirty();}
 
-    /** The owner's test: a vanilla plain minecart with a seated player rolls through both gates without touching them; the ride opens the route and the way back delivers. */
+    /**
+     * The owner's test, as a round trip (0.0.30): a vanilla plain minecart with a seated player goes out on lane A through both gates, turns at
+     * the loop's east end and comes home on lane B through both gates again, without touching them; the ride opens the route on the way out
+     * and delivers on the way home. The cart is kept at a steady 0.4 a tick along whatever way the rail takes it (as powered rails would).
+     */
     @GameTest(template="empty3x3x3",batch="fob_09",timeoutTicks=2400)
     public static void aRiddenMinecartOpensTheRouteAndARoundTripDelivers(GameTestHelper h){
-        var f=village(h,3);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];int[] dir={1};int before[]={0};
-        double[] slowest={9};
+        var f=village(h,3);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];var chestCart=new Entity[1];int before[]={0};boolean[] drive={false};
+        double[] slowest={9},laneOut={0},laneHome={0};
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
             var fob=route(f);for(int i=0;i<fob.stock.length;i++)fob.stock[i]=8;fob.workers=3;
             h.assertTrue(fob.hasRoute()&&!fob.commissioned&&lamp(l,RECEIVING)==RailGates.Lamp.RED,"both gates linked, no route yet: red");
+            for(var at:List.of(RECEIVING,DELIVERY)){
+                h.assertTrue(l.getBlockState(RailGates.column(at,Direction.EAST)).getBlock() instanceof RailGates.Column,"each gate stands on its two columns");
+                for(var lane:RailGates.lanes(at,Direction.EAST))h.assertTrue(l.getBlockState(lane).is(Blocks.RAIL),"a rail runs through each lane: "+lane.toShortString());
+            }
             // a chest minecart rolling through counts for nothing (it cannot carry a rider)
-            var chest=new net.minecraft.world.entity.vehicle.MinecartChest(l,RECEIVING.getX()-3.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(chest);chest.setDeltaMovement(.4,0,0);
-            var c=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);c.setPos(RECEIVING.getX()-5.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(c);cart[0]=c;
-            goTo(p,l,RECEIVING.offset(-5,-1,0));p.startRiding(c,true);before[0]=queued(l);
-        }).thenIdle(20).thenExecute(()->h.assertTrue(Routes.RUNS.isEmpty(),"the chest minecart started nothing"))
-        .thenExecute(()->h.onEachTick(()->{var c=cart[0];if(c==null||!c.isAlive())return;
-            if(dir[0]>0&&c.getX()>DELIVERY.getX()+4)dir[0]=-1;
-            c.setDeltaMovement(.4*dir[0],c.getDeltaMovement().y,0);
-            // the speed through and between the gates (not at the start or the turn): a gate in the way would stop the cart
-            if(c.getX()>RECEIVING.getX()-1&&c.getX()<DELIVERY.getX()+1&&c.tickCount>40)slowest[0]=Math.min(slowest[0],Math.abs(c.getX()-c.xo));}))
+            var chest=new net.minecraft.world.entity.vehicle.MinecartChest(l,RECEIVING.getX()-3.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(chest);chest.setDeltaMovement(.4,0,0);chestCart[0]=chest;
+            var c=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);c.setPos(RECEIVING.getX()-5.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(c);cart[0]=c;
+            goTo(p,l,new BlockPos(RECEIVING.getX()-5,VILLAGE.getY(),LANE_A));p.startRiding(c,true);before[0]=queued(l);
+        }).thenIdle(20).thenExecute(()->{h.assertTrue(Routes.RUNS.isEmpty(),"the chest minecart started nothing");chestCart[0].discard();drive[0]=true;cart[0].setDeltaMovement(.4,0,0);})
+        .thenExecute(()->h.onEachTick(()->{var c=cart[0];if(c==null||!c.isAlive()||!drive[0])return;
+            var v=c.getDeltaMovement();double speed=Math.hypot(v.x,v.z);
+            if(speed<.01)c.setDeltaMovement(.4,v.y,0);else c.setDeltaMovement(v.x*.4/speed,v.y,v.z*.4/speed);
+            // the speed through and between the gates (not at the start or the turns): a gate in the way would stop the cart
+            if(c.getX()>RECEIVING.getX()-1&&c.getX()<DELIVERY.getX()+1&&c.tickCount>40)slowest[0]=Math.min(slowest[0],Math.hypot(c.getX()-c.xo,c.getZ()-c.zo));}))
         .thenWaitUntil(()->h.assertTrue(fob(l).commissioned,"the ride through the Delivery Gate opens the route"))
         .thenExecute(()->{
-            var fob=fob(l);
+            var fob=fob(l);laneOut[0]=cart[0].getZ();
             h.assertTrue(fob.baseline>=Math.ceil(fob.separation()/RouteRules.MAX_SPEED)&&fob.clock==RouteRules.CLOCK,"the one-way time is the route's T ("+fob.baseline+" ticks), the inspection full");
             h.assertTrue(Routes.RUNS.containsKey(fob.id)&&Routes.RUNS.get(fob.id).stage==RouteRules.Stage.RETURN,"the ride goes on home with a load");
+            h.assertTrue(Math.abs(laneOut[0]-(LANE_A+.5))<.3,"out on lane A (z "+laneOut[0]+")");
         }).thenIdle(25).thenExecute(()->h.assertTrue(lamp(l,DELIVERY)==RailGates.Lamp.AMBER&&lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"both lights amber while the ride is under way"))
         .thenWaitUntil(()->h.assertTrue(Routes.RUNS.isEmpty()&&"ride".equals(fob(l).lastKind),"back through the Receiving Gate: the round trip delivers"))
         .thenExecute(()->{
+            drive[0]=false;laneHome[0]=cart[0].getZ();cart[0].setDeltaMovement(0,0,0);   // stopped before the loop brings it round again
             var fob=fob(l);
+            h.assertTrue(Math.abs(laneHome[0]-(LANE_B+.5))<.3,"home on lane B (z "+laneHome[0]+"): the cart came round the loop");
             h.assertTrue(queued(l)>before[0],"the tribute is in the reward chest's queue: "+(queued(l)-before[0])+" stacks");
             h.assertTrue(fob.lastItems==Math.min(RouteRules.activeCapacity(fob.separation()),64)&&fob.clock==RouteRules.CLOCK,"it carried a ride's load ("+fob.lastItems+") and renewed the inspection");
             h.assertTrue(p.getVehicle()==cart[0],"the rider stayed seated the whole way");
             h.assertTrue(slowest[0]>.25,"the cart never slowed against the gates (slowest step "+slowest[0]+" blocks; vanilla moves a ridden cart 0.75 of its speed, 0.3 here)");
         }).thenIdle(25).thenExecute(()->{
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN&&lamp(l,DELIVERY)==RailGates.Lamp.GREEN,"after the round trip both lights are green");
+            h.assertTrue(l.getBlockState(RailGates.column(RECEIVING,Direction.EAST)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN,"the left column's lamps too");
             p.stopRiding();if(cart[0]!=null)cart[0].discard();trimRewards(l,before[0]);clearRoute(l);clear(l);goTo(p,l,STAND);
         }).thenSucceed();
     }
@@ -455,7 +488,7 @@ public final class FobGameTests {
         }).thenIdle(25).thenExecute(()->{
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"amber: deliveries wait on the backlog");
             var fob=fob(l);fob.lastKind="";
-            var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);cart.setPos(RECEIVING.getX()-2.5,RECEIVING.getY()-1,RECEIVING.getZ()+.5);l.addFreshEntity(cart);p.startRiding(cart,true);
+            var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);cart.setPos(RECEIVING.getX()-2.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(cart);p.startRiding(cart,true);
             var d=FobData.get(l);
             Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);Routes.pass(l,d,fob,RailGates.Kind.DELIVERY,p,cart);Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);
             h.assertTrue(fob.clock==RouteRules.CLOCK,"the round trip renewed the inspection");
@@ -473,7 +506,7 @@ public final class FobGameTests {
     @GameTest(template="empty3x3x3",batch="fob_12",timeoutTicks=600)
     public static void gatesArePlacedAndSoldByTheRules(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
-        BlockPos rail=VILLAGE.offset(8,0,-9);
+        BlockPos rail=GATE_RAIL,second=GATE_RAIL.north();
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");
             p.setGameMode(GameType.SURVIVAL);
@@ -486,25 +519,37 @@ public final class FobGameTests {
                 Fobs.button(p,PLANT,Fobs.BUY_GATE);
                 h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==1,"an ACTIVE FOB sells its Supply Delivery Gate");
                 p.closeContainer();
-                for(int i=0;i<p.getInventory().items.size();i++)if(p.getInventory().items.get(i).is(ArsenalBeacon.DELIVERY_GATE_ITEM.get()))p.getInventory().items.set(i,ItemStack.EMPTY);   // it goes on the rail below
-                l.setBlock(rail,Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),2);
+                for(int i=0;i<p.getInventory().items.size();i++)if(p.getInventory().items.get(i).is(ArsenalBeacon.DELIVERY_GATE_ITEM.get()))p.getInventory().items.set(i,ItemStack.EMPTY);   // it goes on the rails below
+                // two rails side by side (0.0.30): the gate stands across both, whichever of them is clicked
+                for(var at:List.of(rail,second))l.setBlock(at,rail(RailShape.EAST_WEST),2);
+                for(var at:List.of(rail,second))l.setBlock(at,rail(RailShape.EAST_WEST),2|16);   // vanilla joined the two up as they were laid
                 var gate=new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get());
-                h.assertTrue(useOn(f,gate,VILLAGE.offset(10,-1,-4))==InteractionResult.FAIL,"not over a rail: refused");
-                h.assertTrue(useOn(f,gate,rail).consumesAction(),"over the rail in the village: placed");
-                var anchor=rail.above();
-                h.assertTrue(l.getBlockState(anchor).is(ArsenalBeacon.DELIVERY_GATE.get())&&fob(l).deliveryGate!=null&&fob(l).deliveryGate.equals(anchor),"it stands over the rail and links to the FOB by itself");
-                for(var part:RailGates.parts(anchor,l.getBlockState(anchor).getValue(RailGates.FACING)))h.assertTrue(l.getBlockState(part).is(ArsenalBeacon.GATE_PART.get()),"its frame at "+part);
-                h.assertTrue(l.getBlockState(rail).is(Blocks.RAIL),"the rail stays the player's");
+                h.assertTrue(useOn(f,gate,VILLAGE.offset(10,-1,-4))==InteractionResult.FAIL,"not on a rail: refused");
+                h.assertTrue(useOn(f,gate,rail).consumesAction(),"on the rails in the village: placed");
+                var anchor=fob(l).deliveryGate;
+                h.assertTrue(anchor!=null&&l.getBlockState(anchor).is(ArsenalBeacon.DELIVERY_GATE.get()),"it stands across the rails and links to the FOB by itself");
+                var facing=l.getBlockState(anchor).getValue(RailGates.FACING);
+                h.assertTrue(new HashSet<>(RailGates.lanes(anchor,facing)).equals(Set.of(rail,second)),"its two lanes are the two rails: "+RailGates.lanes(anchor,facing));
+                h.assertTrue(l.getBlockState(RailGates.column(anchor,facing)).is(ArsenalBeacon.DELIVERY_GATE_LEFT.get()),"its left column");
+                for(var part:RailGates.parts(anchor,facing))h.assertTrue(l.getBlockState(part).is(ArsenalBeacon.GATE_PART.get()),"its beam at "+part);
+                h.assertTrue(l.getBlockState(rail).is(Blocks.RAIL)&&l.getBlockState(second).is(Blocks.RAIL),"the rails stay the player's");
                 Fobs.open(p,PLANT);Fobs.button(p,PLANT,Fobs.BUY_GATE);p.closeContainer();
                 h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==0,"a second gate for the same FOB is refused");
                 var home=new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get());
-                l.setBlock(rail.offset(0,0,-6),Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),2);
+                l.setBlock(rail.offset(0,0,-6),rail(RailShape.EAST_WEST),2);
                 h.assertTrue(useOn(f,home,rail.offset(0,0,-6))==InteractionResult.FAIL,"a Receiving Gate outside the base zone: refused");
-                // the shovel takes it back, and the item remembers its FOB
+                // the shovel takes it back (from its left column too), and the item remembers its FOB
+                h.assertTrue(anchor.equals(RailGates.anchor(l,RailGates.column(anchor,facing))),"a click on the left column is a click on the gate");
                 Routes.pickUp(p,anchor);
-                h.assertTrue(l.getBlockState(anchor).isAir()&&fob(l).deliveryGate==null,"the shovel takes the gate back");
+                h.assertTrue(l.getBlockState(anchor).isAir()&&l.getBlockState(RailGates.column(anchor,facing)).isAir()&&fob(l).deliveryGate==null,"the shovel takes the whole gate back");
                 var back=p.getInventory().items.stream().filter(s->s.is(ArsenalBeacon.DELIVERY_GATE_ITEM.get())).findFirst().orElse(ItemStack.EMPTY);
                 h.assertTrue(back.hasTag()&&back.getTag().getLong("Fob")==fob(l).id,"the item remembers its FOB");
+                // one rail still works (the other lane stays empty)
+                l.setBlock(second,Blocks.AIR.defaultBlockState(),2);
+                h.assertTrue(useOn(f,back,rail).consumesAction(),"on a lone rail: placed");
+                var lone=fob(l).deliveryGate;
+                h.assertTrue(lone!=null&&RailGates.lanes(lone,l.getBlockState(lone).getValue(RailGates.FACING)).contains(rail),"the lone rail runs through one of its lanes");
+                Routes.pickUp(p,lone);
                 // a FOB's removal turns its gates UNLINKED
                 var fob=route(f);
                 FobData.get(l).fobs.remove(fob.id);
@@ -512,7 +557,7 @@ public final class FobGameTests {
         }).thenIdle(30).thenExecute(()->{
             h.assertTrue(l.getBlockEntity(RECEIVING) instanceof RailGates.GateEntity be&&be.fobId==0,"its FOB gone, the gate is UNLINKED");
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.RED,"and red");
-            l.setBlock(rail,Blocks.AIR.defaultBlockState(),2);l.setBlock(rail.offset(0,0,-6),Blocks.AIR.defaultBlockState(),2);
+            for(var at:List.of(rail,second,rail.offset(0,0,-6)))l.setBlock(at,Blocks.AIR.defaultBlockState(),2);
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
@@ -822,6 +867,39 @@ public final class FobGameTests {
             h.assertTrue(pay.ardent()%2==0&&pay.coins()%2==0&&pay.ardent()>=2&&pay.coins()>=4,"twice the formula: "+pay);
         }).thenSucceed();
     }
+    // ---- 0.0.30: where a FOB counts ------------------------------------------------------------------------------------------------------------
+    /**
+     * The planting preview answers as the item would (a good spot, then a village already taken), and the outline of a planted FOB is sent to
+     * the players near it until its screen turns it off (a player holding a FOB Beacon still sees it, to know the village is taken).
+     */
+    @GameTest(template="empty3x3x3",batch="fob_22",timeoutTicks=300)
+    public static void theZoneOutlineAndThePlantingPreview(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            var look=FobOutline.preview(l,PLANT);
+            h.assertTrue(look.getString("problem").isEmpty(),"a good spot: nothing in the way ("+look.getString("problem")+")");
+            h.assertTrue(look.getInt("villagers")==3&&look.getInt("beds")==2&&look.getInt("jobs")>=3,"it counts the village's 3 villagers, 2 beds and its workstations: "+look);
+            h.assertTrue(look.getLongArray("sections").length>0&&java.util.Arrays.stream(look.getLongArray("sections")).anyMatch(x->x==net.minecraft.core.SectionPos.asLong(net.minecraft.core.SectionPos.blockToSectionCoord(PLANT.getX()),net.minecraft.core.SectionPos.blockToSectionCoord(PLANT.getY()),net.minecraft.core.SectionPos.blockToSectionCoord(PLANT.getZ()))),"and the sections the outline draws, the spot's own among them");
+            h.assertTrue(Fobs.plantProblem(l,PLANT)==null,"the item agrees");
+            var far=FobOutline.preview(l,AWAY);
+            h.assertTrue(far.getString("problem").equals("not_village")&&far.getLongArray("sections").length==0,"64 blocks out: no village, nothing to outline");
+            h.assertTrue(FobOutline.state(p,false).getList("zones",10).isEmpty(),"no FOB yet: no outline");
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");
+            h.assertTrue(FobOutline.preview(l,PLANT2).getString("problem").equals("taken"),"next to it: the village is taken");
+            var zones=FobOutline.state(p,false).getList("zones",10);
+            h.assertTrue(zones.size()==1&&zones.getCompound(0).getLong("id")==fob(l).id&&zones.getCompound(0).getLongArray("sections").length>0,"the FOB's outline is sent to a player in its village");
+            Fobs.open(p,PLANT);Fobs.button(p,PLANT,Fobs.OUTLINE);
+            h.assertTrue(!fob(l).showZone&&FobOutline.state(p,false).getList("zones",10).isEmpty(),"its screen turns the outline off");
+            h.assertTrue(FobOutline.state(p,true).getList("zones",10).size()==1,"a player holding a FOB Beacon still sees it");
+            Fobs.button(p,PLANT,Fobs.OUTLINE);p.closeContainer();
+            h.assertTrue(fob(l).showZone,"and on again");
+            var here=p.position();p.setPos(here.x+FobOutline.NEAR+100,here.y,here.z);   // only for this check, within the tick
+            boolean gone=FobOutline.state(p,false).getList("zones",10).isEmpty();p.setPos(here.x,here.y,here.z);
+            h.assertTrue(gone,"far away: no outline");
+            clear(l);
+        }).thenSucceed();
+    }
+
     static InteractionResult useOn(Fixture f,ItemStack stack,BlockPos rail){
         var hit=new BlockHitResult(Vec3.atCenterOf(rail).add(0,.5,0),Direction.UP,rail,false);
         return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack.copy(),hit));

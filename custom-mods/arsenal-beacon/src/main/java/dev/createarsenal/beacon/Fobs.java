@@ -39,7 +39,7 @@ final class Fobs {
     /** Persistent data key on a villager: the id of the FOB whose village it lives in (it stays protected wherever it walks). */
     static final String VILLAGER_TAG="arsenalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
-    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6;
+    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6,OUTLINE=7;
     /** The flares the FOB shop sells, at the Support Platform's prices ({@link SupportRules}). */
     static final List<String> SHOP=List.of("supply","return","fire");
 
@@ -61,10 +61,12 @@ final class Fobs {
 
     // ---- planting -------------------------------------------------------------------------------------------------------------------------------
     /** Why a FOB Beacon cannot be planted at {@code pos}: a key under {@code fob.refused.}, or null. */
-    static String plantProblem(ServerLevel l,BlockPos pos){
+    static String plantProblem(ServerLevel l,BlockPos pos){return plantProblem(l,pos,l.dimension()==Level.OVERWORLD?FobZone.sections(l,pos):Set.of());}
+    /** As above with the spot's zone already worked out (the planting preview, {@link FobOutline}). */
+    static String plantProblem(ServerLevel l,BlockPos pos,Set<Long> zone){
         if(l.dimension()!=Level.OVERWORLD)return "overworld";
         var d=FobData.get(l);boolean beacon=CampaignData.get(l.getServer().overworld()).installed();
-        var zone=FobZone.sections(l,pos);boolean taken=false;
+        boolean taken=false;
         for(var f:d.fobs.values())if(FobZone.contains(zone,f.pos)||FobZone.contains(FobZone.of(l,f),pos)){taken=true;break;}
         return FobRules.plantProblem(beacon,d.fobs.size(),raidsPossible(l),!zone.isEmpty(),taken,zone.isEmpty()?0:FobZone.villagers(l,zone).size());
     }
@@ -163,7 +165,7 @@ final class Fobs {
         var l=p.serverLevel();var zone=FobZone.of(l,f);var n=new CompoundTag();
         n.putLong("fobId",f.id);n.putString("name",f.name);n.putString("state",f.state.id());n.putBoolean("activated",f.activated);n.putLong("pos",f.pos.asLong());
         int villagers=FobZone.villagers(l,zone).size();int[] places=FobZone.homesAndJobs(l,zone);
-        n.putInt("villagers",villagers);n.putInt("beds",places[0]);n.putInt("jobs",places[1]);n.putInt("sections",zone.size());
+        n.putInt("villagers",villagers);n.putInt("beds",places[0]);n.putInt("jobs",places[1]);n.putInt("sections",zone.size());n.putBoolean("showZone",f.showZone);
         n.putBoolean("raid",f.raidRunning());
         if(f.raidRunning()){
             var raid=l.getRaids().get(f.raidId);n.putInt("raidStart",f.raidVillagers);n.putInt("raidAlive",livingVillagers(l,f));
@@ -188,6 +190,10 @@ final class Fobs {
         if(id==CALL_RAID){String problem=callRaid(l,f,p);open(p,pos,problem==null?"fob.result.raid_called":"fob.raid."+problem);return;}
         if(id==BUY_GATE){String result=Routes.buyGate(p,f);log("{}: {} asked for the Delivery Gate: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
         if(id==REPAIR){String result=FobSos.repair(p,f);open(p,pos,result);return;}
+        if(id==OUTLINE){   // 0.0.30: the zone outline of this FOB, on or off for everyone
+            f.showZone=!f.showZone;FobData.get(l).setDirty();log("{}: {} turned the zone outline {}",f.name,p.getGameProfile().getName(),f.showZone?"on":"off");
+            refreshScreens(l,f);return;
+        }
         int index=id-BUY_SUPPLY;if(index<0||index>=SHOP.size())return;
         String item=SHOP.get(index);
         if(!FobRules.working(f.state)){open(p,pos,"fob.result.closed");return;}
@@ -335,7 +341,10 @@ final class Fobs {
             var f=FobData.get(l).byId(id);
             if(protect(f!=null,f!=null&&f.raidRunning(),false))e.setCanceled(true);
         }
-        @SubscribeEvent public void started(net.minecraftforge.event.server.ServerStartedEvent e){FobZone.clear();}
+        @SubscribeEvent public void started(net.minecraftforge.event.server.ServerStartedEvent e){FobZone.clear();FobOutline.clear();}
+        /** A player who comes back or changes dimension gets the outlines again at once (0.0.30). */
+        @SubscribeEvent public void outlineLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e){if(e.getEntity() instanceof ServerPlayer p)FobOutline.forget(p);}
+        @SubscribeEvent public void outlineTravel(net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent e){if(e.getEntity() instanceof ServerPlayer p)FobOutline.forget(p);}
         /** A FOB's villager killed while a raid runs at its FOB is recorded for the repair (0.0.25). */
         @SubscribeEvent(priority=EventPriority.LOWEST) public void death(net.minecraftforge.event.entity.living.LivingDeathEvent e){
             if(e.isCanceled()||!(e.getEntity() instanceof Villager v)||!(v.level() instanceof ServerLevel l))return;

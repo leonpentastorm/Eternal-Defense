@@ -37,8 +37,8 @@ public final class GateClient {
     @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(ArsenalBeacon.GATE_ENTITY.get(),GateRenderer::new);}
 
     // ---- the nameplates --------------------------------------------------------------------------------------------------------------------------
-    /** From the owner's model (facing north): the front plate at z 2.6, the back at z 13.4; text area x -4.5..20.5, y 17.75..20.5 (pixels). */
-    static final float PLATE_FRONT=2.6f/16,PLATE_BACK=13.4f/16,TEXT_X=8f/16,TEXT_Y=19.125f/16,TEXT_WIDTH=25f/16,TEXT_HEIGHT=2.75f/16,SCALE=.018f;
+    /** From the owner's right half (facing north, in the anchor's frame): the front plate at z 2.6, the back at z 13.4; text area x 11.5..30.5, y 27.25..30.25 (pixels). */
+    static final float PLATE_FRONT=2.6f/16,PLATE_BACK=13.4f/16,TEXT_X=21f/16,TEXT_Y=28.75f/16,TEXT_WIDTH=19f/16,TEXT_HEIGHT=3f/16,SCALE=.016f;
     static final int INK=0xff2a2a2a,UNLINKED_INK=0xff8a1c1c;
     static final class GateRenderer implements BlockEntityRenderer<RailGates.GateEntity> {
         private final Font font;

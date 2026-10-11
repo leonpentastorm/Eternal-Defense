@@ -162,37 +162,79 @@ final class RouteTest {
         }
         return out;
     }
-    @Test void theOpeningIsClearAndTheFrameIsThreeByThree() throws Exception{
+    /** The whole gate in the anchor's frame (x 0..64): the right half as the anchor draws it, the left half moved by 48 (the column is 3 cells on). */
+    static List<double[]> whole(RailGates.Kind kind) throws Exception{
+        var out=new ArrayList<double[]>(elements(kind.id+"_right"));
+        for(double[] b:elements(kind.id+"_left"))out.add(new double[]{b[0]+48,b[1],b[2],b[3]+48,b[4],b[5]});
+        return out;
+    }
+    @Test void theLanesAreClearAndTheGateIsFourWideAndTwoTall() throws Exception{
         for(var kind:RailGates.Kind.values()){
             double x0=99,x1=-99,y0=99,y1=-99,z0=99,z1=-99;
-            for(double[] b:elements(kind.id)){
+            for(double[] b:whole(kind)){
                 x0=Math.min(x0,b[0]);y0=Math.min(y0,b[1]);z0=Math.min(z0,b[2]);x1=Math.max(x1,b[3]);y1=Math.max(y1,b[4]);z1=Math.max(z1,b[5]);
-                boolean inOpening=b[0]<16&&b[3]>0&&b[1]<15.85&&b[4]>-16;
-                assertFalse(inOpening,kind.id+": an element reaches into the opening a rider passes through: "+Arrays.toString(b));
+                boolean overLanes=b[0]<48&&b[3]>16;
+                assertFalse(overLanes&&b[1]<24.95,kind.id+": an element hangs into the lanes below the beam: "+Arrays.toString(b));
             }
-            assertEquals(RailGates.WIDE,(int)Math.round((x1-x0)/16+.4),kind.id+" width from "+x0+" to "+x1);
+            assertEquals(RailGates.WIDE,(int)Math.round((x1-x0)/16),kind.id+" width from "+x0+" to "+x1);
             assertEquals(RailGates.TALL,(int)Math.round((y1-y0)/16),kind.id+" height");assertEquals(RailGates.DEEP,(int)Math.ceil((z1-z0)/16));
-            assertTrue(y0>=-16&&y1<=32&&x0>=-16&&x1<=32&&z0>=0&&z1<=16,"inside the 3 x 3 cells around the anchor");
+            assertTrue(y0>=0&&y1<=32&&x0>=0&&x1<=64&&z0>=0&&z1<=16,"inside the 4 x 2 cells from the anchor");
+            for(double[] b:elements(kind.id+"_right"))assertTrue(b[0]>=0&&b[3]<=32,"the right half stays in x 0..32 (a model reaches 3 blocks at most)");
+            for(double[] b:elements(kind.id+"_left"))assertTrue(b[0]>=-16&&b[3]<=16,"the left half stays in x -16..16");
         }
-        assertEquals(7,RailGates.Frame.CELLS.length,"seven parts around the anchor; the rail cell is not the gate's");
-        for(int[] f:RailGates.Frame.CELLS)assertFalse(f[0]==0&&f[1]<=0,"no part in the opening");
+        assertEquals(4,RailGates.Frame.PARTS.length,"the beam: a part over each of the four bottom cells");
+        for(int[] f:RailGates.Frame.PARTS)assertEquals(1,f[1],"the parts are the top row");
+        assertArrayEquals(new int[]{3,0},RailGates.Frame.COLUMN,"the left column is the fourth cell");
+        assertEquals(RailGates.LANES,RailGates.Frame.LANES.length);
+        for(int[] lane:RailGates.Frame.LANES)assertTrue(lane[1]==0&&lane[0]>0&&lane[0]<3,"the lanes are the two middle cells of the bottom row");
+        // over a lane only the beam collides: a seated rider's head (about 1.51 blocks above the rail) passes under it
+        double[] beam=RailGates.Frame.BEAM;
+        assertEquals(9.5,beam[1]);assertEquals(16,beam[4]);assertEquals(0,beam[0]);assertEquals(16,beam[3]);
+        assertTrue(1+beam[1]/16>1.51,"the beam's underside clears a seated rider");
+    }
+    /** The clicked rail's lane: a second rail beside it decides; a lone rail grows the gate towards the side clicked. */
+    @Test void aSecondRailBesideTheClickedOneDecidesTheLanes(){
+        assertArrayEquals(new int[]{1,2},RailGates.Frame.laneOrder(true,false,-.3),"a rail on the clockwise side: the clicked one is lane 1");
+        assertArrayEquals(new int[]{2,1},RailGates.Frame.laneOrder(false,true,.3),"a rail on the other side: the clicked one is lane 2");
+        assertArrayEquals(new int[]{1,2},RailGates.Frame.laneOrder(false,false,.2),"a lone rail clicked on its clockwise half");
+        assertArrayEquals(new int[]{2,1},RailGates.Frame.laneOrder(false,false,-.2),"a lone rail clicked on its other half");
+        assertArrayEquals(new int[]{2,1},RailGates.Frame.laneOrder(true,true,-.2),"rails on both sides: the click decides");
+    }
+    /** The pass plane spans both lanes: a cart on either rail passes, one beside the gate does not. */
+    @Test void aPassThroughEitherLaneCounts(){
+        // lanes at z 20 and 21 (the corner cell 10, 64, 20), rails along X
+        assertEquals(1,crossing(9.8,64.06,20.5,10.9,64.06,20.5,10,64,20,true,2,.2),"lane 1, eastwards");
+        assertEquals(-1,crossing(11,64.06,21.5,10.2,64.06,21.5,10,64,20,true,2,.2),"lane 2, westwards: the way back of a loop");
+        assertEquals(0,crossing(9.8,64.06,22.5,10.9,64.06,22.5,10,64,20,true,2,.2),"in the column's cell, no pass");
+        assertEquals(0,crossing(9.8,64.06,19.5,10.9,64.06,19.5,10,64,20,true,2,.2),"in the anchor's cell, no pass");
+        assertEquals(0,crossing(9.8,64.06,21.5,10.9,64.06,21.5,10,64,20,true,.2),"the one-lane form still covers one cell");
     }
     @Test void theLampsAreSwitchedByAnOverlayAndTheOwnersFilesAreUnchanged() throws Exception{
-        var art=Path.of("../../docs/art/Create-Arsenal-Supply-Rail-Gates");
+        var art=Path.of("../../docs/art/Create-Arsenal-Supply-Rail-Gates-4wide");
         for(var kind:RailGates.Kind.values()){
-            assertEquals(sha(art.resolve("minecraft-models/block/"+kind.id+".json")),sha(Path.of(ASSETS+"models/block/"+kind.id+".json")),kind.id+" model unchanged");
-            assertEquals(sha(art.resolve("textures/block/"+kind.id+".png")),sha(Path.of(ASSETS+"textures/block/"+kind.id+".png")),kind.id+" texture unchanged");
-            String state=Files.readString(Path.of(ASSETS+"blockstates/"+kind.id+".json"));
-            for(String s:List.of("red","amber","green"))assertTrue(state.contains("supply_gate_signal_"+s)&&state.contains("\"signal\": \""+s+"\""),kind.id+" shows the "+s+" light");
-            String model=Files.readString(Path.of(ASSETS+"models/block/"+kind.id+".json"));
-            for(String lamp:List.of("Signal_lamp_0","Signal_lamp_1","Signal_lamp_2"))assertTrue(model.contains(lamp),"the owner's lamp "+lamp+" is where the overlay draws");
+            for(String half:List.of("_right","_left")){
+                assertEquals(sha(art.resolve("minecraft-models/block/"+kind.id+half+".json")),sha(Path.of(ASSETS+"models/block/"+kind.id+half+".json")),kind.id+half+" model unchanged");
+                assertEquals(sha(art.resolve("textures/block/"+kind.id+half+".png")),sha(Path.of(ASSETS+"textures/block/"+kind.id+half+".png")),kind.id+half+" texture unchanged");
+                String state=Files.readString(Path.of(ASSETS+"blockstates/"+kind.id+(half.equals("_right")?"":"_left")+".json"));
+                assertTrue(state.contains("arsenal_beacon:block/"+kind.id+half+"\""),kind.id+half+" is drawn by its block");
+                for(String s:List.of("red","amber","green")){
+                    assertTrue(state.contains(kind.id+half+"_signal_"+s)&&state.contains("\"signal\": \""+s+"\""),kind.id+half+" shows the "+s+" light");
+                    assertTrue(Files.exists(Path.of(ASSETS+"models/block/"+kind.id+half+"_signal_"+s+".json")),"overlay "+kind.id+half+"_signal_"+s);
+                }
+                String model=Files.readString(Path.of(ASSETS+"models/block/"+kind.id+half+".json"));
+                String row=half.equals("_right")?"0":"1";
+                for(int i=0;i<3;i++)assertTrue(model.contains("Signal_lamp_"+row+i),"the owner's lamp Signal_lamp_"+row+i+" is where the overlay draws");
+            }
+            assertEquals(sha(art.resolve("minecraft-models/item/"+kind.id+".json")),sha(Path.of(ASSETS+"models/item/"+kind.id+".json")),kind.id+" item model unchanged");
+            assertEquals(sha(art.resolve("textures/item/"+kind.id+".png")),sha(Path.of(ASSETS+"textures/item/"+kind.id+".png")),kind.id+" item texture unchanged");
+            assertFalse(Files.exists(Path.of(ASSETS+"models/block/"+kind.id+".json")),"the 3 x 3 model of 0.0.24 is gone");
         }
-        assertTrue(Files.exists(Path.of(ASSETS+"textures/block/supply_gate_signal.png")),"the overlay has its own new texture");
+        assertTrue(Files.exists(Path.of(ASSETS+"textures/block/supply_gate_lamps.png")),"the overlay has its own new texture");
     }
     private static String sha(Path p) throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));}
     @Test void thePricesAndTheGuideAgree(){
         assertTrue(WorkshopFabrication.ITEMS.contains("supply_receiving_gate"),"the Receiving Gate is sold at home");
-        assertFalse(WorkshopFabrication.ITEMS.contains("supply_delivery_gate"),"the Delivery Gate only at a FOB");
+        assertTrue(WorkshopFabrication.ITEMS.contains("supply_delivery_gate"),"0.0.30: the Delivery Gate is sold at home too (and still at the FOB)");
         assertEquals(16,Economy.GATE_IRON);assertEquals(8,Economy.GATE_COPPER);assertEquals(8,Economy.GATE_REDSTONE);assertEquals(1,Economy.GATE_LOGISTICS);assertEquals(4,Economy.GATE_ARDENT);
     }
 }

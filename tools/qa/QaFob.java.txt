@@ -32,7 +32,9 @@ import java.util.*;
  * QA ONLY (never part of a release): boots a NORMAL world on the real client, runs the FOB GameTests (FobGameTests, on a sky platform), then
  * plays slices 1 to 4 of the Forward Operating Bases (0.0.23 to 0.0.27) in a real generated village and at home: the FOB Beacon planted with a right-click (the client's
  * own click, sent to the server), the model, the raid bar, the FOB screen before and after the raid, a purchase, the status card, the FOB
- * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation.
+ * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation. 0.0.30: the planting
+ * preview and the zone outline (and its switch), the owner's 4-wide gates across two rails with a seated rider rolling under the beam, the
+ * bigger enchanting screen with its slot empty, and the Workshop list scrolled to its end.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
@@ -61,6 +63,12 @@ public final class QaFob {
     static void click(BlockPos pos,Direction face){
         var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
         mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    /** Presses the first button whose label starts with {@code start} (a label with a number in it). */
+    static void pressStart(String start){
+        var s=mc().screen;if(s==null)return;
+        for(var c:new ArrayList<>(s.children()))if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().startsWith(start)){b.onPress();log("QA_NOTE pressed {}",b.getMessage().getString());return;}
+        log("QA_NOTE no button starting {}",start);
     }
     static void press(String label){
         var s=mc().screen;if(s==null)return;
@@ -109,23 +117,40 @@ public final class QaFob {
 
     /** The village found, the spot the FOB Beacon goes on (the air block above solid ground) and where the player stands to plant it. */
     static BlockPos village,spot,stand,fobGate,homeGate;
-    /** A rail cell for a gate near {@code around}: sturdy ground, free 3 x 3 frame along X, inside the FOB zone ({@code fob}) or the base zone. */
+    /**
+     * 0.0.30, the owner's 4-wide gate across two rails along X, seen from the south (so it faces east): lane A is the returned cell, lane B the
+     * cell south of it, the anchor north of lane A and the left column south of lane B. The spot needs sturdy ground under all four cells and
+     * under the lanes 2 blocks either way, the gate's 4 x 2 free, and the anchor inside the FOB zone ({@code fob}) or the base zone.
+     */
     static BlockPos gateSpot(BlockPos around,int reach,boolean fob){
         var l=sl();BlockPos best=null;double bestD=1e9;
         for(int dx=-reach;dx<=reach;dx++)for(int dz=-reach;dz<=reach;dz++){
             int x=around.getX()+dx,z=around.getZ()+dz,y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);var r=new BlockPos(x,y,z);
-            if(!l.getBlockState(r.below()).isFaceSturdy(l,r.below(),Direction.UP))continue;
             boolean free=true;
-            for(int side=-1;side<=1&&free;side++)for(int up=0;up<=2&&free;up++){var c=r.relative(Direction.SOUTH,side).above(up);if(!l.getBlockState(c).isAir())free=false;}
-            for(int side=-1;side<=1&&free;side+=2)if(!l.getBlockState(r.relative(Direction.SOUTH,side).below()).isFaceSturdy(l,r.relative(Direction.SOUTH,side).below(),Direction.UP))free=false;
-            if(!free||Math.abs(dx)<3&&Math.abs(dz)<3||!fob&&Math.abs(dz)<6)continue;   // at home: off to one side, so the beacon's beam is not behind it
-            if(fob?Fobs.zoneAt(l,r.above())==null:BaseZone.problem(l,r.above())!=null)continue;
+            for(int side=-1;side<=2&&free;side++){var c=r.relative(Direction.SOUTH,side);
+                if(!l.getBlockState(c.below()).isFaceSturdy(l,c.below(),Direction.UP))free=false;
+                for(int up=0;up<=1&&free;up++)if(!l.getBlockState(c.above(up)).isAir())free=false;}
+            for(int a=-2;a<=2&&free;a++)for(int side=0;side<=1&&free;side++){var c=r.offset(a,0,side);if(!l.getBlockState(c).isAir()||!l.getBlockState(c.below()).isFaceSturdy(l,c.below(),Direction.UP))free=false;}
+            if(!free||Math.abs(dx)<3&&Math.abs(dz)<4||!fob&&Math.abs(dz)<6)continue;   // at home: off to one side, so the beacon's beam is not behind it
+            if(fob?Fobs.zoneAt(l,r.north())==null:BaseZone.problem(l,r.north())!=null)continue;
             double d=dx*dx+dz*dz;if(d<bestD){best=r;bestD=d;}
         }
         return best;
     }
+    /** The gate's anchor for a spot of {@link #gateSpot} (facing east: north of lane A). */
+    static BlockPos anchorAt(BlockPos rail){return rail.north();}
+    /** Two rails side by side along X through the spot, {@code half} blocks either way (laid, then their shapes set again: vanilla joins neighbours up). */
+    static void layLanes(BlockPos rail,int half){
+        var l=sl();var ew=net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST);
+        for(int pass=0;pass<2;pass++)for(int a=-half;a<=half;a++)for(int side=0;side<=1;side++){
+            var c=rail.offset(a,0,side);var here=l.getBlockState(c);
+            if(!here.canBeReplaced()&&!here.is(net.minecraft.world.level.block.Blocks.RAIL))continue;   // never through a wall, a bed or a workstation of the village
+            if(pass==0&&!l.getBlockState(c.below()).isFaceSturdy(l,c.below(),Direction.UP))l.setBlock(c.below(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),2);
+            l.setBlock(c,ew,pass==0?2:2|16);
+        }
+    }
     /**
-     * A villager that wanders into a gate's 3 x 3 frame makes the placement refuse with "No room" (the mod's rule, as it should); the harness
+     * A villager that wanders into a gate's cells makes the placement refuse with "No room" (the mod's rule, as it should); the harness
      * moves any mob standing there a few blocks along the rail first, and says so (0.0.27: one run met a villager there).
      */
     /** Put the pointer where the GUI-scaled coordinates are, so tooltips render as they do for a person (as in QaGuide). */
@@ -137,7 +162,7 @@ public final class QaFob {
         }catch(Exception ex){throw new IllegalStateException(ex);}
     }
     static void clearFrame(BlockPos rail){
-        var l=sl();var box=new net.minecraft.world.phys.AABB(rail.getX()-1,rail.getY(),rail.getZ()-2,rail.getX()+2,rail.getY()+3,rail.getZ()+3);
+        var l=sl();var box=new net.minecraft.world.phys.AABB(rail.getX(),rail.getY(),rail.getZ()-1,rail.getX()+1,rail.getY()+2,rail.getZ()+3);
         for(var e:l.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,box,e->!(e instanceof net.minecraft.world.entity.player.Player))){
             int x=rail.getX()+5,z=rail.getZ(),y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
             log("QA_NOTE moved {} out of the gate's frame",e.getName().getString());e.teleportTo(x+.5,y,z+.5);
@@ -183,7 +208,17 @@ public final class QaFob {
             if(spot!=null){stand=spot.relative(Direction.SOUTH,3);look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);}
         });
         // ---- plant it with a real right-click --------------------------------------------------------------------------------------------
-        step(10,()->{if(spot!=null)hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));},"hold the FOB Beacon");
+        step(10,()->{if(spot!=null){hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));look(stand,spot.getX()+.5,spot.getY()+.01,spot.getZ()+.5);}},"hold the FOB Beacon, look at the spot");
+        // 0.0.30: where it would stand and what it would take, before it is planted
+        step(40,()->{
+            var pv=FobOutlineClient.preview;
+            check("holding the FOB Beacon, the spot looked at is previewed",pv!=null&&spot!=null&&BlockPos.of(pv.getLong("pos")).equals(spot)&&pv.getString("problem").isEmpty(),String.valueOf(pv));
+            check("the preview outlines the village part it would take",pv!=null&&pv.getLongArray("sections").length>0,pv==null?"":pv.getLongArray("sections").length+" sections");
+            var line=FobOutlineClient.line();check("the line under the crosshair counts villagers, beds and workstations",line!=null&&line.getString().startsWith("FOB here:"),line==null?"none":line.getString());
+            check("the ghost stands where the player looks",spot!=null&&spot.equals(FobOutlineClient.target()),String.valueOf(FobOutlineClient.target()));
+            shot("f0_fob_preview");
+        },"the planting preview");
+        step(5,()->{if(spot!=null)look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"back as before");
         step(30,()->{if(spot!=null)click(spot.below(),Direction.UP);},"right-click the ground");
         step(5,()->{
             var f=fob();
@@ -195,9 +230,11 @@ public final class QaFob {
             check("the block stands two tall",srvGet(()->sl().getBlockState(spot).is(ArsenalBeacon.FOB_BEACON.get())&&sl().getBlockState(spot.above()).is(ArsenalBeacon.STRUCTURE_PART.get())),"");
             hold(ItemStack.EMPTY);mc().options.hideGui=true;
         },"planted");
-        step(60,()->shot("f1_fob_model_front"),"the model, from the front");
+        step(60,()->{var f=fob();check("the planted FOB's zone outline reaches the client",f!=null&&FobOutlineClient.zones.stream().anyMatch(z->z.id()==f.id&&!z.sections().isEmpty()),FobOutlineClient.zones.toString());shot("f1_fob_model_front");},"the model, from the front");
         step(2,()->{if(spot!=null)look(spot.relative(Direction.EAST,3).relative(Direction.NORTH,2),spot.getX()+.5,spot.getY()+.8,spot.getZ()+.5);},"from the side");
         step(40,()->shot("f2_fob_model_side"),"the model, from the side");
+        step(5,()->{if(spot!=null)look(spot.offset(0,30,22),spot.getX()+.5,spot.getY(),spot.getZ()+.5);srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();});},"up above the village");
+        step(50,()->shot("f2b_fob_zone_outline"),"the FOB's zone outline: the meal bonus and the shop work inside it");
         step(2,()->{if(stand!=null)look(stand,spot.getX()+.5,spot.getY()+.8,spot.getZ()+.5);mc().options.hideGui=false;},"back in front");
         step(60,()->shot("f3_raid_bar"),"the raid bar and the chat");
         // ---- the FOB screen ---------------------------------------------------------------------------------------------------------------
@@ -216,6 +253,10 @@ public final class QaFob {
             check("the shop hands over a Supply Flare",bought,"");
             check("the screen says so in place",mc().screen instanceof FobClient.FobScreen,"");shot("f7_fob_screen_bought");
         },"bought");
+        step(10,()->pressStart("Zone outline"),"turn the zone outline off");
+        step(50,()->{var f=fob();check("the outline is off for the FOB",f!=null&&!f.showZone,"");check("and gone from the client",FobOutlineClient.zones.isEmpty(),FobOutlineClient.zones.toString());shot("f7b_fob_screen_outline_off");},"outline off");
+        step(10,()->pressStart("Zone outline"),"and on again");
+        step(50,()->{var f=fob();check("the outline is back",f!=null&&f.showZone&&!FobOutlineClient.zones.isEmpty(),"");},"outline on");
         // ---- meals in the FOB zone -------------------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();PlayerMeals.eat(sp(),new MealData(false,List.of(new MealData.Bonus(MealRules.Effect.MIGHT,1),new MealData.Bonus(MealRules.Effect.FORTUNE,1)),MealRules.FIELD_TICKS));});},"eat a meal in the FOB zone");
         step(30,()->{
@@ -236,51 +277,63 @@ public final class QaFob {
         step(5,()->{mc().setScreen(null);if(spot!=null)click(spot,Direction.SOUTH);},"open the FOB screen for the gate");
         step(20,()->{srv(()->Fobs.button(sp(),spot,Fobs.BUY_GATE));},"buy the Supply Delivery Gate");
         step(10,()->{check("the FOB shop sells its Supply Delivery Gate",srvGet(()->{for(var st:sp().getInventory().items)if(st.is(ArsenalBeacon.DELIVERY_GATE_ITEM.get()))return true;return false;}),"");mc().setScreen(null);srv(()->sp().closeContainer());
-            fobGate=srvGet(()->gateSpot(spot,12,true));check("a spot for a gate in the village",fobGate!=null,String.valueOf(fobGate));
-            if(fobGate!=null){srv(()->sl().setBlock(fobGate,net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),3));
-                look(fobGate.relative(Direction.SOUTH,3),fobGate.getX()+.5,fobGate.getY()+.5,fobGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()));}},"lay a rail in the village");
-        step(20,()->{if(fobGate!=null){srv(()->clearFrame(fobGate));click(fobGate,Direction.UP);}},"use the gate on the rail (a villager in its frame is moved out first)");
+            fobGate=srvGet(()->gateSpot(spot,14,true));check("a spot for a gate in the village",fobGate!=null,String.valueOf(fobGate));
+            if(fobGate!=null){srv(()->layLanes(fobGate,4));
+                look(fobGate.relative(Direction.SOUTH,4),fobGate.getX()+.5,fobGate.getY()+.5,fobGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()));}},"lay two rails side by side in the village");
+        step(20,()->{if(fobGate!=null){srv(()->clearFrame(fobGate));click(fobGate,Direction.UP);}},"use the gate on one of the rails (a villager in its cells is moved out first)");
         step(10,()->{
-            boolean placed=fobGate!=null&&srvGet(()->sl().getBlockState(fobGate.above()).is(ArsenalBeacon.DELIVERY_GATE.get()));
-            check("the Delivery Gate stands over the rail",placed,"");
-            var f=fob();check("and links to the FOB by itself",f!=null&&fobGate!=null&&fobGate.above().equals(f.deliveryGate),f==null?"":String.valueOf(f.deliveryGate));
+            var anchor=fobGate==null?null:anchorAt(fobGate);
+            boolean placed=anchor!=null&&srvGet(()->sl().getBlockState(anchor).is(ArsenalBeacon.DELIVERY_GATE.get())&&sl().getBlockState(fobGate.south(2)).is(ArsenalBeacon.DELIVERY_GATE_LEFT.get()));
+            check("the Delivery Gate stands across both rails, a column either side",placed,"");
+            check("the rails stay in its two lanes",anchor!=null&&srvGet(()->sl().getBlockState(fobGate).is(net.minecraft.world.level.block.Blocks.RAIL)&&sl().getBlockState(fobGate.south()).is(net.minecraft.world.level.block.Blocks.RAIL)),"");
+            var f=fob();check("and links to the FOB by itself",f!=null&&anchor!=null&&anchor.equals(f.deliveryGate),f==null?"":String.valueOf(f.deliveryGate));
             hold(ItemStack.EMPTY);mc().options.hideGui=true;
             if(fobGate!=null)srv(()->{   // a clear view along the rail (trees and slopes of a real village hide it otherwise); the player flies
-                var l=sl();for(int a=-9;a<=9;a++)for(int side=-2;side<=2;side++)for(int up=0;up<=12;up++){
-                    if(a==0&&Math.abs(side)<=1&&up<=2)continue;var c=fobGate.offset(a,up,side);var st=l.getBlockState(c);
+                var l=sl();for(int a=-9;a<=9;a++)for(int side=-3;side<=4;side++)for(int up=0;up<=12;up++){
+                    if(a==0&&side>=-1&&side<=2&&up<=1)continue;var c=fobGate.offset(a,up,side);var st=l.getBlockState(c);
                     // never the FOB Beacon, a structure, a block entity, or a bed, workstation or bell (the village itself)
-                    if(st.isAir()||st.hasBlockEntity()||st.is(ArsenalBeacon.FOB_BEACON.get())||st.is(ArsenalBeacon.STRUCTURE_PART.get())||st.getBlock() instanceof RailGates.Part||st.getBlock() instanceof RailGates.GateBlock
+                    if(st.isAir()||st.hasBlockEntity()||st.is(ArsenalBeacon.FOB_BEACON.get())||st.is(ArsenalBeacon.STRUCTURE_PART.get())||st.getBlock() instanceof RailGates.Part||st.getBlock() instanceof RailGates.GateBlock||st.getBlock() instanceof RailGates.Column||st.getBlock() instanceof net.minecraft.world.level.block.BaseRailBlock
                         ||net.minecraft.world.entity.ai.village.poi.PoiTypes.forState(st).isPresent()||st.getBlock() instanceof net.minecraft.world.level.block.BedBlock)continue;
                     if(up<=6||st.is(net.minecraft.tags.BlockTags.LEAVES)||st.is(net.minecraft.tags.BlockTags.LOGS))l.setBlock(c,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);}
                 sp().getAbilities().flying=true;sp().onUpdateAbilities();});
-            if(fobGate!=null)look(fobGate.relative(Direction.EAST,7),fobGate.getX()+.5,fobGate.getY()+1.6,fobGate.getZ()+.5);
+            if(fobGate!=null)look(fobGate.relative(Direction.EAST,8),fobGate.getX()+.5,fobGate.getY()+1.1,fobGate.getZ()+1);
         },"placed");
         step(60,()->shot("f12_delivery_gate_front"),"the Delivery Gate, its nameplate and its light");
-        step(2,()->{if(fobGate!=null)look(fobGate.relative(Direction.WEST,7),fobGate.getX()+.5,fobGate.getY()+1.6,fobGate.getZ()+.5);},"from behind");
+        step(2,()->{if(fobGate!=null)look(fobGate.relative(Direction.WEST,8),fobGate.getX()+.5,fobGate.getY()+1.1,fobGate.getZ()+1);},"from behind");
         step(40,()->shot("f13_delivery_gate_back"),"the back nameplate");
+        // a seated rider rolls through lane A under the beam (the GameTest rides the whole loop; this is the picture of it)
+        step(5,()->{if(fobGate!=null)srv(()->{var l=sl();var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);
+            cart.setPos(fobGate.getX()-3.5,fobGate.getY(),fobGate.getZ()+.5);cart.setYRot(-90);l.addFreshEntity(cart);sp().getAbilities().flying=false;sp().onUpdateAbilities();
+            sp().teleportTo(l,cart.getX(),cart.getY(),cart.getZ(),-90,-12);sp().startRiding(cart,true);cart.setDeltaMovement(.4,0,0);});},"sit in a minecart on lane A, rolling east");
+        step(7,()->shot("f12a_rider_under_the_beam"),"the beam overhead");
+        step(25,()->{
+            double x=srvGet(()->sp().getVehicle()==null?-1e9:sp().getVehicle().getX());
+            check("the cart rolled on through the gate with its rider seated",fobGate!=null&&x>fobGate.getX()+1.5,"x="+x+" gate x="+(fobGate==null?0:fobGate.getX()));
+            srv(()->{var v=sp().getVehicle();sp().stopRiding();if(v!=null)v.discard();});
+        },"through");
         // the Receiving Gate at home: placed over a rail in the zone, then linked on its own screen
         step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);},"go home");
         step(60,()->{
             homeGate=srvGet(()->gateSpot(HuntGameTests.BEACON,14,false));check("a spot for a gate in the base zone",homeGate!=null,String.valueOf(homeGate));
-            if(homeGate!=null){srv(()->sl().setBlock(homeGate,net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),3));
-                look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+.5,homeGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get()));mc().options.hideGui=false;}
-        },"lay a rail at home");
+            if(homeGate!=null){srv(()->layLanes(homeGate,2));
+                look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+.5,homeGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get()));mc().options.hideGui=false;}
+        },"lay two rails at home");
         step(20,()->{if(homeGate!=null){srv(()->clearFrame(homeGate));click(homeGate,Direction.UP);}},"use the Receiving Gate on it");
         step(20,()->{check("the Receiving Gate asks which FOB it serves",mc().screen instanceof GateClient.GateScreen,String.valueOf(mc().screen));shot("f14_receiving_gate_link");},"the link screen");
         step(10,()->{var f=fob();if(f!=null)press(f.name+" (ACTIVE)");},"pick the FOB");
-        step(20,()->{var f=fob();check("the Receiving Gate serves the FOB",f!=null&&homeGate!=null&&homeGate.above().equals(f.receivingGate),f==null?"":String.valueOf(f.receivingGate));shot("f15_gate_screen_no_route");},"the gate screen: the route needs a ride");
+        step(20,()->{var f=fob();check("the Receiving Gate serves the FOB",f!=null&&homeGate!=null&&anchorAt(homeGate).equals(f.receivingGate),f==null?"":String.valueOf(f.receivingGate));shot("f15_gate_screen_no_route");},"the gate screen: the route needs a ride");
         // the rides themselves are the GameTest's (a real cart through both arches); here the three passes are made on the server, as a ride would
         step(5,()->{mc().setScreen(null);srv(()->{var l=sl();sp().closeContainer();var f=FobData.get(l).fobs.values().iterator().next();var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);
             cart.setPos(homeGate.getX()+.5,homeGate.getY(),homeGate.getZ()+.5);l.addFreshEntity(cart);sp().startRiding(cart,true);var d=FobData.get(l);for(int i=0;i<f.stock.length;i++)f.stock[i]=30;
             Routes.pass(l,d,f,RailGates.Kind.RECEIVING,sp(),cart);Routes.pass(l,d,f,RailGates.Kind.DELIVERY,sp(),cart);Routes.pass(l,d,f,RailGates.Kind.RECEIVING,sp(),cart);sp().stopRiding();cart.discard();});},"a round trip");
         step(45,()->{},"the lights look again (once a second)");
         step(40,()->{var f=fob();check("the route is open and its round trip delivered",f!=null&&f.commissioned&&"ride".equals(f.lastKind),f==null?"":f.commissioned+" "+f.lastKind+" "+f.lastItems);
-            check("the light at home turns green",homeGate!=null&&srvGet(()->sl().getBlockState(homeGate.above()).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN),"");
-            mc().options.hideGui=true;if(homeGate!=null)look(homeGate.relative(Direction.EAST,7),homeGate.getX()+.5,homeGate.getY()+1.6,homeGate.getZ()+.5);},"green");
+            check("the light at home turns green, on both columns",homeGate!=null&&srvGet(()->sl().getBlockState(anchorAt(homeGate)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN&&sl().getBlockState(homeGate.south(2)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN),"");
+            mc().options.hideGui=true;if(homeGate!=null)look(homeGate.relative(Direction.EAST,8),homeGate.getX()+.5,homeGate.getY()+1.1,homeGate.getZ()+1);},"green");
         step(40,()->shot("f16_receiving_gate_green"),"the Receiving Gate, green");
-        step(5,()->{mc().options.hideGui=false;if(homeGate!=null)look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);},"face it");
-        step(10,()->{if(homeGate!=null)click(homeGate.above(2),Direction.SOUTH);},"open its screen through the beam");
-        step(25,()->{check("the gate screen opens by clicking the arch",mc().screen instanceof GateClient.GateScreen,"");shot("f17_gate_screen_running");},"the gate screen, running");
+        step(5,()->{mc().options.hideGui=false;if(homeGate!=null)look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);},"face it");
+        step(10,()->{if(homeGate!=null)click(homeGate.above(),Direction.SOUTH);},"open its screen through the beam");
+        step(25,()->{check("the gate screen opens by clicking the beam",mc().screen instanceof GateClient.GateScreen,"");shot("f17_gate_screen_running");},"the gate screen, running");
         // ---- slice 3 (0.0.25): an SOS answered and won, an SOS left alone (DOWN), the repair --------------------------------------------------------
         step(45,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(ItemStack.EMPTY);cmd("arsenal fob sos");},"/arsenal fob sos (at home); the status card syncs once a second");
         step(30,()->{
@@ -314,9 +367,9 @@ public final class QaFob {
         step(40,()->{cmd("arsenal fob sos");cmd("arsenal fob sos expire");},"an SOS left alone");
         until("nobody answered: DOWN",100,()->{var f=fob();return f!=null&&f.state==FobRules.State.DOWN;},()->{
             check("the unanswered SOS puts the FOB DOWN",fob()!=null&&fob().state==FobRules.State.DOWN,"");check("everyone reads it",chatHas("Nobody answered"),"");});
-        step(30,()->{check("the gate at home is red",homeGate!=null&&srvGet(()->sl().getBlockState(homeGate.above()).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");
-            if(homeGate!=null){look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);}},"the gate goes red");
-        step(10,()->{if(homeGate!=null)click(homeGate.above(2),Direction.SOUTH);},"open the gate screen");
+        step(30,()->{check("the gate at home is red",homeGate!=null&&srvGet(()->sl().getBlockState(anchorAt(homeGate)).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");
+            if(homeGate!=null){look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);}},"the gate goes red");
+        step(10,()->{if(homeGate!=null)click(homeGate.above(),Direction.SOUTH);},"open the gate screen");
         step(25,()->{check("the gate screen opens",mc().screen instanceof GateClient.GateScreen,"");shot("f21_gate_screen_fob_down");},"the gate screen says repair it");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");
         step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);check("no raid starts at a DOWN FOB",fob()!=null&&!fob().raidRunning(),"");},"face the FOB Beacon");
@@ -340,8 +393,8 @@ public final class QaFob {
         step(50,()->shot("f24_enchanting_table"),"the owner's model");
         step(5,()->{mc().options.hideGui=false;var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()+.8,at.getZ()+.5);},"face it");
         step(10,()->click(FobGameTests.ENCHANT,Direction.SOUTH),"open it");
-        step(20,()->{check("the enchanting screen opens",mc().screen instanceof EnchantClient.EnchantScreen,String.valueOf(mc().screen));
-            srv(()->{if(sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m){m.gear.setItem(0,new ItemStack(Items.DIAMOND_SWORD));m.broadcastChanges();}});},"put a sword in");
+        step(20,()->{check("the enchanting screen opens",mc().screen instanceof EnchantClient.EnchantScreen,String.valueOf(mc().screen));hover(1,1);shot("f24b_enchanting_empty");},"the screen with its slot empty (0.0.30: bigger, nothing on top of anything)");
+        step(5,()->srv(()->{if(sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m){m.gear.setItem(0,new ItemStack(Items.DIAMOND_SWORD));m.broadcastChanges();}}),"put a sword in");
         step(10,()->{if(mc().screen instanceof EnchantClient.EnchantScreen s)hover(s.getGuiLeft()+EnchantClient.EnchantScreen.LIST_X+20,s.getGuiTop()+50+6);},"point at the first enchant's name");
         step(20,()->shot("f25_enchanting_list"),"the list: level I open, higher levels locked by FOBs; the name's tooltip");
         step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),1)),"buy Sharpness I (the menu button the screen sends)");
@@ -390,10 +443,16 @@ public final class QaFob {
             mc().setScreen(null);
         },"removed");
         step(5,()->{var b=HuntGameTests.BEACON;tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);srv(()->HuntGameTests.ground(sl()));},"go home");
-        step(60,()->{mc().options.hideGui=true;if(homeGate!=null)look(homeGate.relative(Direction.EAST,7),homeGate.getX()+.5,homeGate.getY()+1.6,homeGate.getZ()+.5);},"face the Receiving Gate");
-        step(40,()->{check("its FOB gone, the Receiving Gate reads UNLINKED and is red",homeGate!=null&&srvGet(()->sl().getBlockEntity(homeGate.above()) instanceof RailGates.GateEntity be&&be.fobId==0&&sl().getBlockState(homeGate.above()).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");shot("f18_receiving_gate_unlinked");mc().options.hideGui=false;},"unlinked");
+        step(60,()->{mc().options.hideGui=true;if(homeGate!=null)look(homeGate.relative(Direction.EAST,8),homeGate.getX()+.5,homeGate.getY()+1.1,homeGate.getZ()+1);},"face the Receiving Gate");
+        step(40,()->{check("its FOB gone, the Receiving Gate reads UNLINKED and is red",homeGate!=null&&srvGet(()->sl().getBlockEntity(anchorAt(homeGate)) instanceof RailGates.GateEntity be&&be.fobId==0&&sl().getBlockState(anchorAt(homeGate)).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");shot("f18_receiving_gate_unlinked");mc().options.hideGui=false;},"unlinked");
         step(60,()->{var s=new BeaconClient.ControlScreen();s.tab=2;mc().setScreen(s);},"open Workshop Fabrication");
         step(30,()->{check("the Workshop lists the FOB Beacon",WorkshopFabrication.ITEMS.contains("fob_beacon"),"");shot("f11_workshop");},"workshop shot");
+        step(10,()->{if(mc().screen instanceof BeaconClient.ControlScreen s){check("the Workshop list is longer than its window: it scrolls",s.fabMaxScroll()>0,"max="+s.fabMaxScroll());s.mouseScrolled(s.width/2.0,s.height/2.0,-20);}},"scroll to the end");
+        step(20,()->{if(mc().screen instanceof BeaconClient.ControlScreen s){int at=WorkshopFabrication.ITEMS.indexOf("supply_delivery_gate");
+            check("scrolled to the end",s.fabScroll==s.fabMaxScroll()&&s.fabScroll>0,"scroll="+s.fabScroll);
+            check("the Supply Delivery Gate is sold there, its Make button in view",at>=0&&s.fabricationButtons.get(at).visible,"");
+            check("rows scrolled out of view hide their Make button",!s.fabricationButtons.get(0).visible,"");}
+            shot("f11b_workshop_scrolled");},"the end of the list");
         step(5,()->{mc().setScreen(null);srv(()->HuntGameTests.release(sl()));},"done");
     }
 }

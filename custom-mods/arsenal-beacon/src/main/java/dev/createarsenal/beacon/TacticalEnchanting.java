@@ -119,7 +119,7 @@ final class TacticalEnchanting {
     // ---- the menu: one gear slot and the player's inventory ---------------------------------------------------------------------------------------
     static final class EnchantMenu extends AbstractContainerMenu {
         /** Slot positions inside the screen (the screen is a fixed 384 x 236). */
-        static final int GEAR_X=26,GEAR_Y=48,INV_X=12,INV_Y=152;
+        static final int GEAR_X=18,GEAR_Y=50,INV_X=14,INV_Y=176;   // 0.0.30: the screen is 440 x 260
         final BlockPos pos;CompoundTag data;final SimpleContainer gear=new SimpleContainer(1);
         EnchantMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){
             super(ArsenalBeacon.ENCHANT_MENU.get(),id);this.pos=pos;this.data=data;

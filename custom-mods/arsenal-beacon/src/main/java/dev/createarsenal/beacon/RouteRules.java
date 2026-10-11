@@ -102,13 +102,17 @@ final class RouteRules {
      * axis, 0 for no pass.
      */
     static int crossing(double px,double py,double pz,double cx,double cy,double cz,int gx,int gy,int gz,boolean alongX,double slack){
+        return crossing(px,py,pz,cx,cy,cz,gx,gy,gz,alongX,1,slack);
+    }
+    /** As above for an opening {@code lanes} cells wide, from the cell (gx, gy, gz) towards +x or +z (the 0.0.30 gates have two lanes). */
+    static int crossing(double px,double py,double pz,double cx,double cy,double cz,int gx,int gy,int gz,boolean alongX,int lanes,double slack){
         double a0=alongX?px:pz,a1=alongX?cx:cz,mid=(alongX?gx:gz)+.5;
         if((a0-mid)*(a1-mid)>0||a0==a1)return 0;
         if(a0==mid)return 0;   // starting exactly on the plane: the previous step counted it
         double t=(mid-a0)/(a1-a0);
         double side=(alongX?pz:px)+t*((alongX?cz:cx)-(alongX?pz:px)),y=py+t*(cy-py);
         int sideCell=alongX?gz:gx;
-        if(side<sideCell-slack||side>sideCell+1+slack)return 0;
+        if(side<sideCell-slack||side>sideCell+lanes+slack)return 0;
         if(y<gy-slack||y>gy+1.5+slack)return 0;
         return a1>a0?1:-1;
     }
@@ -119,6 +123,8 @@ final class RouteRules {
     enum Stage{OUTBOUND,RETURN}
     /** What a pass did, a key under {@code route.pass.} for the rider's action bar. */
     enum Step{STARTED,RESTARTED,COMMISSIONED,LOADED,COMPLETE,BUSY,START_AT_HOME,WRONG_GATE,TOO_CLOSE}
+    /** A loaded rider back at the Delivery Gate within this many ticks is on the way home through its other lane (a loop): no hint then. */
+    static final long WRONG_GATE_QUIET=200;
     /**
      * Pure: the next step of a ride at a gate. {@code stage} is null when no ride runs on this route; {@code sameRider} tells whether the pass
      * is by the rider (in the same cart) of the running ride. A ride starts at the Receiving Gate (home), turns at the Delivery Gate (the FOB;

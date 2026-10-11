@@ -30,9 +30,10 @@ public final class EnchantClient {
     static void state(CompoundTag data){if(net.minecraft.client.Minecraft.getInstance().screen instanceof EnchantScreen s)s.update(data);}
 
     static final class EnchantScreen extends AbstractContainerScreen<TacticalEnchanting.EnchantMenu> {
-        /** A level button fits "III" (22 wide, 23 apart). */
-        static final int UPGRADE_Y=110;
-        static final int W=384,H=236,ROW=22,LIST_X=184,LEVEL_W=22,LEVEL_STEP=23;
+        /** 0.0.30: bigger and calmer (the owner saw the empty slot's line run into the FOB line). A level button fits "III" (22 wide, 23 apart). */
+        static final int W=440,H=260,ROW=22,LIST_X=214,LEVEL_W=22,LEVEL_STEP=23;
+        /** The left column: x 14, 184 wide; each block of text has its own band, with a rule between them. */
+        static final int SIDE_X=14,SIDE_W=184,GEAR_LABEL_Y=34,GEAR_TEXT_LINES=3,FOBS_RULE_Y=82,FOBS_Y=88,MK_RULE_Y=114,MK_Y=120,UPGRADE_Y=132,ENERGY_Y=158;
         private CompoundTag data;private ItemStack shown=ItemStack.EMPTY;private int scroll;
         private final List<Enchantment> rows=new ArrayList<>();
         EnchantScreen(TacticalEnchanting.EnchantMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;imageWidth=W;imageHeight=H;}
@@ -51,7 +52,7 @@ public final class EnchantClient {
             // the table's next Mk
             int mk=data.getInt("mk");
             if(mk<EnchantRules.MAX_MK){
-                var up=addRenderableWidget(new Ui.UiButton(leftPos+12,topPos+UPGRADE_Y,162,18,Ui.t("enchant.upgrade",EnchantRules.roman(mk+1),EnchantRules.DISCOUNT[mk+1]),Ui.Look.NORMAL,b->click(TacticalEnchanting.UPGRADE)));
+                var up=addRenderableWidget(new Ui.UiButton(leftPos+SIDE_X,topPos+UPGRADE_Y,SIDE_W,18,Ui.t("enchant.upgrade",EnchantRules.roman(mk+1),EnchantRules.DISCOUNT[mk+1]),Ui.Look.NORMAL,b->click(TacticalEnchanting.UPGRADE)));
                 boolean afford=data.getBoolean("creative")||data.getInt("upgradeHave")>=data.getInt("upgradeAmount");
                 up.active=afford;up.warning=!afford;
                 up.setTooltip(Tooltip.create(Ui.t("enchant.upgrade.tip",data.getInt("upgradeAmount"),ItemStack.of(data.getCompound("upgradeItem")).getHoverName())));
@@ -91,26 +92,29 @@ public final class EnchantClient {
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             Ui.panel(g,leftPos,topPos,W,H);
             Ui.header(g,font,leftPos,topPos,W,title,Ui.t("enchant.subtitle"));
-            int x=leftPos+12,w=162,y=topPos+34;
-            // the gear
-            Ui.text(g,font,Ui.t("enchant.gear"),x,y,Ui.BRASS,w);
-            Ui.slot(g,leftPos+TacticalEnchanting.EnchantMenu.GEAR_X-1,topPos+TacticalEnchanting.EnchantMenu.GEAR_Y-1,ARCANE);
-            var gear=gear();int tx=leftPos+TacticalEnchanting.EnchantMenu.GEAR_X+22,tw=x+w-tx;
-            if(gear.isEmpty())Ui.wrap(g,font,Ui.t("enchant.gear.empty"),tx,topPos+TacticalEnchanting.EnchantMenu.GEAR_Y-2,tw,Ui.MUTED,3);
+            int x=leftPos+SIDE_X,w=SIDE_W;
+            // the gear: its slot, and beside it what goes there (up to three lines, ending above the first rule) or what is in it
+            Ui.text(g,font,Ui.t("enchant.gear"),x,topPos+GEAR_LABEL_Y,Ui.BRASS,w);
+            int gx=leftPos+TacticalEnchanting.EnchantMenu.GEAR_X,gy=topPos+TacticalEnchanting.EnchantMenu.GEAR_Y;
+            Ui.slot(g,gx-1,gy-1,ARCANE);
+            var gear=gear();int tx=gx+24,tw=x+w-tx;
+            if(gear.isEmpty())Ui.wrap(g,font,Ui.t("enchant.gear.empty"),tx,gy-4,tw,Ui.MUTED,GEAR_TEXT_LINES);
             else{
-                Ui.text(g,font,gear.getHoverName(),tx,topPos+TacticalEnchanting.EnchantMenu.GEAR_Y-2,Ui.INK,tw);
-                var have=EnchantmentHelper.getEnchantments(gear);int ey=topPos+TacticalEnchanting.EnchantMenu.GEAR_Y+8;
-                Ui.text(g,font,have.isEmpty()?Ui.t("enchant.gear.none"):Ui.t("enchant.gear.has",have.size()),tx,ey,Ui.MUTED,tw);
+                Ui.text(g,font,gear.getHoverName(),tx,gy,Ui.INK,tw);
+                var have=EnchantmentHelper.getEnchantments(gear);
+                Ui.text(g,font,have.isEmpty()?Ui.t("enchant.gear.none"):Ui.t("enchant.gear.has",have.size()),tx,gy+11,Ui.MUTED,tw);
             }
             for(int i=1;i<menu.slots.size();i++){var sl=menu.slots.get(i);Ui.slot(g,leftPos+sl.x-1,topPos+sl.y-1,Ui.EDGE);}
-            // FOBs, the table, the seals
-            y=topPos+72;
-            Ui.text(g,font,Ui.t("enchant.fobs",fobs(),FobRules.MAX_FOBS),x,y,fobs()>0?FobClient.OLIVE:Ui.ORANGE,w);y+=11;
-            Ui.text(g,font,Ui.t("enchant.fobs.how"),x,y,Ui.MUTED,w);
+            // the ACTIVE FOBs
+            Ui.rule(g,x,topPos+FOBS_RULE_Y,w);
+            Ui.text(g,font,Ui.t("enchant.fobs",fobs(),FobRules.MAX_FOBS),x,topPos+FOBS_Y,fobs()>0?FobClient.OLIVE:Ui.ORANGE,w);
+            Ui.text(g,font,Ui.t("enchant.fobs.how"),x,topPos+FOBS_Y+12,Ui.MUTED,w);
+            // the table's Mk and its upgrade button (or "Fully upgraded"), then what you carry
+            Ui.rule(g,x,topPos+MK_RULE_Y,w);
             int mk=data.getInt("mk");
-            Ui.text(g,font,mk==0?Ui.t("enchant.mk.none"):Ui.t("enchant.mk",EnchantRules.roman(mk),EnchantRules.DISCOUNT[mk]),x,topPos+97,Ui.INK,w);
+            Ui.text(g,font,mk==0?Ui.t("enchant.mk.none"):Ui.t("enchant.mk",EnchantRules.roman(mk),EnchantRules.DISCOUNT[mk]),x,topPos+MK_Y,Ui.INK,w);
             if(mk>=EnchantRules.MAX_MK)Ui.text(g,font,Ui.t("enchant.mk.max"),x,topPos+UPGRADE_Y+5,Ui.MUTED,w);
-            Ui.text(g,font,data.getBoolean("creative")?Ui.t("enchant.energy.creative",data.getInt("sealsCarried")):Ui.t("enchant.energy",data.getInt("energy"),data.getInt("sealsCarried")),x,topPos+136,Ui.MUTED,w);
+            Ui.text(g,font,data.getBoolean("creative")?Ui.t("enchant.energy.creative",data.getInt("sealsCarried")):Ui.t("enchant.energy",data.getInt("energy"),data.getInt("sealsCarried")),x,topPos+ENERGY_Y,Ui.MUTED,w);
             // the list
             int lx=leftPos+LIST_X,lw=W-LIST_X-12;
             Ui.text(g,font,Ui.t("enchant.list"),lx,topPos+36,ARCANE,lw);

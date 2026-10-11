@@ -92,6 +92,9 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Block> DELIVERY_GATE=BLOCKS.register("supply_delivery_gate",()->new RailGates.GateBlock(RailGates.Kind.DELIVERY));
     public static final RegistryObject<Block> RECEIVING_GATE=BLOCKS.register("supply_receiving_gate",()->new RailGates.GateBlock(RailGates.Kind.RECEIVING));
     public static final RegistryObject<Block> GATE_PART=BLOCKS.register("gate_part",RailGates.Part::new);
+    /** The left column of each gate (0.0.30): it draws the owner's left half; no item. */
+    public static final RegistryObject<Block> DELIVERY_GATE_LEFT=BLOCKS.register("supply_delivery_gate_left",()->new RailGates.Column(RailGates.Kind.DELIVERY));
+    public static final RegistryObject<Block> RECEIVING_GATE_LEFT=BLOCKS.register("supply_receiving_gate_left",()->new RailGates.Column(RailGates.Kind.RECEIVING));
     public static final RegistryObject<Item> DELIVERY_GATE_ITEM=ITEMS.register("supply_delivery_gate",()->new RailGates.GateItem(DELIVERY_GATE.get(),RailGates.Kind.DELIVERY));
     public static final RegistryObject<Item> RECEIVING_GATE_ITEM=ITEMS.register("supply_receiving_gate",()->new RailGates.GateItem(RECEIVING_GATE.get(),RailGates.Kind.RECEIVING));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<RailGates.GateEntity>> GATE_ENTITY=ENTITIES.register("supply_gate",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(RailGates.GateEntity::new,DELIVERY_GATE.get(),RECEIVING_GATE.get()).build(null));
@@ -337,7 +340,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
         Hunts.tick(l,d,clock);
-        Fobs.tick(l,clock);Routes.tick(l,clock);
+        Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
             BeaconNetwork.syncNearby(l,d);

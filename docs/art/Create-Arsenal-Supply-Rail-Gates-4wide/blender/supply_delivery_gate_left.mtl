@@ -1,0 +1,3 @@
+newmtl supply_delivery_gate_left
+Kd 1 1 1
+map_Kd textures/block/supply_delivery_gate_left.png
