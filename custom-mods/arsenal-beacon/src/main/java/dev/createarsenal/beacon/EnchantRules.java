@@ -35,8 +35,11 @@ final class EnchantRules {
     /** Table upgrades: Mk I to III, each a permanent discount on every enchant (percent). */
     static final int MAX_MK=3;
     static final int[] DISCOUNT={0,10,20,30};
-    /** Pure: the price after the table's discount, never below 1. */
-    static int discounted(int price,int mk){int d=DISCOUNT[Math.max(0,Math.min(MAX_MK,mk))];return Math.max(1,(int)Math.ceil(price*(100-d)/100.0));}
+    /**
+     * Pure: the price after the table's discount, rounded down, never below 1. Rounded down so every Mk takes at least 1 off any price of 2 or
+     * more (rounded up, Mk I took nothing off the pack's small prices: Sharpness V, 5, stayed 5).
+     */
+    static int discounted(int price,int mk){int d=DISCOUNT[Math.max(0,Math.min(MAX_MK,mk))];return Math.max(1,price*(100-d)/100);}
 
     // ---- treasure ------------------------------------------------------------------------------------------------------------------------------
     /** The treasure enchants a Warlord Seal unlocks for the whole team (never the curses). */

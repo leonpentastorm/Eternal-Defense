@@ -771,7 +771,7 @@ public final class FobGameTests {
                 // taking the gear out: the menu gives it back when it closes
                 p.closeContainer();
                 h.assertTrue(p.getInventory().items.stream().anyMatch(s->s.is(Items.DIAMOND_SWORD)&&EnchantmentHelper.getItemEnchantmentLevel(sharp,s)==5),"the sword comes back enchanted when the screen closes");
-            }finally{p.setGameMode(mode);activeFobs(l,0);clearEnchanting(l);}
+            }finally{p.closeContainer();p.setGameMode(mode);activeFobs(l,0);clearEnchanting(l);}   // a failed check never leaves the menu open for what runs next
         }).thenSucceed();
     }
     /** A cleared Warlord pays a Warlord Seal into the reward chest; a Patrol does not. */

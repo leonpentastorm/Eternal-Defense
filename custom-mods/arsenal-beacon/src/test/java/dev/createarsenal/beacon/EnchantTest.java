@@ -47,7 +47,11 @@ final class EnchantTest {
         assertArrayEquals(new int[]{0,10,20,30},DISCOUNT);assertEquals(3,MAX_MK);
         assertEquals(10,discounted(10,0));assertEquals(9,discounted(10,1));assertEquals(8,discounted(10,2));assertEquals(7,discounted(10,3));
         assertEquals(1,discounted(1,3),"never below 1");
-        for(int p=1;p<=80;p++)for(int mk=1;mk<=3;mk++)assertTrue(discounted(p,mk)<=discounted(p,mk-1),"each Mk is at least as cheap");
+        for(int p=1;p<=80;p++)for(int mk=1;mk<=3;mk++){
+            assertTrue(discounted(p,mk)<=discounted(p,mk-1),"each Mk is at least as cheap");
+            if(p>=2)assertTrue(discounted(p,mk)<p,"every Mk takes something off a price of 2 or more ("+p+" at Mk "+mk+")");
+        }
+        assertEquals(4,discounted(price(Rarity.COMMON,5,false,false),1),"the pack's Sharpness V, 5, is 4 at Mk I (rounded up it stayed 5)");
         String economy=source("Economy.java");
         assertTrue(economy.contains("ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24}"),"Mk I to III: resonance coils (pack) or Ardent Energy (standalone)");
     }
