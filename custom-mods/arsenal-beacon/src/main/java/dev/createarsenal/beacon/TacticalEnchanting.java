@@ -119,7 +119,7 @@ final class TacticalEnchanting {
     // ---- the menu: one gear slot and the player's inventory ---------------------------------------------------------------------------------------
     static final class EnchantMenu extends AbstractContainerMenu {
         /** Slot positions inside the screen (the screen is a fixed 384 x 236). */
-        static final int GEAR_X=26,GEAR_Y=62,INV_X=12,INV_Y=152;
+        static final int GEAR_X=26,GEAR_Y=48,INV_X=12,INV_Y=152;
         final BlockPos pos;CompoundTag data;final SimpleContainer gear=new SimpleContainer(1);
         EnchantMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){
             super(ArsenalBeacon.ENCHANT_MENU.get(),id);this.pos=pos;this.data=data;
@@ -227,7 +227,7 @@ final class TacticalEnchanting {
         if(price==null)return "enchant.result.max_mk";
         if(!Economy.pay(p,price))return price.ardent()?"enchant.result.no_energy":"enchant.result.no_parts";
         d.mk++;d.setDirty();
-        Fobs.announce(p.serverLevel(),Component.translatable("gui.arsenal_beacon.enchant.upgraded",p.getDisplayName(),d.mk,EnchantRules.DISCOUNT[d.mk]));
+        Fobs.announce(p.serverLevel(),Component.translatable("gui.arsenal_beacon.enchant.upgraded",p.getDisplayName(),EnchantRules.roman(d.mk),EnchantRules.DISCOUNT[d.mk]));
         return "enchant.result.upgraded";
     }
     /** One Warlord Seal from the player's inventory unlocks treasure enchant {@code id} (or its next level) for the whole team. */
@@ -241,7 +241,7 @@ final class TacticalEnchanting {
         }
         d.seals.merge(id,1,Integer::sum);d.setDirty();
         int level=EnchantRules.unlockedLevel(id,d.seals(id),e.getMaxLevel());
-        Fobs.announce(l,Component.translatable("gui.arsenal_beacon.enchant.unlocked_all",p.getDisplayName(),Component.translatable(e.getDescriptionId()),level));
+        Fobs.announce(l,Component.translatable("gui.arsenal_beacon.enchant.unlocked_all",p.getDisplayName(),Component.translatable(e.getDescriptionId()),EnchantRules.roman(level)));
         l.playSound(null,p.blockPosition(),SoundEvents.ENDER_EYE_DEATH,SoundSource.PLAYERS,.8f,1.2f);
         return "enchant.result.unlocked";
     }

@@ -124,6 +124,25 @@ public final class QaFob {
         }
         return best;
     }
+    /**
+     * A villager that wanders into a gate's 3 x 3 frame makes the placement refuse with "No room" (the mod's rule, as it should); the harness
+     * moves any mob standing there a few blocks along the rail first, and says so (0.0.27: one run met a villager there).
+     */
+    /** Put the pointer where the GUI-scaled coordinates are, so tooltips render as they do for a person (as in QaGuide). */
+    static void hover(double guiX,double guiY){
+        try{
+            var w=mc().getWindow();var handler=mc().mouseHandler;double sx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),sy=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*sx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*sy);
+        }catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void clearFrame(BlockPos rail){
+        var l=sl();var box=new net.minecraft.world.phys.AABB(rail.getX()-1,rail.getY(),rail.getZ()-2,rail.getX()+2,rail.getY()+3,rail.getZ()+3);
+        for(var e:l.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,box,e->!(e instanceof net.minecraft.world.entity.player.Player))){
+            int x=rail.getX()+5,z=rail.getZ(),y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+            log("QA_NOTE moved {} out of the gate's frame",e.getName().getString());e.teleportTo(x+.5,y,z+.5);
+        }
+    }
     static long lastSearch=-1000;
     /** The nearest spot (to the player) the FOB rules allow, on sturdy ground, with two free blocks, nobody in them and free ground 3 south. */
     static BlockPos findSpot(){
@@ -220,7 +239,7 @@ public final class QaFob {
             fobGate=srvGet(()->gateSpot(spot,12,true));check("a spot for a gate in the village",fobGate!=null,String.valueOf(fobGate));
             if(fobGate!=null){srv(()->sl().setBlock(fobGate,net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),3));
                 look(fobGate.relative(Direction.SOUTH,3),fobGate.getX()+.5,fobGate.getY()+.5,fobGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()));}},"lay a rail in the village");
-        step(20,()->{if(fobGate!=null)click(fobGate,Direction.UP);},"use the gate on the rail");
+        step(20,()->{if(fobGate!=null){srv(()->clearFrame(fobGate));click(fobGate,Direction.UP);}},"use the gate on the rail (a villager in its frame is moved out first)");
         step(10,()->{
             boolean placed=fobGate!=null&&srvGet(()->sl().getBlockState(fobGate.above()).is(ArsenalBeacon.DELIVERY_GATE.get()));
             check("the Delivery Gate stands over the rail",placed,"");
@@ -246,7 +265,7 @@ public final class QaFob {
             if(homeGate!=null){srv(()->sl().setBlock(homeGate,net.minecraft.world.level.block.Blocks.RAIL.defaultBlockState().setValue(net.minecraft.world.level.block.RailBlock.SHAPE,net.minecraft.world.level.block.state.properties.RailShape.EAST_WEST),3));
                 look(homeGate.relative(Direction.SOUTH,3),homeGate.getX()+.5,homeGate.getY()+.5,homeGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get()));mc().options.hideGui=false;}
         },"lay a rail at home");
-        step(20,()->{if(homeGate!=null)click(homeGate,Direction.UP);},"use the Receiving Gate on it");
+        step(20,()->{if(homeGate!=null){srv(()->clearFrame(homeGate));click(homeGate,Direction.UP);}},"use the Receiving Gate on it");
         step(20,()->{check("the Receiving Gate asks which FOB it serves",mc().screen instanceof GateClient.GateScreen,String.valueOf(mc().screen));shot("f14_receiving_gate_link");},"the link screen");
         step(10,()->{var f=fob();if(f!=null)press(f.name+" (ACTIVE)");},"pick the FOB");
         step(20,()->{var f=fob();check("the Receiving Gate serves the FOB",f!=null&&homeGate!=null&&homeGate.above().equals(f.receivingGate),f==null?"":String.valueOf(f.receivingGate));shot("f15_gate_screen_no_route");},"the gate screen: the route needs a ride");
@@ -323,17 +342,22 @@ public final class QaFob {
         step(10,()->click(FobGameTests.ENCHANT,Direction.SOUTH),"open it");
         step(20,()->{check("the enchanting screen opens",mc().screen instanceof EnchantClient.EnchantScreen,String.valueOf(mc().screen));
             srv(()->{if(sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m){m.gear.setItem(0,new ItemStack(Items.DIAMOND_SWORD));m.broadcastChanges();}});},"put a sword in");
-        step(30,()->shot("f25_enchanting_list"),"the list: level I open, higher levels locked by FOBs");
+        step(10,()->{if(mc().screen instanceof EnchantClient.EnchantScreen s)hover(s.getGuiLeft()+EnchantClient.EnchantScreen.LIST_X+20,s.getGuiTop()+50+6);},"point at the first enchant's name");
+        step(20,()->shot("f25_enchanting_list"),"the list: level I open, higher levels locked by FOBs; the name's tooltip");
         step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),1)),"buy Sharpness I (the menu button the screen sends)");
         step(20,()->{check("Sharpness I applied",srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
             mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),2));},"try Sharpness II");
         step(20,()->{int fobs=srvGet(()->FobData.get(sl()).count(FobRules.State.ACTIVE));
-            check("Sharpness II stays locked with "+fobs+" ACTIVE FOB (it needs 2)",fobs<2&&srvGet(()->gearLevel("minecraft:sharpness"))==1,"");shot("f26_enchanting_locked");},"locked by the FOBs");
+            check("Sharpness II stays locked with "+fobs+" ACTIVE FOB (it needs 2)",fobs<2&&srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
+            // point at Sharpness II: the sword's rows by id (bane, fire aspect, knockback, looting, mending, sharpness, ...), the sixth row, its second button
+            if(mc().screen instanceof EnchantClient.EnchantScreen s){var sw=new ItemStack(Items.DIAMOND_SWORD);int row=(int)TacticalEnchanting.catalogue().stream().filter(e->e.canEnchant(sw)).takeWhile(e->e!=enchant("minecraft:sharpness")).count();
+                hover(s.getGuiLeft()+EnchantClient.EnchantScreen.W-12-5*EnchantClient.EnchantScreen.LEVEL_STEP+1+EnchantClient.EnchantScreen.LEVEL_STEP+11,s.getGuiTop()+50+row*EnchantClient.EnchantScreen.ROW+10);}},"locked by the FOBs");
+        step(10,()->shot("f26_enchanting_locked"),"the locked level's tooltip");
         step(5,()->srv(()->sp().getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()))),"a Warlord Seal");
         step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending")),"unlock Mending");
         step(20,()->{check("Mending unlocked for the team",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).seals("minecraft:mending"))==1,"");check("everyone reads it",chatHas("spent a Warlord Seal"),"");
             mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:mending")),1));},"buy Mending");
-        step(20,()->{check("Mending applied",srvGet(()->gearLevel("minecraft:mending"))==1,"");mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UPGRADE);},"upgrade the table");
+        step(20,()->{check("Mending applied",srvGet(()->gearLevel("minecraft:mending"))==1,"");hover(1,1);mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UPGRADE);},"upgrade the table");
         step(20,()->{check("the table is Mk I",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).mk)==1,"");shot("f27_enchanting_mk1");},"Mk I");
         step(5,()->{mc().player.closeContainer();},"close the screen");
         step(10,()->check("the sword comes back enchanted",srvGet(()->sp().getInventory().items.stream().anyMatch(st->st.is(Items.DIAMOND_SWORD)&&net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchant("minecraft:mending"),st)==1)),""),"the gear back");

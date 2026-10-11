@@ -29,6 +29,9 @@ final class EnchantRules {
         int p=PER_LEVEL_STANDALONE[rarity.ordinal()]*Math.max(1,level)*(treasure?TREASURE_FACTOR:1);
         return standalone?p:(p+1)/2;
     }
+    /** Levels and the table's Mk as players read them. */
+    static final String[] ROMAN={"I","II","III","IV","V","VI","VII"};
+    static String roman(int n){return n>=1&&n<=ROMAN.length?ROMAN[n-1]:String.valueOf(n);}
     /** Table upgrades: Mk I to III, each a permanent discount on every enchant (percent). */
     static final int MAX_MK=3;
     static final int[] DISCOUNT={0,10,20,30};
