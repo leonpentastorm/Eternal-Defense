@@ -1,0 +1,5 @@
+FOB_TEST_FAIL enchantsfollowthefoblevelgate: cheaper after it
+QA_CHECK FAIL FOB GameTests pass=19 fail=1
+QA_CHECK FAIL the client shows the FOB Zone effect 
+QA_CHECK FAIL the meal does not run down there null
+QA_CHECK FAIL the gate screen opens by clicking the arch 
