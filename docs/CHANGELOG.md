@@ -9,7 +9,9 @@ On `dev`. **Network protocol 34** (a new menu; the table-state packet also refre
 * **Prices:** the enchant's rarity times the level (2, 3, 5, 8 Ardent Energy per level standalone; the pack pays half, rounded up), twice that for treasure enchants. Mk I, II, III table upgrades (8, 16, 32 resonance coils, or 6, 12, 24 Ardent Energy) give 10, 20, 30 percent off for everyone.
 * **Warlord Seal** (new item, our own icon): a cleared Warlord hunt adds one to its pay. Spent at the table, it unlocks a treasure enchant for the whole team (Mending, Frost Walker, Soul Speed, Swift Sneak; the last two take one more seal for each of levels II and III).
 * Field Guide: the table's card on the FOB page and the seal's card on the Tactical Operations page, with both editions' prices. Vanilla enchanting, librarians and anvils are unchanged.
-* Unit tests: 271 (7 new in `EnchantTest`). New GameTests `fob_18` to `fob_20` (the table's placement and the shovel, the level gate, prices, conflicts, treasure and the Mk discount, a Warlord's seal).
+* The table's discount rounds down, never below 1, so every Mk takes something off (the pack's Sharpness V: 5, then 4, 4, 3). Rounded up, Mk I took nothing off the pack's small prices; the pack edition's real-client run found it.
+* Unit tests: 271 (7 new in `EnchantTest`). New GameTests `fob_18` to `fob_20` (the table's placement and the shovel, the level gate, prices, conflicts, treasure and the Mk discount, a Warlord's seal). Real client, both editions: 20/20 FOB GameTests, 69/69 checks (`docs/FOB-SLICE-4-TESTING.md`).
+* Bundle: `dist/Arsenal-Dev-0.0.27-pack-test.zip` and `-standalone-test.zip`, with all four FOB slices and their playtest scripts.
 
 ## 0.0.26 — The owner's fixes: the Return Flare needs the cannon, ammo parts really apply (2026-10-11)
 

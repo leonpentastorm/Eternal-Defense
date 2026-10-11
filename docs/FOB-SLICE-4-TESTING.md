@@ -39,7 +39,7 @@ New `EnchantTest` (7 tests):
 | `fob_19` the level gate | In survival with 64 Ardent Energy, with a diamond sword:<br>• Curses are never listed, Mending is listed, books are refused.<br>• Sharpness I is bought with no FOB at its exact price; Sharpness II is refused with nothing taken.<br>• 2 ACTIVE FOBs open Sharpness II; V is refused until all five are ACTIVE.<br>• Smite (conflicts with Sharpness) and Protection (does not fit a sword) are refused.<br>• Mending is locked without a seal, and the Unlock button does nothing without one; with a seal, the seal is used up and Mending is bought at its treasure price.<br>• Mk I makes Sharpness V cheaper.<br>• Closing the screen gives the enchanted sword back. |
 | `fob_20` a Warlord's seal | A cleared Patrol pays no seal; a cleared Warlord pays one Warlord Seal into the reward chest. |
 
-### Real client, final runs (`docs/validation/fob-slice-4/checks-*.txt`): pack 69 pass, 0 fail; standalone SA_TBD
+### Real client, final runs (`docs/validation/fob-slice-4/checks-*.txt`): 69 pass, 0 fail, each edition
 
 Slices 1 to 3 as in 0.0.25 and 0.0.26, then slice 4 at home:
 * the table placed with a right-click stands with its parts;
