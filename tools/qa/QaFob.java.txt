@@ -349,6 +349,7 @@ public final class QaFob {
             mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),2));},"try Sharpness II");
         step(20,()->{int fobs=srvGet(()->FobData.get(sl()).count(FobRules.State.ACTIVE));
             check("Sharpness II stays locked with "+fobs+" ACTIVE FOB (it needs 2)",fobs<2&&srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
+            {var m=mc().screen instanceof EnchantClient.EnchantScreen s?s.message():null;check("the screen says which level and why",m!=null&&m.getString().startsWith("Sharpness II needs 2 ACTIVE FOBs"),m==null?"":m.getString());}
             // point at Sharpness II: the sword's rows by id (bane, fire aspect, knockback, looting, mending, sharpness, ...), the sixth row, its second button
             if(mc().screen instanceof EnchantClient.EnchantScreen s){var sw=new ItemStack(Items.DIAMOND_SWORD);int row=(int)TacticalEnchanting.catalogue().stream().filter(e->e.canEnchant(sw)).takeWhile(e->e!=enchant("minecraft:sharpness")).count();
                 hover(s.getGuiLeft()+EnchantClient.EnchantScreen.W-12-5*EnchantClient.EnchantScreen.LEVEL_STEP+1+EnchantClient.EnchantScreen.LEVEL_STEP+11,s.getGuiTop()+50+row*EnchantClient.EnchantScreen.ROW+10);}},"locked by the FOBs");

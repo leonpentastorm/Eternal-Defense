@@ -126,9 +126,16 @@ public final class EnchantClient {
                 Component sub=have>0?Ui.t("enchant.row.has",EnchantRules.roman(have)):treasure&&seals(e)==0?Ui.t("enchant.row.treasure"):Ui.t("enchant.row.top",EnchantRules.roman(top));
                 Ui.text(g,font,sub,lx+6,ry+12,Ui.MUTED,nameW);
             }
-            if(rows.size()>visibleRows())Ui.text(g,font,Ui.t("enchant.scroll",scroll+1,Math.min(rows.size(),scroll+visibleRows()),rows.size()),lx,topPos+H-22,Ui.MUTED,lw);
-            var message=data.getString("message");
-            if(!message.isEmpty())Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),lx,topPos+H-12,message.equals("enchant.result.done")||message.equals("enchant.result.upgraded")||message.equals("enchant.result.unlocked")?FobClient.OLIVE:Ui.ORANGE,lw);
+            // the last result under the list; a long one (a refusal naming the enchant) takes two lines, in place of the scroll hint
+            var line=message();boolean twoLines=line!=null&&font.width(line)>lw;
+            if(rows.size()>visibleRows()&&!twoLines)Ui.text(g,font,Ui.t("enchant.scroll",scroll+1,Math.min(rows.size(),scroll+visibleRows()),rows.size()),lx,topPos+H-22,Ui.MUTED,lw);
+            if(line!=null){String key=data.getString("message");int color=key.equals("enchant.result.done")||key.equals("enchant.result.upgraded")||key.equals("enchant.result.unlocked")?FobClient.OLIVE:Ui.ORANGE;
+                if(twoLines)Ui.wrap(g,font,line,lx,topPos+H-23,lw,color,2);else Ui.text(g,font,line,lx,topPos+H-12,color,lw);}
+        }
+        /** The last result the server sent: its finished line when it names an enchant, else the message key's text; null when there is none. */
+        Component message(){
+            var key=data.getString("message");if(key.isEmpty())return null;
+            return data.contains("detail")?Component.Serializer.fromJson(data.getString("detail")):Component.translatable("gui.arsenal_beacon."+key);
         }
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){

@@ -186,7 +186,12 @@ final class TacticalEnchanting {
         NetworkHooks.openScreen(p,new SimpleMenuProvider((id,inv,who)->new EnchantMenu(id,inv,root,new CompoundTag()),Component.translatable("block.arsenal_beacon.tactical_enchanting_table")),
             buf->{buf.writeBlockPos(root);buf.writeNbt(state(p,""));});
     }
-    static void refresh(ServerPlayer p,String message){BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state(p,message)));}
+    static void refresh(ServerPlayer p,String message){refresh(p,message,null);}
+    /** {@code detail}, when given, is the finished line the screen shows instead of the bare message key (a refusal that names the enchant). */
+    static void refresh(ServerPlayer p,String message,Component detail){
+        var n=state(p,message);if(detail!=null)n.putString("detail",Component.Serializer.toJson(detail));
+        BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(n));
+    }
     /** What the screen needs besides the slot: the ACTIVE FOBs, the table's Mk and next price, the unlocks, the seals and energy carried. */
     static CompoundTag state(ServerPlayer p,String message){
         var l=p.serverLevel();var d=EnchantData.get(l);var n=new CompoundTag();
@@ -200,12 +205,17 @@ final class TacticalEnchanting {
     // ---- the buttons, checked again here ------------------------------------------------------------------------------------------------------------
     static void button(ServerPlayer p,EnchantMenu menu,int id){
         if(!menu.stillValid(p)||BaseZone.problem(p.level(),menu.pos)!=null)return;
-        String result;
+        String result;Component detail=null;
         if(id==UPGRADE)result=upgrade(p);
         else if(id>=UNLOCK&&id<UNLOCK+EnchantRules.TREASURE.size())result=unlock(p,EnchantRules.TREASURE.get(id-UNLOCK));
-        else if(id>=BUY)result=buy(p,menu,(id-BUY)/8,(id-BUY)%8);
+        else if(id>=BUY){
+            int index=(id-BUY)/8,level=(id-BUY)%8;result=buy(p,menu,index,level);
+            // a locked level says which and why, with the same words as its tooltip on the screen
+            if(result.startsWith("enchant.locked.")){var e=catalogue().get(index);
+                detail=Component.translatable("gui.arsenal_beacon."+result,Component.translatable(e.getDescriptionId()).append(" "+EnchantRules.roman(level)),EnchantRules.fobsFor(level,e.getMaxLevel()),activeFobs(p.serverLevel()));}
+        }
         else return;
-        refresh(p,result);
+        refresh(p,result,detail);
     }
     static String buy(ServerPlayer p,EnchantMenu menu,int index,int level){
         var l=p.serverLevel();var cat=catalogue();if(index<0||index>=cat.size()||level<1)return "enchant.result.gone";
