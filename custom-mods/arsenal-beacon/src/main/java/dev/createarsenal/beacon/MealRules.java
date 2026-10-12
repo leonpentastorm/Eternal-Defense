@@ -8,12 +8,16 @@ final class MealRules {
     /** The longest a meal can last (a Mk IV hall); every hall tier has its own length, see {@link #tier}. */
     static final int FIELD_TICKS=30*60*20,LINK_RANGE=8;
     static final double HOME_MULTIPLIER=2;
-    /** Every meal effect. Order is the tie-break when two effects score the same, so new effects are only ever appended. */
+    /**
+     * Every meal effect. Order is the tie-break when two effects score the same, so new effects are only ever appended. 0.0.35 (owner): three
+     * were replaced in place (same position, button id and foods): Mobility became HARDY (slower hunger), Hearth BLAST_WARD (explosions only),
+     * Springy Step PROJECTILE_WARD (arrows, bolts, fireballs, tridents; not gun bullets). Saved meals with the old ids just expire.
+     */
     enum Effect {
-        VITALITY("vitality",4,false,false),FORTITUDE("fortitude",2,false,false),STEADINESS("steadiness",.05,true,false),MOBILITY("mobility",.04,true,true),
+        VITALITY("vitality",4,false,false),FORTITUDE("fortitude",2,false,false),STEADINESS("steadiness",.05,true,false),HARDY("hardy",.15,true,false),
         FIREPOWER("firepower",.08,true,false),QUICK_HANDS("quick_hands",.10,true,false),BRAWLER("brawler",.20,true,false),HEAVY_HAND("heavy_hand",.15,true,false),DEMOLITION("demolition",.10,true,false),
         MIGHT("might",.08,true,true),AGILITY("agility",.08,true,true),FORTUNE("fortune",1,false,false),RECOVERY("recovery",1,false,false),
-        HEARTH("hearth",.10,true,false),SPRINGY("springy",.12,true,false),SWIM("swim",.10,true,true),
+        BLAST_WARD("blast_ward",.20,true,false),PROJECTILE_WARD("projectile_ward",.15,true,false),SWIM("swim",.10,true,true),
         RECOIL_CONTROL("recoil_control",.10,true,false),FOCUS("focus",.10,true,false),SNAP_AIM("snap_aim",.10,true,false),
         FAST_DRAW("fast_draw",.10,true,false),DEAD_EYE("dead_eye",.08,true,false),GUN_MOBILITY("gun_mobility",.08,true,false),
         IMPACT("impact",.25,false,false),RAPID_FIRE("rapid_fire",.05,true,false),SCOPED_FOCUS("scoped_focus",.15,true,false),HIP_FOCUS("hip_focus",.15,true,false);
@@ -23,7 +27,7 @@ final class MealRules {
         /** Effects whose value is a share that must stay below one (damage taken). */
         boolean gun(){return this==FIREPOWER||this==QUICK_HANDS||this==BRAWLER||this==HEAVY_HAND||this==DEMOLITION||ordinal()>=RECOIL_CONTROL.ordinal();}
         boolean reduction(){return this==RECOIL_CONTROL;}
-        double cap(){return this==HEARTH||this==RECOIL_CONTROL?.8:this==SPRINGY?.9:Double.MAX_VALUE;}
+        double cap(){return this==BLAST_WARD||this==RECOIL_CONTROL?.8:this==PROJECTILE_WARD?.9:this==HARDY?.6:Double.MAX_VALUE;}
     }
     /** From Mk III a meal can double an effect with distinct foods; legendary effects need two from each group, which takes four food slots (Mk IV). */
     static final int PAIR_MULTIPLIER=2;

@@ -26,7 +26,7 @@ final class PlayerMeals extends SavedData {
         var d=new PlayerMeals();for(var t:n.getList("Players",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;var meal=MealData.load(c.getCompound("Meal"));int ticks=c.getInt("Remaining");if(c.hasUUID("Player")&&meal!=null&&ticks>0)d.players.put(c.getUUID("Player"),new State(meal,Math.min(ticks,meal.duration())));}return d;
     }
     @Override public CompoundTag save(CompoundTag n){var list=new ListTag();players.forEach((id,s)->{var c=new CompoundTag();c.putUUID("Player",id);c.put("Meal",s.meal.save());c.putInt("Remaining",s.remaining);list.add(c);});n.put("Players",list);return n;}
-    static Attribute attribute(MealRules.Effect e){return switch(e){case VITALITY->Attributes.MAX_HEALTH;case FORTITUDE->Attributes.ARMOR;case STEADINESS->Attributes.KNOCKBACK_RESISTANCE;case MOBILITY->Attributes.MOVEMENT_SPEED;
+    static Attribute attribute(MealRules.Effect e){return switch(e){case VITALITY->Attributes.MAX_HEALTH;case FORTITUDE->Attributes.ARMOR;case STEADINESS->Attributes.KNOCKBACK_RESISTANCE;
         case MIGHT->Attributes.ATTACK_DAMAGE;case AGILITY->Attributes.ATTACK_SPEED;case FORTUNE->Attributes.LUCK;case SWIM->net.minecraftforge.common.ForgeMod.SWIM_SPEED.get();
         case FIREPOWER->MealGunBackend.damage();case QUICK_HANDS->MealGunBackend.reload();
         case RECOIL_CONTROL->com.github.leopoko.tacz_attributes.attribute.CustomAttributes.RECOIL.get();
@@ -78,8 +78,8 @@ final class PlayerMeals extends SavedData {
         else if(!wanted&&p.hasEffect(effect))p.removeEffect(effect);
     }
     static void place(State s,MealZone.Kind zone){s.zone=zone;s.home=zone.home();}
-    static void eat(ServerPlayer p,MealData meal){var d=get(p.serverLevel());var s=new State(meal,meal.duration());place(s,MealZone.at(p));d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();syncEffects(p,s);}
-    static void clear(ServerPlayer p){var d=get(p.serverLevel());d.players.remove(p.getUUID());removeModifiers(p);d.setDirty();syncEffects(p,null);}
+    static void eat(ServerPlayer p,MealData meal){EXHAUSTION.remove(p.getUUID());var d=get(p.serverLevel());var s=new State(meal,meal.duration());place(s,MealZone.at(p));d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();syncEffects(p,s);}
+    static void clear(ServerPlayer p){EXHAUSTION.remove(p.getUUID());var d=get(p.serverLevel());d.players.remove(p.getUUID());removeModifiers(p);d.setDirty();syncEffects(p,null);}
     static void refresh(ServerPlayer p){var s=get(p.serverLevel()).players.get(p.getUUID());if(s!=null){place(s,MealZone.at(p));applyModifiers(p,s);}else removeModifiers(p);syncEffects(p,s);}
     static void tick(ServerPlayer p){
         var d=get(p.serverLevel());var s=d.players.get(p.getUUID());if(s==null)return;
@@ -89,6 +89,30 @@ final class PlayerMeals extends SavedData {
         if(s.remaining==0){clear(p);return;}if(changed)applyModifiers(p,s);
         if(changed||p.tickCount%20==0){d.setDirty();syncEffects(p,s);}
         if(p.tickCount%MealRules.RECOVERY_PERIOD==0&&p.getHealth()<p.getMaxHealth()){double heal=bonus(p,MealRules.Effect.RECOVERY);if(heal>0)p.heal((float)heal);}
+        hardy(p);
+    }
+    /** The exhaustion each player had at the end of the last tick (after Hardy's refund): what was added since is this tick's hunger. */
+    private static final Map<UUID,Float> EXHAUSTION=new HashMap<>();
+    /**
+     * 0.0.35 (owner) Hardy: slower hunger. Each tick the exhaustion gained since the last one is compared and the effect's share of it is given
+     * back. When the hunger bar ticked down in between (exhaustion past 4 is turned into lost saturation or food), only what is left can be
+     * refunded that tick.
+     */
+    static void hardy(ServerPlayer p){
+        var food=p.getFoodData();float now=food.getExhaustionLevel();Float last=EXHAUSTION.get(p.getUUID());
+        double share=bonus(p,MealRules.Effect.HARDY);
+        if(last!=null&&share>0){float gained=now>=last?now-last:now+4f-last;float refund=Math.min(now,(float)hardyRefund(gained,share));if(refund>0){now-=refund;food.setExhaustion(now);}}
+        EXHAUSTION.put(p.getUUID(),now);
+    }
+    /** Pure: the share of {@code gained} exhaustion Hardy gives back. */
+    static double hardyRefund(double gained,double share){return Math.max(0,gained)*Math.max(0,Math.min(MealRules.Effect.HARDY.cap(),share));}
+    /** 0.0.35 (owner) Projectile Ward: arrows and crossbow bolts, tridents and fireballs; never TaCZ gun bullets. */
+    static boolean wardedProjectile(net.minecraft.world.damagesource.DamageSource source){
+        if(source.typeHolder().unwrapKey().map(k->k.location().getNamespace().equals("tacz")).orElse(false))return false;
+        if(source.getDirectEntity()!=null&&net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(source.getDirectEntity().getType())!=null
+            &&net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(source.getDirectEntity().getType()).getNamespace().equals("tacz"))return false;
+        return source.is(net.minecraft.world.damagesource.DamageTypes.ARROW)||source.is(net.minecraft.world.damagesource.DamageTypes.TRIDENT)
+            ||source.is(net.minecraft.world.damagesource.DamageTypes.FIREBALL)||source.is(net.minecraft.world.damagesource.DamageTypes.UNATTRIBUTED_FIREBALL);
     }
     static final class MealEvents {
         @SubscribeEvent public void tick(TickEvent.PlayerTickEvent e){if(e.phase==TickEvent.Phase.END&&e.player instanceof ServerPlayer p&&p.isAlive())PlayerMeals.tick(p);}
@@ -97,16 +121,13 @@ final class PlayerMeals extends SavedData {
         @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST) public void death(LivingDeathEvent e){if(e.getEntity() instanceof ServerPlayer p)clear(p);}
         @SubscribeEvent public void respawn(PlayerEvent.PlayerRespawnEvent e){if(e.getEntity() instanceof ServerPlayer p)refresh(p);}
         @SubscribeEvent public void dimension(PlayerEvent.PlayerChangedDimensionEvent e){if(e.getEntity() instanceof ServerPlayer p)refresh(p);}
-        /** Hearth: less fire and explosion damage. */
+        /** 0.0.35 (owner): Blast Ward takes a share off explosion damage (no fire); Projectile Ward off arrows, bolts, fireballs and tridents. */
         @SubscribeEvent public void hurt(net.minecraftforge.event.entity.living.LivingHurtEvent e){
             if(!(e.getEntity() instanceof ServerPlayer p))return;
-            var source=e.getSource();if(!source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)&&!source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION))return;
-            double share=bonus(p,MealRules.Effect.HEARTH);if(share>0)e.setAmount((float)(e.getAmount()*(1-share)));
+            var source=e.getSource();
+            double share=source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION)?bonus(p,MealRules.Effect.BLAST_WARD):wardedProjectile(source)?bonus(p,MealRules.Effect.PROJECTILE_WARD):0;
+            if(share>0)e.setAmount((float)(e.getAmount()*(1-share)));
         }
-        /** Springy Step: less fall damage. */
-        @SubscribeEvent public void fall(net.minecraftforge.event.entity.living.LivingFallEvent e){
-            if(!(e.getEntity() instanceof ServerPlayer p))return;
-            double share=bonus(p,MealRules.Effect.SPRINGY);if(share>0)e.setDamageMultiplier((float)(e.getDamageMultiplier()*(1-share)));
-        }
+        @SubscribeEvent public void gone(PlayerEvent.PlayerLoggedOutEvent e){EXHAUSTION.remove(e.getEntity().getUUID());}
     }
 }

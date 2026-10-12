@@ -4,7 +4,7 @@
   },
   "staple": false,
   "effects": {
-    "hearth": 1
+    "blast_ward": 1
   },
   "family": "fungi"
 }

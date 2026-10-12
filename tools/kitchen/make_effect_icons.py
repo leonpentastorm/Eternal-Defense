@@ -134,14 +134,31 @@ def hip(d, c):
     d.line((3, 4, 3, 13, 7, 13), fill=c, width=2); d.line((14, 4, 14, 13, 10, 13), fill=c, width=2)
     d.rectangle((6, 6, 11, 8), fill=c); d.rectangle((7, 9, 8, 11), fill=shade(c, 1.5))
 
+# 0.0.35 (owner): three effects replaced in place
+def drumstick(d, c):   # Hardy: slower hunger
+    d.ellipse((3, 3, 10, 10), fill=c); d.ellipse((4, 4, 7, 7), fill=shade(c, 1.35))
+    d.line((9, 9, 12, 12), fill=(236, 230, 214, 255), width=2)
+    d.rectangle((12, 11, 13, 14), fill=(236, 230, 214, 255)); d.rectangle((11, 12, 14, 13), fill=(236, 230, 214, 255))
+
+def blast_shield(d, c):   # Blast Ward: less explosion damage
+    d.polygon([(4, 3), (13, 3), (13, 9), (8, 14), (4, 9)], fill=shade(c, .55))
+    for (x0, y0, x1, y1) in [(8, 4, 8, 12), (5, 8, 12, 8), (6, 5, 11, 11), (11, 5, 6, 11)]:
+        d.line((x0, y0, x1, y1), fill=c)
+    d.rectangle((7, 7, 9, 9), fill=shade(c, 1.4)); d.line((4, 3, 13, 3), fill=shade(c, 1.4))
+
+def arrow_shield(d, c):   # Projectile Ward: less arrow, bolt, fireball and trident damage
+    d.polygon([(4, 3), (13, 3), (13, 9), (8, 14), (4, 9)], fill=shade(c, .55))
+    d.line((3, 13, 12, 4), fill=(236, 230, 214, 255)); d.line((10, 4, 12, 4), fill=c); d.line((12, 4, 12, 6), fill=c)
+    d.line((3, 11, 5, 13), fill=c); d.line((4, 3, 13, 3), fill=shade(c, 1.4))
+
 ICONS = {
-    'vitality': ('#e0484f', heart), 'fortitude': ('#6aa0d8', shield), 'steadiness': ('#b08a5a', pillar), 'mobility': ('#6ee07a', chevrons),
+    'vitality': ('#e0484f', heart), 'fortitude': ('#6aa0d8', shield), 'steadiness': ('#b08a5a', pillar), 'hardy': ('#d9a45a', drumstick),
     'firepower': ('#ff9a3d', crosshair), 'quick_hands': ('#f3d34a', magazine), 'brawler': ('#d9603f', fist), 'heavy_hand': ('#9aa4ad', hammer),
     'demolition': ('#8c8f99', bomb), 'might': ('#c9ced4', sword), 'agility': ('#5fe0ea', bolt), 'fortune': ('#7fd65a', clover),
     'recoil_control': ('#82c9ef', recoil), 'focus': ('#f0daa0', eye), 'snap_aim': ('#7ce0cf', aim),
     'fast_draw': ('#efad72', draw), 'dead_eye': ('#db82d9', headshot), 'gun_mobility': ('#8db1ff', gun_stride),
     'impact': ('#e4a477', impact), 'rapid_fire': ('#ffbc4e', rapid), 'scoped_focus': ('#b7bbff', scope), 'hip_focus': ('#9de4b5', hip),
-    'recovery': ('#8ef08e', plus), 'hearth': ('#ff7a2a', flame), 'springy': ('#b6e84a', spring), 'swim': ('#4aa8ff', waves),
+    'recovery': ('#8ef08e', plus), 'blast_ward': ('#ff7a2a', blast_shield), 'projectile_ward': ('#a9c4dc', arrow_shield), 'swim': ('#4aa8ff', waves),
 }
 
 for name, (color, glyph) in ICONS.items():

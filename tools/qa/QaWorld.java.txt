@@ -1316,7 +1316,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
                 }
                 var pot=at(5,0,4);check("cook pot cells: one above, nothing beside",srvGet(()->new java.util.HashSet<>(ArsenalStructures.cells(pot,sl().getBlockState(pot))).equals(java.util.Set.of(pot.above()))),"");
                 check("cook pot box is 1 x 2 x 1",srvGet(()->{var all=ArsenalStructures.full(sl().getBlockState(pot)).bounds();return Math.abs(all.getXsize()-1)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
-                srv(()->{var p=(CookPot.PotEntity)sl().getBlockEntity(at(5,0,4));var meal=new MealData(true,java.util.List.of(new MealData.Bonus(MealRules.Effect.VITALITY,2,true),new MealData.Bonus(MealRules.Effect.FIREPOWER,1),new MealData.Bonus(MealRules.Effect.MOBILITY,3)),MealRules.FIELD_TICKS);p.stew=meal;p.servings=11;p.changed();});
+                srv(()->{var p=(CookPot.PotEntity)sl().getBlockEntity(at(5,0,4));var meal=new MealData(true,java.util.List.of(new MealData.Bonus(MealRules.Effect.VITALITY,2,true),new MealData.Bonus(MealRules.Effect.FIREPOWER,1),new MealData.Bonus(MealRules.Effect.HARDY,3)),MealRules.FIELD_TICKS);p.stew=meal;p.servings=11;p.changed();});
             },"check footprints and fill a pot");
             step(5,()->{mc().options.hideGui=true;camera(-4,2,-6,-4,1.2,4);},"look at the halls");
             step(25,()->shot("r6_halls_front"),"halls shot");

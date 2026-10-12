@@ -214,22 +214,22 @@ public final class QaKitchen {
             step(8,()->{check("Firepower is refused alongside Vitality",!order().contains(MealRules.Effect.FIREPOWER.ordinal())&&view().getString("Notice").equals("order_conflict"),view().getString("Notice"));shot("k08_conflict_toast");},"state");
             step(3,()->click(ui().clear),"click Clear");
             step(6,()->{check("Clear returns to automatic",order().isEmpty()&&!view().getBoolean("Explicit"),String.valueOf(order()));},"state");
-            step(3,()->{click(cell(MealRules.Effect.FIREPOWER));click(cell(MealRules.Effect.MOBILITY));},"click Firepower and Mobility");
+            step(3,()->{click(cell(MealRules.Effect.FIREPOWER));click(cell(MealRules.Effect.HARDY));},"click Firepower and Hardy");
             step(8,()->{check("a legendary and an ordinary recipe can be ordered together",order().size()==2,String.valueOf(order()));
                 check("sandwich limit is two: a third is refused",true,"");shot("k09_two_chosen");},"state");
             step(3,()->click(cell(MealRules.Effect.SWIM)),"third recipe in a sandwich");
             step(8,()->{check("the third recipe is refused (order full)",order().size()==2&&view().getString("Notice").equals("order_full"),view().getString("Notice"));},"state");
             step(3,()->srv(()->hall().ingredients.setItem(6,ItemStack.EMPTY)),"take the first sandwich out of the output slot");
             step(4,()->click(ui().primary),"Gather the two-recipe order");
-            step(8,()->{check("Gather fills the table for Firepower + Mobility",problem().isEmpty(),"problem="+problem());shot("k10_two_gathered");},"state");
+            step(8,()->{check("Gather fills the table for Firepower + Hardy",problem().isEmpty(),"problem="+problem());shot("k10_two_gathered");},"state");
             step(3,()->click(ui().takeBack),"click Take back");
             step(8,()->{check("Take back empties the table into the pack",srvGet(()->{for(int i=0;i<6;i++)if(!hall().ingredients.getItem(i).isEmpty())return false;return true;}),"");shot("k11_taken_back");},"state");
         }
         if(part("stew")){
             step(3,()->{click(ui().stew);},"stew tab");
             step(8,()->{check("mode is stored with the hall",srvGet(()->hall().stewMode),"");shot("k12_stew_empty");},"state");
-            step(3,()->{click(ui().primary);},"Gather (order still Firepower + Mobility)");
-            step(8,()->{check("Mk IV stew gathers four foods for the doubled legendary and two for Mobility",srvGet(()->{int n=0;for(int i=0;i<6;i++)if(!hall().ingredients.getItem(i).isEmpty())n++;return n;})>=4,"");
+            step(3,()->{click(ui().primary);},"Gather (order still Firepower + Hardy)");
+            step(8,()->{check("Mk IV stew gathers four foods for the doubled legendary and two for Hardy",srvGet(()->{int n=0;for(int i=0;i<6;i++)if(!hall().ingredients.getItem(i).isEmpty())n++;return n;})>=4,"");
                 var made=view().getList("Made",10);boolean doubled=true;for(var t:made)doubled&=((net.minecraft.nbt.CompoundTag)t).getBoolean("Pair");check("every chosen effect is doubled (Mk IV stew, pack allows it)",doubled&&made.size()==2,made.toString());shot("k13_stew_gathered");},"state");
             step(3,()->hoverWidget(ui().primary),"hover cook");step(6,()->shot("k14_cook_hover"),"tooltip");
             step(3,()->{hover(5,5);click(ui().primary);},"click Cook stew");
@@ -325,7 +325,7 @@ public final class QaKitchen {
             step(5,()->useBlock(at(11,0,0)),"use milk with no effects");
             step(10,()->{check("milk with nothing to clear tells you so",barHas("no effects"),lastBar());
                 check("and spends nothing",srvGet(()->((MilkDispenser.DispenserEntity)sl().getBlockEntity(at(11,0,0))).tank.getFluidAmount())==5750,"");},"state");
-            step(3,()->srv(()->{sp().addEffect(new MobEffectInstance(MobEffects.POISON,2000));sp().addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,2000));PlayerMeals.eat(sp(),new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.FIREPOWER,1,true),new MealData.Bonus(MealRules.Effect.MOBILITY,1)),36000));}),"get poisoned, strong, and fed");
+            step(3,()->srv(()->{sp().addEffect(new MobEffectInstance(MobEffects.POISON,2000));sp().addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,2000));PlayerMeals.eat(sp(),new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.FIREPOWER,1,true),new MealData.Bonus(MealRules.Effect.HARDY,1)),36000));}),"get poisoned, strong, and fed");
             step(10,()->{BAR.clear();shot("d02_effects_before_milk");},"shot");
             step(3,()->useBlock(at(11,0,0)),"use milk");
             step(10,()->{check("the milk announces what it cleared and how much is left",barHas("Milk cleared")&&barHas("5,500"),lastBar());

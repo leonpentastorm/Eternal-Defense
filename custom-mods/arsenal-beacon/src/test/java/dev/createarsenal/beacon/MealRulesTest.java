@@ -12,8 +12,8 @@ final class MealRulesTest {
         assertEquals(18*60*20-10,ticks);assertEquals(0,MealRules.remaining(0,false));
     }
     @Test void ingredientScoresChooseTwoOrThreeEffectsWithoutUnboundedStacking(){
-        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);for(var e:MealRules.Effect.values())scores.put(e,1);scores.put(MealRules.Effect.MOBILITY,3);
-        var sandwich=MealRules.select(scores,false);var stew=MealRules.select(scores,true);assertEquals(2,sandwich.size());assertEquals(3,stew.size());assertEquals(MealRules.Effect.MOBILITY,sandwich.get(0));assertEquals(MealRules.Effect.VITALITY,sandwich.get(1));assertEquals(sandwich,MealRules.select(new HashMap<>(scores),false));
+        var scores=new EnumMap<MealRules.Effect,Integer>(MealRules.Effect.class);for(var e:MealRules.Effect.values())scores.put(e,1);scores.put(MealRules.Effect.HARDY,3);
+        var sandwich=MealRules.select(scores,false);var stew=MealRules.select(scores,true);assertEquals(2,sandwich.size());assertEquals(3,stew.size());assertEquals(MealRules.Effect.HARDY,sandwich.get(0));assertEquals(MealRules.Effect.VITALITY,sandwich.get(1));assertEquals(sandwich,MealRules.select(new HashMap<>(scores),false));
         assertTrue(MealRules.select(Map.of(MealRules.Effect.FORTITUDE,0),true).isEmpty());assertEquals(1,MealRules.select(Map.of(MealRules.Effect.VITALITY,2),false).size());
     }
     @Test void eachTierBuildsOnTheLastOne(){
@@ -53,7 +53,7 @@ final class MealRulesTest {
     @Test void everyEffectHasAStableIdAndNewEffectsAreAppended(){
         var ids=new HashSet<String>();for(var e:MealRules.Effect.values()){assertTrue(ids.add(e.id));assertSame(e,MealRules.Effect.of(e.id));assertTrue(e.amount>0);}
         assertEquals(26,MealRules.Effect.values().length);
-        for(int i=0;i<9;i++)assertEquals(new String[]{"vitality","fortitude","steadiness","mobility","firepower","quick_hands","brawler","heavy_hand","demolition"}[i],MealRules.Effect.values()[i].id,"saved meals keep their effect ids and order");
+        for(int i=0;i<9;i++)assertEquals(new String[]{"vitality","fortitude","steadiness","hardy","firepower","quick_hands","brawler","heavy_hand","demolition"}[i],MealRules.Effect.values()[i].id,"saved meals keep their effect ids and order");
     }
     @Test void pairedFoodsDoubleTheBonusAndSurviveTheVanillaEffectCodec(){
         var single=new MealData.Bonus(MealRules.Effect.VITALITY,2);var pair=new MealData.Bonus(MealRules.Effect.VITALITY,2,true);
@@ -77,7 +77,37 @@ final class MealRulesTest {
         assertEquals("−10%",new MealData.Bonus(MealRules.Effect.RECOIL_CONTROL,1).amountText(false));
     }
     @Test void damageProtectionsNeverReachFullImmunity(){
-        var hearth=new MealData.Bonus(MealRules.Effect.HEARTH,3,true);var springy=new MealData.Bonus(MealRules.Effect.SPRINGY,3,true);
-        assertTrue(hearth.home()<=.8&&springy.home()<=.9);assertTrue(hearth.field()>0&&springy.field()>0);
+        var blast=new MealData.Bonus(MealRules.Effect.BLAST_WARD,3,true);var shot=new MealData.Bonus(MealRules.Effect.PROJECTILE_WARD,3,true);var hardy=new MealData.Bonus(MealRules.Effect.HARDY,3,true);
+        assertTrue(blast.home()<=.8&&shot.home()<=.9&&hardy.home()<=.6);assertTrue(blast.field()>0&&shot.field()>0&&hardy.field()>0);
+        assertEquals(.8,blast.home(),1e-9);assertEquals(.6,hardy.home(),1e-9);
+    }
+    @Test void theThreeReplacedEffectsKeepTheirPlaceAndCarryTheOwnersNumbers(){
+        // 0.0.35 (owner): Mobility, Hearth and Springy Step were replaced in place; their slots, button ids and foods stay
+        var v=MealRules.Effect.values();
+        assertEquals(MealRules.Effect.HARDY,v[3]);assertEquals("hardy",MealRules.Effect.HARDY.id);assertEquals(.15,MealRules.Effect.HARDY.amount,1e-9);assertEquals(.6,MealRules.Effect.HARDY.cap(),1e-9);
+        assertEquals("blast_ward",MealRules.Effect.BLAST_WARD.id);assertEquals(.20,MealRules.Effect.BLAST_WARD.amount,1e-9);assertEquals(.8,MealRules.Effect.BLAST_WARD.cap(),1e-9);
+        assertEquals("projectile_ward",MealRules.Effect.PROJECTILE_WARD.id);assertEquals(.15,MealRules.Effect.PROJECTILE_WARD.amount,1e-9);assertEquals(.9,MealRules.Effect.PROJECTILE_WARD.cap(),1e-9);
+        for(var old:new String[]{"mobility","hearth","springy"})assertNull(MealRules.Effect.of(old),"a saved meal with an old id just expires");
+        // single, at home: base 15% doubled is 30%
+        assertEquals(.30,new MealData.Bonus(MealRules.Effect.HARDY,1).home(),1e-9);assertEquals(.15,new MealData.Bonus(MealRules.Effect.HARDY,1).field(),1e-9);
+    }
+    @Test void hardyGivesBackItsShareOfTheHungerGainedAndNoMoreThanItsCap(){
+        assertEquals(.3,PlayerMeals.hardyRefund(1,.3),1e-9);assertEquals(.6,PlayerMeals.hardyRefund(1,.95),1e-9);assertEquals(0,PlayerMeals.hardyRefund(-1,.3),1e-9);assertEquals(0,PlayerMeals.hardyRefund(1,0),1e-9);
+    }
+    @Test void theNewEffectsHaveIconsTextsAndFoods() throws Exception{
+        var root=java.nio.file.Path.of("src/main/resources");
+        var lang=java.nio.file.Files.readString(root.resolve("assets/arsenal_beacon/lang/en_us.json"));
+        for(var id:new String[]{"hardy","blast_ward","projectile_ward"}){
+            assertTrue(java.nio.file.Files.exists(root.resolve("assets/arsenal_beacon/textures/mob_effect/meal_"+id+".png")),id+" icon");
+            assertTrue(lang.contains("\"effect.arsenal_beacon.meal_"+id+"\"")&&lang.contains("\"gui.arsenal_beacon.meal.bonus."+id+"\"")&&lang.contains("\"gui.arsenal_beacon.meal.effect."+id+"\""),id+" texts");
+        }
+        for(var old:new String[]{"mobility","hearth","springy"})assertFalse(java.nio.file.Files.exists(root.resolve("assets/arsenal_beacon/textures/mob_effect/meal_"+old+".png")),old+" icon removed");
+        assertTrue(lang.contains("explosions")&&lang.contains("arrows, bolts, fireballs and tridents")&&lang.contains("slower hunger"));
+        var foods=java.nio.file.Files.readString(root.resolve("data/arsenal_beacon/meal_ingredients/chorus.json"));assertTrue(foods.contains("projectile_ward"));
+        assertTrue(java.nio.file.Files.readString(root.resolve("data/arsenal_beacon/meal_ingredients/grim.json")).contains("blast_ward"));
+        assertTrue(java.nio.file.Files.readString(root.resolve("data/arsenal_beacon/meal_ingredients/fish.json")).contains("hardy"));
+        var src=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/createarsenal/beacon/PlayerMeals.java"));
+        assertTrue(src.contains("\"tacz\"")&&src.contains("DamageTypes.ARROW")&&src.contains("DamageTypes.TRIDENT")&&src.contains("DamageTypes.FIREBALL")&&src.contains("IS_EXPLOSION"),"the wards' damage types, never TaCZ bullets");
+        assertFalse(src.contains("IS_FIRE"),"Blast Ward does not cover fire");
     }
 }

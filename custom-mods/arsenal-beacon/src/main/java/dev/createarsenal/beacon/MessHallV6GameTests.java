@@ -26,10 +26,10 @@ public final class MessHallV6GameTests {
     private static void clean(Fixture f){f.player.setShiftKeyDown(false);PlayerMeals.clear(f.player);f.player.removeAllEffects();f.player.closeContainer();CampaignData.get(f.level).phase="unplaced";UpgradeGameTests.release(f.level,f.floor);}
     static final Map<MealRules.Effect,List<Item>> PAIRS=Map.ofEntries(
         Map.entry(MealRules.Effect.VITALITY,List.of(Items.COOKED_CHICKEN,Items.COOKED_MUTTON)),Map.entry(MealRules.Effect.FORTITUDE,List.of(Items.CARROT,Items.POTATO)),
-        Map.entry(MealRules.Effect.STEADINESS,List.of(Items.BROWN_MUSHROOM,Items.RED_MUSHROOM)),Map.entry(MealRules.Effect.MOBILITY,List.of(Items.COOKED_COD,Items.COOKED_SALMON)),
+        Map.entry(MealRules.Effect.STEADINESS,List.of(Items.BROWN_MUSHROOM,Items.RED_MUSHROOM)),Map.entry(MealRules.Effect.HARDY,List.of(Items.COOKED_COD,Items.COOKED_SALMON)),
         Map.entry(MealRules.Effect.MIGHT,List.of(Items.BEEF,Items.COOKED_BEEF)),Map.entry(MealRules.Effect.AGILITY,List.of(Items.COOKIE,Items.PUMPKIN_PIE)),
         Map.entry(MealRules.Effect.FORTUNE,List.of(Items.APPLE,Items.GLOW_BERRIES)),Map.entry(MealRules.Effect.RECOVERY,List.of(Items.HONEY_BOTTLE,Items.GOLDEN_APPLE)),
-        Map.entry(MealRules.Effect.HEARTH,List.of(Items.ROTTEN_FLESH,Items.SPIDER_EYE)),Map.entry(MealRules.Effect.SPRINGY,List.of(Items.CHORUS_FRUIT,Items.MELON_SLICE)),
+        Map.entry(MealRules.Effect.BLAST_WARD,List.of(Items.ROTTEN_FLESH,Items.SPIDER_EYE)),Map.entry(MealRules.Effect.PROJECTILE_WARD,List.of(Items.CHORUS_FRUIT,Items.MELON_SLICE)),
         Map.entry(MealRules.Effect.SWIM,List.of(Items.COD,Items.SALMON)));
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v6EveryOrdinaryTripleDoublesWithoutLegendary(GameTestHelper h){
@@ -93,7 +93,7 @@ public final class MessHallV6GameTests {
         var f=fixture(h);var external=UUID.randomUUID();var recoil=f.player.getAttribute(com.github.leopoko.tacz_attributes.attribute.CustomAttributes.RECOIL.get());try{
             f.level.setBlock(f.root,ArsenalBeacon.MILK_DISPENSER.get().defaultBlockState(),3);var d=(MilkDispenser.DispenserEntity)f.level.getBlockEntity(f.root);d.tank.fill(new FluidStack(ForgeMod.MILK.get(),500),FluidAction.EXECUTE);
             recoil.addTransientModifier(new AttributeModifier(external,"External",.1,AttributeModifier.Operation.ADDITION));
-            PlayerMeals.eat(f.player,new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.VITALITY,1,true),new MealData.Bonus(MealRules.Effect.RECOIL_CONTROL,1,true),new MealData.Bonus(MealRules.Effect.HEARTH,1,true)),36000));f.player.addEffect(new MobEffectInstance(MobEffects.POISON,1000));f.player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,1000));
+            PlayerMeals.eat(f.player,new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.VITALITY,1,true),new MealData.Bonus(MealRules.Effect.RECOIL_CONTROL,1,true),new MealData.Bonus(MealRules.Effect.BLAST_WARD,1,true)),36000));f.player.addEffect(new MobEffectInstance(MobEffects.POISON,1000));f.player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,1000));
             var upper=f.level.getBlockState(f.root.above());upper.getBlock().use(upper,f.level,f.root.above(),f.player,InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(f.root.above().getCenter(),Direction.NORTH,f.root.above(),false));
             h.assertTrue(d.tank.getFluidAmount()==250&&f.player.getActiveEffects().isEmpty()&&f.player.getMaxHealth()==20&&!PlayerMeals.get(f.level).players.containsKey(f.player.getUUID()),"Upper half cleanses all effects and saved meal with one dose");
             PlayerMeals.tick(f.player);PlayerMeals.refresh(f.player);h.assertTrue(f.player.getActiveEffects().isEmpty()&&recoil.getModifier(PlayerMeals.modifier(MealRules.Effect.RECOIL_CONTROL))==null&&recoil.getModifier(external)!=null,"Meal cannot reappear; unrelated attributes survive");

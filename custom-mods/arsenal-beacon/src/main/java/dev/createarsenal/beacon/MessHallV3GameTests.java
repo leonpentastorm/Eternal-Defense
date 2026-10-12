@@ -47,7 +47,7 @@ public final class MessHallV3GameTests {
         var eggs=IngredientTraits.compose(inputs(Items.COOKED_CHICKEN,Items.EGG),true,4).meal();
         h.assertTrue(eggs!=null&&eggs.bonuses().get(0).strength()==1&&eggs.bonuses().get(0).pair(),"Chicken and egg feed Vitality from two families: stronger, but no pair");
         var fish=IngredientTraits.compose(inputs(Items.COOKED_COD,Items.COOKED_SALMON),true,4).meal();
-        h.assertTrue(fish!=null&&fish.bonuses().get(0).effect()==MealRules.Effect.MOBILITY&&fish.bonuses().get(0).pair(),"Cooked cod and salmon pair for Mobility");
+        h.assertTrue(fish!=null&&fish.bonuses().get(0).effect()==MealRules.Effect.HARDY&&fish.bonuses().get(0).pair(),"Cooked cod and salmon pair for Hardy");
         var sandwich=IngredientTraits.compose(inputs(Items.BREAD,Items.COOKED_CHICKEN,Items.COOKED_MUTTON),false).meal();
         h.assertTrue(sandwich!=null&&sandwich.bonuses().stream().noneMatch(MealData.Bonus::pair),"Sandwiches never pair");
         h.assertTrue(Math.abs(chickenMutton.bonuses().get(0).field()-2*new MealData.Bonus(MealRules.Effect.VITALITY,1).field())<1e-9,"The pair doubles the value");
@@ -76,21 +76,32 @@ public final class MessHallV3GameTests {
         }finally{clean(f);}h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
-    public static void v3RecoveryHearthAndSpringyStepActOnTheirDamage(GameTestHelper h){
+    public static void v3RecoveryBlastWardProjectileWardAndHardyAct(GameTestHelper h){
         var f=fixture(h,2);try{
+            var types=f.level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE);
+            java.util.function.Function<net.minecraft.resources.ResourceKey<net.minecraft.world.damagesource.DamageType>,net.minecraft.world.damagesource.DamageSource> src=k->new net.minecraft.world.damagesource.DamageSource(types.getHolderOrThrow(k));
             var fire=f.level.damageSources().inFire();var blast=f.level.damageSources().explosion(null,null);var cactus=f.level.damageSources().cactus();
-            float baseFire=net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,fire,10f);h.assertTrue(baseFire==10f,"Without a meal fire damage is unchanged");
-            var fall=net.minecraftforge.common.ForgeHooks.onLivingFall(f.player,10f,1f);float baseFall=fall==null?1f:fall[1];
-            PlayerMeals.eat(f.player,meal(true,bonus(MealRules.Effect.HEARTH),bonus(MealRules.Effect.SPRINGY),bonus(MealRules.Effect.RECOVERY)));
-            float hearth=(float)(1-MealRules.Effect.HEARTH.amount*2);
-            h.assertTrue(Math.abs(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,fire,10f)-10f*hearth)<1e-4,"Hearth cuts fire damage by the doubled home share");
-            h.assertTrue(Math.abs(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,blast,10f)-10f*hearth)<1e-4,"and explosion damage");
-            h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,cactus,10f)==10f,"but not other damage");
-            var withMeal=net.minecraftforge.common.ForgeHooks.onLivingFall(f.player,10f,1f);h.assertTrue(withMeal!=null&&Math.abs(withMeal[1]-baseFall*(1-MealRules.Effect.SPRINGY.amount*2))<1e-4,"Springy Step cuts fall damage by the doubled home share");
+            var arrow=src.apply(net.minecraft.world.damagesource.DamageTypes.ARROW);var trident=src.apply(net.minecraft.world.damagesource.DamageTypes.TRIDENT);
+            var fireball=src.apply(net.minecraft.world.damagesource.DamageTypes.FIREBALL);var thrown=src.apply(net.minecraft.world.damagesource.DamageTypes.THROWN);
+            h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,blast,10f)==10f,"Without a meal explosion damage is unchanged");
+            PlayerMeals.eat(f.player,meal(true,bonus(MealRules.Effect.BLAST_WARD),bonus(MealRules.Effect.PROJECTILE_WARD),bonus(MealRules.Effect.RECOVERY)));
+            float ward=(float)(1-MealRules.Effect.BLAST_WARD.amount*2),shot=(float)(1-MealRules.Effect.PROJECTILE_WARD.amount*2);
+            h.assertTrue(Math.abs(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,blast,10f)-10f*ward)<1e-4,"Blast Ward cuts explosion damage by the doubled home share");
+            h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,fire,10f)==10f,"but not fire");
+            h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,cactus,10f)==10f,"nor other damage");
+            for(var s:List.of(arrow,trident,fireball))h.assertTrue(Math.abs(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,s,10f)-10f*shot)<1e-4,"Projectile Ward cuts "+s.getMsgId()+" damage by the doubled home share");
+            h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,thrown,10f)==10f,"but not a thrown snowball or egg");
+            PlayerMeals.clear(f.player);
+            PlayerMeals.eat(f.player,meal(true,bonus(MealRules.Effect.HARDY)));
+            var food=f.player.getFoodData();food.setExhaustion(0f);PlayerMeals.tick(f.player);food.addExhaustion(1f);PlayerMeals.tick(f.player);
+            double share=Math.min(MealRules.Effect.HARDY.cap(),MealRules.Effect.HARDY.amount*2);
+            h.assertTrue(Math.abs(food.getExhaustionLevel()-(1-share))<1e-4,"Hardy gives back its doubled home share of the hunger gained ("+food.getExhaustionLevel()+")");
+            PlayerMeals.clear(f.player);food.setExhaustion(0f);food.addExhaustion(1f);PlayerMeals.tick(f.player);h.assertTrue(food.getExhaustionLevel()==1f,"Without Hardy nothing is given back");
+            PlayerMeals.eat(f.player,meal(true,bonus(MealRules.Effect.RECOVERY)));
             f.player.setHealth(10f);f.player.tickCount=MealRules.RECOVERY_PERIOD;PlayerMeals.tick(f.player);
             h.assertTrue(Math.abs(f.player.getHealth()-(10f+MealRules.Effect.RECOVERY.amount*2))<1e-4,"Recovery heals twice its field amount at home on each pulse");
             f.player.setHealth(10f);f.player.tickCount=MealRules.RECOVERY_PERIOD+1;PlayerMeals.tick(f.player);h.assertTrue(f.player.getHealth()==10f,"and only on the pulse");
-            PlayerMeals.clear(f.player);h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,fire,10f)==10f,"A cleared meal protects from nothing");
+            PlayerMeals.clear(f.player);h.assertTrue(net.minecraftforge.common.ForgeHooks.onLivingHurt(f.player,blast,10f)==10f,"A cleared meal protects from nothing");
         }finally{clean(f);}h.succeed();
     }
 }

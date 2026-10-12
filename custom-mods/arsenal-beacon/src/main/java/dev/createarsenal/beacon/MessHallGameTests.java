@@ -70,7 +70,7 @@ public final class MessHallGameTests {
     }
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void fieldTimerHomeStrengthAndPlayerLifecycle(GameTestHelper h){
-        var f=fixture(h,3);var meal=new MealData(false,List.of(new MealData.Bonus(MealRules.Effect.VITALITY,1),new MealData.Bonus(MealRules.Effect.MOBILITY,1)),MealRules.FIELD_TICKS);PlayerMeals.eat(f.player,meal);var s=PlayerMeals.get(f.level).players.get(f.player.getUUID());
+        var f=fixture(h,3);var meal=new MealData(false,List.of(new MealData.Bonus(MealRules.Effect.VITALITY,1),new MealData.Bonus(MealRules.Effect.HARDY,1)),MealRules.FIELD_TICKS);PlayerMeals.eat(f.player,meal);var s=PlayerMeals.get(f.level).players.get(f.player.getUUID());
         h.assertTrue(s.home&&f.player.getMaxHealth()==28,"Home doubles the health meal modifier");int initial=s.remaining;for(int i=0;i<50;i++)PlayerMeals.tick(f.player);h.assertTrue(s.remaining==initial,"Home freezes duration");
         f.player.setPos(f.root.getX()+30,f.root.getY(),f.root.getZ());for(int i=0;i<240;i++)PlayerMeals.tick(f.player);h.assertTrue(!s.home&&s.remaining==initial-240&&f.player.getMaxHealth()==24,"Field timer decrements and strength normalizes");
         f.player.setPos(f.root.getX(),f.root.getY(),f.root.getZ());PlayerMeals.tick(f.player);h.assertTrue(s.remaining==initial-240&&s.home,"Re-entry freezes remaining time without resetting");

@@ -15,9 +15,9 @@ final class MealPlannerTest {
     static Map<String,MealPlanner.Food> pantry(){
         var list=List.of(
             food("cooked_chicken","protein",64,VITALITY),food("cooked_mutton","protein",64,VITALITY),food("beef","protein",64,MIGHT),food("cooked_beef","protein",64,MIGHT),food("milk_bucket","protein",1,FORTITUDE),
-            food("apple","fruit",64,MOBILITY,FORTUNE),food("glow_berries","fruit",64,FORTUNE),food("honey_bottle","fruit",16,RECOVERY),food("golden_apple","fruit",64,RECOVERY),food("chorus_fruit","fruit",64,SPRINGY),food("melon_slice","fruit",64,MOBILITY,SPRINGY),
-            food("cooked_cod","fish",64,MOBILITY),food("cooked_salmon","fish",64,MOBILITY),food("cod","fish",64,SWIM),food("salmon","fish",64,SWIM),
-            food("brown_mushroom","fungi",64,STEADINESS),food("red_mushroom","fungi",64,STEADINESS),food("rotten_flesh","fungi",64,HEARTH),food("spider_eye","fungi",64,HEARTH),
+            food("apple","fruit",64,HARDY,FORTUNE),food("glow_berries","fruit",64,FORTUNE),food("honey_bottle","fruit",16,RECOVERY),food("golden_apple","fruit",64,RECOVERY),food("chorus_fruit","fruit",64,PROJECTILE_WARD),food("melon_slice","fruit",64,HARDY,PROJECTILE_WARD),
+            food("cooked_cod","fish",64,HARDY),food("cooked_salmon","fish",64,HARDY),food("cod","fish",64,SWIM),food("salmon","fish",64,SWIM),
+            food("brown_mushroom","fungi",64,STEADINESS),food("red_mushroom","fungi",64,STEADINESS),food("rotten_flesh","fungi",64,BLAST_WARD),food("spider_eye","fungi",64,BLAST_WARD),
             food("carrot","vegetables",64,FORTITUDE),food("potato","vegetables",64,FORTITUDE),food("beetroot_soup","vegetables",1,FORTITUDE),
             food("bread","grain",64,STEADINESS),food("wheat","grain",64,STEADINESS),food("cookie","grain",64,AGILITY),food("pumpkin_pie","grain",64,AGILITY));
         var map=new LinkedHashMap<String,MealPlanner.Food>();for(var f:list)map.put(f.key(),f);return map;
@@ -88,7 +88,7 @@ final class MealPlannerTest {
     }
     @Test void mkFourStewPlansDoubleEveryEffectWhenThePackAllowsIt(){
         var c=pantry();var stock=stock(c,64);
-        var plan=MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE,MOBILITY),true,4,c,stock,Set.of(),true);
+        var plan=MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE,HARDY),true,4,c,stock,Set.of(),true);
         assertNotNull(plan);assertEquals(3,plan.doubled());assertEquals(6,plan.keys().size());
         var legendary=MealPlanner.plan(EnumSet.of(FIREPOWER),true,4,c,stock,Set.of(),true);
         assertEquals(1,legendary.doubled());assertEquals(4,legendary.keys().size(),"two foods from EACH group");
@@ -105,7 +105,7 @@ final class MealPlannerTest {
         assertNull(MealPlanner.plan(EnumSet.of(FIREPOWER,FOCUS,FAST_DRAW),true,1,c,stock,Set.of(),false),"three legendary recipes need six distinct kinds");
         assertNull(MealPlanner.plan(EnumSet.of(FIREPOWER,FOCUS,FAST_DRAW),true,3,c,stock,Set.of(),false),"three food slots hold three kinds");
         assertNotNull(MealPlanner.plan(EnumSet.of(FIREPOWER,FOCUS,FAST_DRAW),true,4,c,stock,Set.of(),false),"Mk IV has six");
-        assertNotNull(MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE,MOBILITY),true,2,c,stock,Set.of(),false),"three everyday effects fit three slots");
+        assertNotNull(MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE,HARDY),true,2,c,stock,Set.of(),false),"three everyday effects fit three slots");
         assertNull(MealPlanner.plan(EnumSet.of(FIREPOWER,FOCUS),false,4,c,stock,Set.of(),false),"a sandwich holds at most three kinds");
     }
     @Test void scarcePacksGetTheBestPlanTheyCanAndAreMarkedUncovered(){
@@ -129,7 +129,7 @@ final class MealPlannerTest {
         assertEquals(Set.of("cooked_mutton","bread"),new HashSet<>(plan.keys()),"nothing needs to move that is already in place");
     }
     @Test void planningIsDeterministicAndFast(){
-        var c=pantry();var stock=stock(c,64);var order=EnumSet.of(FORTITUDE,MOBILITY,FIREPOWER);
+        var c=pantry();var stock=stock(c,64);var order=EnumSet.of(FORTITUDE,HARDY,FIREPOWER);
         var first=MealPlanner.plan(order,true,4,c,stock,Set.of(),true);var second=MealPlanner.plan(order,true,4,c,stock,Set.of(),true);
         assertEquals(first.keys(),second.keys());assertArrayEquals(first.units(),second.units());
         long start=System.nanoTime();for(int i=0;i<200;i++)MealPlanner.plan(order,true,4,c,stock,Set.of(),false);
