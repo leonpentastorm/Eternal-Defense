@@ -1,4 +1,4 @@
-# 0.0.34: the live catapult, the supply drop, Fishing & Animal Husbandry, the catapult's status, the radio, the specialty cap: testing
+# 0.0.34: the live catapult, the supply drop, Fishing & Animal Husbandry, the catapult's status, the radio, the specialty cap, the war horn, no totems: testing
 
 Branch `feature/supply-catapult`.
 
@@ -13,6 +13,7 @@ Branch `feature/supply-catapult`.
 ### Unit tests: 319 pass, 0 fail
 
 * New `Round0034Test`: the catapult's motion (loaded, turned to the beacon, settled, thrown, the box released 3 ticks into the throw, then back to its rest heading), the rest heading from the placer's facing, the motion saved with the FOB and run every tick (no separate unseen throw); the flight home is the Supply Flare's 12 seconds, the parcel appearing a fall early over open sky, the flare's countdown and parcel used; protocol 39 and the live view packet (id 23), drawn in the seller with the grid narrower; the radio icon (16 x 16), the static and the four order lines (sounds.json, the OGG files, the subtitles, the button and the purchase); Fishing & Animal Husbandry (4 specialties, both lists, both icons, both names); saves of 0.0.31 to 0.0.33 by ordinal map to the right specialty and a husbandry choice keeps its item, saves now by name; the specialty slot at most 4 S-tier items an hour for the slowest, a middling and the biggest FOB alone at research 5, the 30-minute floor untouched, the other slots not capped; the FOB screen's catapult state and the lines for it, level 5 of the research tab.
+* Also in `Round0034Test`: the war horn (the file, sounds.json, the subtitle, sounded on planting, on the raid starting and on the SOS raid, 12 seconds between two). `Round0032Test`: the monster hunter guild has no totem of undying.
 * Changed: `Round0033Test` (the flight is 12 seconds), `RouteTest` (4 specialties; the research ratio checked on a small FOB, under the cap), `Round0032Test` (the merged specialty's two icons), `FobTest` and `RaidRoundTest` (protocol 39).
 
 ### FOB GameTests: 24 pass, 0 fail, in both editions
@@ -24,6 +25,7 @@ Branch `feature/supply-catapult`.
 ### Real client: RESULT_CLIENT
 
 New in 0.0.34:
+* The war horn: planting the FOB (which calls its raid at once) sounds it once; the SOS raid starting sounds it again (the client's sound listener counted `arsenal_beacon:fob.war_horn`, 1 then 2).
 * FOB Beacon, Research tab, the top level: level 5 reads "Supply Catapult + Specialty Shop" with the catapult beside it; one gift from level 2 to 5 announces the S tier and the Supply Catapult and Specialty Shop, each (`f23d`). The FOB tab: "Supply Catapult: OFFLINE, none placed" (`f23f`), and with the catapult placed, "ONLINE" (`f29d`); the overlap check on both.
 * Receiving Gate: the village made Fishing & Animal Husbandry with beef chosen (a husbandry index moved up by the fisher's five): the card shows both names and both icons (`f17m`), the grid every fish, meat and leather, 12 (`f17n`). The specialty's rate on this 21 km line, faster than a vanilla cart, is 64.0 value an hour: the cap (the first run found 87 before the fix below).
 * In the village: bought with the server's own call (as the table's button sends it): one of the owner's order lines played (the client's sound listener counted `arsenal_beacon:seller.order_chatter_N`); the arm throws on the client (`f31`, `f31b`); the box flies, landing 12 s after the throw, the chat says it was thrown and counts down ("Supplies arriving in ..."). Home: the base's land had not been loaded during the flight; the parcel came down after its fall, beside the beacon.
@@ -37,7 +39,10 @@ New in 0.0.34:
   * "Supply Catapult: OFFLINE, none placed" was cut short in the FOB screen's left column at 640 x 360: it wraps onto two lines;
   * the seller's line "Fishing & Animal Husbandry | 4 Ardent Energy a lot | 0 of 4 boxes waiting" was cut short at 427 x 240: it drops the boxes, then the name, when it does not fit; the live view's line "Turning to your base: 1 box(es) loaded" was cut short: the lines are shorter ("Turning to base", "In the air: 9 s");
   * harness: the FOB screen was opened from 10 blocks away and closed at once (out of reach): the player stands beside the FOB Beacon first.
-* **Second standalone run** (`checks-standalone.txt`): 295 of 295.
+* **Second standalone run** (`checks-standalone-second-run.txt`): 295 of 295, before the totem was removed and the war horn added (owner, late in the round).
+* **First pack run** (`checks-pack-first-run-stopped.txt`): stopped after the FOB GameTests and the first client checks, to run on the code without the totem; two meal-buff checks had failed while a unit test build ran beside it (load), not seen in any other run.
+* **Second pack run** (`checks-pack-before-horn.txt`): 295 of 295, with the totem removed, before the war horn.
+* **Final standalone run** (`checks-standalone.txt`): 297 of 297, the final code (the war horn's two checks added).
 PACK_RESULT
 
 ## Not tested

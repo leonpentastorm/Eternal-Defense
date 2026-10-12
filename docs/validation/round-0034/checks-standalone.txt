@@ -9,9 +9,10 @@ PASS the FOB is planted where the player clicked -1090, 66, 721
 PASS it is PLANTED with a generated name PLANTED FOB SILENT MANTIS
 PASS planting started a vanilla raid raid=25, villagers at its start=4
 PASS everyone reads the announcement 
+PASS 0.0.34: the war horn sounds once for the planting and its raid together 1 horns
 PASS the block stands two tall 
 PASS the planted FOB's zone outline reaches the client [Zone[id=34, name=FOB SILENT MANTIS, state=planted, sections=[-307863210688508, -303465164177404, -299067117666300, -307863210688507, -303465164177403, -299067117666299, -307863210688509, -303465164177405, -299067117666301, -307863211737084, -307863207542780, -303465165225980, -303465161031676, -299067118714876, -299067114520572, -307863211737083, -307863207542779, -303465165225979, -303465161031675, -299067118714875, -299067114520571, -307863211737085, -307863207542781, -303465165225981, -303465161031677, -299067118714877, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725], ground=66]]
-PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@aa3e0d7
+PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@2eea76bc
 PASS the status card has the FOB line with the shovel in hand FOB SILENT MANTIS | PLANTED | RAID | 4 villagers
 PASS the FOB is ACTIVE ACTIVE
 PASS everyone reads that it is ACTIVE 
@@ -32,23 +33,23 @@ PASS the Delivery Gate stands across both rails, a column either side
 PASS the rails stay in its two lanes 
 PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
 PASS the cart rolls on the rail 
-PASS the cart rolled on through the gate with its rider seated x=-1079.8723519124358 gate x=-1082
+PASS the cart rolled on through the gate with its rider seated x=-1079.5882393433405 gate x=-1082
 PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@2c9498aa
+PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@2054183c
 PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=291, z=1}
-PASS the route is open and its round trip delivered true ride 481
+PASS the route is open and its round trip delivered true ride 360
 PASS the light at home turns green, on both columns 
-PASS the round trip's tribute is in the Receiving Gate's storage stacks=10 last=481
+PASS the round trip's tribute is in the Receiving Gate's storage stacks=8 last=360
 PASS the gate screen opens by clicking the beam 
 PASS the screen holds the storage (54 slots) and the inventory 90
-PASS the client sees the tribute in the storage stacks=10
+PASS the client sees the tribute in the storage stacks=8
 PASS the screen takes the whole window (8 px margins) 624x344 in 640x360
 PASS 640 x 360: the storage beside the tabs 
 PASS the four loot slots: emeralds, the mine, the farm, potion makers potions
-PASS the countdown runs next in 92376 ticks
+PASS the countdown runs next in 92362 ticks
 PASS the Receiving Gate, Tribute tab at 640x360: 22 texts, none over another or over a button, all in the panel 0 
 PASS the Receiving Gate, Tribute tab at 640x360: no text cut short 
-PASS 52 ticks later it reads about 52 ticks less (the server's state comes every second) 92376 -> 92325
+PASS 52 ticks later it reads about 52 ticks less (the server's state comes every second) 92362 -> 92311
 PASS the mine is off on the server 
 PASS the screen shows it at once: OFF, and the farm brings 4/3 as much 74.4779294117647 -> 99.30390588235294
 PASS the Receiving Gate, a slot off at 640x360: 23 texts, none over another or over a button, all in the panel 0 
@@ -112,7 +113,7 @@ PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
 PASS the Receiving Gate, the potion makers' items at 427x240: 6 texts, none over another or over a button, all in the panel 0 
 PASS the Receiving Gate, the potion makers' items at 427x240: no text cut short 
 PASS the gate screen shows the monster hunter guild monsters
-PASS the guild's list: every monster drop 21
+PASS the guild's list: every monster drop 20
 PASS research level 1: ender pearls (A) still locked 
 PASS the Receiving Gate, the monster hunter guild's items at 640x360: 11 texts, none over another or over a button, all in the panel 0 
 PASS the Receiving Gate, the monster hunter guild's items at 640x360: no text cut short 
@@ -132,7 +133,7 @@ PASS the SOS calls the FOB sos=34 left=167940
 PASS everyone reads the SOS 
 PASS the SOS map is handed out 
 PASS the status card leads with the SOS SOS North Gate | 6 d 23 h left | go there
-PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@4978a3f5
+PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@6361d7d
 PASS it lists the FOB: its name, its distance from the base, its state {bearing:268.0644445255384d,catapult:0b,distance:21110,id:34L,index:0,level:2,name:"North Gate",queue:0,route:1b,seller:"research",signal:"green",sos:1b,sosLeft
 PASS and the time left to answer its SOS left=167880
 PASS the table knows the map is not carried 
@@ -158,9 +159,10 @@ PASS names off: no FOB name or distance on the map [No scan yet. Use SCAN MAP., 
 PASS names on again 
 PASS the SOS raid starts on arrival 
 PASS everyone reads who answered 
-PASS a villager lost in the raid is recorded [{baby:1b,data:{AbsorptionAmount:0.0f,Age:-20057,Air:300s,ArmorDropChances:[0.08
+PASS 0.0.34: the war horn sounds as the SOS raid starts 2 horns in all
+PASS a villager lost in the raid is recorded [{baby:1b,data:{AbsorptionAmount:0.0f,Age:-19980,Air:300s,ArmorDropChances:[0.08
 PASS won: the SOS is over and the FOB stays ACTIVE 
-PASS the SOS clock starts again 834241
+PASS the SOS clock starts again 820283
 PASS its map burnt 
 PASS everyone reads that it held 
 PASS the unanswered SOS puts the FOB DOWN 
@@ -222,7 +224,7 @@ PASS the FOB screen, the catapult online at 640x360: 42 texts, none over another
 PASS the FOB screen, the catapult online at 640x360: no text cut short 
 PASS it reads ONLINE 
 PASS bought from the village: the box waits at the catapult tactical.seller.bought
-PASS the seller's radio answers the purchase (one of the owner's four order lines) [arsenal_beacon:seller.order_chatter_2, minecraft:item.crossbow.loading_start]
+PASS the seller's radio answers the purchase (one of the owner's four order lines) [minecraft:block.metal.place, arsenal_beacon:fob.war_horn, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.wood.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:event.raid.horn, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.gravel.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.metal.place, minecraft:block.grass.break, minecraft:block.grass.break, minecraft:block.grass.break, minecraft:block.wood.break, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.minecart.riding, minecraft:entity.minecart.inside.underwater, minecraft:entity.minecart.inside, minecraft:block.grass.step, minecraft:block.metal.place, minecraft:entity.minecart.riding, minecraft:block.note_block.bell, minecraft:entity.player.levelup, minecraft:entity.player.levelup, minecraft:ui.toast.in, minecraft:ui.toast.out, minecraft:block.bell.use, arsenal_beacon:fob.war_horn, minecraft:block.bell.use, minecraft:block.fire.extinguish, minecraft:entity.villager.ambient, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:entity.villager.ambient, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:ui.toast.in, minecraft:ui.toast.in, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:block.grass.step, minecraft:ui.toast.out, minecraft:ui.toast.out, minecraft:block.gravel.step, minecraft:block.wood.step, minecraft:block.grass.step, minecraft:block.wood.step, minecraft:block.wood.place, minecraft:entity.villager.ambient, arsenal_beacon:seller.order_chatter_2, minecraft:item.crossbow.loading_start]
 PASS the client sees the arm throw 
 PASS the catapult turned to the beacon and threw the box; it lands 12 s later throws 1, lands in 196 ticks
 PASS the buyer reads the throw and the supply drop's countdown 
@@ -249,8 +251,8 @@ PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
 PASS the Command Table, the specialty seller at 427x240: 5 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the specialty seller at 427x240: no text cut short 
 PASS bought: the box waits at the catapult tactical.seller.bought
-PASS the radio answers again [arsenal_beacon:seller.order_chatter_1]
-PASS the seller shows the catapult loading and turning to the base [-7.4879932, -1.0, 1.0, 1.0, 0.0, -1.0]
+PASS the radio answers again [arsenal_beacon:seller.order_chatter_3]
+PASS the seller shows the catapult loading and turning to the base [-5.279993, -1.0, 1.0, 1.0, 0.0, -1.0]
 PASS the Command Table, the catapult turning at 640x360: 6 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the catapult turning at 640x360: no text cut short 
 PASS its line: turning to your base 
@@ -258,17 +260,17 @@ PASS the seller's catapult throws, as the real one far away
 PASS the Command Table, the catapult throwing at 640x360: 6 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the catapult throwing at 640x360: no text cut short 
 PASS its line: throwing 
-PASS the seller counts the box home [-76.55527, -1.0, 0.0, 0.0, 1.0, 9.0]
+PASS the seller counts the box home [-73.38727, -1.0, 0.0, 0.0, 1.0, 9.0]
 PASS the Command Table, the box in the air at 640x360: 6 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the box in the air at 640x360: no text cut short 
 PASS its line: the box lands in so many seconds 
-PASS the parcel appears high over its spot and comes down by parachute y 318.5 over 291
+PASS the parcel appears high over its spot and comes down by parachute y 317.30000000000007 over 291
 PASS a parcel comes down beside the beacon with what was bought 1 parcels
 PASS the chat counted both boxes down, as for a supply drop 28
 PASS the Defense Beacon's preview: the beacon and its base zone Ghost[cells=[BlockPos{x=20008, y=291, z=19}], states=[Block{arsenal_beacon:defense_beacon}[facing=south,mk=1]], box=AABB[20008.0, 291.0, 19.0] -> [20009.0, 292.0, 20.0], beacon=true]
 PASS the Command Table's preview: 2 x 2 x 2 AABB[20007.0, 291.0, 19.0] -> [20009.0, 293.0, 21.0]
 PASS the table stands in the zone, its parts with it 
-PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@22249b41
+PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@7837c99c
 PASS Sharpness I applied 
 PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -277,9 +279,9 @@ PASS everyone reads it
 PASS Mending applied 
 PASS the table is Mk I 
 PASS the sword comes back enchanted 
-PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@6b86a5a4
+PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@5d589727
 PASS the Exchange buys the Warlord Seal for 8 Ardent Energy value=8
-PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@657cce4d
+PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@1efe2fb2
 PASS nothing is removed yet 
 PASS the FOB is deleted 
 PASS its block is gone 
