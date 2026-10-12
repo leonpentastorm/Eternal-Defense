@@ -629,8 +629,8 @@ public final class QaFob {
             check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
             if(catapult!=null)look(surface(catapult.south(3)),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);});
         step(30,()->{var g=PlacementPreviewClient.ghost();
-            check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());
-            shot("f29_catapult_preview");},"the preview");
+            check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());},"the preview");
+        step(40,()->shot("f29_catapult_preview"),"its picture (the software renderer runs behind the game)");
         step(5,()->{if(catapult!=null)click(catapult.below(),Direction.UP);},"place it with a right-click");
         step(20,()->{var f=fob();check("placed: it serves the FOB",f!=null&&catapult!=null&&catapult.equals(f.catapult),f==null?"":String.valueOf(f.catapult));
             hold(ItemStack.EMPTY);mc().options.hideGui=true;if(catapult!=null)look(catapult.south(5).west(3).above(2),catapult.getX()+.5,catapult.getY()+.8,catapult.getZ()+.5);},"placed");
@@ -663,9 +663,12 @@ public final class QaFob {
             srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();if(!x.shipments.isEmpty())x.shipments.get(0).putLong("due",sl().getGameTime()+4000);});
             shot("f30d_seller_bought");});
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());if(catapult!=null)tp(catapult.getX()-6.5,catapult.getY()+1,catapult.getZ()+7.5,0,0);},"to the village to watch");
-        step(5,()->{if(catapult!=null)look(catapult.south(7).west(6).above(2),catapult.getX()+.5,catapult.getY()+1.2,catapult.getZ()+.5);mc().options.hideGui=true;},"face the catapult");
-        until("the catapult throws",600,()->{var be=mc().level.getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c:null;return be!=null&&be.throwAge>=2&&be.throwAge<=4;},()->shot("f31_catapult_throw"));
-        step(4,()->shot("f31b_box_away"),"the box leaves");
+        step(5,()->{if(catapult!=null)look(surface(catapult.east(6).south(2)),catapult.getX()+.5,catapult.getY()+1.2,catapult.getZ()+.5);mc().options.hideGui=true;},"face the catapult from its side");
+        until("the catapult throws",600,()->{var be=mc().level.getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c:null;return be!=null&&be.throwAge>=2&&be.throwAge<=4;},()->check("the client sees the arm throw",true,""));
+        // the software renderer runs about 1.5 s behind the game: three pictures from the throw on
+        step(10,()->shot("f31_catapult_throw"),"the throw");
+        step(15,()->shot("f31b_catapult_throw"),"the arm wound back");
+        step(15,()->shot("f31c_catapult_rewind"),"winding back");
         until("the box is in the air",200,()->{var f=fob();return f!=null&&!f.shipments.isEmpty()&&f.shipments.get(0).getString("stage").equals("flying");},()->{var f=fob();
             var be=srvGet(()->sl().getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c.throwsSeen:-1);
             boolean flying=f!=null&&!f.shipments.isEmpty();
@@ -678,7 +681,7 @@ public final class QaFob {
             check("a parcel comes down beside the beacon with what was bought",parcels.size()==1&&!parcels.get(0).box.isEmpty(),parcels.size()+" parcels");
             check("the buyer reads where it landed",chatHas("landed beside your Defense Beacon"),"");
             if(!parcels.isEmpty()){var at=parcels.get(0).position();look(BlockPos.containing(at.x,b.getY(),at.z+7),at.x,at.y+2,at.z);}},"the parcel");
-        step(10,()->shot("f31c_parcel_at_beacon"),"the parcel at the beacon");
+        step(40,()->shot("f31d_parcel_at_beacon"),"the parcel at the beacon");
         // the placement preview at home: the Defense Beacon shows its base zone, the Command Table its size
         step(5,()->{var b=HuntGameTests.BEACON;hold(new ItemStack(ArsenalBeacon.BEACON_ITEM.get()));look(b.offset(0,1,14),b.getX()+.5,b.getY()-1,b.getZ()+9.5);},"hold a Defense Beacon");
         step(30,()->{var g=PlacementPreviewClient.ghost();check("the Defense Beacon's preview: the beacon and its base zone",g!=null&&g.beacon(),String.valueOf(g));shot("f32_beacon_preview");},"the zone preview");
