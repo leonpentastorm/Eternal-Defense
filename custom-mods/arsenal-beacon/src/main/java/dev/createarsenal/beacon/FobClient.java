@@ -209,7 +209,7 @@ public final class FobClient {
             // 0.0.34 (owner): the Supply Catapult, online or offline and why
             String cat=data.getString("catapult");
             if(!cat.isEmpty()){Component line=cat.equals("online")?Ui.t("fob.catapult.online"):Ui.t("fob.catapult.offline."+cat,CatapultRules.SELLER_LEVEL);
-                Ui.text(g,font,line,x,y,cat.equals("online")?OLIVE:Ui.MUTED,w);catapultLine=new int[]{x,y,Math.min(w,font.width(line)),9};y+=13;}
+                int end=Ui.wrap(g,font,line,x,y,w,cat.equals("online")?OLIVE:Ui.MUTED,2);catapultLine=new int[]{x,y,Math.min(w,font.width(line)),end-y};y=end+3;}
             int bottom=topPos+imageHeight-(callButton.visible||repairButton.visible&&!down()?54:20);
             if(data.getBoolean("sos")&&!data.getBoolean("raid")){   // an SOS from this FOB, no raid yet (0.0.25)
                 Ui.card(g,x,y,w,Math.min(48,bottom-y),Ui.RED);

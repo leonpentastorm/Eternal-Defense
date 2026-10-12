@@ -639,7 +639,7 @@ public final class QaFob {
         atSizes(SIZES,"the FOB screen, Research tab","f23e_fob_research",true,null);
         step(5,()->{press("FOB");FobClient.FobScreen.tab=0;},"back to the FOB tab");
         step(10,()->{var s=fobScreen();check("the FOB tab: the Supply Catapult is OFFLINE, none placed yet",s!=null&&s.data().getString("catapult").equals("catapult"),s==null?"":s.data().getString("catapult"));recordFrame=true;},"the catapult's line");
-        step(3,()->{layout("the FOB screen, the catapult offline",true);check("it reads OFFLINE",drawnHas("Supply Catapult: OFFLINE"),"");shot("f23f_fob_catapult_offline");},"offline");
+        step(3,()->{layout("the FOB screen, the catapult offline",true);check("it reads OFFLINE",drawnHas("OFFLINE"),"");shot("f23f_fob_catapult_offline");},"offline");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
         // ---- 0.0.33: the Supply Catapult and the specialty seller; the placement preview; the FOB zone's ground line -------------------------------
         step(20,()->{catapult=srvGet(QaFob::findCatapultSpot);check("a free 3 x 3 spot in the FOB's village for the catapult",catapult!=null,String.valueOf(catapult));
@@ -660,9 +660,10 @@ public final class QaFob {
             if(spot!=null)look(spot.south(10).above(3),spot.getX()+.5,spot.getY(),spot.getZ()+.5);},"the zone outline");
         step(30,()->shot("f29c_fob_zone_ground"),"its ground line");
         // 0.0.34 (owner): the FOB screen says the catapult is online
-        step(5,()->{listen();if(spot!=null)srv(()->Fobs.open(sp(),spot,""));},"open the FOB screen");
+        step(10,()->{listen();if(spot!=null)look(surface(spot.south(3)),spot.getX()+.5,spot.getY()+1,spot.getZ()+.5);},"stand by the FOB Beacon (its screen closes out of reach)");
+        step(5,()->{if(spot!=null)srv(()->Fobs.open(sp(),spot,""));},"open the FOB screen");
         step(25,()->{var s=fobScreen();check("the FOB screen: the Supply Catapult is ONLINE",s!=null&&s.data().getString("catapult").equals("online"),s==null?"no screen":s.data().getString("catapult"));recordFrame=true;},"the catapult's line");
-        step(3,()->{layout("the FOB screen, the catapult online",true);check("it reads ONLINE",drawnHas("Supply Catapult: ONLINE"),"");shot("f29d_fob_catapult_online");mc().setScreen(null);srv(()->sp().closeContainer());},"online");
+        step(3,()->{layout("the FOB screen, the catapult online",true);check("it reads ONLINE",drawnHas("ONLINE"),"");shot("f29d_fob_catapult_online");mc().setScreen(null);srv(()->sp().closeContainer());},"online");
         // the throw in the village: bought here (the server's own call, as the table's button sends it), watched from the side
         step(5,()->{if(catapult!=null)look(surface(catapult.east(6).south(2)),catapult.getX()+.5,catapult.getY()+1.2,catapult.getZ()+.5);mc().options.hideGui=true;},"face the catapult from its side");
         step(20,()->{String r=srvGet(()->SupplyCatapult.buy(sp(),sl(),SupplyCatapult.sellButton(0,0,0)));check("bought from the village: the box waits at the catapult",r.equals("tactical.seller.bought"),r);},"buy a lot");
