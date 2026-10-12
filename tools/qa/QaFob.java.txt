@@ -480,7 +480,7 @@ public final class QaFob {
         step(5,()->{var s=gate();if(s!=null)press("Back");},"back to the slots");
         // ---- 0.0.32: the monster hunter guild: every monster drop but the bosses'; ender pearls (A) open at research level 2 ---------------------------
         step(5,()->srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.specialty=RouteRules.Specialty.MONSTERS;x.special=0;x.researchXp=RouteRules.RESEARCH_XP[1];FobData.get(sl()).setDirty();}),"the village becomes a monster hunter guild, research level 1");
-        until("the screen shows the guild",200,()->{var s=gate();return s!=null&&s.data().getString("specialty").equals("monsters");},()->{var s=gate();check("the gate screen shows the monster hunter guild",s!=null&&s.data().getString("specialty").equals("monsters"),s==null?"":s.data().getString("specialty"));pressNth("Choose",2);},"Choose for the specialty");
+        until("the screen shows the guild",200,()->{var s=gate();return s!=null&&s.data().getString("specialty").equals("monsters");},()->{var s=gate();check("the gate screen shows the monster hunter guild",s!=null&&s.data().getString("specialty").equals("monsters"),s==null?"":s.data().getString("specialty"));pressNth("Choose",2);});
         step(10,()->{var s=gate();int pearl=pearl();check("the guild's list: every monster drop",s!=null&&s.pickButtons.size()==RouteRules.MONSTER_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));
             check("research level 1: ender pearls (A) still locked",s!=null&&!s.pickButtons.get(pearl).active,"");recordFrame=true;},"the guild's grid");
         step(3,()->{layout("the Receiving Gate, the monster hunter guild's items",true);shot("f17k_gate_monsters_locked");
