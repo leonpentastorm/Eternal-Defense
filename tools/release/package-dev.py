@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.34, branch feature/supply-catapult: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.35, branch feature/drink-station: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,18 +25,18 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # six screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
-BUNDLED_SHOTS={'standalone-f29_catapult_preview.png','standalone-f29b_catapult_model.png','standalone-f30b_seller.png','standalone-f31_catapult_throw.png','standalone-f31d_parcel_at_beacon.png','standalone-f32_beacon_preview.png',
+BUNDLED_SHOTS={'standalone-d05_ready.png','standalone-d10_latte.png','standalone-d15_mk4_three.png','standalone-d16_taps.png','standalone-d17_pots.png','standalone-d03_storage_tooltip.png','pack-d12_pot_tab_640x360.png','standalone-f29_catapult_preview.png','standalone-f29b_catapult_model.png','standalone-f30b_seller.png','standalone-f31_catapult_throw.png','standalone-f31d_parcel_at_beacon.png','standalone-f32_beacon_preview.png',
     'standalone-f30f_seller_live_throw.png','standalone-f30h_seller_box_in_air.png','standalone-f31e_parcel_parachute.png','standalone-f29d_fob_catapult_online.png','standalone-f23d_fob_research_top.png','standalone-f17m_gate_fishing_husbandry.png','pack-f30b_seller.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 39 since 0.0.34 (38 in 0.0.33): 0.0.34 adds the catapults' live state for
-the Command Table, so an older client cannot join this server or the other way round. Install this build on the client AND the server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34): 0.0.35 adds the Drink Station screen's state,
+so an older client cannot join this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
 (or right after) and place it again. A world from 0.0.30 keeps its FOBs: each gets a specialty from its number and every slot on,
@@ -51,9 +51,36 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-THIS BUILD IS FROM THE FEATURE BRANCH feature/supply-catapult (0.0.32 is on dev).
+THIS BUILD IS FROM THE FEATURE BRANCH feature/drink-station (0.0.34 is on dev).
 
-WHAT IS NEW IN 0.0.34: THE LIVE CATAPULT, THE SUPPLY DROP, FISHING AND HUSBANDRY AS ONE, A CAP ON THE SPECIALTY
+WHAT IS NEW IN 0.0.35: DEARER MEALS, THREE NEW MEAL EFFECTS, THE DRINK STATION
+* Meals cost more: a stew batch takes three times the food (12/21/30/36 at Mk I-IV; a pot still holds 3/5/7/9 servings); a
+  sandwich takes 2 of each filling and 2 bread. Effects, meal length and doubling are unchanged.
+* Three meal effects replaced (same buttons, same foods): Hardy (hungry 15% slower) for Mobility, Blast Ward (20% less explosion
+  damage) for Hearth, Projectile Ward (15% less from arrows, bolts, fireballs and tridents; not gun bullets) for Springy Step.
+  Doubled at home, capped at 60/80/90%. A saved meal with an old effect just runs out.
+* Drink Station Mk I-IV (your models): a brewing stand (other mods' brewing recipes too) with a 54-slot potion storage, 64 bottles
+  of one potion a slot. Finished bottles move into the storage. Click a stored potion for one bottle, shift for as many as you can
+  carry; shift-click potions in your pack to store them. Over 256 bottles inside it cannot be broken.
+* From Mk II: the mixing menu. Click effect tiles, Gather potions (storage first, then your pack; nothing spent), Brew into a Brew
+  Pot or Make Latte. 1/2/3 effects and Brew Pots at Mk II/III/IV. A drink lasts 10 minutes; the sweetener (Regeneration potions,
+  250 or 750 mB) buys +10 or +20 minutes for 1,000 or 2,000 mB. Upgrades: 8/16/32 plating (pack) or 4/8/14 Ardent Energy.
+* Brew Pot: one drink, right-click with a Paper Cup to drink (you keep the cup). Cup Dispenser: 64 cups. Paper Cup: 3 paper make 4.
+  Latte: a cup plus up to 2 potions, 10 minutes, stacks to 16.
+* The drink is its own slot beside your meal: the timer stops in your base or an active FOB, logging out pauses it, dying or the
+  Milk Dispenser / Milk Bottle end it (a milk bucket does not). It never takes away a potion effect you got elsewhere.
+
+PLAYTEST SCRIPT FOR 0.0.35 (about 15 minutes)
+1. Mess Hall: cook a stew and a sandwich; the batch bar asks for 12/21/30/36 units, the sandwich for 2 bread and 2 of each filling.
+   Choose Hardy, Blast Ward and Projectile Ward; read their tooltips; eat; take an arrow and a creeper blast.
+2. Buy a Drink Station at Workshop Fabrication (Kitchen) and place it with a Brew Pot within 8 blocks. Brew Speed potions in it:
+   they move into the storage. Shift-click more potions in; click one out; try a splash potion in a mixing slot (Mk II).
+3. Upgrade to Mk II. Click Speed, Gather potions, put Regeneration potions in the sweetener slot, choose +10 min, Brew.
+   Right-click the pot with a Paper Cup. Walk out of the base: the effect counts down; walk back: it is endless again.
+4. Latte tab: make a Latte and drink it later. Drink a milk bucket (the drink stays), then a Milk Bottle (it ends).
+5. Fill the storage past 256 bottles and try to break the station.
+
+WHAT WAS NEW IN 0.0.34: THE LIVE CATAPULT, THE SUPPLY DROP, FISHING AND HUSBANDRY AS ONE, A CAP ON THE SPECIALTY
 * The specialty seller shows the FOB's Supply Catapult live, however far away it stands: it turns toward your base, throws, the
   box flies out, and a line under it says what it does (ready, turning, throwing, the box in the air and when it lands). The
   catapult now turns and throws the same whether anybody is near it or not, and turns back to rest when it has nothing to throw.
@@ -70,7 +97,7 @@ WHAT IS NEW IN 0.0.34: THE LIVE CATAPULT, THE SUPPLY DROP, FISHING AND HUSBANDRY
 * The monster hunter guild no longer sends the totem of undying (too strong). A FOB that chose it sends rotten flesh until you
   choose again.
 
-PLAYTEST SCRIPT FOR 0.0.34 (about 10 minutes)
+PLAYTEST SCRIPT FOR 0.0.34
 1. FOB Beacon: the FOB tab's Supply Catapult line (OFFLINE, why). Research tab: level 5 reads Supply Catapult + Specialty Shop.
 2. With research 5 and a catapult placed: the line reads ONLINE. At home, open the Command Table's FOBs tab, press Contact
    Specialty Seller (the radio static), Buy 1 lot (an order line): watch the catapult turn and throw in the seller.
