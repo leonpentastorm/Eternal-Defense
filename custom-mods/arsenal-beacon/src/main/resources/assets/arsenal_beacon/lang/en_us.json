@@ -1519,7 +1519,6 @@
   "gui.arsenal_beacon.drinks.stand.fuel": "Fuel",
   "gui.arsenal_beacon.drinks.stand.brewing": "Brewing %ss",
   "gui.arsenal_beacon.drinks.stand.idle": "Idle",
-  "gui.arsenal_beacon.drinks.stand.auto": "Stores done bottles",
   "gui.arsenal_beacon.drinks.storage": "Potion storage",
   "gui.arsenal_beacon.drinks.storage_count": "%s bottles",
   "gui.arsenal_beacon.drinks.storage_hint": "Click: take 1 \u00b7 Shift: all you can",

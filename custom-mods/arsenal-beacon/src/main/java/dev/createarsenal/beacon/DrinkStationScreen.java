@@ -140,7 +140,6 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         int ix=leftPos+118;
         Ui.text(g,font,Ui.t("drinks.stand.fuel"),ix,topPos+31,Ui.MUTED,58);Ui.bar(g,ix,topPos+41,56,4,fuel/(float)DrinkRules.FUEL_USES,Ui.BRASS);
         Ui.text(g,font,time>0?Ui.t("drinks.stand.brewing",(time+19)/20):Ui.t("drinks.stand.idle"),ix,topPos+50,time>0?Ui.CYAN:Ui.MUTED,58);
-        Ui.wrap(g,font,Ui.t("drinks.stand.auto"),ix,topPos+61,58,Ui.DISABLED,2);
     }
     private int storeIndexAt(double mx,double my){
         int x=(int)mx-leftPos-DrinkStationMenu.STORE_X,y=(int)my-topPos-DrinkStationMenu.STORE_Y;

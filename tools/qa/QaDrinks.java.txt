@@ -124,6 +124,7 @@ public final class QaDrinks {
     /** Server thread only. */
     static DrinkStation.StationEntity st(){return (DrinkStation.StationEntity)sl().getBlockEntity(S());}
     static BrewPot.PotEntity potAt(int i){return (BrewPot.PotEntity)sl().getBlockEntity(pot(i));}
+    static String BuiltInRegistries_potion(ItemStack s){return net.minecraft.core.registries.BuiltInRegistries.POTION.getKey(PotionUtils.getPotion(s)).toString();}
     static ItemStack potion(net.minecraft.world.item.alchemy.Potion p){return PotionUtils.setPotion(new ItemStack(Items.POTION),p);}
     static ItemStack splash(net.minecraft.world.item.alchemy.Potion p){return PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION),p);}
     static void click(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
@@ -170,12 +171,13 @@ public final class QaDrinks {
         step(5,()->srv(()->{
             sp().teleportTo(sl(),sx+.5,sy,sz+4.5,180,10);
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
-            sl().setBlock(S(),ArsenalBeacon.DRINK_STATION_I.get().defaultBlockState(),3);
-            for(int i=0;i<3;i++)sl().setBlock(pot(i),ArsenalBeacon.BREW_POT.get().defaultBlockState(),3);
-            sl().setBlock(CUPS(),ArsenalBeacon.CUP_DISPENSER.get().defaultBlockState(),3);
+            // facing south: their fronts look at the player standing south of them
+            sl().setBlock(S(),ArsenalBeacon.DRINK_STATION_I.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
+            for(int i=0;i<3;i++)sl().setBlock(pot(i),ArsenalBeacon.BREW_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
+            sl().setBlock(CUPS(),ArsenalBeacon.CUP_DISPENSER.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
         }),"build the corner");
         step(20,QaDrinks::pack,"a pack of potions");
-        step(10,()->check("the station is 2 wide and 2 tall: its three other cells are parts",srvGet(()->sl().getBlockState(S().east()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().above()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().east().above()).is(ArsenalBeacon.STRUCTURE_PART.get())),""),"footprint");
+        step(10,()->check("the station is 2 wide and 2 tall: its three other cells are parts",srvGet(()->sl().getBlockState(S().west()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().above()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().west().above()).is(ArsenalBeacon.STRUCTURE_PART.get())),""),"footprint");
         step(5,()->shot("d00_corner"),"the corner in the world");
 
         // ---- Mk I: a brewing stand with storage ------------------------------------------------------------------------------------------
@@ -187,7 +189,8 @@ public final class QaDrinks {
         // brew: water, nether wart, then sugar; the speed potions move to the storage, the awkward ones stay for the next step
         step(5,()->srv(()->{var s=st();for(int i=0;i<3;i++)s.brew.setItem(i,potion(Potions.WATER));s.brew.setItem(3,new ItemStack(Items.NETHER_WART));s.brew.setItem(4,new ItemStack(Items.BLAZE_POWDER,2));}),"water, nether wart, blaze powder");
         until("brewing started",100,()->srvGet(()->st().brewTime>0),()->srv(()->st().brewTime=1));
-        step(10,()->check("awkward potions stay in the stand (no effect yet)",srvGet(()->PotionUtils.getPotion(st().brew.getItem(0))==Potions.AWKWARD&&st().total()==0),srvGet(()->st().brew.getItem(0).toString())),"awkward");
+        until("the brew done",100,()->srvGet(()->st().brewTime==0&&PotionUtils.getPotion(st().brew.getItem(0))!=Potions.WATER),()->{});
+        step(10,()->check("awkward potions stay in the stand (no effect yet)",srvGet(()->PotionUtils.getPotion(st().brew.getItem(0))==Potions.AWKWARD&&st().total()==0),srvGet(()->BuiltInRegistries_potion(st().brew.getItem(0))+" total "+st().total())),"awkward");
         step(3,()->srv(()->st().brew.setItem(3,new ItemStack(Items.SUGAR))),"sugar");
         until("brewing again",100,()->srvGet(()->st().brewTime>0),()->srv(()->st().brewTime=1));
         step(20,()->{check("the finished Speed potions moved into the storage",srvGet(()->st().total()==3&&st().brew.getItem(0).isEmpty()&&st().brew.getItem(2).isEmpty()),srvGet(()->"total "+st().total()));
@@ -396,9 +399,9 @@ public final class QaDrinks {
         step(8,()->{if(ds()!=null&&ds().confirming)click(ds().replaceYes);},"replace if asked");
         step(10,()->check("pot 1 holds Night Vision",srvGet(()->st().pots().get(0).drink!=null),""),"pot 1");
         step(3,QaDrinks::close,"close");
-        step(5,()->srv(()->sp().teleportTo(sl(),sx+1.0,sy,sz+2.2,180,25)),"stand in front of the taps");
+        step(5,()->srv(()->sp().teleportTo(sl(),sx+0.0,sy,sz+2.6,180,20)),"stand in front of the taps");
         step(30,()->shot("d16_taps"),"the tap icons");
-        step(3,()->srv(()->sp().teleportTo(sl(),sx+6.5,sy,sz+2.5,180,20)),"look at the pots");
+        step(3,()->srv(()->sp().teleportTo(sl(),sx+5.5,sy,sz+3.2,180,15)),"look at the pots");
         step(30,()->shot("d17_pots"),"the pots' boards and liquid");
 
         // ---- the three replaced meal effects -----------------------------------------------------------------------------------------
