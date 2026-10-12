@@ -627,11 +627,11 @@ public final class QaFob {
             hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));},"hold a Supply Catapult");
         until("the catapult in hand",100,()->mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),()->{
             check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
-            if(catapult!=null)look(surface(catapult.south(3)),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);});
+            if(catapult!=null){srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();});look(catapult.above(2).south(1),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);}});
         step(30,()->{var g=PlacementPreviewClient.ghost();
             check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());},"the preview");
         step(40,()->shot("f29_catapult_preview"),"its picture (the software renderer runs behind the game)");
-        step(5,()->{if(catapult!=null)click(catapult.below(),Direction.UP);},"place it with a right-click");
+        step(5,()->{if(catapult!=null)click(catapult.below(),Direction.UP);srv(()->{sp().getAbilities().flying=false;sp().onUpdateAbilities();});},"place it with a right-click (hovering above the spot, the player lands again)");
         step(20,()->{var f=fob();check("placed: it serves the FOB",f!=null&&catapult!=null&&catapult.equals(f.catapult),f==null?"":String.valueOf(f.catapult));
             hold(ItemStack.EMPTY);mc().options.hideGui=true;if(catapult!=null)look(catapult.south(5).west(3).above(2),catapult.getX()+.5,catapult.getY()+.8,catapult.getZ()+.5);},"placed");
         step(40,()->shot("f29b_catapult_model"),"the owner's model");
