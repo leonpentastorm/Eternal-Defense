@@ -6,6 +6,8 @@ package dev.createarsenal.beacon;
  * starts a vanilla raid there; losing it, or not coming, puts the FOB DOWN until it is repaired.
  */
 final class SosRules {
+    /** 0.0.32: the answer starts the raid after this many seconds in the village with its villagers loaded. */
+    static final int ARRIVE_SECONDS=3;
     private SosRules(){}
 
     // ---- the SOS clock ------------------------------------------------------------------------------------------------------------------------

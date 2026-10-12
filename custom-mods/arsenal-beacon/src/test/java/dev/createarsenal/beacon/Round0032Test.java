@@ -73,5 +73,11 @@ final class Round0032Test {
         for(String key:List.of("tactical.fob.names","tactical.fob.names.tip","fob.tab.research","fob.research.title","gate.specialty.monsters","gate.result.locked","gate.pick.locked"))
             assertTrue(lang.contains("\"gui.arsenal_beacon."+key+"\""),"no line for "+key);
     }
+    /** The SOS raid started before a teleported player's village had its villagers ("Keep at least 0 of its 0 villagers alive"). */
+    @Test void anSosAnswerWaitsForTheVillage(){
+        assertEquals(3,SosRules.ARRIVE_SECONDS);
+        String sos=SosTest.source("FobSos.java");
+        assertTrue(sos.contains("settled=here!=null&&villagersLoaded(l,open)?settled+1:0;")&&sos.contains("settled>=SosRules.ARRIVE_SECONDS"),"seconds in a row, the village loaded");
+    }
     @Test void theProtocolIs37(){assertTrue(SosTest.source("BeaconNetwork.java").contains("\"37-standalone\":\"37-pack\""));}
 }

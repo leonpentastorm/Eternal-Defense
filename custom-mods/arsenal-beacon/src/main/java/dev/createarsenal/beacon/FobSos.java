@@ -28,6 +28,8 @@ final class FobSos {
     private static final Random RANDOM=new Random();
     /** Map tag: the SOS serial a map belongs to (maps of an SOS that ended burn). */
     static final String MAP_TAG="arsenalSos";
+    /** Seconds in a row a player has stood in the calling village with its villagers loaded (one SOS at a time). */
+    private static int settled;
 
     // ---- once a second ----------------------------------------------------------------------------------------------------------------------------
     static void second(ServerLevel l,FobData d){
@@ -40,7 +42,14 @@ final class FobSos {
                 d.sosLeft=Math.max(0,d.sosLeft-20);d.setDirty();
                 if(d.sosLeft==0){close(l,d,open,SosRules.End.EXPIRED);return;}
             }
-            if(!open.raidRunning()&&villagersLoaded(l,open))for(var p:l.getServer().getPlayerList().getPlayers())if(arrived(l,open,p)){arrive(l,d,open,p,homeRaid);break;}
+            if(!open.raidRunning()){
+                // 0.0.32: the village must stay loaded for SosRules.ARRIVE_SECONDS with a player in it (entities load after the land: a player
+                // teleported or riding in started the raid before its villagers existed)
+                net.minecraft.server.level.ServerPlayer here=null;
+                for(var p:l.getServer().getPlayerList().getPlayers())if(arrived(l,open,p)){here=p;break;}
+                settled=here!=null&&villagersLoaded(l,open)?settled+1:0;
+                if(here!=null&&settled>=SosRules.ARRIVE_SECONDS){settled=0;arrive(l,d,open,here,homeRaid);}
+            }else settled=0;
             return;
         }
         int active=d.count(FobRules.State.ACTIVE);

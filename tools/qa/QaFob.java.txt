@@ -138,6 +138,10 @@ public final class QaFob {
     }
     /** 0.0.32: the ghast tear's place in the potion makers' list (it runs D to S). */
     static final int GHAST=RouteRules.POTION_LOOT.indexOf(RouteRules.POTION_LOOT.stream().filter(l->l.id().equals("minecraft:ghast_tear")).findFirst().get());
+    static FobClient.FobScreen fobScreen(){return mc().screen instanceof FobClient.FobScreen s?s:null;}
+    /** The research tab's gift buttons in their order: +1 and +10 for emeralds, diamonds, Ardent Energy (active or not). */
+    static List<Ui.UiButton> researchButtons(){var out=new ArrayList<Ui.UiButton>();var s=mc().screen;if(s==null)return out;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&(b.getMessage().getString().equals("+1")||b.getMessage().getString().equals("+10")))out.add(b);return out;}
     static int pearl(){return RouteRules.MONSTER_LOOT.indexOf(RouteRules.MONSTER_LOOT.stream().filter(l->l.id().equals("minecraft:ender_pearl")).findFirst().get());}
     static TacticalClient.TableScreen table(){return mc().screen instanceof TacticalClient.TableScreen s?s:null;}
     static GateClient.GateScreen gate(){return mc().screen instanceof GateClient.GateScreen s?s:null;}
@@ -443,7 +447,7 @@ public final class QaFob {
             BeaconNetwork.menuButton(mc().player.containerMenu.containerId,Routes.chooseButton(RouteRules.Slot.SPECIALTY,GHAST));},"send the locked choice anyway");
         step(20,()->{var f=fob();var s=gate();check("the server refuses a locked item",f!=null&&f.special==0&&s!=null&&s.data().getString("message").equals("gate.result.locked"),f==null||s==null?"":f.special+" "+s.data().getString("message"));
             srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.researchXp=RouteRules.RESEARCH_XP[RouteRules.UNLOCK_S];FobData.get(sl()).setDirty();});},"research level 4 (given on the server; the FOB screen's Research tab is checked later)");
-        step(30,()->{press("Back");pressNth("Choose",2);},"the grid again");
+        until("the screen has research level 4",200,()->{var s=gate();return s!=null&&s.data().getInt("level")==4;},()->{press("Back");pressNth("Choose",2);});
         step(10,()->{var s=gate();check("research level 4: every potion makers' item open",s!=null&&s.pickButtons.stream().allMatch(b->b.active),"");
             if(s!=null)s.pickButtons.get(GHAST).onPress();},"choose the ghast tear");
         step(20,()->{var f=fob();check("the specialty now sends ghast tears",f!=null&&f.special==GHAST&&gateSlot(3).getString("item").equals("minecraft:ghast_tear"),f==null?"":f.special+" "+gateSlot(3).getString("item"));
@@ -476,12 +480,12 @@ public final class QaFob {
         step(5,()->{var s=gate();if(s!=null)press("Back");},"back to the slots");
         // ---- 0.0.32: the monster hunter guild: every monster drop but the bosses'; ender pearls (A) open at research level 2 ---------------------------
         step(5,()->srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.specialty=RouteRules.Specialty.MONSTERS;x.special=0;x.researchXp=RouteRules.RESEARCH_XP[1];FobData.get(sl()).setDirty();}),"the village becomes a monster hunter guild, research level 1");
-        step(30,()->{var s=gate();check("the gate screen shows the monster hunter guild",s!=null&&s.data().getString("specialty").equals("monsters"),s==null?"":s.data().getString("specialty"));pressNth("Choose",2);},"Choose for the specialty");
+        until("the screen shows the guild",200,()->{var s=gate();return s!=null&&s.data().getString("specialty").equals("monsters");},()->{var s=gate();check("the gate screen shows the monster hunter guild",s!=null&&s.data().getString("specialty").equals("monsters"),s==null?"":s.data().getString("specialty"));pressNth("Choose",2);},"Choose for the specialty");
         step(10,()->{var s=gate();int pearl=pearl();check("the guild's list: every monster drop",s!=null&&s.pickButtons.size()==RouteRules.MONSTER_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));
             check("research level 1: ender pearls (A) still locked",s!=null&&!s.pickButtons.get(pearl).active,"");recordFrame=true;},"the guild's grid");
         step(3,()->{layout("the Receiving Gate, the monster hunter guild's items",true);shot("f17k_gate_monsters_locked");
             srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.researchXp=RouteRules.RESEARCH_XP[RouteRules.UNLOCK_A];FobData.get(sl()).setDirty();});},"research level 2");
-        step(30,()->{press("Back");pressNth("Choose",2);},"the grid again");
+        until("the screen has research level 2",200,()->{var s=gate();return s!=null&&s.data().getInt("level")==2;},()->{press("Back");pressNth("Choose",2);});
         step(10,()->{var s=gate();int pearl=pearl();check("research level 2: ender pearls open, the S items still locked",s!=null&&s.pickButtons.get(pearl).active&&!s.pickButtons.get(RouteRules.MONSTER_LOOT.size()-1).active,"");
             if(s!=null)s.pickButtons.get(pearl).onPress();},"choose ender pearls");
         step(20,()->{var f=fob();check("the guild now sends ender pearls",f!=null&&f.special==pearl()&&gateSlot(3).getString("item").equals("minecraft:ender_pearl"),f==null?"":f.special+" "+gateSlot(3).getString("item"));
@@ -575,20 +579,28 @@ public final class QaFob {
         // ---- 0.0.32: the Research tab: diamonds paid from a survival inventory, then gifts as a creative player ------------------------------------
         step(5,()->{srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.researchXp=0;FobData.get(sl()).setDirty();sp().setGameMode(GameType.SURVIVAL);
             sp().getInventory().clearContent();sp().getInventory().setItem(1,new ItemStack(Items.DIAMOND,12));});press("Research");},"the Research tab; survival, 12 diamonds");
-        step(30,()->{recordFrame=true;var s=mc().screen instanceof FobClient.FobScreen f?f:null;
-            check("the Research tab: level 0, the player's 12 diamonds",s!=null&&FobClient.FobScreen.tab==1&&s.data().getInt("level")==0&&s.data().getInt("carry.diamond")==12,s==null?"":s.data().getInt("level")+" "+s.data().getInt("carry.diamond"));},"level 0");
-        step(3,()->{layout("the FOB screen, Research tab",true);shot("f23c_fob_research_0");pressNth("+10",1);},"give ten diamonds");
-        step(25,()->{var f=fob();var s=mc().screen instanceof FobClient.FobScreen x?x:null;
+        until("the screen has the survival inventory and level 0",200,()->{var s=fobScreen();return s!=null&&FobClient.FobScreen.tab==1&&s.data().getInt("level")==0&&s.data().getInt("carry.diamond")==12&&!s.data().getBoolean("creative");},()->{
+            var s=fobScreen();check("the Research tab: level 0, the player's 12 diamonds",s!=null&&s.data().getInt("level")==0&&s.data().getInt("carry.diamond")==12,s==null?"":s.data().getInt("level")+" "+s.data().getInt("carry.diamond"));});
+        step(25,()->{var b=researchButtons();
+            check("six gift buttons: +1 and +10 for emeralds, diamonds and Ardent Energy",b.size()==6,String.valueOf(b.size()));
+            check("no emeralds carried: their buttons are off, the diamonds' on",b.size()==6&&!b.get(0).active&&!b.get(1).active&&b.get(2).active&&b.get(3).active,"");
+            recordFrame=true;},"the buttons");
+        step(3,()->{layout("the FOB screen, Research tab",true);shot("f23c_fob_research_0");var b=researchButtons();if(b.size()==6)b.get(3).onPress();},"give ten diamonds");
+        until("ten diamonds given",200,()->{var f=fob();return f!=null&&f.researchXp>0;},()->{});
+        step(30,()->{var f=fob();var s=fobScreen();
             check("ten diamonds taken from the inventory",inInventory(Items.DIAMOND)==2,"left "+inInventory(Items.DIAMOND));
             check("40 research points: level 1",f!=null&&f.researchXp==10*RouteRules.XP_DIAMOND&&f.level()==1,f==null?"":f.researchXp+" level "+f.level());
             check("the screen says the level went up",s!=null&&s.data().getString("message").equals("fob.research.up"),s==null?"":s.data().getString("message"));
-            check("everyone reads it",chatHas("reached research level 1"),"");pressNth("+1",0);},"give an emerald (none carried)");
-        step(25,()->{var s=mc().screen instanceof FobClient.FobScreen x?x:null;var f=fob();
+            check("everyone reads it",chatHas("reached research level 1"),"");
+            BeaconNetwork.menuButton(mc().player.containerMenu.containerId,Fobs.RESEARCH);},"an emerald sent anyway (none carried)");
+        until("the refusal",200,()->{var s=fobScreen();return s!=null&&s.data().getString("message").startsWith("fob.research.short");},()->{var s=fobScreen();var f=fob();
             check("no emeralds: refused, nothing given",s!=null&&s.data().getString("message").equals("fob.research.short.emerald")&&f!=null&&f.researchXp==40,s==null?"":s.data().getString("message"));
-            srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();});},"creative again");
-        step(25,()->pressNth("+10",1),"a creative player gives ten diamonds");
-        step(25,()->{var f=fob();check("80 points: level 2, A opens",f!=null&&f.researchXp==80&&f.level()==2,f==null?"":f.researchXp+"");check("everyone reads the A tier opened",chatHas("A-tier items are open"),"");
-            for(int i=0;i<10;i++)pressNth("+10",1);},"ten times ten diamonds");
+            srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();});});
+        until("creative on the screen",200,()->{var s=fobScreen();return s!=null&&s.data().getBoolean("creative");},()->{var b=researchButtons();check("a creative player: every gift button on",b.size()==6&&b.stream().allMatch(x->x.active),"");if(b.size()==6)b.get(3).onPress();});
+        until("80 points",200,()->{var f=fob();return f!=null&&f.researchXp>=80;},()->{});
+        step(30,()->{var f=fob();check("80 points: level 2, A opens",f!=null&&f.researchXp==80&&f.level()==2,f==null?"":f.researchXp+"");check("everyone reads the A tier opened",chatHas("A-tier items are open"),"");
+            for(int i=0;i<10;i++)BeaconNetwork.menuButton(mc().player.containerMenu.containerId,Fobs.RESEARCH+Fobs.RESEARCH_TEN+1);},"ten times ten diamonds (the +10 button's packet)");
+        until("the top level",300,()->{var f=fob();return f!=null&&f.level()==RouteRules.MAX_LEVEL;},()->{});
         step(40,()->{var f=fob();check("never more than the top level needs",f!=null&&f.researchXp==RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL]&&f.level()==RouteRules.MAX_LEVEL,f==null?"":f.researchXp+"");
             check("everyone reads the S tier opened",chatHas("S-tier items are open"),"");recordFrame=true;},"the top level");
         step(3,()->{layout("the FOB screen, Research tab at the top level",true);shot("f23d_fob_research_top");},"the top");

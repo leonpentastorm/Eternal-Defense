@@ -116,8 +116,8 @@ public final class FobClient {
         private void research(){
             give.clear();int x=resRightX(),w=resRightW();boolean open=active(),max=data.getInt("level")>=RouteRules.MAX_LEVEL;
             for(int i=0;i<KINDS.length;i++){int kind=i,y=giveRowY(i);int have=data.getBoolean("creative")?99:data.getInt("carry."+KINDS[i]);
-                var one=addRenderableWidget(new Ui.UiButton(x+w-52,y+1,24,18,Component.literal("+1"),Ui.Look.PRIMARY,b->click(Fobs.RESEARCH+kind)));
-                var ten=addRenderableWidget(new Ui.UiButton(x+w-26,y+1,26,18,Component.literal("+10"),Ui.Look.PRIMARY,b->click(Fobs.RESEARCH+Fobs.RESEARCH_TEN+kind)));
+                var one=addRenderableWidget(new Ui.UiButton(x+w-56,y+1,24,18,Component.literal("+1"),Ui.Look.PRIMARY,b->click(Fobs.RESEARCH+kind)));
+                var ten=addRenderableWidget(new Ui.UiButton(x+w-30,y+1,30,18,Component.literal("+10"),Ui.Look.PRIMARY,b->click(Fobs.RESEARCH+Fobs.RESEARCH_TEN+kind)));
                 for(var b:List.of(one,ten)){b.active=open&&!max&&have>0;b.warning=open&&!max&&have<=0;
                     b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.research.give.tip",Fobs.researchXp(kind))));give.add(b);}
             }
@@ -179,8 +179,8 @@ public final class FobClient {
             Ui.text(g,font,Ui.t("fob.research.give"),rx,ry,Ui.BRASS,rw);
             for(int i=0;i<KINDS.length;i++){int gy=giveRowY(i);
                 g.renderItem(new ItemStack(Fobs.researchItem(i)),rx,gy+2);
-                Ui.text(g,font,Ui.t("fob.research.worth",Fobs.researchXp(i)),rx+19,gy+1,Ui.INK,rw-19-56);
-                Ui.text(g,font,data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("fob.research.carry",data.getInt("carry."+KINDS[i])),rx+19,gy+11,Ui.MUTED,rw-19-56);
+                Ui.text(g,font,Ui.t("fob.research.worth",Fobs.researchXp(i)),rx+19,gy+1,Ui.INK,rw-19-60);
+                Ui.text(g,font,data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("fob.research.carry",data.getInt("carry."+KINDS[i])),rx+19,gy+11,Ui.MUTED,rw-19-60);
             }
             int ny=giveRowY(KINDS.length)+4;
             Ui.text(g,font,Ui.t("fob.research.now"),rx,ny,Ui.BRASS,rw);ny+=12;
