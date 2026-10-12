@@ -470,7 +470,7 @@ public final class FobGameTests {
         }).thenWaitUntil(()->h.assertTrue("passive".equals(fob(l).lastKind),"a delivery by itself"))
         .thenIdle(25).thenExecute(()->{
             var fob=fob(l);int perTrip=melonsPerTrip(fob);
-            double alone=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.slotOn,fob.separation(),fob.workers),shared=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),new boolean[]{true,true,true,true},fob.separation(),fob.workers);
+            var y=fob.yield();double alone=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),y),shared=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),new RouteRules.Yield(new boolean[]{true,true,true,true},y.distance(),y.villagers(),y.period(),y.level()));
             h.assertTrue(perTrip>=2&&Math.abs(alone-4*shared)<1e-9,"one slot on takes the whole trip: "+perTrip+" melon slices, four times its share with all four on ("+fob.workers+" villagers)");
             h.assertTrue(fob.lastItems==perTrip&&stored(fob,Items.MELON_SLICE)==perTrip,"they are in the Receiving Gate's storage ("+stored(fob,Items.MELON_SLICE)+")");
             h.assertTrue(queued(l)==before[0],"and not in the reward chest's queue");
@@ -519,7 +519,7 @@ public final class FobGameTests {
         fob.slotOn[0]=false;fob.slotOn[1]=false;fob.slotOn[2]=true;fob.slotOn[3]=false;Arrays.fill(fob.tally,0);
         for(int i=0;i<RouteRules.FARM_LOOT.size();i++)if(RouteRules.FARM_LOOT.get(i).id().equals("minecraft:melon_slice"))fob.farm=i;
     }
-    static int melonsPerTrip(FobData.Fob fob){return (int)Math.floor(RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.slotOn,fob.separation(),fob.workers)+1e-9);}
+    static int melonsPerTrip(FobData.Fob fob){return (int)Math.floor(RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.yield())+1e-9);}
     static int stored(FobData.Fob fob,Item item){int n=0;for(int i=0;i<fob.depot().getContainerSize();i++)if(fob.depot().getItem(i).is(item))n+=fob.depot().getItem(i).getCount();return n;}
     /** The Delivery Gate is sold once per FOB, stands only over a rail in the FOB's village, the Receiving Gate only at home; a FOB's removal unlinks its gates. */
     @GameTest(template="empty3x3x3",batch="fob_12",timeoutTicks=600)

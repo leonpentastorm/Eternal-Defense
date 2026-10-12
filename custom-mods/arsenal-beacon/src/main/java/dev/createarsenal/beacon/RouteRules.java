@@ -19,69 +19,90 @@ final class RouteRules {
      */
     enum Slot{EMERALD,MINE,FARM,SPECIALTY;String id(){return name().toLowerCase(Locale.ROOT);}}
     /** A FOB's specialty, rolled when it is planted (only a new FOB, taken back with the shovel and planted again, rolls another). */
-    enum Specialty{FISHING,HUSBANDRY,POTIONS,TRADER;String id(){return name().toLowerCase(Locale.ROOT);}
-        List<Loot> options(){return switch(this){case FISHING->FISHING_LOOT;case HUSBANDRY->HUSBANDRY_LOOT;case POTIONS->POTION_LOOT;case TRADER->TRADER_LOOT;};}
+    enum Specialty{FISHING,HUSBANDRY,POTIONS,TRADER,MONSTERS;String id(){return name().toLowerCase(Locale.ROOT);}
+        List<Loot> options(){return switch(this){case FISHING->FISHING_LOOT;case HUSBANDRY->HUSBANDRY_LOOT;case POTIONS->POTION_LOOT;case TRADER->TRADER_LOOT;case MONSTERS->MONSTER_LOOT;};}
         static Specialty of(int ordinal){var v=values();return v[Math.floorMod(ordinal,v.length)];}
     }
     /**
-     * One item a slot can send and what it is worth in tribute value (one common item is 1): the higher the value, the more trips one
-     * item takes. {@code note}: a potion ingredient's farming tier (1 = D, dirt cheap, to 5 = S) or a trader item's emerald price; 0 else.
+     * One item a slot can send and what it is worth in tribute value (one common item is 1): the higher the value, the more trips one item
+     * takes. {@code tier}: how hard it is to get, 1 (D) to 5 (S), 0 when it has none; A (4) and S (5) are locked until the FOB's research
+     * opens them (0.0.32). {@code price}: a wandering trader item's price in emeralds, 0 else.
      */
-    record Loot(String id,double value,int note){}
+    record Loot(String id,double value,int tier,int price){}
+    /** 0.0.32: tier D to S worth 1, 2, 4, 8, 16: each tier twice the one below (index 0: no tier). */
+    static final double[] TIER_VALUE={0,1,2,4,8,16};
+    static final String TIERS="-DCBAS";
+    static Loot tiered(String id,int tier){return new Loot(id,TIER_VALUE[tier],tier,0);}
+    static Loot plain(String id,double value){return new Loot(id,value,0,0);}
     /**
-     * One emerald is worth this much tribute, as vanilla villagers price it (about 12 to 20 crops, or 4 iron, for an emerald), so an
-     * emerald-only FOB brings about what the 0.0.28 emerald share did. Every switched-on emerald slot sends at least {@link #EMERALD_MIN} a trip.
+     * 0.0.32: an emerald is worth 4, a quarter of an S-tier item (the standalone Exchange pays 1 Ardent Energy for 2 emeralds and 2 for a
+     * ghast tear: the same per value). Every switched-on emerald slot sends at least {@link #EMERALD_MIN} a trip.
      */
-    static final double EMERALD_VALUE=12,EMERALD_MIN=1/3.0;
-    static final Loot EMERALD=new Loot("minecraft:emerald",EMERALD_VALUE,0);
+    static final double EMERALD_VALUE=4,EMERALD_MIN=1/3.0;
+    static final Loot EMERALD=plain("minecraft:emerald",EMERALD_VALUE);
     static final List<Loot> EMERALD_LOOT=List.of(EMERALD);
     /** The mine: redstone, iron, andesite, flint, gunpowder or charcoal (owner's list). */
-    static final List<Loot> MINE_LOOT=List.of(new Loot("minecraft:redstone",1,0),new Loot("minecraft:iron_ingot",3,0),new Loot("minecraft:andesite",.5,0),
-        new Loot("minecraft:flint",1,0),new Loot("minecraft:gunpowder",1.5,0),new Loot("minecraft:charcoal",1,0));
+    static final List<Loot> MINE_LOOT=List.of(plain("minecraft:redstone",1),plain("minecraft:iron_ingot",2),plain("minecraft:andesite",.5),
+        plain("minecraft:flint",1),plain("minecraft:gunpowder",1.5),plain("minecraft:charcoal",1));
     /** The farm: every plant food material of vanilla 1.20.1. */
-    static final List<Loot> FARM_LOOT=List.of(new Loot("minecraft:wheat",1,0),new Loot("minecraft:carrot",1,0),new Loot("minecraft:potato",1,0),
-        new Loot("minecraft:beetroot",1,0),new Loot("minecraft:melon_slice",.5,0),new Loot("minecraft:pumpkin",1.5,0),new Loot("minecraft:apple",2,0),
-        new Loot("minecraft:sweet_berries",1,0),new Loot("minecraft:glow_berries",1.5,0),new Loot("minecraft:cocoa_beans",1.5,0),new Loot("minecraft:sugar_cane",1,0),
-        new Loot("minecraft:brown_mushroom",1.5,0),new Loot("minecraft:red_mushroom",1.5,0));
+    static final List<Loot> FARM_LOOT=List.of(plain("minecraft:wheat",1),plain("minecraft:carrot",1),plain("minecraft:potato",1),
+        plain("minecraft:beetroot",1),plain("minecraft:melon_slice",.5),plain("minecraft:pumpkin",1.5),plain("minecraft:apple",2),
+        plain("minecraft:sweet_berries",1),plain("minecraft:glow_berries",1.5),plain("minecraft:cocoa_beans",1.5),plain("minecraft:sugar_cane",1),
+        plain("minecraft:brown_mushroom",1.5),plain("minecraft:red_mushroom",1.5));
     /** Specialty, fishing: every aquatic food. */
-    static final List<Loot> FISHING_LOOT=List.of(new Loot("minecraft:cod",1,0),new Loot("minecraft:salmon",1.5,0),new Loot("minecraft:tropical_fish",2,0),
-        new Loot("minecraft:pufferfish",3,0),new Loot("minecraft:dried_kelp",.5,0));
+    static final List<Loot> FISHING_LOOT=List.of(plain("minecraft:cod",1),plain("minecraft:salmon",1.5),plain("minecraft:tropical_fish",2),
+        plain("minecraft:pufferfish",2),plain("minecraft:dried_kelp",.5));
     /** Specialty, animal husbandry: every meat and leather. */
-    static final List<Loot> HUSBANDRY_LOOT=List.of(new Loot("minecraft:beef",1.5,0),new Loot("minecraft:porkchop",1.5,0),new Loot("minecraft:chicken",1,0),
-        new Loot("minecraft:mutton",1,0),new Loot("minecraft:rabbit",2,0),new Loot("minecraft:leather",1.5,0),new Loot("minecraft:rabbit_hide",1,0));
+    static final List<Loot> HUSBANDRY_LOOT=List.of(plain("minecraft:beef",1.5),plain("minecraft:porkchop",1.5),plain("minecraft:chicken",1),
+        plain("minecraft:mutton",1),plain("minecraft:rabbit",2),plain("minecraft:leather",1.5),plain("minecraft:rabbit_hide",1));
     /**
-     * A potion ingredient's tier (the owner's farming tier list) sets its value, each tier twice the one below: D 3, C 6, B 12, A 24, S 48. S
-     * is four emeralds' worth, what the standalone Exchange pays for a ghast tear, so no ingredient beats emeralds there.
+     * Specialty, potion makers: every brewing ingredient of 1.20.1, by the owner's tiers, cheapest first. D: sugar, redstone, glowstone,
+     * gunpowder. C: golden carrot, glistering melon, spider eye, fermented spider eye. B: magma cream, nether wart. A: phantom membrane,
+     * pufferfish, blaze powder. S: ghast tear, rabbit's foot, turtle shell, dragon's breath (0.0.32, owner: dragon's breath to S). (The owner's
+     * breeze rod, cobweb, slime block and stone brew only from 1.21.)
      */
-    static final double[] POTION_TIER_VALUE={0,3,6,12,24,48};
-    static Loot potion(String id,int tier){return new Loot(id,POTION_TIER_VALUE[tier],tier);}
+    static final List<Loot> POTION_LOOT=List.of(tiered("minecraft:sugar",1),tiered("minecraft:redstone",1),tiered("minecraft:glowstone_dust",1),tiered("minecraft:gunpowder",1),
+        tiered("minecraft:golden_carrot",2),tiered("minecraft:glistering_melon_slice",2),tiered("minecraft:spider_eye",2),tiered("minecraft:fermented_spider_eye",2),
+        tiered("minecraft:magma_cream",3),tiered("minecraft:nether_wart",3),
+        tiered("minecraft:phantom_membrane",4),tiered("minecraft:pufferfish",4),tiered("minecraft:blaze_powder",4),
+        tiered("minecraft:ghast_tear",5),tiered("minecraft:rabbit_foot",5),tiered("minecraft:turtle_helmet",5),tiered("minecraft:dragon_breath",5));
     /**
-     * Specialty, potion makers: every brewing ingredient of 1.20.1, by the owner's tiers. S: ghast tear, rabbit's foot, turtle shell. A: phantom
-     * membrane, pufferfish, blaze powder. B: magma cream, nether wart, dragon's breath. C: golden carrot, glistering melon, spider eye,
-     * fermented spider eye. D: sugar, redstone, glowstone, gunpowder. (The owner's breeze rod, cobweb, slime block and stone brew only from 1.21.)
+     * Specialty, the monster hunter guild (0.0.32, owner): every drop of a vanilla 1.20.1 monster except the bosses (the Ender Dragon, the
+     * Wither, the Elder Guardian), by how hard it is to farm; an item two lists share has the same tier in both. Not squid ink (squids are
+     * not monsters), not rare equipment drops (tridents, crossbows, armour) and not music discs.
      */
-    static final List<Loot> POTION_LOOT=List.of(potion("minecraft:ghast_tear",5),potion("minecraft:rabbit_foot",5),potion("minecraft:turtle_helmet",5),
-        potion("minecraft:phantom_membrane",4),potion("minecraft:pufferfish",4),potion("minecraft:blaze_powder",4),
-        potion("minecraft:magma_cream",3),potion("minecraft:nether_wart",3),potion("minecraft:dragon_breath",3),
-        potion("minecraft:golden_carrot",2),potion("minecraft:glistering_melon_slice",2),potion("minecraft:spider_eye",2),potion("minecraft:fermented_spider_eye",2),
-        potion("minecraft:sugar",1),potion("minecraft:redstone",1),potion("minecraft:glowstone_dust",1),potion("minecraft:gunpowder",1));
-    /** A wandering trader's sale: {@code count} of it for {@code emeralds}; its value is what the emeralds are worth, per item. */
-    static Loot trade(String id,int emeralds,int count){return new Loot(id,EMERALD_VALUE*emeralds/count,emeralds);}
-    /** Specialty, wandering trader hub: everything a vanilla 1.20.1 wandering trader sells, at its emerald price. */
+    static final List<Loot> MONSTER_LOOT=List.of(tiered("minecraft:rotten_flesh",1),tiered("minecraft:bone",1),tiered("minecraft:string",1),tiered("minecraft:arrow",1),
+        tiered("minecraft:gunpowder",1),tiered("minecraft:coal",1),tiered("minecraft:glowstone_dust",1),
+        tiered("minecraft:spider_eye",2),tiered("minecraft:slime_ball",2),tiered("minecraft:gold_nugget",2),tiered("minecraft:prismarine_shard",2),
+        tiered("minecraft:magma_cream",3),tiered("minecraft:prismarine_crystals",3),
+        tiered("minecraft:ender_pearl",4),tiered("minecraft:blaze_rod",4),tiered("minecraft:phantom_membrane",4),tiered("minecraft:nautilus_shell",4),
+        tiered("minecraft:ghast_tear",5),tiered("minecraft:shulker_shell",5),tiered("minecraft:wither_skeleton_skull",5),tiered("minecraft:totem_of_undying",5));
+    /**
+     * A wandering trader's sale: {@code count} of it for {@code emeralds}. 0.0.32: its value follows its price, the dearest trade (blue ice,
+     * 6 emeralds) worth an S-tier item, so every trader item comes within the 30 minute promise ({@link #S_HOURS}).
+     */
+    static final double TRADER_PER_EMERALD=TIER_VALUE[5]/6;
+    static Loot trade(String id,int emeralds,int count){return trade(id,emeralds,count,0);}
+    static Loot trade(String id,int emeralds,int count,int tier){return new Loot(id,TRADER_PER_EMERALD*emeralds/count,tier,emeralds);}
+    /**
+     * Specialty, wandering trader hub: everything a vanilla 1.20.1 wandering trader sells, at its emerald price. 0.0.32 (owner): the endgame
+     * goods are locked by research: A the slime ball, packed ice, the five coral blocks and the two fish buckets; S the nautilus shell and
+     * blue ice.
+     */
     static final List<Loot> TRADER_LOOT;
     static{
         var t=new java.util.ArrayList<Loot>();
-        t.add(trade("minecraft:sea_pickle",2,1));t.add(trade("minecraft:slime_ball",4,1));t.add(trade("minecraft:glowstone",2,1));t.add(trade("minecraft:nautilus_shell",5,1));
+        t.add(trade("minecraft:sea_pickle",2,1));t.add(trade("minecraft:slime_ball",4,1,4));t.add(trade("minecraft:glowstone",2,1));t.add(trade("minecraft:nautilus_shell",5,1,5));
         t.add(trade("minecraft:fern",1,1));t.add(trade("minecraft:sugar_cane",1,1));t.add(trade("minecraft:pumpkin",1,1));t.add(trade("minecraft:kelp",3,1));t.add(trade("minecraft:cactus",3,1));
         for(String f:List.of("dandelion","poppy","blue_orchid","allium","azure_bluet","red_tulip","orange_tulip","white_tulip","pink_tulip","oxeye_daisy","cornflower","lily_of_the_valley"))t.add(trade("minecraft:"+f,1,1));
         for(String seed:List.of("wheat_seeds","beetroot_seeds","pumpkin_seeds","melon_seeds"))t.add(trade("minecraft:"+seed,1,1));
         for(String tree:List.of("acacia_sapling","birch_sapling","dark_oak_sapling","jungle_sapling","oak_sapling","spruce_sapling","cherry_sapling","mangrove_propagule"))t.add(trade("minecraft:"+tree,5,1));
         for(String dye:List.of("red","white","blue","pink","black","green","light_gray","magenta","yellow","gray","purple","light_blue","lime","orange","brown","cyan"))t.add(trade("minecraft:"+dye+"_dye",1,3));
-        for(String coral:List.of("brain","bubble","fire","horn","tube"))t.add(trade("minecraft:"+coral+"_coral_block",3,1));
+        for(String coral:List.of("brain","bubble","fire","horn","tube"))t.add(trade("minecraft:"+coral+"_coral_block",3,1,4));
         t.add(trade("minecraft:vine",1,1));t.add(trade("minecraft:brown_mushroom",1,1));t.add(trade("minecraft:red_mushroom",1,1));t.add(trade("minecraft:lily_pad",1,2));
         t.add(trade("minecraft:small_dripleaf",1,2));t.add(trade("minecraft:sand",1,8));t.add(trade("minecraft:red_sand",1,4));t.add(trade("minecraft:pointed_dripstone",1,2));
         t.add(trade("minecraft:rooted_dirt",1,2));t.add(trade("minecraft:moss_block",1,2));
-        t.add(trade("minecraft:tropical_fish_bucket",5,1));t.add(trade("minecraft:pufferfish_bucket",5,1));t.add(trade("minecraft:packed_ice",3,1));t.add(trade("minecraft:blue_ice",6,1));
+        t.add(trade("minecraft:tropical_fish_bucket",5,1,4));t.add(trade("minecraft:pufferfish_bucket",5,1,4));t.add(trade("minecraft:packed_ice",3,1,4));t.add(trade("minecraft:blue_ice",6,1,5));
         t.add(trade("minecraft:gunpowder",1,1));t.add(trade("minecraft:podzol",3,3));
         TRADER_LOOT=List.copyOf(t);
     }
@@ -90,41 +111,85 @@ final class RouteRules {
         return switch(slot){case EMERALD->EMERALD_LOOT;case MINE->MINE_LOOT;case FARM->FARM_LOOT;case SPECIALTY->specialty.options();};
     }
     static Loot loot(Slot slot,Specialty specialty,int choice){var o=options(slot,specialty);return o.get(Math.floorMod(choice,o.size()));}
+    /** The choice as it works now: a locked choice (research not there yet) sends the slot's first open item instead. */
+    static int effectiveChoice(Slot slot,Specialty specialty,int choice,int level){
+        var o=options(slot,specialty);int c=Math.floorMod(choice,o.size());if(unlocked(o.get(c),level))return c;
+        for(int i=0;i<o.size();i++)if(unlocked(o.get(i),level))return i;
+        return 0;
+    }
 
-    // ---- how much a trip carries ---------------------------------------------------------------------------------------------------------------
-    /** A trip's tribute value grows with the distance between the gates: one per this many blocks, at least 1, at most {@link #MAX_UNITS}. */
-    static final int BLOCKS_PER_UNIT=200;
-    static final double MAX_UNITS=50;
-    static double units(double distance){return Math.max(1,Math.min(MAX_UNITS,distance/BLOCKS_PER_UNIT));}
-    /** Villagers count up to {@link #MAX_WORKERS}; ten make a trip worth its units, twenty twice that. */
-    static final int MAX_WORKERS=20,WORKERS_FOR_ONE=10;
-    static double workers(int villagers){return Math.min(MAX_WORKERS,Math.max(0,villagers))/(double)WORKERS_FOR_ONE;}
+    // ---- village research (0.0.32, owner): a bar per FOB, paid at its FOB Beacon ------------------------------------------------------------------
+    /** Research points needed for levels 0 to 5 (in total). */
+    static final int[] RESEARCH_XP={0,16,48,96,160,240};
+    static final int MAX_LEVEL=RESEARCH_XP.length-1;
+    /** What one item given to the research is worth in points: an emerald 1, a diamond 4, an Ardent Energy 2 (the standalone Exchange's prices). */
+    static final int XP_EMERALD=1,XP_DIAMOND=4,XP_ARDENT=2;
+    /** The level research opens a tier at: A at 2, S at 4. */
+    static final int UNLOCK_A=2,UNLOCK_S=4;
+    /** Each level: the specialty +25 percent, emeralds, the mine and the farm +5 percent. */
+    static final double SPECIALTY_PER_LEVEL=.25,OTHER_PER_LEVEL=.05;
+    static int level(int xp){int l=0;while(l<MAX_LEVEL&&xp>=RESEARCH_XP[l+1])l++;return l;}
+    static int unlockLevel(Loot l){return l.tier()>=5?UNLOCK_S:l.tier()>=4?UNLOCK_A:0;}
+    static boolean unlocked(Loot l,int level){return level>=unlockLevel(l);}
+    static double slotMultiplier(Slot slot,int level){return 1+Math.max(0,Math.min(MAX_LEVEL,level))*(slot==Slot.SPECIALTY?SPECIALTY_PER_LEVEL:OTHER_PER_LEVEL);}
+    /** Points still needed for the next level (0 at the top). */
+    static int toNext(int xp){int l=level(xp);return l>=MAX_LEVEL?0:RESEARCH_XP[l+1]-xp;}
+
+    // ---- how much a FOB makes (0.0.32: per hour of play, the owner's 30 minute promise) ------------------------------------------------------------
+    /**
+     * The tribute value an hour of the slowest FOB that can make anything: 3 villagers, gates 128 blocks apart, every slot on. With research
+     * at 4 (S open, the specialty at x2) its specialty slot makes 64 / 4 x 2 = 32 an hour: one S-tier item every 30 minutes of play, the owner's
+     * floor. Everything else is a multiple of it.
+     */
+    static final double SLOWEST_PER_HOUR=64;
+    static final double S_HOURS=.5;
+    /** More villagers: 3 count 1, 20 count 2 (linear between; fewer than 3, after losses, count less). */
+    static final int MIN_VILLAGERS=3,MAX_WORKERS=20;static final double MAX_VILLAGER_FACTOR=2;
+    static double villagerFactor(int villagers){
+        if(villagers<=0)return 0;if(villagers<MIN_VILLAGERS)return villagers/(double)MIN_VILLAGERS;
+        return 1+(Math.min(MAX_WORKERS,villagers)-MIN_VILLAGERS)*(MAX_VILLAGER_FACTOR-1)/(MAX_WORKERS-MIN_VILLAGERS);
+    }
+    /** A longer line: 128 blocks count 1, 1,000 blocks 2 (linear between, never more). */
+    static final double FULL_DISTANCE=1000,MAX_DISTANCE_FACTOR=2;
+    static double distanceFactor(double distance){return 1+Math.max(0,Math.min(1,(distance-MIN_SEPARATION)/(FULL_DISTANCE-MIN_SEPARATION)))*(MAX_DISTANCE_FACTOR-1);}
     /** The owner's bonus for absurdly far bases: none up to {@link #BONUS_FROM} blocks, then rising to {@link #MAX_BONUS} at {@link #BONUS_FULL}. */
     static final double BONUS_FROM=1000,BONUS_FULL=5000,MAX_BONUS=.20;
     static double distanceBonus(double distance){return MAX_BONUS*Math.max(0,Math.min(1,(distance-BONUS_FROM)/(BONUS_FULL-BONUS_FROM)));}
+    /** Pure: the tribute value a FOB makes an hour, all slots together (before research). The best is 4.8 times the slowest. */
+    static double perHour(double distance,int villagers){return SLOWEST_PER_HOUR*villagerFactor(villagers)*distanceFactor(distance)*(1+distanceBonus(distance));}
+    /** A vanilla cart's top speed on a straight rail: the route's period at this speed is the one the value an hour is promised at. */
+    static final double REF_SPEED=.4;
+    static long refPeriod(double distance){return period(Math.round(distance/REF_SPEED));}
+    /**
+     * Pure: the hours of making one trip carries: the route's own period, but never less than at a vanilla cart's speed, so a slow rail
+     * never makes less an hour than promised and a fast one delivers the same trips more often (it pays).
+     */
+    static double tripHours(double distance,long period){return Math.max(refPeriod(distance),period)/(double)HOUR;}
+    /** Everything a trip depends on: the slots on, the line, the villagers, the route's period, the research level. */
+    record Yield(boolean[] on,double distance,int villagers,long period,int level){}
     static int enabled(boolean[] on){int n=0;for(boolean b:on)if(b)n++;return n;}
-    /** Pure: the tribute value one trip gives a slot: the trip's whole value, shared by the slots that are on. */
-    static double budget(Slot slot,boolean[] on,double distance,int villagers){
-        if(!on[slot.ordinal()])return 0;
-        return units(distance)*workers(villagers)*(1+distanceBonus(distance))/Math.max(1,enabled(on));
+    /** Pure: the tribute value one trip gives a slot: the trip's value shared by the slots that are on, times the slot's research bonus. */
+    static double budget(Slot slot,Yield y){
+        if(!y.on()[slot.ordinal()])return 0;
+        return perHour(y.distance(),y.villagers())*tripHours(y.distance(),y.period())/Math.max(1,enabled(y.on()))*slotMultiplier(slot,y.level());
     }
     /** Pure: the value a slot adds to its tally per trip (the emerald slot never less than {@link #EMERALD_MIN} emeralds). */
-    static double perTrip(Slot slot,boolean[] on,double distance,int villagers){
-        double b=budget(slot,on,distance,villagers);
-        return slot==Slot.EMERALD&&on[slot.ordinal()]?Math.max(b,EMERALD_MIN*EMERALD_VALUE):b;
+    static double perTrip(Slot slot,Yield y){
+        double b=budget(slot,y);
+        return slot==Slot.EMERALD&&y.on()[slot.ordinal()]?Math.max(b,EMERALD_MIN*EMERALD_VALUE):b;
     }
     /** Pure: items of {@code loot} a slot makes per trip (a fraction: one every 1/x trips). */
-    static double itemsPerTrip(Slot slot,Loot loot,boolean[] on,double distance,int villagers){return perTrip(slot,on,distance,villagers)/loot.value();}
+    static double itemsPerTrip(Slot slot,Loot loot,Yield y){return perTrip(slot,y)/loot.value();}
     /** A slot may be switched off only while another stays on. */
     static boolean mayToggle(boolean[] on,Slot slot){return !on[slot.ordinal()]||enabled(on)>1;}
     /**
      * Pure: one trip into the tallies (value per slot, kept between trips): {@code trips} trips are added, then every whole item is taken out.
      * Returns the whole items per slot; {@code tally} keeps what is left. A changed choice keeps the tally (it is value, not items).
      */
-    static int[] trip(double[] tally,Loot[] loot,boolean[] on,double distance,int villagers,double trips){
+    static int[] trip(double[] tally,Loot[] loot,Yield y,double trips){
         int[] out=new int[Slot.values().length];
-        for(var slot:Slot.values()){int i=slot.ordinal();if(!on[i])continue;
-            tally[i]+=trips*perTrip(slot,on,distance,villagers);
+        for(var slot:Slot.values()){int i=slot.ordinal();if(!y.on()[i])continue;
+            tally[i]+=trips*perTrip(slot,y);
             int n=(int)Math.floor(tally[i]/loot[i].value()+1e-9);out[i]=n;tally[i]=Math.max(0,tally[i]-n*loot[i].value());}
         return out;
     }

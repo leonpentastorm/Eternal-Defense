@@ -105,7 +105,7 @@ final class Routes {
     /** What a ride will bring home if the way back takes as long as the way out (the tallies looked at, not spent: the Receiving Gate takes it). */
     static int load(FobData d,FobData.Fob f,long outLeg){
         double trips=RouteRules.rideTrips(sinceLast(d,f,outLeg),RouteRules.period(f.baseline));
-        return RouteRules.total(RouteRules.trip(f.tally.clone(),f.loots(),f.slotOn,f.separation(),f.workers,trips));
+        return RouteRules.total(RouteRules.trip(f.tally.clone(),f.loots(),f.yield(),trips));
     }
     // ---- once a second: the clock, passive deliveries, rides that went wrong ----------------------------------------------------------------------
     static void second(ServerLevel l,FobData d){
@@ -154,7 +154,7 @@ final class Routes {
     /** What {@code trips} trips bring (item id to count, the slots in order), taken out of the tallies; {@code now} is the delivery's time. */
     static Map<String,Integer> haul(FobData.Fob f,double trips,long now){
         f.lastTrip=now;
-        var loots=f.loots();int[] n=RouteRules.trip(f.tally,loots,f.slotOn,f.separation(),f.workers,trips);
+        var loots=f.loots();int[] n=RouteRules.trip(f.tally,loots,f.yield(),trips);
         var out=new LinkedHashMap<String,Integer>();
         for(int i=0;i<n.length;i++)if(n[i]>0)out.merge(loots[i].id(),n[i],Integer::sum);
         return out;
@@ -315,13 +315,18 @@ final class Routes {
     static void tribute(FobData.Fob f,CompoundTag n){
         double distance=f.separation();long period=f.baseline>0?RouteRules.period(f.baseline):0;
         n.putString("specialty",f.specialty.id());n.putInt("villagers",Math.min(RouteRules.MAX_WORKERS,f.workers));
-        n.putDouble("units",RouteRules.units(distance));n.putDouble("bonus",RouteRules.distanceBonus(distance));n.putDouble("tripsPerHour",RouteRules.tripsPerHour(period));
+        n.putDouble("bonus",RouteRules.distanceBonus(distance));n.putDouble("tripsPerHour",RouteRules.tripsPerHour(period));
+        // 0.0.32: the value an hour (every slot together, before research) and the research
+        n.putDouble("valuePerHour",RouteRules.perHour(distance,f.workers));
+        n.putInt("level",f.level());n.putInt("researchXp",f.researchXp);
         n.putBoolean("full",full(f));int used=0;for(int i=0;i<f.depot().getContainerSize();i++)if(!f.depot().getItem(i).isEmpty())used++;n.putInt("stored",used);n.putInt("depotSlots",f.depot().getContainerSize());
         var slots=new ListTag();
         for(var slot:RouteRules.Slot.values()){
             var row=new CompoundTag();var loot=f.loot(slot);boolean on=f.slotOn[slot.ordinal()];
             row.putString("slot",slot.id());row.putBoolean("on",on);row.putInt("choice",f.choice(slot));row.putString("item",loot.id());
-            row.putDouble("perTrip",on?RouteRules.itemsPerTrip(slot,loot,f.slotOn,distance,f.workers):0);row.putBoolean("mayToggle",RouteRules.mayToggle(f.slotOn,slot));
+            row.putDouble("perTrip",on?RouteRules.itemsPerTrip(slot,loot,f.yield()):0);row.putBoolean("mayToggle",RouteRules.mayToggle(f.slotOn,slot));
+            row.putDouble("research",RouteRules.slotMultiplier(slot,f.level()));
+            row.putBoolean("fallback",RouteRules.effectiveChoice(slot,f.specialty,f.choice(slot),f.level())!=Math.floorMod(f.choice(slot),RouteRules.options(slot,f.specialty).size()));
             slots.add(row);
         }
         n.put("slots",slots);
@@ -357,6 +362,7 @@ final class Routes {
             if(slotIndex<0||slotIndex>=RouteRules.Slot.values().length){open(p,anchor,"");return;}
             var slot=RouteRules.Slot.values()[slotIndex];var options=RouteRules.options(slot,f.specialty);
             if(slot==RouteRules.Slot.EMERALD||index<0||index>=options.size()){open(p,anchor,"");return;}
+            if(!RouteRules.unlocked(options.get(index),f.level())){open(p,anchor,"gate.result.locked");return;}   // 0.0.32: research opens A and S
             switch(slot){case MINE->f.mine=index;case FARM->f.farm=index;default->f.special=index;}
             result="gate.result.chosen";
         }

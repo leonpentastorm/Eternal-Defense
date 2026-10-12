@@ -1,5 +1,16 @@
 # Change log
 
+## 0.0.32 — Village research, the monster hunter guild, a 30-minute S-tier floor, icons (2026-10-12)
+
+On `dev`. **Network protocol 37** (the gate and FOB states carry the research; new FOB buttons for research gifts). Rules: GDD 0.0.32; tests: `docs/ROUND-0032-TESTING.md`.
+
+* **Dragon's breath is S tier** (owner; it was B) in the potion makers' list, which now runs D to S.
+* **30 minutes of play for an S-tier item, even at the slowest** (owner): the tribute is counted in value an hour. The slowest FOB that makes anything (3 villagers, gates 128 blocks apart, all four slots on) makes 64 value an hour; with research at level 4 its specialty slot makes one S-tier item (worth 16) every 30 minutes. More villagers (up to x2 at 20), a longer line (up to x2 at 1,000 blocks) and the far bonus (+20 percent at 5,000) raise it: the best FOB makes 4.8 times the slowest. A trip carries the hours of the route's own period, never fewer than at a vanilla cart's speed. Worths: tiers D to S 1, 2, 4, 8, 16; an emerald 4; iron 2; a trader item 16/6 per emerald of its price.
+* **Village research** (owner): each FOB has a research bar on its FOB Beacon's new Research tab, fed with emeralds (1 point), diamonds (4) or Ardent Energy (2), one or ten at a time, while ACTIVE. 5 levels (16, 48, 96, 160, 240 points). Level 2 opens the specialty's A-tier items, level 4 its S-tier items (the potion makers' A/S, the monster hunter guild's A/S, the wandering trader hub's endgame goods). Each level gives the specialty slot +25 percent and emeralds, the mine and the farm +5 percent each. A level reached is announced in chat.
+* **The monster hunter guild** (owner): a fifth specialty with every vanilla monster drop but the bosses' (21 items, D to S; ender pearls, which the pack's recipes need in numbers, are A).
+* **Icons** (owner): every loot slot, specialty and research has a round medallion with a villager at the job, in the style of the game's paintings (owner's follow-up; the first flat icons are kept unused in `textures/gui/tribute/flat/`). They show on the gate screen's slot cards, the FOB screen and the Command Table's FOBs tab. The gate's item grid shows each item's tier letter and a padlock on locked items.
+* **Names switch on the Command Table's map** (owner): hides the FOBs' names and "(x blocks)"; the zones, flags and arrows stay.
+
 ## 0.0.31 — Tribute you choose, the Receiving Gate's storage, FOB management (2026-10-12)
 
 On `dev`. **Network protocol 36** (a new packet, `BeaconNetwork.MenuButton`, id 22, C2S: menu buttons). Rules: GDD 0.0.31; tests: `docs/ROUND-0031-TESTING.md`.

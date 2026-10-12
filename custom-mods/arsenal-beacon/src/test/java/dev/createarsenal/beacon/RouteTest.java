@@ -80,113 +80,159 @@ final class RouteTest {
         assertEquals(Signal.RED,signal(true,true,true,true,0,true,true),"red wins over amber");
     }
 
-    // ---- the tribute (0.0.31): four loot slots ------------------------------------------------------------------------------------------------
+    // ---- the tribute (0.0.31): four loot slots; 0.0.32: by the hour, research, the 30 minute promise ---------------------------------------------
     static final boolean[] ALL={true,true,true,true};
-    /** Tribute value an hour of play for a FOB on a route of this length ridden at this speed (blocks a tick). */
-    static double valuePerHour(double distance,int villagers,double speed){
-        long t=Math.round(distance/speed);double sum=0;for(var slot:Slot.values())sum+=budget(slot,ALL,distance,villagers);
-        return sum*tripsPerHour(period(t));
+    static Yield y(boolean[] on,double distance,int villagers,double speed,int level){return new Yield(on,distance,villagers,period(Math.round(distance/speed)),level);}
+    /** Tribute value an hour of play, every slot together, for a route of this length ridden at this speed (blocks a tick). */
+    static double valuePerHour(double distance,int villagers,double speed,int level){
+        var yi=y(ALL,distance,villagers,speed,level);double sum=0;for(var slot:Slot.values())sum+=budget(slot,yi);
+        return sum*tripsPerHour(yi.period());
+    }
+    /** The owner's floor (0.0.32): even the slowest FOB, with S open, makes an S-tier item every 30 minutes of play, whatever the rail. */
+    @Test void theSlowestFobMakesAnSTierItemEvery30Minutes(){
+        for(double speed:new double[]{.05,.1,.4,.57}){
+            var slowest=y(ALL,MIN_SEPARATION,MIN_VILLAGERS,speed,UNLOCK_S);
+            double perHalfHour=budget(Slot.SPECIALTY,slowest)*tripsPerHour(slowest.period())*S_HOURS;
+            assertTrue(perHalfHour>=TIER_VALUE[5]-1e-9,"at "+speed+" blocks a tick: "+perHalfHour+" value in 30 minutes");
+        }
+        assertEquals(TIER_VALUE[5],budget(Slot.SPECIALTY,y(ALL,MIN_SEPARATION,3,.4,UNLOCK_S))*6,1e-9,"six deliveries of 5 minutes: exactly one");
+        // every S item of every list is within it: none is worth more than an S
+        for(var spec:Specialty.values())for(var l:spec.options()){
+            assertTrue(l.value()<=TIER_VALUE[5]+1e-9,l.id()+" is worth "+l.value());
+            if(l.tier()==5)assertEquals(UNLOCK_S,unlockLevel(l));
+        }
+        // and the other slots at that size: 16 value an hour each before research
+        assertEquals(SLOWEST_PER_HOUR/4,budget(Slot.FARM,y(ALL,MIN_SEPARATION,3,.4,0))*12,1e-9);
     }
     @Test void theNumbersFollowTheTuningPrinciples(){
-        double fullSpeed=.4;   // a vanilla cart's top speed, blocks a tick
-        // (a) 0.0.30's throughput is kept: ten villagers on a 1 km route at full speed bring 57.6 value an hour
-        assertEquals(57.6,valuePerHour(1000,10,fullSpeed),1e-6);
-        assertTrue(valuePerHour(1000,10,fullSpeed/2)<valuePerHour(1000,10,fullSpeed),"a slower rail brings less: a faster rail pays");
-        assertEquals(2*valuePerHour(1000,10,fullSpeed),valuePerHour(1000,20,fullSpeed),1e-6,"twenty villagers bring twice ten");
-        assertEquals(valuePerHour(1000,20,fullSpeed),valuePerHour(1000,60,fullSpeed),1e-6,"only twenty count");
-        // (b) riding a round trip brings up to two deliveries: back to back that is 2.5 times passive
+        double fullSpeed=REF_SPEED;
+        assertEquals(64,perHour(MIN_SEPARATION,3),1e-9,"the slowest FOB");
+        assertEquals(128,perHour(MIN_SEPARATION,20),1e-9,"twenty villagers make twice three");
+        assertEquals(perHour(1000,20),perHour(1000,60),1e-9,"only twenty count");
+        assertEquals(256,perHour(1000,20),1e-9,"and a 1 km line twice again");
+        assertEquals(1.2*256,perHour(5000,20),1e-9,"+20 percent at 5 km: the best is 4.8 times the slowest");
+        assertEquals(perHour(5000,20),perHour(40_000,20),1e-9);
+        assertEquals(64/3.0,perHour(MIN_SEPARATION,1),1e-9,"fewer than 3 (after losses) make less: a third each");assertEquals(0,perHour(1000,0),1e-9);
+        // a vanilla cart gets the promised value an hour; a faster rail more (the same trips, more often); a slower one never less
+        for(int d=MIN_SEPARATION;d<=10_000;d+=211){
+            assertEquals(perHour(d,10),valuePerHour(d,10,fullSpeed,0),1e-6,"at "+d);
+            assertTrue(valuePerHour(d,10,fullSpeed/4,0)>=perHour(d,10)-1e-6,"a slow rail at "+d);
+            assertTrue(valuePerHour(d,10,MAX_SPEED,0)>=perHour(d,10)-1e-6);
+        }
+        assertTrue(valuePerHour(2000,10,MAX_SPEED,0)>valuePerHour(2000,10,fullSpeed,0),"a faster rail pays on a long line");
+        double last=0;for(int d=MIN_SEPARATION;d<=10_000;d+=97){double p=perHour(d,10);assertTrue(p>=last-1e-9,"never worse farther out");last=p;}
+        assertEquals(0,distanceBonus(1000),1e-9);assertEquals(.10,distanceBonus(3000),1e-9);assertEquals(.20,distanceBonus(5000),1e-9);
+        // riding back to back: 2.5 times passive
         long t=Math.round(1000/fullSpeed);double ridden=rideTrips(2*t,period(t))*HOUR/(2*t),passive=tripsPerHour(period(t));
-        assertEquals(ACTIVE_FACTOR,rideTrips(2*t,period(t)),1e-9,"1 km at full speed: the full two");
-        assertEquals(2.5,ridden/passive,1e-9);
-        // (c) far routes are never worse per hour at equal speed, and pay the owner's bonus: up to 20 percent from 5,000 blocks
-        double last=0;
-        for(int d=MIN_SEPARATION;d<=10_000;d+=97){double p=valuePerHour(d,10,fullSpeed);assertTrue(p>=last*.999,"per hour at "+d+": "+p+" after "+last);last=p;}
-        assertEquals(0,distanceBonus(1000),1e-9);assertEquals(.10,distanceBonus(3000),1e-9);assertEquals(.20,distanceBonus(5000),1e-9);assertEquals(.20,distanceBonus(40_000),1e-9);
-        assertEquals(1.2*valuePerHour(1000,10,fullSpeed),valuePerHour(5000,10,fullSpeed),1e-6,"5 km: 20 percent more an hour than 1 km");
-        assertEquals(1,units(MIN_SEPARATION),1e-9);assertEquals(5,units(1000),1e-9);assertEquals(MAX_UNITS,units(50_000),1e-9);
+        assertEquals(ACTIVE_FACTOR,rideTrips(2*t,period(t)),1e-9);assertEquals(2.5,ridden/passive,1e-9);
     }
     /** 0.0.30's stockpile capped what rides could take; without it a ride is capped by time: a short loop ridden over and over makes nothing extra. */
     @Test void ridingNeverPaysMoreThan2Point5TimesPassive(){
         for(int d=MIN_SEPARATION;d<=20_000;d+=137)for(double speed:new double[]{.1,.4,.57}){
             long t=Math.round(d/speed),p=period(t);
-            for(long lap=2*t;lap<=2*t+12_000;lap+=1_500){   // back to back, or with a stop at either end
+            for(long lap=2*t;lap<=2*t+12_000;lap+=1_500){
                 double perHour=rideTrips(lap,p)*HOUR/lap;
                 assertTrue(perHour<=RIDE_BOOST*tripsPerHour(p)+1e-9,"d="+d+" speed="+speed+" lap="+lap+": "+perHour+" trips an hour");
             }
         }
-        assertEquals(0,rideTrips(0,6000),1e-9,"a ride right after a delivery brings nothing more");
-        assertEquals(1,rideTrips(2400,6000),1e-9);assertEquals(ACTIVE_FACTOR,rideTrips(1_000_000,6000),1e-9,"never more than two");
-        // the emerald minimum (a third a delivery) can bring at most 4 an hour by itself, and 10 an hour riding a short loop all day
-        assertEquals(4,EMERALD_MIN*tripsPerHour(MIN_PERIOD),1e-9);
+        assertEquals(0,rideTrips(0,6000),1e-9);assertEquals(1,rideTrips(2400,6000),1e-9);assertEquals(ACTIVE_FACTOR,rideTrips(1_000_000,6000),1e-9);
+        assertEquals(4,EMERALD_MIN*tripsPerHour(MIN_PERIOD),1e-9,"the emerald minimum: at most 4 an hour by itself");
+    }
+    @Test void villageResearchOpensTiersAndGrowsTheSlots(){
+        assertEquals(List.of(0,16,48,96,160,240),Arrays.stream(RESEARCH_XP).boxed().toList());
+        assertEquals(0,level(15));assertEquals(1,level(16));assertEquals(2,level(48));assertEquals(4,level(160));assertEquals(5,level(240));assertEquals(5,level(9999));
+        assertEquals(32,toNext(16));assertEquals(0,toNext(240));
+        assertEquals(1,XP_EMERALD);assertEquals(4,XP_DIAMOND);assertEquals(2,XP_ARDENT);
+        assertEquals(1.0,slotMultiplier(Slot.SPECIALTY,0),1e-9);assertEquals(2.0,slotMultiplier(Slot.SPECIALTY,4),1e-9);assertEquals(2.25,slotMultiplier(Slot.SPECIALTY,5),1e-9);
+        assertEquals(1.25,slotMultiplier(Slot.EMERALD,5),1e-9);assertEquals(1.10,slotMultiplier(Slot.MINE,2),1e-9);assertEquals(1.05,slotMultiplier(Slot.FARM,1),1e-9);
+        var tear=POTION_LOOT.stream().filter(l->l.id().equals("minecraft:ghast_tear")).findFirst().orElseThrow();
+        var powder=POTION_LOOT.stream().filter(l->l.id().equals("minecraft:blaze_powder")).findFirst().orElseThrow();
+        assertFalse(unlocked(tear,3));assertTrue(unlocked(tear,4));assertFalse(unlocked(powder,1));assertTrue(unlocked(powder,2));
+        assertTrue(unlocked(POTION_LOOT.get(0),0),"D, C and B are always open");
+        // a choice research has not opened yet sends the slot's first open item, and the first item of every list is open
+        int tearIndex=POTION_LOOT.indexOf(tear);
+        assertEquals(0,effectiveChoice(Slot.SPECIALTY,Specialty.POTIONS,tearIndex,0));assertEquals(tearIndex,effectiveChoice(Slot.SPECIALTY,Specialty.POTIONS,tearIndex,4));
+        for(var spec:Specialty.values())assertTrue(unlocked(spec.options().get(0),0),spec+": its first item is open at level 0");
+        // research makes every slot bigger: the specialty by a quarter a level, the rest by a twentieth
+        var at0=y(ALL,1000,10,.4,0);var at5=y(ALL,1000,10,.4,5);
+        assertEquals(2.25,budget(Slot.SPECIALTY,at5)/budget(Slot.SPECIALTY,at0),1e-9);assertEquals(1.25,budget(Slot.FARM,at5)/budget(Slot.FARM,at0),1e-9);
     }
     @Test void theSlotsThatAreOnShareTheTrip(){
         boolean[] farmOnly={false,false,true,false},two={false,true,true,false};
-        double share=budget(Slot.FARM,ALL,1000,10);
-        assertEquals(1.25,share,1e-9,"all four on: a quarter of 5 each");
-        assertEquals(4*share,budget(Slot.FARM,farmOnly,1000,10),1e-9,"the farm alone gets the whole trip");
-        assertEquals(2*share,budget(Slot.MINE,two,1000,10),1e-9,"two on: half each");
-        assertEquals(0,budget(Slot.EMERALD,farmOnly,1000,10),1e-9,"a slot that is off gets nothing");
-        assertFalse(mayToggle(farmOnly,Slot.FARM),"the last slot on stays on");assertTrue(mayToggle(farmOnly,Slot.MINE),"a slot that is off can always come on");assertTrue(mayToggle(ALL,Slot.EMERALD));
-        // every village sends emeralds: at least one every three deliveries while the slot is on, more on big or far routes
-        assertEquals(EMERALD_MIN,itemsPerTrip(Slot.EMERALD,EMERALD,ALL,MIN_SEPARATION,3),1e-9);
-        assertEquals(1/3.0,EMERALD_MIN,1e-9);
-        boolean[] emeraldOnly={true,false,false,false};
-        assertTrue(itemsPerTrip(Slot.EMERALD,EMERALD,emeraldOnly,5000,20)>1,"an emerald village with 20 villagers 5 km out: more than one a delivery");
+        double share=budget(Slot.FARM,y(ALL,1000,10,.4,0));
+        assertEquals(perHour(1000,10)/4*period(2500)/(double)HOUR,share,1e-9,"all four on: a quarter of the trip each");
+        assertEquals(4*share,budget(Slot.FARM,y(farmOnly,1000,10,.4,0)),1e-9,"the farm alone gets the whole trip");
+        assertEquals(2*share,budget(Slot.MINE,y(two,1000,10,.4,0)),1e-9,"two on: half each");
+        assertEquals(0,budget(Slot.EMERALD,y(farmOnly,1000,10,.4,0)),1e-9,"a slot that is off gets nothing");
+        assertFalse(mayToggle(farmOnly,Slot.FARM));assertTrue(mayToggle(farmOnly,Slot.MINE));assertTrue(mayToggle(ALL,Slot.EMERALD));
+        // every village sends emeralds: at least one every three deliveries; the slowest FOB makes exactly that
+        assertEquals(EMERALD_MIN,itemsPerTrip(Slot.EMERALD,EMERALD,y(ALL,MIN_SEPARATION,3,.4,0)),1e-9);
+        assertEquals(EMERALD_MIN,itemsPerTrip(Slot.EMERALD,EMERALD,y(ALL,MIN_SEPARATION,1,.4,0)),1e-9,"the minimum holds with fewer villagers");
+        assertTrue(itemsPerTrip(Slot.EMERALD,EMERALD,y(new boolean[]{true,false,false,false},5000,20,.4,0))>1);
     }
     @Test void aTripPaysWholeItemsAndKeepsTheRest(){
         var rnd=new Random(11);
         for(int run=0;run<500;run++){
             boolean[] on=new boolean[4];for(int i=0;i<4;i++)on[i]=rnd.nextBoolean();if(enabled(on)==0)on[rnd.nextInt(4)]=true;
-            var spec=Specialty.values()[rnd.nextInt(4)];
+            var spec=Specialty.values()[rnd.nextInt(Specialty.values().length)];
             Loot[] loot={EMERALD,MINE_LOOT.get(rnd.nextInt(MINE_LOOT.size())),FARM_LOOT.get(rnd.nextInt(FARM_LOOT.size())),spec.options().get(rnd.nextInt(spec.options().size()))};
-            double distance=MIN_SEPARATION+rnd.nextInt(8000);int villagers=rnd.nextInt(25),trips=1+rnd.nextInt(2);
+            var yi=y(on,MIN_SEPARATION+rnd.nextInt(8000),rnd.nextInt(25),.1+rnd.nextDouble()*.47,rnd.nextInt(6));double trips=rnd.nextDouble()*2;
             double[] tally=new double[4];for(int i=0;i<4;i++)tally[i]=rnd.nextDouble()*loot[i].value();
-            double[] before=tally.clone();int[] got=trip(tally,loot,on,distance,villagers,trips);
+            double[] before=tally.clone();int[] got=trip(tally,loot,yi,trips);
             for(int i=0;i<4;i++){
-                double added=trips*perTrip(Slot.values()[i],on,distance,villagers);
+                double added=trips*perTrip(Slot.values()[i],yi);
                 assertEquals(before[i]+added,got[i]*loot[i].value()+tally[i],1e-6,"value is never lost or made: slot "+i);
                 assertTrue(tally[i]>=-1e-9&&tally[i]<loot[i].value()+1e-9,"only a part of one item stays in the tally");
-                if(!on[i])assertEquals(0,got[i],"a slot that is off sends nothing");
+                if(!on[i])assertEquals(0,got[i]);
             }
         }
     }
+    static Loot find(List<Loot> list,String id){return list.stream().filter(l->l.id().equals("minecraft:"+id)).findFirst().orElseThrow(()->new AssertionError(id));}
     @Test void theLootListsAreTheOwnersLists(){
         assertEquals(List.of("minecraft:redstone","minecraft:iron_ingot","minecraft:andesite","minecraft:flint","minecraft:gunpowder","minecraft:charcoal"),MINE_LOOT.stream().map(Loot::id).toList());
         assertTrue(FARM_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:wheat","minecraft:carrot","minecraft:potato","minecraft:beetroot","minecraft:melon_slice","minecraft:pumpkin","minecraft:apple","minecraft:sweet_berries","minecraft:glow_berries","minecraft:cocoa_beans")));
         assertTrue(FISHING_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:cod","minecraft:salmon","minecraft:tropical_fish","minecraft:pufferfish")));
         assertTrue(HUSBANDRY_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:beef","minecraft:porkchop","minecraft:chicken","minecraft:mutton","minecraft:rabbit","minecraft:leather","minecraft:rabbit_hide")));
-        // potion makers: the owner's tiers, each tier twice the one below: S takes 16 times as many deliveries as D
-        assertEquals(17,POTION_LOOT.size(),"every brewing ingredient of 1.20.1");
-        for(var l:POTION_LOOT)assertEquals(POTION_TIER_VALUE[l.note()],l.value(),1e-9);
-        assertEquals(5,POTION_LOOT.stream().filter(l->l.id().equals("minecraft:ghast_tear")).findFirst().orElseThrow().note(),"ghast tear: S");
-        assertEquals(1,POTION_LOOT.stream().filter(l->l.id().equals("minecraft:sugar")).findFirst().orElseThrow().note(),"sugar: D");
-        assertEquals(16,POTION_TIER_VALUE[5]/POTION_TIER_VALUE[1],1e-9);
-        // the wandering trader: everything it sells in 1.20.1, its price in emeralds sets the time
+        // potion makers: the owner's tiers (0.0.32: dragon's breath to S), each tier twice the one below
+        assertEquals(17,POTION_LOOT.size());
+        for(var l:POTION_LOOT)assertEquals(TIER_VALUE[l.tier()],l.value(),1e-9);
+        for(String s:List.of("ghast_tear","rabbit_foot","turtle_helmet","dragon_breath"))assertEquals(5,find(POTION_LOOT,s).tier(),s+": S");
+        for(String a:List.of("phantom_membrane","pufferfish","blaze_powder"))assertEquals(4,find(POTION_LOOT,a).tier(),a+": A");
+        assertEquals(1,find(POTION_LOOT,"sugar").tier());assertEquals(16,TIER_VALUE[5]/TIER_VALUE[1],1e-9);
+        // the monster hunter guild (0.0.32): monster drops, no boss drop; ender pearls and blaze rods for eyes of ender
+        for(var l:MONSTER_LOOT)assertEquals(TIER_VALUE[l.tier()],l.value(),1e-9);
+        assertEquals(4,find(MONSTER_LOOT,"ender_pearl").tier());assertEquals(4,find(MONSTER_LOOT,"blaze_rod").tier());
+        for(String boss:List.of("nether_star","dragon_egg","elytra","wet_sponge","dragon_head"))assertTrue(MONSTER_LOOT.stream().noneMatch(l->l.id().equals("minecraft:"+boss)),boss);
+        // an item two lists share has one tier
+        for(var m:MONSTER_LOOT)for(var p:POTION_LOOT)if(m.id().equals(p.id()))assertEquals(p.tier(),m.tier(),m.id());
+        // the wandering trader: everything it sells in 1.20.1, by price; the endgame goods locked
         assertEquals(70,TRADER_LOOT.size());
-        var sapling=TRADER_LOOT.stream().filter(l->l.id().equals("minecraft:oak_sapling")).findFirst().orElseThrow();var sand=TRADER_LOOT.stream().filter(l->l.id().equals("minecraft:sand")).findFirst().orElseThrow();
-        assertEquals(5*EMERALD_VALUE,sapling.value(),1e-9);assertEquals(EMERALD_VALUE/8,sand.value(),1e-9);
+        assertEquals(5*TRADER_PER_EMERALD,find(TRADER_LOOT,"oak_sapling").value(),1e-9);assertEquals(TRADER_PER_EMERALD/8,find(TRADER_LOOT,"sand").value(),1e-9);
+        assertEquals(TIER_VALUE[5],find(TRADER_LOOT,"blue_ice").value(),1e-9,"the dearest trade is an S");
+        assertEquals(5,find(TRADER_LOOT,"nautilus_shell").tier());assertEquals(4,find(TRADER_LOOT,"slime_ball").tier());assertEquals(0,find(TRADER_LOOT,"oak_sapling").tier());
+        assertEquals(6,find(TRADER_LOOT,"blue_ice").price());
+        assertEquals(5,Specialty.values().length);
         for(var spec:Specialty.values())assertFalse(spec.options().isEmpty());
-        for(var list:List.of(MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT))for(var l:list)assertFalse(l.id().contains("arsenal")||l.id().contains("coin"),"no currency of the mod: "+l.id());
+        for(var list:List.of(MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT,MONSTER_LOOT))for(var l:list)assertFalse(l.id().contains("arsenal")||l.id().contains("coin"),"no currency of the mod: "+l.id());
     }
     /**
-     * The tribute items the Exchange buys (they turn into Ardent Energy). Listed here so a change to either list is a decision: an
-     * emerald-only FOB of 10 villagers on a 1 km route brings 4.8 emeralds an hour, 2.4 Ardent Energy at the standalone Exchange.
+     * The tribute items the Exchange buys (they turn into Ardent Energy). Listed here so a change to either list is a decision. 0.0.32: an
+     * emerald is worth 4 and an S item 16, so emeralds and ghast tears earn the same Ardent Energy at the standalone Exchange.
      */
     @Test void theExchangeBuysOnlyTheseTributeItems(){
-        var all=new java.util.TreeSet<String>();for(var list:List.of(EMERALD_LOOT,MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT))for(var l:list)all.add(l.id());
+        var all=new java.util.TreeSet<String>();for(var list:List.of(EMERALD_LOOT,MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT,MONSTER_LOOT))for(var l:list)all.add(l.id());
         for(String list:List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE)){
             String sell=list.substring(list.indexOf("[sell]"),list.indexOf("[buy]"));var bought=new java.util.TreeSet<String>();
             for(String id:all)if(sell.contains(id+" ")||sell.contains(id+"\n"))bought.add(id);
-            var expected=list==ExchangeShop.PACK?java.util.Set.<String>of():java.util.Set.of("minecraft:emerald","minecraft:ghast_tear");
+            var expected=list==ExchangeShop.PACK?java.util.Set.<String>of():java.util.Set.of("minecraft:emerald","minecraft:ghast_tear","minecraft:blaze_rod","minecraft:ender_pearl","minecraft:shulker_shell");
             assertEquals(new java.util.TreeSet<>(expected),bought,list==ExchangeShop.PACK?"pack":"standalone");
         }
-        boolean[] emeraldOnly={true,false,false,false},potionsOnly={false,false,false,true};
-        double perHour=itemsPerTrip(Slot.EMERALD,EMERALD,emeraldOnly,1000,10)*tripsPerHour(period(2500));
-        assertEquals(4.8,perHour,1e-6);
-        // the standalone Exchange pays 1 Ardent Energy for 2 emeralds and 2 for a ghast tear: a potion makers' FOB on ghast tears earns the same
-        var tear=POTION_LOOT.stream().filter(l->l.id().equals("minecraft:ghast_tear")).findFirst().orElseThrow();
-        double tears=itemsPerTrip(Slot.SPECIALTY,tear,potionsOnly,1000,10)*tripsPerHour(period(2500));
-        assertEquals(perHour/2,tears*2,1e-6);
+        // the standalone Exchange pays 1 Ardent Energy for 2 emeralds, 2 for a ghast tear, 1 for a blaze rod or an ender pearl
+        double perValueEmerald=0.5/EMERALD_VALUE,perValueTear=2/TIER_VALUE[5],perValueA=1/TIER_VALUE[4];
+        assertEquals(perValueEmerald,perValueTear,1e-9,"emeralds and ghast tears earn the same an hour");
+        assertEquals(perValueEmerald,perValueA,1e-9,"and so do blaze rods and ender pearls");
+        // a shulker shell (S, the monster hunter guild's) sells for 4: twice the others per value, an open question for the owner (HANDOFF)
+        assertEquals(2*perValueEmerald,4/TIER_VALUE[5],1e-9);
     }
 
     // ---- the saved data --------------------------------------------------------------------------------------------------------------------------
@@ -194,7 +240,7 @@ final class RouteTest {
         var d=new FobData();var f=d.add(new BlockPos(0,64,0),1L,0L);d.onlineTicks=123_456;
         f.deliveryGate=new BlockPos(5,64,5);f.receivingGate=new BlockPos(-900,70,12);f.commissioned=true;f.baseline=3210;f.clock=99_000;f.nextPassive=130_000;
         f.workers=9;f.note.put("minecraft:flint",3);f.lastKind="ride";f.lastItems=10;f.lastAt=120_000;f.lastTrip=119_000;
-        f.slotOn[0]=false;f.mine=2;f.farm=5;f.special=3;f.specialty=Specialty.POTIONS;f.tally[1]=.75;f.tally[3]=2.5;f.zoneColumns=new long[]{7,9};
+        f.slotOn[0]=false;f.mine=2;f.farm=5;f.special=3;f.specialty=Specialty.POTIONS;f.tally[1]=.75;f.tally[3]=2.5;f.zoneColumns=new long[]{7,9};f.researchXp=97;
         f.stockpile.putString("future","kept");
         var back=FobData.load(d.save(new CompoundTag())).byId(f.id);
         assertEquals(new BlockPos(5,64,5),back.deliveryGate);assertEquals(new BlockPos(-900,70,12),back.receivingGate);
@@ -203,6 +249,7 @@ final class RouteTest {
         assertFalse(back.slotOn[0]);assertTrue(back.slotOn[1]&&back.slotOn[2]&&back.slotOn[3]);
         assertEquals(2,back.mine);assertEquals(5,back.farm);assertEquals(3,back.special);assertEquals(Specialty.POTIONS,back.specialty);
         assertEquals(.75,back.tally[1],1e-12);assertEquals(2.5,back.tally[3],1e-12);assertArrayEquals(new long[]{7,9},back.zoneColumns);
+        assertEquals(97,back.researchXp);assertEquals(3,back.level());
         assertEquals("kept",back.stockpile.getString("future"),"unknown keys in the slice 2 tags survive");
         assertEquals(123_456,FobData.load(d.save(new CompoundTag())).onlineTicks);
         assertTrue(back.hasRoute());assertEquals(Math.hypot(905,7),back.separation(),1e-6);

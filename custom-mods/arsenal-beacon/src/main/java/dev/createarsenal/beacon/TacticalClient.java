@@ -160,6 +160,11 @@ public final class TacticalClient {
             int tx=radarX;String[] tabs={"tactical.view.base","tactical.view.region","tactical.view.fobs"};
             for(int i=0;i<tabs.length;i++){int page=i,tw=font.width(Ui.t(tabs[i]))+14;var b=addRenderableWidget(new Ui.UiButton(tx,topPos+31,tw,18,Ui.t(tabs[i]),Ui.Look.TAB,x->{view=page;rebuildWidgets();}));b.selected=view==i;tx+=tw+2;}
             if(view==2){fobView();return;}
+            // 0.0.32 (owner): under the map, right: the FOBs' names on or off
+            Component names=Ui.t("tactical.fob.names");int nw=font.width(names)+30+font.width(Ui.t("off"))+26;
+            namesButton=addRenderableWidget(new Ui.UiButton(radarX+size-nw,radarY+size+3,nw,14,names,Ui.Look.TOGGLE,b->{fobNames=!fobNames;((Ui.UiButton)b).on=fobNames;}));
+            namesButton.on=fobNames;namesButton.visible=!fobs().isEmpty();
+            namesButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("tactical.fob.names.tip")));
             scanButton=addRenderableWidget(new Ui.UiButton(tx+4,topPos+31,Math.max(56,radarX+size-tx-4),18,Ui.t("tactical.scan"),Ui.Look.PRIMARY,b->click(TacticalBlocks.button(TacticalBlocks.SCAN,0))));
             upgradeButton=addRenderableWidget(new Ui.UiButton(sideX,topPos+31,sideW,18,Ui.t("tactical.upgrade",mk()+1),Ui.Look.NORMAL,b->click(TacticalBlocks.button(TacticalBlocks.UPGRADE,0))));
             upgradeButton.visible=data.contains("upgradeItem");upgradeButton.active=data.getBoolean("uplink")&&(data.getBoolean("creative")||data.getInt("upgradeHave")>=data.getInt("upgradeAmount"));
@@ -184,6 +189,9 @@ public final class TacticalClient {
             if(abandonArmed>net.minecraft.Util.getMillis()){abandonButton.setMessage(Ui.t("tactical.abandon.confirm"));}
         }
         // ---- FOB management (0.0.31) -----------------------------------------------------------------------------------------------------------
+        /** 0.0.32 (owner): the map's switch for the FOBs' names and distances (their flags, zones and arrows stay), kept while the game runs. */
+        static boolean fobNames=true;
+        private Ui.UiButton namesButton;
         /** The FOBs, the one calling for help first. */
         private List<CompoundTag> fobs(){var out=new ArrayList<CompoundTag>();for(var t:data.getList("fobs",Tag.TAG_COMPOUND))out.add((CompoundTag)t);out.sort((a,b)->Boolean.compare(b.getBoolean("sos"),a.getBoolean("sos")));return out;}
         private int fobX(){return radarX;}
@@ -221,7 +229,10 @@ public final class TacticalClient {
                 boolean sos=f.getBoolean("sos");String state=f.getString("state");
                 Ui.card(g,x,y,w,h-3,sos?Ui.RED:FobClient.stateColor(state));
                 int chip=Ui.chip(g,font,Ui.t("fob.state."+state),x+w-8-Math.min(90,font.width(Ui.t("fob.state."+state))+12),y+4,FobClient.stateColor(state),90);
-                Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,w-110);
+                // 0.0.32: the specialty's icon and the research level (five pips) left of the state
+                int sx=x+w-8-chip-20;GateClient.tributeIcon(g,"spec_"+f.getString("specialty"),sx,y+2);
+                Ui.pips(g,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-4,y+7,f.getInt("level"),RouteRules.MAX_LEVEL,FobClient.OLIVE);
+                Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-12-x-8);
                 Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));
                 Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-(sos?124:0));
                 Component route=f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");
@@ -248,6 +259,7 @@ public final class TacticalClient {
                 float[] at=toScreen(f.getInt("x")+.5,f.getInt("z")+.5);Component name=Component.literal(f.getString("name"));
                 if(inside(at,x0+2,y0+2,x1-2,y1-2)){
                     int fx=(int)at[0],fy=(int)at[1];flag(g,fx,fy,color);
+                    if(!fobNames)continue;   // 0.0.32: names switched off, the flag stays
                     int lw=font.width(name),lx=Mth.clamp(fx+5,x0+2,x1-lw-2),ly=Mth.clamp(fy-10,y0+2,y1-10);
                     g.fill(lx-1,ly-1,lx+lw+1,ly+9,0xb0000000);Ui.text(g,font,name,lx,ly,color);
                 }else{
@@ -256,6 +268,7 @@ public final class TacticalClient {
                     double hw=(x1-x0)/2.0-8,hh=(y1-y0)/2.0-8,k=Math.min(Math.abs(dx)<1e-6?1e9:hw/Math.abs(dx),Math.abs(dy)<1e-6?1e9:hh/Math.abs(dy));
                     float ex=(float)(cx+dx*k),ey=(float)(cy+dy*k);
                     arrow(g,ex,ey,(float)Math.atan2(dy,dx),color);
+                    if(!fobNames)continue;   // 0.0.32: names switched off, the arrow stays
                     Component label=Ui.t("tactical.fob.arrow",name,f.getInt("distance"));int lw=font.width(label);
                     int lx=(int)Mth.clamp(ex-lw/2f-(float)(dx/len)*(lw/2f+6),x0+2,x1-lw-2),ly=(int)Mth.clamp(ey-4-(float)(dy/len)*12,y0+2,y1-11);
                     // a long name reaching the middle steps above the beacon's mark
@@ -348,8 +361,8 @@ public final class TacticalClient {
                 }else g.blit(TEXTURE[view],x0,y0,size,size,0,0,SIZE,SIZE,SIZE,SIZE);
             }else{
                 for(int i=1;i<8;i++){int gx=x0+size*i/8,gy=y0+size*i/8;g.fill(gx,y0,gx+1,y1,0xff16252c);g.fill(x0,gy,x1,gy+1,0xff16252c);}
-                // 0.0.31: under the map, so a FOB's flag or arrow never lands on it
-                Ui.text(g,font,Ui.t("tactical.no_scan"),x0,y1+4,Ui.MUTED,size);
+                // 0.0.31: under the map, so a FOB's flag or arrow never lands on it (left of the names switch)
+                Ui.text(g,font,Ui.t("tactical.no_scan"),x0,y1+4,Ui.MUTED,size-(namesButton!=null&&namesButton.visible?namesButton.getWidth()+6:0));
             }
             // the sweep line of a running scan, on the view it is filling
             if(scanning&&(scanRegion?1:0)==view){int sy=y0+scanRow*size/SIZE;g.fill(x0,sy,x1,sy+1,0xff5ae2df);g.fill(x0,Math.max(y0,sy-6),x1,sy,0x225ae2df);}

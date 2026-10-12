@@ -89,6 +89,19 @@ public final class GateClient {
     }
     static ItemStack icon(String id){return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(id)));}
     static Component slotTitle(String slot,String specialty){return slot.equals("specialty")?Ui.t("gate.slot.specialty",Ui.t("gate.specialty."+specialty)):Ui.t("gate.slot."+slot);}
+    // ---- 0.0.32: the tribute icons (our own pixel art, tools/fob/make_tribute_icons.py) and the tier badges --------------------------------------
+    static net.minecraft.resources.ResourceLocation tributeTexture(String name){return new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,"textures/gui/tribute/"+name+".png");}
+    /** A tribute icon (textures/gui/tribute, 32 x 32: a round medallion with a villager at the job, tools/fob/make_tribute_medallions.py) drawn
+     *  at 16 x 16 GUI pixels, so it shows every pixel from GUI scale 2 up. */
+    static void tributeIcon(GuiGraphics g,String name,int x,int y){g.blit(tributeTexture(name),x,y,16,16,0,0,32,32,32,32);}
+    /** The icon of a loot slot: its own for emeralds, the mine and the farm; the village's specialty for the specialty slot. */
+    static String slotIcon(String slot,String specialty){return slot.equals("specialty")?"spec_"+specialty:"slot_"+slot;}
+    static int tierColor(int tier){return switch(tier){case 1->0xff9aa5b1;case 2->0xff5fbf5a;case 3->0xff4aa3ff;case 4->0xffb06bff;case 5->0xffffb02e;default->Ui.MUTED;};}
+    /** A tier's letter in a small dark box (D grey, C green, B blue, A purple, S gold, as item rarities read). */
+    static void tierBadge(GuiGraphics g,net.minecraft.client.gui.Font font,int tier,int x,int y){
+        if(tier<=0)return;String letter=RouteRules.TIERS.substring(tier,tier+1);
+        g.fill(x,y,x+7,y+9,0xe0101418);g.drawString(font,letter,x+1,y+1,tierColor(tier),false);
+    }
     static int slotColor(int index){return switch(index){case 0->0xff4fd18b;case 1->0xffb0b8c0;case 2->FobClient.OLIVE;default->Ui.BRASS;};}
 
     /**
@@ -129,6 +142,7 @@ public final class GateClient {
         private int cardInner(){return cardH-3;}
         private boolean tall(){return cardInner()>=33;}
         boolean split(){return split;}
+        int level(){return data.getInt("level");}
         CompoundTag data(){return data;}
 
         @Override protected void init(){
@@ -189,7 +203,13 @@ public final class GateClient {
             for(int i=pickScroll*cols;i<options.size()&&i<(pickScroll+rows)*cols;i++){
                 int index=i,col=(i-pickScroll*cols)%cols,row=(i-pickScroll*cols)/cols;var loot=options.get(i);var stack=icon(loot.id());
                 var b=new Ui.UiButton(rx+6+col*cell,top+row*cell,cell-2,cell-2,Component.empty(),Ui.Look.NORMAL,x->{click(Routes.chooseButton(slot,index));picking=-1;rebuildWidgets();});
-                b.selected=i==chosen;b.painter((g,self,hover)->g.renderItem(stack,self.getX()+2,self.getY()+2)).noLabel();
+                // 0.0.32: an A or S item stays locked until the FOB's research opens it: dimmed, a padlock, no click
+                boolean open=RouteRules.unlocked(loot,level());int tier=loot.tier();
+                b.selected=i==chosen;b.active=open;
+                b.painter((g,self,hover)->{g.renderItem(stack,self.getX()+2,self.getY()+2);
+                    if(!open){g.fill(self.getX()+1,self.getY()+1,self.getX()+self.getWidth()-1,self.getY()+self.getHeight()-1,0xa0101418);g.pose().pushPose();g.pose().translate(0,0,200);
+                        g.pose().pushPose();g.pose().translate(self.getX()+self.getWidth()-11,self.getY()+self.getHeight()-11,0);g.pose().scale(.625f,.625f,1);tributeIcon(g,"lock",0,0);g.pose().popPose();g.pose().popPose();}
+                    g.pose().pushPose();g.pose().translate(0,0,200);tierBadge(g,font,tier,self.getX()+1,self.getY()+1);g.pose().popPose();}).noLabel();
                 pickButtons.add(addRenderableWidget(b));
             }
             addRenderableWidget(new Ui.UiButton(rx+rw-90,topPos+imageHeight-30,90,20,Ui.t("gate.pick.back"),Ui.Look.NORMAL,x->{picking=-1;rebuildWidgets();}));
@@ -286,8 +306,9 @@ public final class GateClient {
             for(int i=0;i<slots.size();i++){
                 var s=slots.get(i);int y=cardsY+13+i*cardH;boolean on=s.getBoolean("on");
                 Ui.card(g,rx,y,rw,h,on?slotColor(i):Ui.EDGE);
-                int tx=rx+46+20,tw=rw-(tx-rx)-(i>0?72:8);
-                g.renderItem(icon(s.getString("item")),rx+46,y+(h-16)/2);
+                int tx=rx+46+38,tw=rw-(tx-rx)-(i>0?72:8);
+                tributeIcon(g,slotIcon(s.getString("slot"),data.getString("specialty")),rx+44,y+(h-16)/2);
+                g.renderItem(icon(s.getString("item")),rx+62,y+(h-16)/2);
                 Component name=slotTitle(s.getString("slot"),data.getString("specialty")),item=icon(s.getString("item")).getHoverName(),rate=rate(s.getDouble("perTrip"),perHour);
                 if(tall()){
                     Ui.text(g,font,name,tx,y+4,on?slotColor(i):Ui.MUTED,tw);
@@ -342,13 +363,15 @@ public final class GateClient {
                 var slot=RouteRules.Slot.values()[picking];var options=RouteRules.options(slot,specialty());
                 var row=slots().size()>picking?slots().get(picking):new CompoundTag();
                 // the slot's share of a trip as it is now, in tribute value: what any item of the list would bring
-                var current=RouteRules.loot(slot,specialty(),row.getInt("choice"));double budget=row.getBoolean("on")?row.getDouble("perTrip")*current.value():0;
+                RouteRules.Loot current=options.get(0);for(var o:options)if(o.id().equals(row.getString("item")))current=o;
+                double budget=row.getBoolean("on")?row.getDouble("perTrip")*current.value():0;
                 int cell=22,cols=Math.max(1,(rw-12)/cell);
                 for(int i=0;i<pickButtons.size();i++)if(pickButtons.get(i).isHovered()){
                     var loot=options.get(pickScroll*cols+i);var lines=new ArrayList<Component>();lines.add(icon(loot.id()).getHoverName());
-                    lines.add(Ui.t("gate.pick.rate",rate(budget/loot.value(),data.getDouble("tripsPerHour"))));
-                    if(slot==RouteRules.Slot.SPECIALTY&&specialty()==RouteRules.Specialty.POTIONS)lines.add(Ui.t("gate.pick.tier","DDCBAS".substring(loot.note(),loot.note()+1)));
-                    if(slot==RouteRules.Slot.SPECIALTY&&specialty()==RouteRules.Specialty.TRADER)lines.add(Ui.t("gate.pick.price",loot.note()));
+                    if(loot.tier()>0)lines.add(Ui.t("gate.pick.tier",RouteRules.TIERS.substring(loot.tier(),loot.tier()+1)).copy().withStyle(st->st.withColor(tierColor(loot.tier()))));
+                    if(!RouteRules.unlocked(loot,level()))lines.add(Ui.t("gate.pick.locked",RouteRules.unlockLevel(loot)).copy().withStyle(st->st.withColor(Ui.ORANGE)));
+                    else lines.add(Ui.t("gate.pick.rate",rate(budget/loot.value(),data.getDouble("tripsPerHour"))));
+                    if(loot.price()>0)lines.add(Ui.t("gate.pick.price",loot.price()));
                     g.renderComponentTooltip(font,lines,mx,my);return;
                 }
             }

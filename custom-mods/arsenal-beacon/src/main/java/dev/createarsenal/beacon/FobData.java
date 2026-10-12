@@ -65,8 +65,14 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         net.minecraft.nbt.ListTag depotTag(){return depot!=null?depot.createTag():depotSaved!=null?depotSaved:new net.minecraft.nbt.ListTag();}
         /** The last zone the FOB had, as 16-block columns (x, z packed as in ChunkPos), for the Command Table's map. */
         long[] zoneColumns=new long[0];
+        /** 0.0.32 (owner): the village's research, in points (emeralds, diamonds and Ardent Energy given at its FOB Beacon); its level is worked out. */
+        int researchXp;
+        int level(){return RouteRules.level(researchXp);}
         int choice(RouteRules.Slot slot){return switch(slot){case MINE->mine;case FARM->farm;case SPECIALTY->special;default->0;};}
-        RouteRules.Loot loot(RouteRules.Slot slot){return RouteRules.loot(slot,specialty,choice(slot));}
+        /** The item the slot sends now: its choice, or while research has not opened that one yet, the slot's first open item. */
+        RouteRules.Loot loot(RouteRules.Slot slot){return RouteRules.loot(slot,specialty,RouteRules.effectiveChoice(slot,specialty,choice(slot),level()));}
+        /** Everything a trip of this FOB depends on. */
+        RouteRules.Yield yield(){return new RouteRules.Yield(slotOn,separation(),workers,baseline>0?RouteRules.period(baseline):0,level());}
         RouteRules.Loot[] loots(){var out=new RouteRules.Loot[RouteRules.Slot.values().length];for(var slot:RouteRules.Slot.values())out[slot.ordinal()]=loot(slot);return out;}
         /** 0.0.30: the zone outline is shown to players near the FOB (its screen turns it off for everyone). */
         boolean showZone=true;
@@ -138,7 +144,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         if(RouteRules.enabled(f.slotOn)==0)f.slotOn[0]=true;
         f.mine=t.getInt("mine");f.farm=t.getInt("farm");f.special=t.getInt("special");
         long[] tally=t.getLongArray("tally");for(int i=0;i<f.tally.length&&i<tally.length;i++)f.tally[i]=Math.max(0,Double.longBitsToDouble(tally[i]));
-        f.zoneColumns=t.getLongArray("zone");
+        f.zoneColumns=t.getLongArray("zone");f.researchXp=Math.max(0,t.getInt("research"));
         if(t.contains("depot",Tag.TAG_LIST))f.depotSaved=t.getList("depot",Tag.TAG_COMPOUND);
         // 0.0.30 and before kept a stockpile of village goods: its whole items move into the storage once (nothing is lost)
         var goods=f.stockpile.getCompound("goods");
@@ -162,7 +168,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         byte[] on=new byte[f.slotOn.length];for(int i=0;i<on.length;i++)on[i]=(byte)(f.slotOn[i]?1:0);t.putByteArray("on",on);
         t.putInt("mine",f.mine);t.putInt("farm",f.farm);t.putInt("special",f.special);
         long[] tally=new long[f.tally.length];for(int i=0;i<tally.length;i++)tally[i]=Double.doubleToLongBits(f.tally[i]);t.putLongArray("tally",tally);
-        t.putLongArray("zone",f.zoneColumns);t.put("depot",f.depotTag());
+        t.putLongArray("zone",f.zoneColumns);t.putInt("research",f.researchXp);t.put("depot",f.depotTag());
         r.put("tribute",t);
     }
     /** The FOB whose Delivery or Receiving Gate stands at {@code anchor}, or null. */

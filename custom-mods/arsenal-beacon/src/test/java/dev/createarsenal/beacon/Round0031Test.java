@@ -59,7 +59,7 @@ final class Round0031Test {
         var d=new FobData();var seen=new HashSet<RouteRules.Specialty>();
         for(int i=0;i<200;i++){var f=d.add(new BlockPos(i*300,64,0),i,0);assertNotNull(f.specialty);seen.add(f.specialty);
             if(i==0){f.specialty=RouteRules.Specialty.TRADER;assertEquals(RouteRules.Specialty.TRADER,FobData.load(d.save(new CompoundTag())).byId(f.id).specialty);}}
-        assertEquals(4,seen.size(),"every specialty can be rolled");
+        assertEquals(RouteRules.Specialty.values().length,seen.size(),"every specialty can be rolled");
     }
     @Test void theScreensHaveTheirLines() throws Exception{
         String lang=lang();

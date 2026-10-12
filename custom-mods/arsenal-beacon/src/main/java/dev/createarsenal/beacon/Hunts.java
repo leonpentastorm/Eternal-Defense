@@ -236,6 +236,7 @@ final class Hunts {
             c.putInt("distance",(int)Math.round(Math.hypot(f.pos.getX()-b.getX(),f.pos.getZ()-b.getZ())));
             c.putDouble("bearing",TacticalRules.bearing(b.getX(),b.getZ(),f.pos.getX(),f.pos.getZ()));
             c.putLongArray("zone",f.zoneColumns);c.putString("signal",Routes.signal(l,fd,f.hasRoute()?f:null).id());c.putBoolean("route",f.hasRoute());
+            c.putString("specialty",f.specialty.id());c.putInt("level",f.level());   // 0.0.32: its specialty and research
             if(fd.sosFob==f.id){c.putBoolean("sos",true);c.putLong("sosLeft",fd.sosLeft);}
             list.add(c);
         }

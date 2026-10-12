@@ -40,6 +40,9 @@ final class Fobs {
     static final String VILLAGER_TAG="arsenalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
     static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6,OUTLINE=7;
+    /** 0.0.32: research buttons: 10 + what is given (0 emerald, 1 diamond, 2 Ardent Energy), + 3 for ten at once. */
+    static final int RESEARCH=10,RESEARCH_TEN=3;
+    static final List<String> RESEARCH_ITEMS=List.of("emerald","diamond","ardent");
     /** The flares the FOB shop sells, at the Support Platform's prices ({@link SupportRules}). */
     static final List<String> SHOP=List.of("supply","return","fire");
 
@@ -180,6 +183,8 @@ final class Fobs {
         n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(p,Economy.fabrication("supply_delivery_gate")));
         // the tribute (0.0.31): the loot slots, the next delivery, the storage at the Receiving Gate
         Routes.tribute(f,n);n.putBoolean("hasRoute",f.hasRoute()&&f.commissioned);
+        n.putInt("villagers",villagers);   // 0.0.32: the tribute writes its own villagers (the workers, at most 20); the screen shows the living ones
+        for(int i=0;i<RESEARCH_ITEMS.size();i++)n.putInt("carry."+RESEARCH_ITEMS.get(i),carried(p,researchItem(i)));   // 0.0.32: for the research tab
         n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-FobData.get(l).onlineTicks):-1);
         FobSos.state(FobData.get(l),f,n);   // the SOS, the lost villagers and the repair (0.0.25)
         n.putString("message",message);
@@ -194,6 +199,7 @@ final class Fobs {
         if(id==CALL_RAID){String problem=callRaid(l,f,p);open(p,pos,problem==null?"fob.result.raid_called":"fob.raid."+problem);return;}
         if(id==BUY_GATE){String result=Routes.buyGate(p,f);log("{}: {} asked for the Delivery Gate: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
         if(id==REPAIR){String result=FobSos.repair(p,f);open(p,pos,result);return;}
+        if(id>=RESEARCH&&id<RESEARCH+2*RESEARCH_TEN){int kind=(id-RESEARCH)%RESEARCH_TEN;open(p,pos,research(l,f,p,kind,id-RESEARCH>=RESEARCH_TEN?10:1));return;}
         if(id==OUTLINE){   // 0.0.30: the zone outline of this FOB, on or off for everyone
             f.showZone=!f.showZone;FobData.get(l).setDirty();log("{}: {} turned the zone outline {}",f.name,p.getGameProfile().getName(),f.showZone?"on":"off");
             refreshScreens(l,f);return;
@@ -205,6 +211,40 @@ final class Fobs {
         var stack=new ItemStack(flare(item));if(!p.getInventory().add(stack))p.drop(stack,false);
         log("{}: {} bought a {} flare",f.name,p.getGameProfile().getName(),item);
         open(p,pos,"fob.result.bought."+item);
+    }
+    /** What one item of a research kind is worth in points, and the item itself. */
+    static int researchXp(int kind){return switch(kind){case 0->RouteRules.XP_EMERALD;case 1->RouteRules.XP_DIAMOND;default->RouteRules.XP_ARDENT;};}
+    static net.minecraft.world.item.Item researchItem(int kind){return switch(kind){case 0->net.minecraft.world.item.Items.EMERALD;case 1->net.minecraft.world.item.Items.DIAMOND;default->ArsenalBeacon.ARDENT_ENERGY.get();};}
+    static int carried(net.minecraft.world.entity.player.Player p,net.minecraft.world.item.Item item){int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;}
+    /**
+     * 0.0.32 (owner): gives up to {@code count} emeralds, diamonds or Ardent Energy to the FOB's research (creative players give for free),
+     * never more than the last level needs; a new level is announced with what it opens. Returns the screen's message.
+     */
+    static String research(ServerLevel l,FobData.Fob f,ServerPlayer p,int kind,int count){
+        if(!FobRules.working(f.state))return "fob.research.closed";
+        int before=f.level();if(before>=RouteRules.MAX_LEVEL)return "fob.research.max";
+        int per=researchXp(kind),need=(RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL]-f.researchXp+per-1)/per;
+        var item=researchItem(kind);int n=Math.min(count,need);if(!p.isCreative())n=Math.min(n,carried(p,item));
+        if(n<=0)return "fob.research.short."+RESEARCH_ITEMS.get(kind);
+        if(!p.isCreative()){
+            var plan=InventoryPayment.plan(p,List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(item),n)));if(!plan.payable())return "fob.research.short."+RESEARCH_ITEMS.get(kind);
+            var slots=plan.inventory();int main=p.getInventory().items.size();
+            for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));
+            for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
+            p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();
+        }
+        f.researchXp=Math.min(RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL],f.researchXp+n*per);FobData.get(l).setDirty();
+        log("{}: {} gave {} {} to the research ({} points, level {})",f.name,p.getGameProfile().getName(),n,RESEARCH_ITEMS.get(kind),f.researchXp,f.level());
+        int after=f.level();
+        if(after>before){
+            String opens=after>=RouteRules.UNLOCK_S&&before<RouteRules.UNLOCK_S?".s":after>=RouteRules.UNLOCK_A&&before<RouteRules.UNLOCK_A?".a":"";
+            announce(l,Component.translatable("gui.arsenal_beacon.fob.research.levelup"+opens,f.name,after));
+            for(var pos:new BlockPos[]{f.deliveryGate,f.receivingGate})if(pos!=null)for(var viewer:l.getServer().getPlayerList().getPlayers())
+                if(viewer.containerMenu instanceof RailGates.GateMenu m&&m.pos.equals(pos))Routes.open(viewer,pos,"");
+            refreshScreens(l,f);
+            return "fob.research.up";
+        }
+        return "fob.research.given";
     }
     /** A renamed Name Tag used on the FOB Beacon renames the FOB (the tag is used up); names are unique per beacon, any case. */
     static void rename(ServerPlayer p,BlockPos pos,ItemStack tag){
