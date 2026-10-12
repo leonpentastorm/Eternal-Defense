@@ -447,7 +447,9 @@ public final class QaFob {
         step(10,()->{var s=gate();check("research level 4: every potion makers' item open",s!=null&&s.pickButtons.stream().allMatch(b->b.active),"");
             if(s!=null)s.pickButtons.get(GHAST).onPress();},"choose the ghast tear");
         step(20,()->{var f=fob();check("the specialty now sends ghast tears",f!=null&&f.special==GHAST&&gateSlot(3).getString("item").equals("minecraft:ghast_tear"),f==null?"":f.special+" "+gateSlot(3).getString("item"));
-            double per=gateSlot(3).getDouble("perTrip");check("a ghast tear (tier S) takes several trips",per>0&&per<1,"per trip "+per);
+            double per=gateSlot(3).getDouble("perTrip");
+            double rule=srvGet(()->{var x=FobData.get(sl()).fobs.values().iterator().next();return RouteRules.itemsPerTrip(RouteRules.Slot.SPECIALTY,x.loot(RouteRules.Slot.SPECIALTY),x.yield());});
+            check("the screen's ghast tears per delivery are the rule's (0.0.32: the value an hour of this 21 km line)",per>0&&Math.abs(per-rule)<1e-6,"per trip "+per+", rule "+rule);
             check("the specialty slot shows its research bonus (x2 at level 4)",Math.abs(gateSlot(3).getDouble("research")-2)<1e-9,String.valueOf(gateSlot(3).getDouble("research")));
             recordFrame=true;},"chosen");
         step(3,()->{layout("the Receiving Gate, after the choices",true);shot("f17e_gate_chosen");press("Route");},"the Route tab");

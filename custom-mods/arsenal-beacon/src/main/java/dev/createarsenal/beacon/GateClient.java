@@ -286,7 +286,10 @@ public final class GateClient {
             }
             Ui.wrap(g,font,every,rx+half,y+3,half-8,Ui.MUTED,2);
             long ago=data.getLong("lastAgo");
-            if(ago>=0&&h>=30)Ui.text(g,font,Ui.t("gate.last."+(data.getString("lastKind").equals("ride")?"ride":"passive"),data.getInt("lastItems"),time(ago)),rx+half,y+h-11,Ui.MUTED,half-8);
+            if(ago>=0&&h>=30){String key="gate.last."+(data.getString("lastKind").equals("ride")?"ride":"passive");
+                Component last=Ui.t(key,data.getInt("lastItems"),time(ago));
+                if(font.width(last)>half-8)last=Ui.t(key+".short",data.getInt("lastItems"),time(ago));   // 0.0.32: big deliveries make it longer
+                Ui.text(g,font,last,rx+half,y+h-11,Ui.MUTED,half-8);}
         }
         private Component reason(){
             if(!linked())return Ui.t("gate.reason.unlinked");

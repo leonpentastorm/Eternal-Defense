@@ -1185,6 +1185,8 @@
   "gui.arsenal_beacon.gate.ride": "A round trip you ride brings up to %s deliveries at once and renews the inspection.",
   "gui.arsenal_beacon.gate.last.ride": "Last delivery: a ride, %1$s items, %2$s ago.",
   "gui.arsenal_beacon.gate.last.passive": "Last delivery: by itself, %1$s items, %2$s ago.",
+  "gui.arsenal_beacon.gate.last.ride.short": "Last: ride, %1$s items, %2$s ago",
+  "gui.arsenal_beacon.gate.last.passive.short": "Last: %1$s items, %2$s ago",
   "gui.arsenal_beacon.gate.time.hours": "%1$s h %2$s min",
   "gui.arsenal_beacon.gate.time.minutes": "%1$s min %2$s s",
   "gui.arsenal_beacon.gate.time.seconds": "%s s",
