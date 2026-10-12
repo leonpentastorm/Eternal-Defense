@@ -72,6 +72,8 @@ final class Round0032Test {
         String lang=Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));
         for(String key:List.of("tactical.fob.names","tactical.fob.names.tip","fob.tab.research","fob.research.title","gate.specialty.monsters","gate.result.locked","gate.pick.locked"))
             assertTrue(lang.contains("\"gui.arsenal_beacon."+key+"\""),"no line for "+key);
+        // Fobs.announce puts "[FOB] " in front of every line: the real client read "[FOB] [FOB] North Gate reached research level 1."
+        assertFalse(lang.contains("research.levelup\": \"[FOB]")||lang.contains("research.levelup.a\": \"[FOB]")||lang.contains("research.levelup.s\": \"[FOB]"),"one prefix only");
     }
     /** The SOS raid started before a teleported player's village had its villagers ("Keep at least 0 of its 0 villagers alive"). */
     @Test void anSosAnswerWaitsForTheVillage(){
