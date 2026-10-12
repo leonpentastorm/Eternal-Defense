@@ -120,12 +120,12 @@ final class MealPlanner {
             for(var key:fillers){if(set.size()>=cap||set.size()>=2&&(!stew||sum(set)>=required))break;set.add(key);}
             var eval=evaluate(set.stream().map(catalogue::get).toList(),stew,mk,order);
             if(!eval.unmet().isEmpty()||!eval.problem().isEmpty())return;
-            boolean covered=!stew||sum(set)>=required;int doubled=(int)eval.meal().bonuses().stream().filter(MealData.Bonus::pair).count();
+            boolean covered=stew?sum(set)>=required:set.stream().allMatch(k->usable(catalogue,stock,k)>=MealRules.SANDWICH_FILLING);int doubled=(int)eval.meal().bonuses().stream().filter(MealData.Bonus::pair).count();
             var keys=List.copyOf(set);var units=new int[keys.size()];
             if(stew){
                 var counts=new int[keys.size()];var types=new int[keys.size()];for(int i=0;i<counts.length;i++){counts[i]=usable(catalogue,stock,keys.get(i));types[i]=i;}
                 var spent=MealRules.plan(counts,types,required);units=spent==null?counts:spent;
-            }else Arrays.fill(units,1);
+            }else for(int i=0;i<units.length;i++)units[i]=Math.min(MealRules.SANDWICH_FILLING,usable(catalogue,stock,keys.get(i)));   // 0.0.35: two of each filling
             var plan=new Plan(keys,units,doubled,covered,eval);
             if(best==null||better(plan,best))best=plan;
         }

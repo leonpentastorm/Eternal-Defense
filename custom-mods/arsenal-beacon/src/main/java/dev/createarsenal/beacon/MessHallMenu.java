@@ -72,7 +72,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         if(!preview.problem().isEmpty())return preview.problem();
         var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());if(!batch.problem().isEmpty())return batch.problem();
         if(stew){var pot=target();return pot==null?"pot":!pot.empty()?"pot_full":"";}
-        if(!ingredients.getItem(7).is(Items.BREAD))return "staple";
+        if(!ingredients.getItem(7).is(Items.BREAD)||ingredients.getItem(7).getCount()<MealRules.SANDWICH_BREAD)return "staple";
         var made=PreparedSandwich.create(preview.meal());var output=ingredients.getItem(6);
         return output.isEmpty()||ItemStack.isSameItemSameTags(output,made)&&output.getCount()<made.getMaxStackSize()?"":"output";
     }
@@ -91,7 +91,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         var batch=IngredientTraits.batch(ingredients,preview,stew,hall.mk());var meal=preview.meal();int potNumber=0;
         int thrownAway=0;String thrownAwayName="";
         if(stew){var pot=target();if(!pot.empty()){thrownAway=pot.servings;thrownAwayName=pot.stew.name().getString();}if(!pot.fill(hall,meal,hall.tier().servings(),replace))return false;potNumber=pots().indexOf(pot)+1;}
-        else{ingredients.removeItem(7,1);var output=ingredients.getItem(6);if(output.isEmpty())ingredients.setItem(6,PreparedSandwich.create(meal));else{output.grow(1);ingredients.setChanged();}}
+        else{ingredients.removeItem(7,MealRules.SANDWICH_BREAD);var output=ingredients.getItem(6);if(output.isEmpty())ingredients.setItem(6,PreparedSandwich.create(meal));else{output.grow(1);ingredients.setChanged();}}
         for(int i=0;i<6;i++)if(batch.spent()[i]>0){
             var unit=ingredients.getItem(i).copyWithCount(1);ingredients.removeItem(i,batch.spent()[i]);
             if(unit.hasCraftingRemainingItem()&&player instanceof ServerPlayer sp)for(int count=0;count<batch.spent()[i];count++)ArsenalBeacon.give(sp,unit.getCraftingRemainingItem().copy());
@@ -125,8 +125,9 @@ final class MessHallMenu extends AbstractContainerMenu {
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();var inv=sp.getInventory();
         for(int i=0;i<6;i++){var food=IngredientTraits.foodOf(ingredients.getItem(i));if(food!=null){stock.merge(food.key(),ingredients.getItem(i).getCount(),Integer::sum);onTable.add(food.key());}}
         for(var stack:inv.items){var food=IngredientTraits.foodOf(stack);if(food!=null)stock.merge(food.key(),stack.getCount(),Integer::sum);}
-        boolean needBase=!stew&&!ingredients.getItem(7).is(Items.BREAD);
-        if(needBase){int bread=stock.getOrDefault("minecraft:bread",0);if(bread<1){notice(WARN,"gather_bread");return false;}stock.put("minecraft:bread",bread-1);}
+        // 0.0.35: the base takes two bread; what is already in it counts
+        int baseHas=ingredients.getItem(7).is(Items.BREAD)?ingredients.getItem(7).getCount():0,baseNeed=stew?0:Math.max(0,MealRules.SANDWICH_BREAD-baseHas);boolean needBase=baseNeed>0;
+        if(needBase){int bread=stock.getOrDefault("minecraft:bread",0);if(bread<baseNeed){notice(WARN,"gather_bread",MealRules.SANDWICH_BREAD);return false;}stock.put("minecraft:bread",bread-baseNeed);}
         var plan=MealPlanner.plan(hall.order,stew,hall.mk(),foods,stock,onTable,true);
         if(plan==null){
             var lacking=hall.order.stream().filter(e->MealPlanner.plan(Set.of(e),stew,hall.mk(),foods,stock,onTable,false)==null).toList();
@@ -135,10 +136,10 @@ final class MessHallMenu extends AbstractContainerMenu {
         var lifted=new ArrayList<ItemStack>();for(int i=0;i<6;i++){var s=ingredients.removeItemNoUpdate(i);if(!s.isEmpty())lifted.add(s);}
         var sources=new ArrayList<ItemStack>(lifted);sources.addAll(inv.items);
         for(int i=0;i<plan.keys().size();i++)ingredients.setItem(i,take(sources,plan.keys().get(i),plan.units()[i]));
-        if(needBase)ingredients.setItem(7,take(sources,"minecraft:bread",1));
+        if(needBase){var bread=take(sources,"minecraft:bread",baseNeed);if(baseHas>0)ingredients.getItem(7).grow(bread.getCount());else ingredients.setItem(7,bread);}
         for(var rest:lifted)if(!rest.isEmpty())ArsenalBeacon.give(sp,rest);
         inv.setChanged();ingredients.setChanged();
-        if(plan.covered())notice(DONE,"gathered",plan.keys().size());else notice(WARN,"gather_short",plan.keys().size(),Math.max(0,(stew?hall.tier().ingredients():0)-Arrays.stream(plan.units()).sum()));
+        if(plan.covered())notice(DONE,"gathered",plan.keys().size());else notice(WARN,"gather_short",plan.keys().size(),Math.max(0,(stew?hall.tier().ingredients():plan.keys().size()*MealRules.SANDWICH_FILLING)-Arrays.stream(plan.units()).sum()));
         sound(SoundEvents.BUNDLE_INSERT,1f);return true;
     }
     /** Moves up to {@code need} units of one food out of {@code sources} into a single new stack. */
@@ -190,8 +191,8 @@ final class MessHallMenu extends AbstractContainerMenu {
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();
         for(int i=0;i<6;i++){var food=IngredientTraits.foodOf(ingredients.getItem(i));if(food!=null){stock.merge(food.key(),ingredients.getItem(i).getCount(),Integer::sum);onTable.add(food.key());}}
         for(var stack:sp.getInventory().items){var food=IngredientTraits.foodOf(stack);if(food!=null)stock.merge(food.key(),stack.getCount(),Integer::sum);}
-        boolean needBase=!stew&&!ingredients.getItem(7).is(Items.BREAD);
-        if(needBase)stock.merge("minecraft:bread",-1,Integer::sum);
+        int baseHas=ingredients.getItem(7).is(Items.BREAD)?ingredients.getItem(7).getCount():0;
+        if(!stew&&baseHas<MealRules.SANDWICH_BREAD)stock.merge("minecraft:bread",-(MealRules.SANDWICH_BREAD-baseHas),Integer::sum);
         int tier=hall.mk();
         for(var effect:MealRules.Effect.values()){
             if(hall.order.contains(effect)){fit[effect.ordinal()]=MealPlanner.plan(EnumSet.of(effect),stew,tier,foods,stock,onTable,false)!=null?3:4;continue;}

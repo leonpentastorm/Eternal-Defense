@@ -82,8 +82,8 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     static Batch batch(Container ingredients,Preview preview,boolean stew,int mk){
         int[] counts=new int[6],types=new int[6];var ids=new HashMap<net.minecraft.world.item.Item,Integer>();
         for(int i=0;i<6;i++){var stack=ingredients.getItem(i);counts[i]=stack.getCount();types[i]=ids.computeIfAbsent(stack.getItem(),item->ids.size());}
-        int required=stew?MealRules.tier(mk).ingredients():preview.occupied(),available=Arrays.stream(counts).sum();
-        var spent=MealRules.plan(counts,types,required);
+        int required=stew?MealRules.tier(mk).ingredients():preview.occupied()*MealRules.SANDWICH_FILLING,available=Arrays.stream(counts).sum();
+        var spent=stew?MealRules.plan(counts,types,required):MealRules.planEach(counts,types,MealRules.SANDWICH_FILLING);
         return new Batch(required,available,spent,preview.occupied()>required?"batch_types":spent==null?"quantity":"");
     }
 }

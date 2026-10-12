@@ -26,10 +26,18 @@ final class MealRulesTest {
         assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);assertEquals(MealRules.FIELD_TICKS,MealRules.tier(4).ticks(),"the longest meal is the old fixed half hour");
     }
     @Test void stewCostsGrowWithTheLevelAndConsumeRealFood(){
-        int[] costs={4,7,10,12};for(int mk=1;mk<=4;mk++){
+        int[] costs={12,21,30,36};for(int mk=1;mk<=4;mk++){   // 0.0.35 (owner): three times the food; the servings stay
+            assertEquals(new int[]{3,3,5,7,9}[mk],MealRules.tier(mk).servings(),"servings unchanged");
             assertEquals(costs[mk-1],MealRules.tier(mk).ingredients());var plan=MealRules.plan(new int[]{16,16,16},new int[]{0,1,2},costs[mk-1]);
             assertEquals(costs[mk-1],Arrays.stream(plan).sum());assertTrue(Arrays.stream(plan).allMatch(n->n>0));
         }
+    }
+    /** 0.0.35 (owner): a sandwich takes two of each filling and two bread. */
+    @Test void aSandwichTakesTwoOfEachFillingAndTwoBread(){
+        assertEquals(2,MealRules.SANDWICH_FILLING);assertEquals(2,MealRules.SANDWICH_BREAD);
+        assertArrayEquals(new int[]{2,2,2},MealRules.planEach(new int[]{5,9,2},new int[]{0,1,2},2));
+        assertArrayEquals(new int[]{1,1,2},MealRules.planEach(new int[]{1,4,3},new int[]{0,0,1},2),"one kind in two stacks");
+        assertNull(MealRules.planEach(new int[]{5,1},new int[]{0,1},2),"a filling with only one left is not enough");
     }
     @Test void planReservesEachDistinctTypeAndFailsWithoutPartialConsumption(){
         int[] counts={1,3,2};assertArrayEquals(new int[]{1,1,2},MealRules.plan(counts,new int[]{0,0,1},4));

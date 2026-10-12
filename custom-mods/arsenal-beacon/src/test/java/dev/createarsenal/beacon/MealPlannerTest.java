@@ -54,7 +54,7 @@ final class MealPlannerTest {
             var eval=MealPlanner.evaluate(table(c,plan),stew,mk,EnumSet.of(effect));
             assertEquals("",eval.problem(),effect+" "+eval);assertTrue(plan.covered());
             assertTrue(plan.keys().size()>=2&&plan.keys().size()<=(stew?Math.min(MealRules.tier(mk).slots(),MealRules.tier(mk).ingredients()):3));
-            assertEquals(stew?MealRules.tier(mk).ingredients():plan.keys().size(),Arrays.stream(plan.units()).sum(),"units pay exactly one batch");
+            assertEquals(stew?MealRules.tier(mk).ingredients():plan.keys().size()*MealRules.SANDWICH_FILLING,Arrays.stream(plan.units()).sum(),"units pay exactly one batch (0.0.35: two of each filling)");
         }
     }
     @Test void everyPairOfEffectsIsEitherPlannedSoundlyOrImpossible(){
@@ -111,10 +111,10 @@ final class MealPlannerTest {
     @Test void scarcePacksGetTheBestPlanTheyCanAndAreMarkedUncovered(){
         var c=pantry();var stock=new HashMap<String,Integer>();stock.put("cooked_chicken",3);stock.put("cooked_mutton",3);stock.put("carrot",1);
         var plan=MealPlanner.plan(EnumSet.of(VITALITY),true,4,c,stock,Set.of(),true);
-        assertNotNull(plan);assertFalse(plan.covered(),"7 units against a 12 unit batch");assertEquals(7,Arrays.stream(plan.units()).sum());
+        assertNotNull(plan);assertFalse(plan.covered(),"7 units against a 36 unit batch");assertEquals(7,Arrays.stream(plan.units()).sum());
         assertNull(MealPlanner.plan(EnumSet.of(MIGHT),true,4,c,stock,Set.of(),true),"no food in the pack feeds Might");
-        stock.put("carrot",9);var better=MealPlanner.plan(EnumSet.of(VITALITY),true,4,c,stock,Set.of(),true);
-        assertTrue(better.covered());assertEquals(12,Arrays.stream(better.units()).sum());
+        stock.put("carrot",30);var better=MealPlanner.plan(EnumSet.of(VITALITY),true,4,c,stock,Set.of(),true);
+        assertTrue(better.covered());assertEquals(36,Arrays.stream(better.units()).sum());
         assertTrue(Arrays.stream(better.units()).allMatch(n->n>=1));
     }
     @Test void foodsThatStackToOneCountAsOneUnit(){

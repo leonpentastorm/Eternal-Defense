@@ -57,7 +57,18 @@ final class MealRules {
         boolean doubling(){return mk>=3;}
         int ticks(){return minutes*60*20;}
     }
-    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,2,5,7,3,20);case 3->new Tier(3,3,7,10,3,25);case 4->new Tier(4,4,9,12,6,30);default->new Tier(1,1,3,4,3,15);};}
+    /** 0.0.35 (owner): meals cost more, they do not give more: a stew batch takes three times the food (12, 21, 30, 36), the servings stay 3, 5, 7, 9. */
+    static Tier tier(int mk){return switch(mk){case 2->new Tier(2,2,5,21,3,20);case 3->new Tier(3,3,7,30,3,25);case 4->new Tier(4,4,9,36,6,30);default->new Tier(1,1,3,12,3,15);};}
+    /** 0.0.35 (owner): a sandwich takes two of each filling and two bread; one cook still makes one sandwich. */
+    static final int SANDWICH_FILLING=2,SANDWICH_BREAD=2;
+    /** Exactly {@code per} units of every type, from its stacks in order; null when a type has fewer. */
+    static int[] planEach(int[] counts,int[] types,int per){
+        var spent=new int[counts.length];var need=new HashMap<Integer,Integer>();
+        for(int i=0;i<counts.length;i++)if(counts[i]>0)need.putIfAbsent(types[i],per);
+        for(int i=0;i<counts.length;i++){if(counts[i]<=0)continue;int left=need.get(types[i]);int take=Math.min(left,counts[i]);spent[i]=take;need.put(types[i],left-take);}
+        for(int left:need.values())if(left>0)return null;
+        return spent;
+    }
     /** Reserve one unit of each composition type, then spread the remaining batch cost across stacks. */
     static int[] plan(int[] counts,int[] types,int required){
         var spent=new int[counts.length];var seen=new HashSet<Integer>();int left=required;
