@@ -57,9 +57,10 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         addSlot(new Slot(brew,3,brewSlotX(79),brewSlotY(17)){@Override public boolean mayPlace(ItemStack s){return BrewingRecipeRegistry.isValidIngredient(s);}});
         addSlot(new Slot(brew,4,brewSlotX(17),brewSlotY(17)){@Override public boolean mayPlace(ItemStack s){return s.is(Items.BLAZE_POWDER);}});
         // the mixing slots: one potion each, the order's ghost shown when empty
-        for(int i=0;i<3;i++){final int index=i;addSlot(new Slot(mix,i,MIX_X+i*MIX_PITCH,SLOT_Y){
-            @Override public boolean isActive(){return index<limit();}
-            @Override public boolean mayPlace(ItemStack s){if(!isActive())return false;var why=refusal(s,index);if(!why.isEmpty()&&!player.level().isClientSide)notice(WARN,"refuse."+why);return why.isEmpty();}
+        // (not "index": that is Slot's own field, the slot's place in the menu, and would shadow the mixing slot's number)
+        for(int i=0;i<3;i++){final int mixing=i;addSlot(new Slot(mix,i,MIX_X+i*MIX_PITCH,SLOT_Y){
+            @Override public boolean isActive(){return mixing<limit();}
+            @Override public boolean mayPlace(ItemStack s){if(!isActive())return false;var why=refusal(s,mixing);if(!why.isEmpty()&&!player.level().isClientSide)notice(WARN,"refuse."+why);return why.isEmpty();}
             @Override public int getMaxStackSize(){return 1;}
         });}
         addSlot(new Slot(mix,3,CUP_X,SLOT_Y){

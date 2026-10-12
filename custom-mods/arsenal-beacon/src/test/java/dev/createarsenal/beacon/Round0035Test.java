@@ -51,7 +51,8 @@ final class Round0035Test {
         assertTrue(PlayerDrinks.ours(1,false,6000,1,false,6010),"in the field, its level and time");
         assertFalse(PlayerDrinks.ours(1,false,3600,1,false,6000),"the same level but another time: a vanilla potion");
         assertFalse(PlayerDrinks.ours(2,false,6000,1,false,6000),"another level: not its own");
-        assertFalse(PlayerDrinks.ours(1,false,6000,1,true,6000),"at home its own is endless, a timed one is vanilla's");
+        assertTrue(PlayerDrinks.ours(1,false,6000,1,true,6010),"just come home: its own timed effect, about to be made endless");
+        assertFalse(PlayerDrinks.ours(1,false,3600,1,true,6000),"at home a timed one of another time is vanilla's");
     }
     @Test void itGoesOnOnlyOverNothingOrSomethingWeaker(){
         assertTrue(PlayerDrinks.mayApply(false,0,0));assertTrue(PlayerDrinks.mayApply(true,0,1),"over a weaker potion (vanilla keeps it underneath)");
@@ -65,6 +66,15 @@ final class Round0035Test {
         var src=readQuietly("PlayerDrinks.java");
         assertTrue(src.contains("setCurativeItems(new ArrayList<>())"),"the vanilla milk bucket does not cure the drink");
         assertTrue(src.contains("MealZone.at(p).home()"),"the timer stops where the meal's does: the Home Zone or an ACTIVE FOB zone");
+    }
+    @Test void aCoveredPotionIsRememberedOnceWithItsLongestTime(){
+        var s=new PlayerDrinks.State(new DrinkData(List.of(new DrinkData.Part(new net.minecraft.resources.ResourceLocation("speed"),1)),12000,false),12000);
+        var speed=new net.minecraft.resources.ResourceLocation("speed");
+        s.cover(speed,new PlayerDrinks.Layer(3000,0,false,true,true));s.cover(speed,new PlayerDrinks.Layer(2000,0,false,true,true));s.cover(speed,new PlayerDrinks.Layer(5000,0,false,true,true));
+        assertEquals(1,s.covered.size(),"one entry a level");assertEquals(5000,s.covered.get(0).duration,"the longest time");
+        s.cover(speed,new PlayerDrinks.Layer(0,0,false,true,true));assertEquals(1,s.covered.size(),"a finished layer is not remembered");
+        var tag=new PlayerDrinks().save(new net.minecraft.nbt.CompoundTag());assertNotNull(tag);
+        var src=readQuietly("PlayerDrinks.java");assertTrue(src.contains("MobEffectEvent.Added")&&src.contains("s.covered.removeIf"),"potions drunk over the drink are remembered and keep counting down");
     }
     static String readQuietly(String name){try{return source(name);}catch(Exception e){throw new RuntimeException(e);}}
     @Test void milkFromTheDispenserOrABottleEndsTheDrinkAndDeathForgetsIt() throws Exception{
@@ -98,6 +108,11 @@ final class Round0035Test {
         var recipe=Files.readString(Path.of(RES+"data/arsenal_beacon/recipes/drink_mixer_mk1.json"));assertTrue(recipe.contains("minecraft:brewing_stand"),"built around a brewing stand");
         var cup=Files.readString(Path.of(RES+"data/arsenal_beacon/recipes/drink_cup_empty.json"));assertTrue(cup.contains("minecraft:paper")&&cup.contains("\"count\": 4"),"paper makes four cups");
         for(var r:List.of("drink_mixer_mk1","drink_pot","drink_cup_empty"))assertTrue(Files.exists(Path.of("src/standalone/resources/data/arsenal_beacon/recipes/"+r+".json")),"standalone "+r);
+    }
+    @Test void theMixingSlotsDoNotShadowSlotIndex() throws Exception{
+        // found on the real client: a captured "index" inside an anonymous Slot reads Slot's own field (5 to 7), so every mixing slot was inactive
+        var menu=source("DrinkStationMenu.java");assertFalse(menu.contains("final int index=i;addSlot"),"the mixing slot's number has its own name");
+        assertTrue(menu.contains("mixing<limit()"));
     }
     @Test void protocolFortyCarriesTheStationView() throws Exception{
         var net=source("BeaconNetwork.java");assertTrue(net.contains("\"40-standalone\":\"40-pack\""));assertTrue(net.contains("registerMessage(24,DrinkStationMenu.View.class"));

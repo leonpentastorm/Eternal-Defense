@@ -55,10 +55,13 @@ final class PlayerDrinks extends SavedData {
     @Override public CompoundTag save(CompoundTag n){var list=new ListTag();players.forEach((id,s)->{var c=new CompoundTag();c.putUUID("Player",id);c.put("Drink",s.drink.save());c.putInt("Remaining",s.remaining);c.putBoolean("Home",s.home);var cov=new ListTag();s.covered.forEach(k->cov.add(k.save()));c.put("Covered",cov);list.add(c);});n.put("Players",list);return n;}
     static State of(ServerPlayer p){return get(p.serverLevel()).players.get(p.getUUID());}
 
-    /** Pure: is an effect of this level and time the drink's own? Endless while the drink is at home, else within {@link #TOLERANCE} of its time. */
+    /**
+     * Pure: is an effect of this level and time the drink's own? Endless (at home, or just come out of it), or within {@link #TOLERANCE} of
+     * the drink's remaining field time (in the field, or just come home: it is made endless then).
+     */
     static boolean ours(int amplifier,boolean infinite,int duration,int wantedAmplifier,boolean home,int remaining){
         if(amplifier!=wantedAmplifier)return false;
-        return infinite||!home&&Math.abs(duration-remaining)<=TOLERANCE;
+        return infinite||Math.abs(duration-remaining)<=TOLERANCE;
     }
     /** Pure: may the drink put its effect on now? Only over nothing or over a weaker effect; an equal or stronger one is left to run out. */
     static boolean mayApply(boolean present,int amplifier,int wantedAmplifier){return !present||amplifier<wantedAmplifier;}

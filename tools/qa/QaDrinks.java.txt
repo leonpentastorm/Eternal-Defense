@@ -246,6 +246,8 @@ public final class QaDrinks {
         step(5,()->click(ds().primary),"Gather potions");
         step(10,()->{check("Gather took the strongest Speed potion from the storage first",srvGet(()->{var fx=DrinkData.effectOf(st().mix.getItem(0));return fx!=null&&fx.getEffect()==MobEffects.MOVEMENT_SPEED&&fx.getAmplifier()==1&&st().total()==7;}),srvGet(()->st().mix.getItem(0).toString()+" "+st().total()));
             check("and nothing was spent",srvGet(()->st().total()+(st().mix.getItem(0).isEmpty()?0:1)==8),"");},"gathered");
+        step(3,()->{var m=ds().getMenu();log("QA_NOTE client mix0 {} active {} server mix0 {} carried {}",m.slots.get(DrinkStationMenu.SLOT_MIX).getItem(),m.slots.get(DrinkStationMenu.SLOT_MIX).isActive(),srvGet(()->st().mix.getItem(0).toString()),m.getCarried());
+            check("the client's mixing slot shows the gathered potion",!m.slots.get(DrinkStationMenu.SLOT_MIX).getItem().isEmpty(),String.valueOf(m.slots.get(DrinkStationMenu.SLOT_MIX).getItem()));},"client slot");
         step(5,()->recordFrame=true,"record");
         step(3,()->{check("the preview line: Speed II, 10 minutes",drawnHas("Speed II")&&drawnHas("10 min"),"");check("ready to brew",view().getString("Problem").isEmpty(),view().getString("Problem"));shot("d05_ready");},"preview");
         step(5,()->{slotClick(invSlot(13),ClickType.PICKUP);},"pick up Regeneration II");
@@ -272,7 +274,7 @@ public final class QaDrinks {
         step(10,()->check("ready, but the pot is full",view().getString("Problem").equals("pot_full"),view().getString("Problem")),"full");
         step(5,()->click(ds().primary),"Brew");
         step(5,()->recordFrame=true,"record");
-        step(3,()->{check("Replace the drink? is asked",ds().confirming&&drawnHas("Replace the drink?"),"");shot("d08_replace");},"asked");
+        step(3,()->{check("Replace the drink? is asked",ds().confirming&&drawnHas("is poured away"),"");shot("d08_replace");},"asked");
         step(5,()->click(ds().replaceYes),"Replace drink");
         step(10,()->check("the pot now holds the new Speed I drink, 10 minutes",srvGet(()->{var p=potAt(0);return p.drink!=null&&p.drink.parts().get(0).amplifier()==0&&p.drink.duration()==12000;})&&notice().equals("replaced"),notice()),"replaced");
 
@@ -282,7 +284,8 @@ public final class QaDrinks {
         for(var r:refusals){
             step(4,()->slotClick(invSlot(Integer.parseInt(r[0])),ClickType.PICKUP),"pick up "+r[1]);
             step(4,()->slotClick(DrinkStationMenu.SLOT_MIX,ClickType.PICKUP),"try the mixing slot");
-            step(6,()->{check("refused: "+r[1],srvGet(()->st().mix.getItem(0).isEmpty())&&notice().equals(r[1]),notice());if(r[1].equals("refuse.regeneration")){recordFrame=true;}},"refused");
+            step(6,()->{log("QA_NOTE server notice {} carried {} mix0 {}",srvGet(()->{try{var f=DrinkStationMenu.class.getDeclaredField("noticeKey");f.setAccessible(true);return String.valueOf(f.get(sp().containerMenu));}catch(Exception x){return x.toString();}}),srvGet(()->sp().containerMenu.getCarried().toString()),srvGet(()->st().mix.getItem(0).toString()));
+                check("refused: "+r[1],srvGet(()->st().mix.getItem(0).isEmpty())&&notice().equals(r[1]),notice()+" mix0="+srvGet(()->st().mix.getItem(0).toString()));if(r[1].equals("refuse.regeneration")){recordFrame=true;}},"refused");
             step(3,()->{if(r[1].equals("refuse.regeneration")){check("Regeneration only goes in the sweetener (on screen)",drawnHas("Regeneration only goes in the sweetener"),"");shot("d09_refused");}slotClick(invSlot(Integer.parseInt(r[0])),ClickType.PICKUP);},"put it back");
         }
 
@@ -412,7 +415,7 @@ public final class QaDrinks {
         step(5,()->mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player)),"the inventory");
         step(10,()->shot("d18_meal_effects"),"meal effects shot");
         step(3,()->mc().setScreen(null),"close");
-        step(5,()->srv(()->{sl().setBlock(HALL(),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);}),"a Mess Hall Mk IV");
+        step(5,()->srv(()->{sl().setBlock(HALL(),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sp().teleportTo(sl(),sx-9.5,sy,sz+3.5,180,10);}),"a Mess Hall Mk IV, and stand in front of it");
         step(10,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(HALL());net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(HALL());b.writeVarInt(h.mk());});}),"open it");
         until("the hall",60,()->mc().screen instanceof MessHallScreen,()->{});
         step(10,()->{var s=(MessHallScreen)mc().screen;var c=s.cells.stream().filter(x->x.effect==MealRules.Effect.HARDY).findFirst().orElseThrow();hover(c.getX()+10,c.getY()+10);},"hover Hardy");
