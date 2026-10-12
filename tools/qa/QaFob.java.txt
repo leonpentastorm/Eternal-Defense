@@ -715,15 +715,15 @@ public final class QaFob {
             shot("f30d_seller_bought");});
         step(10,()->{check("the radio answers again",heard("seller.order_chatter_"),String.valueOf(HEARD));var f=fob();var st=f==null?null:CatapultView.state(f.id);
             check("the seller shows the catapult loading and turning to the base",st!=null&&st[2]==1&&st[3]>=1,st==null?"none":Arrays.toString(st));recordFrame=true;},"loading");
-        step(3,()->{layout("the Command Table, the catapult turning",true);check("its line: turning to your base",drawnHas("Turning to base"),"");shot("f30e_seller_live_turning");},"turning");
+        until("a fresh frame",100,()->!recordFrame,()->{layout("the Command Table, the catapult turning",true);check("its line: turning to your base",drawnHas("Turning to base"),"");shot("f30e_seller_live_turning");});
         until("the seller shows the throw",600,()->{var f=fob();var st=f==null?null:CatapultView.state(f.id);return st!=null&&st[1]>=1;},()->{check("the seller's catapult throws, as the real one far away",true,"");recordFrame=true;});
-        step(3,()->{layout("the Command Table, the catapult throwing",true);check("its line: throwing",drawnHas("Throwing!"),"");},"throwing");
+        until("a fresh frame",100,()->!recordFrame,()->{layout("the Command Table, the catapult throwing",true);check("its line: throwing",drawnHas("Throwing!"),"");});
         // the software renderer runs about 1.5 s behind: the arm up and the box leaving, then the arm winding back
         step(37,()->shot("f30f_seller_live_throw"),"the throw in the seller");
         step(20,()->shot("f30g_seller_live_box"),"the box flies out of the view");
         until("the box is in the air again",200,()->{var f=fob();var st=f==null?null:CatapultView.state(f.id);return st!=null&&st[4]>=1;},()->{var f=fob();var st=CatapultView.state(f.id);
             check("the seller counts the box home",st[5]>=1&&st[5]<=CatapultRules.FLIGHT_TICKS/20,Arrays.toString(st));recordFrame=true;});
-        step(3,()->{layout("the Command Table, the box in the air",true);check("its line: the box lands in so many seconds",drawnHas("In the air:"),"");shot("f30h_seller_box_in_air");},"in the air");
+        until("a fresh frame",100,()->!recordFrame,()->{layout("the Command Table, the box in the air",true);check("its line: the box lands in so many seconds",drawnHas("In the air:"),"");shot("f30h_seller_box_in_air");});
         // out to watch it come down: high over its spot, by parachute, as the countdown ends
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());var f=fob();
             var spotTag=f==null||f.shipments.isEmpty()?null:f.shipments.get(0);var b=HuntGameTests.BEACON;
