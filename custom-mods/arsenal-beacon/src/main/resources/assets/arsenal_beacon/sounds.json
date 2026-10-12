@@ -310,5 +310,11 @@
       "arsenal_beacon:sfx/radio_static"
     ],
     "subtitle": "subtitles.arsenal_beacon.seller.radio_static"
+  },
+  "fob.war_horn": {
+    "sounds": [
+      "arsenal_beacon:sfx/war_horn"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.fob.war_horn"
   }
 }

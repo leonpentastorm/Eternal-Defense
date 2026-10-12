@@ -11,6 +11,7 @@ On `feature/supply-catapult`. **Network protocol 39** (a new packet: the catapul
 * **The radio** (owner): Contact Specialty Seller has a handheld radio icon and plays the owner's radio static; every purchase plays one of the owner's four order lines.
 * **Nerf** (owner, after a playtest): a specialty sends at most 4 S-tier items' worth an hour, however big the FOB, its research or the slots switched off (it could reach 12 an hour).
 * **Fixed:** a research gift that passed several unlocks at once announced only the highest one.
+* **War horn** (owner's recording): it sounds from the FOB Beacon when you plant a FOB and when a FOB's raid starts (the activation raid and an SOS raid).
 * **No more totems of undying from the monster hunter guild** (owner: far too strong). A FOB that chose it sends rotten flesh until you choose again.
 
 ## 0.0.33 — The Supply Catapult and the specialty seller (2026-10-12, branch `feature/supply-catapult`)

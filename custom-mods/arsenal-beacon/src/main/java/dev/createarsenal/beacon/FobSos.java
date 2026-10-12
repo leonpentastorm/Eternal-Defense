@@ -105,6 +105,7 @@ final class FobSos {
         if(raid==null){p.removeEffect(MobEffects.BAD_OMEN);Fobs.say(p,"fob.raid.impossible");return;}
         f.raidId=raid.getId();f.raidVillagers=Fobs.tagVillagers(l,f);d.setDirty();
         Fobs.announce(l,Component.translatable("gui.arsenal_beacon.fob.sos.raid",p.getDisplayName(),f.name,f.raidVillagers,(f.raidVillagers+1)/2));
+        Fobs.horn(l,f);   // 0.0.34 (owner): the war horn
         log("{}: SOS raid {} started by {}",f.name,raid.getId(),p.getGameProfile().getName());
         Fobs.refreshScreens(l,f);
     }

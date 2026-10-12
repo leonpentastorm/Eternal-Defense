@@ -91,6 +91,7 @@ public final class QaFob {
     static final List<String> HEARD=Collections.synchronizedList(new ArrayList<>());static boolean listening;
     static void listen(){if(listening)return;listening=true;mc().getSoundManager().addListener((sound,events)->{HEARD.add(sound.getLocation().toString());log("QA_SOUND {}",sound.getLocation());});}
     static boolean heard(String part){synchronized(HEARD){for(var h:HEARD)if(h.contains(part))return true;}return false;}
+    static int heardCount(String part){int n=0;synchronized(HEARD){for(var h:HEARD)if(h.contains(part))n++;}return n;}
     /** A text of the last recorded frame contains {@code part}. */
     static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
 
@@ -312,7 +313,7 @@ public final class QaFob {
             shot("f0_fob_preview");
         },"the planting preview");
         step(5,()->{if(spot!=null)look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"back as before");
-        step(30,()->{if(spot!=null)click(spot.below(),Direction.UP);},"right-click the ground");
+        step(30,()->{listen();if(spot!=null)click(spot.below(),Direction.UP);},"right-click the ground");
         step(5,()->{
             var f=fob();
             check("the FOB is planted where the player clicked",f!=null&&spot!=null&&f.pos.equals(spot),f==null?"no FOB":f.pos.toShortString());
@@ -320,6 +321,7 @@ public final class QaFob {
             check("it is PLANTED with a generated name",f.state==FobRules.State.PLANTED&&f.name.startsWith("FOB "),f.state+" "+f.name);
             check("planting started a vanilla raid",f.raidRunning()&&srvGet(()->sl().getRaids().get(f.raidId)!=null),"raid="+f.raidId+", villagers at its start="+f.raidVillagers);
             check("everyone reads the announcement",chatHas("[FOB]")&&chatHas(f.name),"");
+            check("0.0.34: the war horn sounds once for the planting and its raid together",heardCount("fob.war_horn")==1,heardCount("fob.war_horn")+" horns");
             check("the block stands two tall",srvGet(()->sl().getBlockState(spot).is(ArsenalBeacon.FOB_BEACON.get())&&sl().getBlockState(spot.above()).is(ArsenalBeacon.STRUCTURE_PART.get())),"");
             hold(ItemStack.EMPTY);mc().options.hideGui=true;
         },"planted");
@@ -574,6 +576,7 @@ public final class QaFob {
         step(5,()->{hold(ItemStack.EMPTY);var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"answer it: back to the village");
         until("the SOS raid starts when a player stands in the village",200,()->{var f=fob();return f!=null&&f.raidRunning();},()->{
             check("the SOS raid starts on arrival",fob()!=null&&fob().raidRunning(),"");check("everyone reads who answered",chatHas("answered the SOS"),"");
+            check("0.0.34: the war horn sounds as the SOS raid starts",heardCount("fob.war_horn")>=2,heardCount("fob.war_horn")+" horns in all");
             // one villager falls in the raid: it is recorded for the repair
             srv(()->{var f=FobData.get(sl()).fobs.values().iterator().next();
                 for(var v:sl().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,new net.minecraft.world.phys.AABB(f.pos).inflate(64),v->v.getPersistentData().getLong(Fobs.VILLAGER_TAG)==f.id)){

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Converts the owner's hand-tuned sound effects into the OGG files the game plays (0.0.18).
 
-Usage: python3 import_sfx.py <folder with the SFX-*.wav/mp3/flac files> <out_dir>
+Usage: python3 import_sfx.py <folder with the SFX-*.wav/mp3/flac files> <out_dir>   (a file not in the folder is skipped)
 
 Every positional sound is made mono (Minecraft only places mono sounds in the world; a stereo file plays at full volume
 everywhere), resampled to 48 kHz, trimmed where noted below and limited to a -1 dBFS peak when it was hotter (the turning
@@ -30,6 +30,8 @@ SOUNDS = [
     # 0.0.21: one double beep. The file repeats a double beep every 0.5 s, the third beep starting at 0.500 s; the owner asked for a
     # 0.6 s clip played with a 0.5 s pause, so it is cut just before that third beep (20 ms fade) and padded with silence to 0.6 s
     ("SFX-Beacon-Attacked.wav", "beacon_attacked", False, (0.0, 0.495), 0.02, 0.0, 0),
+    # 0.0.34: the owner's war horn, sounded when a FOB is planted and when a FOB's raid starts; its 0.41 s of silence at the start cut
+    ("War Horn Sound Effect.mp3", "war_horn", True, (0.40, None), 0.3, 0.0, 0),
 ]
 # seconds of silence a sound is padded to (after the trim): the alarm is a 0.6 s clip (BeaconAlerts.ALARM_CLIP_SECONDS)
 PAD = {"beacon_attacked": 0.6}
@@ -72,6 +74,9 @@ def main():
     src, out = sys.argv[1], sys.argv[2]
     os.makedirs(out, exist_ok=True)
     for name, target, mono, span, fade, loop, gain in SOUNDS:
+        if not os.path.exists(os.path.join(src, name)):
+            print(f"{target:22s} not in this folder, skipped")
+            continue
         x = process(os.path.join(src, name), mono, span, fade, loop, gain)
         if target in PAD and len(x) < int(PAD[target] * RATE):
             x = np.concatenate([x, np.zeros((int(PAD[target] * RATE) - len(x),) + x.shape[1:])])

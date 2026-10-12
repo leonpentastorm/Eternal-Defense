@@ -65,6 +65,8 @@ WHAT IS NEW IN 0.0.34: THE LIVE CATAPULT, THE SUPPLY DROP, FISHING AND HUSBANDRY
   Catapult + Specialty Shop", and reaching it is announced.
 * Nerf: a specialty sends at most 4 S-tier items' worth an hour (64 value; 8 A-tier, 16 B-tier ...), however big the FOB, its
   research or the slots switched off. The 30-minute promise (the slowest FOB, research 4, every slot on) is under it.
+* War horn (your recording): it sounds from the FOB Beacon when you plant a FOB and when a FOB's raid starts (the
+  activation raid and an SOS raid).
 * The monster hunter guild no longer sends the totem of undying (too strong). A FOB that chose it sends rotten flesh until you
   choose again.
 

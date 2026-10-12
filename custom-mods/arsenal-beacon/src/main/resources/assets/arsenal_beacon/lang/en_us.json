@@ -953,6 +953,7 @@
   "subtitles.arsenal_beacon.tactical.scan_done": "Satellite scan done",
   "subtitles.arsenal_beacon.tactical.contact": "Contact alert",
   "subtitles.arsenal_beacon.seller.radio_static": "Radio static",
+  "subtitles.arsenal_beacon.fob.war_horn": "War horn sounds",
   "subtitles.arsenal_beacon.seller.order_chatter": "Specialty seller radios back",
   "gui.arsenal_beacon.support.only_one_table": "Your base already has a Command Table. Move it with the Beacon Recovery Shovel.",
   "gui.arsenal_beacon.support.only_one_satellite": "Your base already has a Satellite Beacon. Move it with the Beacon Recovery Shovel.",

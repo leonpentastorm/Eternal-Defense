@@ -16,6 +16,7 @@ Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbe
   5. The FOB screen's catapult line says OFFLINE with the first missing thing (no Defense Beacon, the FOB not ACTIVE, research below 5, none placed), as the seller button's tooltip does.
   6. The order lines play at the buyer only (Voice), the static only for the player who presses Contact.
   7. The totem of undying is out of the monster hunter guild (owner, late in the round: "it's OP"). A FOB that had chosen it falls back to the list's first item (rotten flesh); its tally (kept in value) carries over to the new choice. Totems still come as a tier-5 raid reward (`RaidRewards`), untouched.
+  8. The war horn (owner's recording, late in the round) sounds at the FOB Beacon, 128 blocks around, when a FOB is planted and when its raid starts (activation and SOS). Planting calls the activation raid at once, so one horn covers both (`Fobs.HORN_TICKS`: no second horn within 12 seconds). Not on the base's own raids.
 VALIDATION_0034
 
 ## The Supply Catapult and the specialty seller (0.0.33, branch `feature/supply-catapult`)

@@ -79,10 +79,27 @@ final class Fobs {
         var f=d.add(pos,SectionPos.asLong(SectionPos.blockToSectionCoord(pos.getX()),SectionPos.blockToSectionCoord(pos.getY()),SectionPos.blockToSectionCoord(pos.getZ())),l.getGameTime());
         FobZone.forget(f.id);int villagers=tagVillagers(l,f);
         announce(l,Component.translatable("gui.arsenal_beacon.fob.planted",p.getDisplayName(),f.name,villagers));
+        horn(l,f);
         log("{} planted at {} by {} ({} villagers)",f.name,pos.toShortString(),p.getGameProfile().getName(),villagers);
         String problem=callRaid(l,f,p);
         if(problem!=null)say(p,"fob.raid."+problem);
     }
+    /**
+     * 0.0.34 (owner): the war horn (the owner's recording) sounds from the FOB Beacon when the FOB is planted and when its raid starts
+     * (the activation raid and an SOS raid). Volume 8: heard 128 blocks around.
+     */
+    static final float HORN_VOLUME=8f;
+    /** The horn is about 12 seconds long: planting starts the activation raid at once, so one horn sounds for both, never two together. */
+    static final int HORN_TICKS=240;
+    private static final Map<Long,Long> LAST_HORN=new HashMap<>();
+    static void horn(ServerLevel l,FobData.Fob f){
+        long now=l.getGameTime();Long last=LAST_HORN.get(f.id);
+        if(last!=null&&now-last>=0&&now-last<HORN_TICKS)return;
+        LAST_HORN.put(f.id,now);hornsSounded++;
+        l.playSound(null,f.pos,ArsenalSounds.WAR_HORN.get(),net.minecraft.sounds.SoundSource.HOSTILE,HORN_VOLUME,1f);
+    }
+    /** Horns sounded since the server started (for tests). */
+    static int hornsSounded;
     /** Starts the FOB's raid with this player's Bad Omen I: null when it started, else why not (a key under {@code fob.raid.}). */
     static String callRaid(ServerLevel l,FobData.Fob f,ServerPlayer p){
         if(!FobRules.mayCallRaid(f.state,f.raidRunning()))return "not_now";
@@ -93,6 +110,7 @@ final class Fobs {
         if(raid==null){p.removeEffect(MobEffects.BAD_OMEN);return "impossible";}
         f.raidId=raid.getId();f.raidVillagers=tagVillagers(l,f);FobData.get(l).setDirty();
         announce(l,Component.translatable("gui.arsenal_beacon.fob.raid_started",f.name,f.raidVillagers,(f.raidVillagers+1)/2));
+        horn(l,f);
         log("{}: raid {} started at {}, {} villagers",f.name,raid.getId(),raid.getCenter().toShortString(),f.raidVillagers);
         refreshScreens(l,f);return null;
     }

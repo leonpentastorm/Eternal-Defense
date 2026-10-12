@@ -45,6 +45,8 @@ final class ArsenalSounds {
      * and one of four order lines when a purchase goes through ({@link SupplyCatapult#ORDER_LINES}).
      */
     static final RegistryObject<SoundEvent> SELLER_STATIC=of("seller.radio_static");
+    /** The owner's war horn (0.0.34, tools/audio/import_sfx.py): a FOB planted, a FOB's raid starting ({@link Fobs#horn}). */
+    static final RegistryObject<SoundEvent> WAR_HORN=of("fob.war_horn");
     private static final List<RegistryObject<SoundEvent>> ORDER_CHATTER=java.util.stream.IntStream.rangeClosed(1,SupplyCatapult.ORDER_LINES).mapToObj(n->of("seller.order_chatter_"+n)).toList();
     /** One order line (1-based). */
     static SoundEvent orderChatter(int line){return ORDER_CHATTER.get(line-1).get();}

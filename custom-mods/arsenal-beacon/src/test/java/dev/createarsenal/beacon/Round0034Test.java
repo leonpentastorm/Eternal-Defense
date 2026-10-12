@@ -81,6 +81,18 @@ final class Round0034Test {
         String lang=lang();assertTrue(lang.contains("\"subtitles.arsenal_beacon.seller.radio_static\"")&&lang.contains("\"subtitles.arsenal_beacon.seller.order_chatter\""));
     }
 
+    /** The owner's war horn: a FOB planted, a FOB's raid starting (the activation raid, an SOS raid), once for planting and its raid together. */
+    @Test void theWarHornSounds() throws Exception{
+        assertTrue(Files.exists(Path.of(EnchantTest.ASSETS+"sounds/sfx/war_horn.ogg")));
+        assertTrue(Files.readString(Path.of(EnchantTest.ASSETS+"sounds.json")).contains("\"fob.war_horn\""));
+        assertTrue(lang().contains("\"subtitles.arsenal_beacon.fob.war_horn\""));
+        String fobs=SosTest.source("Fobs.java");
+        assertTrue(fobs.contains("announce(l,Component.translatable(\"gui.arsenal_beacon.fob.planted\",p.getDisplayName(),f.name,villagers));\n        horn(l,f);"),"on planting");
+        assertTrue(fobs.contains("announce(l,Component.translatable(\"gui.arsenal_beacon.fob.raid_started\",f.name,f.raidVillagers,(f.raidVillagers+1)/2));\n        horn(l,f);"),"when the raid starts");
+        assertTrue(SosTest.source("FobSos.java").contains("Fobs.horn(l,f);"),"when an SOS raid starts");
+        assertEquals(240,Fobs.HORN_TICKS,"not twice while one sounds");
+    }
+
     // ---- fishing and animal husbandry are one specialty ----------------------------------------------------------------------------------------------
     @Test void fishingAndHusbandryAreOne() throws Exception{
         assertEquals(List.of(Specialty.FISHING_HUSBANDRY,Specialty.POTIONS,Specialty.TRADER,Specialty.MONSTERS),List.of(Specialty.values()));
