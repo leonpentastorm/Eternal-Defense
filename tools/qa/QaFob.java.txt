@@ -240,6 +240,8 @@ public final class QaFob {
     static long lastSearch=-1000;
     /** The nearest spot (to the player) the FOB rules allow, on sturdy ground, with two free blocks, nobody in them and free ground 3 south. */
     static BlockPos catapult;
+    /** Where a player stands on the ground in {@code p}'s column (a player put in the air falls and looks somewhere else). */
+    static BlockPos surface(BlockPos p){return srvGet(()->new BlockPos(p.getX(),sl().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p.getX(),p.getZ()),p.getZ()));}
     /** A spot in the FOB's village where a Supply Catapult may stand, nearest the FOB Beacon. */
     static BlockPos findCatapultSpot(){
         var l=sl();var f=FobData.get(l).fobs.values().iterator().next();var from=f.pos;
@@ -287,7 +289,7 @@ public final class QaFob {
             var problem=srvGet(()->Fobs.plantProblem(sl(),sp().blockPosition()));
             int villagers=srvGet(()->FobZone.villagers(sl(),FobZone.sections(sl(),sp().blockPosition())).size());
             check("a spot in the village where the FOB rules allow planting",spot!=null,"spot="+spot+", problem where the player stands="+problem+", villagers in the zone="+villagers);
-            if(spot!=null){stand=spot.relative(Direction.SOUTH,3);look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);}
+            if(spot!=null){stand=surface(spot.relative(Direction.SOUTH,3));look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);}
         });
         // ---- plant it with a real right-click --------------------------------------------------------------------------------------------
         step(10,()->{if(spot!=null){hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));look(stand,spot.getX()+.5,spot.getY()+.01,spot.getZ()+.5);}},"hold the FOB Beacon, look at the spot");
@@ -625,7 +627,7 @@ public final class QaFob {
             hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));},"hold a Supply Catapult");
         until("the catapult in hand",100,()->mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),()->{
             check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
-            if(catapult!=null)look(catapult.south(3).above(1),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);});
+            if(catapult!=null)look(surface(catapult.south(3)),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);});
         step(30,()->{var g=PlacementPreviewClient.ghost();
             check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());
             shot("f29_catapult_preview");},"the preview");
