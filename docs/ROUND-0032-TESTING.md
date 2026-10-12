@@ -28,7 +28,7 @@ New in 0.0.32:
 * The FOB screen's Research tab, from a survival inventory: level 0 and the player's 12 diamonds shown; the emerald buttons off (none carried), the diamonds' on (`f23c`); +10 diamonds takes ten from the inventory, 40 points, level 1, the screen and the chat say so; an emerald sent anyway is refused ("You have no emeralds to give."), nothing given; a creative player gives for free (every button on): 80 points, level 2, "A-tier items are open" in chat; ten more presses stop at the top level (240 points), "S-tier items are open" in chat (`f23d`). The tab passes the overlap check at the three sizes with no text cut short (`f23e`).
 * Everything of 0.0.31 still passes (the gate's storage, the countdown, the switches, take only, the size checks, the SOS, the repair, the enchanting table, the Exchange).
 
-Screenshots in `docs/validation/round-0032/`: `standalone-*` (14) and `pack-*`.
+Screenshots in `docs/validation/round-0032/`: `standalone-*` (14) and `pack-*` (5).
 
 ### Found by the real-client runs and fixed
 
