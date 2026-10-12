@@ -1,5 +1,17 @@
 # Change log
 
+## 0.0.35 — Dearer meals, three new meal effects, the Drink Station (2026-10-12, branch `feature/drink-station`)
+
+On `feature/drink-station` (from `dev`, which now holds 0.0.34). **Network protocol 40** (a new packet: the Drink Station screen's view). Rules: GDD 0.0.35; tests: `docs/ROUND-0035-TESTING.md`. The owner asked for "0.0.34"; that number already belongs to the Supply Catapult round, so this round is 0.0.35.
+
+* **Meals cost more** (owner): a stew batch takes three times the food (12/21/30/36 units at Mk I to IV); a pot still holds 3/5/7/9 servings. A sandwich takes 2 of each filling and 2 bread. Effects, meal length and doubling are unchanged.
+* **Three new meal effects** (owner), in the place of the old ones (same buttons, same foods): **Hardy** (you get hungry 15% slower) replaces Mobility, **Blast Ward** (20% less explosion damage) replaces Hearth, **Projectile Ward** (15% less damage from arrows, bolts, fireballs and tridents; not gun bullets) replaces Springy Step. Doubled at home, capped at 60/80/90%. A meal saved with an old effect simply runs out.
+* **Drink Station Mk I to IV** (owner's models): a brewing stand with a 54-slot potion storage (64 bottles of one potion a slot); from Mk II it mixes potions into drinks with 1, 2 or 3 effects. Finished bottles move into the storage by themselves. More than 256 bottles inside: it cannot be broken until you take some out.
+* **Brew Pot**, **Cup Dispenser**, **Paper Cup** and **Latte** (owner's models): a pot holds one drink, drunk with a Paper Cup (you keep the cup); a Latte is a drink to carry (10 minutes, up to 2 effects, stacks to 16).
+* **Sweetener**: Regeneration potions fill a tank; 1,000 mB buys +10 minutes on a Brew Pot drink (up to +20).
+* **The active drink** sits beside your meal: its timer stops in your base or an active FOB, logging out pauses it, dying or the Milk Dispenser and Milk Bottle end it (a milk bucket does not). It never takes away a potion effect you got elsewhere.
+* Workshop Fabrication sells the Drink Station, the Brew Pot and the Cup Dispenser in the Kitchen group. The Field Guide has a Drink Station page and a card for the three new meal effects.
+
 ## 0.0.34 — The live catapult, the box as a supply drop, fishing and husbandry as one, a cap on the specialty (2026-10-12, branch `feature/supply-catapult`)
 
 On `feature/supply-catapult`. **Network protocol 39** (a new packet: the catapults' live state for the Command Table). Rules: GDD 0.0.34; tests: `docs/ROUND-0034-TESTING.md`.
