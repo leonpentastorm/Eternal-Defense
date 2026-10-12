@@ -32,6 +32,12 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         boolean raidRunning(){return raidId!=0;}
 
         // ---- slice 2 (0.0.24): the supply rail; saved inside the route and stockpile tags above ----------------------------------------
+        /**
+         * 0.0.33: the FOB's Supply Catapult (null: none) and the specialty seller's shipments waiting for it or in the air, each a compound:
+         * {@code items} (the stacks), {@code buyer}/{@code buyerName}, {@code stage} ("wait": not thrown yet, "flying": thrown) and {@code due}
+         * (overworld game time: the throw when not loaded, the landing when flying).
+         */
+        BlockPos catapult;final List<CompoundTag> shipments=new ArrayList<>();
         /** The gate pair of this FOB (null: not placed). */
         BlockPos deliveryGate,receivingGate;
         /** The route was opened by a ride; its one-way time T in ticks; the inspection clock (ticks of play left). */
@@ -136,6 +142,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         f.nextPassive=Math.max(0,r.getLong("nextPassive"));f.lastNoteAt=r.getLong("lastNoteAt");
         f.lastKind=r.getString("lastKind");f.lastItems=r.getInt("lastItems");f.lastAt=r.getLong("lastAt");f.lastTrip=r.getLong("lastTrip");
         f.workers=f.stockpile.getInt("workers");
+        f.catapult=r.contains("catapult")?BlockPos.of(r.getLong("catapult")):null;f.shipments.clear();
+        for(var t:r.getList("shipments",Tag.TAG_COMPOUND))f.shipments.add((CompoundTag)t);
         var note=r.getCompound("noted");for(String id:note.getAllKeys())if(note.getInt(id)>0)f.note.put(id,note.getInt(id));
         // 0.0.31: the loot slots (a FOB from before gets its specialty from its id, every slot on, the first choice of each)
         var t=r.getCompound("tribute");
@@ -163,6 +171,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         r.putLong("nextPassive",f.nextPassive);r.putLong("lastNoteAt",f.lastNoteAt);
         r.putString("lastKind",f.lastKind);r.putInt("lastItems",f.lastItems);r.putLong("lastAt",f.lastAt);r.putLong("lastTrip",f.lastTrip);
         f.stockpile.putInt("workers",f.workers);
+        if(f.catapult!=null)r.putLong("catapult",f.catapult.asLong());else r.remove("catapult");
+        var ships=new ListTag();for(var c:f.shipments)ships.add(c.copy());r.put("shipments",ships);
         var note=new CompoundTag();f.note.forEach(note::putInt);r.put("noted",note);r.remove("note");
         var t=new CompoundTag();t.putInt("specialty",f.specialty.ordinal());
         byte[] on=new byte[f.slotOn.length];for(int i=0;i<on.length;i++)on[i]=(byte)(f.slotOn[i]?1:0);t.putByteArray("on",on);
@@ -172,6 +182,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         r.put("tribute",t);
     }
     /** The FOB whose Delivery or Receiving Gate stands at {@code anchor}, or null. */
+    Fob byCatapult(BlockPos pos){for(var f:fobs.values())if(pos.equals(f.catapult))return f;return null;}
     Fob byGate(BlockPos anchor){for(var f:fobs.values())if(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate))return f;return null;}
     @Override public CompoundTag save(CompoundTag n){
         n.putLong("nextId",nextId);n.putLong("onlineTicks",onlineTicks);

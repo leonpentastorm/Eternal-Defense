@@ -104,6 +104,10 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Item> ENCHANTING_TABLE_ITEM=ITEMS.register("tactical_enchanting_table",()->new TacticalEnchanting.TableItem(ENCHANTING_TABLE.get()));
     public static final RegistryObject<Item> WARLORD_SEAL=ITEMS.register("warlord_seal",TacticalEnchanting.SealItem::new);
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<TacticalEnchanting.EnchantMenu>> ENCHANT_MENU=MENUS.register("tactical_enchanting_table",()->net.minecraftforge.common.extensions.IForgeMenuType.create(TacticalEnchanting.EnchantMenu::client));
+    // ---- the Supply Catapult (0.0.33): the owner's onager, in a FOB's village; the specialty seller's deliveries ----------------------------------
+    public static final RegistryObject<Block> SUPPLY_CATAPULT=BLOCKS.register("supply_catapult",SupplyCatapult.CatapultBlock::new);
+    public static final RegistryObject<Item> SUPPLY_CATAPULT_ITEM=ITEMS.register("supply_catapult",()->new SupplyCatapult.CatapultItem(SUPPLY_CATAPULT.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupplyCatapult.CatapultEntity>> CATAPULT_ENTITY=ENTITIES.register("supply_catapult",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupplyCatapult.CatapultEntity::new,SUPPLY_CATAPULT.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<FobBlocks.FobMenu>> FOB_MENU=MENUS.register("fob_beacon",()->net.minecraftforge.common.extensions.IForgeMenuType.create(FobBlocks.FobMenu::client));
     public static final RegistryObject<Item> SUPPLY_FLARE=ITEMS.register("support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.SUPPLY)),RETURN_FLARE=ITEMS.register("return_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.RETURN)),FIRE_FLARE=ITEMS.register("fire_support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.FIRE));
     public static final RegistryObject<Item> PLATING=part("reinforced_plating"),LOGISTICS=part("logistics_module"),COIL=part("resonance_coil"),REPAIR=part("restoration_matrix"),AMMO_COIN=part("universal_ammo_coin");
@@ -122,6 +126,8 @@ public final class ArsenalBeacon {
     static final RegistryObject<EntityType<RaiderGate>> RAIDER_GATE=OBJECTIVES.register("raider_gate",()->EntityType.Builder.<RaiderGate>of(RaiderGate::new,MobCategory.MISC).sized(1.2f,2.2f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":raider_gate"));
     /** A shell, bomb or starshell falling onto a fire support flare (see Ordnance): only to be seen and heard, never saved. */
     static final RegistryObject<EntityType<Ordnance>> ORDNANCE=OBJECTIVES.register("ordnance",()->EntityType.Builder.<Ordnance>of(Ordnance::new,MobCategory.MISC).sized(.5f,1f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":ordnance"));
+    /** The box a Supply Catapult throws (0.0.33): only to be seen, never saved. */
+    static final RegistryObject<EntityType<SupplyCatapult.ThrownSupply>> THROWN_SUPPLY=OBJECTIVES.register("thrown_supply",()->EntityType.Builder.<SupplyCatapult.ThrownSupply>of(SupplyCatapult.ThrownSupply::new,MobCategory.MISC).sized(.5f,.5f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(1).build(ID+":thrown_supply"));
     private static int clock;
     public ArsenalBeacon() {
         net.minecraftforge.common.ForgeMod.enableMilkFluid();

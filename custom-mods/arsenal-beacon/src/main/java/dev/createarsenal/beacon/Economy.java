@@ -83,6 +83,9 @@ final class Economy {
             // the Tactical Enchanting Table (0.0.27): iron, obsidian and books, plus resonance coils (pack) or Ardent Energy (standalone)
             case "tactical_enchanting_table"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",ENCHANT_IRON),WeaponPlatform.cost("minecraft:obsidian",ENCHANT_OBSIDIAN),WeaponPlatform.cost("minecraft:book",ENCHANT_BOOKS),
                 standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",ENCHANT_ARDENT):WeaponPlatform.cost("arsenal_beacon:resonance_coil",ENCHANT_COILS));
+            // the Supply Catapult (0.0.33): timber, iron and rope, plus a logistics module (pack) or Ardent Energy (standalone)
+            case "supply_catapult"->List.of(new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.LOGS),CATAPULT_LOGS),WeaponPlatform.cost("minecraft:iron_ingot",CATAPULT_IRON),WeaponPlatform.cost("minecraft:string",CATAPULT_STRING),
+                standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",CATAPULT_ARDENT):WeaponPlatform.cost("arsenal_beacon:logistics_module",CATAPULT_LOGISTICS));
             case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
             case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "milk_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:copper_ingot",4));
@@ -134,6 +137,15 @@ final class Economy {
     static int fobRepairBase(){return standalone()?FOB_REPAIR_BASE_STANDALONE:FOB_REPAIR_BASE_PACK;}
     static int fobRepairVillager(int level){return SosRules.villagerCost(standalone()?FOB_REPAIR_VILLAGER_STANDALONE:FOB_REPAIR_VILLAGER_PACK,level);}
     /** The Tactical Enchanting Table at the Workshop, and its Mk I to III (a permanent discount): resonance coils (pack) or Ardent Energy (standalone). */
+    /** The Supply Catapult (0.0.33). */
+    static final int CATAPULT_LOGS=16,CATAPULT_IRON=8,CATAPULT_STRING=16,CATAPULT_LOGISTICS=2,CATAPULT_ARDENT=8;
+    /**
+     * The specialty seller (0.0.33): Ardent Energy for one lot (a lot is worth one S-tier item, {@link CatapultRules#LOT_VALUE}). The standalone
+     * Exchange pays 2 Ardent Energy for a ghast tear, so the seller asks twice that; the pack's Ardent Energy is about twice as dear (its repairs
+     * cost half), so it asks half as many.
+     */
+    static final int SELLER_LOT_STANDALONE=4,SELLER_LOT_PACK=2;
+    static int sellerLotPrice(){return standalone()?SELLER_LOT_STANDALONE:SELLER_LOT_PACK;}
     static final int ENCHANT_IRON=12,ENCHANT_OBSIDIAN=4,ENCHANT_BOOKS=3,ENCHANT_COILS=2,ENCHANT_ARDENT=8;
     static final int[] ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24};
     /** The price of the table's Mk {@code mk} (1 to 3), or null past Mk III. */

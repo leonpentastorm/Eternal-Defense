@@ -30,7 +30,7 @@ final class ArsenalStructures {
     static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(ArsenalBeacon.STRUCTURE_PART.get())?pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z)):pos;}
     static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(ArsenalBeacon.BEACON.get());}
     /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
-    static boolean big(BlockState state){return state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.BEACON.get())&&state.getValue(MK)==4;}
+    static boolean big(BlockState state){return state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.SUPPLY_CATAPULT.get())||state.is(ArsenalBeacon.BEACON.get())&&state.getValue(MK)==4;}
     /** The Support Platform, the Exchange Shop, the Satellite Beacon and the FOB Beacon (0.0.23) are two blocks tall: the upper cell is a structure part. */
     static boolean tallSupport(BlockState state){return state.is(ArsenalBeacon.SUPPORT_PLATFORM.get())||state.is(ArsenalBeacon.EXCHANGE_SHOP.get())||state.is(ArsenalBeacon.SATELLITE_BEACON.get())||state.is(ArsenalBeacon.FOB_BEACON.get());}
     /** The Command Table (0.0.20): 2 wide (clockwise of its facing) x 2 tall x 2 deep (behind), its anchor the front right block. */
@@ -38,7 +38,7 @@ final class ArsenalStructures {
     /** The Tactical Enchanting Table (0.0.27): 2 wide (clockwise of its facing) x 2 tall x 1 deep, like the weapon benches. */
     static boolean enchanting(BlockState state){return state.is(ArsenalBeacon.ENCHANTING_TABLE.get());}
     /** Blocks that are broken as one piece and rebuild a damaged footprint. */
-    static boolean selfHealing(BlockState s){return s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(ArsenalBeacon.SUPPORT_CANNON.get())||tallSupport(s)||table(s)||enchanting(s);}
+    static boolean selfHealing(BlockState s){return s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(ArsenalBeacon.SUPPORT_CANNON.get())||s.is(ArsenalBeacon.SUPPLY_CATAPULT.get())||tallSupport(s)||table(s)||enchanting(s);}
     static boolean owns(BlockState owner){return owner.is(ArsenalBeacon.BEACON.get())||selfHealing(owner);}
     static List<BlockPos> cells(BlockPos root,BlockState state){
         List<BlockPos> cells=new ArrayList<>();
@@ -78,7 +78,7 @@ final class ArsenalStructures {
         if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.full(state);
         // Collision is a simple installation envelope, independent of decorative mesh detail.
         // Exact unions of dozens of fractional cuboids create enormous voxel grids on every raycast.
-        if(state.is(ArsenalBeacon.SUPPORT_CANNON.get()))return Shapes.create(-1,0,-1,2,2,2);
+        if(state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.SUPPLY_CATAPULT.get()))return Shapes.create(-1,0,-1,2,2,2);
         if(tallSupport(state))return Shapes.create(0,0,0,1,2,1);
         if(table(state))return shapes.computeIfAbsent("table:"+state.getValue(FACING),k->{
             Direction f=state.getValue(FACING),side=f.getClockWise(),back=f.getOpposite();
@@ -89,7 +89,7 @@ final class ArsenalStructures {
         boolean wide=state.getValue(WIDE),tall=state.getValue(TALL);Direction facing=state.getValue(FACING);String key=wide+":"+tall+":"+facing;
         return shapes.computeIfAbsent(key,k->{double height=tall?2:1;if(!wide)return Shapes.create(0,0,0,1,height,1);return switch(facing){case EAST->Shapes.create(0,0,0,1,height,2);case SOUTH->Shapes.create(-1,0,0,1,height,1);case WEST->Shapes.create(0,0,-1,1,height,1);default->Shapes.create(0,0,0,2,height,1);};});
     }
-    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.getBlock() instanceof KitchenBlock kitchen?"kitchen:"+kitchen.hall+":"+state.getValue(FACING):state.is(ArsenalBeacon.SUPPORT_CANNON.get())?"cannon":tallSupport(state)?"tall":table(state)?"table:"+state.getValue(FACING):enchanting(state)?"enchanting:"+state.getValue(FACING):state.is(ArsenalBeacon.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
+    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.getBlock() instanceof KitchenBlock kitchen?"kitchen:"+kitchen.hall+":"+state.getValue(FACING):state.is(ArsenalBeacon.SUPPORT_CANNON.get())||state.is(ArsenalBeacon.SUPPLY_CATAPULT.get())?"cannon":tallSupport(state)?"tall":table(state)?"table:"+state.getValue(FACING):enchanting(state)?"enchanting:"+state.getValue(FACING):state.is(ArsenalBeacon.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
     public static final class Part extends Block {
         Part(){super(Properties.of().strength(3,6).noOcclusion().dynamicShape());registerDefaultState(stateDefinition.any().setValue(X,1).setValue(Y,0).setValue(Z,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}

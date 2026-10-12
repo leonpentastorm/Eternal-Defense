@@ -229,18 +229,21 @@ final class Hunts {
      * beacon, its route light, its last known zone (16-block columns) and, for the one calling, the SOS time left out of the 7 days.
      */
     static void fobs(ServerLevel l,CampaignData d,ServerPlayer p,CompoundTag n){
-        var fd=FobData.get(l);var list=new ListTag();var b=d.beacon;
-        for(var f:fd.fobs.values()){
+        var fd=FobData.get(l);var list=new ListTag();var b=d.beacon;int index=0;
+        for(var f:SupplyCatapult.list(fd)){
             var c=new CompoundTag();c.putLong("id",f.id);c.putString("name",f.name);c.putString("state",f.state.id());
             c.putInt("x",f.pos.getX());c.putInt("z",f.pos.getZ());c.putInt("villagers",f.workers);
             c.putInt("distance",(int)Math.round(Math.hypot(f.pos.getX()-b.getX(),f.pos.getZ()-b.getZ())));
             c.putDouble("bearing",TacticalRules.bearing(b.getX(),b.getZ(),f.pos.getX(),f.pos.getZ()));
             c.putLongArray("zone",f.zoneColumns);c.putString("signal",Routes.signal(l,fd,f.hasRoute()?f:null).id());c.putBoolean("route",f.hasRoute());
             c.putString("specialty",f.specialty.id());c.putInt("level",f.level());   // 0.0.32: its specialty and research
+            // 0.0.33: its place in the seller's button ids, its Supply Catapult, whether its seller is open (empty) or why not, the boxes waiting
+            c.putInt("index",index++);c.putBoolean("catapult",SupplyCatapult.present(l,f));c.putString("seller",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),""));c.putInt("queue",f.shipments.size());
             if(fd.sosFob==f.id){c.putBoolean("sos",true);c.putLong("sosLeft",fd.sosLeft);}
             list.add(c);
         }
         n.put("fobs",list);n.putLong("sosTotal",SosRules.RESPONSE_TICKS);n.putInt("fobMax",FobRules.MAX_FOBS);
+        n.putInt("ardent",ArdentEnergy.balance(p));n.putInt("lotPrice",Economy.sellerLotPrice());n.putInt("maxQueue",CatapultRules.MAX_QUEUE);
         n.putBoolean("sosCarried",fd.sosFob!=0&&FobSos.carries(p,fd.sosSerial));
     }
     /** The SOS map again, for a player who lost theirs (it burns when the SOS ends, as before). */
@@ -254,7 +257,7 @@ final class Hunts {
     static void button(ServerPlayer p,BlockPos pos,int id){
         if(!(p.containerMenu instanceof TacticalBlocks.TableMenu menu)||!menu.pos.equals(pos)||!menu.stillValid(p))return;
         int action=id/16,arg=id%16;var l=p.serverLevel();var d=CampaignData.get(l.getServer().overworld());var h=HuntData.get(l);
-        String message=switch(action){
+        String message=id>=SupplyCatapult.SELL?SupplyCatapult.buy(p,l,id):switch(action){   // 0.0.33: the specialty seller's buttons
             case TacticalBlocks.ACCEPT->accept(p,l,d,h,arg);
             case TacticalBlocks.ABANDON->abandon(p,l,d,h);
             case TacticalBlocks.UPGRADE->upgrade(p,l,d,h);

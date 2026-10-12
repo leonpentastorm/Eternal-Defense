@@ -116,6 +116,7 @@ final class Fobs {
             if(loaded&&clock%FobRules.ZONE_REFRESH_TICKS==0)tagVillagers(l,f);
         }
         FobSos.second(l,d);   // the SOS clock, the open SOS and its raid (0.0.25)
+        SupplyCatapult.second(l,d);   // the specialty seller's boxes: thrown unseen, landing at the beacon (0.0.33)
     }
     /** A raid at the FOB ended: won makes it ACTIVE, lost makes it DOWN, no result leaves it as it was (the raid can be called again). */
     static void end(ServerLevel l,FobData.Fob f,FobRules.Outcome outcome,boolean villagersLost){

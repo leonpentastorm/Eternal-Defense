@@ -81,5 +81,4 @@ final class Round0032Test {
         String sos=SosTest.source("FobSos.java");
         assertTrue(sos.contains("settled=here!=null&&villagersLoaded(l,open)?settled+1:0;")&&sos.contains("settled>=SosRules.ARRIVE_SECONDS"),"seconds in a row, the village loaded");
     }
-    @Test void theProtocolIs37(){assertTrue(SosTest.source("BeaconNetwork.java").contains("\"37-standalone\":\"37-pack\""));}
 }

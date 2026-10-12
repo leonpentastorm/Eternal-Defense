@@ -223,7 +223,7 @@ final class LangKeysTest {
             Map.entry("milk_dispenser","Milk Dispenser and Milk Bottle"),Map.entry("milk_bottle","Milk Dispenser and Milk Bottle"),
             Map.entry("command_table","Command Table"),Map.entry("satellite_beacon","Satellite Beacon"),
             Map.entry("fob_beacon","FOB Beacon"),Map.entry("supply_delivery_gate","Supply Delivery Gate"),Map.entry("supply_receiving_gate","Supply Receiving Gate"),
-            Map.entry("tactical_enchanting_table","Tactical Enchanting Table"),Map.entry("warlord_seal","Warlord Seal"));
+            Map.entry("tactical_enchanting_table","Tactical Enchanting Table"),Map.entry("warlord_seal","Warlord Seal"),Map.entry("supply_catapult","Supply Catapult"));
         var ignored=Set.of("structure_part","gate_part","supply_delivery_gate_left","supply_receiving_gate_left","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArsenalBeacon.java"));
         var registered=new TreeSet<String>();

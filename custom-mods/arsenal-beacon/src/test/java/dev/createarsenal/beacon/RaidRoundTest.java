@@ -168,6 +168,6 @@ final class RaidRoundTest {
     }
     @Test void theProtocolMovedOn() throws Exception{
         // 0.0.21 moved it to 30 (MissionSync carries the mission id); 0.0.23 to 31 (FOB screen and removal confirmation), see FobTest
-        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"37-standalone\"")&&net.contains("\"37-pack\""),"protocol 37 since 0.0.32 (research, the tribute state)");
+        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"38-standalone\"")&&net.contains("\"38-pack\""),"protocol 38 since 0.0.33 (the specialty seller, the thrown box)");
     }
 }

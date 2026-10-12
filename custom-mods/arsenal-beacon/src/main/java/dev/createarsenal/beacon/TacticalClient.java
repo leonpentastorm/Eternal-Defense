@@ -201,22 +201,82 @@ public final class TacticalClient {
         /** How many rows fit; a small window scrolls the rest with the mouse wheel. */
         private int fobRows(){return Math.max(1,fobRoom()/fobRowH());}
         private List<CompoundTag> shownFobs(){var all=fobs();fobScroll=Math.max(0,Math.min(fobScroll,all.size()-fobRows()));return all.subList(fobScroll,Math.min(all.size(),fobScroll+fobRows()));}
-        /** The FOB list: the SOS row gets Reprint SOS map, under the state chip. */
+        /** The FOB list: the SOS row gets Reprint SOS map, every row Contact Specialty Seller (0.0.33), under the state chip. */
         private void fobView(){
+            if(seller()!=null){sellerView();return;}
             int y=radarY+14,h=fobRowH();
             for(var f:shownFobs()){
+                int right=fobX()+fobW()-6;
                 if(f.getBoolean("sos")){
-                    sosButton=addRenderableWidget(new Ui.UiButton(fobX()+fobW()-118,y+h-22,112,18,Ui.t("tactical.fob.reprint"),Ui.Look.DANGER,b->click(TacticalBlocks.button(TacticalBlocks.REPRINT_SOS,0))));
+                    sosButton=addRenderableWidget(new Ui.UiButton(right-112,y+h-22,112,18,Ui.t("tactical.fob.reprint"),Ui.Look.DANGER,b->click(TacticalBlocks.button(TacticalBlocks.REPRINT_SOS,0))));
                     sosButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(data.getBoolean("sosCarried")?"tactical.fob.reprint.carried":"tactical.fob.reprint.tip")));
+                    right-=116;
                 }
+                long id=f.getLong("id");String closed=f.getString("seller");int sw=sellButtonWidth();
+                var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;rebuildWidgets();}));
+                sell.active=closed.isEmpty();
+                sell.setTooltip(net.minecraft.client.gui.components.Tooltip.create(closed.isEmpty()?Ui.t("tactical.seller.tip"):Ui.t("tactical.seller.closed."+closed,f.getInt("level"),CatapultRules.SELLER_LEVEL)));
                 y+=h;
             }
         }
+        // ---- the specialty seller (0.0.33, owner) ------------------------------------------------------------------------------------------------
+        /** The FOB whose seller is open (-1: the list), the item picked, the grid's scroll: kept while the game runs. */
+        static long sellerFob=-1;static int sellerItem,sellerScroll;
+        private final List<Ui.UiButton> sellButtons=new ArrayList<>();
+        private int sellButtonWidth(){return Math.min(font.width(Ui.t("tactical.seller.open"))+16,Math.max(60,fobW()/3));}
+        private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}
+        /** The FOB the seller is open for, or null (it is gone, or its seller closed). */
+        private CompoundTag seller(){if(sellerFob<0)return null;for(var f:fobs())if(f.getLong("id")==sellerFob&&f.getString("seller").isEmpty())return f;return null;}
+        private RouteRules.Specialty specialtyOf(CompoundTag f){for(var s:RouteRules.Specialty.values())if(s.id().equals(f.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
+        private int sellTop(){return radarY+28;}
+        private int sellBottom(){return topPos+imageHeight-46;}
+        private int sellCols(){return Math.max(1,(fobW())/22);}
+        private int sellRows(){return Math.max(1,(sellBottom()-sellTop())/22);}
+        private void sellerView(){
+            var f=seller();var options=RouteRules.options(RouteRules.Slot.SPECIALTY,specialtyOf(f));sellButtons.clear();
+            sellerItem=Math.max(0,Math.min(sellerItem,options.size()-1));
+            int cols=sellCols(),rows=sellRows(),total=(options.size()+cols-1)/cols;sellerScroll=Math.max(0,Math.min(sellerScroll,Math.max(0,total-rows)));
+            for(int i=sellerScroll*cols;i<options.size()&&i<(sellerScroll+rows)*cols;i++){
+                int index=i,col=(i-sellerScroll*cols)%cols,row=(i-sellerScroll*cols)/cols;var loot=options.get(i);var stack=GateClient.icon(loot.id());
+                var b=new Ui.UiButton(fobX()+col*22,sellTop()+row*22,20,20,Component.empty(),Ui.Look.NORMAL,x->{sellerItem=index;rebuildWidgets();});
+                b.selected=i==sellerItem;
+                b.painter((g,self,hover)->{g.renderItem(stack,self.getX()+2,self.getY()+2);g.pose().pushPose();g.pose().translate(0,0,200);GateClient.tierBadge(g,font,loot.tier(),self.getX()+1,self.getY()+1);g.pose().popPose();}).noLabel();
+                sellButtons.add(addRenderableWidget(b));
+            }
+            int y=topPos+imageHeight-40,x=fobX()+fobW();
+            var back=addRenderableWidget(new Ui.UiButton(x-50,y,50,18,Ui.t("gate.pick.back"),Ui.Look.NORMAL,b->{sellerFob=-1;rebuildWidgets();}));x-=54;
+            int index=f.getInt("index");boolean creative=data.getBoolean("creative"),room=f.getInt("queue")<data.getInt("maxQueue");
+            for(int k=CatapultRules.LOTS.length-1;k>=0;k--){
+                int kind=k,lots=CatapultRules.LOTS[k],price=lots*data.getInt("lotPrice");Component label=Ui.t(lots==1?"tactical.seller.buy":"tactical.seller.buy.lots",lots,price);int bw=font.width(label)+14;
+                var buy=addRenderableWidget(new Ui.UiButton(x-bw,y,bw,18,label,k==0?Ui.Look.PRIMARY:Ui.Look.NORMAL,b->click(SupplyCatapult.sellButton(index,sellerItem,kind))));
+                buy.active=room&&(creative||data.getInt("ardent")>=price);buy.warning=!buy.active;
+                buy.setTooltip(net.minecraft.client.gui.components.Tooltip.create(!room?Ui.t("tactical.seller.busy"):buy.active?Ui.t("tactical.seller.buy.tip",lots):Ui.t("tactical.seller.short")));
+                x-=bw+4;
+            }
+            sellDetailRight=x-6;
+        }
+        private int sellDetailRight;
+        private void drawSeller(GuiGraphics g,int mx,int my){
+            var f=seller();var spec=specialtyOf(f);var options=RouteRules.options(RouteRules.Slot.SPECIALTY,spec);
+            int x=fobX(),w=fobW(),y=radarY;
+            Component balance=data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("tactical.seller.ardent",data.getInt("ardent"));
+            Ui.text(g,font,Ui.t("tactical.seller.title",f.getString("name")),x,y,Ui.BRASS,w-font.width(balance)-8);Ui.right(g,font,balance,x+w,y,Ui.INK);
+            GateClient.tributeIcon(g,"spec_"+spec.id(),x,y+11);
+            Component sub=Ui.t("tactical.seller.sub",Ui.t("gate.specialty."+spec.id()),data.getInt("lotPrice"),f.getInt("queue"),data.getInt("maxQueue"));
+            Ui.text(g,font,sub,x+19,y+15,Ui.MUTED,w-19);
+            int cols=sellCols(),total=(options.size()+cols-1)/cols;
+            if(total>sellRows()){Component more=Ui.t("tactical.seller.scroll");Ui.text(g,font,more,x,sellBottom()+1,Ui.MUTED,w);}
+            var loot=options.get(Math.max(0,Math.min(sellerItem,options.size()-1)));int lot=CatapultRules.lotSize(loot);
+            int dy=topPos+imageHeight-40;g.renderItem(GateClient.icon(loot.id()),x,dy+1);
+            Ui.text(g,font,Ui.t("tactical.seller.lot",lot,GateClient.icon(loot.id()).getHoverName()),x+19,dy+5,Ui.INK,sellDetailRight-x-19);
+        }
         @Override public boolean mouseScrolled(double mx,double my,double delta){
+            if(view==2&&seller()!=null){sellerScroll=Math.max(0,sellerScroll-(int)Math.signum(delta));rebuildWidgets();return true;}
             if(view==2&&fobs().size()>fobRows()){fobScroll=Math.max(0,fobScroll-(int)Math.signum(delta));rebuildWidgets();return true;}
             return super.mouseScrolled(mx,my,delta);
         }
         private void drawFobView(GuiGraphics g){
+            if(seller()!=null){drawSeller(g,0,0);return;}
             int x=fobX(),w=fobW(),y=radarY;var all=fobs();
             Component title=Ui.t("tactical.fob.title",all.size(),data.getInt("fobMax"));
             Ui.text(g,font,title,x,y,Ui.BRASS,w);
@@ -234,11 +294,12 @@ public final class TacticalClient {
                 Ui.pips(g,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-4,y+7,f.getInt("level"),RouteRules.MAX_LEVEL,FobClient.OLIVE);
                 Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-12-x-8);
                 Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));
-                Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-(sos?124:0));
+                int buttons=sellButtonWidth()+4+(sos?116:0);   // the row's buttons sit at its bottom right
+                Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-buttons);
                 Component route=f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");
-                if(!sos)Ui.text(g,font,route,x+8,y+27,f.getBoolean("route")?GateClient.color(f.getString("signal")):Ui.MUTED,w-16);
+                if(!sos)Ui.text(g,font,route,x+8,y+27,f.getBoolean("route")?GateClient.color(f.getString("signal")):Ui.MUTED,w-16-buttons);
                 else{
-                    long left=f.getLong("sosLeft");int bw=Math.max(40,w-16-124);
+                    long left=f.getLong("sosLeft");int bw=Math.max(40,w-16-buttons);
                     Ui.text(g,font,Ui.t("tactical.fob.sos",FobClient.sosTime(left),FobClient.sosTime(total)),x+8,y+27,Ui.RED,bw);
                     if(h>=46)Ui.bar(g,x+8,y+h-10,bw,4,Math.max(0,Math.min(1,left/(float)total)),Ui.RED);
                 }
@@ -319,7 +380,7 @@ public final class TacticalClient {
             if(view==2)drawFobView(g);
             else{drawRadar(g,mx,my);drawSide(g);}
             var message=data.getString("message");
-            if(!message.isEmpty()){boolean good=message.endsWith(".accepted")||message.endsWith(".upgraded")||message.endsWith(".reprinted")||message.endsWith(".sos_reprinted")||message.endsWith(".scan_started")||message.endsWith(".abandoned");
+            if(!message.isEmpty()){boolean good=message.endsWith(".accepted")||message.endsWith(".upgraded")||message.endsWith(".reprinted")||message.endsWith(".sos_reprinted")||message.endsWith(".scan_started")||message.endsWith(".abandoned")||message.equals("tactical.seller.bought");
                 Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),radarX,topPos+imageHeight-14,good?Ui.CYAN:Ui.ORANGE,view==2?fobW():size);}
         }
         private Component subtitle(){
@@ -451,7 +512,16 @@ public final class TacticalClient {
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             renderBackground(g);super.render(g,mx,my,partial);
-            if(view==2)return;
+            if(view==2){
+                var f=seller();if(f==null)return;var options=RouteRules.options(RouteRules.Slot.SPECIALTY,specialtyOf(f));int cols=sellCols();
+                for(int i=0;i<sellButtons.size();i++)if(sellButtons.get(i).isHovered()&&sellerScroll*cols+i<options.size()){
+                    var loot=options.get(sellerScroll*cols+i);var lines=new ArrayList<Component>();lines.add(GateClient.icon(loot.id()).getHoverName());
+                    if(loot.tier()>0)lines.add(Ui.t("gate.pick.tier",RouteRules.TIERS.substring(loot.tier(),loot.tier()+1)).copy().withStyle(st->st.withColor(GateClient.tierColor(loot.tier()))));
+                    lines.add(Ui.t("tactical.seller.lot.tip",CatapultRules.lotSize(loot),data.getInt("lotPrice")));
+                    g.renderComponentTooltip(font,lines,mx,my);return;
+                }
+                return;
+            }
             var fob=hoveredFob(mx,my);
             if(fob!=null){g.renderComponentTooltip(font,List.of(Component.literal(fob.getString("name")),Ui.t("fob.state."+fob.getString("state")),Ui.t("tactical.fob.where",fob.getInt("distance"),TacticalRules.compass(fob.getDouble("bearing")),fob.getInt("villagers"))),mx,my);return;}
             // hover: an X on the radar, the upgrade price, a blocked Accept
