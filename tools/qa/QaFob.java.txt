@@ -621,8 +621,11 @@ public final class QaFob {
         step(5,()->{press("FOB");FobClient.FobScreen.tab=0;},"back to the FOB tab");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
         // ---- 0.0.33: the Supply Catapult and the specialty seller; the placement preview; the FOB zone's ground line -------------------------------
-        step(5,()->{catapult=srvGet(QaFob::findCatapultSpot);check("a free 3 x 3 spot in the FOB's village for the catapult",catapult!=null,String.valueOf(catapult));
-            if(catapult!=null){hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));look(catapult.south(6).above(2),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);}},"hold a Supply Catapult, look at the spot");
+        step(20,()->{catapult=srvGet(QaFob::findCatapultSpot);check("a free 3 x 3 spot in the FOB's village for the catapult",catapult!=null,String.valueOf(catapult));
+            hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));},"hold a Supply Catapult");
+        until("the catapult in hand",100,()->mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),()->{
+            check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
+            if(catapult!=null)look(catapult.south(3).above(1),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);});
         step(30,()->{var g=PlacementPreviewClient.ghost();
             check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());
             shot("f29_catapult_preview");},"the preview");
@@ -663,9 +666,10 @@ public final class QaFob {
         step(4,()->shot("f31b_box_away"),"the box leaves");
         until("the box is in the air",200,()->{var f=fob();return f!=null&&!f.shipments.isEmpty()&&f.shipments.get(0).getString("stage").equals("flying");},()->{var f=fob();
             var be=srvGet(()->sl().getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c.throwsSeen:-1);
-            check("the catapult turned to the beacon and threw the box; it flies home",be==1&&f.shipments.get(0).getLong("due")>srvGet(()->sl().getGameTime()),"throws "+be);
+            boolean flying=f!=null&&!f.shipments.isEmpty();
+            check("the catapult turned to the beacon and threw the box; it flies home",be==1&&flying&&f.shipments.get(0).getLong("due")>srvGet(()->sl().getGameTime()),"throws "+be);
             mc().options.hideGui=false;
-            srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.shipments.get(0).putLong("due",sl().getGameTime()+60);});
+            srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();if(!x.shipments.isEmpty())x.shipments.get(0).putLong("due",sl().getGameTime()+60);});
             var b=HuntGameTests.BEACON;tp(b.getX()+.5,b.getY(),b.getZ()+9.5,180,-25);});
         until("the box lands",300,()->{var f=fob();return f!=null&&f.shipments.isEmpty();},()->{});
         step(20,()->{var b=HuntGameTests.BEACON;var parcels=srvGet(()->sl().getEntitiesOfClass(SupportCrate.ParcelEntity.class,new net.minecraft.world.phys.AABB(b).inflate(8,48,8)));

@@ -212,10 +212,12 @@ public final class TacticalClient {
                     sosButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(data.getBoolean("sosCarried")?"tactical.fob.reprint.carried":"tactical.fob.reprint.tip")));
                     right-=116;
                 }
-                long id=f.getLong("id");String closed=f.getString("seller");int sw=sellButtonWidth();
-                var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;rebuildWidgets();}));
-                sell.active=closed.isEmpty();
-                sell.setTooltip(net.minecraft.client.gui.components.Tooltip.create(closed.isEmpty()?Ui.t("tactical.seller.tip"):Ui.t("tactical.seller.closed."+closed,f.getInt("level"),CatapultRules.SELLER_LEVEL)));
+                long id=f.getLong("id");String closed=f.getString("seller");int sw=sellButtonWidth(f);
+                if(sw>0){
+                    var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;rebuildWidgets();}));
+                    sell.active=closed.isEmpty();
+                    sell.setTooltip(net.minecraft.client.gui.components.Tooltip.create(closed.isEmpty()?Ui.t("tactical.seller.tip"):Ui.t("tactical.seller.closed."+closed,f.getInt("level"),CatapultRules.SELLER_LEVEL)));
+                }
                 y+=h;
             }
         }
@@ -223,8 +225,18 @@ public final class TacticalClient {
         /** The FOB whose seller is open (-1: the list), the item picked, the grid's scroll: kept while the game runs. */
         static long sellerFob=-1;static int sellerItem,sellerScroll;
         private final List<Ui.UiButton> sellButtons=new ArrayList<>();
-        private int sellButtonWidth(){return Math.min(font.width(Ui.t("tactical.seller.open"))+16,Math.max(60,fobW()/3));}
+        /** The row's seller button: its whole label when the row's lines still fit beside it, else the short one. */
+        private int sellButtonWidth(CompoundTag f){
+            int full=font.width(Ui.t("tactical.seller.open"))+16,other=f.getBoolean("sos")?116:0;
+            int need=Math.max(font.width(where(f)),f.getBoolean("sos")?font.width(Ui.t("tactical.fob.sos",FobClient.sosTime(f.getLong("sosLeft")),FobClient.sosTime(Math.max(1,data.getLong("sosTotal"))))):font.width(route(f)));
+            int shortW=font.width(Ui.t("tactical.seller.open.short"))+16;
+            if(fobW()-16-full-4-other>=need)return full;
+            // an SOS row is crowded by Reprint SOS map: the seller steps aside there on a small window until the SOS is over
+            return fobW()-16-shortW-4-other>=need||!f.getBoolean("sos")?shortW:0;
+        }
         private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}
+        private Component where(CompoundTag f){return Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));}
+        private Component route(CompoundTag f){return f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");}
         /** The FOB the seller is open for, or null (it is gone, or its seller closed). */
         private CompoundTag seller(){if(sellerFob<0)return null;for(var f:fobs())if(f.getLong("id")==sellerFob&&f.getString("seller").isEmpty())return f;return null;}
         private RouteRules.Specialty specialtyOf(CompoundTag f){for(var s:RouteRules.Specialty.values())if(s.id().equals(f.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
@@ -294,7 +306,7 @@ public final class TacticalClient {
                 Ui.pips(g,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-4,y+7,f.getInt("level"),RouteRules.MAX_LEVEL,FobClient.OLIVE);
                 Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-12-x-8);
                 Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));
-                int buttons=sellButtonWidth()+4+(sos?116:0);   // the row's buttons sit at its bottom right
+                int sw=sellButtonWidth(f),buttons=(sw>0?sw+4:0)+(sos?116:0);   // the row's buttons sit at its bottom right
                 Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-buttons);
                 Component route=f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");
                 if(!sos)Ui.text(g,font,route,x+8,y+27,f.getBoolean("route")?GateClient.color(f.getString("signal")):Ui.MUTED,w-16-buttons);
