@@ -188,11 +188,14 @@ final class RouteRules {
         if(!y.on()[slot.ordinal()])return 0;
         double hours=tripHours(y.distance(),y.period());
         double value=perHour(y.distance(),y.villagers())*hours/Math.max(1,enabled(y.on()))*slotMultiplier(slot,y.level());
-        return slot==Slot.SPECIALTY?Math.min(value,SPECIALTY_MAX_PER_HOUR*hours):value;
+        return slot==Slot.SPECIALTY?Math.min(value,SPECIALTY_MAX_PER_HOUR*deliveryHours(y)):value;
     }
+    /** The hours between two deliveries of this route as they really come (a fast rail delivers more often than the hours a trip carries). */
+    static double deliveryHours(Yield y){return (y.period()>0?y.period():refPeriod(y.distance()))/(double)HOUR;}
     /**
      * 0.0.34 (owner, after a playtest of the potion makers at research 5 with every other slot off: 12 S-tier items an hour): the specialty
-     * slot makes at most 4 S-tier items' worth an hour (64 value), however big the FOB, the research or the boost from slots switched off.
+     * slot makes at most 4 S-tier items' worth an hour (64 value), however big the FOB, the research, the boost from slots switched off or
+     * the rail's speed (counted against the real time between deliveries).
      * The 30-minute floor (2 an hour at research 4 with every slot on, the slowest FOB) is under it.
      */
     static final double SPECIALTY_MAX_PER_HOUR=4*TIER_VALUE[5];

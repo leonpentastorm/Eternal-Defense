@@ -124,6 +124,10 @@ final class Round0034Test {
         assertEquals(4,specialtyPerHour(alone,5000,20,5)/s,1e-9,"the biggest FOB");
         // the 30-minute floor holds: the slowest FOB, every slot on, research 4
         assertEquals(2,specialtyPerHour(all,128,3,4)/s,1e-9);
+        // a fast rail delivers more often than the hours a trip carries: still 4 an hour, counted between real deliveries
+        long fast=RouteRules.refPeriod(5000)/3;var quick=new RouteRules.Yield(alone,5000,20,fast,5);
+        assertEquals(4,RouteRules.budget(Slot.SPECIALTY,quick)/(fast/(double)RouteRules.HOUR)/s,1e-9,"a fast rail");
+        assertEquals(4,RouteRules.budget(Slot.SPECIALTY,quick)*RouteRules.tripsPerHour(fast)/s,1e-6,"as the gate screen counts it");
         // the other slots are untouched
         var y=new RouteRules.Yield(new boolean[]{false,false,true,false},5000,20,0,5);
         assertTrue(RouteRules.budget(Slot.FARM,y)/RouteRules.tripHours(5000,0)>RouteRules.SPECIALTY_MAX_PER_HOUR,"the farm alone is not capped");

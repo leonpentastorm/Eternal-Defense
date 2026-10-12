@@ -281,7 +281,9 @@ public final class TacticalClient {
             Component balance=data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("tactical.seller.ardent",data.getInt("ardent"));
             Ui.text(g,font,Ui.t("tactical.seller.title",f.getString("name")),x,y,Ui.BRASS,w-font.width(balance)-8);Ui.right(g,font,balance,x+w,y,Ui.INK);
             int iw=GateClient.specialtyIcons(g,spec.id(),x,y+11)+3;
-            Component sub=Ui.t("tactical.seller.sub",Ui.t("gate.specialty."+spec.id()),data.getInt("lotPrice"),f.getInt("queue"),data.getInt("maxQueue"));
+            // the specialty's name, the lot's price, the boxes waiting: what fits (a small window drops the boxes, then the name)
+            Component sub=null;Object[] args={Ui.t("gate.specialty."+spec.id()),data.getInt("lotPrice"),f.getInt("queue"),data.getInt("maxQueue")};
+            for(String k:new String[]{"tactical.seller.sub","tactical.seller.sub.short","tactical.seller.sub.price"}){sub=Ui.t(k,args);if(font.width(sub)<=w-iw)break;}
             Ui.text(g,font,sub,x+iw,y+15,Ui.MUTED,w-iw);
             int cols=sellCols(),total=(options.size()+cols-1)/cols;
             if(total>sellRows()){Component more=Ui.t("tactical.seller.scroll");Ui.text(g,font,more,x,sellBottom()+1,Ui.MUTED,viewX()-x-8);}

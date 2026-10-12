@@ -517,7 +517,9 @@ public final class QaFob {
         // ---- 0.0.34 (owner): fishing and animal husbandry are one specialty, both names and both icons --------------------------------------------------
         step(5,()->srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.specialty=RouteRules.Specialty.FISHING_HUSBANDRY;x.special=RouteRules.FISHING_LOOT.size();FobData.get(sl()).setDirty();}),"the village fishes and herds (beef chosen)");
         until("the screen shows fishing and animal husbandry",200,()->{var s=gate();return s!=null&&s.data().getString("specialty").equals("fishing_husbandry");},()->{});
-        step(10,()->{check("the specialty slot sends beef from the herder's half of the list",gateSlot(3).getString("item").equals("minecraft:beef"),gateSlot(3).getString("item"));recordFrame=true;},"its slot card");
+        step(10,()->{check("the specialty slot sends beef from the herder's half of the list",gateSlot(3).getString("item").equals("minecraft:beef"),gateSlot(3).getString("item"));
+            var s=gate();double perHour=gateSlot(3).getDouble("perTrip")*1.5*(s==null?0:s.data().getDouble("tripsPerHour"));
+            check("0.0.34 cap: the specialty sends at most 4 S-tier items' worth an hour (64 value), even on this fast 21 km line",perHour>0&&perHour<=RouteRules.SPECIALTY_MAX_PER_HOUR+1e-6,String.format("%.1f value an hour",perHour));recordFrame=true;},"its slot card");
         step(3,()->{layout("the Receiving Gate, Fishing & Animal Husbandry",true);check("both names on the card",drawnHas("Fishing & Animal"),"");shot("f17m_gate_fishing_husbandry");pressNth("Choose",2);},"the card with both icons");
         step(10,()->{var s=gate();check("its list: every fish and every meat and leather",s!=null&&s.pickButtons.size()==RouteRules.FISHING_HUSBANDRY_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));recordFrame=true;},"its grid");
         step(3,()->{layout("the Receiving Gate, the fishing and husbandry grid",true);shot("f17n_gate_fishing_husbandry_grid");press("Back");},"the grid");
@@ -701,7 +703,7 @@ public final class QaFob {
             long buttons=t==null?0:t.children().stream().filter(c->c instanceof Ui.UiButton b&&b.visible&&b.getWidth()==20&&b.getHeight()==20).count();
             check("its grid: the specialty's items (scrolled when they do not fit)",buttons>0&&buttons<=items,buttons+" of "+items);
             TacticalClient.TableScreen.sellerItem=items-1;if(t!=null)t.resize(mc(),t.width,t.height);recordFrame=true;},"the seller's grid, the last item picked");
-        step(3,()->{layout("the Command Table, the specialty seller",true);check("the catapult's line: ready",drawnHas("Ready. Pick an item"),"");shot("f30b_seller");},"the seller");
+        step(3,()->{layout("the Command Table, the specialty seller",true);check("the catapult's line: ready",drawnHas("Ready"),"");shot("f30b_seller");},"the seller");
         atSizes(SIZES,"the Command Table, the specialty seller","f30c_seller",true,()->{var t=table();if(t!=null)t.resize(mc(),t.width,t.height);});
         step(10,()->{TacticalClient.TableScreen.sellerItem=0;var t=table();if(t!=null)t.resize(mc(),t.width,t.height);},"the first item");
         step(10,()->{synchronized(HEARD){HEARD.clear();}pressStart("Buy 1 lot");},"Buy 1 lot");
@@ -710,7 +712,7 @@ public final class QaFob {
             shot("f30d_seller_bought");});
         step(10,()->{check("the radio answers again",heard("seller.order_chatter_"),String.valueOf(HEARD));var f=fob();var st=f==null?null:CatapultView.state(f.id);
             check("the seller shows the catapult loading and turning to the base",st!=null&&st[2]==1&&st[3]>=1,st==null?"none":Arrays.toString(st));recordFrame=true;},"loading");
-        step(3,()->{layout("the Command Table, the catapult turning",true);check("its line: turning to your base",drawnHas("Turning to your base"),"");shot("f30e_seller_live_turning");},"turning");
+        step(3,()->{layout("the Command Table, the catapult turning",true);check("its line: turning to your base",drawnHas("Turning to base"),"");shot("f30e_seller_live_turning");},"turning");
         until("the seller shows the throw",600,()->{var f=fob();var st=f==null?null:CatapultView.state(f.id);return st!=null&&st[1]>=1;},()->{check("the seller's catapult throws, as the real one far away",true,"");recordFrame=true;});
         step(3,()->{layout("the Command Table, the catapult throwing",true);check("its line: throwing",drawnHas("Throwing!"),"");},"throwing");
         // the software renderer runs about 1.5 s behind: the arm up and the box leaving, then the arm winding back
@@ -718,7 +720,7 @@ public final class QaFob {
         step(20,()->shot("f30g_seller_live_box"),"the box flies out of the view");
         until("the box is in the air again",200,()->{var f=fob();var st=f==null?null:CatapultView.state(f.id);return st!=null&&st[4]>=1;},()->{var f=fob();var st=CatapultView.state(f.id);
             check("the seller counts the box home",st[5]>=1&&st[5]<=CatapultRules.FLIGHT_TICKS/20,Arrays.toString(st));recordFrame=true;});
-        step(3,()->{layout("the Command Table, the box in the air",true);check("its line: the box lands in so many seconds",drawnHas("Box in the air: lands in"),"");shot("f30h_seller_box_in_air");},"in the air");
+        step(3,()->{layout("the Command Table, the box in the air",true);check("its line: the box lands in so many seconds",drawnHas("In the air:"),"");shot("f30h_seller_box_in_air");},"in the air");
         // out to watch it come down: high over its spot, by parachute, as the countdown ends
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());var f=fob();
             var spotTag=f==null||f.shipments.isEmpty()?null:f.shipments.get(0);var b=HuntGameTests.BEACON;

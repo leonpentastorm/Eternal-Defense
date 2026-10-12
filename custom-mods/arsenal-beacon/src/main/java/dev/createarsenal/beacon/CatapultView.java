@@ -39,7 +39,7 @@ final class CatapultView {
         if(live==null)return Ui.t("tactical.seller.view.none");
         var e=live.now();
         if(e.throwAge()>=0)return Ui.t("tactical.seller.view.throwing");
-        if(e.waiting()>0)return Ui.t("tactical.seller.view.turning",e.waiting());
+        if(e.waiting()>0)return Ui.t("tactical.seller.view.turning");
         if(e.flying()>0)return Ui.t("tactical.seller.view.flying",e.landsIn());
         return Ui.t("tactical.seller.view.ready");
     }
@@ -52,7 +52,7 @@ final class CatapultView {
         int age=live==null?-1:live.now().throwAge();
         float arm=age<0?0:CatapultRules.armAngle(age+partial);
         boolean cup=live!=null&&live.now().loaded()&&(age<0||age<CatapultRules.RELEASE_TICK);
-        float scale=Math.min(w/3.6f,h/3.0f);
+        float scale=Math.min(w/4.2f,h/3.2f);
         g.flush();
         g.enableScissor(x,y,x+w,y+h);
         PoseStack pose=g.pose();pose.pushPose();
