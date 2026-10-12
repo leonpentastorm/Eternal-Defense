@@ -1631,6 +1631,6 @@
   "gui.arsenal_beacon.guide.drinks.detail.pack": "Station upgrades cost 8/16/32 Reinforced Plating.",
   "gui.arsenal_beacon.guide.drinks.detail.standalone": "Station upgrades cost 4/8/14 Ardent Energy.",
   "gui.arsenal_beacon.drinks.mb_amount": "%s mB",
-  "gui.arsenal_beacon.drinks.latte_hint": "A Paper Cup in the cup slot, then up to 2 potions.",
+  "gui.arsenal_beacon.drinks.latte_hint": "A Paper Cup, then up to 2 potions.",
   "gui.arsenal_beacon.drinks.no_pots": "Place a Brew Pot within 8 blocks of this station."
 }

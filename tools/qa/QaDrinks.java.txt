@@ -193,7 +193,8 @@ public final class QaDrinks {
         step(10,()->check("awkward potions stay in the stand (no effect yet)",srvGet(()->PotionUtils.getPotion(st().brew.getItem(0))==Potions.AWKWARD&&st().total()==0),srvGet(()->BuiltInRegistries_potion(st().brew.getItem(0))+" total "+st().total())),"awkward");
         step(3,()->srv(()->st().brew.setItem(3,new ItemStack(Items.SUGAR))),"sugar");
         until("brewing again",100,()->srvGet(()->st().brewTime>0),()->srv(()->st().brewTime=1));
-        step(20,()->{check("the finished Speed potions moved into the storage",srvGet(()->st().total()==3&&st().brew.getItem(0).isEmpty()&&st().brew.getItem(2).isEmpty()),srvGet(()->"total "+st().total()));
+        until("the second brew done",100,()->srvGet(()->st().brewTime==0&&st().total()>0),()->{});
+        step(10,()->{check("the finished Speed potions moved into the storage",srvGet(()->st().total()==3&&st().brew.getItem(0).isEmpty()&&st().brew.getItem(2).isEmpty()),srvGet(()->"total "+st().total()));
             check("one blaze powder gives 20 brews (2 used)",srvGet(()->st().fuel==18),srvGet(()->""+st().fuel));},"speed potions stored");
         step(5,()->recordFrame=true,"record");
         step(3,()->{check("the screen shows the stored bottles",drawnHas("3 bottles"),"");shot("d02_brewed");},"brewed");
@@ -390,6 +391,7 @@ public final class QaDrinks {
         step(10,()->check("Mk IV links three Brew Pots",srvGet(()->st().links.size()==3),srvGet(()->""+st().links.size())),"mk4");
         step(3,()->click(tile("minecraft:speed")),"drop Speed");step(3,()->{click(tile("minecraft:strength"));},"Strength");step(3,()->click(tile("minecraft:night_vision")),"Night Vision");
         step(3,()->click(tile("minecraft:speed")),"Speed");
+        until("the screen knows the three-effect order",60,()->view().getIntArray("Order").length==3&&view().getBoolean("Gatherable"),()->{});
         step(5,()->click(ds().primary),"Gather potions");
         step(10,()->check("three effects gathered at Mk IV",srvGet(()->!st().mix.getItem(0).isEmpty()&&!st().mix.getItem(1).isEmpty()&&!st().mix.getItem(2).isEmpty()),srvGet(()->st().mix.getItem(0)+" "+st().mix.getItem(1)+" "+st().mix.getItem(2))),"three");
         step(5,()->recordFrame=true,"record");
