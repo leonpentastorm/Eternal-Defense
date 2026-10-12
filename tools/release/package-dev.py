@@ -29,7 +29,7 @@ for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0034-TESTING.md','ROUND-00
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # six screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
 BUNDLED_SHOTS={'standalone-f29_catapult_preview.png','standalone-f29b_catapult_model.png','standalone-f30b_seller.png','standalone-f31_catapult_throw.png','standalone-f31d_parcel_at_beacon.png','standalone-f32_beacon_preview.png',
-    'standalone-f30f_seller_live_throw.png','standalone-f30h_seller_box_in_air.png','standalone-f31e_parcel_parachute.png','standalone-f29d_fob_catapult_online.png','standalone-f23d_fob_research_top.png','standalone-f17m_gate_fishing_husbandry.png'}
+    'standalone-f30f_seller_live_throw.png','standalone-f30h_seller_box_in_air.png','standalone-f31e_parcel_parachute.png','standalone-f29d_fob_catapult_online.png','standalone-f23d_fob_research_top.png','standalone-f17m_gate_fishing_husbandry.png','pack-f30b_seller.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
 for folder in ('round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):

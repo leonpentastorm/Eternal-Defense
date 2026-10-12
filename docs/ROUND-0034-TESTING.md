@@ -10,7 +10,7 @@ Branch `feature/supply-catapult`.
 
 ## Results
 
-### Unit tests: 319 pass, 0 fail
+### Unit tests: 320 pass, 0 fail
 
 * New `Round0034Test`: the catapult's motion (loaded, turned to the beacon, settled, thrown, the box released 3 ticks into the throw, then back to its rest heading), the rest heading from the placer's facing, the motion saved with the FOB and run every tick (no separate unseen throw); the flight home is the Supply Flare's 12 seconds, the parcel appearing a fall early over open sky, the flare's countdown and parcel used; protocol 39 and the live view packet (id 23), drawn in the seller with the grid narrower; the radio icon (16 x 16), the static and the four order lines (sounds.json, the OGG files, the subtitles, the button and the purchase); Fishing & Animal Husbandry (4 specialties, both lists, both icons, both names); saves of 0.0.31 to 0.0.33 by ordinal map to the right specialty and a husbandry choice keeps its item, saves now by name; the specialty slot at most 4 S-tier items an hour for the slowest, a middling and the biggest FOB alone at research 5, the 30-minute floor untouched, the other slots not capped; the FOB screen's catapult state and the lines for it, level 5 of the research tab.
 * Also in `Round0034Test`: the war horn (the file, sounds.json, the subtitle, sounded on planting, on the raid starting and on the SOS raid, 12 seconds between two). `Round0032Test`: the monster hunter guild has no totem of undying.
@@ -22,7 +22,7 @@ Branch `feature/supply-catapult`.
 | --- | --- |
 | `fob_24` | After the throw: it lands 12 s later, its landing spot planned beside the beacon; the parcel appears high over the spot (open sky) and comes down by parachute; the parcel holds the ghast tear; with nothing left to throw the catapult turns back to its rest heading. |
 
-### Real client: RESULT_CLIENT
+### Real client: 297 pass, 0 fail in each edition on the final code (`checks-standalone.txt`, `checks-pack.txt`)
 
 New in 0.0.34:
 * The war horn: planting the FOB (which calls its raid at once) sounds it once; the SOS raid starting sounds it again (the client's sound listener counted `arsenal_beacon:fob.war_horn`, 1 then 2).
@@ -43,7 +43,8 @@ New in 0.0.34:
 * **First pack run** (`checks-pack-first-run-stopped.txt`): stopped after the FOB GameTests and the first client checks, to run on the code without the totem; two meal-buff checks had failed while a unit test build ran beside it (load), not seen in any other run.
 * **Second pack run** (`checks-pack-before-horn.txt`): 295 of 295, with the totem removed, before the war horn.
 * **Final standalone run** (`checks-standalone.txt`): 297 of 297, the final code (the war horn's two checks added).
-PACK_RESULT
+* **Third pack run** (`checks-pack-third-run.txt`, 296 of 297): the check of the live view's "In the air" line read a frame recorded before (the software renderer, loaded, had drawn no new frame in 3 ticks); the picture taken just after shows "In the air: 9 s". Harness: the live view's text checks wait for a fresh frame.
+* **Fourth pack run** (`checks-pack.txt`): 297 of 297, the final code.
 
 ## Not tested
 
