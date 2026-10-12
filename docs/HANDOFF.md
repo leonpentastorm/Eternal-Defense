@@ -15,6 +15,7 @@ Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbe
   4. Fishing & Animal Husbandry's list is the fisher's 5 items then the herder's 7 (12 in all). A FOB of the old animal husbandry keeps its chosen item.
   5. The FOB screen's catapult line says OFFLINE with the first missing thing (no Defense Beacon, the FOB not ACTIVE, research below 5, none placed), as the seller button's tooltip does.
   6. The order lines play at the buyer only (Voice), the static only for the player who presses Contact.
+  7. The totem of undying is out of the monster hunter guild (owner, late in the round: "it's OP"). A FOB that had chosen it falls back to the list's first item (rotten flesh); its tally (kept in value) carries over to the new choice. Totems still come as a tier-5 raid reward (`RaidRewards`), untouched.
 VALIDATION_0034
 
 ## The Supply Catapult and the specialty seller (0.0.33, branch `feature/supply-catapult`)

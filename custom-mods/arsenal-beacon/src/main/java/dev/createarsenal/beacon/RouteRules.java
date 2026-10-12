@@ -84,14 +84,15 @@ final class RouteRules {
     /**
      * Specialty, the monster hunter guild (0.0.32, owner): every drop of a vanilla 1.20.1 monster except the bosses (the Ender Dragon, the
      * Wither, the Elder Guardian), by how hard it is to farm; an item two lists share has the same tier in both. Not squid ink (squids are
-     * not monsters), not rare equipment drops (tridents, crossbows, armour) and not music discs.
+     * not monsters), not rare equipment drops (tridents, crossbows, armour) and not music discs. 0.0.34 (owner): no totem of undying
+     * (far too strong to receive by the hour; a FOB that chose it falls back to the list's first item).
      */
     static final List<Loot> MONSTER_LOOT=List.of(tiered("minecraft:rotten_flesh",1),tiered("minecraft:bone",1),tiered("minecraft:string",1),tiered("minecraft:arrow",1),
         tiered("minecraft:gunpowder",1),tiered("minecraft:coal",1),tiered("minecraft:glowstone_dust",1),
         tiered("minecraft:spider_eye",2),tiered("minecraft:slime_ball",2),tiered("minecraft:gold_nugget",2),tiered("minecraft:prismarine_shard",2),
         tiered("minecraft:magma_cream",3),tiered("minecraft:prismarine_crystals",3),
         tiered("minecraft:ender_pearl",4),tiered("minecraft:blaze_rod",4),tiered("minecraft:phantom_membrane",4),tiered("minecraft:nautilus_shell",4),
-        tiered("minecraft:ghast_tear",5),tiered("minecraft:shulker_shell",5),tiered("minecraft:wither_skeleton_skull",5),tiered("minecraft:totem_of_undying",5));
+        tiered("minecraft:ghast_tear",5),tiered("minecraft:shulker_shell",5),tiered("minecraft:wither_skeleton_skull",5));
     /**
      * A wandering trader's sale: {@code count} of it for {@code emeralds}. 0.0.32: its value follows its price, the dearest trade (blue ice,
      * 6 emeralds) worth an S-tier item, so every trader item comes within the 30 minute promise ({@link #S_HOURS}).

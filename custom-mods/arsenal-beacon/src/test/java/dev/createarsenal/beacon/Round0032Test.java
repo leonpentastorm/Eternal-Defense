@@ -24,9 +24,10 @@ final class Round0032Test {
     @Test void theMonsterHunterGuildHasEveryMonsterDropButTheBosses(){
         var ids=new HashSet<String>();for(var l:RouteRules.MONSTER_LOOT)assertTrue(ids.add(l.id()),"twice: "+l.id());
         for(String drop:List.of("rotten_flesh","bone","string","arrow","gunpowder","spider_eye","slime_ball","magma_cream","ender_pearl","blaze_rod",
-                "ghast_tear","phantom_membrane","shulker_shell","prismarine_shard","prismarine_crystals","glowstone_dust","wither_skeleton_skull","totem_of_undying"))
+                "ghast_tear","phantom_membrane","shulker_shell","prismarine_shard","prismarine_crystals","glowstone_dust","wither_skeleton_skull"))
             assertTrue(ids.contains("minecraft:"+drop),"no "+drop);
         for(String boss:List.of("nether_star","dragon_egg","dragon_head","elytra"))assertFalse(ids.contains("minecraft:"+boss),boss+" is a boss's");
+        assertFalse(ids.contains("minecraft:totem_of_undying"),"0.0.34 (owner): no totem of undying, too strong");
         assertEquals(4,find(RouteRules.MONSTER_LOOT,"minecraft:ender_pearl").tier(),"ender pearls, which the pack's recipes need, are A");
         assertSame(RouteRules.MONSTER_LOOT,Specialty.MONSTERS.options());
         assertTrue(RouteRules.MONSTER_LOOT.size()<=Routes.CHOICES);
