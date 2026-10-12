@@ -10,7 +10,7 @@ Branch `feature/supply-catapult`.
 
 ## Results
 
-### Unit tests: RESULT_UNIT
+### Unit tests: 310 pass, 0 fail
 
 * New `Round0033Test`: a lot is worth one S-tier item for every specialty item; the prices live in `Economy` (4 standalone, twice the Exchange's ghast tear; 2 pack), the catapult's fabrication price, the Workshop and creative lists; the seller's closed reasons in order; the throw follows the owner's README (0 to -88 degrees in 4 ticks, the box leaves as the arm passes -45, a 50-tick cycle; the cup's release point and the 45-degree velocity, turned with the frame); the flight times; the seller's button ids decode back and stay clear of the table's own; the catapult and its boxes are saved with the FOB; the owner's five models are installed as they are, with the textures, the blockstate, the item model, the loot table and the axe tag; every line exists (block, entity, tooltip, refusals for each reason, the seller's screen, the Field Guide card); block events reach the block entity (catapult and cannon); protocol 38.
 * `LangKeysTest` lists the Supply Catapult's Field Guide card. `FobTest`, `RaidRoundTest` check protocol 38.
@@ -22,7 +22,7 @@ Branch `feature/supply-catapult`.
 | `fob_23` | No FOB: the catapult is refused; 64 blocks out of the village: refused; in the FOB's village: placed, it serves the FOB, its 3 x 3 x 2 body stands; a second one in the same FOB: refused; research 0: the seller closed ("research"), research 5: open; the Command Table is told (catapult, seller open, index); taken down: unlinked, the seller closed again ("catapult"), its body gone. |
 | `fob_24` | No Ardent Energy: refused, nothing queued; a lot of ghast tears bought (the lot's price taken); the box waits; the loaded catapult turns to face the beacon and throws once, a thrown box is in the air, it lands after the flight home; the parcel beside the beacon holds the ghast tear; four boxes waiting, a fifth refused ("busy"); four lots of sugar are 64; below research 5: refused. |
 
-### Real client: RESULT_CLIENT
+### Real client: 255 pass, 0 fail in each edition (`checks-standalone.txt`, `checks-pack.txt`)
 
 New in 0.0.33:
 * Holding a Supply Catapult in the FOB's village: the ghost catapult and its 3 x 3 x 2 outline where it would stand (`f29`); placed with a right-click, it serves the FOB; the owner's model (`f29b`).
@@ -43,7 +43,9 @@ New in 0.0.33:
 * **First pack run** (`checks-pack-first-run.txt`, 253 of 254): the catapult's ghost was not seen (`none`): standing on uneven ground the look ray met another block. Harness: the player now hovers above the spot and looks down at it.
 * **Fourth standalone run** (`checks-standalone-fourth-run-stopped.txt`, 231 passed, stopped): harness faults only. The step after a wait for a condition ran at once (the ghost check came before the look had settled); the spot to watch the throw from was read on land not loaded yet, which reads as the bottom of the world, so the player was put there and fell out of the world (every check after it failed at the death screen); the window to catch the throw was too narrow. The harness now loads the land before reading its ground, waits after the hover and gives the throw a wider window. The run was stopped at the death screen.
 * **Fifth standalone run** (`checks-standalone.txt`): 255 of 255.
-PACK_LATER
+* **Second pack run** (`checks-pack.txt`): 255 of 255, on the same code as the fifth standalone run. Its seller shows the pack's price, 2 Ardent Energy a lot (`pack-f30b_seller.png`; the QA player is in creative, so the purchase itself was free).
+
+Pictures: `standalone-*.png` for every shot named above, `pack-*.png` for the catapult's ghost and model, the seller, the parcel at the beacon and the Defense Beacon's preview.
 
 ## Not tested
 
