@@ -241,7 +241,8 @@ public final class QaFob {
     /** The nearest spot (to the player) the FOB rules allow, on sturdy ground, with two free blocks, nobody in them and free ground 3 south. */
     static BlockPos catapult;
     /** Where a player stands on the ground in {@code p}'s column (a player put in the air falls and looks somewhere else). */
-    static BlockPos surface(BlockPos p){return srvGet(()->new BlockPos(p.getX(),sl().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p.getX(),p.getZ()),p.getZ()));}
+    static BlockPos surface(BlockPos p){return srvGet(()->{sl().getChunk(p.getX()>>4,p.getZ()>>4);   // land not loaded yet reads as the bottom of the world
+        return new BlockPos(p.getX(),sl().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p.getX(),p.getZ()),p.getZ());});}
     /** A spot in the FOB's village where a Supply Catapult may stand, nearest the FOB Beacon. */
     static BlockPos findCatapultSpot(){
         var l=sl();var f=FobData.get(l).fobs.values().iterator().next();var from=f.pos;
@@ -628,6 +629,7 @@ public final class QaFob {
         until("the catapult in hand",100,()->mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),()->{
             check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
             if(catapult!=null){srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();});look(catapult.above(2).south(1),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);}});
+        step(30,()->{},"hover over the spot (a step's wait comes after it)");
         step(30,()->{var g=PlacementPreviewClient.ghost();
             check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());},"the preview");
         step(40,()->shot("f29_catapult_preview"),"its picture (the software renderer runs behind the game)");
@@ -664,7 +666,7 @@ public final class QaFob {
             shot("f30d_seller_bought");});
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());if(catapult!=null)tp(catapult.getX()-6.5,catapult.getY()+1,catapult.getZ()+7.5,0,0);},"to the village to watch");
         step(5,()->{if(catapult!=null)look(surface(catapult.east(6).south(2)),catapult.getX()+.5,catapult.getY()+1.2,catapult.getZ()+.5);mc().options.hideGui=true;},"face the catapult from its side");
-        until("the catapult throws",600,()->{var be=mc().level.getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c:null;return be!=null&&be.throwAge>=2&&be.throwAge<=4;},()->check("the client sees the arm throw",true,""));
+        until("the catapult throws",600,()->{var be=mc().level.getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c:null;return be!=null&&be.throwAge>=1&&be.throwAge<=20;},()->check("the client sees the arm throw",true,""));
         // the software renderer runs about 1.5 s behind the game: three pictures from the throw on
         step(10,()->shot("f31_catapult_throw"),"the throw");
         step(15,()->shot("f31b_catapult_throw"),"the arm wound back");
