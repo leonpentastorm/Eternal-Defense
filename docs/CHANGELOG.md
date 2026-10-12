@@ -1,5 +1,17 @@
 # Change log
 
+## 0.0.34 — The live catapult, the box as a supply drop, fishing and husbandry as one, a cap on the specialty (2026-10-12, branch `feature/supply-catapult`)
+
+On `feature/supply-catapult`. **Network protocol 39** (a new packet: the catapults' live state for the Command Table). Rules: GDD 0.0.34; tests: `docs/ROUND-0034-TESTING.md`.
+
+* **Watch the catapult from the Command Table** (owner): the specialty seller shows the FOB's Supply Catapult live, however far away: it turns toward your base, throws, the box flies out, and a line says what it is doing. The catapult now turns and throws the same whether anybody is near it or not, and turns back to rest when it has nothing to throw.
+* **The box comes home as a supply drop** (owner): 12 seconds after the throw, counted down in your chat like the Supply Flare's, the parcel appears high over a spot beside your Defense Beacon and comes down by parachute.
+* **Fishing & Animal Husbandry** (owner): one specialty with both lists and both icons (fishing alone was too thin). Existing FOBs with either keep their choice.
+* **The FOB screen says if the Supply Catapult is ONLINE or OFFLINE** (owner), and why. The research tab's level 5 reads "Supply Catapult + Specialty Shop", and reaching it is announced.
+* **The radio** (owner): Contact Specialty Seller has a handheld radio icon and plays the owner's radio static; every purchase plays one of the owner's four order lines.
+* **Nerf** (owner, after a playtest): a specialty sends at most 4 S-tier items' worth an hour, however big the FOB, its research or the slots switched off (it could reach 12 an hour).
+* **Fixed:** a research gift that passed several unlocks at once announced only the highest one.
+
 ## 0.0.33 — The Supply Catapult and the specialty seller (2026-10-12, branch `feature/supply-catapult`)
 
 On `feature/supply-catapult` (the owner asked for a feature branch). **Network protocol 38** (the seller's buttons and table data, a new entity). Rules: GDD 0.0.33; tests: `docs/ROUND-0033-TESTING.md`.

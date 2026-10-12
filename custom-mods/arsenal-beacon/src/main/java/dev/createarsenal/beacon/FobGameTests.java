@@ -978,10 +978,23 @@ public final class FobGameTests {
             float diff=((be.target-aim)%360+540)%360-180;
             h.assertTrue(Math.abs(diff)<1&&be.throwsSeen==1,"it turned to face the beacon ("+be.target+" vs "+aim+") and threw once");
             h.assertTrue(!l.getEntitiesOfClass(SupplyCatapult.ThrownSupply.class,new AABB(CATAPULT).inflate(20)).isEmpty(),"the box flies off");
-            long due=fob.shipments.get(0).getLong("due");
-            h.assertTrue(due-l.getGameTime()>=CatapultRules.flightTicks(Math.hypot(fob.pos.getX()-beacon.getX(),fob.pos.getZ()-beacon.getZ()))-30,"it lands after the flight home");
-            fob.shipments.get(0).putLong("due",l.getGameTime());   // the flight home is not waited for here
+            var ship=fob.shipments.get(0);long due=ship.getLong("due"),spawnAt=ship.getLong("spawnAt"),now=l.getGameTime();
+            h.assertTrue(due-now>=CatapultRules.FLIGHT_TICKS-30&&due-now<=CatapultRules.FLIGHT_TICKS,"it lands 12 s after the throw, as a supply drop: "+(due-now));
+            h.assertTrue(spawnAt>=0&&spawnAt<=due&&ship.contains("spot"),"its landing spot is planned beside the beacon");
+            // the countdown is not waited for here: the parcel appears now and lands a fall later
+            ship.putLong("spawnAt",now);ship.putLong("due",now+(due-spawnAt));
+        }).thenWaitUntil(()->h.assertTrue(fob(l).shipments.isEmpty()||fob(l).shipments.get(0).getBoolean("spawned"),"the parcel appears"))
+        .thenExecute(()->{
+            var fob=fob(l);if(fob.shipments.isEmpty())return;
+            var ship=fob.shipments.get(0);var spot=BlockPos.of(ship.getLong("spot"));
+            var parcels=l.getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(spot).inflate(2,48,2));
+            h.assertTrue(parcels.size()==1,"one parcel over its spot: "+parcels.size());
+            if(ship.getBoolean("outside"))h.assertTrue(parcels.get(0).getY()>=spot.getY()+SupportRules.PARCEL_MIN_DROP-1,"it appears high above the spot and comes down by parachute: y "+parcels.get(0).getY()+" over "+spot.getY());
         }).thenWaitUntil(()->h.assertTrue(fob(l).shipments.isEmpty(),"the box landed"))
+        .thenExecute(()->{
+            var m=fob(l).motion;float back=((m.target-m.rest)%360+540)%360-180;
+            h.assertTrue(Math.abs(back)<1,"with nothing left to throw the catapult turns back to its rest heading ("+m.target+" vs "+m.rest+")");
+        })
         .thenExecute(()->{
             var parcels=l.getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(beacon).inflate(8,48,8));
             h.assertTrue(parcels.size()==1&&parcels.get(0).box.countItem(Items.GHAST_TEAR)==1,"a parcel with the ghast tear beside the beacon: "+parcels.size());

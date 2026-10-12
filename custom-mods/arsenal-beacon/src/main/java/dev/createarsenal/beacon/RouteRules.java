@@ -19,9 +19,22 @@ final class RouteRules {
      */
     enum Slot{EMERALD,MINE,FARM,SPECIALTY;String id(){return name().toLowerCase(Locale.ROOT);}}
     /** A FOB's specialty, rolled when it is planted (only a new FOB, taken back with the shovel and planted again, rolls another). */
-    enum Specialty{FISHING,HUSBANDRY,POTIONS,TRADER,MONSTERS;String id(){return name().toLowerCase(Locale.ROOT);}
-        List<Loot> options(){return switch(this){case FISHING->FISHING_LOOT;case HUSBANDRY->HUSBANDRY_LOOT;case POTIONS->POTION_LOOT;case TRADER->TRADER_LOOT;case MONSTERS->MONSTER_LOOT;};}
+    /**
+     * A village's specialty. 0.0.34 (owner): fishing and animal husbandry are one specialty, "Fishing & Animal Husbandry", with both lists
+     * and both icons (fishing alone was too thin to fill a slot). Saved by {@link #id()} since 0.0.34; before, by the ordinal of the five of
+     * 0.0.32 ({@link #legacy}).
+     */
+    enum Specialty{FISHING_HUSBANDRY,POTIONS,TRADER,MONSTERS;String id(){return name().toLowerCase(Locale.ROOT);}
+        List<Loot> options(){return switch(this){case FISHING_HUSBANDRY->FISHING_HUSBANDRY_LOOT;case POTIONS->POTION_LOOT;case TRADER->TRADER_LOOT;case MONSTERS->MONSTER_LOOT;};}
+        /** Its icons (textures/gui/tribute): the merged one shows the fisher's and the herder's side by side. */
+        List<String> icons(){return this==FISHING_HUSBANDRY?List.of("spec_fishing","spec_husbandry"):List.of("spec_"+id());}
         static Specialty of(int ordinal){var v=values();return v[Math.floorMod(ordinal,v.length)];}
+        /** The specialty a 0.0.31 to 0.0.33 save meant by its ordinal (fishing, husbandry, potions, trader, monsters). */
+        static Specialty legacy(int ordinal){return switch(Math.floorMod(ordinal,5)){case 0,1->FISHING_HUSBANDRY;case 2->POTIONS;case 3->TRADER;default->MONSTERS;};}
+        /** By id; null for none. */
+        static Specialty byId(String id){for(var s:values())if(s.id().equals(id))return s;return null;}
+        /** By id as the client gets it, Fishing & Animal Husbandry for an unknown one. */
+        static Specialty orFirst(String id){var s=byId(id);return s==null?FISHING_HUSBANDRY:s;}
     }
     /**
      * One item a slot can send and what it is worth in tribute value (one common item is 1): the higher the value, the more trips one item
@@ -55,6 +68,8 @@ final class RouteRules {
     /** Specialty, animal husbandry: every meat and leather. */
     static final List<Loot> HUSBANDRY_LOOT=List.of(plain("minecraft:beef",1.5),plain("minecraft:porkchop",1.5),plain("minecraft:chicken",1),
         plain("minecraft:mutton",1),plain("minecraft:rabbit",2),plain("minecraft:leather",1.5),plain("minecraft:rabbit_hide",1));
+    /** 0.0.34: the merged specialty's list, the fisher's first. */
+    static final List<Loot> FISHING_HUSBANDRY_LOOT=java.util.stream.Stream.concat(FISHING_LOOT.stream(),HUSBANDRY_LOOT.stream()).toList();
     /**
      * Specialty, potion makers: every brewing ingredient of 1.20.1, by the owner's tiers, cheapest first. D: sugar, redstone, glowstone,
      * gunpowder. C: golden carrot, glistering melon, spider eye, fermented spider eye. B: magma cream, nether wart. A: phantom membrane,
@@ -171,8 +186,16 @@ final class RouteRules {
     /** Pure: the tribute value one trip gives a slot: the trip's value shared by the slots that are on, times the slot's research bonus. */
     static double budget(Slot slot,Yield y){
         if(!y.on()[slot.ordinal()])return 0;
-        return perHour(y.distance(),y.villagers())*tripHours(y.distance(),y.period())/Math.max(1,enabled(y.on()))*slotMultiplier(slot,y.level());
+        double hours=tripHours(y.distance(),y.period());
+        double value=perHour(y.distance(),y.villagers())*hours/Math.max(1,enabled(y.on()))*slotMultiplier(slot,y.level());
+        return slot==Slot.SPECIALTY?Math.min(value,SPECIALTY_MAX_PER_HOUR*hours):value;
     }
+    /**
+     * 0.0.34 (owner, after a playtest of the potion makers at research 5 with every other slot off: 12 S-tier items an hour): the specialty
+     * slot makes at most 4 S-tier items' worth an hour (64 value), however big the FOB, the research or the boost from slots switched off.
+     * The 30-minute floor (2 an hour at research 4 with every slot on, the slowest FOB) is under it.
+     */
+    static final double SPECIALTY_MAX_PER_HOUR=4*TIER_VALUE[5];
     /** Pure: the value a slot adds to its tally per trip (the emerald slot never less than {@link #EMERALD_MIN} emeralds). */
     static double perTrip(Slot slot,Yield y){
         double b=budget(slot,y);

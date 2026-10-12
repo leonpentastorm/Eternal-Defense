@@ -38,6 +38,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
          * (overworld game time: the throw when not loaded, the landing when flying).
          */
         BlockPos catapult;final List<CompoundTag> shipments=new ArrayList<>();
+        /** 0.0.34: the catapult's turning and throwing, run with the FOB (seen or not); its heading and rest heading are saved. */
+        CatapultRules.Motion motion=new CatapultRules.Motion(0);
         /** The gate pair of this FOB (null: not placed). */
         BlockPos deliveryGate,receivingGate;
         /** The route was opened by a ride; its one-way time T in ticks; the inspection clock (ticks of play left). */
@@ -57,7 +59,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
          * at planting, and each slot's tally (tribute value carried over between trips; whole items leave it).
          */
         final boolean[] slotOn={true,true,true,true};
-        int mine,farm,special;RouteRules.Specialty specialty=RouteRules.Specialty.FISHING;
+        int mine,farm,special;RouteRules.Specialty specialty=RouteRules.Specialty.FISHING_HUSBANDRY;
         final double[] tally=new double[RouteRules.Slot.values().length];
         /**
          * The Receiving Gate's tribute storage, a double chest's worth; players only take from it. Made on first use (an item stack needs the
@@ -144,13 +146,18 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         f.workers=f.stockpile.getInt("workers");
         f.catapult=r.contains("catapult")?BlockPos.of(r.getLong("catapult")):null;f.shipments.clear();
         for(var t:r.getList("shipments",Tag.TAG_COMPOUND))f.shipments.add((CompoundTag)t);
+        f.motion=new CatapultRules.Motion(r.getFloat("catapultRest"));if(r.contains("catapultYaw"))f.motion.yaw=f.motion.prevYaw=f.motion.target=r.getFloat("catapultYaw");
         var note=r.getCompound("noted");for(String id:note.getAllKeys())if(note.getInt(id)>0)f.note.put(id,note.getInt(id));
         // 0.0.31: the loot slots (a FOB from before gets its specialty from its id, every slot on, the first choice of each)
         var t=r.getCompound("tribute");
-        f.specialty=t.contains("specialty")?RouteRules.Specialty.of(t.getInt("specialty")):RouteRules.Specialty.of((int)f.id);
+        // 0.0.34: saved by name; a save of 0.0.31 to 0.0.33 holds the ordinal of five specialties (fishing and husbandry are one now)
+        var named=RouteRules.Specialty.byId(t.getString("spec"));
+        f.specialty=named!=null?named:t.contains("specialty")?RouteRules.Specialty.legacy(t.getInt("specialty")):RouteRules.Specialty.of((int)f.id);
+        boolean wasHusbandry=named==null&&t.contains("specialty")&&Math.floorMod(t.getInt("specialty"),5)==1;
         if(t.contains("on")){byte[] on=t.getByteArray("on");for(int i=0;i<f.slotOn.length&&i<on.length;i++)f.slotOn[i]=on[i]!=0;}
         if(RouteRules.enabled(f.slotOn)==0)f.slotOn[0]=true;
         f.mine=t.getInt("mine");f.farm=t.getInt("farm");f.special=t.getInt("special");
+        if(wasHusbandry)f.special+=RouteRules.FISHING_LOOT.size();   // its choice pointed into the husbandry list, which now follows the fisher's
         long[] tally=t.getLongArray("tally");for(int i=0;i<f.tally.length&&i<tally.length;i++)f.tally[i]=Math.max(0,Double.longBitsToDouble(tally[i]));
         f.zoneColumns=t.getLongArray("zone");f.researchXp=Math.max(0,t.getInt("research"));
         if(t.contains("depot",Tag.TAG_LIST))f.depotSaved=t.getList("depot",Tag.TAG_COMPOUND);
@@ -173,8 +180,9 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         f.stockpile.putInt("workers",f.workers);
         if(f.catapult!=null)r.putLong("catapult",f.catapult.asLong());else r.remove("catapult");
         var ships=new ListTag();for(var c:f.shipments)ships.add(c.copy());r.put("shipments",ships);
+        r.putFloat("catapultRest",f.motion.rest);r.putFloat("catapultYaw",f.motion.yaw);
         var note=new CompoundTag();f.note.forEach(note::putInt);r.put("noted",note);r.remove("note");
-        var t=new CompoundTag();t.putInt("specialty",f.specialty.ordinal());
+        var t=new CompoundTag();t.putString("spec",f.specialty.id());
         byte[] on=new byte[f.slotOn.length];for(int i=0;i<on.length;i++)on[i]=(byte)(f.slotOn[i]?1:0);t.putByteArray("on",on);
         t.putInt("mine",f.mine);t.putInt("farm",f.farm);t.putInt("special",f.special);
         long[] tally=new long[f.tally.length];for(int i=0;i<tally.length;i++)tally[i]=Double.doubleToLongBits(f.tally[i]);t.putLongArray("tally",tally);

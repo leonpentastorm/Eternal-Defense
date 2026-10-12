@@ -66,7 +66,7 @@ final class SupplyCatapult {
         }
         @Override public void setPlacedBy(Level l,BlockPos pos,BlockState s,LivingEntity who,ItemStack stack){
             super.setPlacedBy(l,pos,s,who,stack);
-            if(l instanceof ServerLevel server){var f=Fobs.zoneAt(server,pos);if(f!=null&&(f.catapult==null||!present(server,f))){link(server,f,pos);if(who instanceof ServerPlayer sp)say(sp,"catapult.linked",f.name);}}
+            if(l instanceof ServerLevel server){var f=Fobs.zoneAt(server,pos);if(f!=null&&(f.catapult==null||!present(server,f))){link(server,f,pos,CatapultRules.restFor(who.getYRot()));if(who instanceof ServerPlayer sp)say(sp,"catapult.linked",f.name);}}
         }
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
             if(!s.is(next.getBlock())){
@@ -107,7 +107,7 @@ final class SupplyCatapult {
         if(!ArsenalStructures.available(l,pos,ArsenalBeacon.SUPPLY_CATAPULT.get().defaultBlockState()))return "no_room";
         return null;
     }
-    static void link(ServerLevel l,FobData.Fob f,BlockPos pos){f.catapult=pos.immutable();FobData.get(l).setDirty();}
+    static void link(ServerLevel l,FobData.Fob f,BlockPos pos,float rest){f.catapult=pos.immutable();f.motion=new CatapultRules.Motion(rest);FobData.get(l).setDirty();}
     /** The FOB's catapult still stands (a catapult whose land is not loaded is taken as standing). */
     static boolean present(ServerLevel l,FobData.Fob f){
         if(f.catapult==null)return false;
@@ -124,60 +124,37 @@ final class SupplyCatapult {
         else say(p,"catapult.status.ready",f.name,f.shipments.size(),CatapultRules.MAX_QUEUE);
     }
 
+    /**
+     * The catapult block's entity: only what the clients draw. Since 0.0.34 the turning and throwing run with the FOB ({@link #tick}); on the
+     * server this copies the FOB's heading and loaded box and sends them on, every client turns the frame with the same motor, and the throw
+     * reaches the clients as block event 1.
+     */
     static final class CatapultEntity extends BlockEntity {
         /** Degrees, unwrapped, as the support cannon's turret: {@code target} is synced, the motor turns {@code yaw} to it on every side. */
         float target,yaw,prevYaw,speed;
         /** Ticks into the current throw (-1: none); the box shows in the cup while {@code loaded} (synced). */
-        int throwAge=-1,settled;boolean loaded;
-        /** Throws since the chunk loaded (not saved), for tests. */
+        int throwAge=-1;boolean loaded;
+        /** Throws seen here since the chunk loaded (not saved), for tests. */
         int throwsSeen;
         private final float[] motor=new float[2];
         CatapultEntity(BlockPos pos,BlockState s){super(ArsenalBeacon.CATAPULT_ENTITY.get(),pos,s);}
         /** The arm's pitch now (degrees, 0 cocked), between ticks. */
         float armAngle(float partial){return throwAge<0?0:CatapultRules.armAngle(throwAge+partial);}
         boolean payloadShown(){return loaded&&(throwAge<0||throwAge<CatapultRules.RELEASE_TICK);}
-        boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
-        void aim(float goal){
-            float diff=goal-yaw;diff=((diff%360)+540)%360-180;float next=yaw+diff;
-            if(Math.abs(next-target)>0.3f){target=next;settled=0;sync();}
-        }
         void sync(){setChanged();if(level instanceof ServerLevel s)s.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         void tick(Level level){
-            motor[0]=yaw;motor[1]=speed;prevYaw=yaw;SupportCannon.spin(motor,target,.8f);yaw=motor[0];speed=motor[1];
-            if(throwAge>=0&&++throwAge>=CatapultRules.CYCLE)throwAge=-1;
-            if(level.isClientSide)return;
-            var server=(ServerLevel)level;
-            if(throwAge==CatapultRules.RELEASE_TICK){release(server);return;}
-            if(throwAge>=0)return;
-            var d=FobData.get(server);var f=d.byCatapult(worldPosition);
-            var ship=f==null?null:waiting(f);
-            if(ship==null){if(loaded){loaded=false;sync();}return;}
-            var base=CampaignData.get(server.getServer().overworld());if(!base.installed())return;
-            if(!loaded){loaded=true;sync();server.playSound(null,worldPosition,SoundEvents.CROSSBOW_LOADING_START,SoundSource.BLOCKS,1.5f,.6f);}
-            aim(CatapultRules.yawTo(worldPosition.getX()+.5,worldPosition.getZ()+.5,base.beacon.getX()+.5,base.beacon.getZ()+.5));
-            settled=ready()?settled+1:0;
-            if(settled>=CatapultRules.SETTLE_TICKS){
-                settled=0;throwAge=0;throwsSeen++;ship.putString("stage","throwing");d.setDirty();
-                server.blockEvent(worldPosition,getBlockState().getBlock(),1,0);
-                server.playSound(null,worldPosition,SoundEvents.CROSSBOW_SHOOT,SoundSource.BLOCKS,2.5f,.5f);
-                server.playSound(null,worldPosition,SoundEvents.PLAYER_ATTACK_SWEEP,SoundSource.BLOCKS,1.5f,.6f);
+            if(level.isClientSide){
+                motor[0]=yaw;motor[1]=speed;prevYaw=yaw;SupportCannon.spin(motor,target,.8f);yaw=motor[0];speed=motor[1];
+                if(throwAge>=0&&++throwAge>=CatapultRules.CYCLE)throwAge=-1;
+                return;
             }
+            var f=FobData.get((ServerLevel)level).byCatapult(worldPosition);if(f==null)return;
+            var m=f.motion;yaw=prevYaw=m.yaw;
+            if(Math.abs(m.target-target)>0.3f||m.loaded!=loaded){target=m.target;loaded=m.loaded;sync();}
         }
-        /** The box leaves the cup: a thrown box to see, and the shipment is in the air (it lands beside the beacon, {@link #second}). */
-        private void release(ServerLevel server){
-            var d=FobData.get(server);var f=d.byCatapult(worldPosition);loaded=false;sync();
-            var at=CatapultRules.release(yaw,1.6);
-            var box=new ThrownSupply(ArsenalBeacon.THROWN_SUPPLY.get(),server);
-            box.setPos(worldPosition.getX()+at[0],worldPosition.getY()+at[1],worldPosition.getZ()+at[2]);box.setDeltaMovement(at[3],at[4],at[5]);
-            server.addFreshEntity(box);
-            server.playSound(null,worldPosition,SoundEvents.WOODEN_TRAPDOOR_CLOSE,SoundSource.BLOCKS,2f,.5f);
-            if(f!=null)for(var ship:f.shipments)if(ship.getString("stage").equals("throwing")){thrown(server,f,ship);d.setDirty();break;}
-        }
-        @Override public boolean triggerEvent(int id,int param){if(id==1){throwAge=0;return true;}return super.triggerEvent(id,param);}
-        @Override protected void saveAdditional(CompoundTag n){super.saveAdditional(n);n.putFloat("Target",target);n.putFloat("Yaw",yaw);}
-        @Override public void load(CompoundTag n){super.load(n);target=n.getFloat("Target");yaw=prevYaw=n.contains("Yaw")?n.getFloat("Yaw"):target;speed=0;}
-        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putBoolean("Loaded",loaded);return n;}
-        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");loaded=n.getBoolean("Loaded");if(!synced){synced=true;yaw=prevYaw=target;}}
+        @Override public boolean triggerEvent(int id,int param){if(id==1){throwAge=0;throwsSeen++;return true;}return super.triggerEvent(id,param);}
+        @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putFloat("Yaw",yaw);n.putBoolean("Loaded",loaded);return n;}
+        @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");loaded=n.getBoolean("Loaded");if(!synced){synced=true;yaw=prevYaw=n.contains("Yaw")?n.getFloat("Yaw"):target;}}
         @Override public void onDataPacket(net.minecraft.network.Connection net,ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
         private boolean synced;
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
@@ -185,41 +162,85 @@ final class SupplyCatapult {
     }
     /** The first shipment not yet thrown. */
     static CompoundTag waiting(FobData.Fob f){for(var ship:f.shipments)if(ship.getString("stage").equals("wait"))return ship;return null;}
-    /** A shipment leaves the catapult: it flies home, the buyer is told when it lands. */
-    static void thrown(ServerLevel l,FobData.Fob f,CompoundTag ship){
-        var base=CampaignData.get(l.getServer().overworld());
-        double distance=Math.hypot(f.pos.getX()-base.beacon.getX(),f.pos.getZ()-base.beacon.getZ());int flight=CatapultRules.flightTicks(distance);
-        ship.putString("stage","flying");ship.putLong("due",l.getGameTime()+flight);
-        var buyer=ship.hasUUID("buyer")?l.getServer().getPlayerList().getPlayer(ship.getUUID("buyer")):null;
-        if(buyer!=null)buyer.sendSystemMessage(Component.translatable("gui.arsenal_beacon.catapult.thrown",f.name,Math.round(flight/20.0)).withStyle(ChatFormatting.GOLD));
-    }
 
-    // ---- once a second (from Fobs.tick): shipments no loaded catapult throws, and boxes landing -------------------------------------------------------
-    static void second(ServerLevel l,FobData d){
-        long now=l.getGameTime();
+    // ---- every tick (overworld): the catapults turn and throw, the boxes come home ----------------------------------------------------------------
+    static void tick(ServerLevel l,int clock){
+        if(l.getServer().getPlayerList().getPlayerCount()==0)return;
+        var d=FobData.get(l);var base=CampaignData.get(l.getServer().overworld());long now=l.getGameTime();
         for(var f:d.fobs.values()){
-            if(f.shipments.isEmpty())continue;
-            boolean seen=f.catapult!=null&&l.isPositionEntityTicking(f.catapult)&&l.getBlockState(f.catapult).is(ArsenalBeacon.SUPPLY_CATAPULT.get());
-            for(var ship:List.copyOf(f.shipments)){
-                String stage=ship.getString("stage");
-                if(stage.equals("wait")&&!seen){
-                    // nobody sees the catapult: it throws after a short while all the same
-                    if(ship.getLong("due")==0){ship.putLong("due",now+CatapultRules.UNSEEN_THROW_TICKS);d.setDirty();}
-                    else if(now>=ship.getLong("due")){thrown(l,f,ship);d.setDirty();}
-                }else if(stage.equals("throwing")&&!seen){thrown(l,f,ship);d.setDirty();}   // the catapult's land unloaded mid-throw
-                else if(stage.equals("flying")&&now>=ship.getLong("due")&&land(l,f,ship)){f.shipments.remove(ship);d.setDirty();}
+            if(f.catapult!=null&&present(l,f))swing(l,d,f,base);
+            else for(var ship:f.shipments)if(!ship.getString("stage").equals("flying")){thrown(l,f,ship);d.setDirty();}   // taken down: what was bought still comes
+            for(var ship:List.copyOf(f.shipments))if(ship.getString("stage").equals("flying")&&fly(l,f,ship,now)){f.shipments.remove(ship);d.setDirty();}
+        }
+        View.send(l,d,clock);
+    }
+    /** One tick of a standing catapult: turn, throw, let go; what nobody is near to see is only counted. */
+    private static void swing(ServerLevel l,FobData d,FobData.Fob f,CampaignData base){
+        var ship=base.installed()?waiting(f):null;var pos=f.catapult;
+        float goal=base.installed()?CatapultRules.yawTo(pos.getX()+.5,pos.getZ()+.5,base.beacon.getX()+.5,base.beacon.getZ()+.5):f.motion.rest;
+        var event=f.motion.step(ship!=null,goal);
+        boolean seen=l.isPositionEntityTicking(pos);
+        // a throw cut short (the game was closed mid-throw): the box is on its way all the same
+        if(!f.motion.throwing())for(var s:f.shipments)if(s.getString("stage").equals("throwing")){thrown(l,f,s);d.setDirty();}
+        switch(event){
+            case LOADED->{if(seen)l.playSound(null,pos,SoundEvents.CROSSBOW_LOADING_START,SoundSource.BLOCKS,1.5f,.6f);}
+            case THROW->{
+                ship.putString("stage","throwing");d.setDirty();
+                if(seen){
+                    l.blockEvent(pos,l.getBlockState(pos).getBlock(),1,0);
+                    l.playSound(null,pos,SoundEvents.CROSSBOW_SHOOT,SoundSource.BLOCKS,2.5f,.5f);l.playSound(null,pos,SoundEvents.PLAYER_ATTACK_SWEEP,SoundSource.BLOCKS,1.5f,.6f);
+                }
             }
+            case RELEASE->{
+                if(seen){
+                    var at=CatapultRules.release(f.motion.yaw,1.6);
+                    var box=new ThrownSupply(ArsenalBeacon.THROWN_SUPPLY.get(),l);
+                    box.setPos(pos.getX()+at[0],pos.getY()+at[1],pos.getZ()+at[2]);box.setDeltaMovement(at[3],at[4],at[5]);
+                    l.addFreshEntity(box);l.playSound(null,pos,SoundEvents.WOODEN_TRAPDOOR_CLOSE,SoundSource.BLOCKS,2f,.5f);
+                }
+                for(var s:f.shipments)if(s.getString("stage").equals("throwing")){thrown(l,f,s);d.setDirty();break;}
+            }
+            default->{}
         }
     }
-    /** The box comes down beside the Defense Beacon (the Supply Flare's parcel, its parachute when the sky is open). False while the base's land is not loaded. */
-    static boolean land(ServerLevel l,FobData.Fob f,CompoundTag ship){
+    /**
+     * A shipment leaves the catapult. 0.0.34 (owner): it comes home as a Supply Flare's parcel: a 12-second countdown in the buyer's chat,
+     * the parcel appearing high over a spot beside the Defense Beacon and coming down by parachute as the count ends.
+     */
+    static void thrown(ServerLevel l,FobData.Fob f,CompoundTag ship){
+        long now=l.getGameTime();
+        ship.putString("stage","flying");ship.putLong("thrown",now);ship.putLong("due",now+CatapultRules.FLIGHT_TICKS);ship.putLong("spawnAt",-1);
+        plan(l,ship);
+        var buyer=buyer(l,ship);
+        if(buyer!=null)buyer.sendSystemMessage(Component.translatable("gui.arsenal_beacon.catapult.thrown",f.name,CatapultRules.FLIGHT_TICKS/20).withStyle(ChatFormatting.GOLD));
+    }
+    /** Picks where the parcel comes down and when it must appear to land on time; waits while the base's land is not loaded. */
+    private static void plan(ServerLevel l,CompoundTag ship){
         var home=l.getServer().overworld();var base=CampaignData.get(home);
-        if(!base.installed()||!home.hasChunkAt(base.beacon))return false;
-        BlockPos spot=landing(home,base.beacon);
-        ListTag items=ship.getList("items",Tag.TAG_COMPOUND);
-        if(spot==null)SupportCalls.deliver(home,null,Vec3.atBottomCenterOf(base.beacon.above(2)),items,false,0);
-        else{int clear=SupportCalls.clearAbove(home,spot);SupportCalls.deliver(home,null,Vec3.atBottomCenterOf(spot),items,clear>=SupportRules.PARCEL_MIN_DROP,clear);}
-        var buyer=ship.hasUUID("buyer")?l.getServer().getPlayerList().getPlayer(ship.getUUID("buyer")):null;
+        if(ship.getLong("spawnAt")>=0||!base.installed()||!home.hasChunkAt(base.beacon))return;
+        BlockPos spot=landing(home,base.beacon);boolean outside=false;int clear=0;
+        if(spot==null)spot=base.beacon.above(2);
+        else{clear=SupportCalls.clearAbove(home,spot);outside=home.canSeeSky(spot)&&clear>=SupportRules.PARCEL_MIN_DROP;}
+        ship.putLong("spot",spot.asLong());ship.putInt("clear",clear);ship.putBoolean("outside",outside);
+        ship.putLong("spawnAt",CatapultRules.spawnAt(ship.getLong("due"),clear,outside));
+    }
+    private static ServerPlayer buyer(ServerLevel l,CompoundTag ship){return ship.hasUUID("buyer")?l.getServer().getPlayerList().getPlayer(ship.getUUID("buyer")):null;}
+    /** One tick of a box on its way: the countdown, the parcel appearing, the landing. True when it is home. */
+    private static boolean fly(ServerLevel l,FobData.Fob f,CompoundTag ship,long now){
+        long due=ship.getLong("due");var buyer=buyer(l,ship);
+        if(buyer!=null&&now<due&&(due-now)%20==0)buyer.sendSystemMessage(Component.translatable("gui.arsenal_beacon.support.countdown",(due-now)/20).withStyle(ChatFormatting.YELLOW));
+        plan(l,ship);
+        long spawnAt=ship.getLong("spawnAt");
+        if(!ship.getBoolean("spawned")&&spawnAt>=0&&now>=spawnAt){
+            var home=l.getServer().overworld();if(!home.hasChunkAt(BlockPos.of(ship.getLong("spot"))))return false;
+            boolean outside=ship.getBoolean("outside");int clear=ship.getInt("clear");
+            SupportCalls.deliver(home,null,Vec3.atBottomCenterOf(BlockPos.of(ship.getLong("spot"))),ship.getList("items",Tag.TAG_COMPOUND),outside,clear);
+            ship.putBoolean("spawned",true);
+            // late (the base's land was not loaded): the box still lands after its whole fall
+            if(now>spawnAt)ship.putLong("due",now+(outside?(long)Math.ceil(clear/SupportRules.PARCEL_FALL_SPEED):0));
+            FobData.get(l).setDirty();
+        }
+        if(!ship.getBoolean("spawned")||now<ship.getLong("due"))return false;
         if(buyer!=null)buyer.sendSystemMessage(Component.translatable("gui.arsenal_beacon.catapult.landed",f.name,ship.getInt("count"),Component.translatable(ship.getString("name"))).withStyle(ChatFormatting.GOLD));
         log("{}: a box of {} {} landed at the beacon",f.name,ship.getInt("count"),ship.getString("item"));
         return true;
@@ -234,6 +255,38 @@ final class SupplyCatapult {
             if(clear>=SupportRules.PARCEL_DROP_HEIGHT)return cell;
         }
         return best;
+    }
+
+    /**
+     * S2C, every tick while somebody has a Command Table open (0.0.34, owner): each catapult's heading, throw and boxes, so the seller's view
+     * draws it live however far away it stands.
+     */
+    record View(List<Entry> entries){
+        record Entry(long fob,float yaw,int throwAge,boolean loaded,int waiting,int flying,int landsIn){}
+        static void send(ServerLevel l,FobData d,int clock){
+            var viewers=TacticalScan.viewers(l);if(viewers.isEmpty())return;
+            long now=l.getGameTime();var list=new ArrayList<Entry>();
+            for(var f:d.fobs.values()){
+                if(f.catapult==null)continue;
+                int waiting=0,flying=0;long soonest=Long.MAX_VALUE;
+                for(var ship:f.shipments){if(ship.getString("stage").equals("flying")){flying++;soonest=Math.min(soonest,ship.getLong("due"));}else waiting++;}
+                list.add(new Entry(f.id,f.motion.yaw,f.motion.throwAge,f.motion.loaded,waiting,flying,flying==0?-1:(int)Math.max(0,(soonest-now+19)/20)));
+            }
+            var msg=new View(list);
+            for(var viewer:viewers)BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->viewer),msg);
+        }
+        static void encode(View m,net.minecraft.network.FriendlyByteBuf b){
+            b.writeVarInt(m.entries.size());
+            for(var e:m.entries){b.writeVarLong(e.fob);b.writeFloat(e.yaw);b.writeByte(e.throwAge);b.writeBoolean(e.loaded);b.writeByte(e.waiting);b.writeByte(e.flying);b.writeVarInt(e.landsIn+1);}
+        }
+        static View decode(net.minecraft.network.FriendlyByteBuf b){
+            int n=Math.min(64,b.readVarInt());var list=new ArrayList<Entry>();
+            for(int i=0;i<n;i++)list.add(new Entry(b.readVarLong(),b.readFloat(),b.readByte(),b.readBoolean(),b.readByte(),b.readByte(),b.readVarInt()-1));
+            return new View(list);
+        }
+        static void handle(View m,java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctx){
+            ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->CatapultView.receive(m)));ctx.get().setPacketHandled(true);
+        }
     }
 
     // ---- the specialty seller (the Command Table's FOBs tab) -------------------------------------------------------------------------------------
@@ -268,9 +321,18 @@ final class SupplyCatapult {
         ship.putString("stage","wait");ship.putLong("due",0);ship.putString("item",loot.id());ship.putString("name",type.getDescriptionId());ship.putInt("count",count);
         f.shipments.add(ship);d.setDirty();
         log("{}: {} bought {} {} for {} Ardent Energy",f.name,p.getGameProfile().getName(),count,loot.id(),price);
+        radio(p);
         return "tactical.seller.bought";
     }
 
+    /** The owner's order lines (0.0.34): one plays to the buyer at random on every purchase, never the same twice in a row. */
+    static final int ORDER_LINES=4;
+    private static final java.util.Map<java.util.UUID,Integer> LAST_ORDER=new java.util.HashMap<>();
+    static void radio(ServerPlayer p){
+        int line=SupportChatter.pick(java.util.stream.IntStream.rangeClosed(1,ORDER_LINES).toArray(),LAST_ORDER.getOrDefault(p.getUUID(),0),p.getRandom().nextInt());
+        LAST_ORDER.put(p.getUUID(),line);
+        p.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(net.minecraft.core.Holder.direct(ArsenalSounds.orderChatter(line)),SoundSource.VOICE,p.getX(),p.getY(),p.getZ(),1f,1f,p.getRandom().nextLong()));
+    }
     static void say(ServerPlayer p,String key,Object... args){p.displayClientMessage(Component.translatable("gui.arsenal_beacon."+key,args),true);}
     private static void log(String text,Object... args){com.mojang.logging.LogUtils.getLogger().info("[catapult] "+text,args);}
 

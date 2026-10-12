@@ -155,7 +155,8 @@ final class RouteTest {
         for(var spec:Specialty.values())assertTrue(unlocked(spec.options().get(0),0),spec+": its first item is open at level 0");
         // research makes every slot bigger: the specialty by a quarter a level, the rest by a twentieth
         var at0=y(ALL,1000,10,.4,0);var at5=y(ALL,1000,10,.4,5);
-        assertEquals(2.25,budget(Slot.SPECIALTY,at5)/budget(Slot.SPECIALTY,at0),1e-9);assertEquals(1.25,budget(Slot.FARM,at5)/budget(Slot.FARM,at0),1e-9);
+        // (on a small FOB: a big one's specialty reaches the 0.0.34 cap of 4 S-tier items an hour, Round0034Test)
+        assertEquals(2.25,budget(Slot.SPECIALTY,y(ALL,MIN_SEPARATION,3,.4,5))/budget(Slot.SPECIALTY,y(ALL,MIN_SEPARATION,3,.4,0)),1e-9);assertEquals(1.25,budget(Slot.FARM,at5)/budget(Slot.FARM,at0),1e-9);
     }
     @Test void theSlotsThatAreOnShareTheTrip(){
         boolean[] farmOnly={false,false,true,false},two={false,true,true,false};
@@ -211,7 +212,7 @@ final class RouteTest {
         assertEquals(TIER_VALUE[5],find(TRADER_LOOT,"blue_ice").value(),1e-9,"the dearest trade is an S");
         assertEquals(5,find(TRADER_LOOT,"nautilus_shell").tier());assertEquals(4,find(TRADER_LOOT,"slime_ball").tier());assertEquals(0,find(TRADER_LOOT,"oak_sapling").tier());
         assertEquals(6,find(TRADER_LOOT,"blue_ice").price());
-        assertEquals(5,Specialty.values().length);
+        assertEquals(4,Specialty.values().length);   // 0.0.34: fishing and animal husbandry are one
         for(var spec:Specialty.values())assertFalse(spec.options().isEmpty());
         for(var list:List.of(MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT,MONSTER_LOOT))for(var l:list)assertFalse(l.id().contains("arsenal")||l.id().contains("coin"),"no currency of the mod: "+l.id());
     }

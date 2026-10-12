@@ -55,7 +55,7 @@ final class Round0032Test {
     /** 0.0.32: a round medallion with a villager at the job for every loot slot, every specialty and research; the first flat icons kept. */
     @Test void everySlotAndSpecialtyHasItsIcon() throws Exception{
         var names=new java.util.ArrayList<String>(List.of("slot_emerald","slot_mine","slot_farm","slot_specialty","research","lock"));
-        for(var spec:Specialty.values())names.add("spec_"+spec.id());
+        for(var spec:Specialty.values())names.addAll(spec.icons());   // 0.0.34: fishing and animal husbandry share one specialty, both icons
         for(String name:names){
             Path icon=Path.of(EnchantTest.ASSETS+"textures/gui/tribute/"+name+".png"),flat=Path.of(EnchantTest.ASSETS+"textures/gui/tribute/flat/"+name+".png");
             var img=javax.imageio.ImageIO.read(icon.toFile());

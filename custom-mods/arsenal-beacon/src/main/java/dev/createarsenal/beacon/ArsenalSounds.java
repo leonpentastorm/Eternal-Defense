@@ -41,6 +41,14 @@ final class ArsenalSounds {
     static final RegistryObject<SoundEvent> TACTICAL_ACCEPT=of("tactical.accept"),TACTICAL_REFUSED=of("tactical.refused"),TACTICAL_SCAN=of("tactical.scan"),
         TACTICAL_SCAN_DONE=of("tactical.scan_done"),TACTICAL_CONTACT=of("tactical.contact");
     /**
+     * The specialty seller's radio (0.0.34, the owner's recordings, tools/audio/import_chatter.py): static as the Command Table makes contact,
+     * and one of four order lines when a purchase goes through ({@link SupplyCatapult#ORDER_LINES}).
+     */
+    static final RegistryObject<SoundEvent> SELLER_STATIC=of("seller.radio_static");
+    private static final List<RegistryObject<SoundEvent>> ORDER_CHATTER=java.util.stream.IntStream.rangeClosed(1,SupplyCatapult.ORDER_LINES).mapToObj(n->of("seller.order_chatter_"+n)).toList();
+    /** One order line (1-based). */
+    static SoundEvent orderChatter(int line){return ORDER_CHATTER.get(line-1).get();}
+    /**
      * The jingle of a cleared mission. A placeholder until the owner's song arrives: its sounds.json entry plays the victory fanfare. Dropping
      * the song in as {@code sounds/music/mission_cleared.ogg} and pointing the entry at it is all that is needed.
      */

@@ -232,6 +232,9 @@ final class Ui {
         UiButton painter(Painter p){painter=p;return this;}
         /** For rows that paint their own content. */
         UiButton noLabel(){label=false;return this;}
+        /** 0.0.34: a 16 x 16 icon at the left of the label (the label is centred in what is left). */
+        net.minecraft.resources.ResourceLocation icon;
+        UiButton icon(net.minecraft.resources.ResourceLocation icon){this.icon=icon;return this;}
         @Override protected void renderWidget(GuiGraphics g,int mx,int my,float partial){
             Minecraft mc=Minecraft.getInstance();Font font=mc.font;
             boolean hover=isHovered()&&active,pressed=hover&&mc.mouseHandler.isLeftPressed(),focus=isFocused();
@@ -264,7 +267,12 @@ final class Ui {
                 g.drawString(font,(on?t("on"):t("off")).getVisualOrderText(),px-font.width(on?t("on"):t("off"))-4,y+(h-8)/2,on?CYAN:MUTED,false);
                 textWidth=w-pw-font.width(t("off"))-24;
             }
-            int tx=look==Look.TOGGLE?x+8:x+w/2-Math.min(textWidth,font.width(getMessage()))/2;
+            if(icon!=null){
+                if(!active)com.mojang.blaze3d.systems.RenderSystem.setShaderColor(.55f,.55f,.55f,1f);
+                g.blit(icon,x+3,y+(h-16)/2,0,0,16,16,16,16);com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f,1f,1f,1f);
+                textWidth=w-24;
+            }
+            int tx=look==Look.TOGGLE?x+8:icon!=null?x+19+(w-22-Math.min(textWidth,font.width(getMessage())))/2:x+w/2-Math.min(textWidth,font.width(getMessage()))/2;
             if(locked){g.fill(x+6,y+h/2-1,x+12,y+h/2+4,ink);g.fill(x+7,y+h/2-4,x+8,y+h/2-1,ink);g.fill(x+10,y+h/2-4,x+11,y+h/2-1,ink);g.fill(x+7,y+h/2-4,x+11,y+h/2-3,ink);tx=Math.max(tx,x+16);}
             g.drawString(font,fit(font,getMessage(),textWidth-(locked?10:0)),tx,y+(h-8)/2,ink,false);
         }

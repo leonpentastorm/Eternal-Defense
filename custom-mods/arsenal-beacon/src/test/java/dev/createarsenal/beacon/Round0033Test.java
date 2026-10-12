@@ -56,7 +56,8 @@ final class Round0033Test {
         // turned to the east (the cannon's yaw -90) it flies east
         double[] e=CatapultRules.release(-90,1);assertEquals(.707,e[3],1e-9);assertEquals(0,e[5],1e-9);
         assertEquals(-90,CatapultRules.yawTo(0,0,10,0),1e-4);assertEquals(0,CatapultRules.yawTo(0,0,0,-10),1e-4);
-        assertEquals(100,CatapultRules.flightTicks(0));assertEquals(600,CatapultRules.flightTicks(100_000));assertEquals(500,CatapultRules.flightTicks(1000));
+        // 0.0.34: the flight home is the Supply Flare's 12 seconds whatever the distance (Round0034Test)
+        assertEquals(240,CatapultRules.FLIGHT_TICKS);
     }
     @Test void sellerButtonsHaveTheirOwnIds(){
         assertTrue(15*16+15<SupplyCatapult.SELL,"the table's own buttons (action x 16 + argument) stay below");
@@ -103,5 +104,5 @@ final class Round0033Test {
         for(String f:List.of("SupplyCatapult.java","SupportCannon.java"))
             assertTrue(SosTest.source(f).contains("public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}"),f);
     }
-    @Test void theProtocolIs38(){assertTrue(SosTest.source("BeaconNetwork.java").contains("\"38-standalone\":\"38-pack\""));}
+    
 }

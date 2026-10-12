@@ -214,7 +214,7 @@ public final class TacticalClient {
                 }
                 long id=f.getLong("id");String closed=f.getString("seller");int sw=sellButtonWidth(f);
                 if(sw>0){
-                    var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;rebuildWidgets();}));
+                    var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;contact();rebuildWidgets();}).icon(RADIO));
                     sell.active=closed.isEmpty();
                     sell.setTooltip(net.minecraft.client.gui.components.Tooltip.create(closed.isEmpty()?Ui.t("tactical.seller.tip"):Ui.t("tactical.seller.closed."+closed,f.getInt("level"),CatapultRules.SELLER_LEVEL)));
                 }
@@ -227,22 +227,29 @@ public final class TacticalClient {
         private final List<Ui.UiButton> sellButtons=new ArrayList<>();
         /** The row's seller button: its whole label when the row's lines still fit beside it, else the short one. */
         private int sellButtonWidth(CompoundTag f){
-            int full=font.width(Ui.t("tactical.seller.open"))+16,other=f.getBoolean("sos")?116:0;
+            int full=font.width(Ui.t("tactical.seller.open"))+16+RADIO_W,other=f.getBoolean("sos")?116:0;
             int need=Math.max(font.width(where(f)),f.getBoolean("sos")?font.width(Ui.t("tactical.fob.sos",FobClient.sosTime(f.getLong("sosLeft")),FobClient.sosTime(Math.max(1,data.getLong("sosTotal"))))):font.width(route(f)));
-            int shortW=font.width(Ui.t("tactical.seller.open.short"))+16;
+            int shortW=font.width(Ui.t("tactical.seller.open.short"))+16+RADIO_W;
             if(fobW()-16-full-4-other>=need)return full;
             // an SOS row is crowded by Reprint SOS map: the seller steps aside there on a small window until the SOS is over
             return fobW()-16-shortW-4-other>=need||!f.getBoolean("sos")?shortW:0;
         }
-        private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}
+        private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16+RADIO_W<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}
+        /** 0.0.34 (owner): the handheld radio on Contact Specialty Seller, and its static as the line opens (the owner's recording). */
+        static final net.minecraft.resources.ResourceLocation RADIO=new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,"textures/gui/radio.png");
+        static final int RADIO_W=16;
+        private static void contact(){Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(ArsenalSounds.SELLER_STATIC.get(),1f,1f));}
         private Component where(CompoundTag f){return Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));}
         private Component route(CompoundTag f){return f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");}
         /** The FOB the seller is open for, or null (it is gone, or its seller closed). */
         private CompoundTag seller(){if(sellerFob<0)return null;for(var f:fobs())if(f.getLong("id")==sellerFob&&f.getString("seller").isEmpty())return f;return null;}
-        private RouteRules.Specialty specialtyOf(CompoundTag f){for(var s:RouteRules.Specialty.values())if(s.id().equals(f.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
+        private RouteRules.Specialty specialtyOf(CompoundTag f){return RouteRules.Specialty.orFirst(f.getString("specialty"));}
         private int sellTop(){return radarY+28;}
         private int sellBottom(){return topPos+imageHeight-56;}
-        private int sellCols(){return Math.max(1,(fobW())/22);}
+        private int sellCols(){return Math.max(1,(fobW()-viewW()-8)/22);}
+        /** 0.0.34 (owner): the live catapult at the right of the seller, the grid at its left. */
+        private int viewW(){return Math.max(90,Math.min(150,fobW()*2/5));}
+        private int viewX(){return fobX()+fobW()-viewW();}
         private int sellRows(){return Math.max(1,(sellBottom()-sellTop())/22);}
         private void sellerView(){
             var f=seller();var options=RouteRules.options(RouteRules.Slot.SPECIALTY,specialtyOf(f));sellButtons.clear();
@@ -273,11 +280,17 @@ public final class TacticalClient {
             int x=fobX(),w=fobW(),y=radarY;
             Component balance=data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("tactical.seller.ardent",data.getInt("ardent"));
             Ui.text(g,font,Ui.t("tactical.seller.title",f.getString("name")),x,y,Ui.BRASS,w-font.width(balance)-8);Ui.right(g,font,balance,x+w,y,Ui.INK);
-            GateClient.tributeIcon(g,"spec_"+spec.id(),x,y+11);
+            int iw=GateClient.specialtyIcons(g,spec.id(),x,y+11)+3;
             Component sub=Ui.t("tactical.seller.sub",Ui.t("gate.specialty."+spec.id()),data.getInt("lotPrice"),f.getInt("queue"),data.getInt("maxQueue"));
-            Ui.text(g,font,sub,x+19,y+15,Ui.MUTED,w-19);
+            Ui.text(g,font,sub,x+iw,y+15,Ui.MUTED,w-iw);
             int cols=sellCols(),total=(options.size()+cols-1)/cols;
-            if(total>sellRows()){Component more=Ui.t("tactical.seller.scroll");Ui.text(g,font,more,x,sellBottom()+1,Ui.MUTED,w);}
+            if(total>sellRows()){Component more=Ui.t("tactical.seller.scroll");Ui.text(g,font,more,x,sellBottom()+1,Ui.MUTED,viewX()-x-8);}
+            // the catapult itself, live, and what it is doing
+            int vx=viewX(),vy=sellTop(),vw=viewW(),vh=sellBottom()-sellTop()+10;
+            Ui.inset(g,vx,vy,vw,vh);
+            CatapultView.draw(g,f.getLong("id"),vx+1,vy+1,vw-2,vh-14);
+            var live=CatapultView.of(f.getLong("id"));
+            Ui.text(g,font,CatapultView.caption(live),vx+4,vy+vh-11,live!=null&&live.now().throwAge()>=0?Ui.BRASS:Ui.INK,vw-8);
             var loot=options.get(Math.max(0,Math.min(sellerItem,options.size()-1)));int lot=CatapultRules.lotSize(loot);
             int dy=topPos+imageHeight-40;g.renderItem(GateClient.icon(loot.id()),x,dy+1);
             Ui.text(g,font,Ui.t("tactical.seller.lot",lot,GateClient.icon(loot.id()).getHoverName()),x+19,dy+5,Ui.INK,sellDetailRight-x-19);
@@ -302,7 +315,7 @@ public final class TacticalClient {
                 Ui.card(g,x,y,w,h-3,sos?Ui.RED:FobClient.stateColor(state));
                 int chip=Ui.chip(g,font,Ui.t("fob.state."+state),x+w-8-Math.min(90,font.width(Ui.t("fob.state."+state))+12),y+4,FobClient.stateColor(state),90);
                 // 0.0.32: the specialty's icon and the research level (five pips) left of the state
-                int sx=x+w-8-chip-20;GateClient.tributeIcon(g,"spec_"+f.getString("specialty"),sx,y+2);
+                int sx=x+w-8-chip-4-GateClient.specialtyIconsWidth(f.getString("specialty"));GateClient.specialtyIcons(g,f.getString("specialty"),sx,y+2);
                 Ui.pips(g,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-4,y+7,f.getInt("level"),RouteRules.MAX_LEVEL,FobClient.OLIVE);
                 Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-12-x-8);
                 Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));

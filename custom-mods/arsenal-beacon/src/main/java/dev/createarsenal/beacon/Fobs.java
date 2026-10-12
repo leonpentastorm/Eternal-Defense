@@ -116,7 +116,6 @@ final class Fobs {
             if(loaded&&clock%FobRules.ZONE_REFRESH_TICKS==0)tagVillagers(l,f);
         }
         FobSos.second(l,d);   // the SOS clock, the open SOS and its raid (0.0.25)
-        SupplyCatapult.second(l,d);   // the specialty seller's boxes: thrown unseen, landing at the beacon (0.0.33)
     }
     /** A raid at the FOB ended: won makes it ACTIVE, lost makes it DOWN, no result leaves it as it was (the raid can be called again). */
     static void end(ServerLevel l,FobData.Fob f,FobRules.Outcome outcome,boolean villagersLost){
@@ -188,6 +187,7 @@ final class Fobs {
         for(int i=0;i<RESEARCH_ITEMS.size();i++)n.putInt("carry."+RESEARCH_ITEMS.get(i),carried(p,researchItem(i)));   // 0.0.32: for the research tab
         n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-FobData.get(l).onlineTicks):-1);
         FobSos.state(FobData.get(l),f,n);   // the SOS, the lost villagers and the repair (0.0.25)
+        n.putString("catapult",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),"online"));   // 0.0.34 (owner): online or why not
         n.putString("message",message);
         return n;
     }
@@ -238,8 +238,13 @@ final class Fobs {
         log("{}: {} gave {} {} to the research ({} points, level {})",f.name,p.getGameProfile().getName(),n,RESEARCH_ITEMS.get(kind),f.researchXp,f.level());
         int after=f.level();
         if(after>before){
-            String opens=after>=RouteRules.UNLOCK_S&&before<RouteRules.UNLOCK_S?".s":after>=RouteRules.UNLOCK_A&&before<RouteRules.UNLOCK_A?".a":"";
-            announce(l,Component.translatable("gui.arsenal_beacon.fob.research.levelup"+opens,f.name,after));
+            // every unlock passed is told (a big gift can pass several): the A tier, the S tier, the Supply Catapult and Specialty Shop (0.0.34)
+            var opens=new ArrayList<String>();
+            if(after>=RouteRules.UNLOCK_A&&before<RouteRules.UNLOCK_A)opens.add(".a");
+            if(after>=RouteRules.UNLOCK_S&&before<RouteRules.UNLOCK_S)opens.add(".s");
+            if(after>=CatapultRules.SELLER_LEVEL&&before<CatapultRules.SELLER_LEVEL)opens.add(".seller");
+            if(opens.isEmpty())opens.add("");
+            for(String o:opens)announce(l,Component.translatable("gui.arsenal_beacon.fob.research.levelup"+o,f.name,after));
             for(var pos:new BlockPos[]{f.deliveryGate,f.receivingGate})if(pos!=null)for(var viewer:l.getServer().getPlayerList().getPlayers())
                 if(viewer.containerMenu instanceof RailGates.GateMenu m&&m.pos.equals(pos))Routes.open(viewer,pos,"");
             refreshScreens(l,f);

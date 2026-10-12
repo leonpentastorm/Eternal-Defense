@@ -95,7 +95,10 @@ public final class GateClient {
      *  at 16 x 16 GUI pixels, so it shows every pixel from GUI scale 2 up. */
     static void tributeIcon(GuiGraphics g,String name,int x,int y){g.blit(tributeTexture(name),x,y,16,16,0,0,32,32,32,32);}
     /** The icon of a loot slot: its own for emeralds, the mine and the farm; the village's specialty for the specialty slot. */
-    static String slotIcon(String slot,String specialty){return slot.equals("specialty")?"spec_"+specialty:"slot_"+slot;}
+    static String slotIcon(String slot,String specialty){return slot.equals("specialty")?RouteRules.Specialty.orFirst(specialty).icons().get(0):"slot_"+slot;}
+    /** A specialty's icons side by side (0.0.34: fishing and animal husbandry, one specialty, shows both); returns the width drawn. */
+    static int specialtyIcons(GuiGraphics g,String specialty,int x,int y){var icons=RouteRules.Specialty.orFirst(specialty).icons();for(int i=0;i<icons.size();i++)tributeIcon(g,icons.get(i),x+i*17,y);return specialtyIconsWidth(specialty);}
+    static int specialtyIconsWidth(String specialty){return RouteRules.Specialty.orFirst(specialty).icons().size()*17-1;}
     static int tierColor(int tier){return switch(tier){case 1->0xff9aa5b1;case 2->0xff5fbf5a;case 3->0xff4aa3ff;case 4->0xffb06bff;case 5->0xffffb02e;default->Ui.MUTED;};}
     /** A tier's letter in a small dark box (D grey, C green, B blue, A purple, S gold, as item rarities read). */
     static void tierBadge(GuiGraphics g,net.minecraft.client.gui.Font font,int tier,int x,int y){
@@ -134,7 +137,7 @@ public final class GateClient {
         private boolean linked(){return data.getBoolean("linked");}
         private boolean choosing(){return receiving()&&(!linked()||relink);}
         private List<CompoundTag> slots(){var out=new ArrayList<CompoundTag>();for(var t:data.getList("slots",Tag.TAG_COMPOUND))out.add((CompoundTag)t);return out;}
-        private RouteRules.Specialty specialty(){for(var s:RouteRules.Specialty.values())if(s.id().equals(data.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
+        private RouteRules.Specialty specialty(){return RouteRules.Specialty.orFirst(data.getString("specialty"));}
         /** The countdown, counted on from the last state (ticks of play pass while the player is here). */
         long nextIn(){long n=data.getLong("nextIn");return n<0?-1:Math.max(0,n-(net.minecraft.Util.getMillis()-receivedAt)/50);}
         private int countH(){return imageHeight>=300?36:22;}
@@ -309,9 +312,10 @@ public final class GateClient {
             for(int i=0;i<slots.size();i++){
                 var s=slots.get(i);int y=cardsY+13+i*cardH;boolean on=s.getBoolean("on");
                 Ui.card(g,rx,y,rw,h,on?slotColor(i):Ui.EDGE);
-                int tx=rx+46+38,tw=rw-(tx-rx)-(i>0?72:8);
-                tributeIcon(g,slotIcon(s.getString("slot"),data.getString("specialty")),rx+44,y+(h-16)/2);
-                g.renderItem(icon(s.getString("item")),rx+62,y+(h-16)/2);
+                boolean special=s.getString("slot").equals("specialty");int extra=special?specialtyIconsWidth(data.getString("specialty"))-16:0;
+                int tx=rx+46+38+extra,tw=rw-(tx-rx)-(i>0?72:8);
+                if(special)specialtyIcons(g,data.getString("specialty"),rx+44,y+(h-16)/2);else tributeIcon(g,slotIcon(s.getString("slot"),data.getString("specialty")),rx+44,y+(h-16)/2);
+                g.renderItem(icon(s.getString("item")),rx+62+extra,y+(h-16)/2);
                 Component name=slotTitle(s.getString("slot"),data.getString("specialty")),item=icon(s.getString("item")).getHoverName(),rate=rate(s.getDouble("perTrip"),perHour);
                 if(tall()){
                     Ui.text(g,font,name,tx,y+4,on?slotColor(i):Ui.MUTED,tw);

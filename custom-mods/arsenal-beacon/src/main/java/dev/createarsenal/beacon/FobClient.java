@@ -105,6 +105,8 @@ public final class FobClient {
         private int tabsX;
         private record Hover(int x,int y,ItemStack stack,int level){}
         private final List<Hover> hoverItems=new ArrayList<>();
+        /** Where the Supply Catapult's line was drawn (for its tooltip), or null. */
+        private int[] catapultLine;
         private final List<Ui.UiButton> give=new ArrayList<>();
         /** The research tab's columns: what the levels open on the left, what to give on the right. */
         private int resLeftW(){return (imageWidth-24)*55/100;}
@@ -148,7 +150,7 @@ public final class FobClient {
          */
         private void drawResearch(GuiGraphics g){
             int x=leftPos+12,w=imageWidth-24,y=bodyY,xp=data.getInt("researchXp"),level=data.getInt("level"),max=RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL];
-            var specialty=RouteRules.Specialty.FISHING;for(var s:RouteRules.Specialty.values())if(s.id().equals(data.getString("specialty")))specialty=s;
+            var specialty=RouteRules.Specialty.orFirst(data.getString("specialty"));
             hoverItems.clear();
             GateClient.tributeIcon(g,"research",x,y-3);
             Component title=Ui.t("fob.research.title"),lv=Ui.t("fob.research.level",level,RouteRules.MAX_LEVEL);
@@ -166,9 +168,14 @@ public final class FobClient {
                 boolean reached=l<=level;int tier=l==RouteRules.UNLOCK_S?5:l==RouteRules.UNLOCK_A?4:0;
                 var items=new ArrayList<RouteRules.Loot>();if(tier>0)for(var o:specialty.options())if(o.tier()==tier)items.add(o);
                 g.fill(x,ly+3,x+11,ly+14,reached?OLIVE:Ui.TRACK);Ui.text(g,font,Component.literal(Integer.toString(l)),x+3,ly+5,reached?0xff101418:Ui.MUTED);
-                Component what=items.isEmpty()?Ui.t("fob.research.bonus",Math.round(RouteRules.SPECIALTY_PER_LEVEL*100),Math.round(RouteRules.OTHER_PER_LEVEL*100))
+                // 0.0.34 (owner): the top level opens the Supply Catapult and the specialty shop, said plainly with the catapult beside it
+                boolean seller=l==CatapultRules.SELLER_LEVEL;
+                Component what=seller?(font.width(Ui.t("fob.research.seller"))+16+20<=lw?Ui.t("fob.research.seller"):Ui.t("fob.research.seller.short"))
+                    :items.isEmpty()?Ui.t("fob.research.bonus",Math.round(RouteRules.SPECIALTY_PER_LEVEL*100),Math.round(RouteRules.OTHER_PER_LEVEL*100))
                     :Ui.t("fob.research.tier",RouteRules.TIERS.substring(tier,tier+1));
-                int tw=Math.min(font.width(what),lw-16);Ui.text(g,font,what,x+16,ly+5,reached?Ui.INK:items.isEmpty()?Ui.MUTED:GateClient.tierColor(tier),tw);
+                int tw=Math.min(font.width(what),lw-16-(seller?20:0));Ui.text(g,font,what,x+16,ly+5,reached?Ui.INK:seller?Ui.BRASS:items.isEmpty()?Ui.MUTED:GateClient.tierColor(tier),tw);
+                if(seller){var cat=new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get());int cx=x+16+tw+4;g.renderItem(cat,cx,ly+1);hoverItems.add(new Hover(cx,ly+1,cat,l));
+                    if(!reached){g.pose().pushPose();g.pose().translate(0,0,200);g.fill(cx,ly+1,cx+16,ly+17,0x90101418);g.pose().popPose();}}
                 // the items it opens, as many as fit
                 int ix=x+16+tw+4;
                 for(var o:items){if(ix+16>x+lw)break;var stack=GateClient.icon(o.id());g.renderItem(stack,ix,ly+1);hoverItems.add(new Hover(ix,ly+1,stack,l));if(!reached){g.pose().pushPose();g.pose().translate(0,0,200);g.fill(ix,ly+1,ix+16,ly+17,0x90101418);g.pose().popPose();}ix+=17;}
@@ -184,21 +191,25 @@ public final class FobClient {
             }
             int ny=giveRowY(KINDS.length)+4;
             Ui.text(g,font,Ui.t("fob.research.now"),rx,ny,Ui.BRASS,rw);ny+=12;
-            GateClient.tributeIcon(g,"spec_"+specialty.id(),rx,ny);
+            int iw=GateClient.specialtyIcons(g,specialty.id(),rx,ny);
             Component spec=Component.literal("+"+Math.round((RouteRules.slotMultiplier(RouteRules.Slot.SPECIALTY,level)-1)*100)+"%");
-            Ui.text(g,font,spec,rx+18,ny+4,level>0?OLIVE:Ui.MUTED);
-            int ox=rx+18+font.width(spec)+8;
+            Ui.text(g,font,spec,rx+iw+2,ny+4,level>0?OLIVE:Ui.MUTED);
+            int ox=rx+iw+2+font.width(spec)+8;
             for(String slot:List.of("emerald","mine","farm")){GateClient.tributeIcon(g,"slot_"+slot,ox,ny);ox+=17;}
             Ui.text(g,font,Component.literal("+"+Math.round((RouteRules.slotMultiplier(RouteRules.Slot.FARM,level)-1)*100)+"%"),ox+1,ny+4,level>0?OLIVE:Ui.MUTED);
             if(!active())Ui.wrap(g,font,Ui.t("fob.research.closed"),rx,ny+22,rw,Ui.ORANGE,2);
         }
         /** Left: the state, the village, and the raid (or what to do next). */
         private void drawVillage(GuiGraphics g){
-            int x=leftX,w=colW,y=bodyY;String state=state();
+            int x=leftX,w=colW,y=bodyY;String state=state();catapultLine=null;
             Ui.chip(g,font,Ui.t("fob.state."+state),x,y,stateColor(state),w);y+=17;
             Ui.text(g,font,Ui.t("fob.screen.villagers",data.getInt("villagers")),x,y,Ui.INK,w);y+=11;
             Ui.text(g,font,Ui.t("fob.screen.places",data.getInt("beds"),data.getInt("jobs")),x,y,Ui.MUTED,w);y+=11;
             y=bodyY+OUTLINE_Y+22;   // the zone outline switch
+            // 0.0.34 (owner): the Supply Catapult, online or offline and why
+            String cat=data.getString("catapult");
+            if(!cat.isEmpty()){Component line=cat.equals("online")?Ui.t("fob.catapult.online"):Ui.t("fob.catapult.offline."+cat,CatapultRules.SELLER_LEVEL);
+                Ui.text(g,font,line,x,y,cat.equals("online")?OLIVE:Ui.MUTED,w);catapultLine=new int[]{x,y,Math.min(w,font.width(line)),9};y+=13;}
             int bottom=topPos+imageHeight-(callButton.visible||repairButton.visible&&!down()?54:20);
             if(data.getBoolean("sos")&&!data.getBoolean("raid")){   // an SOS from this FOB, no raid yet (0.0.25)
                 Ui.card(g,x,y,w,Math.min(48,bottom-y),Ui.RED);
@@ -225,8 +236,8 @@ public final class FobClient {
         private void drawTribute(GuiGraphics g){
             int x=midX,w=colW,y=bodyY;
             Ui.text(g,font,Ui.t("fob.tribute.title"),x,y+2,Ui.BRASS,w);Ui.rule(g,x+font.width(Ui.t("fob.tribute.title"))+6,y+6,Math.max(0,w-font.width(Ui.t("fob.tribute.title"))-6));y+=16;
-            GateClient.tributeIcon(g,"spec_"+data.getString("specialty"),x,y-3);   // 0.0.32: the specialty's icon, its research level
-            y=Ui.wrap(g,font,Ui.t("fob.tribute.specialty",Ui.t("gate.specialty."+data.getString("specialty")),data.getInt("level")),x+19,y,w-19,Ui.MUTED,2)+3;
+            int iw=GateClient.specialtyIcons(g,data.getString("specialty"),x,y-3)+3;   // 0.0.32: the specialty's icon (0.0.34: or two), its research level
+            y=Ui.wrap(g,font,Ui.t("fob.tribute.specialty",Ui.t("gate.specialty."+data.getString("specialty")),data.getInt("level")),x+iw,y,w-iw,Ui.MUTED,2)+3;
             var slots=data.getList("slots",net.minecraft.nbt.Tag.TAG_COMPOUND);double perHour=data.getDouble("tripsPerHour");
             for(int i=0;i<slots.size();i++){
                 var s=slots.getCompound(i);boolean on=s.getBoolean("on");var stack=GateClient.icon(s.getString("item"));
@@ -313,6 +324,7 @@ public final class FobClient {
                 for(var h:hoverItems)if(Ui.inside(mx,my,h.x(),h.y(),16,16)){g.renderComponentTooltip(font,List.of(h.stack().getHoverName(),Ui.t("fob.research.opens.at",h.level())),mx,my);return;}
                 return;
             }
+            if(catapultLine!=null&&Ui.inside(mx,my,catapultLine[0],catapultLine[1],catapultLine[2],catapultLine[3])){g.renderTooltip(font,font.split(Ui.t("fob.catapult.tip"),200),mx,my);return;}
             if(down())return;   // the repair replaces the shop
             // a shop row: the flare's own tooltip
             for(int i=0;i<Fobs.SHOP.size();i++){int ry=bodyY+16+i*26;if(Ui.inside(mx,my,rightX,ry,shopW-50,24)){g.renderTooltip(font,new ItemStack(flare(Fobs.SHOP.get(i))),mx,my);return;}}

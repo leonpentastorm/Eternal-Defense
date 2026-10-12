@@ -346,7 +346,7 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.integrationTests"))IntegrationTests.tick();
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
         Hunts.tick(l,d,clock);
-        Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);
+        Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);SupplyCatapult.tick(l,clock);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
             BeaconNetwork.syncNearby(l,d);

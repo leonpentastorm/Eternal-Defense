@@ -280,5 +280,35 @@
       "arsenal_beacon:sfx/tactical_contact"
     ],
     "subtitle": "subtitles.arsenal_beacon.tactical.contact"
+  },
+  "seller.order_chatter_1": {
+    "sounds": [
+      "arsenal_beacon:sfx/order_chatter_1"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.seller.order_chatter"
+  },
+  "seller.order_chatter_2": {
+    "sounds": [
+      "arsenal_beacon:sfx/order_chatter_2"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.seller.order_chatter"
+  },
+  "seller.order_chatter_3": {
+    "sounds": [
+      "arsenal_beacon:sfx/order_chatter_3"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.seller.order_chatter"
+  },
+  "seller.order_chatter_4": {
+    "sounds": [
+      "arsenal_beacon:sfx/order_chatter_4"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.seller.order_chatter"
+  },
+  "seller.radio_static": {
+    "sounds": [
+      "arsenal_beacon:sfx/radio_static"
+    ],
+    "subtitle": "subtitles.arsenal_beacon.seller.radio_static"
   }
 }

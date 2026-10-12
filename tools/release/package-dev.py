@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.33, branch feature/supply-catapult: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.34, branch feature/supply-catapult: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,23 +25,24 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # six screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
-BUNDLED_SHOTS={'standalone-f29_catapult_preview.png','standalone-f29b_catapult_model.png','standalone-f30b_seller.png','standalone-f31_catapult_throw.png','standalone-f31d_parcel_at_beacon.png','standalone-f32_beacon_preview.png'}
+BUNDLED_SHOTS={'standalone-f29_catapult_preview.png','standalone-f29b_catapult_model.png','standalone-f30b_seller.png','standalone-f31_catapult_throw.png','standalone-f31d_parcel_at_beacon.png','standalone-f32_beacon_preview.png',
+    'standalone-f30f_seller_live_throw.png','standalone-f30h_seller_box_in_air.png','standalone-f31e_parcel_parachute.png','standalone-f29d_fob_catapult_online.png','standalone-f23d_fob_research_top.png','standalone-f17m_gate_fishing_husbandry.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 38 since 0.0.33 (37 in 0.0.32): 0.0.33 adds the seller's buttons, the Command
-Table's catapult data and the thrown box, so an older client cannot join this server or the other way round. Install this build on the client AND the
-server.
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 39 since 0.0.34 (38 in 0.0.33): 0.0.34 adds the catapults' live state for
+the Command Table, so an older client cannot join this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
 (or right after) and place it again. A world from 0.0.30 keeps its FOBs: each gets a specialty from its number and every slot on,
 and what its old stockpile held moves into the Receiving Gate's storage. A world from 0.0.31 keeps its FOBs at research level 0
-(a potion makers' choice may point at another ingredient: the list now runs D to S; choose again). Keep existing worlds separate from this test instance.
+(a potion makers' choice may point at another ingredient: the list now runs D to S; choose again). A world from 0.0.31 to 0.0.33 keeps its
+FOBs' specialties: fishing and animal husbandry both become Fishing & Animal Husbandry, with the same item chosen. Keep existing worlds separate from this test instance.
 This ZIP holds ONE edition (EDITION): install all FOUR JARs of its folder on both client and server, replacing old
 versions. Never mix pack and standalone editions or keep duplicate mod IDs.
 TaCZ Attributes 1.4 is a required backend and is INCLUDED separately (unchanged since v4).
@@ -52,7 +53,27 @@ This ZIP is an update/test bundle, not a complete modpack.
 
 THIS BUILD IS FROM THE FEATURE BRANCH feature/supply-catapult (0.0.32 is on dev).
 
-WHAT IS NEW IN 0.0.33: THE SUPPLY CATAPULT AND THE SPECIALTY SELLER, PLACEMENT PREVIEWS
+WHAT IS NEW IN 0.0.34: THE LIVE CATAPULT, THE SUPPLY DROP, FISHING AND HUSBANDRY AS ONE, A CAP ON THE SPECIALTY
+* The specialty seller shows the FOB's Supply Catapult live, however far away it stands: it turns toward your base, throws, the
+  box flies out, and a line under it says what it does (ready, turning, throwing, the box in the air and when it lands). The
+  catapult now turns and throws the same whether anybody is near it or not, and turns back to rest when it has nothing to throw.
+* The box comes home as a supply drop: your chat counts down 12 seconds like the Supply Flare's, then the parcel appears high
+  over a spot beside your Defense Beacon and comes down by parachute.
+* Contact Specialty Seller has a handheld radio and plays your radio static; every purchase plays one of your four order lines.
+* Fishing & Animal Husbandry is one specialty, both names, both icons, both lists (12 items).
+* The FOB screen says whether the Supply Catapult is ONLINE or OFFLINE, and why. The Research tab's level 5 reads "Supply
+  Catapult + Specialty Shop", and reaching it is announced.
+* Nerf: a specialty sends at most 4 S-tier items' worth an hour (64 value; 8 A-tier, 16 B-tier ...), however big the FOB, its
+  research or the slots switched off. The 30-minute promise (the slowest FOB, research 4, every slot on) is under it.
+
+PLAYTEST SCRIPT FOR 0.0.34 (about 10 minutes)
+1. FOB Beacon: the FOB tab's Supply Catapult line (OFFLINE, why). Research tab: level 5 reads Supply Catapult + Specialty Shop.
+2. With research 5 and a catapult placed: the line reads ONLINE. At home, open the Command Table's FOBs tab, press Contact
+   Specialty Seller (the radio static), Buy 1 lot (an order line): watch the catapult turn and throw in the seller.
+3. Close the table and look up beside your Defense Beacon: the chat counts 12 seconds and the parcel parachutes down.
+4. A potion makers' FOB at research 5 with every other slot off: the gate screen shows at most 4 ghast tears an hour.
+
+WHAT WAS NEW IN 0.0.33: THE SUPPLY CATAPULT AND THE SPECIALTY SELLER, PLACEMENT PREVIEWS
 * Supply Catapult (your model): buy it at Workshop Fabrication (16 logs, 8 iron, 16 string, plus 2 logistics modules in the
   pack or 8 Ardent Energy standalone). Place it in a FOB's village, one per FOB. Mine it with an axe to move it.
 * Command Table, FOBs tab: every FOB row has Contact Specialty Seller. It opens when the FOB is ACTIVE, its research is at
@@ -60,12 +81,12 @@ WHAT IS NEW IN 0.0.33: THE SUPPLY CATAPULT AND THE SPECIALTY SELLER, PLACEMENT P
   specialty: pick one, Buy 1 lot or Buy 4 lots. A lot is worth one S-tier item (1 ghast tear, 2 ender pearls, 16 bones ...)
   and costs 4 Ardent Energy standalone, 2 in the pack. Up to 4 boxes wait at a catapult.
 * After you buy, the catapult turns toward your Defense Beacon, throws the box, and the box parachutes down beside the beacon
-  5 to 30 seconds later (by distance). You read when it is thrown and where it landed. A catapult nobody is near still throws.
+  (0.0.34: 12 seconds later, counted down in chat). You read when it is thrown and where it landed.
 * FOB zone outline: the three lines that followed you are gone; the FOB Beacon's ground level is marked with a tick every block.
 * Placement preview for every block of the mod: hold it and look at the ground for a see-through copy and its outline. The
   Defense Beacon also shows the base zone it would get.
 
-PLAYTEST SCRIPT FOR 0.0.33 (about 10 minutes)
+PLAYTEST SCRIPT FOR 0.0.33
 1. Take a FOB to research level 5 (FOB Beacon, Research tab). Buy a Supply Catapult; hold it in the village: the preview. Place it.
 2. At the Command Table's FOBs tab, press Contact Specialty Seller. Pick an item, Buy 1 lot. Go to the village: the catapult
    turns and throws (or stay home: it throws anyway). Come back home: the box parachutes down beside your beacon.
@@ -390,7 +411,7 @@ Open the cannon menu and scroll the card.
 LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
 Apocalypse gunpack and AppleSkin were not used in these rounds and are not redistributed.
 
-See docs/ROUND-0033-TESTING.md, docs/ROUND-0032-TESTING.md, docs/ROUND-0031-TESTING.md, docs/ROUND-0030-TESTING.md, docs/FOB-SLICE-1-TESTING.md, docs/ROUND-0022-TESTING.md, docs/RAID-ROUND-0021-TESTING.md, docs/TACTICAL-OPERATIONS-TESTING.md, docs/NEW-SOUND-TESTING.md, docs/HAND-TUNED-ROUND-TESTING.md, docs/MUSIC-PLAYER-TESTING.md, docs/BEAUTIFY-PATH-TESTING.md, docs/OPTIMIZE-PATH-TESTING.md, docs/RAIDER-GATES-TESTING.md and
+See docs/ROUND-0034-TESTING.md, docs/ROUND-0033-TESTING.md, docs/ROUND-0032-TESTING.md, docs/ROUND-0031-TESTING.md, docs/ROUND-0030-TESTING.md, docs/FOB-SLICE-1-TESTING.md, docs/ROUND-0022-TESTING.md, docs/RAID-ROUND-0021-TESTING.md, docs/TACTICAL-OPERATIONS-TESTING.md, docs/NEW-SOUND-TESTING.md, docs/HAND-TUNED-ROUND-TESTING.md, docs/MUSIC-PLAYER-TESTING.md, docs/BEAUTIFY-PATH-TESTING.md, docs/OPTIMIZE-PATH-TESTING.md, docs/RAIDER-GATES-TESTING.md and
 docs/STUCK-RAIDERS-TESTING.md for the checks that were actually run (screenshots of rounds before 0.0.22 are in the repository's
 docs/validation, not in this ZIP) and what was not tested (nothing was listened to: the test
 machine has no sound device; the game's audio output was recorded and analysed instead).
