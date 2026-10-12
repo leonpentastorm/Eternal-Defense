@@ -1,8 +1,20 @@
 # Handoff: where the project stands
 
-Last updated for **0.0.32 (village research, the monster hunter guild, a 30-minute S-tier floor, round villager icons, a names switch on the Command Table's map)**, on **`dev`**. Network protocol **37-pack / 37-standalone**. The earlier states are described below.
+Last updated for **0.0.33 (the Supply Catapult and the specialty seller; the FOB zone's ground line; placement previews for every block)**, on the feature branch **`feature/supply-catapult`** (the owner asked for a new feature branch; `dev` holds 0.0.32). Network protocol **38-pack / 38-standalone**. The earlier states are described below.
 
 Current specification: `docs/MESS-HALL-V7-UI.md` (UI and feedback); rules, numbers and recipe matrix are still `docs/MESS-HALL-V6-IMPLEMENTATION.md`. Validation: `docs/MESS-HALL-V7-TESTING.md`.
+
+## The Supply Catapult and the specialty seller (0.0.33, branch `feature/supply-catapult`)
+
+* **What it is.** The owner's message after 0.0.32, with their model (`docs/art/Create-Arsenal-Supply-Catapult`): a new feature branch; the supply catapult, placeable only in FOBs, active when that FOB's research reaches 5; in the Command Table's FOB management, a "Contact Specialty Seller" button, active only at research 5, opening a menu to buy anything of the FOB's specialty loot table with Ardent Energy; after buying, the catapult spins toward the base and launches a package with the item, delivered to the base with the supply beacon (flare) code. Two side quests during the round: the FOB zone box loses the three lines that tracked the player and gets the Defense Beacon's ground-level indicator; every placeable gets the FOB Beacon's 3D placement preview (the Defense Beacon and the FOB with their zone, the others an outline for size). Rules: GDD 0.0.33.
+* **Code map.** `CatapultRules` (pure: lot size and price, the seller's closed reasons, the throw's timing and arm angle, the cup's release point and velocity, the flight home). `SupplyCatapult` (block, item and its placement rules, block entity: aims with the Support Cannon's motor, throws, releases the `ThrownSupply` entity; `second` from `Fobs.tick`: unseen throws and landings; `land` uses `SupportCalls.deliver`; `buy` for the Command Table; button ids from `SELL` = 2^20). `CatapultClient` (frame, arm and box renderer; the thrown box). `FobData.Fob.catapult` and `shipments` (route tag). `Hunts.fobs` (index, catapult, seller, queue; the player's Ardent Energy, the lot price) and `Hunts.button`. `TacticalClient` (the row's seller button, the seller view: grid, lot line, Buy 1 lot / Buy 4 lots, Back). `Economy` (`supply_catapult`, `SELLER_LOT_*`). `ArsenalStructures` (the catapult is a 3 x 3 x 2 structure). `FobOutline`/`FobOutlineClient` (the zone's `ground`). `PlacementPreviewClient` (new), `RailGates.placingSpot`, `BeaconClient.zoneSize`.
+* **Decisions and interpretations to confirm with the owner.**
+  1. A lot is worth one S-tier item (1 S, 2 A, 4 B, 8 C, 16 D, a stack's worth of cheap items) and costs 4 Ardent Energy standalone (twice what the Exchange pays for a ghast tear), 2 in the pack (whose Ardent Energy costs about twice as much to earn); buy 1 or 4 lots; up to 4 boxes wait per FOB.
+  2. "Activates at research 5" also needs the FOB ACTIVE, the catapult standing and the Defense Beacon planted; the button says which is missing in its tooltip.
+  3. The box lands beside the Defense Beacon (2 to 5 blocks out, where the sky is most open), as the Supply Flare's parcel; the flight takes 5 to 30 seconds by distance. A catapult nobody is near throws 3 seconds after the purchase (unseen); a box waits in the air while the beacon's land is not loaded.
+  4. The catapult costs 16 logs, 8 iron, 16 string plus 2 logistics modules (pack) or 8 Ardent Energy (standalone), at Workshop Fabrication; it is mined with an axe and drops itself; boxes already bought are still thrown if it is taken down.
+  5. The Supply Catapult and the box the seller sends are new; the specialty's whole list is on sale (all of it is open at research 5).
+  6. The placement preview covers every block item of the mod (and Gun Displays'); a block whose placement needs the server shows none. Gates show across the rail as placed.
 
 ## Village research, the monster hunter guild, the 30-minute floor, icons (0.0.32)
 
