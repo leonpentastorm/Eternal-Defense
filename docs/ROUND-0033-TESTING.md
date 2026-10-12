@@ -28,7 +28,7 @@ New in 0.0.33:
 * Holding a Supply Catapult in the FOB's village: the ghost catapult and its 3 x 3 x 2 outline where it would stand (`f29`); placed with a right-click, it serves the FOB; the owner's model (`f29b`).
 * The FOB zone outline carries the FOB Beacon's ground level (`f29c`).
 * Command Table, FOBs tab: the row has a catapult and an open seller; Contact Specialty Seller, active (`f30`); the seller opens on the FOB's specialty, its whole grid (`f30b`), the overlap check at the three sizes (`f30c`); Buy 1 lot: bought, the box waits (`f30d`).
-* At the village: the catapult throws (`f31`, `f31b`): it had turned to the beacon and thrown once; the box flies home; at home a parcel comes down beside the beacon with what was bought, the buyer reads where (`f31c`).
+* At the village: the catapult throws (`f31`, `f31b`, `f31c`, seen from the side; at this distance the arm's pose is hard to read in the pictures, the check is the client's own arm angle during the throw): it had turned to the beacon and thrown once; the box flies home; at home a parcel comes down beside the beacon with what was bought (16 Rotten Flesh, the monster hunter guild's), and the buyer reads where (`f31d`).
 * Holding a Defense Beacon: the ghost beacon and the base zone it would get (`f32`); a Command Table: its 2 x 2 x 2 outline (`f32b`).
 
 ### Found by the real-client runs and fixed
@@ -39,7 +39,11 @@ New in 0.0.33:
 * **Second standalone run** (`checks-standalone-second-run.txt`, 250 of 256):
   * **the catapult's throw never reached the clients**: a plain `Block` ignores block events and the server only sends one on when the block takes it, so the arm never moved on screen (the box was thrown and landed all the same). The Support Cannon had the same gap: its recoil was never drawn. Both blocks hand block events to their block entity now;
   * harness: the player was put one block in the air to look at a spot, fell, and looked elsewhere (the FOB Beacon's and the catapult's ghost checks failed); it stands on the ground now.
-RESULT_LATER
+* **Third standalone run** (`checks-standalone-third-run.txt`, 254 of 254): all passed; the catapult's pictures were taken before the software renderer had drawn the moment (it lags about a second and a half), so they were timed again and the throw is now watched from the side.
+* **First pack run** (`checks-pack-first-run.txt`, 253 of 254): the catapult's ghost was not seen (`none`): standing on uneven ground the look ray met another block. Harness: the player now hovers above the spot and looks down at it.
+* **Fourth standalone run** (`checks-standalone-fourth-run-stopped.txt`, 231 passed, stopped): harness faults only. The step after a wait for a condition ran at once (the ghost check came before the look had settled); the spot to watch the throw from was read on land not loaded yet, which reads as the bottom of the world, so the player was put there and fell out of the world (every check after it failed at the death screen); the window to catch the throw was too narrow. The harness now loads the land before reading its ground, waits after the hover and gives the throw a wider window. The run was stopped at the death screen.
+* **Fifth standalone run** (`checks-standalone.txt`): 255 of 255.
+PACK_LATER
 
 ## Not tested
 

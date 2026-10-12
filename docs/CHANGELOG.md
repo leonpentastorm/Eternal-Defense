@@ -9,6 +9,7 @@ On `feature/supply-catapult` (the owner asked for a feature branch). **Network p
 * **The throw** (owner): the catapult turns toward your Defense Beacon, throws the box, and the box parachutes down beside the beacon (the Supply Flare's parcel). A catapult nobody is near still throws.
 * **FOB zone outline** (owner): the three lines that followed you are gone; the FOB Beacon's ground level is marked with a tick every block, like the Defense Beacon's zone.
 * **Placement preview for everything** (owner): every block of the mod shows a see-through copy and its outline where it would be placed; the Defense Beacon also shows the base zone it would get.
+* **Fixed:** the Support Cannon's recoil was never drawn on screen (its block event never reached the clients); the catapult had the same gap and both now pass it on.
 
 ## 0.0.32 — Village research, the monster hunter guild, a 30-minute S-tier floor, icons (2026-10-12)
 
