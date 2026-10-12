@@ -1,5 +1,15 @@
 # Change log
 
+## 0.0.33 — The Supply Catapult and the specialty seller (2026-10-12, branch `feature/supply-catapult`)
+
+On `feature/supply-catapult` (the owner asked for a feature branch). **Network protocol 38** (the seller's buttons and table data, a new entity). Rules: GDD 0.0.33; tests: `docs/ROUND-0033-TESTING.md`.
+
+* **Supply Catapult** (owner's model): a wooden onager for a FOB's village, one per FOB, bought at Workshop Fabrication (16 logs, 8 iron, 16 string, plus 2 logistics modules in the pack or 8 Ardent Energy standalone).
+* **Contact Specialty Seller** on the Command Table's FOBs tab (owner): open when the FOB is ACTIVE, its research at level 5 and its catapult placed. Every item of the FOB's specialty, for Ardent Energy: a lot is worth one S-tier item (1 ghast tear, 2 ender pearls, 16 bones ...) and costs 4 Ardent Energy standalone, 2 in the pack; buy 1 lot or 4; up to 4 boxes wait at the catapult.
+* **The throw** (owner): the catapult turns toward your Defense Beacon, throws the box, and the box parachutes down beside the beacon (the Supply Flare's parcel). A catapult nobody is near still throws.
+* **FOB zone outline** (owner): the three lines that followed you are gone; the FOB Beacon's ground level is marked with a tick every block, like the Defense Beacon's zone.
+* **Placement preview for everything** (owner): every block of the mod shows a see-through copy and its outline where it would be placed; the Defense Beacon also shows the base zone it would get.
+
 ## 0.0.32 — Village research, the monster hunter guild, a 30-minute S-tier floor, icons (2026-10-12)
 
 On `dev`. **Network protocol 37** (the gate and FOB states carry the research; new FOB buttons for research gifts). Rules: GDD 0.0.32; tests: `docs/ROUND-0032-TESTING.md`.
