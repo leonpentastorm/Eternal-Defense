@@ -1,0 +1,120 @@
+QA_CHECK PASS the station is 2 wide and 2 tall: its three other cells are parts 
+QA_CHECK PASS Mk I: the mixing menu is locked 
+QA_CHECK PASS Mk I: no tabs, no tiles 
+QA_CHECK PASS the storage is shown, empty 
+QA_CHECK PASS awkward potions stay in the stand (no effect yet) minecraft:awkward total 0
+QA_CHECK PASS the finished Speed potions moved into the storage total 3
+QA_CHECK PASS one blaze powder gives 20 brews (2 used) 18
+QA_CHECK PASS the screen shows the stored bottles 
+QA_CHECK PASS five more kinds stored (splash, multi-effect and instant too) 8
+QA_CHECK PASS they left the pack 
+QA_CHECK PASS potions stay unstackable: one bottle a slot in the pack 
+QA_CHECK PASS a click takes one bottle onto the cursor 1 potion 2
+QA_CHECK PASS clicking with a potion in hand puts it back 
+QA_CHECK PASS shift takes as many as the pack can carry 13
+QA_CHECK PASS and says how many took
+QA_CHECK PASS the three Speed potions are stored again 8
+QA_CHECK PASS it refuses with 300 bottles inside 
+QA_CHECK PASS and says to empty the storage first This station holds 300 bottles. Take bottles out until it holds 256 or fewer, then break it.
+QA_CHECK PASS with 256 it breaks 
+QA_CHECK PASS and drops every bottle (256) 256
+QA_CHECK PASS the station is Mk II and kept its storage 
+QA_CHECK PASS Mk II links one Brew Pot 1
+QA_CHECK PASS the effect tiles are there (vanilla: Speed, Strength, Night Vision...) 9
+QA_CHECK PASS a creative upgrade is free (as the Mess Hall's) 64 plating, 40 ardent
+QA_CHECK PASS the hint says what to do 
+QA_CHECK PASS Speed is in the order 
+QA_CHECK PASS Gather took the strongest Speed potion from the storage first 1 potion 7
+QA_CHECK PASS and nothing was spent 
+QA_NOTE client mix0 1 potion active true server mix0 1 potion carried 0 air
+QA_CHECK PASS the client's mixing slot shows the gathered potion 1 potion
+QA_CHECK PASS the sweetener slot sits in the mixing row, after the potions (owner) 287,106
+QA_CHECK PASS its +0/+10/+20 button beside it, in the same row 482,168
+QA_CHECK PASS the Brew Pots are chips like the Mess Hall's stew pots (40 x 18, own row) 40x18
+QA_CHECK PASS the sweetener bar says how much is in the tank 
+QA_CHECK PASS the preview line: Speed II, 10 minutes 
+QA_CHECK PASS ready to brew 
+QA_CHECK PASS Regeneration II adds 750 mB 750
+QA_CHECK PASS and the bottle comes back 1
+QA_CHECK PASS +10 needs 1,000 mB: not enough yet sweet_short
+QA_CHECK PASS Regeneration I adds 250 mB: 1,000 1000
+QA_CHECK PASS the preview says 20 minutes 
+QA_CHECK PASS pot 1 holds one Speed II drink, 20 minutes 
+QA_CHECK PASS one full step spent, nothing left over here 0
+QA_CHECK PASS the potion was used and its bottle came back 3
+QA_CHECK PASS a toast says so brewed
+QA_CHECK PASS the toast is on screen 
+QA_CHECK PASS ready, but the pot is full pot_full
+QA_CHECK PASS Replace the drink? is asked 
+QA_CHECK PASS the pot now holds the new Speed I drink, 10 minutes replaced
+QA_NOTE server notice refuse.thrown carried 1 splash_potion mix0 0 air
+QA_CHECK PASS refused: refuse.thrown refuse.thrown mix0=0 air
+QA_NOTE server notice refuse.regeneration carried 1 potion mix0 0 air
+QA_CHECK PASS refused: refuse.regeneration refuse.regeneration mix0=0 air
+QA_CHECK PASS Regeneration only goes in the sweetener (on screen) 
+QA_NOTE server notice refuse.instant carried 1 potion mix0 0 air
+QA_CHECK PASS refused: refuse.instant refuse.instant mix0=0 air
+QA_NOTE server notice refuse.harmful carried 1 potion mix0 0 air
+QA_CHECK PASS refused: refuse.harmful refuse.harmful mix0=0 air
+QA_CHECK PASS Latte mode: the cup slot is open 
+QA_CHECK PASS no sweetener for the Latte: its slot, bar and button are gone, the output in their place 
+QA_CHECK PASS the pots give way to the Latte's hint 
+QA_CHECK PASS Gather also took a Paper Cup from the pack 7
+QA_CHECK PASS a Speed Latte came out, 10 minutes Speed Latte
+QA_CHECK PASS the cup was used up 
+QA_CHECK PASS Lattes stack to 16 
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+QA_CHECK PASS the Drink Station, Latte tab at 640x360: 14 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Latte tab at 640x360: no text cut short 
+QA_CHECK PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+QA_CHECK PASS the Drink Station, Latte tab at 480x270: 14 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Latte tab at 480x270: no text cut short 
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+QA_CHECK PASS the Drink Station, Latte tab at 427x240: 14 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Latte tab at 427x240: no text cut short 
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+QA_CHECK PASS the Drink Station, Brew Pot tab at 640x360: 15 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Brew Pot tab at 640x360: no text cut short 
+QA_CHECK PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+QA_CHECK PASS the Drink Station, Brew Pot tab at 480x270: 15 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Brew Pot tab at 480x270: no text cut short 
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+QA_CHECK PASS the Drink Station, Brew Pot tab at 427x240: 15 texts, none over another or across a button, all in the panel 0 
+QA_CHECK PASS the Drink Station, Brew Pot tab at 427x240: no text cut short 
+QA_CHECK PASS every notice fits the one-line strip (35 notices, three-effect drinks shortened) 
+QA_CHECK PASS the drink is the active drink, its pot empty 
+QA_CHECK PASS the cup is kept 
+QA_CHECK PASS Speed I shows as an endless vanilla effect at home effect.minecraft.speed, Duration: infinite
+QA_CHECK PASS and says so This station holds 300 bottles. Take bottles out until it holds 256 or fewer, then break it. / You drank a Speed Brew: 10 minutes in the field.
+QA_CHECK PASS in the field the timer runs 11933
+QA_CHECK PASS and the effect counts down with it effect.minecraft.speed, Duration: 11934 vs 11933
+QA_CHECK PASS the stronger vanilla Speed II is left alone effect.minecraft.speed x 2, Duration: 95
+QA_CHECK PASS the drink's Speed I comes back with the drink's time effect.minecraft.speed, Duration: 11796 vs 11795
+QA_CHECK PASS the milk bucket does not end the drink 
+QA_CHECK PASS at home it is endless again effect.minecraft.speed, Duration: infinite
+QA_CHECK PASS at home the timer stops 
+QA_CHECK PASS the drink's Speed II is on top effect.minecraft.speed x 2, Duration: infinite
+QA_CHECK PASS the vanilla Speed I is back with its own time, not removed, not extended effect.minecraft.speed, Duration: 5980
+QA_CHECK PASS the new drink is on 
+QA_CHECK PASS the Latte is the active drink now (it replaced the old one) 
+QA_CHECK PASS it left nothing behind (creative keeps the stack) 
+QA_CHECK PASS the Milk Bottle ends the drink 
+QA_CHECK PASS it hands out a cup 
+QA_CHECK PASS and says how many are left This station holds 300 bottles. Take bottles out until it holds 256 or fewer, then break it. / You drank a Speed Brew: 10 minutes in the field. / You drank a Speed Latte: 10 minutes in the field. / The milk cleared Speed, your Speed Latte. / Took a Paper Cup ? 9 left
+QA_CHECK PASS Mk III links two Brew Pots 2
+QA_CHECK PASS Mk III cost 16 Reinforced Beacon Plating 48 plating, 40 ardent
+QA_CHECK PASS two potions of the same effect are refused refuse.duplicate
+QA_CHECK PASS Mk IV links three Brew Pots 3
+QA_CHECK PASS three effects gathered at Mk IV 1 potion 1 potion 1 potion
+QA_CHECK PASS the preview lists all three 
+QA_CHECK PASS a three-effect drink in pot 2 
+QA_CHECK PASS pot 1 holds Night Vision 
+QA_CHECK PASS the three show as their own effects 
+QA_CHECK PASS with their names 
+QA_CHECK PASS and their icons 
+QA_CHECK PASS Blast Ward at home: 40 percent off explosions 6.0
+QA_CHECK PASS Projectile Ward at home: 30 percent off arrows 7.0
+QA_CHECK PASS no fire protection any more 10.0
+QA_CHECK PASS the Field Guide has the drinks page 
+QA_CHECK PASS death clears the drink 
+QA_DONE pass=114 fail=0

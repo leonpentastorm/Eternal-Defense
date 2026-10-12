@@ -275,7 +275,7 @@ public final class QaDrinks {
             check("the potion was used and its bottle came back",srvGet(()->st().mix.getItem(0).isEmpty())&&count(Items.GLASS_BOTTLE)==3,""+count(Items.GLASS_BOTTLE));
             check("a toast says so",notice().equals("brewed"),notice());},"brewed");
         step(3,()->recordFrame=true,"record");
-        step(3,()->{check("the toast is on screen",drawnHas("Brewed Speed into pot 1"),"");shot("d07_brewed");},"toast");
+        step(3,()->{check("the toast is on screen",drawnHas("Brewed: Speed, pot 1, 20 min."),"");shot("d07_brewed");},"toast");
 
         // ---- brewing over a full pot asks first -----------------------------------------------------------------------------------------
         step(5,()->{click(ds().steps);},"+20");step(3,()->click(ds().steps),"+0");
@@ -317,6 +317,13 @@ public final class QaDrinks {
         atSizes("the Drink Station, Latte tab","d11_latte_tab",true);
         step(5,()->click(ds().potTab),"the Brew Pot tab");
         atSizes("the Drink Station, Brew Pot tab","d12_pot_tab",true);
+        step(3,()->{var fx="fx:minecraft:night_vision";var three="fx:minecraft:night_vision,minecraft:fire_resistance,minecraft:water_breathing";var too=new ArrayList<String>();
+            String[][] notices={{"refuse.thrown"},{"refuse.plain"},{"refuse.multi"},{"refuse.regeneration"},{"refuse.harmful"},{"refuse.instant"},{"refuse.duplicate"},{"sweet_only"},
+                {"problem.locked"},{"problem.invalid"},{"problem.missing"},{"problem.extra"},{"problem.empty"},{"problem.cup"},{"problem.output"},{"problem.sweet_short"},{"problem.pot"},{"problem.pot_full"},
+                {"latte_made",fx},{"latte_made","fx:minecraft:night_vision,minecraft:fire_resistance"},{"brewed",fx,"3","30"},{"brewed",three,"3","30"},{"replaced",fx,"3","30",fx},{"order_full","3"},{"gather_choose"},
+                {"gather_missing",fx},{"gather_missing",three},{"gather_cup"},{"gathered","3"},{"table_empty"},{"returned","12"},{"storage_only"},{"storage_full"},{"pack_full"},{"took","64"}};
+            for(var n:notices){var text=DrinkStationScreen.notice(mc().font,n[0],Arrays.asList(n).subList(1,n.length),DrinkStationScreen.RW-10);if(mc().font.width(text)>DrinkStationScreen.RW-10)too.add(text.getString()+" ("+mc().font.width(text)+")");}
+            check("every notice fits the one-line strip ("+notices.length+" notices, three-effect drinks shortened)",too.isEmpty(),String.join(" | ",too));},"notices fit");
 
         // ---- drinking: from the pot with a Paper Cup, at home ------------------------------------------------------------------------------
         step(5,()->{close();srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),3)));},"a Paper Cup in hand");

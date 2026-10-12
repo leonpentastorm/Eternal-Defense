@@ -194,12 +194,18 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         int seq=view().getInt("NoticeSeq");if(seq!=lastNotice){lastNotice=seq;noticeAt=net.minecraft.Util.getMillis();}
         if(seq==0||net.minecraft.Util.getMillis()-noticeAt>4200)return null;
         String key=view().getString("Notice");if(key.isEmpty())return null;
-        var list=view().getList("NoticeArgs",Tag.TAG_STRING);var args=new Object[list.size()];for(int i=0;i<args.length;i++)args[i]=arg(list.getString(i));
-        return Ui.t("drinks.notice."+key,args);
+        var list=view().getList("NoticeArgs",Tag.TAG_STRING);var raw=new ArrayList<String>();for(int i=0;i<list.size();i++)raw.add(list.getString(i));
+        return notice(font,key,raw,RW-10);
     }
-    private static Object arg(String raw){
+    /** A notice in one line of {@code width}: effect lists name every effect, or the first and "+N" when that would not fit. */
+    static Component notice(net.minecraft.client.gui.Font font,String key,List<String> raw,int width){
+        var full=Ui.t("drinks.notice."+key,raw.stream().map(r->arg(r,false)).toArray());
+        return font.width(full)<=width?full:Ui.t("drinks.notice."+key,raw.stream().map(r->arg(r,true)).toArray());
+    }
+    private static Object arg(String raw,boolean compact){
         if(!raw.startsWith("fx:"))return raw;
-        return String.join(", ",Arrays.stream(raw.substring(3).split(",")).map(id->{var e=effect(ResourceLocation.tryParse(id));return e==null?id:e.getDisplayName().getString();}).toList());
+        var names=Arrays.stream(raw.substring(3).split(",")).map(id->{var e=effect(ResourceLocation.tryParse(id));return e==null?id:e.getDisplayName().getString();}).toList();
+        return compact&&names.size()>1?names.get(0)+" +"+(names.size()-1):String.join(", ",names);
     }
     /** The mixing slots: the Latte's cup and output around them, or the Brew Pot; slots past this tier show a padlock. */
     private void table(GuiGraphics g,CompoundTag v,boolean isLatte){

@@ -11,6 +11,7 @@ On `feature/drink-station` (from `dev`, which now holds 0.0.34). **Network proto
 * **Sweetener**: Regeneration potions fill a tank; 1,000 mB buys +10 minutes on a Brew Pot drink (up to +20).
 * **The active drink** sits beside your meal: its timer stops in your base or an active FOB, logging out pauses it, dying or the Milk Dispenser and Milk Bottle end it (a milk bucket does not). It never takes away a potion effect you got elsewhere.
 * Workshop Fabrication sells the Drink Station, the Brew Pot and the Cup Dispenser in the Kitchen group. The Field Guide has a Drink Station page and a card for the three new meal effects.
+* **Drink Station screen tidied** (owner): the sweetener slot, its bar and the +0/+10/+20 minutes button sit next to the mixing slots; the Brew Pot buttons look like the Mess Hall's stew pot buttons (pot, number, the drink's colour, a bar); the effect tiles are one row with a page button; the station's notices are shorter and always fit in one line.
 
 ## 0.0.34 — The live catapult, the box as a supply drop, fishing and husbandry as one, a cap on the specialty (2026-10-12, branch `feature/supply-catapult`)
 

@@ -9,12 +9,12 @@ Branch `feature/drink-station`.
 
 ## Results
 
-### Unit tests: RESULT_UNIT
+### Unit tests: 339 of 339 pass
 
 * New `Round0035Test` (14): effects and Brew Pots per tier, the Latte's 2-effect limit; 10 minutes, the sweetener steps (1,000 and 2,000 mB, never a third), 250 and 750 mB, the 4,000 mB tank and its 4 marks; the storage (54 x 64) and the break guard (256 breaks, 257 does not); the refusal order of a mixing slot (thrown, plain, multi, regeneration, harmful, instant, duplicate) and that every refusal has its text; the tracker's ownership test, when it may put its effect on, the layers it keeps when it takes its own off, the covered potions it remembers; milk and death; the owner's models installed and used (and the generator never writing them); stations hall-sized and kept through an upgrade, Forge's brewing registry, the break guard; prices, the Workshop's Kitchen group, the recipes in both editions; protocol 40; the Field Guide's numbers; the mixing slots' own index (the bug found on the client).
 * From the meal part of this round: `MealRulesTest` (batch costs 12/21/30/36, the sandwich's 2 of each filling and 2 bread; the three replaced effects in place, their ids, numbers and caps, Hardy's refund, their icons, texts and foods), `MealPlannerTest` (2 units a filling), the protocol checks in `FobTest`, `RaidRoundTest`, `Round0034Test` (40).
 
-### Real client: RESULT_CLIENT
+### Real client: standalone 114 of 114, pack 114 of 114 (final layout)
 
 What the harness checks (`docs/validation/round-0035/checks-*.txt`):
 * The corner: the station is 2 wide and 2 tall (three structure parts). Mk I: the mixing menu is locked, no tabs or tiles, the storage empty.
@@ -22,11 +22,12 @@ What the harness checks (`docs/validation/round-0035/checks-*.txt`):
 * The storage: shift-clicking a Strength, a Speed II, a splash poison, Turtle Master and Healing stores all five (any potion is stored); they leave the pack and potions stay unstackable in it. A click on a stored potion puts one bottle on the cursor; clicking again with it puts it back; shift takes as many as the pack holds and says how many; shift-clicking them back stores them again; a stored potion's tooltip (screenshot).
 * The break guard: a station with 300 bottles is not broken by hand (its upper cell), and the action bar says it holds 300 bottles; at 256 it breaks and drops all 256 bottles.
 * Upgrade to Mk II with the screen's button (creative: free, as the Mess Hall's); the storage kept; one Brew Pot linked; the effect tiles (Speed, Strength, Night Vision; no Regeneration).
-* Mixing: Speed chosen; Gather took the strongest Speed (Speed II) from the storage, nothing spent; the client's mixing slot shows it; the preview "Speed II · 10 min"; ready to brew. The sweetener: Regeneration II adds 750 mB and the bottle comes back; +10 min needs 1,000 mB (refused with 750); Regeneration I adds 250 mB; the preview says 20 minutes; Brew: pot 1 holds one Speed II drink of 20 minutes, the tank spent exactly one step, the potion's bottle came back, the toast says "Brewed Speed into pot 1".
+* Mixing: Speed chosen; Gather took the strongest Speed (Speed II) from the storage, nothing spent; the client's mixing slot shows it; the preview "Speed II · 10 min"; ready to brew. The sweetener: Regeneration II adds 750 mB and the bottle comes back; +10 min needs 1,000 mB (refused with 750); Regeneration I adds 250 mB; the preview says 20 minutes; Brew: pot 1 holds one Speed II drink of 20 minutes, the tank spent exactly one step, the potion's bottle came back, the toast says "Brewed: Speed, pot 1, 20 min.".
 * Brewing over the full pot asks "Replace the drink?" (screenshot); Replace drink: the pot holds the new drink.
 * Refusals in the mixing slot, each with its notice on screen: a splash potion, Regeneration ("Regeneration only goes in the sweetener"), Healing (instant), Poison (harmful).
 * The Latte: the tab opens the cup slot; Gather also takes a Paper Cup from the pack; Make Latte makes a "Speed Latte" of 10 minutes and uses the cup; it stacks to 16.
 * The station's screen at 640 x 360, 480 x 270 and 427 x 240, both tabs: no text over another or across a button, every text and button in the panel, no slot under a button, no text cut short.
+* The owner's UI side quest: the sweetener slot in the mixing row, right of the three mixing slots, with its bar and the +0/+10/+20 button in the same row; the Brew Pot chips 40 x 18 in their own row, like the Mess Hall's stew pot chips; in the Latte tab the sweetener is hidden, the output slot shows and the pot chips are hidden. Every one of the station's 35 notices, measured with the game's font, fits the one-line strip (a three-effect drink is named "Night Vision +2" when the whole list would not fit).
 * Drinking: right-clicking the pot with a Paper Cup makes the drink the active one, empties the pot, keeps the cup, says so; at home Speed I shows as an endless vanilla effect. 400 blocks out in the field the timer runs and the effect counts down with it. A vanilla Speed II drunk then is left alone; when it runs out the drink's Speed I comes back with the drink's time. A milk bucket does not end the drink. Back home it is endless again and the timer stops.
 * A weaker vanilla Speed I (5 minutes) under a Speed II drink: the drink is on top; when a new drink replaces it, the vanilla Speed I is back with its own time (not removed, not extended). A Latte drunk replaces that drink. A Milk Bottle ends the drink and its effect.
 * The Cup Dispenser hands out a cup and says "9 left"; its stock screen (screenshot).
@@ -43,7 +44,9 @@ What the harness checks (`docs/validation/round-0035/checks-*.txt`):
   * two texts cut short (the stand's "done bottles" line, the Take back button): the line is gone (the stand's tooltip says it), the button is wider;
   * harness: the upgrade check expected a payment in creative (creative upgrades are free, as the Mess Hall's; a survival upgrade is now checked at Mk III); the confirmation's title is not a recorded text (the check reads its body); the Mess Hall was opened out of reach.
 * **Second standalone run** (`checks-standalone-second-run.txt`, 100 of 107): the stand's line was still cut at every size (removed), and the awkward-potion check read the stand before the brew finished (the harness now waits for it).
-RUNS_MORE
+* **Third standalone run** (`checks-standalone-before-ui.txt`, 107 of 107) and **pack run** (`checks-pack-before-ui.txt`, 107 of 107): the first layout.
+* **The owner's UI side quest** (after screenshots of the first layout): the sweetener slot, bar and button moved into the mixing row and the Brew Pot chips redrawn like the stew pots'. Its first standalone run (`checks-standalone-new-ui-first-run.txt`, 106 of 113): the Latte tab's hint was cut at the smallest size (shortened); at Mk IV the harness clicked the primary button before the screen knew the order, so it brewed instead of gathering (the harness now waits for the order); the second brew's fixed wait became a wait for the brew.
+* **On the final layout** both editions passed 113 of 113; the pack screenshot then showed the Gather toast cut short ("Potions gathered: 3. Nothing is spent unti…"). Fourteen of the 35 notices were too long for the strip: they are shorter now, a long effect list is shortened to the first effect and "+N", and the harness measures every notice. Final runs: standalone 114 of 114 (`checks-standalone.txt`), pack 114 of 114 (`checks-pack.txt`).
 
 ## Not tested
 
