@@ -28,16 +28,21 @@ abstract class KitchenBlock extends Block implements EntityBlock {
     @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.BLOCK;}
     @Override public void onPlace(BlockState s,Level l,BlockPos p,BlockState old,boolean moving){super.onPlace(s,l,p,old,moving);if(!s.is(old.getBlock())&&!l.isClientSide&&!ArsenalStructures.install(l,p,s))l.scheduleTick(p,this,20);}
     @Override public void tick(BlockState s,ServerLevel l,BlockPos p,net.minecraft.util.RandomSource random){if(!ArsenalStructures.install(l,p,s))l.scheduleTick(p,this,20);}
-    @Override public void onRemove(BlockState s,Level l,BlockPos p,BlockState next,boolean moving){if(!s.is(next.getBlock())&&!(s.getBlock() instanceof MessHall.HallBlock&&next.getBlock() instanceof MessHall.HallBlock)){if(l.getBlockEntity(p) instanceof MessHall.HallEntity h)h.removed();ArsenalStructures.remove(l,p);}super.onRemove(s,l,p,next,moving);}
+    @Override public void onRemove(BlockState s,Level l,BlockPos p,BlockState next,boolean moving){
+        boolean upgrade=s.getBlock() instanceof MessHall.HallBlock&&next.getBlock() instanceof MessHall.HallBlock||s.getBlock() instanceof DrinkStation.StationBlock&&next.getBlock() instanceof DrinkStation.StationBlock;
+        if(!s.is(next.getBlock())&&!upgrade){if(l.getBlockEntity(p) instanceof MessHall.HallEntity h)h.removed();ArsenalStructures.remove(l,p);}super.onRemove(s,l,p,next,moving);
+    }
     @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){
         if(player instanceof ServerPlayer sp){if(BaseZone.disabled(l,p,player))return InteractionResult.CONSUME;
             if(l.getBlockEntity(p) instanceof MessHall.HallEntity h){h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp,h,b->{b.writeBlockPos(p);b.writeVarInt(h.mk());});}
             else if(l.getBlockEntity(p) instanceof CookPot.PotEntity pot)pot.use(sp,hand);
+            else if(l.getBlockEntity(p) instanceof DrinkStation.StationEntity st){st.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp,st,b->{b.writeBlockPos(p);b.writeVarInt(st.mk());});}
+            else if(l.getBlockEntity(p) instanceof BrewPot.PotEntity pot)pot.use(sp,hand);
         }return InteractionResult.sidedSuccess(l.isClientSide);
     }
     static final class KitchenItem extends BlockItem {
         KitchenItem(Block block){super(block,new Item.Properties());}
-        @Override public String getDescriptionId(){return getBlock()==ArsenalBeacon.MESS_HALL_I.get()?"item.arsenal_beacon.mess_hall":super.getDescriptionId();}
+        @Override public String getDescriptionId(){return getBlock()==ArsenalBeacon.MESS_HALL_I.get()?"item.arsenal_beacon.mess_hall":getBlock()==ArsenalBeacon.DRINK_STATION_I.get()?"item.arsenal_beacon.drink_station":super.getDescriptionId();}
         @Override public InteractionResult place(BlockPlaceContext c){
             var s=getBlock().getStateForPlacement(c);var level=c.getLevel();var root=c.getClickedPos();
             if(s==null)return InteractionResult.FAIL;
@@ -46,6 +51,6 @@ abstract class KitchenBlock extends Block implements EntityBlock {
                 if(!ArsenalStructures.available(level,root,s)){BaseZone.say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
             }return super.place(c);
         }
-        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));if(getBlock() instanceof BowlDispenser.DispenserBlock||getBlock() instanceof MilkDispenser.DispenserBlock)lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.dispenser.empty_hands"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",getBlock() instanceof MessHall.HallBlock?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));if(getBlock() instanceof BowlDispenser.DispenserBlock||getBlock() instanceof MilkDispenser.DispenserBlock||getBlock() instanceof CupDispenser.DispenserBlock)lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.dispenser.empty_hands"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",((KitchenBlock)getBlock()).hall?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
     }
 }

@@ -11,6 +11,12 @@
     "arsenal_beacon:mess_hall_mk3",
     "arsenal_beacon:mess_hall_mk4",
     "arsenal_beacon:bowl_dispenser",
-    "arsenal_beacon:milk_dispenser"
+    "arsenal_beacon:milk_dispenser",
+    "arsenal_beacon:drink_mixer_mk1",
+    "arsenal_beacon:drink_mixer_mk2",
+    "arsenal_beacon:drink_mixer_mk3",
+    "arsenal_beacon:drink_mixer_mk4",
+    "arsenal_beacon:drink_pot",
+    "arsenal_beacon:cup_dispenser"
   ]
 }

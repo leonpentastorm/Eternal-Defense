@@ -39,13 +39,15 @@ final class MilkDispenser {
         return drained.isFluidEqual(fluid)&&drained.getAmount()==fluid.getAmount()?new Fill(drained.getAmount(),handler.get().getContainer().copy()):null;
     }
     /** A prepared meal always shows as potion effects, so "no effects" means there is nothing for milk to clear. The server also checks the saved meal. */
-    static boolean hasCleansable(Player p){return !p.getActiveEffects().isEmpty()||p instanceof ServerPlayer sp&&PlayerMeals.get(sp.serverLevel()).players.containsKey(sp.getUUID());}
+    static boolean hasCleansable(Player p){return !p.getActiveEffects().isEmpty()||p instanceof ServerPlayer sp&&(PlayerMeals.get(sp.serverLevel()).players.containsKey(sp.getUUID())||PlayerDrinks.of(sp)!=null);}
     /** What a cleanse removed: the names of ordinary effects and the saved meal, for the message the player sees. */
     record Cleansed(List<Component> effects,Component meal){int count(){return effects.size()+(meal==null?0:1);}}
     static Cleansed cleanse(ServerPlayer player){
         var names=new ArrayList<Component>();var state=PlayerMeals.get(player.serverLevel()).players.get(player.getUUID());Component meal=state==null?null:state.meal.name();
         for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&effect.getEffect()!=MealEffects.HOME.get()&&effect.getEffect()!=MealEffects.FOB.get())names.add(effect.getEffect().getDisplayName());
-        PlayerMeals.clear(player);player.removeAllEffects();return new Cleansed(names,meal);
+        // 0.0.35: milk from the dispenser or a Milk Bottle also ends the active drink (the vanilla milk bucket does not)
+        var drink=PlayerDrinks.of(player);if(drink!=null)names.add(Component.translatable("gui.arsenal_beacon.milk.drink",drink.drink.name()));
+        PlayerMeals.clear(player);player.removeAllEffects();PlayerDrinks.forget(player);return new Cleansed(names,meal);
     }
     /** "Strength, Speed and your Stew of Firepower": at most three names, then a count. */
     static Component describe(Cleansed cleansed){

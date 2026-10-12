@@ -39,11 +39,11 @@ families = {
     # Ordinary Minecraft bonuses. Category doubling is gated by Mk IV on the server.
     'protein': (['cooked_chicken', 'cooked_mutton', 'cooked_rabbit', 'rabbit_stew'], False, {'vitality': 1}),
     'eggs': (['egg'], False, {'vitality': 1}),
-    'fish': (['cooked_cod', 'cooked_salmon'], False, {'mobility': 1}),
+    'fish': (['cooked_cod', 'cooked_salmon'], False, {'hardy': 1}),
     'vegetables': (['carrot', 'potato', 'beetroot', 'beetroot_soup', 'dried_kelp'], False, {'fortitude': 1}),
     'dairy': (['milk_bucket'], False, {'fortitude': 2}),
     'mushrooms': (['brown_mushroom', 'red_mushroom', 'mushroom_stew'], False, {'steadiness': 1}),
-    'sweet': (['apple', 'sweet_berries', 'melon_slice', 'sugar'], False, {'mobility': 1}),
+    'sweet': (['apple', 'sweet_berries', 'melon_slice', 'sugar'], False, {'hardy': 1}),
     # Former direct gun foods now provide ordinary bonuses.
     'firepower': (['cooked_beef'], False, {'might': 1}),
     'quick_hands': (['honey_bottle'], False, {'recovery': 1}),
@@ -58,8 +58,8 @@ families = {
     'mystery': (['suspicious_stew'], False, {'fortune': 2}),
     'golden': (['golden_apple'], False, {'recovery': 2}),
     'enchanted': (['enchanted_golden_apple'], False, {'recovery': 3, 'fortune': 1}),
-    'grim': (['rotten_flesh', 'spider_eye', 'poisonous_potato'], False, {'hearth': 1}),
-    'chorus': (['chorus_fruit', 'melon_slice'], False, {'springy': 2}),
+    'grim': (['rotten_flesh', 'spider_eye', 'poisonous_potato'], False, {'blast_ward': 1}),
+    'chorus': (['chorus_fruit', 'melon_slice'], False, {'projectile_ward': 2}),
 }
 groups = {
     'staples': 'grain', 'treats': 'grain',

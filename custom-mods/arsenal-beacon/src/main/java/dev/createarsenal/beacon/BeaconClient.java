@@ -313,7 +313,7 @@ public final class BeaconClient {
             }
         }
         /** Starter installations in three groups: the four tables, the kitchen, and support and trade. */
-        private static final int[] FAB_GROUP_START={0,4,8};
+        private static final int[] FAB_GROUP_START={0,4,11};
         private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
         private static final String[] FAB_GROUP={"tables","kitchen","support"};
         private record FabCell(int x,int y,int w,int h){}
@@ -634,6 +634,7 @@ public final class BeaconClient {
                 case "fob"->ArsenalBeacon.FOB_BEACON_ITEM.get();
                 case "kitchen"->ArsenalBeacon.MESS_HALL_I.get().asItem();
                 case "mixes"->ArsenalBeacon.SANDWICH.get();
+                case "drinks"->ArsenalBeacon.DRINK_STATION_I.get().asItem();
                 case "gear"->ArsenalBeacon.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:ArsenalBeacon.RACKS.get(0).get().asItem();
                 case "coop"->net.minecraft.world.item.Items.PLAYER_HEAD;
                 default->net.minecraft.world.item.Items.WRITABLE_BOOK;

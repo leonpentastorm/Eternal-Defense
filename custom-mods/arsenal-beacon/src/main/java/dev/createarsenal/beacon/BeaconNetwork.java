@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    /** Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"39-standalone":"39-pack",s->s.equals(BuildFlavor.STANDALONE?"39-standalone":"39-pack"),s->s.equals(BuildFlavor.STANDALONE?"39-standalone":"39-pack"));
+    /** Protocol 40 (0.0.35): the Drink Station screen's view (id 24) is new. Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"40-standalone":"40-pack",s->s.equals(BuildFlavor.STANDALONE?"40-standalone":"40-pack"),s->s.equals(BuildFlavor.STANDALONE?"40-standalone":"40-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -77,6 +77,7 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(21,FobOutline.Sync.class,FobOutline.Sync::encode,FobOutline.Sync::decode,FobOutline.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         // 0.0.31, protocol 36: menu buttons as full numbers
         CHANNEL.registerMessage(23,SupplyCatapult.View.class,SupplyCatapult.View::encode,SupplyCatapult.View::decode,SupplyCatapult.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));   // 0.0.34
+        CHANNEL.registerMessage(24,DrinkStationMenu.View.class,DrinkStationMenu.View::encode,DrinkStationMenu.View::decode,DrinkStationMenu.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));   // 0.0.35, protocol 40
         CHANNEL.registerMessage(22,MenuButton.class,MenuButton::encode,MenuButton::decode,MenuButton::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(20,Hunts.TableState.class,Hunts.TableState::encode,Hunts.TableState::decode,Hunts.TableState::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));

@@ -56,6 +56,9 @@ final class Economy {
     static int repairAmount(){return standalone()?6:8;}
     static final int[] KITCHEN_ARDENT={4,8,14},KITCHEN_PLATING={8,16,32};
     static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}
+    /** 0.0.35 (owner): Drink Station upgrades to Mk II, III and IV, like the Mess Hall's: 8/16/32 plating (pack) or 4/8/14 Ardent Energy (standalone). */
+    static final int[] DRINKS_ARDENT={4,8,14},DRINKS_PLATING={8,16,32};
+    static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?DRINKS_ARDENT:DRINKS_PLATING)[mk-1]);}
 
     static List<WeaponPlatform.Cost> stationCosts(String kind){
         if(kind.equals("support"))return List.of(WeaponPlatform.cost("minecraft:iron_ingot",20),WeaponPlatform.cost("minecraft:copper_ingot",12),WeaponPlatform.cost("minecraft:redstone",12),WeaponPlatform.cost("minecraft:glass",4));
@@ -89,6 +92,10 @@ final class Economy {
             case "mess_hall_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8));
             case "cook_pot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "milk_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:copper_ingot",4));
+            // 0.0.35 (owner): the drinks corner, in the kitchen's style: the station takes a brewing stand, the pot copper, the dispenser paper
+            case "drink_mixer_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:brewing_stand",1));
+            case "drink_pot"->List.of(WeaponPlatform.cost("minecraft:copper_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
+            case "cup_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:paper",4));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };
