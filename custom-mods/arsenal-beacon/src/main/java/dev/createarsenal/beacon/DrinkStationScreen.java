@@ -27,7 +27,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
     static final int BREW=0,GATHER=1,MISSING=2;
     static final Set<String> GATHERABLE=Set.of("empty","missing","extra","cup");
     Ui.UiButton potTab,latteTab,primary,takeBack,clear,steps,upgrade,replaceYes,replaceNo;boolean confirming;
-    final List<Ui.UiButton> pots=new ArrayList<>();final List<Tile> tiles=new ArrayList<>();
+    final List<Ui.UiButton> pots=new ArrayList<>();final List<Tile> tiles=new ArrayList<>();Ui.UiButton nextPage;int tilePage;
     private int lastNotice;private long noticeAt;
     DrinkStationScreen(DrinkStationMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=W;imageHeight=H;}
     private CompoundTag view(){return menu.view;}
@@ -59,25 +59,31 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         super.init();pots.clear();tiles.clear();
         potTab=addRenderableWidget(new Ui.UiButton(leftPos+RX,topPos+DrinkStationMenu.TAB_Y,72,15,Component.empty(),Ui.Look.TAB,b->action(DrinkStationMenu.MODE_POT)).painter((g,self,h)->tab(g,self,new ItemStack(ArsenalBeacon.BREW_POT_ITEM.get()),"drinks.tab.pot")).noLabel());
         latteTab=addRenderableWidget(new Ui.UiButton(leftPos+RX+76,topPos+DrinkStationMenu.TAB_Y,72,15,Component.empty(),Ui.Look.TAB,b->action(DrinkStationMenu.MODE_LATTE)).painter((g,self,h)->tab(g,self,new ItemStack(ArsenalBeacon.PAPER_CUP.get()),"drinks.tab.latte")).noLabel());
-        for(int i=0;i<3;i++){final int index=i;pots.add(addRenderableWidget(new Ui.UiButton(leftPos+RX+152+i*24,topPos+DrinkStationMenu.TAB_Y,22,15,Component.empty(),Ui.Look.ROW,b->action(DrinkStationMenu.POT+index)).painter((g,self,h)->potChip(g,self,index)).noLabel()));}
+        // the Brew Pots, as the Mess Hall's stew pots: the pot, its number, its drink's colour and a bar (one serving: full or empty)
+        for(int i=0;i<3;i++){final int index=i;pots.add(addRenderableWidget(new Ui.UiButton(leftPos+RX+i*DrinkStationMenu.POT_PITCH,topPos+DrinkStationMenu.POTS_Y,DrinkStationMenu.POT_W,18,Component.empty(),Ui.Look.ROW,b->action(DrinkStationMenu.POT+index)).painter((g,self,h)->potChip(g,self,index)).noLabel()));}
         int by=topPos+DrinkStationMenu.BUTTON_Y;
         primary=addRenderableWidget(new Ui.UiButton(leftPos+RX,by,100,16,Component.empty(),Ui.Look.PRIMARY,b->{int mode=ctaMode();if(mode==GATHER)action(DrinkStationMenu.GATHER);else if(mode==BREW){if(replacing())confirming=true;else action(DrinkStationMenu.BREW);}}).painter(this::primaryFace).noLabel());
         takeBack=addRenderableWidget(new Ui.UiButton(leftPos+RX+104,by,62,16,Ui.t("drinks.take_back"),Ui.Look.NORMAL,b->action(DrinkStationMenu.TAKE_BACK)));
         clear=addRenderableWidget(new Ui.UiButton(leftPos+RX+170,by,54,16,Ui.t("drinks.clear"),Ui.Look.NORMAL,b->action(DrinkStationMenu.CLEAR)));
-        steps=addRenderableWidget(new Ui.UiButton(leftPos+378,topPos+181,38,14,Component.empty(),Ui.Look.NORMAL,b->action(DrinkStationMenu.STEPS)).painter((g,self,h)->Ui.text(g,font,Ui.t("drinks.steps",view().getInt("Steps")*10),self.getX()+4,self.getY()+3,self.active?Ui.INK:Ui.DISABLED,self.getWidth()-6)).noLabel());
+        steps=addRenderableWidget(new Ui.UiButton(leftPos+DrinkStationMenu.STEPS_X,topPos+DrinkStationMenu.SLOT_Y+1,DrinkStationMenu.STEPS_W,14,Component.empty(),Ui.Look.NORMAL,b->action(DrinkStationMenu.STEPS)).painter((g,self,h)->Ui.text(g,font,Ui.t("drinks.steps",view().getInt("Steps")*10),self.getX()+4,self.getY()+3,self.active?Ui.INK:Ui.DISABLED,self.getWidth()-6)).noLabel());
         upgrade=addRenderableWidget(new Ui.UiButton(leftPos+118,topPos+82,58,14,Component.empty(),Ui.Look.NORMAL,b->action(DrinkStationMenu.UPGRADE)).painter(this::upgradeFace).noLabel());
         replaceYes=addRenderableWidget(new Ui.UiButton(leftPos+W/2-122,topPos+H/2+22,118,16,Ui.t("drinks.replace.yes"),Ui.Look.DANGER,b->{confirming=false;action(DrinkStationMenu.REPLACE);}));
         replaceNo=addRenderableWidget(new Ui.UiButton(leftPos+W/2+4,topPos+H/2+22,118,16,Ui.t("drinks.replace.no"),Ui.Look.PRIMARY,b->confirming=false));
         replaceYes.visible=replaceNo.visible=false;confirming=false;
+        nextPage=addRenderableWidget(new Ui.UiButton(leftPos+RX+(DrinkStationMenu.TILE_COLS-1)*DrinkStationMenu.TILE_PITCH,topPos+DrinkStationMenu.TILE_Y,DrinkStationMenu.TILE,DrinkStationMenu.TILE,Component.literal("›"),Ui.Look.NORMAL,b->{tilePage++;buildTiles();}));
         buildTiles();
     }
+    /** One row of tiles: all of them when they fit (vanilla has 9), else 10 a page and a button to the next page. */
+    private int perPage(){return menu.catalogue.size()>DrinkStationMenu.TILE_COLS?DrinkStationMenu.TILE_COLS-1:DrinkStationMenu.TILE_COLS;}
+    private int pages(){return Math.max(1,(menu.catalogue.size()+perPage()-1)/perPage());}
     /** The tiles come with the effect list, which arrives with the first view after the screen opens. */
     private void buildTiles(){
-        for(var t:tiles)removeWidget(t);tiles.clear();
-        int max=DrinkStationMenu.TILE_COLS*DrinkStationMenu.TILE_ROWS;
-        for(int i=0;i<menu.catalogue.size()&&i<max;i++)tiles.add(addRenderableWidget(new Tile(leftPos+RX+(i%DrinkStationMenu.TILE_COLS)*DrinkStationMenu.TILE_PITCH,topPos+DrinkStationMenu.TILE_Y+(i/DrinkStationMenu.TILE_COLS)*DrinkStationMenu.TILE_PITCH,i)));
+        for(var t:tiles)removeWidget(t);tiles.clear();tilePage=tilePage%pages();builtFor=menu.catalogue.size();
+        int first=tilePage*perPage();
+        for(int i=first;i<menu.catalogue.size()&&i<first+perPage();i++)tiles.add(addRenderableWidget(new Tile(leftPos+RX+(i-first)*DrinkStationMenu.TILE_PITCH,topPos+DrinkStationMenu.TILE_Y,i)));
     }
-    @Override protected void containerTick(){super.containerTick();int max=DrinkStationMenu.TILE_COLS*DrinkStationMenu.TILE_ROWS;if(tiles.size()!=Math.min(max,menu.catalogue.size()))buildTiles();}
+    private int builtFor=-1;
+    @Override protected void containerTick(){super.containerTick();if(builtFor!=menu.catalogue.size())buildTiles();}
 
     // ---- buttons --------------------------------------------------------------------------------------------------------------
     private boolean replacing(){return !latte()&&view().getString("Problem").equals("pot_full");}
@@ -86,10 +92,14 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         g.pose().pushPose();g.pose().translate(b.getX()+3,b.getY(),0);g.pose().scale(.8f,.8f,1);g.renderItem(icon,0,0);g.pose().popPose();
         Ui.text(g,font,Ui.t(key),b.getX()+19,b.getY()+4,b.selected?Ui.INK:Ui.MUTED,b.getWidth()-22);
     }
+    /** A Brew Pot chip, drawn as the Mess Hall's stew pot chip: the pot, its number, its drink's colour and how full it is. */
     private void potChip(GuiGraphics g,Ui.UiButton b,int index){
         var list=view().getList("Pots",Tag.TAG_COMPOUND);if(index>=list.size())return;var drink=DrinkData.load(list.getCompound(index).getCompound("Drink"));
-        Ui.text(g,font,Component.literal(Integer.toString(index+1)),b.getX()+4,b.getY()+4,b.selected?Ui.INK:Ui.MUTED,8);
-        if(drink!=null)g.fill(b.getX()+12,b.getY()+4,b.getX()+19,b.getY()+11,0xff000000|drink.color());else{g.fill(b.getX()+12,b.getY()+4,b.getX()+19,b.getY()+11,Ui.EDGE);g.fill(b.getX()+13,b.getY()+5,b.getX()+18,b.getY()+10,Ui.DEEP);}
+        g.pose().pushPose();g.pose().translate(b.getX()+2,b.getY()+1,0);g.pose().scale(.75f,.75f,1f);g.renderItem(new ItemStack(ArsenalBeacon.BREW_POT_ITEM.get()),0,0);g.pose().popPose();
+        Ui.text(g,font,Component.literal(Integer.toString(index+1)),b.getX()+18,b.getY()+3,b.selected?Ui.INK:Ui.MUTED,12);
+        int color=drink==null?Ui.TRACK:0xff000000|drink.color();
+        if(drink!=null)g.fill(b.getX()+27,b.getY()+4,b.getX()+31,b.getY()+8,color);
+        Ui.bar(g,b.getX()+3,b.getY()+13,b.getWidth()-6,3,drink==null?0:1,color);
     }
     private void primaryFace(GuiGraphics g,Ui.UiButton b,boolean hover){
         int mode=ctaMode();
@@ -118,12 +128,11 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         potTab.visible=latteTab.visible=mix;potTab.selected=!isLatte;latteTab.selected=isLatte;
         var list=v.getList("Pots",Tag.TAG_COMPOUND);
         for(int i=0;i<pots.size();i++){var b=pots.get(i);b.visible=mix&&!isLatte&&i<list.size();if(b.visible){b.selected=v.contains("Selected")&&v.getLong("Selected")==list.getCompound(i).getLong("Pos");b.accent=accent;}}
-        primary.visible=takeBack.visible=mix;clear.visible=mix&&explicit();steps.visible=mix;steps.active=!isLatte;
+        primary.visible=takeBack.visible=mix;clear.visible=mix&&explicit();steps.visible=mix&&!isLatte;nextPage.visible=mix&&pages()>1;
         upgrade.visible=menu.mk<4;upgrade.active=v.contains("UpgradeCost")&&v.getInt("UpgradeHave")>=v.getInt("UpgradeCost");
         for(var t:tiles)t.visible=mix;
-        if(!mix)locked(g);else{strip(g);table(g,v,isLatte);preview(g,v);}
+        if(!mix)locked(g);else{strip(g);potRow(g,v,isLatte);table(g,v,isLatte);preview(g,v);}
         Ui.inventory(g,leftPos+RX,topPos+DrinkStationMenu.INV_Y-1);
-        tank(g,v,mix,isLatte);
     }
     /** The vanilla brewing stand's art and its fuel, bubbles and arrow, then what it is doing in words. */
     private void stand(GuiGraphics g,CompoundTag v){
@@ -198,7 +207,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         if(isLatte){
             Ui.slot(g,leftPos+DrinkStationMenu.CUP_X-1,y,accent);if(menu.mix.getItem(3).isEmpty())Ui.ghost(g,new ItemStack(ArsenalBeacon.PAPER_CUP.get()),leftPos+DrinkStationMenu.CUP_X,y+1);
             Ui.slot(g,leftPos+DrinkStationMenu.OUT_X-1,y,accent);Ui.text(g,font,Component.literal("→"),leftPos+DrinkStationMenu.OUT_X-12,y+5,Ui.MUTED);
-        }else{g.renderItem(new ItemStack(ArsenalBeacon.BREW_POT_ITEM.get()),leftPos+DrinkStationMenu.CUP_X,y+1);}
+        }else{g.renderItem(new ItemStack(ArsenalBeacon.BREW_POT_ITEM.get()),leftPos+DrinkStationMenu.CUP_X,y+1);sweetener(g,v);}
         Ui.text(g,font,Component.literal("+"),leftPos+DrinkStationMenu.CUP_X+18,y+5,Ui.MUTED);
         int shown=isLatte?DrinkRules.LATTE_MAX:3;
         for(int i=0;i<shown;i++){
@@ -215,15 +224,20 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         g.fill(x,y+1,x+6,y+7,0xff000000|drink.color());
         Ui.text(g,font,Ui.t("drinks.preview",String.join(" + ",parts),DrinkRules.minutes(drink.duration())),x+10,y,Ui.INK,RW-10);
     }
-    /** The sweetener: a graduated tank (a mark every 1,000 mB), its slot, the +0 / +10 / +20 control and the mB left. */
-    private void tank(GuiGraphics g,CompoundTag v,boolean mix,boolean isLatte){
-        int x=leftPos+DrinkStationMenu.TANK_X,y=topPos+DrinkStationMenu.TANK_Y,mb=v.getInt("Tank");
-        Ui.tank(g,x,y,DrinkStationMenu.TANK_W,DrinkStationMenu.TANK_H,mb/(float)DrinkRules.TANK_MB,SYRUP,DrinkRules.TANK_MB/DrinkRules.STEP_MB);
-        int sx=leftPos+DrinkStationMenu.SWEET_X-1,sy=topPos+DrinkStationMenu.SWEET_Y-1;
-        if(mix){Ui.slot(g,sx,sy,SYRUP);if(menu.mix.getItem(5).isEmpty())Ui.ghost(g,DrinkData.sample(net.minecraft.world.effect.MobEffects.REGENERATION,0),sx+1,sy+1);}
-        Ui.text(g,font,Component.literal(String.format("%,d",mb)),leftPos+379,topPos+200,Ui.INK,37);
-        Ui.text(g,font,Ui.t("drinks.mb"),leftPos+379,topPos+210,Ui.MUTED,37);
-        if(!mix||isLatte){g.pose().pushPose();g.pose().translate(0,0,250);g.fill(x-1,y-1,leftPos+416,y+DrinkStationMenu.TANK_H+1,0x900a1218);g.pose().popPose();}
+    /** Under the tiles: the Brew Pots (Brew Pot tab), or how a Latte is made (Latte tab), as the Mess Hall shows its pots or the sandwich hint. */
+    private void potRow(GuiGraphics g,CompoundTag v,boolean isLatte){
+        int x=leftPos+RX,y=topPos+DrinkStationMenu.POTS_Y;
+        if(isLatte){Ui.text(g,font,Ui.t("drinks.latte_hint"),x,y+5,Ui.MUTED,RW);return;}
+        if(v.getList("Pots",Tag.TAG_COMPOUND).isEmpty())Ui.text(g,font,Ui.t("drinks.no_pots"),x,y+5,Ui.ORANGE,RW);
+    }
+    /** The sweetener, in the mixing row (Brew Pot tab): its slot, a bar with a mark every 1,000 mB and the mB in it; the +0/+10/+20 button beside. */
+    private void sweetener(GuiGraphics g,CompoundTag v){
+        int mb=v.getInt("Tank"),sx=leftPos+DrinkStationMenu.SWEET_X-1,y=topPos+DrinkStationMenu.SLOT_Y-1;
+        Ui.slot(g,sx,y,SYRUP);if(menu.mix.getItem(5).isEmpty())Ui.ghost(g,DrinkData.sample(net.minecraft.world.effect.MobEffects.REGENERATION,0),sx+1,y+1);
+        int bx=leftPos+DrinkStationMenu.BAR_X,bw=DrinkStationMenu.BAR_W,need=DrinkRules.sweetenerCost(v.getInt("Steps"));
+        g.fill(bx,y+1,bx+bw,y+8,Ui.TRACK);int fill=Math.round(bw*Math.min(1f,mb/(float)DrinkRules.TANK_MB));if(fill>0){g.fill(bx,y+1,bx+fill,y+8,SYRUP);g.fill(bx,y+1,bx+fill,y+2,0x55ffffff);}
+        for(int i=1;i<DrinkRules.TANK_MB/DrinkRules.STEP_MB;i++){int tx=bx+bw*i/(DrinkRules.TANK_MB/DrinkRules.STEP_MB);g.fill(tx,y+1,tx+1,y+8,Ui.DEEP);}
+        Ui.text(g,font,Ui.t("drinks.mb_amount",String.format("%,d",mb)),bx,y+10,need>mb?Ui.ORANGE:Ui.MUTED,bw);
     }
     @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
 
@@ -259,7 +273,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         else if(clear.visible&&clear.isHovered())tip(g,"drinks.tip.clear",mx,my);
         else if(steps.visible&&steps.isHovered())tip(g,latte()?"drinks.tip.steps_latte":"drinks.tip.steps",mx,my,DrinkRules.STEP_MB,view().getInt("Tank"));
         else if(upgrade.visible&&upgrade.isHovered())Ui.materialTooltip(g,font,List.of(Ui.t("drinks.upgrade",menu.mk+1),Ui.t("drinks.tier_gain."+(menu.mk+1))),Ui.singleCost(ItemStack.of(view().getCompound("UpgradeItem")),view().getInt("UpgradeCost"),view().getInt("UpgradeHave")),mx,my);
-        else if(Ui.inside(mx,my,leftPos+DrinkStationMenu.TANK_X,topPos+DrinkStationMenu.TANK_Y,DrinkStationMenu.TANK_W,DrinkStationMenu.TANK_H))tip(g,"drinks.tip.tank",mx,my,String.format("%,d",view().getInt("Tank")),String.format("%,d",DrinkRules.TANK_MB),DrinkRules.REGEN_I_MB,DrinkRules.REGEN_II_MB,DrinkRules.STEP_MB);
+        else if(!latte()&&mixing()&&Ui.inside(mx,my,leftPos+DrinkStationMenu.BAR_X,topPos+DrinkStationMenu.SLOT_Y-1,DrinkStationMenu.BAR_W,18))tip(g,"drinks.tip.tank",mx,my,String.format("%,d",view().getInt("Tank")),String.format("%,d",DrinkRules.TANK_MB),DrinkRules.REGEN_I_MB,DrinkRules.REGEN_II_MB,DrinkRules.STEP_MB);
         else if(Ui.inside(mx,my,leftPos+118,topPos+30,58,50))tip(g,"drinks.tip.stand",mx,my);
         else for(int i=0;i<pots.size();i++)if(pots.get(i).visible&&pots.get(i).isHovered()){potTip(g,i,mx,my);return;}
     }

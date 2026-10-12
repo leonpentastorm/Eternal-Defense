@@ -33,9 +33,13 @@ final class DrinkStationMenu extends AbstractContainerMenu {
     static final int WIDTH=424,HEIGHT=238;
     /** Left column: the stand (the vanilla texture's region from u 12, v 12, 108 x 66) and the storage under it. */
     static final int BREW_X=8,BREW_Y=30,BREW_U=12,BREW_V=12,BREW_W=108,BREW_H=66,STORE_X=8,STORE_Y=114,STORE_COLS=9;
-    /** Right column (x 192 to 416): tabs, notices, effect tiles, the mixing slots, the preview, the buttons, then the inventory and the tank. */
-    static final int RX=192,RW=224,TAB_Y=29,STRIP_Y=46,TILE_Y=63,TILE=18,TILE_PITCH=20,TILE_COLS=11,TILE_ROWS=2,SLOT_Y=106,PREVIEW_Y=127,BUTTON_Y=138,INV_X=193,INV_Y=159,HOT_Y=217;
-    static final int CUP_X=193,MIX_X=217,MIX_PITCH=20,OUT_X=287,SWEET_X=381,SWEET_Y=160,TANK_X=359,TANK_Y=158,TANK_W=14,TANK_H=76;
+    /**
+     * Right column (x 192 to 416): tabs, notices, one row of effect tiles, the Brew Pots (chips like the Mess Hall's stew pots), the mixing row
+     * (the pot or the Latte's cup, the potions, then the sweetener: its slot, its bar and the +0 / +10 / +20 button; owner, 0.0.35), the
+     * preview, the buttons, then the inventory.
+     */
+    static final int RX=192,RW=224,TAB_Y=29,STRIP_Y=46,TILE_Y=63,TILE=18,TILE_PITCH=20,TILE_COLS=11,POTS_Y=85,POT_W=40,POT_PITCH=42,SLOT_Y=106,PREVIEW_Y=127,BUTTON_Y=138,INV_X=193,INV_Y=159,HOT_Y=217;
+    static final int CUP_X=193,MIX_X=217,MIX_PITCH=20,OUT_X=287,SWEET_X=287,BAR_X=308,BAR_W=62,STEPS_X=374,STEPS_W=40;
     static int brewSlotX(int u){return BREW_X+u-BREW_U;}
     static int brewSlotY(int v){return BREW_Y+v-BREW_V;}
     static final int MODE_POT=0,MODE_LATTE=1,BREW=2,UPGRADE=3,CLEAR=4,GATHER=5,TAKE_BACK=6,REPLACE=7,STEPS=8,EFFECT=40,POT=100,STORE=200;
@@ -71,8 +75,9 @@ final class DrinkStationMenu extends AbstractContainerMenu {
             @Override public boolean isActive(){return latte()&&DrinkRules.tier(mk).mixing();}
             @Override public boolean mayPlace(ItemStack s){return false;}
         });
-        addSlot(new Slot(mix,5,SWEET_X,SWEET_Y){
-            @Override public boolean isActive(){return DrinkRules.tier(mk).mixing();}
+        // the sweetener sits where the Latte's output is: only one of them shows (no sweetener for the Latte)
+        addSlot(new Slot(mix,5,SWEET_X,SLOT_Y){
+            @Override public boolean isActive(){return DrinkRules.tier(mk).mixing()&&!latte();}
             @Override public boolean mayPlace(ItemStack s){if(!isActive())return false;boolean ok=DrinkData.sweetener(s)>0;if(!ok&&!player.level().isClientSide)notice(WARN,"sweet_only");return ok;}
             @Override public int getMaxStackSize(){return 1;}
         });

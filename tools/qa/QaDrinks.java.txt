@@ -251,8 +251,13 @@ public final class QaDrinks {
             check("and nothing was spent",srvGet(()->st().total()+(st().mix.getItem(0).isEmpty()?0:1)==8),"");},"gathered");
         step(3,()->{var m=ds().getMenu();log("QA_NOTE client mix0 {} active {} server mix0 {} carried {}",m.slots.get(DrinkStationMenu.SLOT_MIX).getItem(),m.slots.get(DrinkStationMenu.SLOT_MIX).isActive(),srvGet(()->st().mix.getItem(0).toString()),m.getCarried());
             check("the client's mixing slot shows the gathered potion",!m.slots.get(DrinkStationMenu.SLOT_MIX).getItem().isEmpty(),String.valueOf(m.slots.get(DrinkStationMenu.SLOT_MIX).getItem()));},"client slot");
+        step(3,()->{var s=ds();var m=s.getMenu();var sweet=m.slots.get(DrinkStationMenu.SLOT_SWEET);
+            check("the sweetener slot sits in the mixing row, after the potions (owner)",sweet.isActive()&&sweet.y==DrinkStationMenu.SLOT_Y&&sweet.x>DrinkStationMenu.MIX_X+2*DrinkStationMenu.MIX_PITCH,sweet.x+","+sweet.y);
+            check("its +0/+10/+20 button beside it, in the same row",s.steps.visible&&s.steps.getY()>=s.getGuiTop()+DrinkStationMenu.SLOT_Y-2&&s.steps.getY()<=s.getGuiTop()+DrinkStationMenu.SLOT_Y+4&&s.steps.getX()>s.getGuiLeft()+sweet.x,s.steps.getX()+","+s.steps.getY());
+            var chip=s.pots.get(0);check("the Brew Pots are chips like the Mess Hall's stew pots (40 x 18, own row)",chip.visible&&chip.getWidth()==40&&chip.getHeight()==18&&chip.getY()==s.getGuiTop()+DrinkStationMenu.POTS_Y,chip.getWidth()+"x"+chip.getHeight());},"the new layout");
         step(5,()->recordFrame=true,"record");
-        step(3,()->{check("the preview line: Speed II, 10 minutes",drawnHas("Speed II")&&drawnHas("10 min"),"");check("ready to brew",view().getString("Problem").isEmpty(),view().getString("Problem"));shot("d05_ready");},"preview");
+        step(3,()->{check("the sweetener bar says how much is in the tank",drawnHas("0 mB"),"");
+            check("the preview line: Speed II, 10 minutes",drawnHas("Speed II")&&drawnHas("10 min"),"");check("ready to brew",view().getString("Problem").isEmpty(),view().getString("Problem"));shot("d05_ready");},"preview");
         step(5,()->{slotClick(invSlot(13),ClickType.PICKUP);},"pick up Regeneration II");
         step(5,()->slotClick(DrinkStationMenu.SLOT_SWEET,ClickType.PICKUP),"into the sweetener slot");
         step(10,()->{check("Regeneration II adds 750 mB",srvGet(()->st().tank==750),srvGet(()->""+st().tank));check("and the bottle comes back",count(Items.GLASS_BOTTLE)==1,""+count(Items.GLASS_BOTTLE));},"750");
@@ -294,7 +299,9 @@ public final class QaDrinks {
 
         // ---- the Latte ---------------------------------------------------------------------------------------------------------------
         step(5,()->click(ds().latteTab),"the Latte tab");
-        step(8,()->check("Latte mode: the cup slot is open",view().getBoolean("Latte")&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_CUP).isActive(),""),"latte");
+        step(8,()->{check("Latte mode: the cup slot is open",view().getBoolean("Latte")&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_CUP).isActive(),"");
+            check("no sweetener for the Latte: its slot, bar and button are gone, the output in their place",!ds().getMenu().slots.get(DrinkStationMenu.SLOT_SWEET).isActive()&&!ds().steps.visible&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_OUT).isActive(),"");
+            check("the pots give way to the Latte's hint",ds().pots.stream().noneMatch(b->b.visible),"");},"latte");
         step(5,()->click(ds().primary),"Gather potions");
         step(10,()->check("Gather also took a Paper Cup from the pack",srvGet(()->CupDispenser.cup(st().mix.getItem(3))&&!st().mix.getItem(0).isEmpty())&&count(ArsenalBeacon.PAPER_CUP.get())==7,""+count(ArsenalBeacon.PAPER_CUP.get())),"cup");
         step(5,()->click(ds().primary),"Make Latte");
