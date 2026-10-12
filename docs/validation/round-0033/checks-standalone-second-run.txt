@@ -1,0 +1,256 @@
+PASS FOB GameTests pass=24 fail=0
+PASS the world has a village BlockPos{x=-1088, y=0, z=720}
+PASS a spot in the village where the FOB rules allow planting spot=BlockPos{x=-1088, y=65, z=718}, problem where the player stands=null, villagers in the zone=4
+FAIL holding the FOB Beacon, the spot looked at is previewed {beds:1,jobs:3,pos:-299067159805886L,problem:"",sections:[L;-307863211737085L,-307863211737084L,-307863211737083L,-307863210688509L,-307863210688508L,-307863210688507L,-307863209639933L,-307863209639932L,-307863209639931L,-307863208591357L,-307863208591356L,-307863208591355L,-307863207542781L,-307863207542780L,-307863207542779L,-303465165225981L,-303465165225980L,-303465165225979L,-303465164177405L,-303465164177404L,-303465164177403L,-303465163128829L,-303465163128828L,-303465163128827L,-303465162080253L,-303465162080252L,-303465162080251L,-303465161031677L,-303465161031676L,-303465161031675L,-299067118714877L,-299067118714876L,-299067118714875L,-299067117666301L,-299067117666300L,-299067117666299L,-299067116617725L,-299067116617724L,-299067116617723L,-299067115569149L,-299067115569148L,-299067115569147L,-299067114520573L,-299067114520572L,-299067114520571L],villagers:4}
+PASS the preview outlines the village part it would take 45 sections
+PASS the line under the crosshair counts villagers, beds and workstations FOB here: 4 villagers (3 needed) | beds 1 | workstations 3
+FAIL the ghost stands where the player looks BlockPos{x=-1088, y=66, z=720}
+PASS the FOB is planted where the player clicked -1088, 65, 718
+PASS it is PLANTED with a generated name PLANTED FOB SILENT MANTIS
+PASS planting started a vanilla raid raid=25, villagers at its start=4
+PASS everyone reads the announcement 
+PASS the block stands two tall 
+PASS the planted FOB's zone outline reaches the client [Zone[id=34, name=FOB SILENT MANTIS, state=planted, sections=[-307863210688508, -303465164177404, -299067117666300, -307863210688507, -303465164177403, -299067117666299, -307863210688509, -303465164177405, -299067117666301, -307863211737084, -307863207542780, -303465165225980, -303465161031676, -299067118714876, -299067114520572, -307863211737083, -307863207542779, -303465165225979, -303465161031675, -299067118714875, -299067114520571, -307863211737085, -307863207542781, -303465165225981, -303465161031677, -299067118714877, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725], ground=65]]
+PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@59527c30
+PASS the status card has the FOB line with the shovel in hand FOB SILENT MANTIS | PLANTED | RAID | 4 villagers
+PASS the FOB is ACTIVE ACTIVE
+PASS everyone reads that it is ACTIVE 
+PASS the FOB screen opens again 
+PASS the shop hands over a Supply Flare 
+PASS the screen says so in place 
+PASS the outline is off for the FOB 
+PASS and gone from the client []
+PASS the outline is back 
+PASS the client shows the FOB Zone effect 
+PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+PASS the FOB is renamed North Gate
+PASS everyone reads the new name 
+PASS the Field Guide has the FOB page 
+PASS the FOB shop sells its Supply Delivery Gate 
+PASS a spot for a gate in the village BlockPos{x=-1082, y=63, z=719}
+PASS the Delivery Gate stands across both rails, a column either side 
+PASS the rails stay in its two lanes 
+PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
+PASS the cart rolls on the rail 
+PASS the cart rolled on through the gate with its rider seated x=-1080.4572235831854 gate x=-1082
+PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
+PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@55150964
+PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=291, z=1}
+PASS the route is open and its round trip delivered true ride 432
+PASS the light at home turns green, on both columns 
+PASS the round trip's tribute is in the Receiving Gate's storage stacks=9 last=432
+PASS the gate screen opens by clicking the beam 
+PASS the screen holds the storage (54 slots) and the inventory 90
+PASS the client sees the tribute in the storage stacks=9
+PASS the screen takes the whole window (8 px margins) 624x344 in 640x360
+PASS 640 x 360: the storage beside the tabs 
+PASS the four loot slots: emeralds, the mine, the farm, potion makers potions
+PASS the countdown runs next in 92372 ticks
+PASS the Receiving Gate, Tribute tab at 640x360: 22 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Tribute tab at 640x360: no text cut short 
+PASS 52 ticks later it reads about 52 ticks less (the server's state comes every second) 92372 -> 92321
+PASS the mine is off on the server 
+PASS the screen shows it at once: OFF, and the farm brings 4/3 as much 74.4779294117647 -> 99.30390588235294
+PASS the Receiving Gate, a slot off at 640x360: 23 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, a slot off at 640x360: no text cut short 
+PASS the mine is on again 
+PASS the mine's items to choose from: six 6
+PASS the Receiving Gate, the mine's items at 640x360: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the mine's items at 640x360: no text cut short 
+PASS the mine now sends iron 1 minecraft:iron_ingot
+PASS potion makers: every brewing ingredient 17
+PASS research level 0: the A and S items are locked, the rest open locked 7, wrong 0
+PASS the Receiving Gate, the potion makers' items at 640x360: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the potion makers' items at 640x360: no text cut short 
+PASS the server refuses a locked item 0 gate.result.locked
+PASS research level 4: every potion makers' item open 
+PASS the specialty now sends ghast tears 13 minecraft:ghast_tear
+PASS the screen's ghast tears per delivery are the rule's (0.0.32: the value an hour of this 21 km line) per trip 9.309741176470588, rule 9.309741176470588
+PASS the specialty slot shows its research bonus (x2 at level 4) 2.0
+PASS the Receiving Gate, after the choices at 640x360: 23 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, after the choices at 640x360: no text cut short 
+PASS the Receiving Gate, Route tab at 640x360: 18 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Route tab at 640x360: no text cut short 
+PASS shift-click takes a stack out of the storage count=37
+PASS nothing goes into the storage, by hand or with shift dirt in the inventory: 5
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the Receiving Gate, Tribute tab at 640x360: 23 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Tribute tab at 640x360: no text cut short 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Receiving Gate, Tribute tab at 480x270: 18 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Tribute tab at 480x270: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Receiving Gate, Tribute tab at 427x240: 18 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Tribute tab at 427x240: no text cut short 
+PASS a narrow window gives the storage a tab of its own, its slots shown 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Receiving Gate, Storage tab (narrow window) at 480x270: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Storage tab (narrow window) at 480x270: no text cut short 
+PASS a narrow window gives the storage a tab of its own, its slots shown 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Receiving Gate, Storage tab (narrow window) at 427x240: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Storage tab (narrow window) at 427x240: no text cut short 
+PASS the slots are hidden on the other tabs of a narrow window 
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the Receiving Gate, Route tab at 640x360: 18 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Route tab at 640x360: no text cut short 
+PASS the slots are hidden on the other tabs of a narrow window 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Receiving Gate, Route tab at 480x270: 13 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Route tab at 480x270: no text cut short 
+PASS the slots are hidden on the other tabs of a narrow window 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Receiving Gate, Route tab at 427x240: 14 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, Route tab at 427x240: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the Receiving Gate, the potion makers' items at 640x360: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the potion makers' items at 640x360: no text cut short 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Receiving Gate, the potion makers' items at 480x270: 6 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the potion makers' items at 480x270: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Receiving Gate, the potion makers' items at 427x240: 6 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the potion makers' items at 427x240: no text cut short 
+PASS the gate screen shows the monster hunter guild monsters
+PASS the guild's list: every monster drop 21
+PASS research level 1: ender pearls (A) still locked 
+PASS the Receiving Gate, the monster hunter guild's items at 640x360: 11 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the monster hunter guild's items at 640x360: no text cut short 
+PASS research level 2: ender pearls open, the S items still locked 
+PASS the guild now sends ender pearls 13 minecraft:ender_pearl
+PASS the Receiving Gate, the guild's ender pearls at 640x360: 23 texts, none over another or over a button, all in the panel 0 
+PASS the Receiving Gate, the guild's ender pearls at 640x360: no text cut short 
+PASS the SOS calls the FOB sos=34 left=167960
+PASS everyone reads the SOS 
+PASS the SOS map is handed out 
+PASS the status card leads with the SOS SOS North Gate | 6 d 23 h left | go there
+PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@531c30db
+PASS it lists the FOB: its name, its distance from the base, its state {bearing:268.07239977171525d,catapult:0b,distance:21108,id:34L,index:0,level:2,name:"North Gate",queue:0,route:1b,seller:"research",signal:"green",sos:1b,sosLef
+PASS and the time left to answer its SOS left=167900
+PASS the table knows the map is not carried 
+PASS the Command Table, FOBs tab with an SOS at 640x360: 5 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, FOBs tab with an SOS at 640x360: no text cut short 
+PASS the SOS map is reprinted 
+PASS the screen says so tactical.result.sos_reprinted
+PASS a second copy is refused while one is carried tactical.result.sos_carried
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the Command Table, FOBs tab at 640x360: 6 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, FOBs tab at 640x360: no text cut short 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Command Table, FOBs tab at 480x270: 6 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, FOBs tab at 480x270: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Command Table, FOBs tab at 427x240: 6 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, FOBs tab at 427x240: no text cut short 
+PASS the FOB 20 km away: an arrow at the map's edge with its name and distance [No scan yet. Use SCAN MAP., North Gate (21108 blocks), QA Near, Base: 128 blocks each way, The satellite has found nothing yet. A new offer, comes at dawn., READY]
+PASS the FOB near home: a flag with its name on the map 
+PASS the Command Table, Base map with the FOBs at 640x360: 7 texts, none over another or over a button, all in the panel 0 
+PASS the Names switch is off 
+PASS names off: no FOB name or distance on the map [No scan yet. Use SCAN MAP., Base: 128 blocks each way, The satellite has found nothing yet. A new offer, comes at dawn., READY]
+PASS names on again 
+PASS the SOS raid starts on arrival 
+PASS everyone reads who answered 
+PASS a villager lost in the raid is recorded [{baby:1b,data:{AbsorptionAmount:0.0f,Age:-19946,Air:300s,ArmorDropChances:[0.08
+PASS won: the SOS is over and the FOB stays ACTIVE 
+PASS the SOS clock starts again 803242
+PASS its map burnt 
+PASS everyone reads that it held 
+PASS the unanswered SOS puts the FOB DOWN 
+PASS everyone reads it 
+PASS the gate at home is red 
+PASS the gate screen opens 
+PASS no raid starts at a DOWN FOB 
+PASS the FOB screen opens DOWN 
+PASS the repair costs the base and the lost villager total=8
+PASS repaired: ACTIVE again ACTIVE
+PASS the lost villager is back 
+PASS everyone reads the repair 
+PASS the FOB screen sums up its tribute 4 slots, next in 92535
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the FOB screen with its tribute column at 640x360: 42 texts, none over another or over a button, all in the panel 0 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the FOB screen with its tribute column at 480x270: 43 texts, none over another or over a button, all in the panel 0 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the FOB screen with its tribute column at 427x240: 41 texts, none over another or over a button, all in the panel 0 
+PASS the Research tab: level 0, the player's 12 diamonds 0 12
+PASS six gift buttons: +1 and +10 for emeralds, diamonds and Ardent Energy 6
+PASS no emeralds carried: their buttons are off, the diamonds' on 
+PASS the FOB screen, Research tab at 640x360: 30 texts, none over another or over a button, all in the panel 0 
+PASS the FOB screen, Research tab at 640x360: no text cut short 
+PASS ten diamonds taken from the inventory left 2
+PASS 40 research points: level 1 40 level 1
+PASS the screen says the level went up fob.research.up
+PASS everyone reads it, with one [FOB] prefix 
+PASS no emeralds: refused, nothing given fob.research.short.emerald
+PASS a creative player: every gift button on 
+PASS 80 points: level 2, A opens 80
+PASS everyone reads the A tier opened 
+PASS never more than the top level needs 240
+PASS everyone reads the S tier opened 
+PASS the FOB screen, Research tab at the top level at 640x360: 30 texts, none over another or over a button, all in the panel 0 
+PASS the FOB screen, Research tab at the top level at 640x360: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the FOB screen, Research tab at 640x360: 30 texts, none over another or over a button, all in the panel 0 
+PASS the FOB screen, Research tab at 640x360: no text cut short 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the FOB screen, Research tab at 480x270: 30 texts, none over another or over a button, all in the panel 0 
+PASS the FOB screen, Research tab at 480x270: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the FOB screen, Research tab at 427x240: 30 texts, none over another or over a button, all in the panel 0 
+PASS the FOB screen, Research tab at 427x240: no text cut short 
+PASS a free 3 x 3 spot in the FOB's village for the catapult BlockPos{x=-1084, y=63, z=717}
+PASS the catapult is in hand 1 supply_catapult
+FAIL the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline [BlockPos{x=-1088, y=63, z=719}] AABB[-1089.0, 63.0, 718.0] -> [-1086.0, 65.0, 721.0]
+PASS placed: it serves the FOB BlockPos{x=-1084, y=63, z=717}
+PASS the FOB zone's outline carries the FOB Beacon's ground level (no more lines at the player's feet) 65 vs 65
+PASS the FOB row: a catapult, the seller open 
+PASS Contact Specialty Seller is there and active 
+PASS the Command Table, FOBs tab with the seller at 640x360: 5 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, FOBs tab with the seller at 640x360: no text cut short 
+PASS the seller opens on the FOB's specialty 
+PASS its grid: the specialty's items (scrolled when they do not fit) 21 of 21
+PASS the Command Table, the specialty seller at 640x360: 4 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, the specialty seller at 640x360: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+PASS the Command Table, the specialty seller at 640x360: 4 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, the specialty seller at 640x360: no text cut short 
+PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+PASS the Command Table, the specialty seller at 480x270: 4 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, the specialty seller at 480x270: no text cut short 
+PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+PASS the Command Table, the specialty seller at 427x240: 4 texts, none over another or over a button, all in the panel 0 
+PASS the Command Table, the specialty seller at 427x240: no text cut short 
+PASS bought: the box waits at the catapult tactical.seller.bought
+FAIL timeout the catapult throws
+FAIL timeout the box is in the air
+FAIL the catapult turned to the beacon and threw the box; it flies home throws 1
+PASS a parcel comes down beside the beacon with what was bought 1 parcels
+PASS the buyer reads where it landed 
+PASS the Defense Beacon's preview: the beacon and its base zone Ghost[cells=[BlockPos{x=20008, y=291, z=19}], states=[Block{arsenal_beacon:defense_beacon}[facing=south,mk=1]], box=AABB[20008.0, 291.0, 19.0] -> [20009.0, 292.0, 20.0], beacon=true]
+PASS the Command Table's preview: 2 x 2 x 2 AABB[20007.0, 291.0, 19.0] -> [20009.0, 293.0, 21.0]
+PASS the table stands in the zone, its parts with it 
+PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@58735597
+PASS Sharpness I applied 
+PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
+PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
+PASS Mending unlocked for the team 
+PASS everyone reads it 
+PASS Mending applied 
+PASS the table is Mk I 
+PASS the sword comes back enchanted 
+PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@1f3d34e4
+PASS the Exchange buys the Warlord Seal for 8 Ardent Energy value=8
+PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@30b84f33
+PASS nothing is removed yet 
+PASS the FOB is deleted 
+PASS its block is gone 
+PASS the FOB Beacon came back 
+PASS everyone reads who took it back 
+PASS what its storage held is handed over (0.0.31) 0 -> 3
+PASS and the player reads so 
+PASS its FOB gone, the Receiving Gate reads UNLINKED and is red 
+PASS the Workshop lists the FOB Beacon 
+PASS the Workshop list is longer than its window: it scrolls max=42
+PASS scrolled to the end scroll=42
+PASS the Supply Delivery Gate is sold there, its Make button in view 
+PASS rows scrolled out of view hide their Make button 

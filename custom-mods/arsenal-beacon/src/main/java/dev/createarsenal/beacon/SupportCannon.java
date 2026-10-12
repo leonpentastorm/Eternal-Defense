@@ -76,6 +76,8 @@ final class SupportCannon {
         CannonBlock(){super(Properties.of().strength(4,8).noOcclusion().dynamicShape().sound(SoundType.METAL));}
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return ArsenalStructures.cell(s,0,0,0);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState s){return new CannonEntity(pos,s);}
+        /** A plain Block ignores block events: hand them to the block entity (the server only sends an event to the clients when this accepts it). */
+        @Override public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}
         @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){
             super.onPlace(s,l,pos,old,moving);
             if(l instanceof ServerLevel)ArsenalStructures.install(l,pos,s);

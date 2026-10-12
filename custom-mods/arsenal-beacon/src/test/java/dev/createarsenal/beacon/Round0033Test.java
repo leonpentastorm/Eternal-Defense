@@ -98,5 +98,10 @@ final class Round0033Test {
         for(String why:List.of("overworld","not_fob","has_catapult","no_room"))assertTrue(lang.contains("\"gui.arsenal_beacon.catapult.refused."+why+"\""),why);
         assertTrue(lang.contains("# Supply Catapult"),"a Field Guide card");
     }
+    /** The block event that starts the throw (and the cannon's recoil) reaches the block entity and so the clients (found by the real client run). */
+    @Test void blockEventsReachTheBlockEntity(){
+        for(String f:List.of("SupplyCatapult.java","SupportCannon.java"))
+            assertTrue(SosTest.source(f).contains("public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}"),f);
+    }
     @Test void theProtocolIs38(){assertTrue(SosTest.source("BeaconNetwork.java").contains("\"38-standalone\":\"38-pack\""));}
 }
