@@ -79,67 +79,194 @@ public final class GateClient {
         return Ui.t("gate.time.seconds",s);
     }
 
+    /** "1.5" or "12": a rate for the screens. */
+    static String number(double x){if(x>=10)return Long.toString(Math.round(x));String s=String.format(java.util.Locale.ROOT,"%.1f",x);return s.endsWith(".0")?s.substring(0,s.length()-2):s;}
+    /** "2 per trip" or "1 every 3.5 trips", with "about 9 an hour of play" when the route runs. */
+    static Component rate(double perTrip,double tripsPerHour){
+        if(perTrip<=0)return Ui.t("gate.rate.off");
+        Component trip=perTrip>=1-1e-9?Ui.t("gate.rate.per_trip",number(perTrip)):Ui.t("gate.rate.every",number(1/perTrip));
+        return tripsPerHour>0?Ui.t("gate.rate.hour",trip,number(perTrip*tripsPerHour)):trip;
+    }
+    static ItemStack icon(String id){return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(id)));}
+    static Component slotTitle(String slot,String specialty){return slot.equals("specialty")?Ui.t("gate.slot.specialty",Ui.t("gate.specialty."+specialty)):Ui.t("gate.slot."+slot);}
+    static int slotColor(int index){return switch(index){case 0->0xff4fd18b;case 1->0xffb0b8c0;case 2->FobClient.OLIVE;default->Ui.BRASS;};}
+
+    /**
+     * 0.0.31 (owner): the gate screen takes the whole window. A Receiving Gate shows its tribute storage (take only) and the inventory on the
+     * left; the right side has the light and why, the countdown to the next delivery, and two tabs: Tribute (the four loot slots, each with
+     * its switch, its item, how many trips one item takes and a Choose button) and Route (the checklist). Choose opens a grid of the slot's
+     * items. On a narrow window (1920 x 1080 at GUI scale 4, 1280 x 720 at GUI scale 3) the storage has a tab of its own and the slot cards
+     * use two lines. The server sends the state again every second, so the countdown and the rates are always current.
+     */
     static final class GateScreen extends AbstractContainerScreen<RailGates.GateMenu> {
-        private CompoundTag data;private boolean relink;
-        private int leftX,rightX,colW,bodyY;
-        GateScreen(RailGates.GateMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;}
-        void update(CompoundTag next){data=next;relink=false;rebuildWidgets();}
+        /** The storage column's width (its left margin, 9 slots, a gap) and the least room the tabs need beside it. */
+        static final int STORE_COL=RailGates.GateMenu.STORE_X+162+14,SPLIT_MIN=290,TAB_W=80;
+        private CompoundTag data;private boolean relink;private long receivedAt;private String layout="";
+        /** The open tab (0 tribute, 1 route, 2 storage on a narrow window) and the slot whose items are being chosen (-1 none), kept while the screen is open. */
+        int tab,picking=-1,pickScroll;
+        private int rx,rw,bodyY,cardsY,cardH;private boolean split,changeBelow;
+        final List<Ui.UiButton> pickButtons=new ArrayList<>();
+        GateScreen(RailGates.GateMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;receivedAt=net.minecraft.Util.getMillis();layout=layout(data);}
+        void update(CompoundTag next){
+            data=next;receivedAt=net.minecraft.Util.getMillis();
+            String now=layout(next);if(!now.equals(layout)){layout=now;relink=false;rebuildWidgets();}
+        }
+        /** What the buttons depend on: rebuilt only when it changes (the state comes every second). */
+        private static String layout(CompoundTag d){
+            var b=new StringBuilder(d.getString("kind")).append(d.getBoolean("linked")).append(d.getString("specialty")).append(d.getList("options",Tag.TAG_COMPOUND).size());
+            for(var t:d.getList("slots",Tag.TAG_COMPOUND)){var s=(CompoundTag)t;b.append(s.getBoolean("on")).append(s.getInt("choice")).append(s.getBoolean("mayToggle"));}
+            return b.toString();
+        }
         private boolean receiving(){return data.getString("kind").equals(RailGates.Kind.RECEIVING.id);}
         private boolean linked(){return data.getBoolean("linked");}
         private boolean choosing(){return receiving()&&(!linked()||relink);}
+        private List<CompoundTag> slots(){var out=new ArrayList<CompoundTag>();for(var t:data.getList("slots",Tag.TAG_COMPOUND))out.add((CompoundTag)t);return out;}
+        private RouteRules.Specialty specialty(){for(var s:RouteRules.Specialty.values())if(s.id().equals(data.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
+        /** The countdown, counted on from the last state (ticks of play pass while the player is here). */
+        long nextIn(){long n=data.getLong("nextIn");return n<0?-1:Math.max(0,n-(net.minecraft.Util.getMillis()-receivedAt)/50);}
+        private int countH(){return imageHeight>=300?36:22;}
+        /** A slot card's own height (the cards are {@code cardH} apart) and whether it has room for three lines. */
+        private int cardInner(){return cardH-3;}
+        private boolean tall(){return cardInner()>=33;}
+        boolean split(){return split;}
+        CompoundTag data(){return data;}
 
         @Override protected void init(){
-            imageWidth=Math.min(width-12,430);imageHeight=Math.min(height-12,262);
-            super.init();clearWidgets();
-            colW=(imageWidth-36)/2;leftX=leftPos+12;rightX=leftX+colW+12;bodyY=topPos+34;
+            // the whole window, with a small margin (the storage column needs 240 px of height)
+            imageWidth=Math.max(300,width-16);imageHeight=Math.max(RailGates.GateMenu.STORE_BOTTOM,height-16);
+            super.init();clearWidgets();pickButtons.clear();
+            // a wide window shows the storage beside the tabs; a narrow one gives it a tab of its own
+            split=menu.storage&&imageWidth-STORE_COL-12>=SPLIT_MIN;
+            if(tab==2&&(!menu.storage||split))tab=0;
+            menu.slotsShown=menu.storage&&(split||tab==2&&linked()&&!choosing());
+            rx=leftPos+(menu.slotsShown?STORE_COL:12);rw=leftPos+imageWidth-12-rx;bodyY=topPos+32;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
             if(choosing()){
                 var options=data.getList("options",Tag.TAG_COMPOUND);int y=bodyY+30;
                 for(int i=0;i<options.size()&&y<topPos+imageHeight-40;i++){
                     var o=options.getCompound(i);int id=Routes.LINK+i;
-                    var b=addRenderableWidget(new Ui.UiButton(leftX,y,imageWidth-24,20,Ui.t("gate.link.option",o.getString("name"),Ui.t("fob.state."+o.getString("state"))),Ui.Look.PRIMARY,x->click(id)));
+                    var b=addRenderableWidget(new Ui.UiButton(rx,y,rw,20,Ui.t("gate.link.option",o.getString("name"),Ui.t("fob.state."+o.getString("state"))),Ui.Look.PRIMARY,x->click(id)));
                     b.active=!o.getBoolean("current");y+=24;
                 }
-                if(linked())addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-30,90,20,Ui.t("gate.link.back"),Ui.Look.NORMAL,x->{relink=false;rebuildWidgets();}));
+                if(linked())addRenderableWidget(new Ui.UiButton(rx,topPos+imageHeight-30,90,20,Ui.t("gate.link.back"),Ui.Look.NORMAL,x->{relink=false;rebuildWidgets();}));
                 return;
             }
-            if(receiving()&&linked())addRenderableWidget(new Ui.UiButton(rightX+colW-110,topPos+imageHeight-30,110,20,Ui.t("gate.link.change"),Ui.Look.NORMAL,x->{relink=true;rebuildWidgets();}));
+            if(!linked())return;
+            // the countdown card's height shrinks on a small window; the four cards share what is left
+            int tabsY=bodyY+24+countH()+6;cardsY=tabsY+22;
+            cardH=Math.max(26,Math.min(46,(topPos+imageHeight-14-cardsY-13)/4));
+            var labels=new ArrayList<String>(List.of("gate.tab.tribute","gate.tab.route"));if(menu.storage&&!split)labels.add("gate.tab.storage");
+            // the tabs share the row when it is narrow (the Storage tab beside the storage on a 426 px window)
+            int tabW=Math.min(TAB_W,(rw-2*(labels.size()-1))/labels.size());
+            for(int i=0;i<labels.size();i++){int index=i;
+                var t=addRenderableWidget(new Ui.UiButton(rx+i*(tabW+2),tabsY,tabW,18,Ui.t(labels.get(i)),Ui.Look.TAB,b->{tab=index;picking=-1;rebuildWidgets();}));t.selected=tab==i;}
+            if(tab==1){
+                // Change FOB beside the tabs when there is room, else at the bottom
+                int tabsEnd=rx+labels.size()*(tabW+2);changeBelow=tabsEnd+4+110>rx+rw;
+                if(receiving())addRenderableWidget(new Ui.UiButton(rx+rw-110,changeBelow?topPos+imageHeight-30:tabsY,110,changeBelow?20:18,Ui.t("gate.link.change"),Ui.Look.NORMAL,x->{relink=true;rebuildWidgets();}));
+                return;
+            }
+            if(tab==2)return;
+            if(picking>=0){picker();return;}
+            var slots=slots();int h=cardInner();
+            for(int i=0;i<slots.size();i++){
+                var s=slots.get(i);int index=i,y=cardsY+13+i*cardH;boolean on=s.getBoolean("on");
+                var toggle=addRenderableWidget(new Ui.UiButton(rx+6,y+(h-16)/2,34,16,Ui.t(on?"gate.slot.on":"gate.slot.off"),on?Ui.Look.PRIMARY:Ui.Look.NORMAL,b->click(Routes.TOGGLE+index)));
+                toggle.active=s.getBoolean("mayToggle");
+                toggle.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(toggle.active?"gate.slot.toggle.tip":"gate.slot.last")));
+                if(i>0){
+                    var choose=addRenderableWidget(new Ui.UiButton(rx+rw-66,y+(h-18)/2,60,18,Ui.t("gate.slot.choose"),Ui.Look.NORMAL,b->{picking=index;pickScroll=0;rebuildWidgets();}));
+                    choose.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("gate.slot.choose.tip."+s.getString("slot"))));
+                }
+            }
         }
-        private void click(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
+        /** The grid of a slot's items: one button each (its icon), scrolled by the wheel when it is longer than the space. */
+        private void picker(){
+            var slot=RouteRules.Slot.values()[picking];var options=RouteRules.options(slot,specialty());
+            int cell=22,cols=Math.max(1,(rw-12)/cell),top=cardsY+13,rows=Math.max(1,(topPos+imageHeight-44-top)/cell);
+            int total=(options.size()+cols-1)/cols;pickScroll=Math.max(0,Math.min(pickScroll,Math.max(0,total-rows)));
+            int chosen=slots().size()>picking?slots().get(picking).getInt("choice"):0;
+            for(int i=pickScroll*cols;i<options.size()&&i<(pickScroll+rows)*cols;i++){
+                int index=i,col=(i-pickScroll*cols)%cols,row=(i-pickScroll*cols)/cols;var loot=options.get(i);var stack=icon(loot.id());
+                var b=new Ui.UiButton(rx+6+col*cell,top+row*cell,cell-2,cell-2,Component.empty(),Ui.Look.NORMAL,x->{click(Routes.chooseButton(slot,index));picking=-1;rebuildWidgets();});
+                b.selected=i==chosen;b.painter((g,self,hover)->g.renderItem(stack,self.getX()+2,self.getY()+2)).noLabel();
+                pickButtons.add(addRenderableWidget(b));
+            }
+            addRenderableWidget(new Ui.UiButton(rx+rw-90,topPos+imageHeight-30,90,20,Ui.t("gate.pick.back"),Ui.Look.NORMAL,x->{picking=-1;rebuildWidgets();}));
+        }
+        private void click(int id){BeaconNetwork.menuButton(menu.containerId,id);}
+        @Override public boolean mouseScrolled(double mx,double my,double delta){
+            if(picking>=0){pickScroll=Math.max(0,pickScroll-(int)Math.signum(delta));rebuildWidgets();return true;}
+            return super.mouseScrolled(mx,my,delta);
+        }
 
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             Ui.panel(g,leftPos,topPos,imageWidth,imageHeight);
             Component title=linked()?Component.literal(data.getString("name")):Ui.t("gate.unlinked");
             Ui.header(g,font,leftPos,topPos,imageWidth,title,Component.translatable("block.arsenal_beacon."+data.getString("kind")));
+            if(menu.slotsShown)drawStorage(g);
             if(choosing()){
-                Ui.wrap(g,font,Ui.t(data.getList("options",Tag.TAG_COMPOUND).isEmpty()?"gate.link.none":"gate.link.help"),leftX,bodyY,imageWidth-24,Ui.MUTED,3);
+                Ui.wrap(g,font,Ui.t(data.getList("options",Tag.TAG_COMPOUND).isEmpty()?"gate.link.none":"gate.link.help"),rx,bodyY,rw,Ui.MUTED,3);
+            }else if(!linked()){
+                Ui.chip(g,font,Ui.t("gate.signal.red"),rx,bodyY,Ui.RED,90);
+                Ui.wrap(g,font,Ui.t("gate.reason.unlinked"),rx,bodyY+18,rw,Ui.RED,3);
             }else{
-                strip(g);
                 drawStatus(g);
-                drawChecklist(g);
-                drawStock(g);
+                drawCountdown(g);
+                if(tab==1)drawChecklist(g);
+                else if(tab==2)drawStorageTab(g);
+                else if(picking>=0)drawPicker(g);
+                else drawSlots(g);
             }
             var message=data.getString("message");
-            if(!message.isEmpty())Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),leftX,topPos+imageHeight-14,message.endsWith(".linked")?FobClient.OLIVE:Ui.ORANGE,imageWidth/2);
+            if(!message.isEmpty()){boolean good=message.endsWith(".linked")||message.endsWith(".chosen")||message.endsWith(".slot_on")||message.endsWith(".slot_off");
+                Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),rx,topPos+imageHeight-12,good?FobClient.OLIVE:Ui.ORANGE,rw-(tab==1&&changeBelow||picking>=0?120:0));}
         }
-        /** The picture strip: Receiving Gate, a cart with a rider, the Delivery Gate, and back. */
-        private void strip(GuiGraphics g){
-            int y=bodyY,x=leftX;
-            Ui.card(g,x,y,imageWidth-24,26,Ui.EDGE);
-            ItemStack receiving=new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get()),cart=new ItemStack(Items.MINECART),delivery=new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get());
-            int cx=x+8;
-            g.renderItem(receiving,cx,y+5);Ui.text(g,font,Ui.t("gate.strip.home"),cx+19,y+9,Ui.INK,60);cx+=19+font.width(Ui.t("gate.strip.home"))+6;
-            Ui.text(g,font,Component.literal("→"),cx,y+9,Ui.CYAN,10);cx+=12;
-            g.renderItem(cart,cx,y+5);Ui.text(g,font,Ui.t("gate.strip.ride"),cx+19,y+9,Ui.INK,80);cx+=19+font.width(Ui.t("gate.strip.ride"))+6;
-            Ui.text(g,font,Component.literal("→"),cx,y+9,Ui.CYAN,10);cx+=12;
-            g.renderItem(delivery,cx,y+5);Ui.text(g,font,Ui.t("gate.strip.fob"),cx+19,y+9,Ui.INK,60);cx+=19+font.width(Ui.t("gate.strip.fob"))+6;
-            Ui.text(g,font,Ui.t("gate.strip.back"),cx,y+9,Ui.MUTED,x+imageWidth-24-cx-6);
+        /** The storage (take only) and the player's inventory, each slot drawn where the menu put it. */
+        private void drawStorage(GuiGraphics g){
+            int x=leftPos+RailGates.GateMenu.STORE_X,titleY=topPos+RailGates.GateMenu.STORE_Y-10;
+            Ui.text(g,font,Ui.t("gate.storage.title"),x,titleY,Ui.BRASS,110);
+            if(linked())Ui.right(g,font,Ui.t("gate.storage.short",data.getInt("stored"),data.getInt("depotSlots")),x+162,titleY,data.getBoolean("full")?Ui.ORANGE:Ui.MUTED);
+            for(var slot:menu.slots){boolean store=slot.container!=minecraft.player.getInventory();Ui.slot(g,leftPos+slot.x-1,topPos+slot.y-1,store?FobClient.OLIVE:Ui.EDGE);}
+            Ui.text(g,font,Ui.t("gate.storage.inventory"),x,topPos+RailGates.GateMenu.INV_Y-10,Ui.MUTED,162);
         }
-        /** The light and what it means. */
+        /** A narrow window's Storage tab: beside the storage, how full it is and what it does. */
+        private void drawStorageTab(GuiGraphics g){
+            int y=cardsY+2;
+            Ui.text(g,font,Ui.t("gate.check.storage",data.getInt("stored"),data.getInt("depotSlots")),rx,y,data.getBoolean("full")?Ui.ORANGE:Ui.INK,rw);y+=14;
+            y=Ui.wrap(g,font,Ui.t("gate.storage.tip"),rx,y,rw,Ui.MUTED,5)+4;
+            if(data.getBoolean("full"))Ui.wrap(g,font,Ui.t("gate.reason.full"),rx,y,rw,Ui.ORANGE,4);
+        }
         private void drawStatus(GuiGraphics g){
-            String signal=data.getString("signal");int y=bodyY+30;
-            Ui.chip(g,font,Ui.t("gate.signal."+signal),leftX,y,color(signal),90);
-            Ui.text(g,font,reason(),leftX+96,y+2,color(signal),imageWidth-24-96);
+            String signal=data.getString("signal");
+            int chip=Ui.chip(g,font,Ui.t("gate.signal."+signal),rx,bodyY,color(signal),90);
+            Ui.wrap(g,font,reason(),rx+chip+8,bodyY+2,rw-chip-8,color(signal),2);
+        }
+        /** The countdown to the next delivery, big, and how often they come. */
+        private void drawCountdown(GuiGraphics g){
+            int y=bodyY+24,h=countH();
+            Ui.card(g,rx,y,rw,h,FobClient.OLIVE);
+            long next=nextIn();long period=data.getLong("period");
+            Component when=next>=0?time(next):Ui.t("gate.next.paused");
+            int half=rw/2;
+            if(h>=30){
+                Ui.text(g,font,Ui.t("gate.next.title"),rx+8,y+4,Ui.BRASS,half-16);
+                // 1.5 times as big: the delivery the player waits for
+                if(font.width(when)*1.5f<=half-16){g.pose().pushPose();g.pose().translate(rx+8,y+16,0);g.pose().scale(1.5f,1.5f,1);
+                    g.drawString(font,when,0,0,next>=0?Ui.INK:Ui.MUTED,false);g.pose().popPose();}
+                else Ui.wrap(g,font,when,rx+8,y+15,half-16,next>=0?Ui.INK:Ui.MUTED,2);
+            }
+            Component every=period>0?Ui.t("gate.next.every",time(period),number(data.getDouble("tripsPerHour"))):Ui.t("gate.next.unopened");
+            if(h<30){
+                // a small window: two lines across the card, the countdown on top
+                Ui.text(g,font,Ui.t("gate.next.short",when),rx+8,y+2,next>=0?Ui.INK:Ui.MUTED,rw-16);
+                if(period>0&&font.width(every)>rw-16)every=Ui.t("gate.next.every.short",time(period),number(data.getDouble("tripsPerHour")));
+                Ui.text(g,font,every,rx+8,y+12,Ui.MUTED,rw-16);
+                return;
+            }
+            Ui.wrap(g,font,every,rx+half,y+3,half-8,Ui.MUTED,2);
+            long ago=data.getLong("lastAgo");
+            if(ago>=0&&h>=30)Ui.text(g,font,Ui.t("gate.last."+(data.getString("lastKind").equals("ride")?"ride":"passive"),data.getInt("lastItems"),time(ago)),rx+half,y+h-11,Ui.MUTED,half-8);
         }
         private Component reason(){
             if(!linked())return Ui.t("gate.reason.unlinked");
@@ -148,64 +275,85 @@ public final class GateClient {
             if(!data.getBoolean("commissioned"))return Ui.t("gate.reason.open");
             if(data.getLong("clock")<=0)return Ui.t("gate.reason.overdue");
             if(data.getBoolean("riding"))return Ui.t("gate.reason.riding");
-            if(data.getInt("queued")>=data.getInt("queueCap"))return Ui.t("gate.reason.backlog");
+            if(data.getBoolean("full"))return Ui.t("gate.reason.full");
             if(data.getBoolean("warn"))return Ui.t("gate.reason.warn");
             return Ui.t("gate.reason.running");
         }
+        /** The four loot slots: the facts line, then one card each (three lines when there is room: its name, its item, its rate). */
+        private void drawSlots(GuiGraphics g){
+            Ui.text(g,font,Ui.t("gate.facts",data.getInt("villagers"),data.getInt("distance"),Math.round(data.getDouble("bonus")*100)),rx,cardsY+2,Ui.MUTED,rw);
+            var slots=slots();double perHour=data.getDouble("tripsPerHour");int h=cardInner();
+            for(int i=0;i<slots.size();i++){
+                var s=slots.get(i);int y=cardsY+13+i*cardH;boolean on=s.getBoolean("on");
+                Ui.card(g,rx,y,rw,h,on?slotColor(i):Ui.EDGE);
+                int tx=rx+46+20,tw=rw-(tx-rx)-(i>0?72:8);
+                g.renderItem(icon(s.getString("item")),rx+46,y+(h-16)/2);
+                Component name=slotTitle(s.getString("slot"),data.getString("specialty")),item=icon(s.getString("item")).getHoverName(),rate=rate(s.getDouble("perTrip"),perHour);
+                if(tall()){
+                    Ui.text(g,font,name,tx,y+4,on?slotColor(i):Ui.MUTED,tw);
+                    Ui.text(g,font,item,tx,y+14,on?Ui.INK:Ui.MUTED,tw);
+                    Ui.text(g,font,rate,tx,y+24,on?Ui.CYAN:Ui.MUTED,tw);
+                }else{
+                    // two lines: the slot's name and its item, then the rate
+                    int top=y+(h-18)/2,nameW=Math.min(font.width(name),tw*2/3);
+                    Ui.text(g,font,name,tx,top,on?slotColor(i):Ui.MUTED,nameW);
+                    if(tw-nameW-6>12)Ui.text(g,font,item,tx+nameW+6,top,on?Ui.INK:Ui.MUTED,tw-nameW-6);
+                    Ui.text(g,font,rate,tx,top+10,on?Ui.CYAN:Ui.MUTED,tw);
+                }
+            }
+        }
+        private void drawPicker(GuiGraphics g){
+            var slot=RouteRules.Slot.values()[picking];
+            Ui.text(g,font,Ui.t("gate.pick.title",slotTitle(slot.id(),data.getString("specialty"))),rx,cardsY+2,Ui.BRASS,rw);
+            var options=RouteRules.options(slot,specialty());int cell=22,cols=Math.max(1,(rw-12)/cell),total=(options.size()+cols-1)/cols;
+            int top=cardsY+13,rows=Math.max(1,(topPos+imageHeight-44-top)/cell);
+            if(total>rows)Ui.text(g,font,Ui.t("gate.pick.scroll",pickScroll+1,total-rows+1),rx,topPos+imageHeight-26,Ui.MUTED,rw-100);
+        }
         /** The requirements, a tick or a cross each, the fix next to every cross. */
         private void drawChecklist(GuiGraphics g){
-            int x=leftX,w=colW,y=bodyY+48;
-            Ui.text(g,font,Ui.t("gate.check.title"),x,y,Ui.BRASS,w);y+=12;
-            boolean fob=linked()&&data.getString("state").equals("active");
-            y=line(g,x,y,w,fob,Ui.t("gate.check.fob"),!linked()?Ui.t(receiving()?"gate.fix.link":"gate.fix.unlinked"):Ui.t(data.getString("state").equals("down")?"gate.fix.fob.down":"gate.fix.fob"));
+            int x=rx,w=rw,y=cardsY+2;
+            boolean fob=data.getString("state").equals("active");
+            y=line(g,x,y,w,fob,Ui.t("gate.check.fob"),Ui.t(data.getString("state").equals("down")?"gate.fix.fob.down":"gate.fix.fob"));
             y=line(g,x,y,w,data.getBoolean("partner"),Ui.t("gate.check.partner"),Ui.t(receiving()?"gate.fix.partner.receiving":"gate.fix.partner.delivery"));
-            // the distance only means something once both gates stand
             if(data.getBoolean("partner")){boolean far=data.getInt("distance")>=data.getInt("minDistance");
                 y=line(g,x,y,w,far,Ui.t("gate.check.distance",data.getInt("distance")),Ui.t("gate.fix.distance",data.getInt("minDistance")));}
             boolean open=data.getBoolean("commissioned");
-            y=line(g,x,y,w,open,Ui.t("gate.check.route"),Ui.t("gate.fix.route"),3);   // the whole instruction, never cut
+            y=line(g,x,y,w,open,Ui.t("gate.check.route"),Ui.t("gate.fix.route"),3);
             long clock=data.getLong("clock");
             if(!open){Ui.text(g,font,Component.literal("-"),x+1,y,Ui.MUTED,8);Ui.text(g,font,Ui.t("gate.check.clock.later"),x+9,y,Ui.MUTED,w-9);y+=12;}
-            else if(clock>0){y=line(g,x,y,w,true,Ui.t("gate.check.clock",time(clock)),Component.empty());Ui.text(g,font,Ui.t("gate.check.clock.renews"),x+9,y-2,Ui.MUTED,w-9);y+=10;}
+            else if(clock>0){y=line(g,x,y,w,true,Ui.t("gate.check.clock",time(clock)),Component.empty());if(y+20<topPos+imageHeight-(changeBelow?34:16))y=Ui.wrap(g,font,Ui.t("gate.check.clock.renews"),x+9,y-2,w-9,Ui.MUTED,2)+2;}
             else y=line(g,x,y,w,false,Ui.t("gate.check.clock.none"),Ui.t("gate.fix.clock"));
-            line(g,x,y,w,data.getInt("queued")<data.getInt("queueCap"),Ui.t("gate.check.backlog",data.getInt("queued"),data.getInt("queueCap")),Ui.t("gate.fix.backlog"));
+            y=line(g,x,y,w,!data.getBoolean("full"),Ui.t(receiving()?"gate.check.storage":"gate.storage.remote",data.getInt("stored"),data.getInt("depotSlots")),Ui.t("gate.fix.storage"));
+            if(y+26<topPos+imageHeight-(changeBelow?34:16))Ui.wrap(g,font,Ui.t("gate.ride",RouteRules.ACTIVE_FACTOR),x,y+4,w,Ui.MUTED,2);
         }
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix){return line(g,x,y,w,ok,what,fix,2);}
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix,int fixLines){
+            int bottom=topPos+imageHeight-(changeBelow?34:16);if(y+9>bottom)return y;   // no room left (a very small window): the rest is cut, never drawn over
+            fixLines=Math.max(0,Math.min(fixLines,(bottom-y-10)/11));
             if(ok)Ui.check(g,x,y+1,FobClient.OLIVE);else Ui.cross(g,x,y+1,Ui.RED);
             Ui.text(g,font,what,x+9,y,ok?Ui.INK:Ui.ORANGE,w-9);
-            if(ok)return y+12;
+            if(ok||fixLines==0)return y+12;
             return Ui.wrap(g,font,fix,x+9,y+10,w-9,Ui.MUTED,fixLines)+3;
-        }
-        /** Goods per row of the stockpile grid (0.0.28: five, so the nine goods take two rows as the eight did). */
-        static final int STOCK_COLS=5;
-        /** The stockpile, the next delivery, what a ride carries, the last delivery. */
-        private void drawStock(GuiGraphics g){
-            int x=rightX,w=colW,y=bodyY+48;
-            Ui.text(g,font,Ui.t("gate.stock.title",data.getInt("workers")),x,y,Ui.BRASS,w);y+=12;
-            var stock=data.getList("stock",Tag.TAG_COMPOUND);
-            for(int i=0;i<stock.size();i++){
-                var row=stock.getCompound(i);int cx=x+(i%STOCK_COLS)*(w/STOCK_COLS),cy=y+(i/STOCK_COLS)*20;
-                var item=BuiltInRegistries.ITEM.get(new ResourceLocation(row.getString("id")));
-                g.renderItem(new ItemStack(item),cx,cy);
-                Ui.text(g,font,Component.literal(Integer.toString(row.getInt("amount"))),cx+17,cy+5,row.getInt("amount")>=row.getInt("cap")?Ui.ORANGE:Ui.INK,w/STOCK_COLS-18);
-            }
-            y+=((stock.size()+STOCK_COLS-1)/STOCK_COLS)*20+4;
-            long next=data.getLong("nextIn");
-            Ui.wrap(g,font,next>=0?Ui.t("gate.next",time(next),data.getInt("capacity")):Ui.t("gate.next.paused"),x,y,w,next>=0?Ui.INK:Ui.MUTED,2);y+=22;
-            Ui.wrap(g,font,Ui.t("gate.ride",data.getInt("active")),x,y,w,Ui.MUTED,2);y+=22;
-            long ago=data.getLong("lastAgo");
-            if(ago>=0)Ui.wrap(g,font,Ui.t("gate.last."+(data.getString("lastKind").equals("ride")?"ride":"passive"),data.getInt("lastItems"),time(ago)),x,y,w,Ui.MUTED,2);
         }
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             renderBackground(g);super.render(g,mx,my,partial);
-            if(!choosing()){
-                var stock=data.getList("stock",Tag.TAG_COMPOUND);int y=bodyY+60;
-                for(int i=0;i<stock.size();i++){int cx=rightX+(i%STOCK_COLS)*(colW/STOCK_COLS),cy=y+(i/STOCK_COLS)*20;
-                    if(Ui.inside(mx,my,cx,cy,16,16)){var row=stock.getCompound(i);var item=BuiltInRegistries.ITEM.get(new ResourceLocation(row.getString("id")));
-                        g.renderComponentTooltip(font,List.of(item.getDescription(),Ui.t("gate.stock.tip",row.getInt("amount"),row.getInt("cap"))),mx,my);}}
+            if(picking>=0&&tab==0){
+                var slot=RouteRules.Slot.values()[picking];var options=RouteRules.options(slot,specialty());
+                var row=slots().size()>picking?slots().get(picking):new CompoundTag();
+                // the slot's share of a trip as it is now, in tribute value: what any item of the list would bring
+                var current=RouteRules.loot(slot,specialty(),row.getInt("choice"));double budget=row.getBoolean("on")?row.getDouble("perTrip")*current.value():0;
+                int cell=22,cols=Math.max(1,(rw-12)/cell);
+                for(int i=0;i<pickButtons.size();i++)if(pickButtons.get(i).isHovered()){
+                    var loot=options.get(pickScroll*cols+i);var lines=new ArrayList<Component>();lines.add(icon(loot.id()).getHoverName());
+                    lines.add(Ui.t("gate.pick.rate",rate(budget/loot.value(),data.getDouble("tripsPerHour"))));
+                    if(slot==RouteRules.Slot.SPECIALTY&&specialty()==RouteRules.Specialty.POTIONS)lines.add(Ui.t("gate.pick.tier","DDCBAS".substring(loot.note(),loot.note()+1)));
+                    if(slot==RouteRules.Slot.SPECIALTY&&specialty()==RouteRules.Specialty.TRADER)lines.add(Ui.t("gate.pick.price",loot.note()));
+                    g.renderComponentTooltip(font,lines,mx,my);return;
+                }
             }
+            if(menu.slotsShown&&Ui.inside(mx,my,leftPos+RailGates.GateMenu.STORE_X,topPos+RailGates.GateMenu.STORE_Y-11,162,10))g.renderComponentTooltip(font,List.of(Ui.t("gate.storage.tip")),mx,my);
+            renderTooltip(g,mx,my);
         }
     }
 }

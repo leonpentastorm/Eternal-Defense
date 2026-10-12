@@ -26,7 +26,8 @@ import java.util.*;
  * Delivery Gate, opens the route (the commissioning ride; its one-way time is the route's T); the route then delivers the FOB's tribute by
  * itself every 2T/0.8 ticks of play while its inspection clock runs, and a round trip (Receiving, Delivery, Receiving) by the same rider in the
  * same cart carries twice a passive trip and renews the clock. Tribute enters the beacon reward chest only through {@link RaidRewards#queue}.
- * Rides live in memory only: a restart, a logout or a dismount ends one, and the stockpile is touched only when goods are delivered.
+ * Rides live in memory only: a restart, a logout or a dismount ends one. 0.0.31 (owner): the tribute is the FOB's four loot slots, delivered
+ * into the Receiving Gate's own storage (a double chest's worth, take only) instead of the beacon's reward chest.
  */
 final class Routes {
     private Routes(){}
@@ -78,59 +79,55 @@ final class Routes {
             case WRONG_GATE->{if(now-run.legStart>RouteRules.WRONG_GATE_QUIET)say(p,"route.pass.wrong_gate");}   // not on the way back through the gate's other lane
             case TOO_CLOSE->{RUNS.remove(f.id);say(p,"route.pass.too_close",(int)distance,RouteRules.MIN_SEPARATION);sound(p,SoundEvents.VILLAGER_NO,1f);}
             case COMMISSIONED->{
-                accrue(d,f);
                 f.commissioned=true;f.baseline=RouteRules.clamp(now-run.start,distance);f.clock=RouteRules.CLOCK;f.nextPassive=d.onlineTicks+RouteRules.period(f.baseline);
-                run.outLeg=now-run.start;run.stage=RouteRules.Stage.RETURN;run.legStart=now;run.load=load(l,f,distance);d.setDirty();
-                say(p,run.load<0?"route.pass.commissioned_backlog":"route.pass.commissioned",f.name,seconds(f.baseline),Math.max(0,run.load));sound(p,SoundEvents.PLAYER_LEVELUP,1f);
+                run.outLeg=now-run.start;run.stage=RouteRules.Stage.RETURN;run.legStart=now;run.load=load(d,f,run.outLeg);d.setDirty();
+                say(p,"route.pass.commissioned",f.name,seconds(f.baseline),run.load);sound(p,SoundEvents.PLAYER_LEVELUP,1f);
                 Fobs.announce(l,Component.translatable("gui.arsenal_beacon.route.opened",f.name,p.getDisplayName(),seconds(f.baseline)));
             }
             case LOADED->{
-                accrue(d,f);run.outLeg=now-run.start;run.stage=RouteRules.Stage.RETURN;run.legStart=now;run.load=load(l,f,distance);
-                if(run.load<0){say(p,"route.pass.loaded_backlog",f.name);sound(p,SoundEvents.VILLAGER_NO,1f);}
-                else{say(p,"route.pass.loaded",run.load,f.name);sound(p,SoundEvents.ITEM_PICKUP,.8f);}
+                run.outLeg=now-run.start;run.stage=RouteRules.Stage.RETURN;run.legStart=now;run.load=load(d,f,run.outLeg);
+                say(p,"route.pass.loaded",run.load,f.name);sound(p,SoundEvents.ITEM_PICKUP,.8f);
             }
             case COMPLETE->{
-                RUNS.remove(f.id);accrue(d,f);
-                f.baseline=RouteRules.baseline(run.outLeg,now-run.legStart,distance);f.clock=RouteRules.CLOCK;d.setDirty();
-                var campaign=CampaignData.get(l.getServer().overworld());
-                if(RouteRules.backlog(campaign.rewards.size())){say(p,"route.pass.complete_backlog",RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.VILLAGER_NO,1f);return;}
-                int[] taken=RouteRules.take(f.stock,Math.max(0,run.load));
-                deliver(l,d,f,taken,"ride");
-                say(p,"route.pass.complete",RouteRules.total(taken),RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.PLAYER_LEVELUP,1.3f);
-                if(RouteRules.total(taken)>0)Fobs.announce(l,Component.translatable("gui.arsenal_beacon.route.delivered_ride",f.name,p.getDisplayName(),goods(taken)));
+                RUNS.remove(f.id);
+                f.baseline=RouteRules.baseline(run.outLeg,now-run.legStart,distance);f.clock=RouteRules.CLOCK;
+                long period=RouteRules.period(f.baseline);
+                f.nextPassive=d.onlineTicks+period;d.setDirty();   // the ride carried the trips: the next passive one waits a whole period
+                if(full(f)){say(p,"route.pass.complete_full",RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.VILLAGER_NO,1f);return;}
+                var brought=haul(f,RouteRules.rideTrips(sinceLast(d,f,0),period),d.onlineTicks);int stored=store(d,f,brought,"ride");
+                say(p,"route.pass.complete",stored,RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.PLAYER_LEVELUP,1.3f);
+                if(stored>0)Fobs.announce(l,Component.translatable("gui.arsenal_beacon.route.delivered_ride",f.name,p.getDisplayName(),goods(brought)));
             }
         }
     }
-    /** What a ride takes at the Delivery Gate: twice a passive trip, never more than the stockpile holds; -1 (nothing) while the reward chest is backed up. */
-    private static int load(ServerLevel l,FobData.Fob f,double distance){
-        if(RouteRules.backlog(CampaignData.get(l.getServer().overworld()).rewards.size()))return -1;
-        int whole=0;for(double s:f.stock)whole+=(int)Math.floor(s);return Math.min(RouteRules.activeCapacity(distance),whole);
+    /** Ticks of play since the route's last delivery, {@code ahead} ticks from now; a route that never delivered gets a full ride. */
+    static long sinceLast(FobData d,FobData.Fob f,long ahead){return f.lastTrip==0?Long.MAX_VALUE/4:d.onlineTicks+ahead-f.lastTrip;}
+    /** What a ride will bring home if the way back takes as long as the way out (the tallies looked at, not spent: the Receiving Gate takes it). */
+    static int load(FobData d,FobData.Fob f,long outLeg){
+        double trips=RouteRules.rideTrips(sinceLast(d,f,outLeg),RouteRules.period(f.baseline));
+        return RouteRules.total(RouteRules.trip(f.tally.clone(),f.loots(),f.slotOn,f.separation(),f.workers,trips));
     }
-
     // ---- once a second: the clock, passive deliveries, rides that went wrong ----------------------------------------------------------------------
     static void second(ServerLevel l,FobData d){
         d.onlineTicks+=20;long now=d.onlineTicks;boolean dirty=false;
-        boolean backlog=RouteRules.backlog(CampaignData.get(l.getServer().overworld()).rewards.size());
         for(var f:d.fobs.values()){
-            boolean active=FobRules.working(f.state);
-            if(!active)f.accruedAt=now;   // nothing is made while a FOB is not ACTIVE
+            boolean active=FobRules.working(f.state),full=full(f);
             if(active&&f.commissioned&&f.clock>0){
                 f.clock=Math.max(0,f.clock-20);dirty=true;
                 if(f.clock==0){Fobs.announce(l,Component.translatable("gui.arsenal_beacon.route.overdue",f.name));}
             }
-            if(f.hasRoute()&&f.baseline>0&&RouteRules.passive(active,f.commissioned,f.clock,backlog)){
+            if(f.hasRoute()&&f.baseline>0&&RouteRules.passive(active,f.commissioned,f.clock,full)){
                 long period=RouteRules.period(f.baseline);
                 if(f.nextPassive==0||f.nextPassive>now+period)f.nextPassive=now+period;
                 else if(now>=f.nextPassive){
-                    accrue(d,f);int[] taken=RouteRules.take(f.stock,RouteRules.capacity(f.separation()));
-                    if(RouteRules.total(taken)>0){deliver(l,d,f,taken,"passive");for(int i=0;i<taken.length;i++)f.note[i]+=taken[i];}
+                    var brought=haul(f,1,now);store(d,f,brought,"passive");
+                    for(var e:brought.entrySet())f.note.merge(e.getKey(),e.getValue(),Integer::sum);
                     f.nextPassive=now+period;dirty=true;
                 }
             }else f.nextPassive=0;
-            int noted=0;for(int n:f.note)noted+=n;
-            if(noted>0&&now-f.lastNoteAt>=RouteRules.NOTE_TICKS){
+            if(!f.note.isEmpty()&&now-f.lastNoteAt>=RouteRules.NOTE_TICKS){
                 Fobs.announce(l,Component.translatable("gui.arsenal_beacon.route.delivered",f.name,goods(f.note)));
-                Arrays.fill(f.note,0);f.lastNoteAt=now;dirty=true;
+                f.note.clear();f.lastNoteAt=now;dirty=true;
             }
         }
         // rides that cannot go on: the rider left, died, changed world or cart, the FOB or a gate is gone, or the leg took far too long
@@ -147,34 +144,57 @@ final class Routes {
             if(reason!=null){RUNS.remove(e.getKey());if(rider!=null){say(rider,"route.cancel."+reason,f==null?"":f.name);sound(rider,SoundEvents.VILLAGER_NO,1f);}}
         }
         if(dirty)d.setDirty();
-    }
-    /** Brings the stockpile up to date (lazily, from the ticks of play since it was last done), only for an ACTIVE FOB. */
-    static void accrue(FobData d,FobData.Fob f){
-        long now=d.onlineTicks;
-        if(FobRules.working(f.state)&&f.accruedAt>0&&now>f.accruedAt)f.stock=RouteRules.accrue(f.stock,f.workers,now-f.accruedAt);
-        f.accruedAt=now;d.setDirty();
-    }
-    /** Goods leave the stockpile and enter the reward chest's queue in the same step, so every item is paid exactly once. */
-    static void deliver(ServerLevel l,FobData d,FobData.Fob f,int[] amounts,String kind){
-        var stacks=new ArrayList<ItemStack>();
-        for(int i=0;i<amounts.length;i++){
-            if(amounts[i]<=0)continue;
-            var item=BuiltInRegistries.ITEM.get(new ResourceLocation(RouteRules.GOODS.get(i).id()));
-            f.stock[i]=Math.max(0,f.stock[i]-amounts[i]);stacks.add(new ItemStack(item,amounts[i]));
+        // an open gate screen counts down with the route (its state again, once a second), and so does the FOB screen's tribute column (0.0.31)
+        for(var p:l.getServer().getPlayerList().getPlayers()){
+            if(p.containerMenu instanceof RailGates.GateMenu menu&&menu.stillValid(p))open(p,menu.pos,menu.message);
+            else if(p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.stillValid(p))Fobs.open(p,menu.pos,menu.message);
         }
-        if(stacks.isEmpty())return;
-        RaidRewards.queue(CampaignData.get(l.getServer().overworld()),stacks);
-        f.lastKind=kind;f.lastItems=RouteRules.total(amounts);f.lastAt=d.onlineTicks;d.setDirty();
-        com.mojang.logging.LogUtils.getLogger().info("[route] {}: {} delivery of {} items",f.name,kind,f.lastItems);
+    }
+    // ---- the tribute (0.0.31): the slots' tallies into the Receiving Gate's storage ---------------------------------------------------------------
+    /** What {@code trips} trips bring (item id to count, the slots in order), taken out of the tallies; {@code now} is the delivery's time. */
+    static Map<String,Integer> haul(FobData.Fob f,double trips,long now){
+        f.lastTrip=now;
+        var loots=f.loots();int[] n=RouteRules.trip(f.tally,loots,f.slotOn,f.separation(),f.workers,trips);
+        var out=new LinkedHashMap<String,Integer>();
+        for(int i=0;i<n.length;i++)if(n[i]>0)out.merge(loots[i].id(),n[i],Integer::sum);
+        return out;
+    }
+    static ItemStack stack(String id,int count){return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(id)),count);}
+    /** No room in the storage for any item the slots that are on would send: deliveries wait (amber). */
+    static boolean full(FobData.Fob f){
+        for(var slot:RouteRules.Slot.values())if(f.slotOn[slot.ordinal()]&&f.depot().canAddItem(stack(f.loot(slot).id(),1)))return false;
+        return true;
+    }
+    /** Puts a haul into the storage; what does not fit goes back into its slot's tally (nothing is lost). Returns the items stored. */
+    static int store(FobData d,FobData.Fob f,Map<String,Integer> haul,String kind){
+        int stored=0;var loots=f.loots();
+        for(var e:haul.entrySet()){
+            int left=e.getValue();var item=stack(e.getKey(),1);int max=Math.max(1,item.getMaxStackSize());
+            while(left>0){int n=Math.min(max,left);var rest=f.depot().addItem(stack(e.getKey(),n));int put=n-rest.getCount();stored+=put;left-=n;
+                if(rest.getCount()>0){left+=rest.getCount();break;}}
+            if(left>0)for(int i=0;i<loots.length;i++)if(loots[i].id().equals(e.getKey())){f.tally[i]+=left*loots[i].value();break;}
+        }
+        if(stored>0){f.lastKind=kind;f.lastItems=stored;f.lastAt=d.onlineTicks;}
+        d.setDirty();
+        if(stored>0)log("{}: {} delivery of {} items into the storage",f.name,kind,stored);
+        return stored;
+    }
+    /**
+     * A FOB is deleted: its storage is handed to the player who took it back (what does not fit drops at their feet), or, without one, dropped
+     * at its Receiving Gate (or the FOB Beacon) if loaded. Returns the stacks handed over.
+     */
+    static int spill(ServerLevel l,FobData.Fob f,ServerPlayer p){
+        // no player: dropped at the Receiving Gate, or at the FOB Beacon when the gate's land is not loaded (the FOB's always is: its block just went)
+        int stacks=0;var at=f.receivingGate!=null&&l.hasChunkAt(f.receivingGate)?f.receivingGate:f.pos;
+        for(int i=0;i<f.depot().getContainerSize();i++){var s=f.depot().removeItemNoUpdate(i);if(s.isEmpty())continue;stacks++;
+            if(p!=null){if(!p.getInventory().add(s))p.drop(s,false);}
+            else if(l.hasChunkAt(at))net.minecraft.world.Containers.dropItemStack(l,at.getX()+.5,at.getY()+1,at.getZ()+.5,s);}
+        return stacks;
     }
     /** "3 Redstone Dust, 2 Flint" for the chat lines. */
-    static Component goods(int[] amounts){
+    static Component goods(Map<String,Integer> amounts){
         var out=Component.empty();boolean first=true;
-        for(int i=0;i<amounts.length;i++){
-            if(amounts[i]<=0)continue;
-            if(!first)out.append(", ");first=false;
-            out.append(amounts[i]+" ").append(BuiltInRegistries.ITEM.get(new ResourceLocation(RouteRules.GOODS.get(i).id())).getDescription());
-        }
+        for(var e:amounts.entrySet()){if(e.getValue()<=0)continue;if(!first)out.append(", ");first=false;out.append(e.getValue()+" ").append(stack(e.getKey(),1).getHoverName());}
         return out;
     }
     static long seconds(long ticks){return Math.round(ticks/20.0);}
@@ -232,8 +252,7 @@ final class Routes {
     }
     static RouteRules.Signal signal(ServerLevel l,FobData d,FobData.Fob f){
         if(f==null)return RouteRules.Signal.RED;
-        boolean backlog=RouteRules.backlog(CampaignData.get(l.getServer().overworld()).rewards.size());
-        return RouteRules.signal(true,f.hasRoute(),FobRules.working(f.state),f.commissioned,f.clock,RUNS.containsKey(f.id),backlog);
+        return RouteRules.signal(true,f.hasRoute(),FobRules.working(f.state),f.commissioned,f.clock,RUNS.containsKey(f.id),full(f));
     }
 
     // ---- clicks: the screen, the shovel ----------------------------------------------------------------------------------------------------------
@@ -255,11 +274,16 @@ final class Routes {
     static void open(ServerPlayer p,BlockPos anchor,String message){open(p,anchor,message,false);}
     /** {@code fresh}: a click on the gate always opens a new screen; otherwise an open one is refreshed in place. */
     static void open(ServerPlayer p,BlockPos anchor,String message,boolean fresh){
-        var l=p.serverLevel();if(!(l.getBlockState(anchor).getBlock() instanceof RailGates.GateBlock))return;
+        var l=p.serverLevel();if(!(l.getBlockState(anchor).getBlock() instanceof RailGates.GateBlock gate))return;
         var state=state(p,anchor,message);
-        if(!fresh&&p.containerMenu instanceof RailGates.GateMenu menu&&menu.pos.equals(anchor)){BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
-        var title=Component.translatable("block.arsenal_beacon."+((RailGates.GateBlock)l.getBlockState(anchor).getBlock()).kind.id);
-        NetworkHooks.openScreen(p,new SimpleMenuProvider((id,inv,who)->new RailGates.GateMenu(id,inv,anchor,new CompoundTag()),title),buf->{buf.writeBlockPos(anchor);buf.writeNbt(state);});
+        if(!fresh&&p.containerMenu instanceof RailGates.GateMenu menu&&menu.pos.equals(anchor)){menu.message=message;BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
+        var title=Component.translatable("block.arsenal_beacon."+gate.kind.id);
+        // the Receiving Gate's screen holds the linked FOB's storage (take only); an unlinked one shows an empty, locked one
+        long id=l.getBlockEntity(anchor) instanceof RailGates.GateEntity be?be.fobId:0;var f=id==0?null:FobData.get(l).byId(id);
+        boolean storage=gate.kind==RailGates.Kind.RECEIVING;
+        net.minecraft.world.Container depot=storage&&f!=null&&anchor.equals(f.receivingGate)?f.depot():null;
+        NetworkHooks.openScreen(p,new SimpleMenuProvider((cid,inv,who)->new RailGates.GateMenu(cid,inv,anchor,new CompoundTag(),storage,depot),title),buf->{buf.writeBlockPos(anchor);buf.writeNbt(state);buf.writeBoolean(storage);});
+        if(p.containerMenu instanceof RailGates.GateMenu menu)menu.message=message;
     }
     /** Everything a gate's screen shows (see {@code GateClient}). */
     static CompoundTag state(ServerPlayer p,BlockPos anchor,String message){
@@ -269,19 +293,16 @@ final class Routes {
         boolean linked=f!=null&&(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate));
         n.putLong("gate",anchor.asLong());n.putString("kind",gate.kind.id);n.putBoolean("linked",linked);n.putString("message",message);
         n.putString("signal",signal(l,d,linked?f:null).id());
-        var campaign=CampaignData.get(l.getServer().overworld());n.putInt("queued",campaign.rewards.size());n.putInt("queueCap",RouteRules.BACKLOG_CAP);
         if(linked){
-            accrue(d,f);double distance=f.separation();
+            double distance=f.separation();
             n.putString("name",f.name);n.putString("state",f.state.id());n.putBoolean("partner",f.hasRoute());n.putBoolean("commissioned",f.commissioned);
             n.putLong("clock",f.clock);n.putLong("clockMax",RouteRules.CLOCK);n.putBoolean("warn",RouteRules.warning(f.clock));
             n.putInt("distance",(int)Math.round(distance));n.putInt("minDistance",RouteRules.MIN_SEPARATION);n.putLong("baseline",f.baseline);
-            n.putInt("capacity",RouteRules.capacity(distance));n.putInt("active",RouteRules.activeCapacity(distance));
-            n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-d.onlineTicks):-1);n.putLong("period",f.baseline>0?RouteRules.period(f.baseline):0);
+            long period=f.baseline>0?RouteRules.period(f.baseline):0;
+            n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-d.onlineTicks):-1);n.putLong("period",period);
             n.putBoolean("riding",RUNS.containsKey(f.id));
             n.putString("lastKind",f.lastKind);n.putInt("lastItems",f.lastItems);n.putLong("lastAgo",f.lastAt>0?d.onlineTicks-f.lastAt:-1);
-            var stock=new ListTag();
-            for(int i=0;i<RouteRules.GOODS.size();i++){var g=RouteRules.GOODS.get(i);var row=new CompoundTag();row.putString("id",g.id());row.putInt("amount",(int)Math.floor(f.stock[i]));row.putInt("cap",(int)RouteRules.cap(g,f.workers));stock.add(row);}
-            n.put("stock",stock);n.putInt("workers",Math.min(RouteRules.MAX_WORKERS,f.workers));
+            tribute(f,n);
         }
         if(gate.kind==RailGates.Kind.RECEIVING){
             var options=new ListTag();
@@ -290,11 +311,27 @@ final class Routes {
         }
         return n;
     }
+    /** The FOB's four loot slots and what they bring, for the gate screens and the FOB screen (0.0.31). */
+    static void tribute(FobData.Fob f,CompoundTag n){
+        double distance=f.separation();long period=f.baseline>0?RouteRules.period(f.baseline):0;
+        n.putString("specialty",f.specialty.id());n.putInt("villagers",Math.min(RouteRules.MAX_WORKERS,f.workers));
+        n.putDouble("units",RouteRules.units(distance));n.putDouble("bonus",RouteRules.distanceBonus(distance));n.putDouble("tripsPerHour",RouteRules.tripsPerHour(period));
+        n.putBoolean("full",full(f));int used=0;for(int i=0;i<f.depot().getContainerSize();i++)if(!f.depot().getItem(i).isEmpty())used++;n.putInt("stored",used);n.putInt("depotSlots",f.depot().getContainerSize());
+        var slots=new ListTag();
+        for(var slot:RouteRules.Slot.values()){
+            var row=new CompoundTag();var loot=f.loot(slot);boolean on=f.slotOn[slot.ordinal()];
+            row.putString("slot",slot.id());row.putBoolean("on",on);row.putInt("choice",f.choice(slot));row.putString("item",loot.id());
+            row.putDouble("perTrip",on?RouteRules.itemsPerTrip(slot,loot,f.slotOn,distance,f.workers):0);row.putBoolean("mayToggle",RouteRules.mayToggle(f.slotOn,slot));
+            slots.add(row);
+        }
+        n.put("slots",slots);
+    }
     /** A gate screen button: link a Receiving Gate to a FOB (checked again here). */
     static void button(ServerPlayer p,BlockPos anchor,int id){
         var l=p.serverLevel();if(!(p.containerMenu instanceof RailGates.GateMenu menu)||!menu.stillValid(p))return;
-        if(!(l.getBlockState(anchor).getBlock() instanceof RailGates.GateBlock gate)||gate.kind!=RailGates.Kind.RECEIVING||!(l.getBlockEntity(anchor) instanceof RailGates.GateEntity be))return;
-        if(id<LINK)return;
+        if(!(l.getBlockState(anchor).getBlock() instanceof RailGates.GateBlock gate)||!(l.getBlockEntity(anchor) instanceof RailGates.GateEntity be))return;
+        if(id>=TOGGLE&&id<TOGGLE+RouteRules.Slot.values().length||id>=CHOOSE){choose(p,anchor,be,id);return;}
+        if(gate.kind!=RailGates.Kind.RECEIVING||id<LINK||id>=TOGGLE)return;
         var d=FobData.get(l);var options=new ArrayList<FobData.Fob>();
         for(var o:d.fobs.values())if(o.receivingGate==null||o.receivingGate.equals(anchor))options.add(o);
         int index=id-LINK;if(index<0||index>=options.size()){open(p,anchor,"gate.result.gone");return;}
@@ -302,7 +339,32 @@ final class Routes {
         if(anchor.equals(target.receivingGate)){open(p,anchor,"gate.result.same");return;}
         var old=be.fobId==0?null:d.byId(be.fobId);if(old!=null&&anchor.equals(old.receivingGate)){old.receivingGate=null;old.commissioned=false;RUNS.remove(old.id);}
         link(l,d,target,RailGates.Kind.RECEIVING,anchor,be);
-        open(p,anchor,"gate.result.linked");
+        p.closeContainer();open(p,anchor,"gate.result.linked",true);   // a fresh screen: its storage is the new FOB's
+    }
+    /** Menu buttons of the loot slots: switch a slot on or off, choose its item (0.0.31). */
+    static final int TOGGLE=20,CHOOSE=1000,CHOICES=100;
+    static int chooseButton(RouteRules.Slot slot,int index){return CHOOSE+slot.ordinal()*CHOICES+index;}
+    static void choose(ServerPlayer p,BlockPos anchor,RailGates.GateEntity be,int id){
+        var l=p.serverLevel();var d=FobData.get(l);var f=be.fobId==0?null:d.byId(be.fobId);
+        if(f==null||!(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate))){open(p,anchor,"gate.result.gone");return;}
+        String result;
+        if(id<CHOOSE){
+            var slot=RouteRules.Slot.values()[id-TOGGLE];
+            if(!RouteRules.mayToggle(f.slotOn,slot))result="gate.result.last_slot";
+            else{f.slotOn[slot.ordinal()]=!f.slotOn[slot.ordinal()];result=f.slotOn[slot.ordinal()]?"gate.result.slot_on":"gate.result.slot_off";}
+        }else{
+            int slotIndex=(id-CHOOSE)/CHOICES,index=(id-CHOOSE)%CHOICES;
+            if(slotIndex<0||slotIndex>=RouteRules.Slot.values().length){open(p,anchor,"");return;}
+            var slot=RouteRules.Slot.values()[slotIndex];var options=RouteRules.options(slot,f.specialty);
+            if(slot==RouteRules.Slot.EMERALD||index<0||index>=options.size()){open(p,anchor,"");return;}
+            switch(slot){case MINE->f.mine=index;case FARM->f.farm=index;default->f.special=index;}
+            result="gate.result.chosen";
+        }
+        d.setDirty();log("{}: {} set the tribute: {}",f.name,p.getGameProfile().getName(),result);
+        for(var pos:new BlockPos[]{f.deliveryGate,f.receivingGate})if(pos!=null)for(var viewer:l.getServer().getPlayerList().getPlayers())
+            if(viewer!=p&&viewer.containerMenu instanceof RailGates.GateMenu m&&m.pos.equals(pos))open(viewer,pos,"");
+        Fobs.refreshScreens(l,f);
+        open(p,anchor,result);
     }
     /** The FOB shop's second listing: one Supply Delivery Gate per FOB, while it is ACTIVE (paid like any fabricated block). */
     static String buyGate(ServerPlayer p,FobData.Fob f){

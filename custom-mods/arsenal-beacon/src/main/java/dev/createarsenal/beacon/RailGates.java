@@ -388,13 +388,53 @@ final class RailGates {
         }
     }
 
-    // ---- the gate screen's menu: no slots ---------------------------------------------------------------------------------------------------------
+    // ---- the gate screen's menu: the Receiving Gate holds its FOB's tribute storage (0.0.31) -------------------------------------------------------
+    /**
+     * A Receiving Gate's menu has the linked FOB's storage (54 slots, take only: nothing can be put in) and the player's inventory; a Delivery
+     * Gate's has no slot. The storage is the FOB's own container ({@code FobData.Fob.depot}), shared by everyone who has it open.
+     */
     static final class GateMenu extends AbstractContainerMenu {
-        final BlockPos pos;final CompoundTag data;
-        GateMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){super(ArsenalBeacon.GATE_MENU.get(),id);this.pos=pos;this.data=data;}
-        static GateMenu client(int id,Inventory inv,FriendlyByteBuf buf){var pos=buf.readBlockPos();var n=buf.readNbt();return new GateMenu(id,inv,pos,n==null?new CompoundTag():n);}
+        /**
+         * Where the slots sit in the screen (its top left corner): the storage 9 x 6, the inventory under it, the hotbar under that. The column
+         * is 240 high with its margins, so it fits a 1280 x 720 window at GUI scale 3.
+         */
+        static final int STORE_X=12,STORE_Y=40,INV_Y=STORE_Y+6*18+12,HOTBAR_Y=INV_Y+58,STORE_BOTTOM=HOTBAR_Y+18+4;
+        final BlockPos pos;final CompoundTag data;final boolean storage;String message="";
+        /** The client's screen hides the slots (not drawn, not clickable) while a narrow window shows another tab (always true on the server). */
+        boolean slotsShown=true;
+        GateMenu(int id,Inventory inv,BlockPos pos,CompoundTag data,boolean storage,net.minecraft.world.Container depot){
+            super(ArsenalBeacon.GATE_MENU.get(),id);this.pos=pos;this.data=data;this.storage=storage;
+            if(!storage)return;
+            var box=depot!=null?depot:new net.minecraft.world.SimpleContainer(FobData.DEPOT_SLOTS);
+            for(int row=0;row<6;row++)for(int col=0;col<9;col++)addSlot(new TakeOnly(this,box,row*9+col,STORE_X+col*18,STORE_Y+row*18));
+            for(int row=0;row<3;row++)for(int col=0;col<9;col++)addSlot(new Shown(this,inv,9+row*9+col,STORE_X+col*18,INV_Y+row*18));
+            for(int col=0;col<9;col++)addSlot(new Shown(this,inv,col,STORE_X+col*18,HOTBAR_Y));
+        }
+        static GateMenu client(int id,Inventory inv,FriendlyByteBuf buf){
+            var pos=buf.readBlockPos();var n=buf.readNbt();boolean storage=buf.readBoolean();
+            return new GateMenu(id,inv,pos,n==null?new CompoundTag():n,storage,null);
+        }
         @Override public boolean clickMenuButton(Player p,int id){if(p instanceof ServerPlayer sp)Routes.button(sp,pos,id);return true;}
-        @Override public ItemStack quickMoveStack(Player p,int index){return ItemStack.EMPTY;}
+        /** Shift-click takes a stack out of the storage; nothing goes in. */
+        @Override public ItemStack quickMoveStack(Player p,int index){
+            if(!storage||index<0||index>=FobData.DEPOT_SLOTS)return ItemStack.EMPTY;
+            var slot=slots.get(index);if(!slot.hasItem())return ItemStack.EMPTY;
+            var stack=slot.getItem();var copy=stack.copy();
+            if(!moveItemStackTo(stack,FobData.DEPOT_SLOTS,slots.size(),true))return ItemStack.EMPTY;
+            if(stack.isEmpty())slot.setByPlayer(ItemStack.EMPTY);else slot.setChanged();
+            return copy;
+        }
         @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).getBlock() instanceof GateBlock&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=100;}
+    }
+    /** A slot of the gate's menu: hidden while the screen shows another tab. */
+    static class Shown extends net.minecraft.world.inventory.Slot {
+        final GateMenu menu;
+        Shown(GateMenu menu,net.minecraft.world.Container c,int index,int x,int y){super(c,index,x,y);this.menu=menu;}
+        @Override public boolean isActive(){return menu.slotsShown;}
+    }
+    /** A storage slot: take only. */
+    static final class TakeOnly extends Shown {
+        TakeOnly(GateMenu menu,net.minecraft.world.Container c,int index,int x,int y){super(menu,c,index,x,y);}
+        @Override public boolean mayPlace(ItemStack stack){return false;}
     }
 }

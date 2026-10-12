@@ -82,7 +82,7 @@ public final class EnchantClient {
                 }
             }
         }
-        private void click(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
+        private void click(int id){BeaconNetwork.menuButton(menu.containerId,id);}
         @Override protected void containerTick(){super.containerTick();if(!ItemStack.matches(gear(),shown)){scroll=0;rebuildWidgets();}}
         @Override public boolean mouseScrolled(double mx,double my,double delta){
             if(mx>=leftPos+LIST_X&&rows.size()>visibleRows()){scroll=Math.max(0,Math.min(rows.size()-visibleRows(),scroll-(int)Math.signum(delta)));rebuildWidgets();return true;}

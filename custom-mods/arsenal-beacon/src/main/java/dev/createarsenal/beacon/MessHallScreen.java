@@ -36,7 +36,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
 
     MessHallScreen(MessHallMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=WIDTH;imageHeight=HEIGHT;}
     int uiLeft(){return leftPos;}int uiTop(){return topPos;}MessHallMenu currentMenu(){return menu;}
-    private void action(int id){minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
+    private void action(int id){BeaconNetwork.menuButton(menu.containerId,id);}
     private int tierColor(){return TIER[Math.max(0,Math.min(3,menu.mk-1))];}
     private MealRules.Tier tier(){return MealRules.tier(menu.mk);}
     private CompoundTag view(){return menu.view;}

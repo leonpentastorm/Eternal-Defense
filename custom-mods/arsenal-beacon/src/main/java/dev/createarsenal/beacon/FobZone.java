@@ -46,8 +46,12 @@ final class FobZone {
     static Set<Long> of(ServerLevel l,FobData.Fob f){
         long now=l.getGameTime();var c=CACHE.get(f.id);
         if(c!=null&&now-c.at()<FobRules.ZONE_REFRESH_TICKS&&now>=c.at())return c.sections();
-        var s=sections(l,f.pos);CACHE.put(f.id,new Cached(s,now));return s;
+        var s=sections(l,f.pos);CACHE.put(f.id,new Cached(s,now));
+        if(!s.isEmpty()){var cols=columns(s);if(!java.util.Arrays.equals(cols,f.zoneColumns)){f.zoneColumns=cols;FobData.get(l).setDirty();}}   // 0.0.31: kept for the Command Table's map
+        return s;
     }
+    /** The 16-block columns of a zone (x and z packed as in {@code ChunkPos.asLong}), sorted. */
+    static long[] columns(Set<Long> zone){var set=new TreeSet<Long>();for(long s:zone)set.add(net.minecraft.world.level.ChunkPos.asLong(SectionPos.x(s),SectionPos.z(s)));return set.stream().mapToLong(Long::longValue).toArray();}
     static boolean contains(Set<Long> zone,BlockPos p){return zone.contains(SectionPos.asLong(SectionPos.blockToSectionCoord(p.getX()),SectionPos.blockToSectionCoord(p.getY()),SectionPos.blockToSectionCoord(p.getZ())));}
     /** The box around all sections of a zone (null when empty). */
     static AABB box(Set<Long> zone){

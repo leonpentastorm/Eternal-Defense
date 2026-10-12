@@ -409,11 +409,11 @@ public final class FobGameTests {
      */
     @GameTest(template="empty3x3x3",batch="fob_09",timeoutTicks=2400)
     public static void aRiddenMinecartOpensTheRouteAndARoundTripDelivers(GameTestHelper h){
-        var f=village(h,3);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];var chestCart=new Entity[1];int before[]={0};boolean[] drive={false};
+        var f=village(h,10);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];var chestCart=new Entity[1];int before[]={0};boolean[] drive={false};
         double[] slowest={9},laneOut={0},laneHome={0};
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
-            var fob=route(f);for(int i=0;i<fob.stock.length;i++)fob.stock[i]=8;fob.workers=3;
+            var fob=route(f);farmVillage(fob);
             h.assertTrue(fob.hasRoute()&&!fob.commissioned&&lamp(l,RECEIVING)==RailGates.Lamp.RED,"both gates linked, no route yet: red");
             for(var at:List.of(RECEIVING,DELIVERY)){
                 h.assertTrue(l.getBlockState(RailGates.column(at,Direction.EAST)).getBlock() instanceof RailGates.Column,"each gate stands on its two columns");
@@ -441,67 +441,86 @@ public final class FobGameTests {
             drive[0]=false;laneHome[0]=cart[0].getZ();cart[0].setDeltaMovement(0,0,0);   // stopped before the loop brings it round again
             var fob=fob(l);
             h.assertTrue(Math.abs(laneHome[0]-(LANE_B+.5))<.3,"home on lane B (z "+laneHome[0]+"): the cart came round the loop");
-            h.assertTrue(queued(l)>before[0],"the tribute is in the reward chest's queue: "+(queued(l)-before[0])+" stacks");
-            h.assertTrue(fob.lastItems==Math.min(RouteRules.activeCapacity(fob.separation()),64)&&fob.clock==RouteRules.CLOCK,"it carried a ride's load ("+fob.lastItems+") and renewed the inspection");
+            int perTrip=melonsPerTrip(fob);
+            h.assertTrue(queued(l)==before[0],"0.0.31: nothing goes to the reward chest's queue");
+            h.assertTrue(fob.lastItems==RouteRules.ACTIVE_FACTOR*perTrip&&stored(fob,Items.MELON_SLICE)==RouteRules.ACTIVE_FACTOR*perTrip&&fob.clock==RouteRules.CLOCK,
+                "the round trip brought two trips of melon slices ("+fob.lastItems+", "+perTrip+" a trip) into the gate's storage and renewed the inspection");
             h.assertTrue(p.getVehicle()==cart[0],"the rider stayed seated the whole way");
             h.assertTrue(slowest[0]>.25,"the cart never slowed against the gates (slowest step "+slowest[0]+" blocks; vanilla moves a ridden cart 0.75 of its speed, 0.3 here)");
         }).thenIdle(25).thenExecute(()->{
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN&&lamp(l,DELIVERY)==RailGates.Lamp.GREEN,"after the round trip both lights are green");
             h.assertTrue(l.getBlockState(RailGates.column(RECEIVING,Direction.EAST)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN,"the left column's lamps too");
-            p.stopRiding();if(cart[0]!=null)cart[0].discard();trimRewards(l,before[0]);clearRoute(l);clear(l);goTo(p,l,STAND);
+            p.stopRiding();if(cart[0]!=null)cart[0].discard();clearRoute(l);clear(l);goTo(p,l,STAND);
         }).thenSucceed();
     }
-    /** Passive tribute arrives in the reward chest with its chat line, and stops when the inspection runs out. */
+    /**
+     * 0.0.31: the tribute is the FOB's loot slots. A farm village (emeralds, mine and specialty switched off, the farm on melon slices) gets the
+     * whole trip in its one slot; a passive trip puts them into the Receiving Gate's storage with its chat line, and stops when the inspection
+     * runs out. The storage is take only.
+     */
     @GameTest(template="empty3x3x3",batch="fob_10",timeoutTicks=1200)
     public static void passiveTributeArrivesAndStopsWhenTheClockRunsOut(GameTestHelper h){
-        var f=village(h,3);var l=f.l();var p=f.p();int[] before={0},after={0};
+        var f=village(h,10);var l=f.l();var p=f.p();int[] before={0},after={0};
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
-            var fob=route(f);var d=FobData.get(l);
-            fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.nextPassive=0;fob.workers=3;for(int i=0;i<fob.stock.length;i++)fob.stock[i]=10;
+            var fob=route(f);var d=FobData.get(l);farmVillage(fob);
+            fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.nextPassive=d.onlineTicks+40;
             fob.lastNoteAt=d.onlineTicks-RouteRules.NOTE_TICKS;before[0]=queued(l);
-        }).thenWaitUntil(()->h.assertTrue("passive".equals(fob(l).lastKind),"a delivery by itself every 2T/0.8 = "+RouteRules.period(60)+" ticks of play"))
+            h.assertTrue(RouteRules.period(60)==RouteRules.MIN_PERIOD,"a short, fast route still waits 5 minutes between deliveries");
+        }).thenWaitUntil(()->h.assertTrue("passive".equals(fob(l).lastKind),"a delivery by itself"))
         .thenIdle(25).thenExecute(()->{
-            var fob=fob(l);
-            h.assertTrue(queued(l)>before[0],"tribute queued for the reward chest");
-            h.assertTrue(fob.lastItems==RouteRules.capacity(fob.separation()),"a passive trip carries C = "+RouteRules.capacity(fob.separation())+": "+fob.lastItems);
-            int notes=0;for(int n:fob.note)notes+=n;h.assertTrue(notes==0,"the chat line went out and the note was cleared");
+            var fob=fob(l);int perTrip=melonsPerTrip(fob);
+            double alone=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.slotOn,fob.separation(),fob.workers),shared=RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),new boolean[]{true,true,true,true},fob.separation(),fob.workers);
+            h.assertTrue(perTrip>=2&&Math.abs(alone-4*shared)<1e-9,"one slot on takes the whole trip: "+perTrip+" melon slices, four times its share with all four on ("+fob.workers+" villagers)");
+            h.assertTrue(fob.lastItems==perTrip&&stored(fob,Items.MELON_SLICE)==perTrip,"they are in the Receiving Gate's storage ("+stored(fob,Items.MELON_SLICE)+")");
+            h.assertTrue(queued(l)==before[0],"and not in the reward chest's queue");
+            h.assertTrue(fob.note.isEmpty(),"the chat line went out and the note was cleared");
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"green while it runs");
+            // the storage is take only: a player's stack never goes in
+            var menu=new RailGates.GateMenu(0,p.getInventory(),RECEIVING,new CompoundTag(),true,fob.depot());
+            h.assertTrue(!menu.slots.get(0).mayPlace(new ItemStack(Items.DIRT))&&menu.quickMoveStack(p,FobData.DEPOT_SLOTS)==ItemStack.EMPTY,"nothing can be put into the storage");
             command(l,p,"arsenal fob overdue");h.assertTrue(fob.clock==20,"/arsenal fob overdue: the inspection runs out within a second");
         }).thenIdle(60).thenExecute(()->{
             h.assertTrue(fob(l).clock==0&&lamp(l,RECEIVING)==RailGates.Lamp.RED&&lamp(l,DELIVERY)==RailGates.Lamp.RED,"the inspection ran out: both lights red");
-            after[0]=queued(l);
-        }).thenIdle(300).thenExecute(()->{
-            h.assertTrue(queued(l)==after[0],"no delivery while the inspection is overdue");
-            trimRewards(l,before[0]);clearRoute(l);clear(l);
+            after[0]=stored(fob(l),Items.MELON_SLICE);fob(l).nextPassive=FobData.get(l).onlineTicks+20;
+        }).thenIdle(100).thenExecute(()->{
+            h.assertTrue(stored(fob(l),Items.MELON_SLICE)==after[0],"no delivery while the inspection is overdue");
+            clearRoute(l);clear(l);
         }).thenSucceed();
     }
-    /** A round trip renews the inspection even when the reward chest is backed up, but carries nothing; passive deliveries wait (amber). */
+    /** 0.0.31: a full storage pauses deliveries (amber); a round trip still renews the inspection but brings nothing; emptied, it runs again. */
     @GameTest(template="empty3x3x3",batch="fob_11",timeoutTicks=600)
-    public static void theBacklogPausesDeliveriesButARideStillRenews(GameTestHelper h){
-        var f=village(h,3);var l=f.l();var p=f.p();int[] before={0};
+    public static void aFullStoragePausesDeliveriesButARideStillRenews(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
-            var fob=route(f);fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;fob.workers=3;for(int i=0;i<fob.stock.length;i++)fob.stock[i]=10;
-            before[0]=queued(l);var campaign=CampaignData.get(l.getServer().overworld());
-            for(int i=queued(l);i<RouteRules.BACKLOG_CAP;i++)RaidRewards.queue(campaign,List.of(new ItemStack(Items.DIRT)));
+            var fob=route(f);farmVillage(fob);fob.commissioned=true;fob.baseline=60;fob.clock=RouteRules.CLOCK;
+            for(int i=0;i<FobData.DEPOT_SLOTS;i++)fob.depot().setItem(i,new ItemStack(Items.DIRT,64));
         }).thenIdle(25).thenExecute(()->{
-            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"amber: deliveries wait on the backlog");
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"amber: the storage is full");
             var fob=fob(l);fob.lastKind="";
             var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);cart.setPos(RECEIVING.getX()-2.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(cart);p.startRiding(cart,true);
             var d=FobData.get(l);
             Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);Routes.pass(l,d,fob,RailGates.Kind.DELIVERY,p,cart);Routes.pass(l,d,fob,RailGates.Kind.RECEIVING,p,cart);
             h.assertTrue(fob.clock==RouteRules.CLOCK,"the round trip renewed the inspection");
-            h.assertTrue(fob.lastKind.isEmpty()&&queued(l)==RouteRules.BACKLOG_CAP,"and delivered nothing while the chest is backed up");
+            h.assertTrue(fob.lastKind.isEmpty()&&stored(fob,Items.MELON_SLICE)==0,"and brought nothing while the storage is full");
             p.stopRiding();cart.discard();
-        }).thenIdle(200).thenExecute(()->{
-            h.assertTrue(queued(l)==RouteRules.BACKLOG_CAP&&fob(l).lastKind.isEmpty(),"no passive delivery either");
-            trimRewards(l,before[0]);
+            fob.nextPassive=d.onlineTicks+20;
+        }).thenIdle(100).thenExecute(()->{
+            h.assertTrue(stored(fob(l),Items.MELON_SLICE)==0&&fob(l).lastKind.isEmpty(),"no passive delivery either");
+            var fob=fob(l);for(int i=0;i<FobData.DEPOT_SLOTS;i++)fob.depot().setItem(i,ItemStack.EMPTY);
         }).thenIdle(25).thenExecute(()->{
-            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"chest emptied: green again");
+            h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"storage emptied: green again");
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
+    /** A farm village: emeralds, the mine and the specialty switched off, the farm on melon slices (the villagers are the ones the FOB counts). */
+    static void farmVillage(FobData.Fob fob){
+        fob.slotOn[0]=false;fob.slotOn[1]=false;fob.slotOn[2]=true;fob.slotOn[3]=false;Arrays.fill(fob.tally,0);
+        for(int i=0;i<RouteRules.FARM_LOOT.size();i++)if(RouteRules.FARM_LOOT.get(i).id().equals("minecraft:melon_slice"))fob.farm=i;
+    }
+    static int melonsPerTrip(FobData.Fob fob){return (int)Math.floor(RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.slotOn,fob.separation(),fob.workers)+1e-9);}
+    static int stored(FobData.Fob fob,Item item){int n=0;for(int i=0;i<fob.depot().getContainerSize();i++)if(fob.depot().getItem(i).is(item))n+=fob.depot().getItem(i).getCount();return n;}
     /** The Delivery Gate is sold once per FOB, stands only over a rail in the FOB's village, the Receiving Gate only at home; a FOB's removal unlinks its gates. */
     @GameTest(template="empty3x3x3",batch="fob_12",timeoutTicks=600)
     public static void gatesArePlacedAndSoldByTheRules(GameTestHelper h){
@@ -511,7 +530,7 @@ public final class FobGameTests {
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");
             p.setGameMode(GameType.SURVIVAL);
             try{
-                for(var s:List.of(new ItemStack(Items.IRON_INGOT,64),new ItemStack(Items.COPPER_INGOT,64),new ItemStack(Items.REDSTONE,64),new ItemStack(ArsenalBeacon.LOGISTICS.get(),8),new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),16)))p.getInventory().add(s);
+                for(var s:List.of(new ItemStack(Items.IRON_INGOT,64),new ItemStack(Items.COPPER_INGOT,64),new ItemStack(Items.REDSTONE,64),new ItemStack(Items.CHEST,8),new ItemStack(ArsenalBeacon.LOGISTICS.get(),8),new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),16)))p.getInventory().add(s);
                 Fobs.open(p,PLANT);
                 Fobs.button(p,PLANT,Fobs.BUY_GATE);
                 h.assertTrue(count(p,ArsenalBeacon.DELIVERY_GATE_ITEM.get())==0,"a PLANTED FOB sells no gate");

@@ -77,7 +77,8 @@ final class Economy {
             case "fob_beacon"->standalone()?List.of(WeaponPlatform.cost("minecraft:iron_ingot",FOB_IRON),WeaponPlatform.cost("minecraft:copper_ingot",FOB_COPPER),WeaponPlatform.cost("minecraft:redstone",FOB_REDSTONE),WeaponPlatform.cost("minecraft:glass",FOB_GLASS),WeaponPlatform.cost("arsenal_beacon:ardent_energy",FOB_ARDENT))
                 :List.of(WeaponPlatform.cost("minecraft:iron_ingot",FOB_IRON),WeaponPlatform.cost("minecraft:copper_ingot",FOB_COPPER),WeaponPlatform.cost("minecraft:redstone",FOB_REDSTONE),WeaponPlatform.cost("minecraft:glass",FOB_GLASS),WeaponPlatform.cost("arsenal_beacon:logistics_module",FOB_LOGISTICS),WeaponPlatform.cost("arsenal_beacon:reinforced_plating",FOB_PLATING));
             // the supply rail (0.0.24): the same plain materials for both gates, plus a logistics module (pack) or Ardent Energy (standalone)
-            case "supply_delivery_gate","supply_receiving_gate"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",GATE_IRON),WeaponPlatform.cost("minecraft:copper_ingot",GATE_COPPER),WeaponPlatform.cost("minecraft:redstone",GATE_REDSTONE),
+            // 0.0.31: two chests, for the Receiving Gate's tribute storage (the owner put them in both gates' recipes)
+            case "supply_delivery_gate","supply_receiving_gate"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",GATE_IRON),WeaponPlatform.cost("minecraft:copper_ingot",GATE_COPPER),WeaponPlatform.cost("minecraft:redstone",GATE_REDSTONE),WeaponPlatform.cost("minecraft:chest",GATE_CHESTS),
                 standalone()?WeaponPlatform.cost("arsenal_beacon:ardent_energy",GATE_ARDENT):WeaponPlatform.cost("arsenal_beacon:logistics_module",GATE_LOGISTICS));
             // the Tactical Enchanting Table (0.0.27): iron, obsidian and books, plus resonance coils (pack) or Ardent Energy (standalone)
             case "tactical_enchanting_table"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",ENCHANT_IRON),WeaponPlatform.cost("minecraft:obsidian",ENCHANT_OBSIDIAN),WeaponPlatform.cost("minecraft:book",ENCHANT_BOOKS),
@@ -123,7 +124,7 @@ final class Economy {
     /** The FOB Beacon at the Workshop: the same materials in both editions, then parts (pack) or Ardent Energy (standalone). */
     static final int FOB_IRON=16,FOB_COPPER=16,FOB_REDSTONE=8,FOB_GLASS=4,FOB_LOGISTICS=2,FOB_PLATING=2,FOB_ARDENT=8;
     /** Each supply gate (0.0.24): bought at the FOB shop (Delivery) or the Workshop (Receiving). */
-    static final int GATE_IRON=16,GATE_COPPER=8,GATE_REDSTONE=8,GATE_LOGISTICS=1,GATE_ARDENT=4;
+    static final int GATE_IRON=16,GATE_COPPER=8,GATE_REDSTONE=8,GATE_CHESTS=2,GATE_LOGISTICS=1,GATE_ARDENT=4;
     /**
      * A FOB's repair (0.0.25): a base price while it is DOWN, plus each villager lost in its raids by level (Novice to Master), in Ardent Energy
      * in both editions; the pack edition's Ardent is half as plentiful (a raid pays 1+t against 2+2t), so its prices are lower.

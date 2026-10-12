@@ -101,7 +101,7 @@ final class FobBlocks {
      * the shop and the raid call are vanilla menu buttons, each checked again on the server ({@link Fobs#button}).
      */
     static final class FobMenu extends AbstractContainerMenu {
-        final BlockPos pos;final CompoundTag data;
+        final BlockPos pos;final CompoundTag data;String message="";
         FobMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){super(ArsenalBeacon.FOB_MENU.get(),id);this.pos=pos;this.data=data;}
         static FobMenu client(int id,Inventory inv,FriendlyByteBuf buf){var pos=buf.readBlockPos();var n=buf.readNbt();return new FobMenu(id,inv,pos,n==null?new CompoundTag():n);}
         @Override public boolean clickMenuButton(Player p,int id){if(p instanceof ServerPlayer sp)Fobs.button(sp,pos,id);return true;}

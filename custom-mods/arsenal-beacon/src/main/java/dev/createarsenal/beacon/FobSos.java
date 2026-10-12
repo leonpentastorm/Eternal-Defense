@@ -40,7 +40,7 @@ final class FobSos {
                 d.sosLeft=Math.max(0,d.sosLeft-20);d.setDirty();
                 if(d.sosLeft==0){close(l,d,open,SosRules.End.EXPIRED);return;}
             }
-            if(!open.raidRunning())for(var p:l.getServer().getPlayerList().getPlayers())if(arrived(l,open,p)){arrive(l,d,open,p,homeRaid);break;}
+            if(!open.raidRunning()&&villagersLoaded(l,open))for(var p:l.getServer().getPlayerList().getPlayers())if(arrived(l,open,p)){arrive(l,d,open,p,homeRaid);break;}
             return;
         }
         int active=d.count(FobRules.State.ACTIVE);
@@ -52,6 +52,16 @@ final class FobSos {
     /** The Home raid's warning day (the same window that locks Tactical Operations): only while a beacon waits for its next raid. */
     static boolean homeWarning(CampaignData c){
         return c.installed()&&c.phase.equals("preparation")&&TacticalRules.raidWarning(TacticalRules.untilRaid(c.rewardTier,c.preparationTicks,c.respiteTicks));
+    }
+    /**
+     * 0.0.31: the village's entities are loaded (they load a moment after its land): an SOS answered by a player who just arrived started its
+     * raid counting no villagers, so losing them never put the FOB DOWN and none was recorded for the repair.
+     */
+    static boolean villagersLoaded(ServerLevel l,FobData.Fob f){
+        if(!l.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.asLong(f.pos)))return false;
+        // a column whose land is loaded must have its entities too (land not loaded holds no villager that could count)
+        for(long column:f.zoneColumns)if(l.hasChunk(net.minecraft.world.level.ChunkPos.getX(column),net.minecraft.world.level.ChunkPos.getZ(column))&&!l.areEntitiesLoaded(column))return false;
+        return true;
     }
     static boolean arrived(ServerLevel l,FobData.Fob f,ServerPlayer p){
         return p.level()==l&&p.isAlive()&&!p.isSpectator()&&FobZone.contains(FobZone.of(l,f),p.blockPosition());

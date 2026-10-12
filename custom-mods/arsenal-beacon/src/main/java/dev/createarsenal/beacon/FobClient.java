@@ -38,22 +38,36 @@ public final class FobClient {
 
     static final class FobScreen extends AbstractContainerScreen<FobBlocks.FobMenu> {
         private CompoundTag data;
-        private int colW,leftX,rightX,bodyY;
+        private int colW,shopW,leftX,midX,rightX,bodyY;
+        private long receivedAt=net.minecraft.Util.getMillis();
         private Ui.UiButton callButton,repairButton,outlineButton;
         /** The zone outline's switch sits where the zone line was (0.0.30). */
         static final int OUTLINE_Y=39;
         private final List<Ui.UiButton> buy=new ArrayList<>();private Ui.UiButton gateButton;
-        FobScreen(FobBlocks.FobMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;}
-        void update(CompoundTag next){data=next;rebuildWidgets();}
+        private String layout;
+        FobScreen(FobBlocks.FobMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;layout=layout(data);}
+        /** 0.0.31: the state comes every second (the tribute's countdown); the buttons are rebuilt only when what they show changes. */
+        void update(CompoundTag next){data=next;receivedAt=net.minecraft.Util.getMillis();String now=layout(next);if(!now.equals(layout)){layout=now;rebuildWidgets();}}
+        private static String layout(CompoundTag d){
+            var b=new StringBuilder();
+            for(String key:List.of("state","showZone","sections","mayCallRaid","raidsPossible","creative","energy","hasGate","gateCost","lost","repairTotal","mayRepair"))b.append(d.get(key)).append(';');
+            for(String id:Fobs.SHOP)b.append(d.getInt("price."+id)).append(';');
+            return b.toString();
+        }
+        CompoundTag data(){return data;}
         private String state(){return data.getString("state");}
         private boolean active(){return state().equals("active");}
 
         @Override protected void init(){
-            imageWidth=Math.min(width-12,400);imageHeight=Math.min(height-12,236);
+            // 0.0.31: three columns: the village, the tribute (its four loot slots), the shop
+            imageWidth=Math.min(width-12,660);imageHeight=Math.min(height-12,300);
             super.init();clearWidgets();buy.clear();
-            colW=(imageWidth-36)/2;leftX=leftPos+12;rightX=leftX+colW+12;bodyY=topPos+34;
+            int inner=imageWidth-48;shopW=Math.min(210,Math.max(150,inner*2/5));colW=(inner-shopW)/2;
+            leftX=leftPos+12;midX=leftX+colW+12;rightX=midX+colW+12;bodyY=topPos+34;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
-            outlineButton=addRenderableWidget(new Ui.UiButton(leftX,bodyY+OUTLINE_Y,colW,18,Ui.t("fob.screen.outline"),Ui.Look.TOGGLE,b->click(Fobs.OUTLINE)));
+            // a narrow column (a 426 px window) has room only for the short label; the tooltip says the rest
+            Component outline=font.width(Ui.t("fob.screen.outline"))<=colW-30-font.width(Ui.t("off"))-24?Ui.t("fob.screen.outline"):Ui.t("fob.screen.outline.short");
+            outlineButton=addRenderableWidget(new Ui.UiButton(leftX,bodyY+OUTLINE_Y,colW,18,outline,Ui.Look.TOGGLE,b->click(Fobs.OUTLINE)));
             outlineButton.on=data.getBoolean("showZone");
             outlineButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.outline.tip",data.getInt("sections"))));
             // the raid call, only while the FOB waits for its first won raid
@@ -62,17 +76,17 @@ public final class FobClient {
             callButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.call.tip")));
             for(int i=0;i<Fobs.SHOP.size();i++){
                 String id=Fobs.SHOP.get(i);int price=data.getInt("price."+id);
-                var button=addRenderableWidget(new Ui.UiButton(rightX+colW-46,bodyY+16+i*26+3,44,18,Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_SUPPLY+Fobs.SHOP.indexOf(id))));
+                var button=addRenderableWidget(new Ui.UiButton(rightX+shopW-46,bodyY+16+i*26+3,44,18,Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_SUPPLY+Fobs.SHOP.indexOf(id))));
                 boolean afford=data.getBoolean("creative")||data.getInt("energy")>=price;
                 button.active=active()&&afford;button.warning=active()&&!afford;buy.add(button);
             }
             // the second listing (0.0.24): this FOB's Supply Delivery Gate
             boolean has=data.getBoolean("hasGate"),enough=data.getBoolean("creative")||enough(data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND));
-            gateButton=addRenderableWidget(new Ui.UiButton(rightX+colW-46,gateRowY()+3,44,18,has?Ui.t("fob.shop.placed"):Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_GATE)));
+            gateButton=addRenderableWidget(new Ui.UiButton(rightX+shopW-46,gateRowY()+3,44,18,has?Ui.t("fob.shop.placed"):Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_GATE)));
             gateButton.active=active()&&!has&&enough;gateButton.warning=active()&&!has&&!enough;
             // slice 3 (0.0.25): the repair (DOWN: on the right, instead of the shop) or bringing villagers lost in a won raid back (left)
             int lost=lost().size(),total=data.getInt("repairTotal");boolean afford=data.getBoolean("creative")||data.getInt("energy")>=total;
-            if(down())repairButton=addRenderableWidget(new Ui.UiButton(rightX,topPos+imageHeight-50,colW,20,Ui.t("fob.repair.button",total),Ui.Look.PRIMARY,b->click(Fobs.REPAIR)));
+            if(down())repairButton=addRenderableWidget(new Ui.UiButton(rightX,topPos+imageHeight-50,shopW,20,Ui.t("fob.repair.button",total),Ui.Look.PRIMARY,b->click(Fobs.REPAIR)));
             else repairButton=addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-50,colW,20,Ui.t("fob.repair.bring",lost,total),Ui.Look.PRIMARY,b->click(Fobs.REPAIR)));
             repairButton.visible=down()||lost>0&&!state().equals("planted");
             repairButton.active=data.getBoolean("mayRepair")&&afford;repairButton.warning=data.getBoolean("mayRepair")&&!afford;
@@ -83,12 +97,13 @@ public final class FobClient {
         private net.minecraft.nbt.ListTag lost(){return data.getList("lost",net.minecraft.nbt.Tag.TAG_COMPOUND);}
         private int gateRowY(){return bodyY+16+Fobs.SHOP.size()*26;}
         private static boolean enough(net.minecraft.nbt.ListTag costs){for(var c:costs){var t=(CompoundTag)c;if(t.getInt("have")<t.getInt("count"))return false;}return true;}
-        private void click(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
+        private void click(int id){BeaconNetwork.menuButton(menu.containerId,id);}
 
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             Ui.panel(g,leftPos,topPos,imageWidth,imageHeight);
             Ui.header(g,font,leftPos,topPos,imageWidth,Component.literal(data.getString("name")),Ui.t("fob.screen.subtitle"));
             drawVillage(g);
+            drawTribute(g);
             if(down())drawRepair(g);else drawShop(g);
             var message=data.getString("message");
             if(!message.isEmpty()){boolean good=message.startsWith("fob.result.bought")||message.equals("fob.result.raid_called")||message.startsWith("fob.result.repaired")||message.equals("fob.result.villagers_back");
@@ -123,9 +138,35 @@ public final class FobClient {
             Component about=!data.getBoolean("raidsPossible")&&state.equals("planted")?Ui.t("fob.screen.about.no_raids"):Ui.t("fob.screen.about."+state);
             Ui.wrap(g,font,about,x,y,w,state.equals("down")?Ui.ORANGE:Ui.MUTED,Math.max(1,(bottom-y)/10));
         }
+        /** Middle (0.0.31): the tribute, a summary of the four loot slots chosen at the Supply Gates, the next delivery and the storage. */
+        private void drawTribute(GuiGraphics g){
+            int x=midX,w=colW,y=bodyY;
+            Ui.text(g,font,Ui.t("fob.tribute.title"),x,y+2,Ui.BRASS,w);Ui.rule(g,x+font.width(Ui.t("fob.tribute.title"))+6,y+6,Math.max(0,w-font.width(Ui.t("fob.tribute.title"))-6));y+=16;
+            y=Ui.wrap(g,font,Ui.t("gate.slot.specialty",Ui.t("gate.specialty."+data.getString("specialty"))),x,y,w,Ui.MUTED,2)+1;
+            var slots=data.getList("slots",net.minecraft.nbt.Tag.TAG_COMPOUND);double perHour=data.getDouble("tripsPerHour");
+            for(int i=0;i<slots.size();i++){
+                var s=slots.getCompound(i);boolean on=s.getBoolean("on");var stack=GateClient.icon(s.getString("item"));
+                g.renderItem(stack,x,y+2);
+                Ui.text(g,font,stack.getHoverName(),x+19,y,on?Ui.INK:Ui.MUTED,w-19);
+                Ui.text(g,font,on?GateClient.rate(s.getDouble("perTrip"),0):Ui.t("fob.tribute.off"),x+19,y+10,on?Ui.CYAN:Ui.MUTED,w-19);
+                y+=imageHeight>=300?24:21;
+            }
+            int bottom=topPos+imageHeight-20;
+            if(!data.getBoolean("hasRoute")){Ui.wrap(g,font,Ui.t("fob.tribute.no_route"),x,y+2,w,Ui.ORANGE,Math.max(1,(bottom-y)/10));return;}
+            long next=data.getLong("nextIn");if(next>=0)next=Math.max(0,next-(net.minecraft.Util.getMillis()-receivedAt)/50);
+            // each line wraps on a narrow window, and stops at the bottom of the column
+            y=Ui.wrap(g,font,next>=0?Ui.t("fob.tribute.next",GateClient.time(next)):Ui.t("fob.tribute.paused"),x,y+2,w,next>=0?Ui.INK:Ui.MUTED,rows(y,bottom,2))-1;
+            if(perHour>0&&y+10<=bottom)y=Ui.wrap(g,font,Ui.t("fob.tribute.trips",GateClient.number(perHour)),x,y+2,w,Ui.MUTED,rows(y,bottom,2))-1;
+            if(y+10<=bottom)y=Ui.wrap(g,font,Ui.t("fob.tribute.storage",data.getInt("stored"),data.getInt("depotSlots")),x,y+2,w,data.getBoolean("full")?Ui.ORANGE:Ui.MUTED,rows(y,bottom,2))-1;
+            // the hint only when it fits whole (the Field Guide says it too)
+            int hint=Ui.lines(font,Ui.t("fob.tribute.where"),w);
+            if(hint<=3&&hint<=rows(y+2,bottom,3)&&y+4+hint*11<=bottom)Ui.wrap(g,font,Ui.t("fob.tribute.where"),x,y+4,w,Ui.MUTED,hint);
+        }
+        /** How many 11 px lines fit from {@code y} to {@code bottom}, at least 1 and at most {@code max}. */
+        private static int rows(int y,int bottom,int max){return Math.max(1,Math.min(max,(bottom-y-2)/11));}
         /** Right, while DOWN (0.0.25): each lost villager with its price, the base price, the total and what the player carries. */
         private void drawRepair(GuiGraphics g){
-            int x=rightX,w=colW,y=bodyY,bottom=topPos+imageHeight-54;
+            int x=rightX,w=shopW,y=bodyY,bottom=topPos+imageHeight-54;
             Ui.text(g,font,Ui.t("fob.repair.title"),x,y+2,Ui.RED,w);Ui.rule(g,x+font.width(Ui.t("fob.repair.title"))+6,y+6,w-font.width(Ui.t("fob.repair.title"))-6);y+=16;
             var lost=lost();int rows=Math.max(0,(bottom-y-40)/20),shown=lost.size()>rows?Math.max(0,rows-1):lost.size();
             if(lost.isEmpty()){Ui.text(g,font,Ui.t("fob.repair.none"),x,y,Ui.MUTED,w);y+=12;}
@@ -150,7 +191,7 @@ public final class FobClient {
         }
         /** Right: the three flares, the energy carried, and what each needs at home. */
         private void drawShop(GuiGraphics g){
-            int x=rightX,w=colW,y=bodyY;
+            int x=rightX,w=shopW,y=bodyY;
             Ui.text(g,font,Ui.t("fob.shop.title"),x,y+2,Ui.BRASS,w);Ui.rule(g,x+font.width(Ui.t("fob.shop.title"))+6,y+6,w-font.width(Ui.t("fob.shop.title"))-6);
             for(int i=0;i<Fobs.SHOP.size();i++){
                 String id=Fobs.SHOP.get(i);int ry=y+16+i*26,price=data.getInt("price."+id);
@@ -162,14 +203,20 @@ public final class FobClient {
                 Ui.text(g,font,Component.literal(Integer.toString(price)),x+37,ry+14,afford?Ui.CYAN:Ui.ORANGE,30);
             }
             // the Supply Delivery Gate row: its materials, like the Workshop
-            int gy=gateRowY();Ui.card(g,x,gy,w,24,active()?OLIVE:Ui.EDGE);
+            // 0.0.31: five materials; when they do not fit beside the button, the rest go on a second line under it
+            var costs=data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND);int costW=0;
+            for(var e:costs)costW+=12+font.width(Integer.toString(((CompoundTag)e).getInt("count")));
+            boolean twoLines=x+27+costW>x+w-50;int gy=gateRowY(),cardH=twoLines?34:24;
+            Ui.card(g,x,gy,w,cardH,active()?OLIVE:Ui.EDGE);
             g.renderItem(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()),x+7,gy+4);
             Ui.text(g,font,new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),x+27,gy+3,active()?Ui.INK:Ui.MUTED,w-27-50);
-            int cx=x+27;
-            for(var e:data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND)){var c=(CompoundTag)e;var icon=ItemStack.of(c.getCompound("item"));boolean short_=!data.getBoolean("creative")&&c.getInt("have")<c.getInt("count");
-                g.pose().pushPose();g.pose().translate(cx,gy+13,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
-                var n=Component.literal(Integer.toString(c.getInt("count")));Ui.text(g,font,n,cx+9,gy+14,short_?Ui.ORANGE:Ui.MUTED,30);cx+=12+font.width(n);}
-            int ny=gy+28,bottom=topPos+imageHeight-20;
+            int cx=x+27,cy=gy+13;
+            for(var e:costs){var c=(CompoundTag)e;var icon=ItemStack.of(c.getCompound("item"));boolean short_=!data.getBoolean("creative")&&c.getInt("have")<c.getInt("count");
+                var n=Component.literal(Integer.toString(c.getInt("count")));int cw=12+font.width(n);
+                if(cy==gy+13&&cx+cw>x+w-50){cx=x+27;cy=gy+23;}
+                g.pose().pushPose();g.pose().translate(cx,cy,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                Ui.text(g,font,n,cx+9,cy+1,short_?Ui.ORANGE:Ui.MUTED,30);cx+=cw;}
+            int ny=gy+cardH+4,bottom=topPos+imageHeight-20;
             Ui.text(g,font,data.getBoolean("creative")?Ui.t("fob.shop.creative"):Ui.t("fob.shop.energy",data.getInt("energy")),x,ny,Ui.MUTED,w);ny+=12;
             if(!active()){Ui.wrap(g,font,Ui.t("fob.shop.closed"),x,ny,w,Ui.ORANGE,Math.max(1,(bottom-ny)/10));return;}
             if(!data.getBoolean("hasPlatform"))ny=Ui.wrap(g,font,Ui.t("fob.shop.no_platform"),x,ny,w,Ui.ORANGE,3)+2;
@@ -180,8 +227,8 @@ public final class FobClient {
             renderBackground(g);super.render(g,mx,my,partial);
             if(down())return;   // the repair replaces the shop
             // a shop row: the flare's own tooltip
-            for(int i=0;i<Fobs.SHOP.size();i++){int ry=bodyY+16+i*26;if(Ui.inside(mx,my,rightX,ry,colW-50,24)){g.renderTooltip(font,new ItemStack(flare(Fobs.SHOP.get(i))),mx,my);return;}}
-            if(Ui.inside(mx,my,rightX,gateRowY(),colW-50,24)){g.renderComponentTooltip(font,List.of(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),Ui.t(data.getBoolean("hasGate")?"fob.shop.gate.placed":"fob.shop.gate.tip")),mx,my);return;}
+            for(int i=0;i<Fobs.SHOP.size();i++){int ry=bodyY+16+i*26;if(Ui.inside(mx,my,rightX,ry,shopW-50,24)){g.renderTooltip(font,new ItemStack(flare(Fobs.SHOP.get(i))),mx,my);return;}}
+            if(Ui.inside(mx,my,rightX,gateRowY(),shopW-50,24)){g.renderComponentTooltip(font,List.of(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),Ui.t(data.getBoolean("hasGate")?"fob.shop.gate.placed":"fob.shop.gate.tip")),mx,my);return;}
             for(int i=0;i<buy.size();i++)if(buy.get(i).isHovered()&&!buy.get(i).active){g.renderComponentTooltip(font,List.of(Ui.t(active()?"fob.result.no_energy":"fob.shop.closed")),mx,my);return;}
         }
     }

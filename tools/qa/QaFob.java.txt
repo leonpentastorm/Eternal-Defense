@@ -27,6 +27,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * QA ONLY (never part of a release): boots a NORMAL world on the real client, runs the FOB GameTests (FobGameTests, on a sky platform), then
@@ -34,7 +35,10 @@ import java.util.*;
  * own click, sent to the server), the model, the raid bar, the FOB screen before and after the raid, a purchase, the status card, the FOB
  * Zone effect, renaming with a Name Tag, the Field Guide card, the Workshop row, and the Recovery Shovel's confirmation. 0.0.30: the planting
  * preview and the zone outline (and its switch), the owner's 4-wide gates across two rails with a seated rider rolling under the beam, the
- * bigger enchanting screen with its slot empty, and the Workshop list scrolled to its end.
+ * bigger enchanting screen with its slot empty, and the Workshop list scrolled to its end. 0.0.31: the Receiving Gate's whole-window screen
+ * (its take-only storage, the live countdown, the four loot slots switched and chosen) at three window sizes with every text checked for
+ * overlap, the FOB screen's tribute column, the Command Table's FOBs tab during an SOS (the map reprinted) and the FOB arrow on its map,
+ * the enchanting table's buttons through the mod's own packet, and the storage handed over when the FOB is taken back.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
@@ -82,6 +86,61 @@ public final class QaFob {
     static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){String t=e.getMessage().getString();CHAT.add(t);log("QA_CHAT {}",t);}
     static boolean chatHas(String part){synchronized(CHAT){for(var c:CHAT)if(c.contains(part))return true;}return false;}
+
+    // ---- 0.0.31: one frame's texts (recorded by Ui, see Ui.drawn) and the window sizes the screens must fit --------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean hit(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return aw>0&&bw>0&&ax<bx+bw&&bx<ax+aw&&ay<by+bh&&by<ay+ah;}
+    /** The last recorded frame: no text over another text or a button, all inside the window; a text cut short fails only when {@code strict}. */
+    static void layout(String name,boolean strict){
+        var s=mc().screen;var boxes=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();var cut=new ArrayList<String>();
+        String size=(s==null?0:s.width)+"x"+(s==null?0:s.height);
+        for(int i=0;i<boxes.size();i++){var a=boxes.get(i);
+            if(a.cut())cut.add(a.text());
+            if(s!=null&&(a.x()<0||a.y()<0||a.x()+a.w()>s.width||a.y()+a.h()>s.height))bad.add("off the window: '"+a.text()+"'");
+            for(int j=i+1;j<boxes.size();j++){var b=boxes.get(j);if(hit(a.x(),a.y(),a.w(),a.h(),b.x(),b.y(),b.w(),b.h()))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+            if(s!=null)for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&hit(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("'"+a.text()+"' over the button '"+w.getMessage().getString()+"'");
+        }
+        // every text and button inside the screen's panel
+        if(s instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> cs){int px=cs.getGuiLeft(),py=cs.getGuiTop(),pw=cs.getXSize(),ph=cs.getYSize();
+            for(var a:boxes)if(a.x()<px||a.y()<py||a.x()+a.w()>px+pw||a.y()+a.h()>py+ph)bad.add("outside the panel: '"+a.text()+"'");
+            for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&(w.getX()<px||w.getY()<py||w.getX()+w.getWidth()>px+pw||w.getY()+w.getHeight()>py+ph))bad.add("the button '"+w.getMessage().getString()+"' outside the panel");}
+        // a button's label room, as Ui.UiButton draws it: a row 16 px less than its width, a switch less its knob and its ON/OFF, any other 10 px less
+        if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.label&&!b.getMessage().getString().isEmpty()){
+            int room=b.look==Ui.Look.ROW?b.getWidth()-16:b.look==Ui.Look.TOGGLE?b.getWidth()-30-mc().font.width(Ui.t("off"))-24:b.getWidth()-10-(b.locked?10:0);
+            if(mc().font.width(b.getMessage())>room)cut.add("button '"+b.getMessage().getString()+"'");}
+        check(name+" at "+size+": "+boxes.size()+" texts, none over another or over a button, all in the panel",bad.isEmpty()&&!boxes.isEmpty(),bad.size()+" "+String.join(" | ",bad.subList(0,Math.min(4,bad.size()))));
+        if(strict)check(name+" at "+size+": no text cut short",cut.isEmpty(),String.join(" | ",cut));
+        else if(!cut.isEmpty())log("QA_NOTE {} at {}: cut short: {}",name,size,String.join(" | ",cut));
+    }
+    /** 640 x 360 (1280 x 720 at GUI scale 2), 480 x 270 (1920 x 1080 at GUI scale 4) and 426 x 240 (1280 x 720 at GUI scale 3). */
+    static final int[][] SIZES={{1280,720,2},{960,540,2},{1280,720,3}},NARROW={{960,540,2},{1280,720,3}};
+    /** The window first; the GUI scale a step later (the option is clamped to what the window's size allows when it is set). */
+    static void window(int w,int h){org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc().getWindow().getWindow(),w,h);}
+    static void scale(int scale){mc().options.guiScale().set(scale);mc().resizeDisplay();}
+    /** For each size: resize, lay the screen out again ({@code prepare}), record one frame, check it, take a picture. */
+    static void atSizes(int[][] sizes,String name,String picture,boolean strict,Runnable prepare){
+        for(var sz:sizes){
+            step(15,()->window(sz[0],sz[1]),"window "+sz[0]+" x "+sz[1]);
+            step(8,()->{scale(sz[2]);if(prepare!=null)prepare.run();},"GUI scale "+sz[2]+", lay it out again");
+            step(4,()->recordFrame=true,"record a frame");
+            step(2,()->{var w=mc().getWindow();check("the window is "+sz[0]+" x "+sz[1]+" at GUI scale "+sz[2],w.getWidth()==sz[0]&&w.getHeight()==sz[1]&&w.getGuiScale()==sz[2],w.getWidth()+"x"+w.getHeight()+" scale "+w.getGuiScale());
+                layout(name,strict);shot(picture+"_"+w.getGuiScaledWidth()+"x"+w.getGuiScaledHeight());},"check "+name);
+        }
+        step(15,()->window(1280,720),"back to 1280 x 720");
+        step(8,()->scale(2),"GUI scale 2, lay it out again");
+    }
+    static void pressNth(String label,int n){
+        var s=mc().screen;if(s==null)return;int k=0;
+        for(var c:new ArrayList<>(s.children()))if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals(label)&&k++==n){b.onPress();log("QA_NOTE pressed {} #{}",label,n);return;}
+        log("QA_NOTE no button {} #{}",label,n);
+    }
+    static TacticalClient.TableScreen table(){return mc().screen instanceof TacticalClient.TableScreen s?s:null;}
+    static GateClient.GateScreen gate(){return mc().screen instanceof GateClient.GateScreen s?s:null;}
+    static CompoundTag gateSlot(int i){var s=gate();return s==null?new CompoundTag():s.data().getList("slots",net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(i);}
+    static int inInventory(net.minecraft.world.item.Item item){return srvGet(()->{int n=0;for(var st:sp().getInventory().items)if(st.is(item))n+=st.getCount();return n;});}
+    static long countdown;
 
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
@@ -327,19 +386,77 @@ public final class QaFob {
         step(20,()->{if(homeGate!=null){srv(()->clearFrame(homeGate));click(homeGate,Direction.UP);}},"use the Receiving Gate on it");
         step(20,()->{check("the Receiving Gate asks which FOB it serves",mc().screen instanceof GateClient.GateScreen,String.valueOf(mc().screen));shot("f14_receiving_gate_link");},"the link screen");
         step(10,()->{var f=fob();if(f!=null)press(f.name+" (ACTIVE)");},"pick the FOB");
-        step(20,()->{var f=fob();check("the Receiving Gate serves the FOB",f!=null&&homeGate!=null&&anchorAt(homeGate).equals(f.receivingGate),f==null?"":String.valueOf(f.receivingGate));shot("f15_gate_screen_no_route");},"the gate screen: the route needs a ride");
+        until("the Receiving Gate serves the FOB",100,()->{var f=fob();return f!=null&&homeGate!=null&&anchorAt(homeGate).equals(f.receivingGate);},()->{var f=fob();
+            check("the Receiving Gate serves the FOB",f!=null&&homeGate!=null&&anchorAt(homeGate).equals(f.receivingGate),f==null?"":String.valueOf(f.receivingGate));});
+        step(20,()->shot("f15_gate_screen_no_route"),"the gate screen: the route needs a ride");
         // the rides themselves are the GameTest's (a real cart through both arches); here the three passes are made on the server, as a ride would
         step(5,()->{mc().setScreen(null);srv(()->{var l=sl();sp().closeContainer();var f=FobData.get(l).fobs.values().iterator().next();var cart=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);
-            cart.setPos(homeGate.getX()+.5,homeGate.getY(),homeGate.getZ()+.5);l.addFreshEntity(cart);sp().startRiding(cart,true);var d=FobData.get(l);for(int i=0;i<f.stock.length;i++)f.stock[i]=30;
+            cart.setPos(homeGate.getX()+.5,homeGate.getY(),homeGate.getZ()+.5);l.addFreshEntity(cart);sp().startRiding(cart,true);var d=FobData.get(l);
             Routes.pass(l,d,f,RailGates.Kind.RECEIVING,sp(),cart);Routes.pass(l,d,f,RailGates.Kind.DELIVERY,sp(),cart);Routes.pass(l,d,f,RailGates.Kind.RECEIVING,sp(),cart);sp().stopRiding();cart.discard();});},"a round trip");
         step(45,()->{},"the lights look again (once a second)");
         step(40,()->{var f=fob();check("the route is open and its round trip delivered",f!=null&&f.commissioned&&"ride".equals(f.lastKind),f==null?"":f.commissioned+" "+f.lastKind+" "+f.lastItems);
             check("the light at home turns green, on both columns",homeGate!=null&&srvGet(()->sl().getBlockState(anchorAt(homeGate)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN&&sl().getBlockState(homeGate.south(2)).getValue(RailGates.SIGNAL)==RailGates.Lamp.GREEN),"");
             mc().options.hideGui=true;if(homeGate!=null)look(homeGate.relative(Direction.EAST,8),homeGate.getX()+.5,homeGate.getY()+1.1,homeGate.getZ()+1);},"green");
-        step(40,()->shot("f16_receiving_gate_green"),"the Receiving Gate, green");
+        step(40,()->{shot("f16_receiving_gate_green");
+            // the ride's two deliveries are in the storage, not the reward chest
+            var f=fob();int stacks=srvGet(()->{int n=0;var x=FobData.get(sl()).fobs.values().iterator().next();for(int i=0;i<x.depot().getContainerSize();i++)if(!x.depot().getItem(i).isEmpty())n++;return n;});
+            check("the round trip's tribute is in the Receiving Gate's storage",stacks>0,"stacks="+stacks+" last="+(f==null?"":f.lastItems));
+            // the screen's pictures with the potion makers (the specialty is rolled at planting)
+            srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.specialty=RouteRules.Specialty.POTIONS;x.special=RouteRules.POTION_LOOT.size()-1;FobData.get(sl()).setDirty();});},"the Receiving Gate, green");
         step(5,()->{mc().options.hideGui=false;if(homeGate!=null)look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+1.5,homeGate.getZ()+.5);},"face it");
         step(10,()->{if(homeGate!=null)click(homeGate.above(),Direction.SOUTH);},"open its screen through the beam");
         step(25,()->{check("the gate screen opens by clicking the beam",mc().screen instanceof GateClient.GateScreen,"");shot("f17_gate_screen_running");},"the gate screen, running");
+        // ---- 0.0.31: the Receiving Gate's screen: the storage, the countdown, the four loot slots ---------------------------------------------------
+        step(5,()->{var s=gate();
+            check("the screen holds the storage (54 slots) and the inventory",s!=null&&s.getMenu().storage&&s.getMenu().slots.size()==FobData.DEPOT_SLOTS+36,s==null?"":String.valueOf(s.getMenu().slots.size()));
+            int stacks=0;if(s!=null)for(int i=0;i<FobData.DEPOT_SLOTS;i++)if(!s.getMenu().slots.get(i).getItem().isEmpty())stacks++;
+            check("the client sees the tribute in the storage",stacks>0,"stacks="+stacks);
+            check("the screen takes the whole window (8 px margins)",s!=null&&s.getXSize()==s.width-16&&s.getYSize()==s.height-16,s==null?"":s.getXSize()+"x"+s.getYSize()+" in "+s.width+"x"+s.height);
+            check("640 x 360: the storage beside the tabs",s!=null&&s.split(),"");
+            check("the four loot slots: emeralds, the mine, the farm, potion makers",s!=null&&s.data().getList("slots",10).size()==4&&s.data().getString("specialty").equals("potions"),s==null?"":s.data().getString("specialty"));
+            countdown=s==null?-1:s.nextIn();
+            check("the countdown runs",countdown>0,"next in "+countdown+" ticks");},"the storage and the slots");
+        step(4,()->recordFrame=true,"record a frame");
+        step(40,()->{layout("the Receiving Gate, Tribute tab",true);shot("f17a_gate_tribute");},"the Tribute tab");
+        step(2,()->{var s=gate();long now=s==null?-1:s.nextIn();check("52 ticks later it reads about 52 ticks less (the server's state comes every second)",now>=0&&countdown-now>=40&&countdown-now<=70,countdown+" -> "+now);},"the countdown, live");
+        step(5,()->{countdown=Double.doubleToLongBits(gateSlot(2).getDouble("perTrip"));pressNth("ON",1);},"switch the mine off");
+        step(25,()->{var f=fob();double before=Double.longBitsToDouble(countdown),after=gateSlot(2).getDouble("perTrip");
+            check("the mine is off on the server",f!=null&&!f.slotOn[1],"");
+            check("the screen shows it at once: OFF, and the farm brings 4/3 as much",!gateSlot(1).getBoolean("on")&&Math.abs(after/before-4/3.0)<1e-6,before+" -> "+after);
+            recordFrame=true;},"the mine off");
+        step(3,()->{layout("the Receiving Gate, a slot off",true);shot("f17b_gate_mine_off");pressNth("OFF",0);},"and on again");
+        step(20,()->{var f=fob();check("the mine is on again",f!=null&&f.slotOn[1]&&gateSlot(1).getBoolean("on"),"");pressNth("Choose",0);},"Choose for the mine");
+        step(10,()->{var s=gate();check("the mine's items to choose from: six",s!=null&&s.pickButtons.size()==RouteRules.MINE_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));recordFrame=true;},"the mine's grid");
+        step(3,()->{layout("the Receiving Gate, the mine's items",true);shot("f17c_gate_choose_mine");var s=gate();if(s!=null&&s.pickButtons.size()>1)s.pickButtons.get(1).onPress();},"choose iron");
+        step(20,()->{var f=fob();check("the mine now sends iron",f!=null&&f.mine==1&&gateSlot(1).getString("item").equals("minecraft:iron_ingot"),f==null?"":f.mine+" "+gateSlot(1).getString("item"));pressNth("Choose",2);},"Choose for the specialty");
+        step(10,()->{var s=gate();check("potion makers: every brewing ingredient",s!=null&&s.pickButtons.size()==RouteRules.POTION_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));
+            if(s!=null&&!s.pickButtons.isEmpty()){var b=s.pickButtons.get(0);hover(b.getX()+8,b.getY()+8);}},"point at the ghast tear");
+        step(10,()->{shot("f17d_gate_choose_potions_tier");recordFrame=true;},"its tooltip: the rate and the tier");
+        step(3,()->{layout("the Receiving Gate, the potion makers' items",true);var s=gate();if(s!=null&&!s.pickButtons.isEmpty())s.pickButtons.get(0).onPress();hover(1,1);},"choose the ghast tear");
+        step(20,()->{var f=fob();check("the specialty now sends ghast tears",f!=null&&f.special==0&&gateSlot(3).getString("item").equals("minecraft:ghast_tear"),f==null?"":f.special+" "+gateSlot(3).getString("item"));
+            double per=gateSlot(3).getDouble("perTrip");check("a ghast tear (tier S) takes several trips",per>0&&per<1,"per trip "+per);recordFrame=true;},"chosen");
+        step(3,()->{layout("the Receiving Gate, after the choices",true);shot("f17e_gate_chosen");press("Route");},"the Route tab");
+        step(10,()->recordFrame=true,"record a frame");
+        step(3,()->{layout("the Receiving Gate, Route tab",true);shot("f17f_gate_route");press("Tribute");},"the checklist");
+        // take only, with the client's own clicks: shift-click a stack out; a stack put on an empty storage slot stays on the cursor
+        step(5,()->{var s=gate();if(s==null)return;var first=s.getMenu().slots.get(0).getItem();countdown=first.isEmpty()?0:first.getCount();
+            log("QA_NOTE storage slot 0: {}",first);mc().gameMode.handleInventoryMouseClick(s.getMenu().containerId,0,0,net.minecraft.world.inventory.ClickType.QUICK_MOVE,mc().player);},"shift-click the first stack out");
+        step(15,()->{boolean empty=srvGet(()->FobData.get(sl()).fobs.values().iterator().next().depot().getItem(0).isEmpty());
+            check("shift-click takes a stack out of the storage",countdown>0&&empty,"count="+countdown);
+            srv(()->{var inv=sp().getInventory();inv.setItem(0,new ItemStack(Items.DIRT,5));});},"5 dirt in the hotbar");
+        step(10,()->{var s=gate();if(s==null)return;int hotbar=FobData.DEPOT_SLOTS+27,id=s.getMenu().containerId;
+            mc().gameMode.handleInventoryMouseClick(id,hotbar,0,net.minecraft.world.inventory.ClickType.PICKUP,mc().player);
+            mc().gameMode.handleInventoryMouseClick(id,0,0,net.minecraft.world.inventory.ClickType.PICKUP,mc().player);
+            mc().gameMode.handleInventoryMouseClick(id,hotbar,0,net.minecraft.world.inventory.ClickType.PICKUP,mc().player);
+            mc().gameMode.handleInventoryMouseClick(id,hotbar,0,net.minecraft.world.inventory.ClickType.QUICK_MOVE,mc().player);},"try to put the dirt in: by hand, then with shift");
+        step(15,()->{boolean dirt=srvGet(()->{var x=FobData.get(sl()).fobs.values().iterator().next().depot();for(int i=0;i<x.getContainerSize();i++)if(x.getItem(i).is(Items.DIRT))return true;return false;});
+            check("nothing goes into the storage, by hand or with shift",!dirt&&inInventory(Items.DIRT)==5,"dirt in the inventory: "+inInventory(Items.DIRT));
+            srv(()->sp().getInventory().setItem(0,ItemStack.EMPTY));},"take only");
+        atSizes(SIZES,"the Receiving Gate, Tribute tab","f17g_gate_tribute",true,()->press("Tribute"));
+        atSizes(NARROW,"the Receiving Gate, Storage tab (narrow window)","f17h_gate_storage",true,()->{press("Storage");var s=gate();check("a narrow window gives the storage a tab of its own, its slots shown",s!=null&&!s.split()&&s.getMenu().slotsShown,"");});
+        atSizes(SIZES,"the Receiving Gate, Route tab","f17i_gate_route",true,()->{press("Route");var s=gate();if(s!=null)check("the slots are hidden on the other tabs of a narrow window",s.split()||!s.getMenu().slotsShown,"");});
+        atSizes(SIZES,"the Receiving Gate, the potion makers' items","f17j_gate_choose",true,()->{press("Tribute");pressNth("Choose",2);});
+        step(5,()->{var s=gate();if(s!=null)press("Back");},"back to the slots");
         // ---- slice 3 (0.0.25): an SOS answered and won, an SOS left alone (DOWN), the repair --------------------------------------------------------
         step(45,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(ItemStack.EMPTY);cmd("arsenal fob sos");},"/arsenal fob sos (at home); the status card syncs once a second");
         step(30,()->{
@@ -353,6 +470,36 @@ public final class QaFob {
             mc().player.getInventory().selected=0;
         },"the SOS on the card");
         step(40,()->shot("f20_sos_map"),"the SOS map in hand");
+        // ---- 0.0.31: the Command Table's FOBs tab during the SOS, the SOS map reprinted, the FOBs on its map -----------------------------------------
+        step(5,()->{hold(ItemStack.EMPTY);TacticalClient.view=2;srv(()->{var l=sl();var t=HuntGameTests.TABLE;
+            if(!l.getBlockState(t).is(ArsenalBeacon.COMMAND_TABLE.get()))l.setBlock(t,ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState().setValue(TacticalBlocks.FACING,Direction.NORTH),3);
+            Hunts.open(sp(),t);});},"the SOS map is lost (it was in the first slot); open the Command Table on its FOBs tab");
+        step(30,()->{var t=table();var f=fob();
+            check("the Command Table opens on its FOBs tab",t!=null&&TacticalClient.view==2,String.valueOf(mc().screen));
+            var row=t==null||t.data().getList("fobs",10).isEmpty()?new CompoundTag():t.data().getList("fobs",10).getCompound(0);
+            int dist=f==null?-1:srvGet(()->{var b=CampaignData.get(sl()).beacon;return (int)Math.round(Math.hypot(f.pos.getX()-b.getX(),f.pos.getZ()-b.getZ()));});
+            check("it lists the FOB: its name, its distance from the base, its state",f!=null&&row.getString("name").equals(f.name)&&row.getInt("distance")==dist&&row.getString("state").equals("active"),row.toString().substring(0,Math.min(160,row.toString().length())));
+            check("and the time left to answer its SOS",row.getBoolean("sos")&&row.getLong("sosLeft")>0&&row.getLong("sosLeft")<=SosRules.RESPONSE_TICKS,"left="+row.getLong("sosLeft"));
+            check("the table knows the map is not carried",t!=null&&!t.data().getBoolean("sosCarried"),"");
+            recordFrame=true;},"the FOBs tab");
+        step(3,()->{layout("the Command Table, FOBs tab with an SOS",true);shot("f19b_table_fobs_sos");press("Reprint SOS map");},"Reprint SOS map");
+        step(20,()->{var t=table();long serial=srvGet(()->FobData.get(sl()).sosSerial);
+            check("the SOS map is reprinted",srvGet(()->FobSos.carries(sp(),serial)),"");
+            check("the screen says so",t!=null&&t.data().getString("message").equals("tactical.result.sos_reprinted"),t==null?"":t.data().getString("message"));
+            press("Reprint SOS map");},"press it again");
+        step(20,()->{var t=table();check("a second copy is refused while one is carried",t!=null&&t.data().getString("message").equals("tactical.result.sos_carried")&&srvGet(()->{int n=0;for(var st:sp().getInventory().items)if(FobSos.serial(st)!=0)n++;return n;})==1,t==null?"":t.data().getString("message"));},"one map only");
+        atSizes(SIZES,"the Command Table, FOBs tab","f19c_table_fobs",true,null);
+        // the map: a FOB 20 km away is an arrow at the edge; a FOB near home (a record only, DOWN, removed again at once) is a flag on its zone
+        step(5,()->{srv(()->{var d=FobData.get(sl());var near=d.add(HuntGameTests.BEACON.offset(60,0,-40),0,0);near.state=FobRules.State.DOWN;near.name="QA Near";
+            int cx=near.pos.getX()>>4,cz=near.pos.getZ()>>4;near.zoneColumns=new long[]{net.minecraft.world.level.ChunkPos.asLong(cx,cz),net.minecraft.world.level.ChunkPos.asLong(cx+1,cz),net.minecraft.world.level.ChunkPos.asLong(cx,cz+1)};
+            d.setDirty();Hunts.open(sp(),HuntGameTests.TABLE);});TacticalClient.view=0;var t=table();if(t!=null)t.resize(mc(),t.width,t.height);},"a second FOB near home; the Base map");
+        step(20,()->recordFrame=true,"record a frame");
+        step(3,()->{var f=fob();var texts=lastFrame.stream().map(Ui.Drawn::text).toList();
+            check("the FOB 20 km away: an arrow at the map's edge with its name and distance",f!=null&&texts.stream().anyMatch(x->x.startsWith(f.name+" (")&&x.endsWith("blocks)")),texts.toString());
+            check("the FOB near home: a flag with its name on the map",texts.contains("QA Near"),"");
+            layout("the Command Table, Base map with the FOBs",false);shot("f19d_table_map_fobs");TacticalClient.view=1;var t=table();if(t!=null)t.resize(mc(),t.width,t.height);},"the Region map");
+        step(20,()->shot("f19e_table_region_fobs"),"the Region map");
+        step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();var d=FobData.get(sl());for(var f:new ArrayList<>(d.fobs.values()))if(f.name.equals("QA Near")){d.fobs.remove(f.id);FobZone.forget(f.id);}d.setDirty();});TacticalClient.view=1;},"the second FOB goes again");
         step(5,()->{hold(ItemStack.EMPTY);var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"answer it: back to the village");
         until("the SOS raid starts when a player stands in the village",200,()->{var f=fob();return f!=null&&f.raidRunning();},()->{
             check("the SOS raid starts on arrival",fob()!=null&&fob().raidRunning(),"");check("everyone reads who answered",chatHas("answered the SOS"),"");
@@ -388,6 +535,8 @@ public final class QaFob {
             check("the lost villager is back",srvGet(()->!sl().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class,new net.minecraft.world.phys.AABB(spot).inflate(12),v->v.isAlive()&&v.hasCustomName()&&v.getCustomName().getString().equals("Ottilie")&&v.getVillagerData().getLevel()==2).isEmpty()),"");
             check("everyone reads the repair",chatHas("repaired"),"");
             shot("f23_fob_screen_repaired");},"repaired");
+        step(5,()->{if(mc().screen instanceof FobClient.FobScreen s){check("the FOB screen sums up its tribute",s.data().getBoolean("hasRoute")&&s.data().getList("slots",10).size()==4&&s.data().getLong("nextIn")>0,s.data().getList("slots",10).size()+" slots, next in "+s.data().getLong("nextIn"));}else check("the FOB screen sums up its tribute",false,"no screen");},"the tribute column");
+        atSizes(SIZES,"the FOB screen with its tribute column","f23b_fob_screen",false,null);
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
         // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
         step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+.5,0,10);},"home for the enchanting table");
@@ -403,9 +552,9 @@ public final class QaFob {
         step(5,()->srv(()->{if(sp().containerMenu instanceof TacticalEnchanting.EnchantMenu m){m.gear.setItem(0,new ItemStack(Items.DIAMOND_SWORD));m.broadcastChanges();}}),"put a sword in");
         step(10,()->{if(mc().screen instanceof EnchantClient.EnchantScreen s)hover(s.getGuiLeft()+EnchantClient.EnchantScreen.LIST_X+20,s.getGuiTop()+50+6);},"point at the first enchant's name");
         step(20,()->shot("f25_enchanting_list"),"the list: level I open, higher levels locked by FOBs; the name's tooltip");
-        step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),1)),"buy Sharpness I (the menu button the screen sends)");
+        step(10,()->BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),1)),"buy Sharpness I (the menu button the screen sends)");
         step(20,()->{check("Sharpness I applied",srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
-            mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),2));},"try Sharpness II");
+            BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:sharpness")),2));},"try Sharpness II");
         step(20,()->{int fobs=srvGet(()->FobData.get(sl()).count(FobRules.State.ACTIVE));
             check("Sharpness II stays locked with "+fobs+" ACTIVE FOB (it needs 2)",fobs<2&&srvGet(()->gearLevel("minecraft:sharpness"))==1,"");
             {var m=mc().screen instanceof EnchantClient.EnchantScreen s?s.message():null;check("the screen says which level and why",m!=null&&m.getString().startsWith("Sharpness II needs 2 ACTIVE FOBs"),m==null?"":m.getString());}
@@ -414,10 +563,10 @@ public final class QaFob {
                 hover(s.getGuiLeft()+EnchantClient.EnchantScreen.W-12-5*EnchantClient.EnchantScreen.LEVEL_STEP+1+EnchantClient.EnchantScreen.LEVEL_STEP+11,s.getGuiTop()+50+row*EnchantClient.EnchantScreen.ROW+10);}},"locked by the FOBs");
         step(10,()->shot("f26_enchanting_locked"),"the locked level's tooltip");
         step(5,()->srv(()->sp().getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()))),"a Warlord Seal");
-        step(10,()->mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending")),"unlock Mending");
+        step(10,()->BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending")),"unlock Mending");
         step(20,()->{check("Mending unlocked for the team",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).seals("minecraft:mending"))==1,"");check("everyone reads it",chatHas("spent a Warlord Seal"),"");
-            mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:mending")),1));},"buy Mending");
-        step(20,()->{check("Mending applied",srvGet(()->gearLevel("minecraft:mending"))==1,"");hover(1,1);mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,TacticalEnchanting.UPGRADE);},"upgrade the table");
+            BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:mending")),1));},"buy Mending");
+        step(20,()->{check("Mending applied",srvGet(()->gearLevel("minecraft:mending"))==1,"");hover(1,1);BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.UPGRADE);},"upgrade the table");
         step(20,()->{check("the table is Mk I",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).mk)==1,"");shot("f27_enchanting_mk1");},"Mk I");
         step(5,()->{mc().player.closeContainer();},"close the screen");
         step(10,()->check("the sword comes back enchanted",srvGet(()->sp().getInventory().items.stream().anyMatch(st->st.is(Items.DIAMOND_SWORD)&&net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchant("minecraft:mending"),st)==1)),""),"the gear back");
@@ -437,7 +586,9 @@ public final class QaFob {
         step(5,()->{var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");
         step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"face the FOB Beacon");
         // ---- take it back with the shovel -----------------------------------------------------------------------------------------------------
-        step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
+        step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));
+            srv(()->{var f=FobData.get(sl()).fobs.values().iterator().next();for(int i=0;i<f.depot().getContainerSize();i++)f.depot().setItem(i,ItemStack.EMPTY);f.depot().setItem(5,new ItemStack(Items.DIAMOND,3));});
+            countdown=inInventory(Items.DIAMOND);},"hold the shovel (the storage holds 3 diamonds)");
         step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use the shovel on the FOB Beacon");
         step(20,()->{check("the shovel asks first",mc().screen instanceof BeaconClient.ConfirmScreen,String.valueOf(mc().screen));check("nothing is removed yet",fob()!=null,"");shot("f10_confirm_remove");},"confirmation");
         step(30,()->press("Take it back"),"confirm");
@@ -446,6 +597,8 @@ public final class QaFob {
             check("its block is gone",spot!=null&&srvGet(()->sl().getBlockState(spot).isAir()&&sl().getBlockState(spot.above()).isAir()),"");
             boolean back=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.FOB_BEACON_ITEM.get()))return true;return false;});
             check("the FOB Beacon came back",back,"");check("everyone reads who took it back",chatHas("took back North Gate"),"");
+            check("what its storage held is handed over (0.0.31)",inInventory(Items.DIAMOND)==countdown+3,countdown+" -> "+inInventory(Items.DIAMOND));
+            check("and the player reads so",chatHas("storage put in your inventory: 1."),"");
             mc().setScreen(null);
         },"removed");
         step(5,()->{var b=HuntGameTests.BEACON;tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);srv(()->HuntGameTests.ground(sl()));},"go home");

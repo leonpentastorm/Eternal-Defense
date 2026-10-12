@@ -143,7 +143,7 @@ final class FobTest {
         assertFalse(fobs.contains("setInvulnerable"),"villagers are protected by the damage event, not the invulnerable flag");
         assertTrue(source("ArsenalStructures.java").contains("state.is(ArsenalBeacon.FOB_BEACON.get())"),"the FOB Beacon is two tall like the shop");
         assertTrue(source("PlayerMeals.java").contains("MealZone.at(p)")&&!source("PlayerMeals.java").contains("BaseZone.problem"),"meals use MealZone");
-        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"35-standalone\"")&&net.contains("\"35-pack\""),"protocol 35 since 0.0.30 (the FOB zone outlines)");
+        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"36-standalone\"")&&net.contains("\"36-pack\""),"protocol 36 since 0.0.31 (the menu buttons, the tribute screens)");
     }
     /**
      * Forge names the class it generates for a {@code @SubscribeEvent} method after the SIMPLE name of its class, the method and the event's

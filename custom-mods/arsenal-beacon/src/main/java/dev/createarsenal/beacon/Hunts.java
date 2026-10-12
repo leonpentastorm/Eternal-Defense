@@ -221,7 +221,33 @@ final class Hunts {
         var upgrade=Economy.satellite(sat);
         if(upgrade!=null){n.putString("upgradeItem",net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(upgrade.item()).toString());n.putInt("upgradeAmount",upgrade.amount());n.putInt("upgradeHave",Economy.have(p,upgrade.item()));}
         n.putBoolean("creative",p.isCreative());n.putString("message",message);
+        fobs(l,d,p,n);
         return n;
+    }
+    /**
+     * 0.0.31 (owner): the FOB management tab and the FOBs on the map. Every FOB with its name, state, place, distance and bearing from the
+     * beacon, its route light, its last known zone (16-block columns) and, for the one calling, the SOS time left out of the 7 days.
+     */
+    static void fobs(ServerLevel l,CampaignData d,ServerPlayer p,CompoundTag n){
+        var fd=FobData.get(l);var list=new ListTag();var b=d.beacon;
+        for(var f:fd.fobs.values()){
+            var c=new CompoundTag();c.putLong("id",f.id);c.putString("name",f.name);c.putString("state",f.state.id());
+            c.putInt("x",f.pos.getX());c.putInt("z",f.pos.getZ());c.putInt("villagers",f.workers);
+            c.putInt("distance",(int)Math.round(Math.hypot(f.pos.getX()-b.getX(),f.pos.getZ()-b.getZ())));
+            c.putDouble("bearing",TacticalRules.bearing(b.getX(),b.getZ(),f.pos.getX(),f.pos.getZ()));
+            c.putLongArray("zone",f.zoneColumns);c.putString("signal",Routes.signal(l,fd,f.hasRoute()?f:null).id());c.putBoolean("route",f.hasRoute());
+            if(fd.sosFob==f.id){c.putBoolean("sos",true);c.putLong("sosLeft",fd.sosLeft);}
+            list.add(c);
+        }
+        n.put("fobs",list);n.putLong("sosTotal",SosRules.RESPONSE_TICKS);n.putInt("fobMax",FobRules.MAX_FOBS);
+        n.putBoolean("sosCarried",fd.sosFob!=0&&FobSos.carries(p,fd.sosSerial));
+    }
+    /** The SOS map again, for a player who lost theirs (it burns when the SOS ends, as before). */
+    static String reprintSos(ServerPlayer p,ServerLevel l){
+        var d=FobData.get(l);var f=d.sosFob==0?null:d.byId(d.sosFob);
+        if(f==null)return "tactical.result.no_sos";
+        if(FobSos.carries(p,d.sosSerial))return "tactical.result.sos_carried";
+        give(p,FobSos.map(l.getServer().overworld(),d,f));return "tactical.result.sos_reprinted";
     }
     /** A table button (vanilla menu click), checked again here: the player's open table, near, in the zone. */
     static void button(ServerPlayer p,BlockPos pos,int id){
@@ -233,6 +259,7 @@ final class Hunts {
             case TacticalBlocks.UPGRADE->upgrade(p,l,d,h);
             case TacticalBlocks.SCAN->TacticalScan.start(p,l,d,h);
             case TacticalBlocks.REPRINT->reprint(p,l,d,h);
+            case TacticalBlocks.REPRINT_SOS->reprintSos(p,l);
             default->"";
         };
         // the open screen is refreshed in place (closing and reopening it would throw the cursor back to the middle of the window)

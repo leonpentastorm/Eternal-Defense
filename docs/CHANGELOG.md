@@ -1,5 +1,21 @@
 # Change log
 
+## 0.0.31 — Tribute you choose, the Receiving Gate's storage, FOB management (2026-10-12)
+
+On `dev`. **Network protocol 36** (a new packet, `BeaconNetwork.MenuButton`, id 22, C2S: menu buttons). Rules: GDD 0.0.31; tests: `docs/ROUND-0031-TESTING.md`.
+
+* **Four loot slots per FOB** (owner) instead of the random pool of village goods: Emeralds (every village; at least 1 every 3 deliveries), The mine (redstone, iron, andesite, flint, gunpowder or charcoal), The farm (one of 13 plant foods) and the village's Specialty, rolled when it is planted: Fishing (every aquatic food), Animal husbandry (every meat and leather), Potion makers (every 1.20.1 brewing ingredient, priced by the owner's tier list D to S) or Wandering trader hub (the 70 items a wandering trader sells, priced by their emerald cost). Each slot sends the one item chosen on a gate's screen. Another specialty only by taking the FOB back with the shovel and winning a new one.
+* **Switch slots off to boost the others** (owner): the slots still on share the whole trip; at least one stays on.
+* **Far bonus** (owner): none up to 1,000 blocks between the gates, then up to +20 percent at 5,000. A trip's value: 1 per 200 blocks (1 to 50) times villagers / 10 (20 count) times the far bonus.
+* **The Receiving Gate's storage** (owner): a double chest (54 slots) per FOB, take only; every delivery lands there, never in the reward chest; a full storage pauses deliveries (amber); taking the FOB back hands it to that player. Both gates cost 2 chests more. A 0.0.30 stockpile's whole items move into it once.
+* **The gate screen takes the whole window** (owner): the storage and inventory (their own tab on a narrow window: 1920 x 1080 at GUI scale 4, 1280 x 720 at GUI scale 3), the light, a live countdown to the next delivery, the four slots (switch, item, "N per trip" or "1 every N trips", about how many an hour, Choose grid with tooltips) and the checklist. Refreshed every second. The FOB screen's middle column sums up the tribute.
+* **The Command Table's FOBs tab** (owner): every FOB's name, distance and bearing from the base, villagers, state and route light; during an SOS the time left to answer and Reprint SOS map (one copy; it still burns when the SOS ends). Both maps show each FOB's zone and flag; a FOB beyond the edge is an arrow at the edge with its name and distance.
+* **Balance guards.** Deliveries by themselves come at most every 5 minutes of play (the emerald minimum gives at most 4 emeralds an hour); a ridden round trip brings at most 2.5 times what the route would have sent by itself since the last delivery (a route's first delivery always the full two) (0.0.30's stockpile capped rides; without it a short loop ridden over and over would have made tribute out of nothing). An emerald is worth 12 tribute value, the potion tiers 3 to 48: neither emeralds nor ghast tears beat the other at the standalone Exchange.
+* **Bug fix: an SOS answered as the village loads.** A player arriving (or teleporting) into the calling village could start its raid before the villagers had loaded, so it counted none: losing them never put the FOB DOWN and none was recorded for the repair. The answer now waits until the village's entities are loaded (found by the real-client QA).
+* **The FOB screen refreshes every second** (its tribute countdown and storage), its buttons rebuilt only when they change; its tribute lines wrap on a narrow window.
+* **Bug fix: menu buttons on a dedicated server.** The vanilla button packet carries a byte; the enchanting table's buy buttons (ids from 1,000) did nothing on a dedicated server since 0.0.27. Every screen of the mod now sends its buttons with the mod's own packet.
+* **Tests.** New `Round0031Test`; `RouteTest` rewritten for the slots, the value tallies, the far bonus, the ride cap and the save format; FOB GameTests `fob_09` (the round trip into the storage), `fob_10` (a passive trip, take only), `fob_11` (a full storage). The real-client QA checks every text of the new screens for overlap at three window sizes.
+
 ## 0.0.30 — The owner's 4-wide gates, where a FOB counts, two screens (2026-10-11)
 
 On `dev`. **Network protocol 35** (a new packet, `FobOutline.Sync`, id 21: the FOB zone outlines and the planting preview). Rules: GDD 0.0.30; tests: `docs/ROUND-0030-TESTING.md`.

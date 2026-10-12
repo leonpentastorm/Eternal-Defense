@@ -124,14 +124,17 @@ public final class TacticalClient {
     }
     /** Kept while the table is reopened: which view and which offer. */
     static int view=1;static long selected=-1;
+    /** The first FOB row shown on the FOBs tab (a small window scrolls). */
+    static int fobScroll;
 
     static final class TableScreen extends AbstractContainerScreen<TacticalBlocks.TableMenu> {
         private CompoundTag data;private long openedAt,abandonArmed;
         private int size,radarX,radarY,sideX,sideW;
         private final List<Ui.UiButton> rows=new ArrayList<>();
-        private Ui.UiButton scanButton,upgradeButton,acceptButton,abandonButton,reprintButton;
+        private Ui.UiButton scanButton,upgradeButton,acceptButton,abandonButton,reprintButton,sosButton;
         TableScreen(TacticalBlocks.TableMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;openedAt=net.minecraft.Util.getMillis();scanning=data.getBoolean("scanning");}
         void update(CompoundTag next){data=next;openedAt=net.minecraft.Util.getMillis();scanning=next.getBoolean("scanning");rebuildWidgets();}
+        CompoundTag data(){return data;}
 
         private List<CompoundTag> offers(){var out=new ArrayList<CompoundTag>();for(var t:data.getList("offers",Tag.TAG_COMPOUND))out.add((CompoundTag)t);return out;}
         private CompoundTag offer(){
@@ -147,16 +150,17 @@ public final class TacticalClient {
         private BlockPos beacon(){return BlockPos.of(data.getLong("beacon"));}
 
         @Override protected void init(){
-            imageWidth=Math.min(width-12,440);imageHeight=Math.min(height-12,292);
-            super.init();clearWidgets();rows.clear();
+            imageWidth=Math.min(width-12,560);imageHeight=Math.min(height-12,340);
+            super.init();clearWidgets();rows.clear();sosButton=null;
             size=Math.max(96,Math.min(imageHeight-28-24-30,imageWidth-24-150));
             radarX=leftPos+12;radarY=topPos+28+24;sideX=radarX+size+10;sideW=leftPos+imageWidth-12-sideX;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
             // toolbar: Base / Region, then SCAN MAP and the satellite upgrade
-            var base=addRenderableWidget(new Ui.UiButton(radarX,topPos+31,60,18,Ui.t("tactical.view.base"),Ui.Look.TAB,b->{view=0;rebuildWidgets();}));
-            var region=addRenderableWidget(new Ui.UiButton(radarX+62,topPos+31,60,18,Ui.t("tactical.view.region"),Ui.Look.TAB,b->{view=1;rebuildWidgets();}));
-            base.selected=view==0;region.selected=view==1;
-            scanButton=addRenderableWidget(new Ui.UiButton(radarX+128,topPos+31,Math.max(70,size-128),18,Ui.t("tactical.scan"),Ui.Look.PRIMARY,b->click(TacticalBlocks.button(TacticalBlocks.SCAN,0))));
+            // three tabs (0.0.31: FOBs, the FOB management view), each as wide as its label
+            int tx=radarX;String[] tabs={"tactical.view.base","tactical.view.region","tactical.view.fobs"};
+            for(int i=0;i<tabs.length;i++){int page=i,tw=font.width(Ui.t(tabs[i]))+14;var b=addRenderableWidget(new Ui.UiButton(tx,topPos+31,tw,18,Ui.t(tabs[i]),Ui.Look.TAB,x->{view=page;rebuildWidgets();}));b.selected=view==i;tx+=tw+2;}
+            if(view==2){fobView();return;}
+            scanButton=addRenderableWidget(new Ui.UiButton(tx+4,topPos+31,Math.max(56,radarX+size-tx-4),18,Ui.t("tactical.scan"),Ui.Look.PRIMARY,b->click(TacticalBlocks.button(TacticalBlocks.SCAN,0))));
             upgradeButton=addRenderableWidget(new Ui.UiButton(sideX,topPos+31,sideW,18,Ui.t("tactical.upgrade",mk()+1),Ui.Look.NORMAL,b->click(TacticalBlocks.button(TacticalBlocks.UPGRADE,0))));
             upgradeButton.visible=data.contains("upgradeItem");upgradeButton.active=data.getBoolean("uplink")&&(data.getBoolean("creative")||data.getInt("upgradeHave")>=data.getInt("upgradeAmount"));
             upgradeButton.warning=upgradeButton.visible&&!upgradeButton.active&&data.getBoolean("uplink");
@@ -179,17 +183,115 @@ public final class TacticalClient {
             abandonButton.visible=reprintButton.visible=active;
             if(abandonArmed>net.minecraft.Util.getMillis()){abandonButton.setMessage(Ui.t("tactical.abandon.confirm"));}
         }
+        // ---- FOB management (0.0.31) -----------------------------------------------------------------------------------------------------------
+        /** The FOBs, the one calling for help first. */
+        private List<CompoundTag> fobs(){var out=new ArrayList<CompoundTag>();for(var t:data.getList("fobs",Tag.TAG_COMPOUND))out.add((CompoundTag)t);out.sort((a,b)->Boolean.compare(b.getBoolean("sos"),a.getBoolean("sos")));return out;}
+        private int fobX(){return radarX;}
+        private int fobW(){return leftPos+imageWidth-12-radarX;}
+        private int fobRoom(){return topPos+imageHeight-22-(radarY+14);}
+        private int fobRowH(){int n=Math.max(1,fobs().size());return Math.max(38,Math.min(52,fobRoom()/n));}
+        /** How many rows fit; a small window scrolls the rest with the mouse wheel. */
+        private int fobRows(){return Math.max(1,fobRoom()/fobRowH());}
+        private List<CompoundTag> shownFobs(){var all=fobs();fobScroll=Math.max(0,Math.min(fobScroll,all.size()-fobRows()));return all.subList(fobScroll,Math.min(all.size(),fobScroll+fobRows()));}
+        /** The FOB list: the SOS row gets Reprint SOS map, under the state chip. */
+        private void fobView(){
+            int y=radarY+14,h=fobRowH();
+            for(var f:shownFobs()){
+                if(f.getBoolean("sos")){
+                    sosButton=addRenderableWidget(new Ui.UiButton(fobX()+fobW()-118,y+h-22,112,18,Ui.t("tactical.fob.reprint"),Ui.Look.DANGER,b->click(TacticalBlocks.button(TacticalBlocks.REPRINT_SOS,0))));
+                    sosButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(data.getBoolean("sosCarried")?"tactical.fob.reprint.carried":"tactical.fob.reprint.tip")));
+                }
+                y+=h;
+            }
+        }
+        @Override public boolean mouseScrolled(double mx,double my,double delta){
+            if(view==2&&fobs().size()>fobRows()){fobScroll=Math.max(0,fobScroll-(int)Math.signum(delta));rebuildWidgets();return true;}
+            return super.mouseScrolled(mx,my,delta);
+        }
+        private void drawFobView(GuiGraphics g){
+            int x=fobX(),w=fobW(),y=radarY;var all=fobs();
+            Component title=Ui.t("tactical.fob.title",all.size(),data.getInt("fobMax"));
+            Ui.text(g,font,title,x,y,Ui.BRASS,w);
+            if(all.size()>fobRows()){Component more=Ui.t("tactical.fob.scroll",fobScroll+1,fobScroll+shownFobs().size(),all.size());
+                if(font.width(title)+12+font.width(more)<=w)Ui.right(g,font,more,x+w,y,Ui.MUTED);}
+            y+=14;
+            if(all.isEmpty()){Ui.wrap(g,font,Ui.t("tactical.fob.none"),x,y+4,w,Ui.MUTED,4);return;}
+            int h=fobRowH();long total=Math.max(1,data.getLong("sosTotal"));
+            for(var f:shownFobs()){
+                boolean sos=f.getBoolean("sos");String state=f.getString("state");
+                Ui.card(g,x,y,w,h-3,sos?Ui.RED:FobClient.stateColor(state));
+                int chip=Ui.chip(g,font,Ui.t("fob.state."+state),x+w-8-Math.min(90,font.width(Ui.t("fob.state."+state))+12),y+4,FobClient.stateColor(state),90);
+                Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,w-110);
+                Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));
+                Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-(sos?124:0));
+                Component route=f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");
+                if(!sos)Ui.text(g,font,route,x+8,y+27,f.getBoolean("route")?GateClient.color(f.getString("signal")):Ui.MUTED,w-16);
+                else{
+                    long left=f.getLong("sosLeft");int bw=Math.max(40,w-16-124);
+                    Ui.text(g,font,Ui.t("tactical.fob.sos",FobClient.sosTime(left),FobClient.sosTime(total)),x+8,y+27,Ui.RED,bw);
+                    if(h>=46)Ui.bar(g,x+8,y+h-10,bw,4,Math.max(0,Math.min(1,left/(float)total)),Ui.RED);
+                }
+                y+=h;
+            }
+        }
+        /** FOBs on the map (0.0.31): each zone's columns, a flag on the FOB, its name; beyond the map's edge an arrow at the edge points to it. */
+        private void drawFobs(GuiGraphics g,int x0,int y0,int x1,int y1){
+            double perPixel=viewScale()*(double)SIZE/size;
+            for(var f:fobs()){
+                boolean sos=f.getBoolean("sos");int color=sos?Ui.RED:FobClient.stateColor(f.getString("state"));int fill=(color&0x00ffffff)|0x40000000;
+                for(long col:f.getLongArray("zone")){
+                    int cx=net.minecraft.world.level.ChunkPos.getX(col)*16,cz=net.minecraft.world.level.ChunkPos.getZ(col)*16;
+                    float[] a=toScreen(cx,cz),b=toScreen(cx+16,cz+16);
+                    int ax=(int)Math.floor(a[0]),ay=(int)Math.floor(a[1]),bx=Math.max(ax+1,(int)Math.ceil(b[0])),by=Math.max(ay+1,(int)Math.ceil(b[1]));
+                    if(bx<x0||by<y0||ax>x1||ay>y1)continue;g.fill(ax,ay,bx,by,fill);
+                }
+                float[] at=toScreen(f.getInt("x")+.5,f.getInt("z")+.5);Component name=Component.literal(f.getString("name"));
+                if(inside(at,x0+2,y0+2,x1-2,y1-2)){
+                    int fx=(int)at[0],fy=(int)at[1];flag(g,fx,fy,color);
+                    int lw=font.width(name),lx=Mth.clamp(fx+5,x0+2,x1-lw-2),ly=Mth.clamp(fy-10,y0+2,y1-10);
+                    g.fill(lx-1,ly-1,lx+lw+1,ly+9,0xb0000000);Ui.text(g,font,name,lx,ly,color);
+                }else{
+                    // the arrow at the edge, pointing at the FOB, its name beside it on the map's side
+                    double cx=(x0+x1)/2.0,cy=(y0+y1)/2.0,dx=at[0]-cx,dy=at[1]-cy,len=Math.max(1e-6,Math.hypot(dx,dy));
+                    double hw=(x1-x0)/2.0-8,hh=(y1-y0)/2.0-8,k=Math.min(Math.abs(dx)<1e-6?1e9:hw/Math.abs(dx),Math.abs(dy)<1e-6?1e9:hh/Math.abs(dy));
+                    float ex=(float)(cx+dx*k),ey=(float)(cy+dy*k);
+                    arrow(g,ex,ey,(float)Math.atan2(dy,dx),color);
+                    Component label=Ui.t("tactical.fob.arrow",name,f.getInt("distance"));int lw=font.width(label);
+                    int lx=(int)Mth.clamp(ex-lw/2f-(float)(dx/len)*(lw/2f+6),x0+2,x1-lw-2),ly=(int)Mth.clamp(ey-4-(float)(dy/len)*12,y0+2,y1-11);
+                    // a long name reaching the middle steps above the beacon's mark
+                    if(lx<cx+7&&lx+lw>cx-7&&ly<cy+8&&ly+9>cy-9)ly=(int)Mth.clamp(cy-21,y0+2,y1-11);
+                    g.fill(lx-1,ly-1,lx+lw+1,ly+9,0xb0000000);Ui.text(g,font,label,lx,ly,color);
+                }
+            }
+        }
+        /** A small flag: a pole and a pennant, outlined in black. */
+        private static void flag(GuiGraphics g,int x,int y,int color){
+            g.fill(x-1,y-8,x+2,y+2,0xff000000);g.fill(x,y-7,x+1,y+1,0xffedf5f8);
+            g.fill(x+1,y-8,x+7,y-3,0xff000000);g.fill(x+1,y-7,x+6,y-4,color);
+        }
+        /** A filled triangle pointing along {@code angle} (radians, screen coordinates). */
+        private static void arrow(GuiGraphics g,float x,float y,float angle,int color){
+            g.pose().pushPose();g.pose().translate(x,y,0);g.pose().mulPose(com.mojang.math.Axis.ZP.rotation(angle));
+            for(int i=0;i<=6;i++){int half=(6-i)/2+1;g.fill(i-4,-half-1,i-3,half+1,0xff000000);}
+            for(int i=0;i<=5;i++){int half=(5-i)/2;g.fill(i-3,-half,i-2,half+1,color);}
+            g.pose().popPose();
+        }
+        private CompoundTag hoveredFob(int mx,int my){
+            if(view==2||!Ui.inside(mx,my,radarX,radarY,size,size))return null;
+            for(var f:fobs()){float[] at=toScreen(f.getInt("x")+.5,f.getInt("z")+.5);if(Math.abs(mx-at[0])<=5&&Math.abs(my-at[1]+3)<=6)return f;}
+            return null;
+        }
         private void abandon(){
             long now=net.minecraft.Util.getMillis();
             if(abandonArmed<now){abandonArmed=now+5000;abandonButton.setMessage(Ui.t("tactical.abandon.confirm"));return;}
             abandonArmed=0;click(TacticalBlocks.button(TacticalBlocks.ABANDON,0));
         }
-        private void click(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
+        private void click(int id){BeaconNetwork.menuButton(menu.containerId,id);}
 
         @Override public void containerTick(){
             super.containerTick();
             if(abandonButton!=null&&abandonArmed!=0&&abandonArmed<net.minecraft.Util.getMillis()){abandonArmed=0;abandonButton.setMessage(Ui.t("tactical.abandon"));}
-            if(scanButton!=null){
+            if(scanButton!=null&&view!=2){
                 long ready=data.getLong("scanReady")-now();
                 scanButton.active=data.getBoolean("uplink")&&!scanning&&ready<=0;
                 scanButton.setMessage(scanning?Ui.t("tactical.scan.running",scanPercent()):ready>0?Ui.t("tactical.scan.cooldown",(ready+19)/20):Ui.t("tactical.scan"));
@@ -201,11 +303,11 @@ public final class TacticalClient {
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             Ui.panel(g,leftPos,topPos,imageWidth,imageHeight);
             Ui.header(g,font,leftPos,topPos,imageWidth,Ui.t("tactical.title"),subtitle());
-            drawRadar(g,mx,my);
-            drawSide(g);
+            if(view==2)drawFobView(g);
+            else{drawRadar(g,mx,my);drawSide(g);}
             var message=data.getString("message");
-            if(!message.isEmpty()){boolean good=message.endsWith(".accepted")||message.endsWith(".upgraded")||message.endsWith(".reprinted")||message.endsWith(".scan_started")||message.endsWith(".abandoned");
-                Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),radarX,topPos+imageHeight-14,good?Ui.CYAN:Ui.ORANGE,size);}
+            if(!message.isEmpty()){boolean good=message.endsWith(".accepted")||message.endsWith(".upgraded")||message.endsWith(".reprinted")||message.endsWith(".sos_reprinted")||message.endsWith(".scan_started")||message.endsWith(".abandoned");
+                Ui.text(g,font,Component.translatable("gui.arsenal_beacon."+message),radarX,topPos+imageHeight-14,good?Ui.CYAN:Ui.ORANGE,view==2?fobW():size);}
         }
         private Component subtitle(){
             if(!data.getBoolean("uplink"))return Ui.t("tactical.no_uplink.short");
@@ -246,7 +348,8 @@ public final class TacticalClient {
                 }else g.blit(TEXTURE[view],x0,y0,size,size,0,0,SIZE,SIZE,SIZE,SIZE);
             }else{
                 for(int i=1;i<8;i++){int gx=x0+size*i/8,gy=y0+size*i/8;g.fill(gx,y0,gx+1,y1,0xff16252c);g.fill(x0,gy,x1,gy+1,0xff16252c);}
-                Ui.wrap(g,font,Ui.t("tactical.no_scan"),x0+8,y0+size/2-8,size-16,Ui.MUTED,3);
+                // 0.0.31: under the map, so a FOB's flag or arrow never lands on it
+                Ui.text(g,font,Ui.t("tactical.no_scan"),x0,y1+4,Ui.MUTED,size);
             }
             // the sweep line of a running scan, on the view it is filling
             if(scanning&&(scanRegion?1:0)==view){int sy=y0+scanRow*size/SIZE;g.fill(x0,sy,x1,sy+1,0xff5ae2df);g.fill(x0,Math.max(y0,sy-6),x1,sy,0x225ae2df);}
@@ -271,6 +374,7 @@ public final class TacticalClient {
                 cross(g,(int)cx,(int)cy,active&&pulse==0?0xffffffff:color,chosen||active?4:3);
                 if(chosen||active)ring(g,cx+.5f,cy+.5f,7,active?0xffed7369:0xccedf5f8);
             }
+            drawFobs(g,x0,y0,x1,y1);
             g.disableScissor();
             // scale label
             // the scale on a dark strip, readable over snow and sand
@@ -334,6 +438,9 @@ public final class TacticalClient {
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             renderBackground(g);super.render(g,mx,my,partial);
+            if(view==2)return;
+            var fob=hoveredFob(mx,my);
+            if(fob!=null){g.renderComponentTooltip(font,List.of(Component.literal(fob.getString("name")),Ui.t("fob.state."+fob.getString("state")),Ui.t("tactical.fob.where",fob.getInt("distance"),TacticalRules.compass(fob.getDouble("bearing")),fob.getInt("villagers"))),mx,my);return;}
             // hover: an X on the radar, the upgrade price, a blocked Accept
             var hovered=hoveredOffer(mx,my);
             if(hovered!=null)g.renderComponentTooltip(font,List.of(Component.literal(hovered.getString("codename")),Ui.t("tactical.row",Ui.t("tactical.class."+hovered.getString("kind")),hovered.getInt("distance"),TacticalRules.compass(hovered.getDouble("bearing")))),mx,my);
@@ -347,7 +454,7 @@ public final class TacticalClient {
             else if(scanButton.isHovered())g.renderComponentTooltip(font,List.of(Ui.t("tactical.scan.tip")),mx,my);
         }
         private CompoundTag hoveredOffer(int mx,int my){
-            if(!Ui.inside(mx,my,radarX,radarY,size,size))return null;
+            if(view==2||!Ui.inside(mx,my,radarX,radarY,size,size))return null;
             for(var o:offers()){float[] at=toScreen(o.getInt("x")+.5,o.getInt("z")+.5);
                 float cx=Mth.clamp(at[0],radarX+4,radarX+size-5),cy=Mth.clamp(at[1],radarY+4,radarY+size-5);
                 if(Math.abs(mx-cx)<=5&&Math.abs(my-cy)<=5)return o;}

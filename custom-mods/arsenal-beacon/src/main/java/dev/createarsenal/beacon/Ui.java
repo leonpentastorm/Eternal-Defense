@@ -41,16 +41,26 @@ final class Ui {
         int dots=font.width("…");
         return FormattedCharSequence.composite(Language.getInstance().getVisualOrder(font.substrByWidth(text,Math.max(0,width-dots))),FormattedCharSequence.forward("…",Style.EMPTY));
     }
-    static void text(GuiGraphics g,Font font,Component text,int x,int y,int color,int width){g.drawString(font,fit(font,text,width),x,y,color,false);}
-    static void text(GuiGraphics g,Font font,Component text,int x,int y,int color){g.drawString(font,text.getVisualOrderText(),x,y,color,false);}
-    static void right(GuiGraphics g,Font font,Component text,int xRight,int y,int color){g.drawString(font,text.getVisualOrderText(),xRight-font.width(text),y,color,false);}
+    /**
+     * For the real-client checks only (null in play): each text the helpers below draw adds its box and words here, so a check can prove
+     * that no two texts and no text and button overlap, and which texts were cut short. Boxes are in the screen's own coordinates.
+     */
+    static List<Drawn> drawn;
+    record Drawn(int x,int y,int w,int h,boolean cut,String text){}
+    private static void drawn(Font font,FormattedCharSequence row,int x,int y,boolean cut){
+        if(drawn==null)return;var b=new StringBuilder();row.accept((i,style,c)->{b.appendCodePoint(c);return true;});drawn.add(new Drawn(x,y,font.width(row),font.lineHeight-1,cut,b.toString()));
+    }
+    static void text(GuiGraphics g,Font font,Component text,int x,int y,int color,int width){var row=fit(font,text,width);g.drawString(font,row,x,y,color,false);drawn(font,row,x,y,font.width(text)>width);}
+    static void text(GuiGraphics g,Font font,Component text,int x,int y,int color){g.drawString(font,text.getVisualOrderText(),x,y,color,false);drawn(font,text.getVisualOrderText(),x,y,false);}
+    static void right(GuiGraphics g,Font font,Component text,int xRight,int y,int color){g.drawString(font,text.getVisualOrderText(),xRight-font.width(text),y,color,false);drawn(font,text.getVisualOrderText(),xRight-font.width(text),y,false);}
     /** Wraps into at most {@code maxLines}; an overflowing last line ends in an ellipsis. Returns the next free y. */
     static int wrap(GuiGraphics g,Font font,Component text,int x,int y,int width,int color,int maxLines){
         List<FormattedCharSequence> rows=font.split(text,Math.max(8,width));int shown=Math.min(rows.size(),maxLines);
         for(int i=0;i<shown;i++){
             FormattedCharSequence row=rows.get(i);
-            if(i==shown-1&&rows.size()>shown)row=FormattedCharSequence.composite(row,FormattedCharSequence.forward("…",Style.EMPTY));
-            g.drawString(font,row,x,y,color,false);y+=font.lineHeight+2;
+            boolean cut=i==shown-1&&rows.size()>shown;
+            if(cut)row=FormattedCharSequence.composite(row,FormattedCharSequence.forward("…",Style.EMPTY));
+            g.drawString(font,row,x,y,color,false);drawn(font,row,x,y,cut);y+=font.lineHeight+2;
         }
         return y;
     }
@@ -197,7 +207,7 @@ final class Ui {
     static int chip(GuiGraphics g,Font font,Component text,int x,int y,int accent,int maxWidth){
         int w=Math.min(maxWidth,font.width(text)+10);
         g.fill(x,y,x+w,y+12,DEEP);g.fill(x,y,x+3,y+12,accent);g.fill(x,y+11,x+w,y+12,accent&0x99ffffff);
-        g.drawString(font,fit(font,text,w-7),x+6,y+2,INK,false);return w;
+        var row=fit(font,text,w-7);g.drawString(font,row,x+6,y+2,INK,false);drawn(font,row,x+6,y+2,font.width(text)>w-7);return w;
     }
     /** Hazard stripes for destructive confirmations and the attack banner. */
     static void hazard(GuiGraphics g,int x,int y,int w,int h,int a,int b){

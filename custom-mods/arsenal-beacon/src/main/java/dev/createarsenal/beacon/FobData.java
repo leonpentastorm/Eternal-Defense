@@ -14,6 +14,7 @@ import java.util.*;
  */
 final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     static final String NAME="arsenal_beacon_fobs_v1";
+    static final int DEPOT_SLOTS=54;
 
     static final class Fob {
         final long id;String name;BlockPos pos;
@@ -37,12 +38,36 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         boolean commissioned;long baseline,clock;
         /** Ticks of play (FobData.onlineTicks) at which the next passive delivery comes (0: not scheduled), and of the last chat line. */
         long nextPassive,lastNoteAt;
-        /** Goods delivered by passive trips since the last chat line (one count per good). */
-        int[] note=new int[RouteRules.GOODS.size()];
+        /** Items delivered by passive trips since the last chat line (item id to count). */
+        final Map<String,Integer> note=new LinkedHashMap<>();
         /** The last delivery, for the screens: what it was ({@code passive}/{@code ride}), how many items, when (ticks of play). */
         String lastKind="";int lastItems;long lastAt;
-        /** The stockpile (whole and part items per good), when it was last brought up to date (ticks of play), the villagers counted then. */
-        double[] stock=new double[RouteRules.GOODS.size()];long accruedAt;int workers;
+        /** 0.0.31: when the last delivery came, passive or ridden, in ticks of play (a ride brings at most 2.5 times the time since; 0: never). */
+        long lastTrip;
+        /** The villagers counted the last time the FOB looked (they set what a trip is worth). */
+        int workers;
+        /**
+         * 0.0.31 (owner): the four loot slots. Which are on, the item chosen in the mine, the farm and the specialty slot, the specialty rolled
+         * at planting, and each slot's tally (tribute value carried over between trips; whole items leave it).
+         */
+        final boolean[] slotOn={true,true,true,true};
+        int mine,farm,special;RouteRules.Specialty specialty=RouteRules.Specialty.FISHING;
+        final double[] tally=new double[RouteRules.Slot.values().length];
+        /**
+         * The Receiving Gate's tribute storage, a double chest's worth; players only take from it. Made on first use (an item stack needs the
+         * game's registries), until then its saved list is kept as it was read.
+         */
+        private net.minecraft.world.SimpleContainer depot;private net.minecraft.nbt.ListTag depotSaved;Runnable dirty=()->{};
+        net.minecraft.world.SimpleContainer depot(){
+            if(depot==null){depot=new net.minecraft.world.SimpleContainer(DEPOT_SLOTS);if(depotSaved!=null)depot.fromTag(depotSaved);depotSaved=null;depot.addListener(c->dirty.run());}
+            return depot;
+        }
+        net.minecraft.nbt.ListTag depotTag(){return depot!=null?depot.createTag():depotSaved!=null?depotSaved:new net.minecraft.nbt.ListTag();}
+        /** The last zone the FOB had, as 16-block columns (x, z packed as in ChunkPos), for the Command Table's map. */
+        long[] zoneColumns=new long[0];
+        int choice(RouteRules.Slot slot){return switch(slot){case MINE->mine;case FARM->farm;case SPECIALTY->special;default->0;};}
+        RouteRules.Loot loot(RouteRules.Slot slot){return RouteRules.loot(slot,specialty,choice(slot));}
+        RouteRules.Loot[] loots(){var out=new RouteRules.Loot[RouteRules.Slot.values().length];for(var slot:RouteRules.Slot.values())out[slot.ordinal()]=loot(slot);return out;}
         /** 0.0.30: the zone outline is shown to players near the FOB (its screen turns it off for everyone). */
         boolean showZone=true;
         boolean hasRoute(){return deliveryGate!=null&&receivingGate!=null;}
@@ -67,6 +92,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     int count(FobRules.State state){int n=0;for(var f:fobs.values())if(f.state==state)n++;return n;}
     Fob add(BlockPos pos,long villageSection,long now){
         var f=new Fob(nextId++);f.pos=pos.immutable();f.villageSection=villageSection;f.placedAt=now;f.name=FobRules.freeCodename(f.id,names(f.id));
+        f.specialty=RouteRules.Specialty.of(new Random().nextInt(RouteRules.Specialty.values().length));   // 0.0.31: rolled once, at planting
+        f.dirty=this::setDirty;
         fobs.put(f.id,f);setDirty();return f;
     }
 
@@ -87,7 +114,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
                 if(c.contains("dead",Tag.TAG_LIST))f.deadVillagers=c.getList("dead",Tag.TAG_COMPOUND);
                 if(c.contains("stockpile",Tag.TAG_COMPOUND))f.stockpile=c.getCompound("stockpile");
                 if(c.contains("route",Tag.TAG_COMPOUND))f.route=c.getCompound("route");
-                readRoute(f);
+                f.dirty=d::setDirty;readRoute(f);
                 d.fobs.put(f.id,f);d.nextId=Math.max(d.nextId,f.id+1);
             }catch(RuntimeException ex){com.mojang.logging.LogUtils.getLogger().warn("[fob] skipped a broken FOB record: {}",ex.toString());}
         }
@@ -101,10 +128,26 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         if(r.contains("receiving"))f.receivingGate=BlockPos.of(r.getLong("receiving"));
         f.commissioned=r.getBoolean("commissioned");f.baseline=Math.max(0,r.getLong("baseline"));f.clock=Math.max(0,Math.min(RouteRules.CLOCK,r.getLong("clock")));
         f.nextPassive=Math.max(0,r.getLong("nextPassive"));f.lastNoteAt=r.getLong("lastNoteAt");
-        f.lastKind=r.getString("lastKind");f.lastItems=r.getInt("lastItems");f.lastAt=r.getLong("lastAt");
-        var s=f.stockpile;f.accruedAt=s.getLong("accruedAt");f.workers=s.getInt("workers");
-        CompoundTag goods=s.getCompound("goods"),note=r.getCompound("note");
-        for(int i=0;i<RouteRules.GOODS.size();i++){String id=RouteRules.GOODS.get(i).id();f.stock[i]=Math.max(0,goods.getDouble(id));f.note[i]=Math.max(0,note.getInt(id));}
+        f.lastKind=r.getString("lastKind");f.lastItems=r.getInt("lastItems");f.lastAt=r.getLong("lastAt");f.lastTrip=r.getLong("lastTrip");
+        f.workers=f.stockpile.getInt("workers");
+        var note=r.getCompound("noted");for(String id:note.getAllKeys())if(note.getInt(id)>0)f.note.put(id,note.getInt(id));
+        // 0.0.31: the loot slots (a FOB from before gets its specialty from its id, every slot on, the first choice of each)
+        var t=r.getCompound("tribute");
+        f.specialty=t.contains("specialty")?RouteRules.Specialty.of(t.getInt("specialty")):RouteRules.Specialty.of((int)f.id);
+        if(t.contains("on")){byte[] on=t.getByteArray("on");for(int i=0;i<f.slotOn.length&&i<on.length;i++)f.slotOn[i]=on[i]!=0;}
+        if(RouteRules.enabled(f.slotOn)==0)f.slotOn[0]=true;
+        f.mine=t.getInt("mine");f.farm=t.getInt("farm");f.special=t.getInt("special");
+        long[] tally=t.getLongArray("tally");for(int i=0;i<f.tally.length&&i<tally.length;i++)f.tally[i]=Math.max(0,Double.longBitsToDouble(tally[i]));
+        f.zoneColumns=t.getLongArray("zone");
+        if(t.contains("depot",Tag.TAG_LIST))f.depotSaved=t.getList("depot",Tag.TAG_COMPOUND);
+        // 0.0.30 and before kept a stockpile of village goods: its whole items move into the storage once (nothing is lost)
+        var goods=f.stockpile.getCompound("goods");
+        for(String id:List.copyOf(goods.getAllKeys())){
+            int whole=(int)Math.floor(goods.getDouble(id));if(whole<=0)continue;
+            var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(id));
+            if(item!=net.minecraft.world.item.Items.AIR)f.depot().addItem(new net.minecraft.world.item.ItemStack(item,whole));
+        }
+        f.stockpile.remove("goods");
     }
     static void writeRoute(Fob f){
         var r=f.route;
@@ -112,11 +155,15 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         if(f.receivingGate!=null)r.putLong("receiving",f.receivingGate.asLong());else r.remove("receiving");
         r.putBoolean("commissioned",f.commissioned);r.putLong("baseline",f.baseline);r.putLong("clock",f.clock);
         r.putLong("nextPassive",f.nextPassive);r.putLong("lastNoteAt",f.lastNoteAt);
-        r.putString("lastKind",f.lastKind);r.putInt("lastItems",f.lastItems);r.putLong("lastAt",f.lastAt);
-        var s=f.stockpile;s.putLong("accruedAt",f.accruedAt);s.putInt("workers",f.workers);
-        CompoundTag goods=new CompoundTag(),note=new CompoundTag();
-        for(int i=0;i<RouteRules.GOODS.size();i++){String id=RouteRules.GOODS.get(i).id();goods.putDouble(id,f.stock[i]);if(f.note[i]>0)note.putInt(id,f.note[i]);}
-        s.put("goods",goods);r.put("note",note);
+        r.putString("lastKind",f.lastKind);r.putInt("lastItems",f.lastItems);r.putLong("lastAt",f.lastAt);r.putLong("lastTrip",f.lastTrip);
+        f.stockpile.putInt("workers",f.workers);
+        var note=new CompoundTag();f.note.forEach(note::putInt);r.put("noted",note);r.remove("note");
+        var t=new CompoundTag();t.putInt("specialty",f.specialty.ordinal());
+        byte[] on=new byte[f.slotOn.length];for(int i=0;i<on.length;i++)on[i]=(byte)(f.slotOn[i]?1:0);t.putByteArray("on",on);
+        t.putInt("mine",f.mine);t.putInt("farm",f.farm);t.putInt("special",f.special);
+        long[] tally=new long[f.tally.length];for(int i=0;i<tally.length;i++)tally[i]=Double.doubleToLongBits(f.tally[i]);t.putLongArray("tally",tally);
+        t.putLongArray("zone",f.zoneColumns);t.put("depot",f.depotTag());
+        r.put("tribute",t);
     }
     /** The FOB whose Delivery or Receiving Gate stands at {@code anchor}, or null. */
     Fob byGate(BlockPos anchor){for(var f:fobs.values())if(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate))return f;return null;}

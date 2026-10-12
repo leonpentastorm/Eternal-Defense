@@ -49,8 +49,4 @@ final class OwnerList0028Test {
         assertEquals("Planks (any wood)",UniversalWood.name("minecraft:planks"));
         assertEquals("Any wood slabs",UniversalWood.name("minecraft:wooden_slabs"));
     }
-    @Test void nineTributeGoodsFitTheGateScreen(){
-        assertEquals(9,RouteRules.GOODS.size());
-        assertTrue(RouteRules.GOODS.size()<=2*GateClient.GateScreen.STOCK_COLS,"two rows on the gate screen, as before");
-    }
 }

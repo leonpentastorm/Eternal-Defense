@@ -140,7 +140,7 @@ final class Fobs {
             if(id!=f.id&&(id==0||d.byId(id)==null))v.getPersistentData().putLong(VILLAGER_TAG,f.id);
         }
         int alive=livingVillagers(l,f);
-        if(alive!=f.workers){Routes.accrue(d,f);f.workers=alive;d.setDirty();}   // the stockpile counts up to now at the old rate (0.0.24)
+        if(alive!=f.workers){f.workers=alive;d.setDirty();}   // the villagers set what a trip is worth
         return alive;
     }
 
@@ -157,8 +157,9 @@ final class Fobs {
         var l=p.serverLevel();var f=FobData.get(l).at(pos);
         if(f==null){say(p,"fob.unregistered");return;}
         var state=state(p,f,message);
-        if(!fresh&&p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.pos.equals(pos)){BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
+        if(!fresh&&p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.pos.equals(pos)){menu.message=message;BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
         NetworkHooks.openScreen(p,new SimpleMenuProvider((id,inv,who)->new FobBlocks.FobMenu(id,inv,pos,new CompoundTag()),Component.literal(f.name)),buf->{buf.writeBlockPos(pos);buf.writeNbt(state);});
+        if(p.containerMenu instanceof FobBlocks.FobMenu menu)menu.message=message;
     }
     /** Everything the FOB screen shows, for one player. */
     static CompoundTag state(ServerPlayer p,FobData.Fob f,String message){
@@ -177,6 +178,9 @@ final class Fobs {
         for(String id:SHOP)n.putInt("price."+id,price(id));
         // the second listing (0.0.24): this FOB's Supply Delivery Gate, one per FOB
         n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(p,Economy.fabrication("supply_delivery_gate")));
+        // the tribute (0.0.31): the loot slots, the next delivery, the storage at the Receiving Gate
+        Routes.tribute(f,n);n.putBoolean("hasRoute",f.hasRoute()&&f.commissioned);
+        n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-FobData.get(l).onlineTicks):-1);
         FobSos.state(FobData.get(l),f,n);   // the SOS, the lost villagers and the repair (0.0.25)
         n.putString("message",message);
         return n;
@@ -229,6 +233,7 @@ final class Fobs {
         d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);   // its gates turn UNLINKED by themselves
         if(l.getBlockState(f.pos).is(ArsenalBeacon.FOB_BEACON.get()))l.removeBlock(f.pos,false);
         give(p);
+        int handed=Routes.spill(l,f,p);if(handed>0)say(p,"fob.removed_storage",handed);   // 0.0.31: what its storage held goes to the player
         announce(l,Component.translatable("gui.arsenal_beacon.fob.removed",p.getDisplayName(),f.name));
         log("{} removed by {}",f.name,p.getGameProfile().getName());
         return true;
@@ -239,6 +244,7 @@ final class Fobs {
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
         FobSos.removed(l,f);
         d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);log("{}: its block was removed; the FOB is deleted",f.name);
+        Routes.spill(l,f,null);
     }
     private static void give(ServerPlayer p){var stack=new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get());if(!p.getInventory().add(stack))p.drop(stack,false);}
     static void refreshScreens(ServerLevel l,FobData.Fob f){

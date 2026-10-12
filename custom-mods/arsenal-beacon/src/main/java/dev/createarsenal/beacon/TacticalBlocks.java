@@ -127,6 +127,6 @@ final class TacticalBlocks {
         @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).is(ArsenalBeacon.COMMAND_TABLE.get())&&BaseZone.problem(p.level(),pos)==null&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
     }
     /** Button ids: action * 16 + argument (the offer's index on the board for Accept). */
-    static final int ACCEPT=1,ABANDON=2,UPGRADE=3,SCAN=4,REPRINT=5;
+    static final int ACCEPT=1,ABANDON=2,UPGRADE=3,SCAN=4,REPRINT=5,REPRINT_SOS=6;
     static int button(int action,int arg){return action*16+Math.max(0,Math.min(15,arg));}
 }

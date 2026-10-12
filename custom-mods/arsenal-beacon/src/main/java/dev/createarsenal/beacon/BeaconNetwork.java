@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 final class BeaconNetwork {
     /** Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"35-standalone":"35-pack",s->s.equals(BuildFlavor.STANDALONE?"35-standalone":"35-pack"),s->s.equals(BuildFlavor.STANDALONE?"35-standalone":"35-pack"));
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"36-standalone":"36-pack",s->s.equals(BuildFlavor.STANDALONE?"36-standalone":"36-pack"),s->s.equals(BuildFlavor.STANDALONE?"36-standalone":"36-pack"));
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -36,6 +36,23 @@ final class BeaconNetwork {
         static Placement decode(FriendlyByteBuf b){return new Placement(b.readBlockHitResult(),b.readEnum(net.minecraft.world.InteractionHand.class));}
         static void handle(Placement p,Supplier<NetworkEvent.Context> ctx){var c=ctx.get();c.enqueueWork(()->{if(c.getSender()!=null)BeaconActions.requestPlacement(c.getSender(),new net.minecraft.world.item.context.UseOnContext(c.getSender(),p.hand,p.hit));});c.setPacketHandled(true);}
     }
+    /**
+     * 0.0.31: a menu button, its id as a full number. Vanilla's own button packet sends the id as one signed byte, so ids above 127 (the
+     * enchanting table's levels, the tribute choices) arrived wrong on a dedicated server; single player never encodes packets, so it never
+     * showed. Every screen of this mod sends its buttons through here; the server answers as vanilla does.
+     */
+    record MenuButton(int container,int id){
+        static void encode(MenuButton p,FriendlyByteBuf b){b.writeVarInt(p.container);b.writeVarInt(p.id);}
+        static MenuButton decode(FriendlyByteBuf b){return new MenuButton(b.readVarInt(),b.readVarInt());}
+        static void handle(MenuButton p,Supplier<NetworkEvent.Context> ctx){var c=ctx.get();c.enqueueWork(()->{
+            var player=c.getSender();if(player==null)return;player.resetLastActionTime();
+            var menu=player.containerMenu;if(menu.containerId!=p.container||player.isSpectator())return;
+            if(!menu.stillValid(player))return;
+            if(menu.clickMenuButton(player,p.id))menu.broadcastChanges();
+        });c.setPacketHandled(true);}
+    }
+    /** Sends a menu button of the open screen (see {@link MenuButton}). */
+    static void menuButton(int container,int id){CHANNEL.sendToServer(new MenuButton(container,id));}
     static void init(){
         GunPackSync.init();
         CHANNEL.registerMessage(0,State.class,State::encode,State::decode,State::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -58,6 +75,8 @@ final class BeaconNetwork {
         // the supply rail (0.0.24, protocol 32): id 20 also refreshes the open gate screen (its state carries "gate"); SOS and repair (0.0.25, protocol 33): no new packet
         // 0.0.30, protocol 35: the FOB zone outlines and the planting preview
         CHANNEL.registerMessage(21,FobOutline.Sync.class,FobOutline.Sync::encode,FobOutline.Sync::decode,FobOutline.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        // 0.0.31, protocol 36: menu buttons as full numbers
+        CHANNEL.registerMessage(22,MenuButton.class,MenuButton::encode,MenuButton::decode,MenuButton::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(20,Hunts.TableState.class,Hunts.TableState::encode,Hunts.TableState::decode,Hunts.TableState::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(5,Placement.class,Placement::encode,Placement::decode,Placement::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
