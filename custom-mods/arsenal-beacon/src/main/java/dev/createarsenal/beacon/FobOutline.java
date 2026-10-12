@@ -66,7 +66,7 @@ final class FobOutline {
             if(!f.showZone&&!holding)continue;
             if(Math.abs(f.pos.getX()-p.getX())>NEAR||Math.abs(f.pos.getZ()-p.getZ())>NEAR)continue;
             var sections=FobZone.of(l,f);if(sections.isEmpty())continue;
-            var z=new CompoundTag();z.putLong("id",f.id);z.putString("name",f.name);z.putString("state",f.state.id());
+            var z=new CompoundTag();z.putLong("id",f.id);z.putString("name",f.name);z.putString("state",f.state.id());z.putInt("ground",f.pos.getY());   // 0.0.33 (owner): the FOB Beacon's ground level, marked on the walls
             z.putLongArray("sections",sorted(sections));zones.add(z);
         }
         if(holding){var at=target(p);if(at!=null)out.put("preview",preview(l,at));}

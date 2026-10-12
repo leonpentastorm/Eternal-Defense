@@ -45,6 +45,8 @@ public final class BeaconClient {
     static final int STALE_TICKS=600;
     /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
     private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
+    /** The base zone's radius, depth and height as the server last sent them (a beacon picked up keeps its upgrades), else a new beacon's (0.0.33: the placement preview). */
+    static int[] zoneSize(){return state.contains("radius")?new int[]{state.getInt("radius"),state.getInt("below"),state.getInt("above")}:new int[]{Rules.radius(0),Rules.below(0),Rules.above(0)};}
     private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
     /** The raid song this wave plays (see {@link RaidPlaylist}), or null when no raid is running. */
     static RaidPlaylist.Song raidSong(){

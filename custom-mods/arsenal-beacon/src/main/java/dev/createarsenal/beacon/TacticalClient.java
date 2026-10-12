@@ -229,7 +229,7 @@ public final class TacticalClient {
         private CompoundTag seller(){if(sellerFob<0)return null;for(var f:fobs())if(f.getLong("id")==sellerFob&&f.getString("seller").isEmpty())return f;return null;}
         private RouteRules.Specialty specialtyOf(CompoundTag f){for(var s:RouteRules.Specialty.values())if(s.id().equals(f.getString("specialty")))return s;return RouteRules.Specialty.FISHING;}
         private int sellTop(){return radarY+28;}
-        private int sellBottom(){return topPos+imageHeight-46;}
+        private int sellBottom(){return topPos+imageHeight-56;}
         private int sellCols(){return Math.max(1,(fobW())/22);}
         private int sellRows(){return Math.max(1,(sellBottom()-sellTop())/22);}
         private void sellerView(){

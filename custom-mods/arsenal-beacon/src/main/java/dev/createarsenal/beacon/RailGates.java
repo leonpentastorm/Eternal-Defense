@@ -189,6 +189,16 @@ final class RailGates {
         for(int lane:order){var s=new Spot(rail.relative(cw,-lane),facing,lane);if(first==null)first=s;if(available(level,s.anchor(),facing))return s;}
         return first;
     }
+    /** Where a gate used with this click would stand (its item, and the client's placement preview, 0.0.33). Null: no straight rail. */
+    static Spot placingSpot(net.minecraft.world.item.context.BlockPlaceContext c){
+        var level=c.getLevel();var face=c.getClickedFace();var at=c.getClickLocation();
+        var hit=BlockPos.containing(at.x-face.getStepX()*1e-3,at.y-face.getStepY()*1e-3,at.z-face.getStepZ()*1e-3);
+        var rail=railFor(level,hit,c.getClickedPos());
+        var look=c.getHorizontalDirection();
+        var probe=facingOver(level.getBlockState(rail),look);
+        double clickSide=probe==null?0:(at.x-(rail.getX()+.5))*probe.getClockWise().getStepX()+(at.z-(rail.getZ()+.5))*probe.getClockWise().getStepZ();
+        return spot(level,rail,look,clickSide);
+    }
     /** The rail a gate item was used on: the block clicked, or the one the click lands in front of or above. */
     static BlockPos railFor(Level level,BlockPos hit,BlockPos clicked){
         for(var p:new BlockPos[]{hit,clicked,clicked.below()})if(level.getBlockState(p).getBlock() instanceof BaseRailBlock)return p;
@@ -356,13 +366,7 @@ final class RailGates {
         private static final ThreadLocal<Spot> PLACING=new ThreadLocal<>();
         GateItem(Block block,Kind kind){super(block,new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));this.kind=kind;}
         @Override public InteractionResult place(BlockPlaceContext c){
-            var level=c.getLevel();var face=c.getClickedFace();var at=c.getClickLocation();
-            var hit=BlockPos.containing(at.x-face.getStepX()*1e-3,at.y-face.getStepY()*1e-3,at.z-face.getStepZ()*1e-3);
-            var rail=railFor(level,hit,c.getClickedPos());
-            var look=c.getHorizontalDirection();
-            var probe=facingOver(level.getBlockState(rail),look);
-            double clickSide=probe==null?0:(at.x-(rail.getX()+.5))*probe.getClockWise().getStepX()+(at.z-(rail.getZ()+.5))*probe.getClockWise().getStepZ();
-            var spot=spot(level,rail,look,clickSide);
+            var level=c.getLevel();var spot=placingSpot(c);
             // the client does not guess: the anchor stands beside the clicked cell, where the server's refusal would not correct a ghost block
             if(!(level instanceof ServerLevel server))return spot!=null&&available(level,spot.anchor(),spot.facing())?InteractionResult.SUCCESS:InteractionResult.FAIL;
             var player=c.getPlayer() instanceof ServerPlayer p?p:null;

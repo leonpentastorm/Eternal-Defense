@@ -37,7 +37,7 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class FobOutlineClient {
     private FobOutlineClient(){}
-    record Zone(long id,String name,String state,Set<Long> sections){}
+    record Zone(long id,String name,String state,Set<Long> sections,int ground){}
     static List<Zone> zones=List.of();static CompoundTag preview;static Set<Long> previewSections=Set.of();
     private static final MultiBufferSource.BufferSource BUFFER=MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<18));
     /** Olive (a FOB's colour on its screen), green for a good spot, orange for a refused one. */
@@ -45,7 +45,7 @@ public final class FobOutlineClient {
 
     static void receive(CompoundTag data){
         var list=new ArrayList<Zone>();
-        for(var t:data.getList("zones",Tag.TAG_COMPOUND)){var z=(CompoundTag)t;list.add(new Zone(z.getLong("id"),z.getString("name"),z.getString("state"),set(z.getLongArray("sections"))));}
+        for(var t:data.getList("zones",Tag.TAG_COMPOUND)){var z=(CompoundTag)t;list.add(new Zone(z.getLong("id"),z.getString("name"),z.getString("state"),set(z.getLongArray("sections")),z.getInt("ground")));}
         zones=List.copyOf(list);
         preview=data.contains("preview")?data.getCompound("preview"):null;
         previewSections=preview==null?Set.of():set(preview.getLongArray("sections"));
@@ -73,10 +73,9 @@ public final class FobOutlineClient {
         pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);
         double time=mc.level.getGameTime()+e.getPartialTick();
         VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());
-        double band=mc.player.getY()+.05;
-        for(var z:zones)outline(lines,pose.last(),z.sections(),OLIVE,time,holding?110:150,band);
+        for(var z:zones)outline(lines,pose.last(),z.sections(),OLIVE,time,holding?110:150,z.ground());
         BlockPos at=holding?target():null;
-        if(holding&&preview!=null&&!previewSections.isEmpty())outline(lines,pose.last(),previewSections,previewGood()?GOOD:BAD,time,210,band);
+        if(holding&&preview!=null&&!previewSections.isEmpty())outline(lines,pose.last(),previewSections,previewGood()?GOOD:BAD,time,210,at!=null?at.getY():(int)Math.floor(mc.player.getY()));
         if(at!=null){
             int[] c=preview==null?OLIVE:previewGood()?GOOD:BAD;
             LevelRenderer.renderLineBox(pose,lines,new AABB(at.getX(),at.getY(),at.getZ(),at.getX()+1,at.getY()+FobBlocks.TALL,at.getZ()+1).inflate(.002),c[0]/255f,c[1]/255f,c[2]/255f,.9f);
@@ -87,10 +86,11 @@ public final class FobOutlineClient {
     }
     /**
      * The outer walls of a set of 16-block sections: every side face with no zone section beyond it, its edges, a slow moving grid every
-     * four blocks and a scan line climbing the zone's whole height, and a bright band at {@code band} (the player's feet), so the edge reads
-     * on the ground where the player walks; the top and bottom faces get their edges only.
+     * four blocks and a scan line climbing the zone's whole height, and (0.0.33, owner, in place of the three lines that followed the
+     * player's feet) the FOB Beacon's ground level: a bright line with a tick every block, as the Defense Beacon's zone marks its own; the
+     * top and bottom faces get their edges only.
      */
-    static void outline(VertexConsumer v,PoseStack.Pose p,Set<Long> sections,int[] rgb,double time,int alpha,double band){
+    static void outline(VertexConsumer v,PoseStack.Pose p,Set<Long> sections,int[] rgb,double time,int alpha,int ground){
         if(sections.isEmpty())return;
         int lowY=Integer.MAX_VALUE,highY=Integer.MIN_VALUE;for(long s:sections){lowY=Math.min(lowY,SectionPos.y(s));highY=Math.max(highY,SectionPos.y(s));}
         double bottom=lowY*16,top=(highY+1)*16,scan=bottom+(time*.12)%(top-bottom),shift=(time*.025)%4;
@@ -105,7 +105,12 @@ public final class FobOutlineClient {
                 for(double d=shift;d<16;d+=4){double fx=w[0]+(w[2]-w[0])*d/16,fz=w[1]+(w[3]-w[1])*d/16;line(v,p,fx,y0,fz,fx,y1,fz,rgb,alpha/3);}
                 for(double y=y0+shift;y<y1;y+=4)line(v,p,w[0],y,w[1],w[2],y,w[3],rgb,alpha/3);
                 if(scan>=y0&&scan<y1)line(v,p,w[0],scan,w[1],w[2],scan,w[3],rgb,Math.min(255,alpha+40));
-                if(band>=y0&&band<y1)for(double b:new double[]{band,band+.5,band+1})line(v,p,w[0],b,w[1],w[2],b,w[3],rgb,255);
+                if(ground>=y0&&ground<y1){
+                    line(v,p,w[0],ground,w[1],w[2],ground,w[3],rgb,255);
+                    // one-block ticks pointing into the zone (north wall inward is +z, east -x, south -z, west +x)
+                    double ix=i==1?-.35:i==3?.35:0,iz=i==0?.35:i==2?-.35:0;
+                    for(int d=0;d<=16;d++){double fx=w[0]+(w[2]-w[0])*d/16,fz=w[1]+(w[3]-w[1])*d/16;line(v,p,fx,ground,fz,fx+ix,ground,fz+iz,rgb,230);}
+                }
             }
             if(!sections.contains(SectionPos.asLong(sx,sy+1,sz)))square(v,p,x0,y1,z0,x1,z1,rgb,alpha/2);
             if(!sections.contains(SectionPos.asLong(sx,sy-1,sz)))square(v,p,x0,y0,z0,x1,z1,rgb,alpha/2);
@@ -131,7 +136,7 @@ public final class FobOutlineClient {
         pose.popPose();
     }
     /** Passes every vertex on with its alpha scaled down. */
-    private record Faint(VertexConsumer to,float alpha) implements VertexConsumer {
+    record Faint(VertexConsumer to,float alpha) implements VertexConsumer {
         @Override public VertexConsumer vertex(double x,double y,double z){to.vertex(x,y,z);return this;}
         @Override public VertexConsumer color(int r,int g,int b,int a){to.color(r,g,b,Math.round(a*alpha));return this;}
         @Override public VertexConsumer uv(float u,float v){to.uv(u,v);return this;}

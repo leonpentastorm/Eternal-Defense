@@ -106,6 +106,7 @@ public final class FobGameTests {
         var raid=l.getRaidAt(VILLAGE);if(raid!=null)raid.stop();
         for(var e:l.getEntitiesOfClass(Entity.class,new AABB(VILLAGE).inflate(100,40,100),e->!(e instanceof Player)))e.discard();
         for(var at:List.of(PLANT,PLANT2))if(l.getBlockState(at).is(ArsenalBeacon.FOB_BEACON.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
+        clearCatapults(l);
         for(var at:List.of(RECEIVING,DELIVERY))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at,Blocks.AIR.defaultBlockState(),3);
         for(var at:BlockPos.betweenClosed(GATE_RAIL.offset(-3,0,-3),GATE_RAIL.offset(3,0,3)))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at.immutable(),Blocks.AIR.defaultBlockState(),3);
     }
@@ -916,6 +917,82 @@ public final class FobGameTests {
             boolean gone=FobOutline.state(p,false).getList("zones",10).isEmpty();p.setPos(here.x,here.y,here.z);
             h.assertTrue(gone,"far away: no outline");
             clear(l);
+        }).thenSucceed();
+    }
+
+    // ---- the Supply Catapult and the specialty seller (0.0.33) -----------------------------------------------------------------------------------
+    /** Where the tests put the catapult: inside the village's section, clear of the bell, the composters, the beds and the FOB Beacon. */
+    static final BlockPos CATAPULT=VILLAGE.offset(2,0,-6),CATAPULT2=VILLAGE.offset(-3,0,-9);
+    static InteractionResult placeCatapult(Fixture f,BlockPos at){
+        var stack=new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get());
+        var hit=new BlockHitResult(Vec3.atCenterOf(at.below()),Direction.UP,at.below(),false);
+        return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack,hit));
+    }
+    static void clearCatapults(ServerLevel l){for(var at:List.of(CATAPULT,CATAPULT2))if(l.getBlockState(at).is(ArsenalBeacon.SUPPLY_CATAPULT.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);}
+    /** Placed only in a FOB's village, one per FOB, a 3 x 3 x 2 structure; the seller opens at research level 5; taken down, it is unlinked. */
+    @GameTest(template="empty3x3x3",batch="fob_23",timeoutTicks=300)
+    public static void theCatapultStandsOnlyInAFobVillage(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            clearCatapults(l);
+            h.assertTrue(SupplyCatapult.placeProblem(l,CATAPULT).equals("not_fob")&&!placeCatapult(f,CATAPULT).consumesAction(),"no FOB yet: refused");
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            h.assertTrue(SupplyCatapult.placeProblem(l,AWAY).equals("not_fob"),"64 blocks out of the village: refused");
+            h.assertTrue(placeCatapult(f,CATAPULT).consumesAction(),"placed in the FOB's village");
+            var fob=fob(l);
+            h.assertTrue(CATAPULT.equals(fob.catapult),"it serves the FOB");
+            h.assertTrue(ArsenalStructures.cells(CATAPULT,l.getBlockState(CATAPULT)).stream().allMatch(c->l.getBlockState(c).is(ArsenalBeacon.STRUCTURE_PART.get())),"its 3 x 3 x 2 body stands");
+            h.assertTrue(SupplyCatapult.placeProblem(l,CATAPULT2).equals("has_catapult"),"a second one in the same FOB: refused");
+            h.assertTrue("research".equals(SupplyCatapult.closed(l,fob)),"research level 0: the seller is closed");
+            fob.researchXp=RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL];
+            h.assertTrue(SupplyCatapult.closed(l,fob)==null,"research level 5: open");
+            var n=new CompoundTag();Hunts.fobs(l,CampaignData.get(l),p,n);var row=n.getList("fobs",10).getCompound(0);
+            h.assertTrue(row.getBoolean("catapult")&&row.getString("seller").isEmpty()&&row.getInt("index")==0,"the Command Table is told: "+row);
+            l.setBlock(CATAPULT,Blocks.AIR.defaultBlockState(),3);
+            h.assertTrue(fob.catapult==null&&"catapult".equals(SupplyCatapult.closed(l,fob)),"taken down: unlinked, the seller closed again");
+            h.assertTrue(!l.getBlockState(CATAPULT.above()).is(ArsenalBeacon.STRUCTURE_PART.get()),"its body went with it");
+            clear(l);
+        }).thenSucceed();
+    }
+    /** A purchase: Ardent Energy paid, the catapult turns to the beacon and throws, the box lands beside the beacon as a parcel; refusals. */
+    @GameTest(template="empty3x3x3",batch="fob_24",timeoutTicks=1200)
+    public static void theSellersBoxIsThrownHomeAndLandsAtTheBeacon(GameTestHelper h){
+        var f=village(h,3);var l=f.l();var p=f.p();int tear=RouteRules.POTION_LOOT.indexOf(RouteRules.POTION_LOOT.stream().filter(x->x.id().equals("minecraft:ghast_tear")).findFirst().get());
+        BlockPos beacon=CampaignData.get(l).beacon;
+        h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
+            clearCatapults(l);
+            for(var e:l.getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(beacon).inflate(12)))e.discard();
+            h.assertTrue(plant(f,PLANT).consumesAction(),"planted");command(l,p,"arsenal fob complete");
+            h.assertTrue(placeCatapult(f,CATAPULT).consumesAction(),"the catapult placed");
+            var fob=fob(l);fob.specialty=RouteRules.Specialty.POTIONS;fob.researchXp=RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL];
+            p.setGameMode(GameType.SURVIVAL);setArdent(p,0);
+            h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,tear,0)).equals("tactical.seller.short")&&fob.shipments.isEmpty(),"no Ardent Energy: refused, nothing queued");
+            setArdent(p,10);
+            h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,tear,0)).equals("tactical.seller.bought"),"bought a lot of ghast tears");
+            h.assertTrue(count(p,ArsenalBeacon.ARDENT_ENERGY.get())==10-Economy.sellerLotPrice(),"paid "+Economy.sellerLotPrice()+" Ardent Energy");
+            h.assertTrue(fob.shipments.size()==1&&fob.shipments.get(0).getString("stage").equals("wait")&&fob.shipments.get(0).getInt("count")==1,"one box waits at the catapult: "+fob.shipments);
+        }).thenWaitUntil(()->h.assertTrue(fob(l).shipments.get(0).getString("stage").equals("flying"),"the catapult threw it"))
+        .thenExecute(()->{
+            var fob=fob(l);var be=(SupplyCatapult.CatapultEntity)l.getBlockEntity(CATAPULT);
+            float aim=CatapultRules.yawTo(CATAPULT.getX()+.5,CATAPULT.getZ()+.5,beacon.getX()+.5,beacon.getZ()+.5);
+            float diff=((be.target-aim)%360+540)%360-180;
+            h.assertTrue(Math.abs(diff)<1&&be.throwsSeen==1,"it turned to face the beacon ("+be.target+" vs "+aim+") and threw once");
+            h.assertTrue(!l.getEntitiesOfClass(SupplyCatapult.ThrownSupply.class,new AABB(CATAPULT).inflate(20)).isEmpty(),"the box flies off");
+            long due=fob.shipments.get(0).getLong("due");
+            h.assertTrue(due-l.getGameTime()>=CatapultRules.flightTicks(Math.hypot(fob.pos.getX()-beacon.getX(),fob.pos.getZ()-beacon.getZ()))-30,"it lands after the flight home");
+            fob.shipments.get(0).putLong("due",l.getGameTime());   // the flight home is not waited for here
+        }).thenWaitUntil(()->h.assertTrue(fob(l).shipments.isEmpty(),"the box landed"))
+        .thenExecute(()->{
+            var parcels=l.getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(beacon).inflate(8,48,8));
+            h.assertTrue(parcels.size()==1&&parcels.get(0).box.countItem(Items.GHAST_TEAR)==1,"a parcel with the ghast tear beside the beacon: "+parcels.size());
+            parcels.forEach(Entity::discard);
+            // the catapult holds four boxes
+            setArdent(p,64);var fob=fob(l);
+            for(int i=0;i<CatapultRules.MAX_QUEUE;i++)h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,0,1)).equals("tactical.seller.bought"),"box "+(i+1));
+            h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,0,0)).equals("tactical.seller.busy"),"a fifth waits: refused");
+            h.assertTrue(fob.shipments.get(0).getInt("count")==CatapultRules.LOTS[1]*CatapultRules.lotSize(RouteRules.POTION_LOOT.get(0)),"four lots of sugar: "+fob.shipments.get(0).getInt("count"));
+            fob.researchXp=0;h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,0,0)).equals("tactical.seller.refused.research"),"below level 5: refused");
+            fob.shipments.clear();p.setGameMode(GameType.CREATIVE);clearCatapults(l);clear(l);
         }).thenSucceed();
     }
 

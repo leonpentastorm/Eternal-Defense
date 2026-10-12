@@ -239,6 +239,19 @@ public final class QaFob {
     }
     static long lastSearch=-1000;
     /** The nearest spot (to the player) the FOB rules allow, on sturdy ground, with two free blocks, nobody in them and free ground 3 south. */
+    static BlockPos catapult;
+    /** A spot in the FOB's village where a Supply Catapult may stand, nearest the FOB Beacon. */
+    static BlockPos findCatapultSpot(){
+        var l=sl();var f=FobData.get(l).fobs.values().iterator().next();var from=f.pos;
+        for(int r=4;r<=24;r++)for(int dx=-r;dx<=r;dx++)for(int dz=-r;dz<=r;dz++){
+            if(Math.max(Math.abs(dx),Math.abs(dz))!=r)continue;
+            int x=from.getX()+dx,z=from.getZ()+dz,y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);var at=new BlockPos(x,y,z);
+            boolean flat=true;for(int ox=-1;ox<=1;ox++)for(int oz=-1;oz<=1;oz++)if(!l.getBlockState(at.offset(ox,-1,oz)).isFaceSturdy(l,at.offset(ox,-1,oz),Direction.UP))flat=false;
+            if(!flat||!l.getEntitiesOfClass(net.minecraft.world.entity.Entity.class,new net.minecraft.world.phys.AABB(at).inflate(2,1,2)).isEmpty())continue;
+            if(SupplyCatapult.placeProblem(l,at)==null)return at;
+        }
+        return null;
+    }
     static BlockPos findSpot(){
         var l=sl();var from=sp().blockPosition();
         if(FobZone.sections(l,from).isEmpty())return null;   // not a village (yet) where the player stands
@@ -607,6 +620,65 @@ public final class QaFob {
         atSizes(SIZES,"the FOB screen, Research tab","f23e_fob_research",true,null);
         step(5,()->{press("FOB");FobClient.FobScreen.tab=0;},"back to the FOB tab");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
+        // ---- 0.0.33: the Supply Catapult and the specialty seller; the placement preview; the FOB zone's ground line -------------------------------
+        step(5,()->{catapult=srvGet(QaFob::findCatapultSpot);check("a free 3 x 3 spot in the FOB's village for the catapult",catapult!=null,String.valueOf(catapult));
+            if(catapult!=null){hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));look(catapult.south(6).above(2),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);}},"hold a Supply Catapult, look at the spot");
+        step(30,()->{var g=PlacementPreviewClient.ghost();
+            check("the placement preview: a ghost catapult where it would stand, its 3 x 3 x 2 outline",g!=null&&g.cells().get(0).equals(catapult)&&Math.abs(g.box().getXsize()-3)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6,g==null?"none":g.cells()+" "+g.box());
+            shot("f29_catapult_preview");},"the preview");
+        step(5,()->{if(catapult!=null)click(catapult.below(),Direction.UP);},"place it with a right-click");
+        step(20,()->{var f=fob();check("placed: it serves the FOB",f!=null&&catapult!=null&&catapult.equals(f.catapult),f==null?"":String.valueOf(f.catapult));
+            hold(ItemStack.EMPTY);mc().options.hideGui=true;if(catapult!=null)look(catapult.south(5).west(3).above(2),catapult.getX()+.5,catapult.getY()+.8,catapult.getZ()+.5);},"placed");
+        step(40,()->shot("f29b_catapult_model"),"the owner's model");
+        step(5,()->{mc().options.hideGui=false;var f=fob();var z=FobOutlineClient.zones.stream().filter(x->f!=null&&x.id()==f.id).findFirst().orElse(null);
+            check("the FOB zone's outline carries the FOB Beacon's ground level (no more lines at the player's feet)",z!=null&&f!=null&&z.ground()==f.pos.getY(),z==null?"no zone":z.ground()+" vs "+(f==null?"?":f.pos.getY()));
+            if(spot!=null)look(spot.south(10).above(3),spot.getX()+.5,spot.getY(),spot.getZ()+.5);},"the zone outline");
+        step(30,()->shot("f29c_fob_zone_ground"),"its ground line");
+        // the seller at the Command Table (the research is at level 5 from the research tab's checks)
+        step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);},"home");
+        step(20,()->{TacticalClient.view=2;TacticalClient.TableScreen.sellerFob=-1;srv(()->Hunts.open(sp(),HuntGameTests.TABLE));},"open the Command Table on its FOBs tab");
+        step(30,()->{var t=table();var row=t==null||t.data().getList("fobs",10).isEmpty()?new CompoundTag():t.data().getList("fobs",10).getCompound(0);
+            check("the FOB row: a catapult, the seller open",row.getBoolean("catapult")&&row.getString("seller").isEmpty(),row.getString("seller"));
+            boolean button=t!=null&&t.children().stream().anyMatch(c->c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals("Contact Specialty Seller"));
+            check("Contact Specialty Seller is there and active",button,"");recordFrame=true;},"the FOBs tab");
+        step(3,()->{layout("the Command Table, FOBs tab with the seller",true);shot("f30_table_fobs_seller");press("Contact Specialty Seller");},"Contact Specialty Seller");
+        step(20,()->{var f=fob();var t=table();
+            check("the seller opens on the FOB's specialty",t!=null&&TacticalClient.TableScreen.sellerFob==f.id,"");
+            int items=f==null?0:RouteRules.options(RouteRules.Slot.SPECIALTY,f.specialty).size();
+            long buttons=t==null?0:t.children().stream().filter(c->c instanceof Ui.UiButton b&&b.visible&&b.getWidth()==20&&b.getHeight()==20).count();
+            check("its grid: the specialty's items (scrolled when they do not fit)",buttons>0&&buttons<=items,buttons+" of "+items);
+            TacticalClient.TableScreen.sellerItem=items-1;if(t!=null)t.resize(mc(),t.width,t.height);recordFrame=true;},"the seller's grid, the last item picked");
+        step(3,()->{layout("the Command Table, the specialty seller",true);shot("f30b_seller");},"the seller");
+        atSizes(SIZES,"the Command Table, the specialty seller","f30c_seller",true,()->{var t=table();if(t!=null)t.resize(mc(),t.width,t.height);});
+        step(10,()->{TacticalClient.TableScreen.sellerItem=0;var t=table();if(t!=null)t.resize(mc(),t.width,t.height);},"the first item");
+        step(10,()->pressStart("Buy 1 lot"),"Buy 1 lot");
+        until("bought",100,()->{var t=table();return t!=null&&!t.data().getString("message").isEmpty();},()->{var t=table();var f=fob();
+            check("bought: the box waits at the catapult",t!=null&&t.data().getString("message").equals("tactical.seller.bought")&&f!=null&&f.shipments.size()==1,t==null?"":t.data().getString("message"));
+            // the catapult throws unseen 3 seconds after a purchase when nobody is near it: held back so the client can watch it
+            srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();if(!x.shipments.isEmpty())x.shipments.get(0).putLong("due",sl().getGameTime()+4000);});
+            shot("f30d_seller_bought");});
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());if(catapult!=null)tp(catapult.getX()-6.5,catapult.getY()+1,catapult.getZ()+7.5,0,0);},"to the village to watch");
+        step(5,()->{if(catapult!=null)look(catapult.south(7).west(6).above(2),catapult.getX()+.5,catapult.getY()+1.2,catapult.getZ()+.5);mc().options.hideGui=true;},"face the catapult");
+        until("the catapult throws",600,()->{var be=mc().level.getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c:null;return be!=null&&be.throwAge>=2&&be.throwAge<=4;},()->shot("f31_catapult_throw"));
+        step(4,()->shot("f31b_box_away"),"the box leaves");
+        until("the box is in the air",200,()->{var f=fob();return f!=null&&!f.shipments.isEmpty()&&f.shipments.get(0).getString("stage").equals("flying");},()->{var f=fob();
+            var be=srvGet(()->sl().getBlockEntity(catapult) instanceof SupplyCatapult.CatapultEntity c?c.throwsSeen:-1);
+            check("the catapult turned to the beacon and threw the box; it flies home",be==1&&f.shipments.get(0).getLong("due")>srvGet(()->sl().getGameTime()),"throws "+be);
+            mc().options.hideGui=false;
+            srv(()->{var x=FobData.get(sl()).fobs.values().iterator().next();x.shipments.get(0).putLong("due",sl().getGameTime()+60);});
+            var b=HuntGameTests.BEACON;tp(b.getX()+.5,b.getY(),b.getZ()+9.5,180,-25);});
+        until("the box lands",300,()->{var f=fob();return f!=null&&f.shipments.isEmpty();},()->{});
+        step(20,()->{var b=HuntGameTests.BEACON;var parcels=srvGet(()->sl().getEntitiesOfClass(SupportCrate.ParcelEntity.class,new net.minecraft.world.phys.AABB(b).inflate(8,48,8)));
+            check("a parcel comes down beside the beacon with what was bought",parcels.size()==1&&!parcels.get(0).box.isEmpty(),parcels.size()+" parcels");
+            check("the buyer reads where it landed",chatHas("landed beside your Defense Beacon"),"");
+            if(!parcels.isEmpty()){var at=parcels.get(0).position();look(BlockPos.containing(at.x,b.getY(),at.z+7),at.x,at.y+2,at.z);}},"the parcel");
+        step(10,()->shot("f31c_parcel_at_beacon"),"the parcel at the beacon");
+        // the placement preview at home: the Defense Beacon shows its base zone, the Command Table its size
+        step(5,()->{var b=HuntGameTests.BEACON;hold(new ItemStack(ArsenalBeacon.BEACON_ITEM.get()));look(b.offset(0,1,14),b.getX()+.5,b.getY()-1,b.getZ()+9.5);},"hold a Defense Beacon");
+        step(30,()->{var g=PlacementPreviewClient.ghost();check("the Defense Beacon's preview: the beacon and its base zone",g!=null&&g.beacon(),String.valueOf(g));shot("f32_beacon_preview");},"the zone preview");
+        step(5,()->hold(new ItemStack(ArsenalBeacon.COMMAND_TABLE_ITEM.get())),"hold a Command Table");
+        step(30,()->{var g=PlacementPreviewClient.ghost();check("the Command Table's preview: 2 x 2 x 2",g!=null&&!g.beacon()&&Math.abs(g.box().getXsize()-2)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6&&Math.abs(g.box().getZsize()-2)<1e-6,g==null?"none":g.box().toString());
+            shot("f32b_table_preview");hold(ItemStack.EMPTY);},"the table's preview");
         // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
         step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+.5,0,10);},"home for the enchanting table");
         step(40,()->{var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()-.5,at.getZ()+.5);hold(new ItemStack(ArsenalBeacon.ENCHANTING_TABLE_ITEM.get()));},"hold the table");
