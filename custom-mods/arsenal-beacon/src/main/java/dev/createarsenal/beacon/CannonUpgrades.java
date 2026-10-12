@@ -116,6 +116,14 @@ final class CannonUpgrades {
     /** Pure: what the burning ground deals each second to a mob standing in it. */
     static float napalm(float multiplier){return hit(NAPALM_SHARE,multiplier);}
     /**
+     * Spotter Arrows (0.0.36, owner; it was the Arrow Cluster Bomb): each volley every hostile mob in the box takes one arrow hit of
+     * {@link FireMarks#SPOTTER_HIT} (Damage upgrade included, no knockback) and is marked until it dies (see {@link FireMarks}).
+     */
+    static float spotterHit(float multiplier){return FireMarks.SPOTTER_HIT*multiplier;}
+    /** Curse of Debilitation (0.0.36, owner): what every mob one shell touches keeps until it dies. The Damage upgrade does not change it. */
+    record Curse(String effect,int amplifier){}
+    static final java.util.List<Curse> CURSES=java.util.List.of(new Curse("minecraft:wither",1),new Curse("minecraft:poison",1),new Curse("minecraft:weakness",1),new Curse("minecraft:slowness",2),new Curse("minecraft:blindness",0));
+    /**
      * Cryo Shell: no damage. The ground is covered in snow and every hostile mob in the box is slowed almost to a stop (Slowness V, Mining
      * Fatigue III) for as long as it stays; a raid boss is slowed less (Slowness III).
      */
@@ -155,21 +163,22 @@ final class CannonUpgrades {
 
     /**
      * The numbers the cannon menu prints for one fire support with one player's upgrades (0.0.20): rounds, seconds between rounds, damage of
-     * one hit, the area's width and height in blocks, how long a lingering effect lasts (s), the type's own figure (an arrow, the Bunker
-     * Buster's blow, a bomblet pulse, a second of napalm) and a total (what a mob that takes every hit takes).
+     * one hit, the area's width and height in blocks, how long a lingering effect lasts (s), the type's own figure (a Spotter Arrows hit,
+     * the Bunker Buster's blow, a bomblet pulse, a second of napalm), a total (what a mob that takes every hit takes) and a second of
+     * Ablaze (0.0.36: what a mob the napalm set Ablaze takes each second until it dies).
      */
-    record Facts(int rounds,double every,double damage,double width,double height,double lasts,double special,double total){}
+    record Facts(int rounds,double every,double damage,double width,double height,double lasts,double special,double total,double ablaze){}
     static Facts facts(Config c){
         var t=c.type();double r=c.radius(),hit=SupportRules.FIRE_DAMAGE*c.damage(),lasts=c.lingerTicks()/20.0;
         double height=t==FireType.BUNKER||t==FireType.STARSHELL?2*r:t.flat()?GROUND_HEIGHT:r+.5;
-        double special=switch(t){case ARROW->2.5*c.damage();case BUNKER->hit*BUNKER_HITS;case CLUSTER->clusterPulse(c.damage());case NAPALM->napalm(c.damage());default->hit;};
-        double total=switch(t){case CLUSTER->special*(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);case NAPALM->special*lasts;case EXPLOSION,NARUKAMI->hit*c.volleys();default->special;};
-        return new Facts(c.volleys(),c.interval()/20.0,hit,2*r,height,lasts,special,total);
+        double special=switch(t){case ARROW->spotterHit(c.damage());case BUNKER->hit*BUNKER_HITS;case CLUSTER->clusterPulse(c.damage());case NAPALM->napalm(c.damage());default->hit;};
+        double total=switch(t){case CLUSTER->special*(CLUSTER_TICKS/CLUSTER_PULSE_TICKS);case NAPALM->special*lasts;case EXPLOSION,NARUKAMI->hit*c.volleys();case ARROW->special*c.volleys();default->special;};
+        return new Facts(c.volleys(),c.interval()/20.0,hit,2*r,height,lasts,special,total,FireMarks.ablazeFor(c.damage()));
     }
     /** Pure: a number for the menu: whole numbers without a decimal point, others with one decimal. */
     static String number(double v){double rounded=Math.round(v*10)/10.0;return rounded==Math.rint(rounded)?String.valueOf((long)Math.rint(rounded)):String.valueOf(rounded);}
-    /** The arguments of a type's menu lines, in order (%1$s ... %8$s). */
-    static Object[] factArgs(Facts f){return new Object[]{f.rounds(),number(f.every()),number(f.damage()),number(f.width()),number(f.height()),number(f.lasts()),number(f.special()),number(f.total())};}
+    /** The arguments of a type's menu lines, in order (%1$s ... %9$s). */
+    static Object[] factArgs(Facts f){return new Object[]{f.rounds(),number(f.every()),number(f.damage()),number(f.width()),number(f.height()),number(f.lasts()),number(f.special()),number(f.total()),number(f.ablaze())};}
 
     /** Everything a thrown flare needs to know, frozen at the moment of the throw. */
     record Config(FireType type,int volleys,int interval,float damage,boolean tunnel,boolean slow,boolean longPortal,boolean aura,int aoe,int volleyLevel){

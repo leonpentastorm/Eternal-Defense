@@ -86,7 +86,7 @@ final class HandTunedRoundTest {
 
     // ---- the fire supports -----------------------------------------------------------------------------------------------
     @Test void theLingeringTypesAreOneRoundAndVolleyMakesThemLast(){
-        assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"arrow cluster: six volleys");
+        assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"Spotter Arrows (the Arrow Cluster until 0.0.36): six volleys");
         assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,0));assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,3),"volley does nothing for the cluster");
         assertEquals(200,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.NAPALM,0));assertEquals(440,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.NAPALM,3));
         assertEquals(300,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CRYO,0));assertEquals(600,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CRYO,3));
@@ -129,17 +129,7 @@ final class HandTunedRoundTest {
             assertTrue(x>=r,"a mob "+d+" blocks out ends up past the edge: "+x);
         }
     }
-    @Test void arrowsCarryAPotionThatHarmsTheirTarget(){
-        var harmful=Set.of("harming","poison","slowness","weakness","healing");
-        for(int roll=0;roll<24;roll++){
-            String undead=SupportFlares.arrowPotion(true,true,roll),living=SupportFlares.arrowPotion(false,true,roll),stray=SupportFlares.arrowPotion(false,false,roll);
-            assertTrue(harmful.contains(undead)&&!undead.equals("harming")&&!undead.equals("poison"),"undead are healed by harming and immune to poison: "+undead);
-            assertTrue(harmful.contains(living)&&!living.equals("healing"),living);
-            assertTrue(stray.equals("slowness")||stray.equals("weakness"),"an arrow at no one in particular: "+stray);
-        }
-        var seen=new HashSet<String>();for(int roll=0;roll<24;roll++)seen.add(SupportFlares.arrowPotion(false,true,roll));
-        assertEquals(Set.of("harming","poison","slowness","weakness"),seen,"every effect comes up");
-    }
+    // 0.0.36: the tipped arrows are gone (Spotter Arrows hit and mark; their arrows are only for show): see Round0036Test
 
     private static com.google.gson.JsonObject json(String path) throws Exception{
         try(var in=HandTunedRoundTest.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in,path),StandardCharsets.UTF_8)).getAsJsonObject();}

@@ -1,0 +1,62 @@
+QA_CHECK PASS a hostile mob that can burn, in the burning carpet, is set Ablaze (4 a second at Damage 0) 4.0
+QA_CHECK PASS a blaze (fire immune) is never set Ablaze 
+QA_CHECK PASS a mob with Fire Resistance is never set Ablaze 
+QA_CHECK PASS the carpet's fire is gone 
+QA_CHECK PASS Ablaze keeps burning after the carpet: 4 damage a second by its own timer 7 burns in 7 s: minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; 
+QA_CHECK PASS vanilla's own burn (1 a second) is replaced, never added 
+QA_CHECK PASS it still burns (server) 
+QA_CHECK PASS the client shows it on fire 
+QA_CHECK PASS every burn counts as the weapon's fire (its fire mark is refreshed) 
+QA_CHECK PASS a blaze in the carpet takes nothing from Ablaze 
+QA_CHECK PASS in water the husk is in water and its flames are out water true fire false
+QA_CHECK PASS in water Ablaze keeps hurting it, 4 a second 3: minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; 
+QA_CHECK PASS still Ablaze 
+QA_CHECK PASS out of the water it is lit again 
+QA_CHECK PASS in the rain Ablaze keeps hurting it, 4 a second 6: minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; minecraft:on_fire 4.0->4.0; 
+QA_CHECK PASS no stream of extinguish hisses in the rain (the flames show as particles there) 0 hisses
+QA_CHECK PASS after the rain it is lit again 
+QA_CHECK PASS a burning husk against the wooden wall lit no block in 15 seconds (fire tick on) fires 0, planks 28/28
+QA_CHECK PASS it burned the whole time 15 burns
+QA_CHECK PASS death clears Ablaze 
+QA_CHECK PASS the first volley marks every hostile mob in the box: all 15, no cap 15 of 15
+QA_CHECK PASS each is Glowing for good (an endless effect) 
+QA_CHECK PASS each took one arrow hit of 4 (the mark comes after the hit) minecraft:arrow 4.0->4.0; 
+QA_CHECK PASS no knockback from the hit (Forge's knockback event is cancelled for it) 15 knockbacks, all cancelled: true
+QA_CHECK PASS the falling arrows hit nothing 
+QA_CHECK PASS the client sees them glow 
+QA_CHECK PASS arrows fall (for show) 
+QA_CHECK PASS a mob that arrived late is marked by the next volley 
+QA_CHECK PASS a marked mob takes 30 percent more from the next hit (4 -> 5.2) minecraft:arrow 4.0->4.0; minecraft:arrow 4.0->5.2; 
+QA_CHECK PASS a raid boss takes 15 percent more (4 -> 4.6) minecraft:arrow 4.0->4.0; minecraft:arrow 4.0->4.6; 
+QA_CHECK PASS the show arrows are gone soon after they land 
+QA_CHECK PASS six volleys hit each mob six times 6
+QA_CHECK PASS marks do not stack: every later hit is 5.2 minecraft:arrow 4.0->4.0; minecraft:arrow 4.0->5.2; minecraft:arrow 4.0->5.2; minecraft:arrow 4.0->5.2; minecraft:arrow 4.0->5.2; minecraft:arrow 4.0->5.2; 
+QA_CHECK PASS Marked: an explosion counts 30 percent more minecraft:explosion 10.0->13.0; 
+QA_CHECK PASS Marked: fire counts 30 percent more minecraft:in_fire 3.0->3.8999999; 
+QA_CHECK PASS Marked: a melee hit counts 30 percent more minecraft:mob_attack 6.0->7.7999997; 
+QA_CHECK PASS Marked: every poison tick counts 30 percent more minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; minecraft:magic 1.0->1.3; 
+QA_CHECK PASS Marked: every wither tick counts 30 percent more minecraft:wither 1.0->1.3; minecraft:wither 1.0->1.3; minecraft:wither 1.0->1.3; minecraft:wither 1.0->1.3; 
+QA_CHECK PASS damage that ignores invulnerability (a kill) is left alone minecraft:generic_kill 3.4028235E38->3.4028235E38; 
+QA_CHECK PASS an unmarked mob takes what it always took (explosion, fire, poison, wither) minecraft:explosion 10.0->10.0; minecraft:in_fire 3.0->3.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:wither 1.0->1.0; minecraft:wither 1.0->1.0; minecraft:wither 1.0->1.0; minecraft:wither 1.0->1.0; 
+QA_NOTE shoot marked: SUCCESS
+QA_NOTE shoot unmarked: SUCCESS
+QA_CHECK PASS a real TaCZ bullet hit the marked mob tacz:bullet 6.75->8.775; tacz:bullet_ignore_armor 2.25->2.925; 
+QA_CHECK PASS Marked: the TaCZ bullet counts 30 percent more tacz:bullet 6.75->8.775; tacz:bullet_ignore_armor 2.25->2.925; 
+QA_CHECK PASS an unmarked mob takes the bullet as it is tacz:bullet 6.75->6.75; tacz:bullet_ignore_armor 2.25->2.25; 
+QA_CHECK PASS one shell: Wither II, Poison II, Weakness II, Slowness III and Blindness, all endless (Damage level 3 changes nothing) [effect.minecraft.blindness, Duration: infinite, effect.minecraft.wither x 2, Duration: infinite, effect.minecraft.slowness x 3, Duration: infinite, effect.minecraft.weakness x 2, Duration: infinite, effect.minecraft.poison x 2, Duration: infinite]
+QA_CHECK PASS no Glowing any more 
+QA_CHECK PASS an undead husk gets them too, except Poison (vanilla: undead are immune) 
+QA_CHECK PASS the curses are still there, still endless 
+QA_CHECK PASS in the raid the napalm's raider was hurt by the carpet and by Ablaze minecraft:in_fire 5.0->5.0; minecraft:on_fire 4.0->4.0; minecraft:in_fire 1.0->1.0; minecraft:on_fire 4.0->4.0; minecraft:in_fire 1.0->1.0; minecraft:on_fire 4.0->4.0; minecraft:in_fire 1.0->1.0; minecraft:on_fire 4.0->4.0; minecraft:in_fire 1.0->1.0; minecraft:on_fire 4.0->4.0; minecraft:in_fire 1.0->1.0; 
+QA_CHECK PASS in the raid the Spotter's raider took its hits minecraft:arrow 4.0->4.0; minecraft:arrow 4.0->5.2; minecraft:arrow 4.0->5.2; 
+QA_CHECK PASS in the raid the cursed raider took poison and wither ticks minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:wither 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:magic 1.0->1.0; minecraft:wither 1.0->1.0; 
+QA_CHECK PASS the raid learned no trap from them {}
+QA_CHECK PASS control: plain fire is learned as a fire trap (the check can see it) [FIRE]
+QA_CHECK PASS the Field Guide has the support page 
+QA_CHECK PASS the cannon menu (open) shows the card for Spotter Arrows, which says Spotter Arrows, glows Spotter Arrows | 6 volleys, one every 2 s. Each hits every hostile mob in the box and marks it until it dies: it glows and takes 30% more from all damage (a raid boss 15%). Mobs that arrive late are marked by the next volley. | 4 per hit, with no knockback. Marks do not stack. The falling arrows are only for show: they hit nothing and cannot be picked up. | Every hostile mob in a box 8 blocks across, however many there are.
+QA_CHECK FAIL and no longer says 'Arrow Cluster' Spotter Arrows | 6 volleys, one every 2 s. Each hits every hostile mob in the box and marks it until it dies: it glows and takes 30% more from all damage (a raid boss 15%). Mobs that arrive late are marked by the next volley. | 4 per hit, with no knockback. Marks do not stack. The falling arrows are only for show: they hit nothing and cannot be picked up. | Every hostile mob in a box 8 blocks across, however many there are.
+QA_CHECK PASS the cannon menu (open) shows the card for Curse of Debilitation, which says Curse of Debilitation, dies Curse of Debilitation | 6 shells, one every 2 s. Each puts Wither II, Poison II, Weakness II, Slowness III and Blindness on every hostile mob in the box, until it dies. | Wither and Poison hurt over time. The curses last until the mob dies; the Damage upgrade does not change them. | A box 8 blocks across and 4.5 blocks high, around the flare.
+QA_CHECK PASS and no longer says 'Glowing' Curse of Debilitation | 6 shells, one every 2 s. Each puts Wither II, Poison II, Weakness II, Slowness III and Blindness on every hostile mob in the box, until it dies. | Wither and Poison hurt over time. The curses last until the mob dies; the Damage upgrade does not change them. | A box 8 blocks across and 4.5 blocks high, around the flare.
+QA_CHECK PASS the cannon menu (open) shows the card for Napalm Carpet, which says Napalm Carpet, Ablaze Napalm Carpet | One shell sets the ground on fire for 10 seconds. Hostile mobs in it burn, and each one that can burn is set Ablaze until it dies. Careful: the fire is real and burns players who walk into it. | 5 every second to each hostile mob in it: 50 for one that stays the whole time. Ablaze: 4 every second until it dies (half for a raid boss), even in water or rain. | Flat ground 9.6 blocks across and 2 blocks high. No fire is lit within 4 blocks of your beacon zone.
+QA_CHECK PASS and no longer says 'tipped' Napalm Carpet | One shell sets the ground on fire for 10 seconds. Hostile mobs in it burn, and each one that can burn is set Ablaze until it dies. Careful: the fire is real and burns players who walk into it. | 5 every second to each hostile mob in it: 50 for one that stays the whole time. Ablaze: 4 every second until it dies (half for a raid boss), even in water or rain. | Flat ground 9.6 blocks across and 2 blocks high. No fire is lit within 4 blocks of your beacon zone.
+QA_DONE pass=58 fail=1

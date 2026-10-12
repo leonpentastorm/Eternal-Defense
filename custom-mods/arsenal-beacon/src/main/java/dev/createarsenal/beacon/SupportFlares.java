@@ -69,11 +69,8 @@ final class SupportFlares {
         }
         return n;
     }
-    /** Pure: the tipped-arrow potion an Arrow Cluster arrow carries: harmful to its target (an undead mob is hurt by healing, not by harming or poison). {@code roll} is any non-negative number. */
-    static String arrowPotion(boolean undead,boolean aimed,int roll){
-        var pick=!aimed?List.of("slowness","weakness"):undead?List.of("healing","slowness","weakness"):List.of("harming","poison","slowness","weakness");
-        return pick.get(Math.floorMod(roll,pick.size()));
-    }
+    /** A Spotter Arrows arrow vanishes this long after it lands: it is only for show (0.0.36). */
+    static final int SHOW_ARROW_TICKS=40;
 
     static final class FlareItem extends Item {
         final SupportCalls.Kind kind;
@@ -332,7 +329,7 @@ final class SupportFlares {
         }
         /**
          * The cannon has fired: the round is seen falling from high over the flare and lands exactly when it resolves. Nothing flies from the
-         * cannon to the target. Lightning needs no round; a starshell, a cluster shell and an arrow cluster burst in the air above the flare.
+         * cannon to the target. Lightning needs no round; a starshell, a cluster shell and a Spotter Arrows volley burst in the air above the flare.
          */
         private void launch(ServerLevel server,int flight){
             var type=type();Vec3 c=position();double r=radius(),h=Ordnance.DROP_HEIGHT;
@@ -356,19 +353,24 @@ final class SupportFlares {
                 case ARROW->{
                     level.sendParticles(ParticleTypes.FIREWORK,c.x,c.y+r*2,c.z,30,r*.5,.4,r*.5,.05);
                     level.playSound(null,c.x,c.y+r,c.z,SoundEvents.FIREWORK_ROCKET_BLAST,SoundSource.BLOCKS,3f,.8f);
-                    // a shower of tipped arrows: three come down on every hostile mob in the box (a potion that harms that mob), the rest fall at random
-                    record Spot(double x,double z,LivingEntity target){}
+                    // Spotter Arrows (0.0.36): every hostile mob in the box takes one small arrow hit (no knockback) and is marked until it dies
+                    var source=new net.minecraft.world.damagesource.DamageSource(level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE).getHolderOrThrow(net.minecraft.world.damagesource.DamageTypes.ARROW),this,getOwner());
+                    float hit=CannonUpgrades.spotterHit(cfg.damage());
+                    var spotted=enemies(level,box);
+                    for(LivingEntity e:spotted){FireMarks.spot(e,source,hit);if(e.isAlive())FireMarks.mark(e,this);}
+                    // the arrows that fall are only for show: three over each of the first ten mobs, the rest at random; they hit nothing
+                    record Spot(double x,double z){}
                     var spots=new ArrayList<Spot>();int count=0;
-                    for(LivingEntity e:enemies(level,box)){if(count++>=10)break;for(int k=0;k<3;k++)spots.add(new Spot(e.getX()+(random.nextDouble()-.5)*.5,e.getZ()+(random.nextDouble()-.5)*.5,e));}
+                    for(LivingEntity e:spotted){if(count++>=10)break;for(int k=0;k<3;k++)spots.add(new Spot(e.getX()+(random.nextDouble()-.5)*.5,e.getZ()+(random.nextDouble()-.5)*.5));}
                     int extra=8+(int)Math.round((r-SupportRules.BLAST_RADIUS)*2);
-                    for(int k=0;k<extra;k++)spots.add(new Spot(c.x+(random.nextDouble()*2-1)*r,c.z+(random.nextDouble()*2-1)*r,null));
+                    for(int k=0;k<extra;k++)spots.add(new Spot(c.x+(random.nextDouble()*2-1)*r,c.z+(random.nextDouble()*2-1)*r));
                     for(var at:spots){
                         double y=c.y+r*2+random.nextDouble()*2;
-                        var arrow=new Arrow(level,at.x(),y,at.z()){@Override protected boolean canHitEntity(net.minecraft.world.entity.Entity e){return e instanceof Enemy&&super.canHitEntity(e);}};
-                        arrow.setOwner(getOwner());arrow.getPersistentData().putBoolean("arsenalDefensiveWeapon",true);arrow.pickup=AbstractArrow.Pickup.DISALLOWED;arrow.setBaseDamage(2.5*cfg.damage());
-                        boolean undead=at.target()!=null&&at.target().getMobType()==net.minecraft.world.entity.MobType.UNDEAD;
-                        var potion=net.minecraft.core.registries.BuiltInRegistries.POTION.get(new net.minecraft.resources.ResourceLocation(arrowPotion(undead,at.target()!=null,random.nextInt(12))));
-                        arrow.setEffectsFromItem(net.minecraft.world.item.alchemy.PotionUtils.setPotion(new ItemStack(Items.TIPPED_ARROW),potion));
+                        var arrow=new Arrow(level,at.x(),y,at.z()){
+                            @Override protected boolean canHitEntity(net.minecraft.world.entity.Entity e){return false;}
+                            @Override public void tick(){super.tick();if(inGroundTime>SHOW_ARROW_TICKS)discard();}
+                        };
+                        arrow.getPersistentData().putBoolean("arsenalDefensiveWeapon",true);arrow.pickup=AbstractArrow.Pickup.DISALLOWED;arrow.setBaseDamage(0);
                         arrow.setDeltaMovement((random.nextDouble()-.5)*.05,-1.8,(random.nextDouble()-.5)*.05);level.addFreshEntity(arrow);
                     }
                 }
@@ -396,12 +398,9 @@ final class SupportFlares {
                 case CURSE->{
                     level.sendParticles(ParticleTypes.SOUL,c.x,c.y+.6,c.z,50,r*.4,.6,r*.4,.04);level.sendParticles(ParticleTypes.SQUID_INK,c.x,c.y+.6,c.z,40,r*.4,.6,r*.4,.05);
                     level.sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.5,c.z,1,0,0,0,0);level.playSound(null,c.x,c.y,c.z,SoundEvents.WITHER_SPAWN,SoundSource.BLOCKS,.9f,1.6f);
-                    float k=cfg.damage();
-                    for(LivingEntity e:enemies(level,box)){
-                        e.addEffect(new MobEffectInstance(MobEffects.WITHER,(int)(160*k),1));e.addEffect(new MobEffectInstance(MobEffects.POISON,(int)(200*k),1));
-                        e.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,(int)(300*k),1));e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,(int)(200*k),2));
-                        e.addEffect(new MobEffectInstance(MobEffects.BLINDNESS,(int)(200*k),0));e.addEffect(new MobEffectInstance(MobEffects.GLOWING,(int)(300*k),0));
-                    }
+                    // 0.0.36: every mob one shell touches keeps its curses until it dies (the Damage upgrade does not change them); no Glowing
+                    for(LivingEntity e:enemies(level,box))for(var curse:CannonUpgrades.CURSES)
+                        e.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.get(new net.minecraft.resources.ResourceLocation(curse.effect())),MobEffectInstance.INFINITE_DURATION,curse.amplifier()),this);
                 }
                 case CLUSTER->{
                     // the shell bursts over the flare; from now on bomblets rain on the whole box (see clusterTick)
@@ -489,12 +488,13 @@ final class SupportFlares {
                 for(LivingEntity e:enemies(l,box()))e.hurt(l.damageSources().explosion(this,getOwner()),hurt);
             }
         }
-        /** Napalm Carpet: the ground keeps burning; once a second every hostile mob in the box is hurt and set alight, and burnt-out fire is lit again. */
+        /** Napalm Carpet: the ground keeps burning; once a second every hostile mob in the box is hurt and set alight (and Ablaze), and burnt-out fire is lit again. */
         private void napalmTick(ServerLevel l,int age){
             Vec3 c=position();double r=radius();
             if(age%4==0){l.sendParticles(ParticleTypes.FLAME,c.x,c.y+.2,c.z,14,r*.5,.1,r*.5,.02);l.sendParticles(ParticleTypes.SMOKE,c.x,c.y+.6,c.z,6,r*.4,.3,r*.4,.02);}
             if(age%20==0){
-                for(LivingEntity e:enemies(l,box())){RaidAdaptation.weaponDamage(e,l.damageSources().inFire(),CannonUpgrades.napalm(cfg.damage()));RaidAdaptation.weaponFire(e,CannonUpgrades.NAPALM_BURN_SECONDS*20);e.setSecondsOnFire(CannonUpgrades.NAPALM_BURN_SECONDS);}
+                // 0.0.36: a mob that can burn and stands in the burning carpet is set Ablaze until it dies (see FireMarks)
+                for(LivingEntity e:enemies(l,box())){RaidAdaptation.weaponDamage(e,l.damageSources().inFire(),CannonUpgrades.napalm(cfg.damage()));RaidAdaptation.weaponFire(e,CannonUpgrades.NAPALM_BURN_SECONDS*20);e.setSecondsOnFire(CannonUpgrades.NAPALM_BURN_SECONDS);if(e.isAlive())FireMarks.ignite(e,FireMarks.ablazeFor(cfg.damage()));}
                 if(age>0)placeGround(l,Blocks.FIRE.defaultBlockState(),true);   // burnt-out fire is lit again
             }
         }

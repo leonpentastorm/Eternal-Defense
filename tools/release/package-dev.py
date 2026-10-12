@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.35, branch feature/drink-station: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.36, branch feature/drink-station: the fire support rework, Ablaze, Spotter Arrows, the curse until death; 0.0.35: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,16 +25,16 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0036-TESTING.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # seven screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
-BUNDLED_SHOTS={'standalone-d05_ready.png','standalone-d10_latte.png','standalone-d15_mk4_three.png','standalone-d16_taps.png','standalone-d17_pots.png','standalone-d03_storage_tooltip.png','pack-d12_pot_tab_640x360.png'}
+BUNDLED_SHOTS={'standalone-f02_ablaze_after_carpet.png','standalone-f03_ablaze_in_water.png','standalone-f05_ablaze_by_the_wall.png','standalone-f06_spotter_marked.png','standalone-f07_curse.png','standalone-f10_menu_spotter.png','pack-f12_menu_napalm.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0036','round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34): 0.0.35 adds the Drink Station screen's state,
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34; 0.0.36 changes no packet): 0.0.35 adds the Drink Station screen's state,
 so an older client cannot join this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
@@ -52,7 +52,25 @@ This ZIP is an update/test bundle, not a complete modpack.
 
 THIS BUILD IS FROM THE FEATURE BRANCH feature/drink-station (0.0.34 is on dev).
 
-WHAT IS NEW IN 0.0.35: DEARER MEALS, THREE NEW MEAL EFFECTS, THE DRINK STATION
+WHAT IS NEW IN 0.0.36: THE FIRE SUPPORT REWORK
+* Napalm Carpet: the burning ground is as before, and every hostile mob that can burn and stands in it is set Ablaze until it
+  dies: 4 damage a second (more with the Damage upgrade, half for a raid boss), even in water or rain. Blazes, fire-proof mobs and
+  mobs with Fire Resistance are not affected. A raid never learns it as a fire trap.
+* Spotter Arrows (the Arrow Cluster Bomb's place): each volley hits every hostile mob in the box once for 4, without knockback,
+  however many there are, and marks it until it dies: it glows and takes 30% more from all damage, guns included (a raid boss 15%).
+  The falling arrows are only for show.
+* Curse of Debilitation: Wither II, Poison II, Weakness II, Slowness III and Blindness until the mob dies; no more Glowing; the
+  Damage upgrade no longer changes it.
+
+PLAYTEST SCRIPT FOR 0.0.36 (about 10 minutes)
+1. Choose Napalm Carpet at your cannon and call it on zombies near water: they burn after the carpet, in the water and in rain,
+   until they die. Call it on blazes: nothing sticks. Stand a burning zombie against a wooden wall: nothing catches fire.
+2. Choose Spotter Arrows and call it on a crowd: every mob glows after the first volley; shoot one with a gun and compare the
+   damage with an unmarked one. Watch that none of them is knocked back.
+3. Choose the Curse of Debilitation: the curses stay on until the mobs die; they no longer glow.
+4. During a raid use all three: the chat never says the raiders learned fire, projectiles or magic from them.
+
+WHAT WAS NEW IN 0.0.35: DEARER MEALS, THREE NEW MEAL EFFECTS, THE DRINK STATION
 * Meals cost more: a stew batch takes three times the food (12/21/30/36 at Mk I-IV; a pot still holds 3/5/7/9 servings); a
   sandwich takes 2 of each filling and 2 bread. Effects, meal length and doubling are unchanged.
 * Three meal effects replaced (same buttons, same foods): Hardy (hungry 15% slower) for Mobility, Blast Ward (20% less explosion

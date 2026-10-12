@@ -52,7 +52,7 @@ final class SupportTest {
     @Test void everyFireTypeHasItsOwnShellCount(){
         var u=CannonUpgrades.class;
         assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.EXPLOSION,0));
-        assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"arrow cluster: six volleys since 0.0.18 (tipped arrows)");
+        assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"Spotter Arrows (the Arrow Cluster until 0.0.36): six volleys since 0.0.18");
         assertEquals(5,CannonUpgrades.volleys(CannonUpgrades.FireType.NARUKAMI,0),"narukami: 1 fewer");
         assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.BUNKER,0));
         assertEquals(1,CannonUpgrades.volleys(CannonUpgrades.FireType.BUNKER,3),"the bunker buster ignores volley upgrades");

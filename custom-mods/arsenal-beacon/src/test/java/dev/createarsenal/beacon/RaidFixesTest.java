@@ -66,7 +66,7 @@ final class RaidFixesTest {
         var e2=CannonUpgrades.facts(CannonUpgrades.Config.of(up,CannonUpgrades.FireType.EXPLOSION));
         assertEquals(37.5,e2.damage(),1e-9);assertEquals(11,e2.width(),1e-9);assertEquals(8,e2.rounds());
         assertEquals("25",CannonUpgrades.number(25));assertEquals("37.5",CannonUpgrades.number(37.5));assertEquals("4.8",CannonUpgrades.number(4.8000001));assertEquals("2",CannonUpgrades.number(1.99999));
-        assertEquals(8,CannonUpgrades.factArgs(e).length);
+        assertEquals(9,CannonUpgrades.factArgs(e).length,"0.0.36: a ninth, the Ablaze burn a second");
     }
     @Test void everyFireSupportHasAnEffectDamageAndAreaLine() throws Exception{
         var lang=lang();
@@ -74,7 +74,7 @@ final class RaidFixesTest {
             String key="gui.arsenal_beacon.cannon.type."+t.id+"."+part;
             assertTrue(lang.containsKey(key),key);
             var m=java.util.regex.Pattern.compile("%(\\d)\\$s").matcher(lang.get(key));
-            while(m.find())assertTrue(Integer.parseInt(m.group(1))<=8,key+" uses an argument the card does not pass");
+            while(m.find())assertTrue(Integer.parseInt(m.group(1))<=9,key+" uses an argument the card does not pass");
             assertFalse(lang.get(key).matches(".*(?<!%)%(?![0-9%]).*"),key+": a percent sign must be written %%");
             assertFalse(lang.containsKey("gui.arsenal_beacon.cannon.type."+t.id+".desc"),"the old one-line description is gone");
         }

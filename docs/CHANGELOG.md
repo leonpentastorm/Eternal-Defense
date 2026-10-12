@@ -1,5 +1,14 @@
 # Change log
 
+## 0.0.36 — Fire support rework: Ablaze, Spotter Arrows, a curse until death (2026-10-12, branch `feature/drink-station`)
+
+On `feature/drink-station`, after 0.0.35. No packet changed: **network protocol 40** as in 0.0.35. Rules: GDD 0.0.36; tests: `docs/ROUND-0036-TESTING.md`. The three types keep their ids and places in the list, so saved choices stay.
+
+* **Napalm Carpet: Ablaze** (owner): the burning ground and its damage are as before, and every hostile mob that can burn and stands in it is now set Ablaze until it dies: 4 damage a second (more with the Damage upgrade, half for a raid boss), even in water or rain. Blazes and other fire-proof mobs, and mobs with Fire Resistance, are not affected. A raid never learns it as a fire trap.
+* **Spotter Arrows** replace the Arrow Cluster Bomb (owner): each volley hits every hostile mob in the box once for 4 (no knockback, no limit on how many) and marks it until it dies: it glows and takes 30% more from every kind of damage, guns included (a raid boss 15%). The falling arrows are only for show.
+* **Curse of Debilitation** (owner): its curses (Wither II, Poison II, Weakness II, Slowness III, Blindness) now last until the mob dies; it no longer makes mobs glow, and the Damage upgrade no longer changes it.
+* The cannon menu, the call announcement and the Field Guide's fire support page say what the three do now.
+
 ## 0.0.35 — Dearer meals, three new meal effects, the Drink Station (2026-10-12, branch `feature/drink-station`)
 
 On `feature/drink-station` (from `dev`, which now holds 0.0.34). **Network protocol 40** (a new packet: the Drink Station screen's view). Rules: GDD 0.0.35; tests: `docs/ROUND-0035-TESTING.md`. The owner asked for "0.0.34"; that number already belongs to the Supply Catapult round, so this round is 0.0.35.
