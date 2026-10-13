@@ -31,8 +31,6 @@ final class Ui {
     // ---- text ---------------------------------------------------------------------------------
     /** Translatable text in this mod's {@code gui.arsenal_beacon} namespace. */
     static Component t(String key,Object... args){return Component.translatable("gui.arsenal_beacon."+key,args);}
-    /** Text that differs between the full pack and the standalone release. */
-    static Component edition(String key,Object... args){return t(key+(BuildFlavor.STANDALONE?".standalone":".pack"),args);}
     static boolean has(String key){return I18n.exists("gui.arsenal_beacon."+key);}
     static String plain(String key,Object... args){return t(key,args).getString();}
 

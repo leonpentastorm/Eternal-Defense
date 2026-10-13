@@ -9,21 +9,20 @@ final class CannonUpgrades {
     private CannonUpgrades(){}
 
     enum Upgrade {
-        TRAVERSE("traverse",3,6,10),     // faster turret
-        RATE("rate",4,8,12),             // faster fire rate
-        VOLLEY("volley",5,10,16),        // more shells per call
-        DAMAGE("damage",5,10,16),
-        QUANTUM("quantum",14),              // fire support works below ground
-        SLOW("slow",8),                    // slowness field over the whole area
-        PORTAL("portal",6),                // 5 minute portal that can be used twice
-        AURA("aura",6),                    // healing aura round a supply flare
-        AOE("aoe",5,9,14),              // wider area of effect for every fire support
-        DIMENSION("dimension",18);          // fire support can be called in the other dimensions
-        final String id;final int[] prices;
-        Upgrade(String id,int... prices){this.id=id;this.prices=prices;}
-        int max(){return prices.length;}
-        /** Ardent Energy for the next level in the standalone edition (the pack pays in factory parts, see {@link Economy}), or -1 when maxed. */
-        int price(int level){return level<0||level>=prices.length?-1:prices[level];}
+        TRAVERSE("traverse",3),          // faster turret
+        RATE("rate",3),                  // faster fire rate
+        VOLLEY("volley",3),              // more shells per call
+        DAMAGE("damage",3),
+        QUANTUM("quantum",1),            // fire support works below ground
+        SLOW("slow",1),                  // slowness field over the whole area
+        PORTAL("portal",1),              // 5 minute portal that can be used twice
+        AURA("aura",1),                  // healing aura round a supply flare
+        AOE("aoe",3),                    // wider area of effect for every fire support
+        DIMENSION("dimension",1);        // fire support can be called in the other dimensions
+        /** The levels each upgrade has; what each level costs (factory parts) is in {@link Economy#PACK_AMOUNTS}. 0.0.41: the standalone edition's Ardent Energy prices that stood here are gone. */
+        final String id;final int levels;
+        Upgrade(String id,int levels){this.id=id;this.levels=levels;}
+        int max(){return levels;}
     }
 
     /** The types are saved and sent by their position in this list: new ones are only ever added at the end. */

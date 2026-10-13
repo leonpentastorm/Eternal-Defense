@@ -10,7 +10,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 
 /**
- * 0.0.40, pack edition only (this source set is compiled against Create and never goes into the standalone jar): Create's mechanical arm
+ * 0.0.40 (this source set is compiled against Create): Create's mechanical arm
  * only works with blocks that have a registered interaction point type, and has none for plain inventories. This one lets an arm put items
  * into, and take them out of, any of the Logistics Center Hub's 27 blocks, through the same item handler hoppers and funnels use. It also
  * swaps in the Hub part Create's belts can deliver to ({@link CreateHubPart}). Registered from {@link ArsenalBeacon} by name, only when

@@ -4,6 +4,6 @@ tasks.named('build') {
 }
 tasks.register('releaseJars') {
     group = 'build'
-    description = 'Build all pack and standalone release JARs.'
-    dependsOn 'build', ':arsenal-beacon:standaloneJar', ':arsenal-gun-guide:standaloneJar', ':arsenal-displays:standaloneJar'
+    description = 'Build the release JARs (0.0.41: the pack edition only; the standalone edition is discontinued).'
+    dependsOn 'build'
 }

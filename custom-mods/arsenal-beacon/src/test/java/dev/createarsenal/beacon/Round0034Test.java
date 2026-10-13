@@ -58,7 +58,7 @@ final class Round0034Test {
     // ---- the live view in the seller -------------------------------------------------------------------------------------------------------------------
     @Test void theSellerShowsTheCatapultLive() throws Exception{
         String net=SosTest.source("BeaconNetwork.java");
-        assertTrue(net.contains("\"40-standalone\":\"40-pack\""),"protocol 40 since 0.0.35");
+        assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41");
         assertTrue(net.contains("registerMessage(23,SupplyCatapult.View.class"),"the live view packet");
         String table=SosTest.source("TacticalClient.java");
         assertTrue(table.contains("CatapultView.draw(g,f.getLong(\"id\")"),"drawn in the seller");

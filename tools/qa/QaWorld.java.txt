@@ -351,30 +351,30 @@ public final class QaWorld {
                 try{var f=ExchangeScreen.class.getDeclaredField("sell");f.setAccessible(true);f.setBoolean(mc().screen,true);mc().screen.resize(mc(),mc().screen.width,mc().screen.height);}catch(Throwable t){com.mojang.logging.LogUtils.getLogger().info("QA_NOTE {}",t.toString());}
             },"screen");
             step(15,()->shot("r5_exchange_sell"),"sell tab shot");
-            step(3,()->{if(!BuildFlavor.STANDALONE)srv(()->inv().setItem(2,stack(ArsenalBeacon.PLATING.get(),4)));int before=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),0,true));r4Shots=before;},"sell the first listed item");
-            step(20,()->{if(BuildFlavor.STANDALONE)check("selling a diamond paid 2 Ardent Energy and took the diamond",energy()==r4Shots+2&&count(sp(),"minecraft:diamond")==2,"energy="+energy()+" diamonds="+count(sp(),"minecraft:diamond"));
+            step(3,()->{if(!false)srv(()->inv().setItem(2,stack(ArsenalBeacon.PLATING.get(),4)));int before=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),0,true));r4Shots=before;},"sell the first listed item");
+            step(20,()->{if(false)check("selling a diamond paid 2 Ardent Energy and took the diamond",energy()==r4Shots+2&&count(sp(),"minecraft:diamond")==2,"energy="+energy()+" diamonds="+count(sp(),"minecraft:diamond"));
                 else check("selling 2 reinforced plating paid 1 Ardent Energy",energy()==r4Shots+1&&count(sp(),"arsenal_beacon:reinforced_plating")==2,"energy="+energy()+" plating="+count(sp(),"arsenal_beacon:reinforced_plating"));},"sold");
             step(3,()->{energy(5);},"5 energy");
-            step(10,()->{r4Shots=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),BuildFlavor.STANDALONE?0:1,false));},"buy");
+            step(10,()->{r4Shots=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),false?0:1,false));},"buy");
             step(20,()->{check("buying spent Ardent Energy and gave the goods",energy()<r4Shots,"energy "+r4Shots+" -> "+energy()+" plating="+count(sp(),"arsenal_beacon:reinforced_plating")+" coins="+count(sp(),"arsenal_beacon:universal_ammo_coin"));
-                if(!BuildFlavor.STANDALONE)check("a plating costs 2 energy to buy but pays 0.5 to sell",energy()==r4Shots-2,"energy="+energy());mc().setScreen(null);},"bought");
+                if(!false)check("a plating costs 2 energy to buy but pays 0.5 to sell",energy()==r4Shots-2,"energy="+energy());mc().setScreen(null);},"bought");
         }
         if(part5("upgrade")){
-            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.defense=0;d.health=1;inv().clearContent();sp().teleportTo(sl(),sx+.5,sy,sz-8+.5,0,0);}),"beacon upgrade and repair, "+(BuildFlavor.STANDALONE?"standalone":"pack"));
-            step(5,()->{if(BuildFlavor.STANDALONE)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),7)));},"one short");
+            step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.defense=0;d.health=1;inv().clearContent();sp().teleportTo(sl(),sx+.5,sy,sz-8+.5,0,0);}),"beacon upgrade and repair, "+(false?"standalone":"pack"));
+            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),7)));},"one short");
             step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"defense")),"try");
-            step(10,()->{check("a beacon upgrade is refused when one short ("+(BuildFlavor.STANDALONE?"4 Ardent Energy":"8 resonance coils")+")",CampaignData.get(sl()).defense==0,"def="+CampaignData.get(sl()).defense);
-                if(BuildFlavor.STANDALONE)energy(4);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),8)));},"short");
+            step(10,()->{check("a beacon upgrade is refused when one short ("+(false?"4 Ardent Energy":"8 resonance coils")+")",CampaignData.get(sl()).defense==0,"def="+CampaignData.get(sl()).defense);
+                if(false)energy(4);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),8)));},"short");
             step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"defense")),"buy");
-            step(10,()->{if(BuildFlavor.STANDALONE)check("the first standalone beacon upgrade costs 4 Ardent Energy",CampaignData.get(sl()).defense==1&&energy()==0,"def="+CampaignData.get(sl()).defense+" energy="+energy());
+            step(10,()->{if(false)check("the first standalone beacon upgrade costs 4 Ardent Energy",CampaignData.get(sl()).defense==1&&energy()==0,"def="+CampaignData.get(sl()).defense+" energy="+energy());
                 else check("the first pack beacon upgrade costs 8 resonance coils (no Ardent Energy)",CampaignData.get(sl()).defense==1&&count(sp(),"arsenal_beacon:resonance_coil")==0&&energy()==0,"def="+CampaignData.get(sl()).defense);},"bought");
-            step(3,()->{if(BuildFlavor.STANDALONE)energy(6);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),8)));},"repair materials");
+            step(3,()->{if(false)energy(6);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),8)));},"repair materials");
             step(3,()->srv(()->ArsenalBeacon.repair(sp())),"repair");
-            step(10,()->{check("repair costs "+(BuildFlavor.STANDALONE?"6 Ardent Energy":"8 plating"),CampaignData.get(sl()).health>1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"hp="+CampaignData.get(sl()).health);},"repaired");
+            step(10,()->{check("repair costs "+(false?"6 Ardent Energy":"8 plating"),CampaignData.get(sl()).health>1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"hp="+CampaignData.get(sl()).health);},"repaired");
             step(5,()->{near();energy(0);},"cannon upgrade prices");
-            step(5,()->{if(BuildFlavor.STANDALONE)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),6)));},"exactly the first traverse level");
+            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),6)));},"exactly the first traverse level");
             step(5,()->act(CannonControl.UPGRADE,0),"buy traverse 1");
-            step(15,()->{check("the first traverse level costs "+(BuildFlavor.STANDALONE?"3 Ardent Energy":"6 reinforced plating, never Ardent Energy"),base().up[0]==1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"lv="+base().up[0]);mc().setScreen(null);},"traverse");
+            step(15,()->{check("the first traverse level costs "+(false?"3 Ardent Energy":"6 reinforced plating, never Ardent Energy"),base().up[0]==1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"lv="+base().up[0]);mc().setScreen(null);},"traverse");
         }
         if(part5("hard")){
             step(3,()->{near();},"near");step(8,()->act(CannonControl.SELECT,3),"select bunker");
@@ -917,7 +917,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(20,()->{shot("r7_music_muted");mc().options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(1.0);},"muted");
             // the real end of a raid: the last wave is cleared on the server, which announces VICTORY (standalone only: the pack's
             // completion cache needs Create items, which the development runtime does not have)
-            if(BuildFlavor.STANDALONE){
+            if(false){
             step(2,()->srv(()->{var d=CampaignData.get(sl());d.raidType="normal";d.hardRaid=false;d.wave=Rules.waves(d.raidTier);d.spawnRemaining=0;d.raiders.clear();d.setDirty();}),"clear the last wave");
             until("victory",400,()->!srvGet(()->CampaignData.get(sl()).phase.equals("raid"))&&RaidMusic.nowPlaying()==null,()->{});
             step(10,()->{check("after VICTORY the raid song stops and the fanfare holds the music",RaidMusic.nowPlaying()==null&&RaidMusic.holdsMusic(),playing()+" holds="+RaidMusic.holdsMusic());shot("r7_music_victory");},"victory");
@@ -1087,12 +1087,12 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(part8("beacon")){
             step(5,()->{srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.vertical=0;d.defense=0;d.reconnaissance=0;d.setDirty();sp().teleportTo(sl(),sx+.5,sy,sz-6+.5,180,0);sp().setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
-                inv().clearContent();for(var id:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix"))inv().add(stack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,id)),64));});if(BuildFlavor.STANDALONE)energy(200);},"parts for the upgrades");
+                inv().clearContent();for(var id:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix"))inv().add(stack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,id)),64));});if(false)energy(200);},"parts for the upgrades");
             step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"vertical")),"buy vertical");
-            step(5,()->{boolean pack=!BuildFlavor.STANDALONE;int p=count(sp(),"arsenal_beacon:reinforced_plating"),l=count(sp(),"arsenal_beacon:logistics_module"),c=count(sp(),"arsenal_beacon:resonance_coil"),m=count(sp(),"arsenal_beacon:restoration_matrix");
+            step(5,()->{boolean pack=!false;int p=count(sp(),"arsenal_beacon:reinforced_plating"),l=count(sp(),"arsenal_beacon:logistics_module"),c=count(sp(),"arsenal_beacon:resonance_coil"),m=count(sp(),"arsenal_beacon:restoration_matrix");
                 if(pack)check("beacon: the Vertical zone took 2 of each of the four parts",p==62&&l==62&&c==62&&m==62&&srvGet(()->CampaignData.get(sl()).vertical)==1,p+"/"+l+"/"+c+"/"+m);
                 srv(()->ArsenalBeacon.upgrade(sp(),"defense"));},"buy defense");
-            step(5,()->{if(!BuildFlavor.STANDALONE)check("beacon: Defense took 8 reinforced plating and no coil",count(sp(),"arsenal_beacon:reinforced_plating")==54&&count(sp(),"arsenal_beacon:resonance_coil")==62,"plating="+count(sp(),"arsenal_beacon:reinforced_plating"));
+            step(5,()->{if(!false)check("beacon: Defense took 8 reinforced plating and no coil",count(sp(),"arsenal_beacon:reinforced_plating")==54&&count(sp(),"arsenal_beacon:resonance_coil")==62,"plating="+count(sp(),"arsenal_beacon:reinforced_plating"));
                 srv(()->{for(int i=0;i<4;i++)ArsenalBeacon.upgrade(sp(),"reconnaissance");});},"buy reconnaissance 4 times");
             step(5,()->{int r=srvGet(()->CampaignData.get(sl()).reconnaissance);check("beacon: Reconnaissance stops at level 3 (attackers glow at once)",r==3&&Rules.revealTicks(r)==0,"level "+r);
                 srv(()->{var d=CampaignData.get(sl());d.reconnaissance=1;d.setDirty();BeaconNetwork.syncNearby(sl(),d);});},"recon back to 1 for the picture");
@@ -1189,7 +1189,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
                     check("music: special raid wave "+wave+" plays its planned song",s!=null&&s.equals(want),(s==null?"none":s.id())+" planned "+(want==null?"none":want.id()));},"special wave "+wave+" song");
             }
             step(1,()->{check("music: a special raid opens with Anomaly Protocol and never repeats",songs9.size()==4&&songs9.get(0).equals("anomaly_protocol")&&new java.util.HashSet<>(songs9).size()==4,String.join(",",songs9));},"special songs");
-            if(BuildFlavor.STANDALONE){
+            if(false){
                 step(2,()->{heard0=HEARD.size();srv(()->{var d=CampaignData.get(sl());d.raidType="normal";d.hardRaid=false;d.raidTier=0;d.wave=Rules.waves(0);d.spawnRemaining=0;d.raiders.clear();d.setDirty();});},"clear the last wave");
                 until("victory",400,()->!srvGet(()->CampaignData.get(sl()).phase.equals("raid"))&&RaidMusic.nowPlaying()==null,()->{});
                 step(10,()->{check("victory: the owner's fanfare plays",!heardSince(heard0,"music.victory").isEmpty(),"");check("victory: the raid song stopped and the fanfare holds the music",RaidMusic.nowPlaying()==null&&RaidMusic.holdsMusic(),"");com.mojang.logging.LogUtils.getLogger().info("QA_NOTE victory fanfare");},"victory");

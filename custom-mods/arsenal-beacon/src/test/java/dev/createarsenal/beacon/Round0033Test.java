@@ -22,12 +22,9 @@ final class Round0033Test {
         for(var spec:RouteRules.Specialty.values())for(var l:spec.options()){int n=CatapultRules.lotSize(l);assertTrue(n>=1,l.id());assertTrue(n*l.value()>=CatapultRules.LOT_VALUE*.66&&n*l.value()<=CatapultRules.LOT_VALUE*1.5,l.id()+" "+n);}
     }
     @Test void pricesLiveInEconomy(){
-        assertEquals(4,Economy.SELLER_LOT_STANDALONE);assertEquals(2,Economy.SELLER_LOT_PACK);
+        assertEquals(2,Economy.SELLER_LOT);
         assertEquals(CatapultRules.LOTS[1]*Economy.sellerLotPrice(),CatapultRules.price(CatapultRules.LOTS[1]));
         assertArrayEquals(new int[]{1,4},CatapultRules.LOTS);
-        // the standalone seller asks twice what the Exchange pays for a ghast tear
-        assertTrue(SosTest.source("ExchangeShop.java").contains("minecraft:ghast_tear = 2"));
-        assertEquals(2*2,Economy.SELLER_LOT_STANDALONE);
         String economy=SosTest.source("Economy.java");
         assertTrue(economy.contains("case \"supply_catapult\"->List.of(new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.LOGS),CATAPULT_LOGS)"),"the catapult's price");
         assertTrue(WorkshopFabrication.ITEMS.contains("supply_catapult"));

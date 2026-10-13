@@ -155,14 +155,14 @@ final class Round0038Test {
         assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,12}"));
         assertEquals(4,Economy.MRE_STATION_KEY);assertEquals(8,Economy.MRE_STATION_IRON);
         var price=body(source("Economy.java"),"case \"mre_maker\"->","\n");
-        assertTrue(price.contains("standalone()?\"arsenal_beacon:ardent_energy\":\"arsenal_beacon:reinforced_plating\"")&&price.contains("minecraft:smoker"),"the Mess Hall's style, plus a smoker");
+        assertTrue(price.contains("WeaponPlatform.cost(\"arsenal_beacon:reinforced_plating\",MRE_STATION_KEY)")&&price.contains("minecraft:smoker"),"the Mess Hall's style, plus a smoker");
         var reg=source("ArsenalBeacon.java");
         assertTrue(reg.contains("BLOCKS.register(\"mre_maker\",MreStation.StationBlock::new)")&&reg.contains("ITEMS.register(\"mre\",Mre::new)")&&reg.contains("ITEMS.register(\"marines_fuel\",Mre.MarinesFuel::new)"));
         assertTrue(source("MreStation.java").contains("StationBlock(){super(false);}"),"1 x 1 x 2 like the pots and dispensers (the upper cell a filler)");
         assertTrue(source("CreativeCatalog.java").contains("id.equals(\"mre\")"),"an MRE with no totals is not in the creative tab");
     }
     @Test void marinesFuelIsTwoFromAClayBallAndAnyDye() throws Exception{
-        for(var dir:List.of(RES+"data/arsenal_beacon/recipes/","src/standalone/resources/data/arsenal_beacon/recipes/")){
+        for(var dir:List.of(RES+"data/arsenal_beacon/recipes/")){
             var r=com.google.gson.JsonParser.parseString(Files.readString(Path.of(dir+"marines_fuel.json"))).getAsJsonObject();
             assertEquals("minecraft:crafting_shapeless",r.get("type").getAsString());
             assertEquals("[{\"item\":\"minecraft:clay_ball\"},{\"tag\":\"forge:dyes\"}]",r.get("ingredients").toString());
@@ -181,7 +181,9 @@ final class Round0038Test {
     }
     @Test void theArmorPlatformNeverSellsTheMre() throws Exception{
         var allowed=body(source("ArmorPlatform.java"),"static boolean allowed(Item item){","\n    }");
-        assertTrue(allowed.contains("!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals(ArsenalBeacon.ID)"),"its id contains \"mre\", which the standalone gear list matches");
+        // only the listed gear mods' items are sold, and this mod is not one of them (the MRE's id contains "mre", which the gear words match)
+        assertTrue(allowed.contains("{\n        if(!MODS.contains(BuiltInRegistries.ITEM.getKey(item).getNamespace())"),"the first check: a listed gear mod");
+        assertFalse(ArmorPlatform.MODS.contains(ArsenalBeacon.ID));
     }
 
     // ---- what the player reads ---------------------------------------------------------------------------------------------------------
@@ -197,8 +199,7 @@ final class Round0038Test {
         assertTrue(guide.contains("Craft 2 from a clay ball and any dye"),"the recipe");
         assertTrue(guide.contains("stack to "+MreRules.STACK)&&guide.contains("only when you are hungry")&&guide.contains("Every effect is lost"));
         assertTrue(detail.contains(MreRules.EAT_TICKS+" ticks")&&detail.contains("at most "+(int)MreRules.MAX_SATURATION)&&detail.contains("nutrition x saturation modifier x 2"));
-        assertTrue(detail.contains("[pack] - MRE Station: "+Economy.MRE_STATION_KEY+" Reinforced Beacon Plating, "+Economy.MRE_STATION_IRON+" iron ingots and a smoker"));
-        assertTrue(detail.contains("[standalone] - MRE Station: "+Economy.MRE_STATION_KEY+" Ardent Energy, "+Economy.MRE_STATION_IRON+" iron ingots and a smoker"));
+        assertTrue(detail.contains("- MRE Station: "+Economy.MRE_STATION_KEY+" Reinforced Beacon Plating, "+Economy.MRE_STATION_IRON+" iron ingots and a smoker"));
         for(var k:List.of("no_food","not_food","over","no_nutrition","no_fuel","no_paper","output_other","output_full"))assertTrue(json.has("gui.arsenal_beacon.mre.problem."+k),k);
         var station=source("MreStation.java");
         for(var k:List.of("\"not_food\"","\"no_food\"","\"over\"","\"no_nutrition\"","\"no_fuel\"","\"no_paper\"","\"output_other\"","\"output_full\""))assertTrue(station.contains(k),k);

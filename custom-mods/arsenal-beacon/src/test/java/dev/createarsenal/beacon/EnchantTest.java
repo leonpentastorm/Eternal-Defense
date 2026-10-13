@@ -31,20 +31,19 @@ final class EnchantTest {
         assertArrayEquals(new int[]{0,2,3,4,5},new int[]{fobsFor(1,5),fobsFor(2,5),fobsFor(3,5),fobsFor(4,5),fobsFor(5,5)});
         for(int fobs=0;fobs<=5;fobs++)for(int max=1;max<=5;max++){int top=maxLevel(max,fobs);assertTrue(fobsFor(top,max)<=fobs&&(top==max||fobsFor(top+1,max)>fobs),"the highest level allowed, "+fobs+" FOBs, max "+max);}
     }
-    @Test void pricesFollowRarityAndLevelAndEdition(){
-        // 0.0.29 (owner): doubled in both editions
-        assertEquals(4,price(Rarity.COMMON,1,false,true));assertEquals(20,price(Rarity.COMMON,5,false,true),"Sharpness V, standalone");
-        assertEquals(18,price(Rarity.UNCOMMON,3,false,true),"Unbreaking III");
-        assertEquals(30,price(Rarity.RARE,3,false,true),"Fortune III");
-        assertEquals(16,price(Rarity.VERY_RARE,1,false,true),"Silk Touch");
-        assertEquals(20,price(Rarity.RARE,1,true,true),"Mending (treasure: twice)");
-        assertEquals(40,price(Rarity.COMMON,5,false,false),"Sharpness V, pack");
-        for(var r:Rarity.values())assertEquals(new int[]{2,3,5,8}[r.ordinal()],discounted(price(r,1,false,true),MAX_MK),"a table at Mk III charges the 0.0.27 standalone price");
+    @Test void pricesFollowRarityAndLevel(){
+        // 0.0.29 (owner): the base doubled; 0.0.28 (owner): you pay twice the base (Ardent Energy pays for little else)
+        assertEquals(8,price(Rarity.COMMON,1,false));assertEquals(40,price(Rarity.COMMON,5,false),"Sharpness V");
+        assertEquals(36,price(Rarity.UNCOMMON,3,false),"Unbreaking III");
+        assertEquals(60,price(Rarity.RARE,3,false),"Fortune III");
+        assertEquals(32,price(Rarity.VERY_RARE,1,false),"Silk Touch");
+        assertEquals(40,price(Rarity.RARE,1,true),"Mending (treasure: twice)");
+        for(var r:Rarity.values())assertEquals(new int[]{4,6,10,16}[r.ordinal()],discounted(price(r,1,false),MAX_MK),"a table at Mk III charges the 0.0.27 base price");
         for(var r:Rarity.values())for(int level=1;level<=5;level++)for(boolean t:new boolean[]{false,true}){
-            int sa=price(r,level,t,true),pk=price(r,level,t,false);
-            assertEquals(2*sa,pk,"0.0.28 (owner): the pack pays twice (its Ardent Energy pays for little else)");
-            assertEquals(sa,discounted(pk,MAX_MK),"a pack table at Mk III charges the standalone price");
-            assertTrue(level==1||price(r,level,t,true)>price(r,level-1,t,true),"a higher level costs more");
+            int p=price(r,level,t);
+            assertEquals(PACK_FACTOR*PER_LEVEL_BASE[r.ordinal()]*level*(t?TREASURE_FACTOR:1),p);
+            assertEquals(p/2,discounted(p,MAX_MK),"a table at Mk III halves it");
+            assertTrue(level==1||price(r,level,t)>price(r,level-1,t),"a higher level costs more");
         }
     }
     @Test void theTableMkIsAPermanentDiscount(){
@@ -56,9 +55,9 @@ final class EnchantTest {
             if(p>=2)assertTrue(discounted(p,mk)<p,"every Mk takes something off a price of 2 or more ("+p+" at Mk "+mk+")");
         }
         assertArrayEquals(new int[]{40,33,26,20},new int[]{discounted(40,0),discounted(40,1),discounted(40,2),discounted(40,3)},"the pack's Sharpness V by Mk");
-        assertEquals(40,price(Rarity.COMMON,5,false,false),"the pack's Sharpness V");
+        assertEquals(40,price(Rarity.COMMON,5,false),"Sharpness V");
         String economy=source("Economy.java");
-        assertTrue(economy.contains("ENCHANT_UPGRADE_COILS={8,16,32},ENCHANT_UPGRADE_ARDENT={6,12,24}"),"Mk I to III: resonance coils (pack) or Ardent Energy (standalone)");
+        assertTrue(economy.contains("ENCHANT_UPGRADE_COILS={8,16,32};"),"Mk I to III: resonance coils");
     }
     @Test void warlordSealsUnlockTreasure(){
         assertEquals(List.of("minecraft:mending","minecraft:frost_walker","minecraft:soul_speed","minecraft:swift_sneak"),TREASURE,"never a curse");
@@ -99,13 +98,11 @@ final class EnchantTest {
     }
     @Test void thePricesAndTheGuideAgree() throws Exception{
         String lang=Files.readString(Path.of(ASSETS+"lang/en_us.json")),economy=source("Economy.java");
-        assertTrue(economy.contains("ENCHANT_IRON=12,ENCHANT_OBSIDIAN=4,ENCHANT_BOOKS=3,ENCHANT_COILS=2,ENCHANT_ARDENT=8"));
+        assertTrue(economy.contains("ENCHANT_IRON=12,ENCHANT_OBSIDIAN=4,ENCHANT_BOOKS=3,ENCHANT_COILS=2;"));
         assertTrue(lang.contains("12 iron, 4 obsidian, 3 books and 2 resonance coils. Mk I, II and III: 8, 16 and 32 resonance coils."),"pack price in the guide");
-        assertTrue(lang.contains("12 iron, 4 obsidian, 3 books and 8 Ardent Energy. Mk I, II and III: 6, 12 and 24 Ardent Energy."),"standalone price in the guide");
-        assertTrue(lang.contains("4 for common enchants, 6 for uncommon, 10 for rare and 16 for very rare")&&Arrays.equals(PER_LEVEL_STANDALONE,new int[]{4,6,10,16}),"per level by rarity");
+        assertTrue(lang.contains("8 for common enchants, 12 for uncommon, 20 for rare and 32 for very rare")&&Arrays.equals(PER_LEVEL_BASE,new int[]{4,6,10,16})&&PACK_FACTOR==2,"per level by rarity");
         assertTrue(lang.contains("Sharpness II needs 2, III needs 3, IV needs 4 and V needs 5")&&fobsFor(2,5)==2&&fobsFor(3,5)==3&&fobsFor(4,5)==4&&fobsFor(5,5)==5,"the level gate's example");
         assertTrue(lang.contains("17, 33 and 50 percent off"),"the discounts");
-        assertTrue(lang.contains("[pack] - The pack edition pays twice that"),"the pack's factor");
     }
     private static String sha(Path p) throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));}
     static String source(String name){try{return Files.readString(Path.of(SRC+name));}catch(Exception e){return "";}}

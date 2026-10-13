@@ -50,7 +50,6 @@ final class FlareVoiceAndAmmoTest {
         String platform=source("WeaponPlatform.java");
         assertTrue(platform.contains("costs.add(cost(\"kubejs:cartridge_case\",AmmoInputs.casings(e.output.getCount(),ammo)));")&&platform.contains("costs.add(cost(\"kubejs:propellant\",AmmoInputs.propellant(e.output.getCount(),ammo)));"),"the Ammo Platform");
         assertTrue(platform.contains("costs.removeIf(c->is(c,\"kubejs:cartridge_case\")||is(c,\"kubejs:propellant\"));"),"0.0.26: whatever the recipe (or an older pack script) lists is replaced, so the platform always charges these amounts");
-        assertFalse(source("StandaloneBalance.java").contains("AmmoInputs"),"the standalone edition's ammo (vanilla materials) is not changed");
         assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getModifiers()),"KubeJS can only load a public class");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class).getModifiers()),m+" is public");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class,String.class).getModifiers()),m+"(batch, id) is public");
@@ -91,14 +90,13 @@ final class FlareVoiceAndAmmoTest {
 
     // ---- a hunt always pays something ---------------------------------------------------------------------------------------------------------
     @Test void aHuntPaysAtLeastOneArdentAndTwoCoins() throws Exception{
-        for(boolean standalone:new boolean[]{false,true})for(var kind:TacticalRules.Kind.values())for(int t=-2;t<=12;t++){
-            var pay=Economy.hunt(kind,t,standalone);
-            assertTrue(pay.ardent()>=1&&pay.coins()>=2,kind+" at tier "+t+(standalone?" standalone":" pack")+" pays "+pay);
+        for(var kind:TacticalRules.Kind.values())for(int t=-2;t<=12;t++){
+            var pay=Economy.hunt(kind,t);
+            assertTrue(pay.ardent()>=1&&pay.coins()>=2,kind+" at tier "+t+" pays "+pay);
         }
-        assertEquals(new Economy.HuntPay(2,4),Economy.hunt(TacticalRules.Kind.PATROL,0,false),"a pack Patrol at tier 0 paid 0 and 1 before 0.0.22, the minimum 1 and 2 since, twice that since 0.0.28");
-        assertEquals(new Economy.HuntPay(2,4),Economy.hunt(TacticalRules.Kind.PATROL,0,true),"the minimum, doubled for a Patrol (0.0.28)");
-        assertEquals(new Economy.HuntPay(1,2),Economy.hunt(TacticalRules.Kind.GARRISON,0,false),"other classes keep the plain minimum");
-        assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3,false),"above the minimum nothing changes");
+        assertEquals(new Economy.HuntPay(2,4),Economy.hunt(TacticalRules.Kind.PATROL,0),"a Patrol at tier 0 paid 0 and 1 before 0.0.22, the minimum 1 and 2 since, twice that since 0.0.28");
+        assertEquals(new Economy.HuntPay(1,2),Economy.hunt(TacticalRules.Kind.GARRISON,0),"other classes keep the plain minimum");
+        assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3),"above the minimum nothing changes");
         assertTrue(RaidFixesTest.lang().get("gui.arsenal_beacon.guide.tactical.detail").contains("Every mission pays at least "+Economy.HUNT_MIN_ARDENT+" Ardent Energy and "+Economy.HUNT_MIN_COINS+" ammo coins, a Patrol at least "+Economy.PATROL_PAY_FACTOR*Economy.HUNT_MIN_ARDENT+" and "+Economy.PATROL_PAY_FACTOR*Economy.HUNT_MIN_COINS+"."));
     }
 }

@@ -70,10 +70,6 @@ final class HandTunedRoundTest {
     @Test void defenseIsPaidInPlatingAndTheVerticalZoneInAllFourParts(){
         assertEquals("reinforced_plating",Economy.beaconPart("defense"));assertEquals("reinforced_plating",Economy.beaconPart("core"));
         assertEquals("resonance_coil",Economy.beaconPart("reconnaissance"));
-        if(Economy.standalone()){
-            assertEquals(List.of(new Economy.Part("ardent_energy",4)),Economy.beaconCost("vertical",0),"standalone pays Ardent Energy");
-            return;
-        }
         var vertical=Economy.beaconCost("vertical",0);
         assertEquals(4,vertical.size());
         for(var part:vertical)assertEquals(part.id().equals("restoration_matrix")?1:2,part.amount(),part.id()+": two of every part at first (one matrix since 0.0.28: matrix prices are halved)");

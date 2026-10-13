@@ -48,9 +48,8 @@ final class ExchangeShop {
         # Changes apply the next time a player opens the shop. Delete this file to get the defaults back.
         """;
     /**
-     * Pack edition: sell the surplus of a factory, buy parts at a premium when farming instead; since 0.0.21 also the standalone edition's
-     * rare vanilla materials (gold, blaze rods, ender pearls, diamonds) and its iron at the same prices, plus iron in bulk (16 blocks, a little
-     * cheaper per ingot than nine lots of 16 ingots).
+     * The default: sell the surplus of a factory, buy parts at a premium when farming instead; since 0.0.21 also rare vanilla materials (gold,
+     * blaze rods, ender pearls, diamonds) and iron, plus iron in bulk (16 blocks, a little cheaper per ingot than nine lots of 16 ingots).
      */
     static final String PACK="""
         [sell]
@@ -142,91 +141,13 @@ final class ExchangeShop {
         kubejs:cartridge_case x16 = 2
         kubejs:propellant x16 = 2
         """;
-    /** Standalone edition: rare vanilla materials; since 0.0.21 also iron in bulk (16 blocks, a little cheaper per ingot than nine lots of 16 ingots). */
-    static final String STANDALONE="""
-        [sell]
-        arsenal_beacon:warlord_seal = 8
-        minecraft:diamond = 2
-        minecraft:blaze_rod = 1
-        minecraft:ender_pearl = 1
-        minecraft:ghast_tear = 2
-        minecraft:netherite_scrap = 3
-        minecraft:shulker_shell = 4
-        minecraft:nether_star = 20
-        minecraft:emerald x2 = 1
-        minecraft:gold_ingot x8 = 1
-        minecraft:quartz x16 = 1
-
-        [buy]
-        arsenal_beacon:universal_ammo_coin x16 = 3
-        minecraft:iron_ingot x16 = 1
-        minecraft:iron_block x16 = 8
-        minecraft:copper_ingot x16 = 1
-        minecraft:gunpowder x16 = 1
-        minecraft:redstone x16 = 1
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 3
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
-    /** The standalone edition's default from 0.0.21 to 0.0.27 (see {@link #PACK_0021}). */
-    static final String STANDALONE_0021="""
-        [sell]
-        minecraft:diamond = 2
-        minecraft:blaze_rod = 1
-        minecraft:ender_pearl = 1
-        minecraft:ghast_tear = 2
-        minecraft:netherite_scrap = 3
-        minecraft:shulker_shell = 4
-        minecraft:nether_star = 20
-        minecraft:emerald x2 = 1
-        minecraft:gold_ingot x8 = 1
-        minecraft:quartz x16 = 1
-
-        [buy]
-        arsenal_beacon:universal_ammo_coin x16 = 3
-        minecraft:iron_ingot x16 = 1
-        minecraft:iron_block x16 = 8
-        minecraft:copper_ingot x16 = 1
-        minecraft:gunpowder x16 = 1
-        minecraft:redstone x16 = 1
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 3
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
-    /** The standalone edition's default before 0.0.21 (see {@link #PACK_BEFORE_0021}). */
-    static final String STANDALONE_BEFORE_0021="""
-        [sell]
-        minecraft:diamond = 2
-        minecraft:blaze_rod = 1
-        minecraft:ender_pearl = 1
-        minecraft:ghast_tear = 2
-        minecraft:netherite_scrap = 3
-        minecraft:shulker_shell = 4
-        minecraft:nether_star = 20
-        minecraft:emerald x2 = 1
-        minecraft:gold_ingot x8 = 1
-        minecraft:quartz x16 = 1
-
-        [buy]
-        arsenal_beacon:universal_ammo_coin x16 = 3
-        minecraft:iron_ingot x16 = 1
-        minecraft:copper_ingot x16 = 1
-        minecraft:gunpowder x16 = 1
-        minecraft:redstone x16 = 1
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 3
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
     static final List<TextTable.Row> DEFAULT_BUY=List.of(new TextTable.Row("arsenal_beacon:universal_ammo_coin",16,3));
-    static String template(){return HEADER+"\n"+(BuildFlavor.STANDALONE?STANDALONE:PACK);}
+    static String template(){return HEADER+"\n"+PACK;}
     /** Pure: the file's text with each line's trailing spaces and the blank lines at its end dropped (to compare a file with a template). */
     static String normal(String text){return text.lines().map(String::stripTrailing).collect(java.util.stream.Collectors.joining("\n")).strip();}
-    /** Pure: is this file the untouched default of an earlier version for that edition (so it may be replaced by the current one)? */
-    static boolean oldDefault(String text,boolean standalone){
-        for(String old:standalone?List.of(STANDALONE_BEFORE_0021,STANDALONE_0021):List.of(PACK_BEFORE_0021,PACK_0021))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
+    /** Pure: is this file the untouched default of an earlier version (so it may be replaced by the current one)? */
+    static boolean oldDefault(String text){
+        for(String old:List.of(PACK_BEFORE_0021,PACK_0021))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
         return false;
     }
 
@@ -249,7 +170,7 @@ final class ExchangeShop {
                 Files.move(file,file.resolveSibling(FILE.replace(".txt",".old.txt")),StandardCopyOption.REPLACE_EXISTING);lines=List.of();
                 com.mojang.logging.LogUtils.getLogger().warn("{} used the old single-list format; it was kept as an .old file and replaced with buy and sell sections",FILE);
             }
-            if(!lines.isEmpty()&&oldDefault(String.join("\n",lines),BuildFlavor.STANDALONE)){
+            if(!lines.isEmpty()&&oldDefault(String.join("\n",lines))){
                 lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.28 default (the Warlord Seal sells for Ardent Energy)",FILE);
             }
             if(lines.isEmpty()){Files.writeString(file,template());lines=Files.readAllLines(file);}

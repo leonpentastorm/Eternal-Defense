@@ -162,10 +162,10 @@ public final class ArsenalBeacon {
     private static int clock;
     public ArsenalBeacon() {
         net.minecraftforge.common.ForgeMod.enableMilkFluid();
-        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);ArsenalSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();MinecraftForge.EVENT_BUS.register(new StandaloneBalance());
-        if(!BuildFlavor.STANDALONE&&Boolean.getBoolean("arsenal.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
-        // 0.0.40: pack edition with Create: mechanical arms may use the Logistics Center Hub (the class is in the pack jar only, compiled against Create)
-        if(!BuildFlavor.STANDALONE&&net.minecraftforge.fml.ModList.get().isLoaded("create"))
+        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);ArsenalSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();
+        if(Boolean.getBoolean("arsenal.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
+        // 0.0.40: with Create: mechanical arms may use the Logistics Center Hub (the class is compiled against Create, loaded by name)
+        if(net.minecraftforge.fml.ModList.get().isLoaded("create"))
             try{Class.forName("dev.createarsenal.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
             catch(ReflectiveOperationException|LinkageError e){com.mojang.logging.LogUtils.getLogger().warn("[Logistics Hub] mechanical arms cannot use the Hub: {}",e.toString());}
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
@@ -173,7 +173,6 @@ public final class ArsenalBeacon {
         MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
         MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new PlayerDrinks.DrinkEvents());MinecraftForge.EVENT_BUS.register(new DrinkStation.GuardEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());MinecraftForge.EVENT_BUS.register(new Routes.RouteEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
-        if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV2GameTests.KitchenV2TestRunner());
         if(Boolean.getBoolean("arsenal.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
@@ -183,7 +182,6 @@ public final class ArsenalBeacon {
         if(Boolean.getBoolean("arsenal.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
         if(Boolean.getBoolean("arsenal.huntTests"))MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());
         if(Boolean.getBoolean("arsenal.fobTests"))MinecraftForge.EVENT_BUS.register(new FobGameTests.Runner());
-        if(Boolean.getBoolean("arsenal.standaloneSmoke"))MinecraftForge.EVENT_BUS.register(new StandaloneSmoke());
         if(Boolean.getBoolean("arsenal.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
         if(Boolean.getBoolean("arsenal.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
         if(Boolean.getBoolean("arsenal.v4ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV4ClientSmoke());
@@ -238,7 +236,6 @@ public final class ArsenalBeacon {
     }
     static void give(ServerPlayer p,ItemStack stack){if(!p.getInventory().add(stack)&&!stack.isEmpty())p.drop(stack,false);}
     static void grantStarter(ServerPlayer p) {
-        if(BuildFlavor.STANDALONE){StandaloneBalance.grantStarter(p);return;}
         if(p.getPersistentData().getBoolean("arsenalStarterGranted"))return;
         Item gunItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:modern_kinetic_gun"));
         Item ammoItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:ammo"));
@@ -326,7 +323,7 @@ public final class ArsenalBeacon {
         String[] branches={"core","logistics","defense","restoration","reconnaissance","vertical"};int[] grades={d.core,d.logistics,d.defense,d.restoration,d.reconnaissance,d.vertical};
         for(int i=0;i<branches.length;i++) {
             String branch=branches[i];int grade=grades[i],limit=Rules.branchMaximum(branch);
-            p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconCost(branch,grade).stream().mapToInt(Economy.Part::amount).sum()+(Economy.standalone()?" Ardent Energy":" components"):" - complete")+"]")
+            p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconCost(branch,grade).stream().mapToInt(Economy.Part::amount).sum()+" components":" - complete")+"]")
                 .withStyle(style->style.withColor(ChatFormatting.AQUA).withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,"/arsenal upgrade "+branch))));
         }
     }
@@ -343,7 +340,7 @@ public final class ArsenalBeacon {
         for(var part:cost)costs.add(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()))),part.amount()));
         var plan=InventoryPayment.plan(w,costs);
         for(int i=0;i<cost.size();i++){var part=cost.get(i);Item item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()));if(!p.isCreative()&&plan.allocated()[i]<part.amount())missing.add(part.amount()+" "+item.getDescription().getString());}
-        if(!missing.isEmpty())return feedback(p,"Upgrade needs "+String.join(", ",missing)+(Economy.standalone()?". Kill hostile mobs, or trade rare materials at an Exchange Shop.":". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy."));
+        if(!missing.isEmpty())return feedback(p,"Upgrade needs "+String.join(", ",missing)+". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy.");
         if(!InventoryPayment.commit(w,costs,ItemStack.EMPTY))return feedback(p,"Upgrade materials changed. Nothing consumed.");
         switch(branch){case "core"->{int oldMaximum=d.maximumHealth();d.core++;d.health=Math.min(d.maximumHealth(),d.health+d.maximumHealth()-oldMaximum);ArsenalStructures.syncBeacon(p.server.overworld(),d);}case "logistics"->d.logistics++;case "defense"->d.defense++;case "restoration"->d.restoration++;case "reconnaissance"->d.reconnaissance++;case "vertical"->d.vertical++;}
         d.setDirty();BaseSurvey.request(p.server.overworld());
@@ -353,7 +350,7 @@ public final class ArsenalBeacon {
     static int repair(ServerPlayer p) {
         var d=CampaignData.get(p.server.overworld());if(!d.installed()||!near(p,d)||d.active())return feedback(p,"Repair between raids, near the beacon.");
         if(d.health>=d.maximumHealth())return feedback(p,"Already at full health.");
-        if(!consume(Supply.at(p,d.beacon),Economy.standalone()?ARDENT_ENERGY.get():PLATING.get(),Economy.repairAmount()))return feedback(p,Economy.standalone()?"Needs "+Economy.repairAmount()+" Ardent Energy.":"Needs 8 reinforced plating. JEI shows the recipe.");
+        if(!consume(Supply.at(p,d.beacon),PLATING.get(),Economy.repairAmount()))return feedback(p,"Needs "+Economy.repairAmount()+" reinforced plating. JEI shows the recipe.");
         d.health=Math.min(d.maximumHealth(),d.health+250);d.phase="preparation";d.setDirty();return feedback(p,"Repaired +250 HP. Campaign resumed.");
     }
     /** Takes {@code cost} of {@code item}: the pack first, then the Home Zone's Hubs (0.0.40); creative players pay nothing. False, nothing taken, if short. */

@@ -157,7 +157,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         }
         if(upgrades){renderUpgrade(g,mx,my,partial);return;}
         boolean special=ageFilter>=7&&ageFilter<=9;
-        Component browsing=special?Ui.t(data.getBoolean("standalone")?"platform.progression":"platform.create_progress",CreateUnlocks.stage(data.getInt("createLevel"))):Ui.t("platform.browsing."+data.getString("kind"),data.getInt("ammoCoins"));
+        Component browsing=special?Ui.t("platform.create_progress",CreateUnlocks.stage(data.getInt("createLevel"))):Ui.t("platform.browsing."+data.getString("kind"),data.getInt("ammoCoins"));
         if(!layout.compact())Ui.text(g,font,browsing,left+14,top+(weapons()?154:armor()?132:114),Ui.CYAN,lw);
         ageButton.visible=!upgrades;
         ageButton.setMessage(ageFilter==10?Ui.t("platform.filter.loose"):ageFilter==11?Ui.t("platform.filter.magazines"):ageFilter==0?Ui.t("platform.filter.all"):ageFilter==6?Ui.t("platform.cat.supplies"):ageFilter>=7?Ui.t("platform.filter.back"):Ui.t("platform.age_line",ageFilter,ageName(ageFilter)).copy().withStyle(s->s.withColor(AGE_COLORS[ageFilter]&0xffffff)));

@@ -171,8 +171,8 @@ final class TacticalEnchanting {
         return false;
     }
     static EnchantRules.Rarity rarity(Enchantment e){return EnchantRules.Rarity.values()[Math.min(3,e.getRarity().ordinal())];}
-    /** The price of level {@code level} of {@code e} at a table of Mk {@code mk}, in this edition. */
-    static int price(Enchantment e,int level,int mk){return EnchantRules.discounted(EnchantRules.price(rarity(e),level,treasure(e),BuildFlavor.STANDALONE),mk);}
+    /** The price of level {@code level} of {@code e} at a table of Mk {@code mk}. */
+    static int price(Enchantment e,int level,int mk){return EnchantRules.discounted(EnchantRules.price(rarity(e),level,treasure(e)),mk);}
     /** Why level {@code level} of {@code e} cannot be bought for {@code gear} now (a key under {@code enchant.locked.}), or null. Shared by the screen and the server. */
     static String problem(ItemStack gear,Enchantment e,int level,int activeFobs,int seals){
         boolean compatible=true;var have=EnchantmentHelper.getEnchantments(gear);
@@ -233,7 +233,7 @@ final class TacticalEnchanting {
         com.mojang.logging.LogUtils.getLogger().info("[enchant] {} bought {} {} for {} Ardent Energy",p.getGameProfile().getName(),id(e),level,price);
         return "enchant.result.done";
     }
-    /** The table's next Mk: a permanent discount for everyone, paid per edition (pack: resonance coils; standalone: Ardent Energy). */
+    /** The table's next Mk: a permanent discount for everyone, paid in resonance coils. */
     static String upgrade(ServerPlayer p){
         var d=EnchantData.get(p.serverLevel());var price=Economy.enchantingUpgrade(d.mk+1);
         if(price==null)return "enchant.result.max_mk";

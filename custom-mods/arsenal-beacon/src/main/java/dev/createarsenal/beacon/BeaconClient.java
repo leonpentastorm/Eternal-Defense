@@ -257,7 +257,7 @@ public final class BeaconClient {
             if(tab==0){
                 int bw=(w-8)/3,y=top+ph-48;
                 claim=button(Ui.t("overview.chest"),x,y,bw,Ui.Look.PRIMARY,b->BeaconNetwork.action("claim",""));
-                repair=button(Economy.standalone()?Ui.t("overview.repair.standalone"):Ui.t("overview.repair"),x+bw+4,y,bw,Ui.Look.NORMAL,b->BeaconNetwork.action("repair",""));
+                repair=button(Ui.t("overview.repair"),x+bw+4,y,bw,Ui.Look.NORMAL,b->BeaconNetwork.action("repair",""));
                 button(Ui.t("overview.tiers"),x+(bw+4)*2,y,w-(bw+4)*2,Ui.Look.NORMAL,b->BeaconNetwork.action("rewards",""));
             }else if(tab==1){
                 int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;
@@ -487,7 +487,7 @@ public final class BeaconClient {
                 if(Ui.inside(mx,my,cx,cy,cw,ch)&&!Ui.inside(mx,my,cx+8,rowY+1,16,16)&&tooltip==null){
                     tooltip=new ArrayList<>(List.of(Ui.t("upgrade."+branch+".name"),effect));
                     if(complete)tooltip.add(Ui.t("upgrade.branch_complete"));
-                    else{upgradeHoverCosts=costs;tooltip.add(Ui.edition("upgrade.craft"));}
+                    else{upgradeHoverCosts=costs;tooltip.add(Ui.t("upgrade.craft"));}
                 }
             }
             return tooltip;
@@ -619,9 +619,9 @@ public final class BeaconClient {
         boolean fullList;
         final List<Ui.UiButton> nav=new ArrayList<>();
         GuideScreen(Screen parent){super(Ui.t("guide.title"));this.parent=parent;}
-        @Override Component subtitle(){return Ui.edition("guide.subtitle");}
-        static String raw(String id,String part,boolean standalone){return GuideText.raw(id,part,standalone,key->Ui.has(key)?Ui.plain(key):null);}
-        private String pageText(){return ControlHints.guide(GuideText.page(IDS[page],BuildFlavor.STANDALONE,key->Ui.has(key)?Ui.plain(key):null));}
+        @Override Component subtitle(){return Ui.t("guide.subtitle");}
+        static String raw(String id,String part){return GuideText.raw(id,part,key->Ui.has(key)?Ui.plain(key):null);}
+        private String pageText(){return ControlHints.guide(GuideText.page(IDS[page],key->Ui.has(key)?Ui.plain(key):null));}
         /** The item that stands for each page in the side menu. */
         static ItemStack icon(String id){
             return new ItemStack(switch(id){

@@ -6,8 +6,7 @@ package dev.createarsenal.beacon;
  * {@code Java.loadClass}) and the Ammo Platform on a server without KubeJS ({@link WeaponPlatform#costs}).
  * <p>Until 0.0.21 a batch took one cartridge case per 8 rounds started and one propellant per 16. 0.0.22 (owner): twice the propellant,
  * 20 percent more cartridge cases, rounded up. 0.0.26: the Ammo Platform sets these amounts itself, replacing whatever the recipe lists (the
- * owner's pack still ran the older KubeJS script, so the platform showed the old amounts), and weak special rounds keep the old price. The standalone edition's ammo costs vanilla materials ({@link StandaloneBalance}) and is not
- * affected.
+ * owner's pack still ran the older KubeJS script, so the platform showed the old amounts), and weak special rounds keep the old price.
  */
 public final class AmmoInputs {
     private AmmoInputs(){}

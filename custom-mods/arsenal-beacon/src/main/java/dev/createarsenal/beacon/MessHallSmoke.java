@@ -1,6 +1,6 @@
 package dev.createarsenal.beacon;
 
-/** Optional real-client kitchen checks, scheduled after the existing standalone UI smoke. */
+/** Optional real-client kitchen checks (only with -Darsenal.kitchenSmoke=true). */
 public final class MessHallSmoke {
     private net.minecraft.server.level.ServerPlayer player;private int ticks,stage;
     @net.minecraftforge.eventbus.api.SubscribeEvent public void login(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p){player=p;ticks=stage=0;}}

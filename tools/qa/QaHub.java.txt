@@ -213,7 +213,7 @@ public final class QaHub {
     }
 
     static void script(){
-        boolean standalone=BuildFlavor.STANDALONE;
+        boolean standalone=false;
         // ---- a base 2000 blocks out (so the spawn chunks never hold the Hub), a still world, a survival player ----------------------------------
         step(60,()->{srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());

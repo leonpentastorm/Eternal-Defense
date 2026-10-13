@@ -16,7 +16,7 @@ final class TacticalOperationsTest {
         assertEquals(List.of(TacticalRules.Kind.PATROL,TacticalRules.Kind.GARRISON,TacticalRules.Kind.WARLORD),TacticalRules.classes(3));
         assertArrayEquals(new int[]{2,4,8},new int[]{TacticalRules.regionScale(1),TacticalRules.regionScale(2),TacticalRules.regionScale(3)},"Region covers +-range on 256 pixels");
         // the pay does not depend on the Mk: an upgrade buys more offers and classes, never a higher price for the same class
-        for(var kind:TacticalRules.Kind.values())assertEquals(Economy.hunt(kind,4,true),Economy.hunt(kind,4,true));
+        for(var kind:TacticalRules.Kind.values())assertEquals(Economy.hunt(kind,4),Economy.hunt(kind,4));
     }
     @Test void theConstantsAreTheOnesTheSpecAsksFor(){
         assertEquals(8,TacticalRules.UPLINK_DISTANCE);assertEquals(150,TacticalRules.BEYOND_ZONE);assertEquals(40,TacticalRules.SEPARATION,1e-9);
@@ -28,7 +28,7 @@ final class TacticalOperationsTest {
         assertEquals(256,TacticalRules.SCAN_SIZE);assertEquals(128,TacticalRules.BASE_HALF);assertEquals(600,TacticalRules.SCAN_COOLDOWN_TICKS,"30 second cooldown");
         assertEquals(2,TacticalRules.EXTRA_PER_PLAYER);assertEquals(8,TacticalRules.EXTRA_MAX);
         assertEquals("arsenal_beacon_hunts_v1",HuntData.NAME);
-        assertEquals(new int[]{16,32}[1],Economy.SATELLITE_UPGRADE_COILS[1]);assertEquals(10,Economy.SATELLITE_UPGRADE_ARDENT[0]);assertEquals(20,Economy.SATELLITE_UPGRADE_ARDENT[1]);
+        assertEquals(16,Economy.SATELLITE_UPGRADE_COILS[0]);assertEquals(32,Economy.SATELLITE_UPGRADE_COILS[1]);
     }
     @Test void warbandsGrowWithPlayersUpToEightMore(){
         assertEquals(8,TacticalRules.warband(TacticalRules.Kind.PATROL,0,1));assertEquals(12,TacticalRules.warband(TacticalRules.Kind.PATROL,4,1));
@@ -43,31 +43,27 @@ final class TacticalOperationsTest {
 
     // ---- the pay ------------------------------------------------------------------------------------------------------------------------------
     @Test void huntsPayAShareOfARaidsGuaranteedArdent(){
-        assertEquals(8,Economy.huntGuaranteed(3,true));assertEquals(4,Economy.huntGuaranteed(3,false));
-        assertEquals(22,Economy.huntGuaranteed(10,true));assertEquals(22,Economy.huntGuaranteed(50,true),"the tier is capped at 10");assertEquals(2,Economy.huntGuaranteed(-3,true));
-        // tier 3, standalone: g = 8; B = 4, 8, 14
-        assertEquals(new Economy.HuntPay(4,18),Economy.hunt(TacticalRules.Kind.PATROL,3,true),"0.0.28 (owner): a Patrol pays twice (2 and 9 before)");
-        assertEquals(new Economy.HuntPay(5,17),Economy.hunt(TacticalRules.Kind.GARRISON,3,true));
-        assertEquals(new Economy.HuntPay(8,30),Economy.hunt(TacticalRules.Kind.WARLORD,3,true));
-        // tier 3, pack: g = 4; B = 2, 4, 7
-        assertEquals(new Economy.HuntPay(2,8),Economy.hunt(TacticalRules.Kind.PATROL,3,false),"0.0.28 (owner): twice (1 and 4 before)");
-        assertEquals(new Economy.HuntPay(2,9),Economy.hunt(TacticalRules.Kind.GARRISON,3,false));
-        assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3,false));
-        for(boolean standalone:new boolean[]{true,false})for(int t=0;t<=10;t++){
-            var p=Economy.hunt(TacticalRules.Kind.PATROL,t,standalone);var g=Economy.hunt(TacticalRules.Kind.GARRISON,t,standalone);var w=Economy.hunt(TacticalRules.Kind.WARLORD,t,standalone);
+        assertEquals(4,Economy.huntGuaranteed(3));assertEquals(11,Economy.huntGuaranteed(10));
+        assertEquals(11,Economy.huntGuaranteed(50),"the tier is capped at 10");assertEquals(1,Economy.huntGuaranteed(-3));
+        // tier 3: g = 4; B = 2, 4, 7
+        assertEquals(new Economy.HuntPay(2,8),Economy.hunt(TacticalRules.Kind.PATROL,3),"0.0.28 (owner): twice (1 and 4 before)");
+        assertEquals(new Economy.HuntPay(2,9),Economy.hunt(TacticalRules.Kind.GARRISON,3));
+        assertEquals(new Economy.HuntPay(4,15),Economy.hunt(TacticalRules.Kind.WARLORD,3));
+        for(int t=0;t<=10;t++){
+            var p=Economy.hunt(TacticalRules.Kind.PATROL,t);var g=Economy.hunt(TacticalRules.Kind.GARRISON,t);var w=Economy.hunt(TacticalRules.Kind.WARLORD,t);
             assertTrue(g.coins()<=w.coins()&&g.ardent()<=w.ardent(),"a Warlord never pays less than a Garrison (tier "+t+")");
             // 0.0.28 (owner): a Patrol pays exactly twice what the shared formula gives it (the minimum included), at every tier
-            double b=TacticalRules.Kind.PATROL.budget*Economy.huntGuaranteed(t,standalone);
+            double b=TacticalRules.Kind.PATROL.budget*Economy.huntGuaranteed(t);
             assertEquals(2*Math.max(Economy.HUNT_MIN_ARDENT,(int)Math.round(Economy.HUNT_ARDENT_SHARE*b)),p.ardent(),"Patrol Ardent doubled, tier "+t);
             assertEquals(2*Math.max(Economy.HUNT_MIN_COINS,(int)Math.round(Economy.HUNT_COIN_SHARE*b*Economy.COINS_PER_ARDENT)),p.coins(),"Patrol coins doubled, tier "+t);
             // the whole pay, valued at the Exchange's coin price, stays at the class's share of a raid's guaranteed Ardent (rounding aside)
             double value=w.ardent()+w.coins()/Economy.COINS_PER_ARDENT;
-            assertEquals(1.75*Economy.huntGuaranteed(t,standalone),value,1.0);
+            assertEquals(1.75*Economy.huntGuaranteed(t),value,1.0);
         }
     }
     @Test void coinsFromAHuntNeverSellBackForArdent(){
-        // the Exchange "loops never pay" rule, with the coins a hunt hands out: neither edition buys coins back, and the coin rate is the shop's
-        for(String template:List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE)){
+        // the Exchange "loops never pay" rule, with the coins a hunt hands out: the shop never buys coins back, and the coin rate is the shop's
+        for(String template:List.of(ExchangeShop.PACK)){
             var parts=ExchangeShop.sections(List.of(template.split("\n")));
             var sell=TextTable.parse(parts.get("sell"),id->true,64,9999);var buy=TextTable.parse(parts.get("buy"),id->true,64,9999);
             assertTrue(sell.rows().stream().noneMatch(r->r.id().equals("arsenal_beacon:universal_ammo_coin")),"coins must never sell for Ardent Energy");
@@ -285,16 +281,14 @@ final class TacticalOperationsTest {
                 "within "+TacticalRules.APPROACH+" blocks","more than "+TacticalRules.AWAY+" blocks away","for "+TacticalRules.AWAY_TICKS/1200+" minutes",
                 "adds "+TacticalRules.EXTRA_PER_PLAYER+" enemies, up to "+TacticalRules.EXTRA_MAX+" more","8 to 12 enemies","14 to 20 enemies","10 to 14 escorts",
                 "resonance coils: "+Economy.SATELLITE_UPGRADE_COILS[0]+" for Mk II and "+Economy.SATELLITE_UPGRADE_COILS[1]+" for Mk III",
-                "Ardent Energy: "+Economy.SATELLITE_UPGRADE_ARDENT[0]+" for Mk II and "+Economy.SATELLITE_UPGRADE_ARDENT[1]+" for Mk III",
                 "at least "+TacticalRules.BEYOND_ZONE+" blocks beyond","within "+TacticalRules.ANCHOR_SEARCH+" blocks of the X","Its zone is "+TacticalRules.MINI_ZONE+" blocks wide",
                 TacticalRules.RING_FROM+" to "+TacticalRules.RING_TO+" blocks from the middle","within "+TacticalRules.LEASH+" blocks of it",TacticalRules.SCAN_COOLDOWN_TICKS/20+" seconds after a scan ends",
-                "8 glass and "+Economy.COMMAND_TABLE_PLATING+" reinforced plating","8 glass and "+Economy.COMMAND_TABLE_ARDENT+" Ardent Energy",
-                "4 gold and "+Economy.SATELLITE_COILS+" resonance coils","4 gold and "+Economy.SATELLITE_ARDENT+" Ardent Energy"))
+                "8 glass and "+Economy.COMMAND_TABLE_PLATING+" reinforced plating","4 gold and "+Economy.SATELLITE_COILS+" resonance coils"))
             assertTrue(all.contains(expected),"the Tactical Ops page does not say '"+expected+"'");
-        for(boolean standalone:new boolean[]{false,true}){
-            var p=Economy.hunt(TacticalRules.Kind.PATROL,3,standalone);var g=Economy.hunt(TacticalRules.Kind.GARRISON,3,standalone);var w=Economy.hunt(TacticalRules.Kind.WARLORD,3,standalone);
+        {
+            var p=Economy.hunt(TacticalRules.Kind.PATROL,3);var g=Economy.hunt(TacticalRules.Kind.GARRISON,3);var w=Economy.hunt(TacticalRules.Kind.WARLORD,3);
             String line="Patrol "+p.ardent()+" Ardent Energy and "+p.coins()+" ammo coins, Garrison "+g.ardent()+" and "+g.coins()+", Warlord "+w.ardent()+" and "+w.coins();
-            assertTrue(detail.contains((standalone?"[standalone] ":"[pack] ")+"- Pay at reward tier 3: "+line),"the "+(standalone?"standalone":"pack")+" pay line says "+line);
+            assertTrue(detail.contains("- Pay at reward tier 3: "+line),"the pay line says "+line);
         }
         assertTrue(TacticalRules.Kind.PATROL.min==8&&TacticalRules.Kind.PATROL.max==12&&TacticalRules.Kind.GARRISON.min==14&&TacticalRules.Kind.GARRISON.max==20&&TacticalRules.Kind.WARLORD.min==10&&TacticalRules.Kind.WARLORD.max==14);
     }

@@ -25,8 +25,6 @@ final class ArdentEnergy {
      * the raider dies; the beacon's own raid mobs never join one (wave 0) and carry the {@code arsenalRaider} tag.
      */
     static boolean vanillaRaider(boolean raider,int wave,boolean ours){return raider&&wave>0&&!ours;}
-    /** The standalone edition has no factory to fall back on, so target farming pays a little better there. */
-    static final double STANDALONE_DROP_FACTOR=1.3;
     static int balance(Player p){
         int count=0;
         for(var s:p.getInventory().items)if(s.is(ArsenalBeacon.ARDENT_ENERGY.get()))count+=s.getCount();
@@ -48,7 +46,7 @@ final class ArdentEnergy {
         boolean credited=entity.getKillCredit() instanceof Player||event.getSource().getEntity() instanceof Player||entity.getPersistentData().getBoolean("arsenalRaider");
         if(!credited)return;
         boolean boss=entity.getPersistentData().getBoolean("arsenalBoss")||entity.getType().is(Tags.EntityTypes.BOSSES);
-        int n=amount(level.random.nextDouble(),ArsenalConfig.ENERGY_CHANCE.get()*(BuildFlavor.STANDALONE?STANDALONE_DROP_FACTOR:1.0),event.getLootingLevel(),ArsenalConfig.LOOTING_BONUS.get(),boss,ArsenalConfig.BOSS_ENERGY.get(),entity.getMaxHealth());
+        int n=amount(level.random.nextDouble(),ArsenalConfig.ENERGY_CHANCE.get(),event.getLootingLevel(),ArsenalConfig.LOOTING_BONUS.get(),boss,ArsenalConfig.BOSS_ENERGY.get(),entity.getMaxHealth());
         if(n<=0)return;
         var drop=new ItemEntity(level,entity.getX(),entity.getY()+0.3,entity.getZ(),new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),n));
         drop.setDeltaMovement((level.random.nextDouble()-.5)*.2,.25,(level.random.nextDouble()-.5)*.2);

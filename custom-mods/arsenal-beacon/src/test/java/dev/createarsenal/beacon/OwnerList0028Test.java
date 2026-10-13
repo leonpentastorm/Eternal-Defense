@@ -11,18 +11,15 @@ final class OwnerList0028Test {
 
     @Test void theWarlordSealSellsAtTheExchange(){
         assertTrue(ExchangeShop.PACK.contains("arsenal_beacon:warlord_seal = 4"),"pack: 4 Ardent Energy");
-        assertTrue(ExchangeShop.STANDALONE.contains("arsenal_beacon:warlord_seal = 8"),"standalone: 8 Ardent Energy");
-        for(String list:java.util.List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE))
+        for(String list:java.util.List.of(ExchangeShop.PACK))
             assertTrue(list.indexOf("arsenal_beacon:warlord_seal")<list.indexOf("[buy]"),"a seal is sold to the shop, never bought");
         // a world whose file is an untouched earlier default gets the new one (with the seal); an edited or current file is kept
-        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0021,false));
-        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.STANDALONE_0021,true));
-        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_BEFORE_0021,false),"the older default still too");
-        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK,false),"the current default is not replaced");
-        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0021.replace("= 6","= 5"),false),"an edited file is kept");
+        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0021));
+        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_BEFORE_0021),"the older default still too");
+        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK),"the current default is not replaced");
+        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0021.replace("= 6","= 5")),"an edited file is kept");
         assertEquals(ExchangeShop.PACK_0021.replace("arsenal_beacon:warlord_seal = 4\n",""),ExchangeShop.PACK_0021,"the 0.0.21 default has no seal");
         assertEquals(ExchangeShop.PACK.replace("arsenal_beacon:warlord_seal = 4\n",""),ExchangeShop.PACK_0021,"the new default is the old one plus the seal");
-        assertEquals(ExchangeShop.STANDALONE.replace("arsenal_beacon:warlord_seal = 8\n",""),ExchangeShop.STANDALONE_0021);
     }
     @Test void restorationMatrixPricesAreHalvedAndTheRecipeMakesEight() throws Exception{
         assertEquals(4,Economy.matrices("restoration_matrix",8));assertEquals(1,Economy.matrices("arsenal_beacon:restoration_matrix",2));assertEquals(1,Economy.matrices("restoration_matrix",1),"rounded up");
@@ -42,7 +39,6 @@ final class OwnerList0028Test {
         int hard=rewards.indexOf("if(hard){for(var s:list)s.setCount(");int receiver=rewards.indexOf("add(list,\"kubejs:pressed_receiver\",1);");
         assertTrue(hard>0&&receiver>hard,"one Pressed Receiver, added after the hard raid's bonus so it stays one");
         assertTrue(receiver<rewards.indexOf("static List<ItemStack> total("),"in the pack edition's completion rewards");
-        assertFalse(SosTest.source("StandaloneBalance.java").contains("pressed_receiver\",1"),"the standalone edition has no receivers");
     }
     @Test void woodCostsAreNamedWood(){
         assertEquals("Wood (any log)",UniversalWood.name("minecraft:logs"));

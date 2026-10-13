@@ -218,17 +218,16 @@ final class RouteTest {
     }
     /**
      * The tribute items the Exchange buys (they turn into Ardent Energy). Listed here so a change to either list is a decision. 0.0.32: an
-     * emerald is worth 4 and an S item 16, so emeralds and ghast tears earn the same Ardent Energy at the standalone Exchange.
+     * emerald is worth 4 and an S item 16, so emeralds and ghast tears earned the same Ardent Energy at the (discontinued) standalone Exchange.
      */
     @Test void theExchangeBuysOnlyTheseTributeItems(){
         var all=new java.util.TreeSet<String>();for(var list:List.of(EMERALD_LOOT,MINE_LOOT,FARM_LOOT,FISHING_LOOT,HUSBANDRY_LOOT,POTION_LOOT,TRADER_LOOT,MONSTER_LOOT))for(var l:list)all.add(l.id());
-        for(String list:List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE)){
+        for(String list:List.of(ExchangeShop.PACK)){
             String sell=list.substring(list.indexOf("[sell]"),list.indexOf("[buy]"));var bought=new java.util.TreeSet<String>();
             for(String id:all)if(sell.contains(id+" ")||sell.contains(id+"\n"))bought.add(id);
-            var expected=list==ExchangeShop.PACK?java.util.Set.<String>of():java.util.Set.of("minecraft:emerald","minecraft:ghast_tear","minecraft:blaze_rod","minecraft:ender_pearl","minecraft:shulker_shell");
-            assertEquals(new java.util.TreeSet<>(expected),bought,list==ExchangeShop.PACK?"pack":"standalone");
+            assertEquals(new java.util.TreeSet<String>(),bought,"tribute goes to the Receiving Gate; the Exchange buys none of it");
         }
-        // the standalone Exchange pays 1 Ardent Energy for 2 emeralds, 2 for a ghast tear, 1 for a blaze rod or an ender pearl
+        // the values were set against the standalone Exchange's prices (1 Ardent Energy for 2 emeralds, 2 for a ghast tear, 1 for a blaze rod or an ender pearl)
         double perValueEmerald=0.5/EMERALD_VALUE,perValueTear=2/TIER_VALUE[5],perValueA=1/TIER_VALUE[4];
         assertEquals(perValueEmerald,perValueTear,1e-9,"emeralds and ghast tears earn the same an hour");
         assertEquals(perValueEmerald,perValueA,1e-9,"and so do blaze rods and ender pearls");
@@ -343,6 +342,6 @@ final class RouteTest {
     @Test void thePricesAndTheGuideAgree(){
         assertTrue(WorkshopFabrication.ITEMS.contains("supply_receiving_gate"),"the Receiving Gate is sold at home");
         assertTrue(WorkshopFabrication.ITEMS.contains("supply_delivery_gate"),"0.0.30: the Delivery Gate is sold at home too (and still at the FOB)");
-        assertEquals(16,Economy.GATE_IRON);assertEquals(8,Economy.GATE_COPPER);assertEquals(8,Economy.GATE_REDSTONE);assertEquals(1,Economy.GATE_LOGISTICS);assertEquals(4,Economy.GATE_ARDENT);
+        assertEquals(16,Economy.GATE_IRON);assertEquals(8,Economy.GATE_COPPER);assertEquals(8,Economy.GATE_REDSTONE);assertEquals(1,Economy.GATE_LOGISTICS);
     }
 }

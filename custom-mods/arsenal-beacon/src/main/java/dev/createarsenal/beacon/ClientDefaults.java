@@ -41,7 +41,7 @@ public final class ClientDefaults {
         PREFERRED.put("key.advancements",keyboard("f7"));
     }
     @SubscribeEvent public static void clientTick(TickEvent.ClientTickEvent e) {
-        if(BuildFlavor.STANDALONE||checked||e.phase!=TickEvent.Phase.END)return;
+        if(checked||e.phase!=TickEvent.Phase.END)return;
         Minecraft mc=Minecraft.getInstance();if(mc.options==null||mc.options.keyMappings.length<20)return;
         checked=true;Path directory=FMLPaths.CONFIGDIR.get();Path marker=directory.resolve("arsenal-controls-"+REVISION+".applied");
         try {
@@ -98,7 +98,7 @@ public final class ClientDefaults {
         JsonArray array=new JsonArray();for(KeyMapping m:mappings){JsonObject obj=new JsonObject();obj.addProperty("name",m.getName());obj.addProperty("category",m.getCategory());obj.addProperty("key",m.getKey().getName());obj.addProperty("modifier",m.getKeyModifier().name());array.add(obj);}return array;
     }
     @SubscribeEvent public static void welcome(ClientChatReceivedEvent e) {
-        if(BuildFlavor.STANDALONE||!e.isSystem())return;
+        if(!e.isSystem())return;
         String text=e.getMessage().getString().toLowerCase(Locale.ROOT);
         if(text.contains("create arsenal"))return;
         if(text.contains("thank you for downloading")||text.contains("thanks for downloading")||text.startsWith("welcome to ")||text.contains("stardust labs discord"))e.setCanceled(true);

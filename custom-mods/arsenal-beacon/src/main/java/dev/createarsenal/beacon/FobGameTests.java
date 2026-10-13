@@ -866,7 +866,7 @@ public final class FobGameTests {
             h.assertTrue(darkOak.test(new ItemStack(Items.BIRCH_LOG))&&darkOak.test(new ItemStack(Items.CRIMSON_STEM)),"any log pays it");
             h.assertTrue("Wood (any log)".equals(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.LOGS))),"the logs tag");
             h.assertTrue(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(Items.IRON_INGOT)).isEmpty(),"no label for iron");
-            // a Warlord Seal sells at the Exchange Shop: 4 Ardent Energy (pack) or 8 (standalone)
+            // a Warlord Seal sells at the Exchange Shop for 4 Ardent Energy
             p.setGameMode(GameType.SURVIVAL);
             try{
                 HuntGameTests.goTo(p,l,SHOP.south(2));
@@ -874,7 +874,7 @@ public final class FobGameTests {
                 p.getInventory().clearContent();p.getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()));
                 var sell=ExchangeShop.offers().sell();int index=-1;for(int i=0;i<sell.size();i++)if(sell.get(i).id().equals("arsenal_beacon:warlord_seal"))index=i;
                 h.assertTrue(index>=0,"the shop buys Warlord Seals");
-                int value=sell.get(index).value();h.assertTrue(value==(BuildFlavor.STANDALONE?8:4),"for "+value);
+                int value=sell.get(index).value();h.assertTrue(value==4,"for "+value);
                 ExchangeShop.buy(p,SHOP,index,true);
                 h.assertTrue(count(p,ArsenalBeacon.WARLORD_SEAL.get())==0&&ardent(p)==value,"sold: the seal gone, "+ardent(p)+" Ardent Energy");
             }finally{p.setGameMode(mode);l.setBlock(SHOP,Blocks.AIR.defaultBlockState(),3);ArsenalStructures.remove(l,SHOP);p.getInventory().clearContent();}

@@ -100,14 +100,13 @@ final class Round0035Test {
         assertTrue(station.contains("BlockEvent.BreakEvent")&&station.contains("DrinkRules.guarded(st.total())"),"the break guard");
     }
     @Test void pricesAndTheWorkshop() throws Exception{
-        assertArrayEquals(new int[]{8,16,32},Economy.DRINKS_PLATING,"pack: Reinforced Beacon Plating");assertArrayEquals(new int[]{4,8,14},Economy.DRINKS_ARDENT,"standalone: Ardent Energy");
+        assertArrayEquals(new int[]{8,16,32},Economy.DRINKS_PLATING,"Reinforced Beacon Plating");
         assertTrue(WorkshopFabrication.ITEMS.containsAll(List.of("drink_mixer_mk1","drink_pot","cup_dispenser")));
         int kitchen=WorkshopFabrication.ITEMS.indexOf("mess_hall_mk1"),support=WorkshopFabrication.ITEMS.indexOf("support_platform");
         for(var id:List.of("drink_mixer_mk1","drink_pot","cup_dispenser")){int at=WorkshopFabrication.ITEMS.indexOf(id);assertTrue(at>kitchen&&at<support,id+" sits in the Kitchen group");}
         assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,"+support+"}"),"the Kitchen group grew by three (and by the MRE Station in 0.0.38)");
         var recipe=Files.readString(Path.of(RES+"data/arsenal_beacon/recipes/drink_mixer_mk1.json"));assertTrue(recipe.contains("minecraft:brewing_stand"),"built around a brewing stand");
         var cup=Files.readString(Path.of(RES+"data/arsenal_beacon/recipes/drink_cup_empty.json"));assertTrue(cup.contains("minecraft:paper")&&cup.contains("\"count\": 4"),"paper makes four cups");
-        for(var r:List.of("drink_mixer_mk1","drink_pot","drink_cup_empty"))assertTrue(Files.exists(Path.of("src/standalone/resources/data/arsenal_beacon/recipes/"+r+".json")),"standalone "+r);
     }
     @Test void theMixingSlotsDoNotShadowSlotIndex() throws Exception{
         // found on the real client: a captured "index" inside an anonymous Slot reads Slot's own field (5 to 7), so every mixing slot was inactive
@@ -115,12 +114,12 @@ final class Round0035Test {
         assertTrue(menu.contains("mixing<limit()"));
     }
     @Test void protocolFortyCarriesTheStationView() throws Exception{
-        var net=source("BeaconNetwork.java");assertTrue(net.contains("\"40-standalone\":\"40-pack\""));assertTrue(net.contains("registerMessage(24,DrinkStationMenu.View.class"));
+        var net=source("BeaconNetwork.java");assertEquals("41",BeaconNetwork.PROTOCOL);assertTrue(net.contains("registerMessage(24,DrinkStationMenu.View.class"));
     }
     @Test void theFieldGuideQuotesTheRealNumbers() throws Exception{
         var all=lang();
         for(var s:List.of("54 storage slots that each hold 64 bottles","more than 256 bottles","+10 minutes for 1,000 mB, +20 for 2,000 mB","I adds 250 mB, II adds 750 mB","The tank holds 4,000 mB",
-                "Up to 2 effects for 10 minutes","They stack to 16","Put up to 64 cups inside","Craft 4 from 3 paper","Pay 8, 16 and 32 Reinforced Beacon Plating.","Pay 4, 8 and 14 Ardent Energy.","1, 2 or 3 pots at Mk II, III and IV"))
+                "Up to 2 effects for 10 minutes","They stack to 16","Put up to 64 cups inside","Craft 4 from 3 paper","Pay 8, 16 and 32 Reinforced Beacon Plating.","1, 2 or 3 pots at Mk II, III and IV"))
             assertTrue(all.contains(s),"guide does not say '"+s+"'");
         assertTrue(all.contains("\"gui.arsenal_beacon.guide.drinks.title\""));
     }

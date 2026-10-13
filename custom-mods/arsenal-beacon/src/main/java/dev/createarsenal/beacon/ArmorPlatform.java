@@ -30,8 +30,6 @@ public final class ArmorPlatform {
     static net.minecraftforge.registries.RegistryObject<net.minecraft.world.level.block.Block> station(String kind){return switch(kind){case "ammo"->ArsenalBeacon.AMMO_PLATFORM;case "attachment"->ArsenalBeacon.ATTACHMENT_PLATFORM;case "armor"->ArsenalBeacon.ARMOR_PLATFORM;default->ArsenalBeacon.GUN_PLATFORM;};}
     static String key(Item item){return BuiltInRegistries.ITEM.getKey(item).getPath().toLowerCase(Locale.ROOT);}
     static boolean allowed(Item item){
-        // 0.0.38: never this mod's own items (the MRE's id contains "mre"; it is made at the MRE Station, never sold as gear)
-        if(BuildFlavor.STANDALONE)return item instanceof ArmorItem||!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("minecraft")&&!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals(ArsenalBeacon.ID)&&!(item instanceof BlockItem)&&!(item instanceof SpawnEggItem)&&matches(key(item),"pouch","backpack","armor_plate","armorplate","nvg","night_vision","grenade","medkit","bandage","mre","ration");
         if(!MODS.contains(BuiltInRegistries.ITEM.getKey(item).getNamespace())||item instanceof BlockItem||item instanceof SpawnEggItem)return false;
         String id=key(item);
         if(id.endsWith("_tab")||id.contains("itemtab")||id.contains("logo")||id.contains("spawn_egg")||id.contains("test")||id.contains("tape_1")||id.contains("brokenwatch"))return false;
@@ -70,7 +68,6 @@ public final class ArmorPlatform {
         return switch(type){case "vision"->3;case "plates"->matches(id,"lite","light")?2:3;case "pouches"->matches(id,"tactical","squad","leader")?3:2;case "medical"->matches(id,"bandage")?1:3;case "explosives"->3;case "materials"->matches(id,"kevlar","polyethylene","polymer")?3:1;default->matches(id,"gas_mask_filter","filter")?2:1;};
     }
     private static List<WeaponPlatform.Cost> materials(ItemStack output,int age){
-        if(BuildFlavor.STANDALONE)return StandaloneBalance.gearCosts(output,age);
         String type=type(output);var c=new ArrayList<WeaponPlatform.Cost>();
         if(type.equals("materials"))return matches(key(output.getItem()),"plate","metal","steel","blade","handle")?List.of(WeaponPlatform.cost("create:iron_sheet",2),WeaponPlatform.cost("minecraft:coal",1)):List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),4),WeaponPlatform.cost("minecraft:slime_ball",2));
         if(type.equals("medical"))return List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),8),WeaponPlatform.cost(age>=3?"minecraft:golden_apple":"minecraft:honey_bottle",1));

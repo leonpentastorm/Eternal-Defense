@@ -19,7 +19,6 @@ final class RaidRewards {
     }
     static void supply(List<ItemStack> list,ServerLevel l,String key,String id,int count){if(count<=0)return;var stack=tactical(l,key,id);stack.setCount(count);list.add(stack);}
     static List<ItemStack> completion(ServerLevel l,int tier,boolean hard){
-        if(BuildFlavor.STANDALONE)return StandaloneBalance.rewards(l,tier,hard);
         tier=Math.max(0,Math.min(10,tier));List<ItemStack> list=new ArrayList<>();int t=tier,b=Math.min(5,t),extra=Math.max(0,t-5);
         // Raw starter stone tapers off; later caches prioritize compact useful production inputs.
         add(list,"minecraft:andesite",new int[]{64,64,48,32,32,32,16,16,16,16,16}[t]);add(list,"minecraft:iron_ingot",Math.min(96,16+8*t));

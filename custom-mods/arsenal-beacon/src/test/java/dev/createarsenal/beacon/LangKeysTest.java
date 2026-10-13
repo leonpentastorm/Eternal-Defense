@@ -24,7 +24,7 @@ final class LangKeysTest {
     private static String get(String key){return LANG.get(PREFIX+key);}
 
     @Test void everyLiteralKeyUsedByTheScreensExists() throws Exception {
-        var pattern=Pattern.compile("Ui\\.(t|plain|edition)\\(\"([^\"]+)\"");
+        var pattern=Pattern.compile("Ui\\.(t|plain)\\(\"([^\"]+)\"");
         var missing=new TreeSet<String>();
         try(Stream<Path> files=Files.walk(Path.of("src/main/java/dev/createarsenal/beacon"))){
             for(Path file:files.filter(f->f.toString().endsWith(".java")).toList()){
@@ -32,8 +32,7 @@ final class LangKeysTest {
                 while(m.find()){
                     String kind=m.group(1),key=m.group(2);
                     if(key.endsWith("."))continue; // dynamic prefix, covered by the lists below
-                    if(kind.equals("edition")){for(String edition:List.of(".pack",".standalone"))if(get(key+edition)==null)missing.add(key+edition);}
-                    else if(get(key)==null)missing.add(key);
+                    if(get(key)==null)missing.add(key);
                 }
             }
         }
@@ -49,7 +48,7 @@ final class LangKeysTest {
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key+".note");
         for(String phase:List.of("unplaced","preparation","raid","disabled","restore","snapshot","decommissioning"))needed.add("phase."+phase);
         for(String b:List.of("core","logistics","defense","restoration","vertical"))needed.add("upgrade."+b+".now");
-        needed.addAll(List.of("support.name.supply","support.name.return","support.called","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now","upgrade.reconnaissance.after","upgrade.reconnaissance.after_one","upgrade.reconnaissance.at_once","upgrade.buy_parts","upgrade.short_parts","rewards.head_normal","rewards.head_hard","platform.progression","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
+        needed.addAll(List.of("support.name.supply","support.name.return","support.called","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now","upgrade.reconnaissance.after","upgrade.reconnaissance.after_one","upgrade.reconnaissance.at_once","upgrade.buy_parts","upgrade.short_parts","rewards.head_normal","rewards.head_hard","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
         for(var t:CannonUpgrades.FireType.values()){needed.add("support.name."+t.callId());needed.add("cannon.type."+t.id);for(String part:List.of("effect","damage","area"))needed.add("cannon."+"type."+t.id+"."+part);}
         // Tactical Operations (0.0.20): the keys the table, the satellite and the chat build from ids
         for(var k:TacticalRules.Kind.values()){needed.add("tactical.class."+k.id);needed.add("tactical.card.note."+k.id);}
@@ -90,8 +89,8 @@ final class LangKeysTest {
         assertTrue(missing.isEmpty(),"Language keys named in code but missing: "+missing);
     }
     @Test void theRaidsCardExplainsTheRedGateInPlainWords(){
-        for(boolean standalone:new boolean[]{false,true}){
-            String body=edition("raids","body",standalone);
+        {
+            String body=edition("raids","body");
             assertTrue(body.contains("red gate")&&body.contains("lava, a chasm or a wide lake")&&body.contains("You can shoot it"),"the gate is explained: what it is, what it does and what to do about it");
             assertTrue(body.lines().filter(l->l.contains("red gate")).allMatch(l->l.length()<=330),"one short line");
         }
@@ -124,43 +123,30 @@ final class LangKeysTest {
         assertTrue(bad.isEmpty(),"Unsafe '%' in "+bad);
     }
 
-    private static String edition(String id,String part,boolean standalone){return GuideText.raw(id,part,standalone,key->LANG.get(PREFIX+key));}
+    private static String edition(String id,String part){return GuideText.raw(id,part,key->LANG.get(PREFIX+key));}
 
     @Test void everyGuidePageHasContentForBothEditions(){
-        for(String id:GuideText.IDS)for(boolean standalone:new boolean[]{false,true}){
-            assertFalse(edition(id,"body",standalone).isBlank(),id+" body for "+(standalone?"standalone":"pack"));
-        }
-    }
-
-    @Test void standaloneGuideNeverSendsPlayersToPackOnlyMods(){
-        for(String id:GuideText.IDS)for(String part:List.of("body","detail")){
-            String text=edition(id,part,true);
-            for(String forbidden:List.of("FTB","Essential","KubeJS","Create machines","Create recipes","Create precision","Create research","Create Armory","precision mechanism","brass","steam engine"))
-                assertFalse(text.contains(forbidden),"standalone "+id+"."+part+" mentions "+forbidden);
+        for(String id:GuideText.IDS){
+            assertFalse(edition(id,"body").isBlank(),id+" body for "+"pack");
         }
     }
 
     @Test void packGuideKeepsItsFactoryAndCoopInstructions(){
-        String all=Stream.of(GuideText.IDS).flatMap(id->Stream.of(edition(id,"body",false),edition(id,"detail",false))).collect(Collectors.joining("\n"));
+        String all=Stream.of(GuideText.IDS).flatMap(id->Stream.of(edition(id,"body"),edition(id,"detail"))).collect(Collectors.joining("\n"));
         for(String required:List.of("Essential","FTB Team","JEI shows the Create recipes","Create Armory","Precision","precision mechanisms","Park and disassemble moving Create contraptions"))assertTrue(all.contains(required),"pack guide lost: "+required);
     }
 
-    @Test void standaloneGuideKeepsItsConfigAndInstallInstructions(){
-        String all=Stream.of(GuideText.IDS).flatMap(id->Stream.of(edition(id,"body",true),edition(id,"detail",true))).collect(Collectors.joining("\n"));
-        for(String required:List.of("config/arsenal-beacon-standalone.json","crafting table","same standalone beacon and TaCZ","vanilla Ravager","copper, diamonds and gold"))assertTrue(all.contains(required),"standalone guide lost: "+required);
-    }
-
     @Test void guideExplainsCurrentFoodUnlocksAndRaidBehavior(){
-        for(boolean standalone:new boolean[]{false,true}){
-            String kitchen=edition("kitchen","body",standalone),mixes=edition("mixes","body",standalone),raids=edition("raids","body",standalone);
-            String detail=edition("kitchen","detail",standalone);
+        {
+            String kitchen=edition("kitchen","body"),mixes=edition("mixes","body"),raids=edition("raids","body");
+            String detail=edition("kitchen","detail");
             assertTrue(kitchen.contains("Gather ingredients")&&kitchen.contains("Make sandwich")&&kitchen.contains("Cook stew"),"the kitchen page teaches the three steps");
             assertTrue(detail.contains("3/5/7/9 servings")&&detail.contains("Doubling unlocks at Mk III")&&detail.contains("EACH group")&&detail.contains("only Mk IV can double one"),"the double rule stays documented");
             assertTrue(kitchen.contains("Mk I: sandwiches only")&&kitchen.contains("Mk II: unlocks stew")&&kitchen.contains("Mk III: meals last 25 minutes")&&kitchen.contains("Mk IV: meals last 30 minutes"),"the four hall levels are spelled out");
-            assertFalse(kitchen.contains("Mix guide")||detail.contains("Mix guide")||edition("mixes","body",standalone).contains("Mix guide"),"the Mix guide screen no longer exists");
+            assertFalse(kitchen.contains("Mix guide")||detail.contains("Mix guide")||edition("mixes","body").contains("Mix guide"),"the Mix guide screen no longer exists");
             for(var mix:MealRules.MIXES)assertTrue(mixes.contains(get("meal.effect."+mix.effect().id)),"Missing legendary recipe "+mix.effect());
             assertTrue(raids.contains("sunlight only")&&raids.contains("25%%")&&raids.contains("Turrets"));
-            assertTrue(edition("stations","body",standalone).contains("Workshop Fabrication"));
+            assertTrue(edition("stations","body").contains("Workshop Fabrication"));
         }
     }
     @Test void resourceRegenerationDoesNotOwnGuideProse()throws Exception{
@@ -173,10 +159,10 @@ final class LangKeysTest {
     /** Every feature card tells a newcomer the same five things in the same order. */
     @Test void everyGuideCardFollowsTheSameFormat(){
         var broken=new ArrayList<String>();
-        for(boolean standalone:new boolean[]{false,true})for(String id:GuideText.IDS){
+        for(String id:GuideText.IDS){
             if(id.equals(GuideText.REFERENCE))continue;
             String heading="";var labels=new ArrayList<String>();
-            var lines=new ArrayList<>(List.of(edition(id,"body",standalone).split("\n")));lines.add("# end");
+            var lines=new ArrayList<>(List.of(edition(id,"body").split("\n")));lines.add("# end");
             for(String line:lines){
                 if(line.startsWith("# ")){
                     if(labels.contains("What it is")){
@@ -195,9 +181,9 @@ final class LangKeysTest {
     /** The guide is for somebody who just spawned in: short lines, short sentences, no walls of text. */
     @Test void guideSentencesStayShortAndPlain(){
         var long_=new ArrayList<String>();
-        for(boolean standalone:new boolean[]{false,true})for(String id:GuideText.IDS){
+        for(String id:GuideText.IDS){
             if(id.equals(GuideText.REFERENCE))continue;
-            for(String line:edition(id,"body",standalone).split("\n")){
+            for(String line:edition(id,"body").split("\n")){
                 if(line.length()>330)long_.add(id+": line of "+line.length()+" characters: "+line.substring(0,Math.min(50,line.length())));
                 for(String sentence:SENTENCE_END.split(line))if(sentence.split("\\s+").length>42)long_.add(id+": sentence over 42 words: "+sentence.substring(0,Math.min(60,sentence.length())));
             }
@@ -233,10 +219,10 @@ final class LangKeysTest {
         Matcher platforms=Pattern.compile("platform\\(\"([a-z]+)\"\\)").matcher(source);while(platforms.find())registered.add(platforms.group(1)+"_platform");
         var unknown=registered.stream().filter(id->!cards.containsKey(id)&&!ignored.contains(id)).toList();
         assertTrue(unknown.isEmpty(),"Registered but missing from the Field Guide (add a card, then list it here): "+unknown);
-        for(boolean standalone:new boolean[]{false,true}){
-            String all=Stream.of(GuideText.IDS).map(id->edition(id,"body",standalone)).collect(Collectors.joining("\n"));
+        {
+            String all=Stream.of(GuideText.IDS).map(id->edition(id,"body")).collect(Collectors.joining("\n"));
             var headings=Stream.of(all.split("\n")).filter(l->l.startsWith("# ")).map(l->l.substring(2)).collect(Collectors.toSet());
-            for(String heading:Stream.concat(cards.values().stream(),Stream.of("Gun Guide","Gun Displays")).collect(Collectors.toSet()))assertTrue(headings.contains(heading),(standalone?"standalone":"pack")+" guide has no card named '"+heading+"'");
+            for(String heading:Stream.concat(cards.values().stream(),Stream.of("Gun Guide","Gun Displays")).collect(Collectors.toSet()))assertTrue(headings.contains(heading),"pack"+" guide has no card named '"+heading+"'");
         }
     }
 

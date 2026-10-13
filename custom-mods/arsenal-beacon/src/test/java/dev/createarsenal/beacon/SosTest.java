@@ -91,11 +91,8 @@ final class SosTest {
         assertEquals(6,repairCost(true,6,new int[0]),"DOWN with nobody lost: the base");
         assertEquals(1+3+5,repairCost(false,6,new int[]{1,3,5}),"ACTIVE: only the villagers");
         for(int n=0;n<=20;n++){int[] each=new int[n];Arrays.fill(each,2);assertEquals(6+2*n,repairCost(true,6,each),"the total is the sum");}
-        // both editions' numbers live in Economy; pack Ardent is scarcer, so pack prices are lower (never above standalone)
-        String economy=source("Economy.java");
-        assertTrue(economy.contains("FOB_REPAIR_BASE_STANDALONE=6,FOB_REPAIR_BASE_PACK=3"),"base 6 standalone, 3 pack");
-        assertTrue(economy.contains("FOB_REPAIR_VILLAGER_STANDALONE={1,2,3,4,5},FOB_REPAIR_VILLAGER_PACK={1,1,2,2,3}"),"per villager by level");
-        int[] sa={1,2,3,4,5},pk={1,1,2,2,3};for(int i=0;i<5;i++)assertTrue(pk[i]<=sa[i]);
+        // the numbers live in Economy (0.0.41: the pack's; the discontinued standalone edition asked 6 and 1 to 5)
+        assertEquals(3,Economy.FOB_REPAIR_BASE,"base 3");assertArrayEquals(new int[]{1,1,2,2,3},Economy.FOB_REPAIR_VILLAGER,"per villager by level");
         assertEquals(64,MAX_RECORDS,"more lost villagers than any village holds are not kept");
     }
     @Test void lostVillagersHaveStableNames(){

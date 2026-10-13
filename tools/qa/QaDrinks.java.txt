@@ -385,7 +385,7 @@ public final class QaDrinks {
         step(10,()->click(ds().upgrade),"Upgrade to Mk III");
         until("Mk III",80,()->ds()!=null&&ds().getMenu().mk==3,()->{});
         step(10,()->{check("Mk III links two Brew Pots",srvGet(()->st().links.size()==2),srvGet(()->""+st().links.size()));
-            boolean standalone=BuildFlavor.STANDALONE;int plating=count(ArsenalBeacon.PLATING.get()),ardent=count(ArsenalBeacon.ARDENT_ENERGY.get());
+            boolean standalone=false;int plating=count(ArsenalBeacon.PLATING.get()),ardent=count(ArsenalBeacon.ARDENT_ENERGY.get());
             check("Mk III cost "+(standalone?"8 Ardent Energy":"16 Reinforced Beacon Plating"),standalone?ardent==32&&plating==64:plating==48&&ardent==40,plating+" plating, "+ardent+" ardent");
             srv(()->sp().setGameMode(GameType.CREATIVE));},"mk3");
         step(3,()->srv(()->{var inv=sp().getInventory();inv.setItem(23,potion(Potions.SWIFTNESS));inv.setItem(24,potion(Potions.SWIFTNESS));}),"two Speed potions");

@@ -133,7 +133,6 @@ public final class WeaponPlatform {
         return indexedGuns.getOrDefault(id,new Gate(5,"gun",id));
     }
     static List<Entry> entries(ServerPlayer p,String kind,String query){
-        if(BuildFlavor.STANDALONE&&!kind.equals("armor"))return StandaloneBalance.entries(p,kind,query);
         if(kind.equals("armor"))return ArmorPlatform.entries(p,query);
         String filter=query.toLowerCase(Locale.ROOT);List<Entry> list=new ArrayList<>();
         for(var recipe:p.level().getRecipeManager().getRecipes()){
@@ -164,16 +163,15 @@ public final class WeaponPlatform {
         }catch(NoSuchMethodException ignored){}catch(ReflectiveOperationException ex){return false;}
         return true; // Native tactical supplies have their own item implementation.
     }
-    static List<Cost> upgrades(int age){if(BuildFlavor.STANDALONE)return StandaloneBalance.upgrades(age);return switch(age){
+    static List<Cost> upgrades(int age){return switch(age){
         case 1->List.of(cost("minecraft:iron_ingot",64),cost("create:andesite_alloy",32),cost("create:cogwheel",16),cost("kubejs:pressed_receiver",16));
         case 2->List.of(cost("kubejs:hardened_receiver",16),cost("create:precision_mechanism",32),cost("minecraft:blaze_rod",8),cost("create:brass_sheet",32));
         case 3->List.of(cost("kubejs:hardened_receiver",64),cost("create:precision_mechanism",64),cost("minecraft:netherite_scrap",16),cost("arsenal_beacon:resonance_coil",16));
         case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("arsenal_beacon:restoration_matrix",8));   // 0.0.28: 16 matrices before (halved with the matrix recipe doubled)
         default->List.of();};}
-    static Cost cost(String id,int amount){if(BuildFlavor.STANDALONE)id=StandaloneBalance.material(id);return new Cost(Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id))),amount);}
+    static Cost cost(String id,int amount){return new Cost(Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id))),amount);}
     static List<Cost> costs(Entry e)throws ReflectiveOperationException{
         if(e.recipe instanceof ArmorPlatform.Fabrication)return ArmorPlatform.costs(e);
-        if(BuildFlavor.STANDALONE)return StandaloneBalance.costs(e);
         if(DisplayRacks.entry(e))return DisplayRacks.costs(e);
         if(MagazineBridge.isMagazine(e.output)){List<Cost> materials=new ArrayList<>();for(Object input:(List<?>)e.recipe.getClass().getMethod("getInputs").invoke(e.recipe))materials.add(new Cost(UniversalWood.normalize((Ingredient)input.getClass().getMethod("getIngredient").invoke(input)),(int)input.getClass().getMethod("getCount").invoke(input)));addUnlessPresent(materials,cost("create:iron_sheet",2));return InventoryPayment.consolidate(materials);}
         if(CreateUnlocks.turret(e))return List.of(cost("arsenal_beacon:reinforced_plating",4),cost("create:brass_sheet",2),cost("create:precision_mechanism",1));
@@ -227,7 +225,7 @@ public final class WeaponPlatform {
         if(event.getEntity() instanceof ServerPlayer p&&event.getContainer().getClass().getName().equals("com.tacz.guns.inventory.GunSmithTableMenu")){
             p.closeContainer();p.sendSystemMessage(Component.literal("Use a Universal Gun, Ammo or Attachment Platform. Their Ages unlock all packs."));
         }
-        if(!BuildFlavor.STANDALONE&&event.getEntity() instanceof ServerPlayer p&&Set.of("omegarecon.world.inventory.TestGuiMenu","net.mcreator.capsawimtacticalgearrework.world.inventory.ArmorCraftingMenu").contains(event.getContainer().getClass().getName())){
+        if(event.getEntity() instanceof ServerPlayer p&&Set.of("omegarecon.world.inventory.TestGuiMenu","net.mcreator.capsawimtacticalgearrework.world.inventory.ArmorCraftingMenu").contains(event.getContainer().getClass().getName())){
             p.closeContainer();p.sendSystemMessage(Component.literal("Craft tactical gear at the Universal Armor Platform. Buy it in the beacon's Workshop Fabrication tab and upgrade it at its own table."));
         }
     }
@@ -280,7 +278,7 @@ public final class WeaponPlatform {
         var block=p.level().getBlockState(pos);var station=(Station)block.getBlock();var n=new CompoundTag();int age=block.getValue(AGE);
         CreateUnlocks.sync(p);n.putInt("createLevel",CreateUnlocks.level(p));
         for(String type:List.of("gun","ammo","attachment","armor")){int nearbyAge=station.kind.equals(type)?age:0;double nearest=Double.MAX_VALUE;for(BlockPos test:PlatformRegistry.get(p.serverLevel()).nearbyAll(p.serverLevel(),pos)){if(test.distSqr(pos)>64||!p.level().hasChunkAt(test))continue;var candidate=p.level().getBlockState(test);if(candidate.getBlock() instanceof Station other&&other.kind.equals(type)&&test.distSqr(pos)<nearest){nearbyAge=candidate.getValue(AGE);nearest=test.distSqr(pos);}}n.putInt(type+"Age",nearbyAge);}
-        n.putBoolean("standalone",BuildFlavor.STANDALONE);var w=Supply.at(p,pos);n.putInt("ammoCoins",Supply.count(w,ArsenalBeacon.AMMO_COIN.get()));n.putBoolean("creative",p.isCreative());n.putString("kind",station.kind);n.putInt("age",age);n.putInt("score",Rules.platformScore(age));n.putString("query",request.query);n.putBoolean("netherVisited",p.isCreative()||visitedNether(p));
+        var w=Supply.at(p,pos);n.putInt("ammoCoins",Supply.count(w,ArsenalBeacon.AMMO_COIN.get()));n.putBoolean("creative",p.isCreative());n.putString("kind",station.kind);n.putInt("age",age);n.putInt("score",Rules.platformScore(age));n.putString("query",request.query);n.putBoolean("netherVisited",p.isCreative()||visitedNether(p));
         boolean armor=station.kind.equals("armor"),components=ArmorPlatform.component(station.kind);int filter=Math.max(0,Math.min(station.kind.equals("ammo")?11:components||armor?5:9,request.ageFilter));n.putInt("ageFilter",filter);
         List<Entry> compatible=entries(p,station.kind,"").stream().filter(e->!components||compatible(p,e)).toList();
         n.putInt("locked",(int)compatible.stream().filter(e->!CreateUnlocks.unlocked(p,e,age)).map(e->e.gate.id).distinct().count());
@@ -294,7 +292,7 @@ public final class WeaponPlatform {
         List<Entry> entries=aged.stream().filter(e->!typed||type.equals("all")||type.equals(types.get(e))).toList();int page=WeaponBrowser.page(request.page,entries.size(),pageSize);
         n.putInt("page",page);n.putInt("total",entries.size());ListTag recipes=new ListTag();
         for(int i=page*pageSize;i<Math.min(entries.size(),(page+1)*pageSize);i++){
-            Entry e=entries.get(i);var row=new CompoundTag();row.putString("recipe",e.recipeId.toString());row.putString("id",e.gate.id);row.putInt("age",e.gate.age);row.putBoolean("unlocked",CreateUnlocks.unlocked(p,e,age));row.putBoolean("special",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e));row.putString("progression",CreateUnlocks.label(e));row.putString("requirement",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e)?CreateUnlocks.requirement(CreateUnlocks.turret(e)?2:CreateUnlocks.required(e)):"Upgrade this table to "+CreateUnlocks.label(e));if(BuildFlavor.STANDALONE&&CreateUnlocks.armory(e))row.putString("requirement","Upgrade this table to Age "+e.gate.age+": "+AGES[e.gate.age]);row.put("output",e.output.copyWithCount(1).save(new CompoundTag()));row.putInt("outputCount",e.output.getCount());row.putBoolean("magazine",MagazineBridge.isMagazine(e.output));if(MagazineBridge.isMagazine(e.output))row.putInt("capacity",MagazineBridge.capacity(e.output));
+            Entry e=entries.get(i);var row=new CompoundTag();row.putString("recipe",e.recipeId.toString());row.putString("id",e.gate.id);row.putInt("age",e.gate.age);row.putBoolean("unlocked",CreateUnlocks.unlocked(p,e,age));row.putBoolean("special",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e));row.putString("progression",CreateUnlocks.label(e));row.putString("requirement",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e)?CreateUnlocks.requirement(CreateUnlocks.turret(e)?2:CreateUnlocks.required(e)):"Upgrade this table to "+CreateUnlocks.label(e));row.put("output",e.output.copyWithCount(1).save(new CompoundTag()));row.putInt("outputCount",e.output.getCount());row.putBoolean("magazine",MagazineBridge.isMagazine(e.output));if(MagazineBridge.isMagazine(e.output))row.putInt("capacity",MagazineBridge.capacity(e.output));
             try{row.put("costs",costTags(w,costs(e)));}catch(ReflectiveOperationException ex){row.putBoolean("invalid",true);}
             if(station.kind.equals("ammo"))row.putInt("coinCost",AmmoCoins.price(p,e));recipes.add(row);
         }

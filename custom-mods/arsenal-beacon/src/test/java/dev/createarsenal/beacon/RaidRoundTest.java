@@ -134,22 +134,22 @@ final class RaidRoundTest {
     }
     // ---- the Exchange Shop (side quest) -----------------------------------------------------------------------------------------------
     static List<TextTable.Row> buys(String template){return TextTable.parse(ExchangeShop.sections(List.of(template.split("\n"))).get("buy"),id->true,64,9999).rows();}
-    @Test void thePackShopSellsTheStandaloneRareMaterialsToo(){
+    @Test void theShopSellsRareVanillaMaterialsToo(){
         var pack=buys(ExchangeShop.PACK);
-        for(String rare:List.of("minecraft:gold_ingot","minecraft:blaze_rod","minecraft:ender_pearl","minecraft:diamond")){
-            var s=buys(ExchangeShop.STANDALONE).stream().filter(r->r.id().equals(rare)).findFirst().orElseThrow();
-            var p=pack.stream().filter(r->r.id().equals(rare)).findFirst().orElse(null);
-            assertNotNull(p,rare+" can be bought in the pack edition too");
-            assertEquals(s.count(),p.count(),rare);assertEquals(s.value(),p.value(),rare+": the same price in both editions");
+        // 0.0.21: the prices the (since discontinued) standalone edition asked: 8 gold 2, a blaze rod 3, an ender pearl 3, a diamond 6
+        for(var rare:List.of(new TextTable.Row("minecraft:gold_ingot",8,2),new TextTable.Row("minecraft:blaze_rod",1,3),new TextTable.Row("minecraft:ender_pearl",1,3),new TextTable.Row("minecraft:diamond",1,6))){
+            var p=pack.stream().filter(r->r.id().equals(rare.id())).findFirst().orElse(null);
+            assertNotNull(p,rare.id()+" can be bought");
+            assertEquals(rare.count(),p.count(),rare.id());assertEquals(rare.value(),p.value(),rare.id());
         }
         assertTrue(pack.stream().anyMatch(r->r.id().equals("create:precision_mechanism")),"the pack's own goods stay");
     }
-    @Test void bothShopsSellIronInBulkSlightlyCheaperPerIngot(){
-        for(String template:List.of(ExchangeShop.PACK,ExchangeShop.STANDALONE)){
-            var list=buys(template);
+    @Test void theShopSellsIronInBulkSlightlyCheaperPerIngot(){
+        {
+            var list=buys(ExchangeShop.PACK);
             var ingots=list.stream().filter(r->r.id().equals("minecraft:iron_ingot")).findFirst().orElseThrow();
             var blocks=list.stream().filter(r->r.id().equals("minecraft:iron_block")).findFirst().orElseThrow();
-            assertEquals(16,ingots.count());assertEquals(1,ingots.value(),"16 ingots for 1 energy in both editions");
+            assertEquals(16,ingots.count());assertEquals(1,ingots.value(),"16 ingots for 1 energy");
             assertEquals(16,blocks.count(),"a large lot: 16 blocks, 144 ingots");
             double perIngot=(double)ingots.value()/ingots.count(),perIngotInBulk=(double)blocks.value()/(blocks.count()*9);
             assertTrue(perIngotInBulk<perIngot,"the bulk lot is a little cheaper per ingot");
@@ -157,17 +157,14 @@ final class RaidRoundTest {
         }
     }
     @Test void anUntouchedOldDefaultFileGetsTheNewDefaultAnEditedOneIsKept(){
-        for(boolean standalone:new boolean[]{false,true}){
-            String old=ExchangeShop.HEADER+"\n"+(standalone?ExchangeShop.STANDALONE_BEFORE_0021:ExchangeShop.PACK_BEFORE_0021);
-            assertTrue(ExchangeShop.oldDefault(old,standalone));
-            assertTrue(ExchangeShop.oldDefault(old.replace("\n","   \n")+"\n\n",standalone),"trailing spaces and blank lines do not matter");
-            assertFalse(ExchangeShop.oldDefault(old.replace("universal_ammo_coin x16 = 3","universal_ammo_coin x16 = 4"),standalone),"an edited file is the admin's: kept");
-            assertFalse(ExchangeShop.oldDefault(old,!standalone),"the other edition's old default is not this one's");
-            assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+(standalone?ExchangeShop.STANDALONE:ExchangeShop.PACK),standalone),"the current default is not replaced");
-        }
+        String old=ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_BEFORE_0021;
+        assertTrue(ExchangeShop.oldDefault(old));
+        assertTrue(ExchangeShop.oldDefault(old.replace("\n","   \n")+"\n\n"),"trailing spaces and blank lines do not matter");
+        assertFalse(ExchangeShop.oldDefault(old.replace("universal_ammo_coin x16 = 3","universal_ammo_coin x16 = 4")),"an edited file is the admin's: kept");
+        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK),"the current default is not replaced");
     }
     @Test void theProtocolMovedOn() throws Exception{
         // 0.0.21 moved it to 30 (MissionSync carries the mission id); 0.0.23 to 31 (FOB screen and removal confirmation), see FobTest
-        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"40-standalone\"")&&net.contains("\"40-pack\""),"protocol 40 since 0.0.35 (the Drink Station view)");
+        assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition; the states lost their \"standalone\" flag)");
     }
 }

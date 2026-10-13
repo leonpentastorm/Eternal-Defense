@@ -415,9 +415,9 @@ public final class QaMre {
 
         // ---- Workshop Fabrication: the 8th Kitchen card, bought with this edition's price -----------------------------------------------------
         step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();
-            inv.add(new ItemStack(BuildFlavor.STANDALONE?ArsenalBeacon.ARDENT_ENERGY.get():ArsenalBeacon.PLATING.get(),4));inv.add(new ItemStack(Items.IRON_INGOT,8));inv.add(new ItemStack(Items.SMOKER));}),"the price in the pack");
+            inv.add(new ItemStack(false?ArsenalBeacon.ARDENT_ENERGY.get():ArsenalBeacon.PLATING.get(),4));inv.add(new ItemStack(Items.IRON_INGOT,8));inv.add(new ItemStack(Items.SMOKER));}),"the price in the pack");
         step(5,()->{var msg=srvGet(()->WorkshopFabrication.buy(sp(),"mre_maker"));
-            check("Workshop Fabrication sells the MRE Station for "+(BuildFlavor.STANDALONE?"4 Ardent Energy":"4 Reinforced Beacon Plating")+", 8 iron and a smoker",msg.startsWith("Fabricated MRE Station")&&count(ArsenalBeacon.MRE_STATION_ITEM.get())==1&&count(Items.IRON_INGOT)==0&&count(Items.SMOKER)==0,msg);},"bought");
+            check("Workshop Fabrication sells the MRE Station for "+(false?"4 Ardent Energy":"4 Reinforced Beacon Plating")+", 8 iron and a smoker",msg.startsWith("Fabricated MRE Station")&&count(ArsenalBeacon.MRE_STATION_ITEM.get())==1&&count(Items.IRON_INGOT)==0&&count(Items.SMOKER)==0,msg);},"bought");
         step(5,()->srv(()->{CampaignData.get(sl()).phase="preparation";BeaconNetwork.open(sp(),"menu","");}),"open the beacon");
         until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
         step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals("Workshop Fabrication")){b.onPress();break;}},"the Workshop Fabrication tab");

@@ -11,8 +11,8 @@ version = '0.21.0'
 group = 'dev.createarsenal'
 base { archivesName = 'arsenal-beacon' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-// 0.0.40: the pack edition's Create compat (mechanical arms and the Logistics Center Hub). Compiled against Create, packed into the pack jar
-// only (standaloneJar takes sourceSets.main alone), loaded by name when Create is present.
+// 0.0.40: the Create compat (mechanical arms and the Logistics Center Hub). Compiled against Create, packed into the jar, loaded by name when
+// Create is present (it always is: Create is a required dependency).
 sourceSets { create { java { srcDirs = ['src/create/java'] }; resources { srcDirs = [] } } }
 minecraft {
     mappings channel: 'official', version: '1.20.1'
@@ -45,7 +45,7 @@ dependencies {
     compileOnly fg.deobf('mezz.jei:jei-1.20.1-common-api:15.62.0.217')
     compileOnly fg.deobf('mezz.jei:jei-1.20.1-forge-api:15.62.0.217')
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
-    // 0.0.40: compile only, for the pack's Create compat source set; never shaded, never in the standalone jar
+    // 0.0.40: compile only, for the Create compat source set; never shaded
     createCompileOnly(fg.deobf('com.simibubi.create:create-1.20.1:6.0.8-291:slim')){ transitive = false }
     createCompileOnly('net.createmod.ponder:Ponder-Forge-1.20.1:1.0.91'){ transitive = false }   // Create's block entities implement a Ponder interface (a type name only: not remapped)
 }
@@ -59,17 +59,3 @@ tasks.named('test', Test) { useJUnitPlatform() }
 tasks.named('jar', Jar).configure { from sourceSets.create.output; finalizedBy 'reobfJar' }
 
 tasks.named('jar', Jar).configure { manifest { attributes('MixinConfigs': 'arsenal_beacon.mixins.json') } }
-
-// Both flavors share code and registry IDs. Never install the two flavors together.
-tasks.register('standaloneJar', Jar) {
-    archiveClassifier = 'standalone'
-    from(sourceSets.main.output) {
-        exclude 'META-INF/mods.toml', 'arsenal-build.properties'
-        exclude 'data/arsenal_beacon/recipes/**'
-    }
-    from('src/standalone/resources')
-    manifest { attributes('MixinConfigs': 'arsenal_beacon.mixins.json') }
-    dependsOn tasks.named('classes')
-    finalizedBy 'reobfStandaloneJar'
-}
-reobf { standaloneJar {} }

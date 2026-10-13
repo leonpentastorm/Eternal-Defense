@@ -12,8 +12,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    /** Protocol 40 (0.0.35): the Drink Station screen's view (id 24) is new. Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
-    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->BuildFlavor.STANDALONE?"40-standalone":"40-pack",s->s.equals(BuildFlavor.STANDALONE?"40-standalone":"40-pack"),s->s.equals(BuildFlavor.STANDALONE?"40-standalone":"40-pack"));
+    /** Protocol 41 (0.0.41): one edition only (the standalone edition is discontinued); the status and platform states no longer carry "standalone". Protocol 40 (0.0.35): the Drink Station screen's view (id 24) is new. Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
+    static final String PROTOCOL="41";
+    static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(ArsenalBeacon.ID,"control"),()->PROTOCOL,PROTOCOL::equals,PROTOCOL::equals);
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
         static State decode(FriendlyByteBuf b){CompoundTag n=b.readNbt();return new State(n==null?new CompoundTag():n,b.readUtf(24),b.readUtf(64),b.readUtf(256));}
@@ -86,7 +87,7 @@ final class BeaconNetwork {
     static void action(String action,String token){CHANNEL.sendToServer(new Action(action,token));}
     static void requestPlacement(Placement request){CHANNEL.sendToServer(request);}
     static CompoundTag state(ServerPlayer p,CampaignData d){
-        CompoundTag n=new CompoundTag();n.putBoolean("standalone",BuildFlavor.STANDALONE);n.putString("phase",d.phase);n.putLong("beacon",d.beacon.asLong());
+        CompoundTag n=new CompoundTag();n.putString("phase",d.phase);n.putLong("beacon",d.beacon.asLong());
         n.putInt("health",d.health);n.putInt("maximum",d.maximumHealth());n.putInt("radius",d.radius());n.putInt("below",d.below());n.putInt("above",d.above());n.putInt("vertical",d.vertical);
         n.putInt("tier",d.rewardTier);n.putInt("score",d.score);n.putInt("wave",d.wave);n.putInt("waves",Rules.waves(d.raidTier));n.putInt("attackers",d.raiders.size()+d.spawnRemaining);
         var survey=BaseSurvey.get(p.server.overworld());var score=survey.score;int live=liveScore(p.server,d),prospective=prospectiveTier(p.server,d);n.putBoolean("creative",p.isCreative());n.putInt("buildingTier",Rules.buildingTier(live));n.putInt("liveScore",live);n.putInt("prospectiveTier",prospective);n.putInt("nextScore",Rules.buildingTier(live)>=5?0:(Rules.buildingTier(live)+1)*500);n.putInt("surveyPercent",survey.percent());n.putBoolean("surveyBusy",survey.scanning||score==null);n.putBoolean("surveyIncomplete",survey.incomplete);if(score!=null)n.put("scoreBreakdown",score.tag());n.putInt("raidsStarted",d.raidsStarted);n.putBoolean("nextHard",HardRaids.isHard(d.raidsStarted+1));n.putBoolean("hardRaid",d.hardRaid&&d.active());

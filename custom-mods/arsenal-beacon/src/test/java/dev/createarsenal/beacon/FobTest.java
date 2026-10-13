@@ -26,7 +26,7 @@ final class FobTest {
         }catch(Exception ex){throw new IllegalStateException(ex);}
     }
     private static String gui(String key){return LANG.get("gui.arsenal_beacon."+key);}
-    private static String guide(String part,boolean standalone){return GuideText.raw("fob",part,standalone,key->LANG.get("gui.arsenal_beacon."+key));}
+    private static String guide(String part){return GuideText.raw("fob",part,key->LANG.get("gui.arsenal_beacon."+key));}
 
     // ---- planting ------------------------------------------------------------------------------------------------------------------------------
     @Test void theOwnersLimitsAreTheConstants(){
@@ -143,7 +143,7 @@ final class FobTest {
         assertFalse(fobs.contains("setInvulnerable"),"villagers are protected by the damage event, not the invulnerable flag");
         assertTrue(source("ArsenalStructures.java").contains("state.is(ArsenalBeacon.FOB_BEACON.get())"),"the FOB Beacon is two tall like the shop");
         assertTrue(source("PlayerMeals.java").contains("MealZone.at(p)")&&!source("PlayerMeals.java").contains("BaseZone.problem"),"meals use MealZone");
-        String net=source("BeaconNetwork.java");assertTrue(net.contains("\"40-standalone\"")&&net.contains("\"40-pack\""),"protocol 40 since 0.0.35 (the Drink Station view)");
+        assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition)");
     }
     /**
      * Forge names the class it generates for a {@code @SubscribeEvent} method after the SIMPLE name of its class, the method and the event's
@@ -216,15 +216,15 @@ final class FobTest {
         assertTrue(gui("fob.rename.too_long").contains(FobRules.NAME_MAX+" characters"));
     }
     @Test void theFieldGuideQuotesTheRealNumbers(){
-        for(boolean standalone:new boolean[]{false,true}){
-            String text=guide("body",standalone)+"\n"+guide("detail",standalone);
+        {
+            String text=guide("body")+"\n"+guide("detail");
             for(String expected:List.of("at least "+FobRules.MIN_VILLAGERS+" villagers","Up to "+FobRules.MAX_FOBS+" FOBs","fewer than half",
                     "Support Flare "+SupportRules.SUPPLY_FLARE_PRICE+", Return Flare "+SupportRules.RETURN_FLARE_PRICE+" and Fire Support Flare "+SupportRules.FIRE_FLARE_PRICE,
                     "at most "+FobRules.NAME_MAX+" characters","up to "+FobRules.ZONE_REACH+" sections sideways and "+FobRules.ZONE_REACH_Y+" up or down","With 7 villagers, keep "+(7+1)/2))
-                assertTrue(text.contains(expected),(standalone?"standalone":"pack")+" guide does not say '"+expected+"'");
+                assertTrue(text.contains(expected),"guide does not say '"+expected+"'");
             String price=Economy.FOB_IRON+" iron, "+Economy.FOB_COPPER+" copper, "+Economy.FOB_REDSTONE+" redstone, "+Economy.FOB_GLASS+" glass"
-                +(standalone?" and "+Economy.FOB_ARDENT+" Ardent Energy":", "+Economy.FOB_LOGISTICS+" logistics modules and "+Economy.FOB_PLATING+" reinforced plating");
-            assertTrue(text.contains(price),(standalone?"standalone":"pack")+" price: "+price);
+                +", "+Economy.FOB_LOGISTICS+" logistics modules and "+Economy.FOB_PLATING+" reinforced plating";
+            assertTrue(text.contains(price),"price: "+price);
         }
         assertEquals(SupportRules.SUPPLY_FLARE_PRICE,Economy.fobFlare("supply"));assertEquals(SupportRules.RETURN_FLARE_PRICE,Economy.fobFlare("return"));assertEquals(SupportRules.FIRE_FLARE_PRICE,Economy.fobFlare("fire"));
     }

@@ -22,27 +22,26 @@ final class EnchantRules {
     /** Vanilla's rarity of an enchant (its weight on the enchanting table): COMMON 10, UNCOMMON 5, RARE 2, VERY_RARE 1. */
     enum Rarity{COMMON,UNCOMMON,RARE,VERY_RARE}
     /**
-     * Standalone Ardent Energy per level, by rarity; treasure enchants (unlocked by Warlord Seals) cost twice that. 0.0.29 (owner): doubled in
-     * both editions (2, 3, 5, 8 before), so a table at Mk III charges the 0.0.27 standalone price.
+     * The base Ardent Energy per level, by rarity; treasure enchants (unlocked by Warlord Seals) cost twice that. 0.0.29 (owner): doubled (2, 3,
+     * 5, 8 before), so a table at Mk III charges the 0.0.27 base price.
      */
-    static final int[] PER_LEVEL_STANDALONE={4,6,10,16};
+    static final int[] PER_LEVEL_BASE={4,6,10,16};
     static final int TREASURE_FACTOR=2;
     /**
-     * The pack edition pays twice the standalone price (owner, 0.0.28): there Ardent Energy pays for little else, Create parts buy the other
-     * upgrades; in the standalone edition it pays for everything. Until 0.0.27 the pack paid half.
+     * The price is twice the base (owner, 0.0.28): Ardent Energy pays for little else, Create parts buy the other upgrades. Until 0.0.27 it
+     * was half. (The standalone edition, discontinued in 0.0.41, paid the base.)
      */
     static final int PACK_FACTOR=2;
-    /** Pure: the full price of level {@code level} (before a table upgrade): rarity x level (x2 for treasure), x2 in the pack edition. */
-    static int price(Rarity rarity,int level,boolean treasure,boolean standalone){
-        int p=PER_LEVEL_STANDALONE[rarity.ordinal()]*Math.max(1,level)*(treasure?TREASURE_FACTOR:1);
-        return standalone?p:p*PACK_FACTOR;
+    /** Pure: the full price of level {@code level} (before a table upgrade): rarity x level (x2 for treasure), x2. */
+    static int price(Rarity rarity,int level,boolean treasure){
+        return PER_LEVEL_BASE[rarity.ordinal()]*Math.max(1,level)*(treasure?TREASURE_FACTOR:1)*PACK_FACTOR;
     }
     /** Levels and the table's Mk as players read them. */
     static final String[] ROMAN={"I","II","III","IV","V","VI","VII"};
     static String roman(int n){return n>=1&&n<=ROMAN.length?ROMAN[n-1]:String.valueOf(n);}
     /**
      * Table upgrades: Mk I to III, each a permanent discount on every enchant (percent). 0.0.28 (owner): Mk III takes half off, so a pack table
-     * at Mk III charges exactly the standalone price (the 0.0.27 price), and Mk I and II are evenly between.
+     * at Mk III charges exactly the base price (the 0.0.27 price), and Mk I and II are evenly between.
      */
     static final int MAX_MK=3;
     static final int[] DISCOUNT={0,17,33,50};

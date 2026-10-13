@@ -789,7 +789,7 @@ public final class QaFob {
         step(20,()->{int value=-1;
             try{var f=ExchangeScreen.class.getDeclaredField("data");f.setAccessible(true);var data=(net.minecraft.nbt.CompoundTag)f.get(mc().screen);
                 for(var t:data.getList("sell",net.minecraft.nbt.Tag.TAG_COMPOUND)){var row=(net.minecraft.nbt.CompoundTag)t;if(ItemStack.of(row.getCompound("item")).is(ArsenalBeacon.WARLORD_SEAL.get()))value=row.getInt("cost");}}catch(Exception e){log("QA_NOTE {}",e);}
-            check("the Exchange buys the Warlord Seal for "+(BuildFlavor.STANDALONE?8:4)+" Ardent Energy",value==(BuildFlavor.STANDALONE?8:4),"value="+value);
+            check("the Exchange buys the Warlord Seal for "+(false?8:4)+" Ardent Energy",value==(false?8:4),"value="+value);
             shot("f28_exchange_seal");},"the seal on the sell list");
         step(5,()->{mc().setScreen(null);srv(()->{sl().setBlock(FobGameTests.SHOP,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);ArsenalStructures.remove(sl(),FobGameTests.SHOP);});},"close it");
         step(5,()->{var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");

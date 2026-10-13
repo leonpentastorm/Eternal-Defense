@@ -20,7 +20,7 @@ final class CreateUnlocks {
         scan(player,data); // Existing saves and newly joining teammates keep their earned milestones.
     }
     private static void scan(ServerPlayer p,PlatformRegistry data){for(String id:REQUIRED){var a=p.server.getAdvancements().getAdvancement(new ResourceLocation("create",id));if(a!=null&&p.getAdvancements().getOrStartProgress(a).isDone()&&data.createMilestones.add(id))data.setDirty();}}
-    static int level(ServerPlayer p){if(BuildFlavor.STANDALONE&&!net.minecraftforge.fml.ModList.get().isLoaded("create"))return WeaponPlatform.visitedNether(p)?2:1;sync(p);var milestones=PlatformRegistry.get(p.server.overworld()).createMilestones;
+    static int level(ServerPlayer p){sync(p);var milestones=PlatformRegistry.get(p.server.overworld()).createMilestones;
         if(!milestones.containsAll(List.of("mechanical_press","mechanical_mixer")))return 0;
         if(!milestones.containsAll(List.of("deployer","precision_mechanism")))return 1;
         return milestones.contains("steam_engine")?3:2;
@@ -36,8 +36,8 @@ final class CreateUnlocks {
     static boolean supply(WeaponPlatform.Entry e){if(DisplayRacks.entry(e)||e.gate().kind().equals("supply"))return true;if(!e.gate().kind().equals("attachment"))return false;try{e.output().getItem().getClass().getMethod("getAttachmentId",net.minecraft.world.item.ItemStack.class);return false;}catch(NoSuchMethodException ex){return true;}}
     static boolean armory(WeaponPlatform.Entry e){return e.gate().id().startsWith("create_armorer:")||e.gate().id().equals("lrl:db_long_super");}
     static boolean turret(WeaponPlatform.Entry e){return e.gate().kind().equals("turret");}
-    static String requirement(int level){if(BuildFlavor.STANDALONE)return level<2?"Available from the start":"Visit the Nether";return switch(level){case 0->"Available from the start";case 1->"Operate a Mechanical Press and Mechanical Mixer";case 2->"Operate a Deployer and make a Precision Mechanism";default->"Operate a Steam Engine";};}
-    static String stage(int level){if(BuildFlavor.STANDALONE)return level>=2?"Nether unlocked":"Overworld";return switch(level){case 0->"Not unlocked";case 1->"Workshop";case 2->"Precision";default->"Steam";};}
-    static boolean unlocked(ServerPlayer p,WeaponPlatform.Entry e,int age){if(BuildFlavor.STANDALONE)return p.isCreative()||(DisplayRacks.entry(e)?true:turret(e)?WeaponPlatform.visitedNether(p):CreateUnlocks.supply(e)?required(e)<2||WeaponPlatform.visitedNether(p):e.gate().age()<=age);return p.isCreative()|| (MagazineBridge.isMagazine(e.output())?MagazineBridge.unlocked(p,e,age):turret(e)?level(p)>=2:supply(e)?level(p)>=required(e):armory(e)?level(p)>=required(e):e.gate().age()<=age);}
+    static String requirement(int level){return switch(level){case 0->"Available from the start";case 1->"Operate a Mechanical Press and Mechanical Mixer";case 2->"Operate a Deployer and make a Precision Mechanism";default->"Operate a Steam Engine";};}
+    static String stage(int level){return switch(level){case 0->"Not unlocked";case 1->"Workshop";case 2->"Precision";default->"Steam";};}
+    static boolean unlocked(ServerPlayer p,WeaponPlatform.Entry e,int age){return p.isCreative()|| (MagazineBridge.isMagazine(e.output())?MagazineBridge.unlocked(p,e,age):turret(e)?level(p)>=2:supply(e)?level(p)>=required(e):armory(e)?level(p)>=required(e):e.gate().age()<=age);}
     static String label(WeaponPlatform.Entry e){return turret(e)?"Create: Precision defenses":supply(e)?required(e)==0?"Supplies: Field equipment":"Supplies: Create "+stage(required(e)):armory(e)?"Create: "+stage(required(e)):"Age "+e.gate().age()+": "+WeaponPlatform.AGES[e.gate().age()];}
 }
