@@ -44,7 +44,9 @@ final class TacticalBlocks {
     /** The table's footprint, from its anchor: 2 wide (clockwise of the facing), 2 deep (behind), 2 tall. */
     static final int TABLE_WIDE=2,TABLE_DEEP=2,TABLE_TALL=2;
 
-    static final class TableBlock extends Block {
+    static final class TableBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
+        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         TableBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->7).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite());}
@@ -63,7 +65,9 @@ final class TacticalBlocks {
         }
     }
 
-    static final class SatelliteBlock extends Block {
+    static final class SatelliteBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
+        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         SatelliteBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->4).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(MK,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,MK);}
         /** The Mk comes from the server's record of the base ({@link HuntData#satelliteMk}), never from the item. */

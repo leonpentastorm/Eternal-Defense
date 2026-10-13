@@ -47,7 +47,9 @@ final class FobBlocks {
     /** From the owner's model: y 0 to 32 px (two blocks), x and z inside one block (the flag's tip reaches 0.2 px past it). See FobTest. */
     static final int TALL=2,WIDE=1,DEEP=1;
 
-    static final class FobBlock extends Block {
+    static final class FobBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
+        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         FobBlock(){super(Properties.of().strength(-1f,3600000f).noOcclusion().lightLevel(s->7).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite());}

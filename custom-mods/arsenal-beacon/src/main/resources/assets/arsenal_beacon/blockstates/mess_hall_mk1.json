@@ -1,19 +1,19 @@
 {
   "variants": {
     "facing=north": {
-      "model": "arsenal_beacon:block/mess_hall_mk1",
+      "model": "arsenal_beacon:block/mess_hall_mk1_static",
       "y": 0
     },
     "facing=east": {
-      "model": "arsenal_beacon:block/mess_hall_mk1",
+      "model": "arsenal_beacon:block/mess_hall_mk1_static",
       "y": 90
     },
     "facing=south": {
-      "model": "arsenal_beacon:block/mess_hall_mk1",
+      "model": "arsenal_beacon:block/mess_hall_mk1_static",
       "y": 180
     },
     "facing=west": {
-      "model": "arsenal_beacon:block/mess_hall_mk1",
+      "model": "arsenal_beacon:block/mess_hall_mk1_static",
       "y": 270
     }
   }

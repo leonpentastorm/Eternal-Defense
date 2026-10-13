@@ -15,6 +15,7 @@ final class KitchenRenderer implements BlockEntityRenderer<CookPot.PotEntity> {
     static final ResourceLocation STEW=new ResourceLocation(ArsenalBeacon.ID,"block/cook_pot_stew");
     KitchenRenderer(BlockEntityRendererProvider.Context context){}
     @Override public void render(CookPot.PotEntity pot,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+        Animations.draw(pot,partial,pose,buffer,light);   // 0.0.39: the flames
         pose.pushPose();pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-ArsenalStructures.angle(pot.getBlockState().getValue(ArsenalStructures.FACING))));pose.translate(-.5,0,-.5);
         if(!pot.empty())SupportClient.draw(pose,buffer,RenderType.cutout(),STEW,light,overlay);
         var lines=new ArrayList<Component>();lines.add(pot.empty()?Ui.t("kitchen.pot_empty"):pot.stew.name());if(!pot.empty()){for(var b:pot.stew.bonuses())lines.add(b.description(false));lines.add(Ui.t("kitchen.servings",pot.servings));}

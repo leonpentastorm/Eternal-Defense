@@ -1,5 +1,15 @@
 # Change log
 
+## 0.0.39 — Idle animations (2026-10-13, branch `feature/animation-pass`)
+
+On `feature/animation-pass`, made from `feature/drink-station` at 0.0.38 (the owner asked for a new branch with everything so far). No packet changed: **network protocol 40**. Rules: GDD 0.0.39 (section 7); tests: `docs/ROUND-0039-TESTING.md`.
+
+* **The blocks move** (owner: "the flag in the FOB model or the satellite dish being able to bend up and down"): the FOB Beacon's flag waves as a cloth of four strips, its whip antenna sways, its emitter ring turns; the Satellite Beacon's dish picks a new heading every 9 seconds and turns and tilts to it (-110 to +50 degrees round, -15 to +20 up and down, never into its own antenna); the Command Table's antenna sways, its warning light turns and flashes, a sweep circles the radar screen; the Defense Beacon's rings (Mk I to IV) rise and fall up the core and turn a quarter at a time, its emitter ring turns; the Support Platform's emitter floats and turns; the Tactical Enchanting Table's book floats, turns and breathes, its sparks twinkle, its ring spins; the Mess Hall Mk I's roast turns on its spit over a flickering fire; the Cook Pot's and Brew Pot's flames flicker and the Brew Pot's paddle stirs; the MRE Station's press comes down and seals with its lever while its rollers turn; the cannon's crane hook swings.
+* Only for show. Each block keeps its own rhythm (from its position), the game time drives it (pausing stops it), and at rest every part sits exactly where the owner's model has it. Item icons and the owner's model files are unchanged: `tools/art/split_animated.py` writes a model without the moving parts for the world and one model per part.
+* **Settings > Idle animations** (beacon screen, on by default, saved per player): off, every block stands still in its normal pose. The music volume line under the music switch now shows only when the game's music volume is 0.
+* The FOB Beacon, Satellite Beacon, Command Table and Tactical Enchanting Table have a block entity now (it holds no data). In a world from before 0.0.39 they get it when their chunk loads, so their parts are not missing.
+* The placement ghost still shows the whole model, its moving parts at rest. The Field Guide's Settings section mentions the switch.
+
 ## 0.0.38 — The MRE Station (2026-10-13, branch `feature/drink-station`)
 
 On `feature/drink-station`, after 0.0.37. No packet changed: **network protocol 40** (the station's buttons use the existing menu-button packet). Rules: GDD 0.0.38 (Part F3); tests: `docs/ROUND-0038-TESTING.md`.

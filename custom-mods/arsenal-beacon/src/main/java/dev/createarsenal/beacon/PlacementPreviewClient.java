@@ -96,6 +96,8 @@ public final class PlacementPreviewClient {
             pose.pushPose();pose.translate(at.getX(),at.getY(),at.getZ());
             mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),consumer,state,mc.getBlockRenderer().getBlockModel(state),
                 .55f+.45f*CYAN[0]/255f,.55f+.45f*CYAN[1]/255f,.55f+.45f*CYAN[2]/255f,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
+            // 0.0.39: the moving parts are no longer in the block's model; the ghost shows them at rest
+            if(Animations.animated(state))Animations.drawRest(state,pose,consumer,.55f+.45f*CYAN[0]/255f,.55f+.45f*CYAN[1]/255f,.55f+.45f*CYAN[2]/255f);
             pose.popPose();
         }
         BUFFER.endBatch(RenderType.translucent());

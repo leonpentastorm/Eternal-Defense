@@ -96,6 +96,7 @@ public final class SupportClient {
         private final net.minecraft.client.gui.Font font;
         PlatformRenderer(BlockEntityRendererProvider.Context ctx){font=ctx.getFont();}
         @Override public void render(SupportPlatform.PlatformEntity be,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            Animations.draw(be,partial,pose,buffer,light);   // 0.0.39: the emitter
             if(be.ownerName==null||be.ownerName.isEmpty())return;
             var facing=be.getBlockState().getValue(SupportPlatform.FACING);
             pose.pushPose();
@@ -124,7 +125,10 @@ public final class SupportClient {
             pose.pushPose();
             float k=(float)SupportCannon.SCALE,turn=(float)SupportCannon.TURN_Y;
             pose.translate(.5,turn,.5);pose.mulPose(Axis.YP.rotationDegrees(yaw));pose.scale(k,k,k);pose.translate(-.5,-turn,-.5);
-            draw(pose,buffer,RenderType.cutout(),TURRET,light,overlay);
+            draw(pose,buffer,RenderType.cutout(),Animations.TURRET_STATIC,light,overlay);
+            // 0.0.39: the crane hook swings; the same turret transform without the camera, for its shading
+            var own=new PoseStack();own.translate(.5,turn,.5);own.mulPose(Axis.YP.rotationDegrees(yaw));own.scale(k,k,k);own.translate(-.5,-turn,-.5);
+            Animations.cannonHook(be,partial,pose,own,buffer,light);
             // the barrel hinges on the turret and slides back along its own axis when it fires
             float t=Math.max(0f,(be.recoil-partial)/SupportCannon.RECOIL_TICKS);
             pose.translate(.5,1.7,.5);

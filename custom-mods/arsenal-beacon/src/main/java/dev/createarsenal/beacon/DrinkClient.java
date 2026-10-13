@@ -66,6 +66,7 @@ public final class DrinkClient {
         static final ResourceLocation LIQUID=new ResourceLocation(ArsenalBeacon.ID,"block/drink_pot_liquid");
         PotRenderer(BlockEntityRendererProvider.Context context){}
         @Override public void render(BrewPot.PotEntity pot,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            Animations.draw(pot,partial,pose,buffer,light);   // 0.0.39: the flames and the stirring paddle
             pose.pushPose();pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-ArsenalStructures.angle(pot.getBlockState().getValue(ArsenalStructures.FACING))));pose.translate(-.5,0,-.5);
             if(!pot.empty()){int c=pot.drink.color();SupportClient.drawTinted(pose,buffer,RenderType.translucent(),LIQUID,light,overlay,(c>>16&255)/255f,(c>>8&255)/255f,(c&255)/255f);}
             var lines=new ArrayList<Component>();

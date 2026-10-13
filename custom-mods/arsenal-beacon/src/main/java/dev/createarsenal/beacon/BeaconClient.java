@@ -148,6 +148,7 @@ public final class BeaconClient {
     public static final class Beam implements BlockEntityRenderer<ArsenalBeacon.DefenseEntity> {
         public Beam(BlockEntityRendererProvider.Context context){}
         @Override public void render(ArsenalBeacon.DefenseEntity entity,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            Animations.draw(entity,partial,pose,buffer,light);   // 0.0.39: the rings and the emitter ring
             if(!current()||!state.getBoolean("beam")||!entity.getBlockPos().equals(BlockPos.of(state.getLong("beacon"))))return;
             float[] color=state.getInt("health")>0?new float[]{.22f,1f,.88f}:new float[]{1f,.35f,.18f};
             pose.pushPose();pose.translate(0,state.getInt("mk")==4?2:1,0);BeaconRenderer.renderBeaconBeam(pose,buffer,BeaconRenderer.BEAM_LOCATION,partial,1f,entity.getLevel().getGameTime(),0,512,color,.2f,.28f);pose.popPose();
@@ -236,7 +237,7 @@ public final class BeaconClient {
     record Hover(ItemStack item,int x,int y){}
 
     static final class ControlScreen extends PanelScreen {
-        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
+        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,animations,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
         private final List<Hover> icons=new ArrayList<>();
         static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
         private static ItemStack item(String id){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,id)));}
@@ -246,7 +247,7 @@ public final class BeaconClient {
         private int contentTop(){return top+54;}
         private boolean ready(){return on("installed")&&on("near")&&!on("active");}
         @Override protected void init(){
-            super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=music=player=remove=respite=startRaid=lowerTier=higherTier=null;
+            super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=music=player=animations=remove=respite=startRaid=lowerTier=higherTier=null;
             int total=0;for(String key:TABS)total+=font.width(Ui.t("tab."+key))+14;int tx=left+14,space=pw-28;
             for(int i=0;i<TABS.length;i++){int page=i,tw=(font.width(Ui.t("tab."+TABS[i]))+14)*space/total;var b=button(Ui.t("tab."+TABS[i]),tx,top+31,tw-2,18,Ui.Look.TAB,x->{tab=page;rebuildWidgets();});b.selected=i==tab;tx+=tw;}
             closeButton();
@@ -285,6 +286,7 @@ public final class BeaconClient {
                 hurtbox=button(Component.empty(),x,contentTop()+2+gap*2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("hurtbox",""));
                 music=button(Component.empty(),x2,contentTop()+2,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setEnabled(!RaidMusic.enabled()));
                 player=button(Component.empty(),x2,contentTop()+2+gap,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setPlayerShown(!RaidMusic.playerShown()));
+                animations=button(Component.empty(),x2,contentTop()+2+gap*2,w-col-10,22,Ui.Look.TOGGLE,b->Animations.setEnabled(!Animations.enabled()));
                 remove=button(Ui.t("settings.remove"),x,contentTop()+2+gap*3,w,22,Ui.Look.DANGER,b->BeaconNetwork.action("remove",""));
             }
         }
@@ -563,10 +565,12 @@ public final class BeaconClient {
             }
             var m=(Ui.UiButton)music;m.on=RaidMusic.enabled();m.setMessage(Ui.t("settings.music"));
             var p=(Ui.UiButton)player;p.on=RaidMusic.playerShown();p.setMessage(Ui.t("settings.player"));p.active=m.on;
-            Ui.wrap(g,font,Ui.t("settings.music.note"),x2+4,y+25,w-col-18,Ui.MUTED,lines);
-            Ui.wrap(g,font,Ui.t("settings.player.note"),x2+4,y+gap+25,w-col-18,Ui.MUTED,lines);
+            // 0.0.39: the row under the music switches is the idle animations' own; the game's Music volume is told under the music switch when it is off
             int volume=Math.round(Minecraft.getInstance().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MUSIC)*100);
-            Ui.wrap(g,font,Ui.t("settings.music.volume",volume),x2+4,y+gap*2+6,w-col-18,volume<=0?Ui.ORANGE:Ui.MUTED,Math.max(2,lines+1));
+            Ui.wrap(g,font,volume<=0?Ui.t("settings.music.volume",volume):Ui.t("settings.music.note"),x2+4,y+25,w-col-18,volume<=0?Ui.ORANGE:Ui.MUTED,lines);
+            Ui.wrap(g,font,Ui.t("settings.player.note"),x2+4,y+gap+25,w-col-18,Ui.MUTED,lines);
+            var a=(Ui.UiButton)animations;a.on=Animations.enabled();a.setMessage(Ui.t("settings.animations"));
+            Ui.wrap(g,font,Ui.t("settings.animations.note"),x2+4,y+gap*2+25,w-col-18,Ui.MUTED,lines);
             remove.active=on("installed")&&on("controller")&&on("canRemove");
             Ui.wrap(g,font,ph>=300?Ui.t("settings.remove.note"):Ui.t("settings.remove.short"),x+4,y+gap*3+25,w-8,Ui.MUTED,ph>=300?2:1);
         }

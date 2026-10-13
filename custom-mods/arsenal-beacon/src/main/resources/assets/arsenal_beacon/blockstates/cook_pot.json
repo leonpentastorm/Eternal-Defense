@@ -1,19 +1,19 @@
 {
   "variants": {
     "facing=north": {
-      "model": "arsenal_beacon:block/cook_pot",
+      "model": "arsenal_beacon:block/cook_pot_static",
       "y": 0
     },
     "facing=east": {
-      "model": "arsenal_beacon:block/cook_pot",
+      "model": "arsenal_beacon:block/cook_pot_static",
       "y": 90
     },
     "facing=south": {
-      "model": "arsenal_beacon:block/cook_pot",
+      "model": "arsenal_beacon:block/cook_pot_static",
       "y": 180
     },
     "facing=west": {
-      "model": "arsenal_beacon:block/cook_pot",
+      "model": "arsenal_beacon:block/cook_pot_static",
       "y": 270
     }
   }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.38, branch feature/drink-station: the MRE Station, the MRE and Marines Fuel; 0.0.37: bowls and cups used up, a guard against mods that take endless effects away; 0.0.36: the fire support rework, Ablaze, Spotter Arrows, the curse until death; 0.0.35: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.39, branch feature/animation-pass: idle animations; 0.0.38: the MRE Station, the MRE and Marines Fuel; 0.0.37: bowls and cups used up, a guard against mods that take endless effects away; 0.0.36: the fire support rework, Ablaze, Spotter Arrows, the curse until death; 0.0.35: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,16 +25,16 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0038-TESTING.md','ROUND-0037-TESTING.md','ROUND-0036-TESTING.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0039-TESTING.md','ROUND-0038-TESTING.md','ROUND-0037-TESTING.md','ROUND-0036-TESTING.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
-# seven screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
-BUNDLED_SHOTS={'standalone-m03_screen_ready.png','standalone-m06_over_twenty.png','standalone-m01_station_world.png','pack-m08_guide_mre.png','pack-m07_workshop.png'}
+# five screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
+BUNDLED_SHOTS={'standalone-a01_motion_pairs.png','standalone-a02_fob_flag_film.png','standalone-a03_satellite_film.png','standalone-a04_satellite_side_3s.png','pack-a09_old_world_blocks.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0038','round-0037','round-0036','round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0039','round-0038','round-0037','round-0036','round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34; 0.0.36, 0.0.37 and 0.0.38 change no packet): 0.0.35 adds the Drink Station screen's state,
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34; 0.0.36 to 0.0.39 change no packet): 0.0.35 adds the Drink Station screen's state,
 so an older client cannot join this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
@@ -50,9 +50,26 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-THIS BUILD IS FROM THE FEATURE BRANCH feature/drink-station (0.0.34 is on dev).
+THIS BUILD IS FROM THE FEATURE BRANCH feature/animation-pass (made from feature/drink-station; 0.0.34 is on dev).
 
-WHAT IS NEW IN 0.0.38: THE MRE STATION
+WHAT IS NEW IN 0.0.39: IDLE ANIMATIONS
+* The mod's blocks move a little while they stand: the FOB flag waves and its antenna sways, the Satellite Beacon's dish turns and
+  tilts to a new heading every few seconds, the Command Table's warning light turns and flashes and a sweep circles its radar, the
+  Defense Beacon's rings pulse up the core and turn a quarter at a time, the Support Platform's emitter floats and turns, the
+  Enchanting Table's book floats and its sparks twinkle, the Mess Hall's roast turns over a flickering fire, the pots' flames flicker
+  and the Brew Pot's paddle stirs, the MRE Station's press seals while its rollers turn, the cannon's crane hook swings.
+* Only for show: nothing in the game changes. Each block moves to its own rhythm; pausing the game stops them.
+* Settings (beacon screen) > "Idle animations": switch it off and every block stands still in its normal pose. It is saved for you only.
+* A world from an older build: the FOB Beacon, Satellite Beacon, Command Table and Enchanting Table get their moving parts when
+  their chunk loads (tried in the test client on a chunk saved without them).
+
+PLAYTEST SCRIPT FOR 0.0.39 (about 5 minutes)
+1. Walk past your blocks and watch: does anything clip through another part, jump, or look wrong? (Tell us which block.)
+2. Watch the Satellite Beacon for half a minute: the dish should never pass through its antenna or the box below.
+3. Open the beacon screen > Settings, switch "Idle animations" off: everything stops in its normal pose. Switch it on again.
+4. With many blocks in view, does the frame rate drop compared with 0.0.38?
+
+WHAT WAS NEW IN 0.0.38: THE MRE STATION
 * A new kitchen block, bought at Workshop Fabrication (Kitchen group, 8th card): EDITIONPRICE, 8 iron ingots and a smoker.
   Place it inside your zone and open it.
 * Put up to six foods (any food, modded too), Marines Fuel and Paper in its slots and press Make MRE. Each MRE takes one of each

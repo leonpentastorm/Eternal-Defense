@@ -97,6 +97,8 @@ final class MreStation {
             for(var t:tag.getList("Items",Tag.TAG_COMPOUND)){var row=(CompoundTag)t;int slot=row.getByte("Slot");if(slot>=0&&slot<SLOTS)items.setItem(slot,ItemStack.of(row));}
         }
         @Override public Component getDisplayName(){return Component.translatable("block.arsenal_beacon.mre_maker");}
+        /** 0.0.39: its press, lever and rollers are drawn while any of the two-tall model is in view. */
+        @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).inflate(2);}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player player){return new StationMenu(id,inv,items,worldPosition,this);}
     }
 

@@ -1,0 +1,239 @@
+package dev.createarsenal.beacon;
+
+import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): the 0.0.39 idle animations on a real client. Builds every animated block in a row on a still flat
+ * world (no daylight cycle, no clouds, no beam, no zone outline, the HUD hidden), and for each one takes frames a second apart: with the
+ * animations on they must differ, with the Settings switch off they must be identical to the pixel. Also checks every part and static
+ * model loads, each block has its renderer, the Settings switch and its layout, and the placement ghost. Copied in by setup-qa.sh.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaAnim {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
+    static BlockPos B(){return at(0,0,-40);}
+    /** Pixels that differ between two screenshots (any channel by more than 6). */
+    static int diff(String a,String b){
+        // the screenshot is written on an IO thread: a file still being written cannot be read yet, so try again for up to 3 s
+        for(int attempt=0;attempt<30;attempt++){int n=diffOnce(a,b,attempt==29);if(n!=-2)return n;try{Thread.sleep(100);}catch(InterruptedException ignored){}}
+        return -2;
+    }
+    static int diffOnce(String a,String b,boolean last){
+        try(var ia=NativeImage.read(new java.io.FileInputStream(new File("shots/screenshots/"+a+".png")));var ib=NativeImage.read(new java.io.FileInputStream(new File("shots/screenshots/"+b+".png")))){
+            if(ia.getWidth()!=ib.getWidth()||ia.getHeight()!=ib.getHeight())return -1;int n=0;
+            for(int y=0;y<ia.getHeight();y++)for(int x=0;x<ia.getWidth();x++){int p=ia.getPixelRGBA(x,y),q=ib.getPixelRGBA(x,y);
+                for(int s=0;s<24;s+=8)if(Math.abs((p>>s&255)-(q>>s&255))>6){n++;break;}}
+            return n;
+        }catch(Exception ex){if(last)log("QA_NOTE diff {} {}: {}",a,b,ex.toString());return -2;}
+    }
+
+    // ---- one frame's texts (as QaDrinks), for the Settings tab's layout ------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean hit(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return aw>0&&bw>0&&ax<bx+bw&&bx<ax+aw&&ay<by+bh&&by<ay+ah;}
+    static boolean inside(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return ax>=bx&&ay>=by&&ax+aw<=bx+bw&&ay+ah<=by+bh;}
+    static void layout(String name){
+        var s=mc().screen;var boxes=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();
+        for(int i=0;i<boxes.size();i++){var a=boxes.get(i);
+            for(int j=i+1;j<boxes.size();j++){var b=boxes.get(j);if(hit(a.x(),a.y(),a.w(),a.h(),b.x(),b.y(),b.w(),b.h()))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+            if(s!=null)for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&hit(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight())&&!inside(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("'"+a.text()+"' across the button '"+w.getMessage().getString()+"'");
+        }
+        check(name+" at "+(s==null?"?":s.width+"x"+s.height)+": "+boxes.size()+" texts, none over another or across a button",bad.isEmpty()&&!boxes.isEmpty(),bad.size()+" "+String.join(" | ",bad.subList(0,Math.min(5,bad.size()))));
+    }
+    static void window(int w,int h){org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc().getWindow().getWindow(),w,h);}
+    static void scale(int scale){mc().options.guiScale().set(scale);mc().resizeDisplay();}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_anim",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_anim",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    /** One animated block on show: where it stands, how it is set, and the camera: distance in front (north of it), height and pitch. */
+    record Subject(String name,BlockPos pos,Supplier<BlockState> state,double back,double eye,float pitch,double side){}
+    static final List<Subject> SUBJECTS=new ArrayList<>();
+    static void subject(String name,int dx,Supplier<BlockState> state,double back,double eye,float pitch){SUBJECTS.add(new Subject(name,at(dx,0,0),state,back,eye,pitch,0));}
+    static void subject(String name,int dx,Supplier<BlockState> state,double back,double eye,float pitch,double side){SUBJECTS.add(new Subject(name,at(dx,0,0),state,back,eye,pitch,side));}
+
+    /** The camera in front of a subject (north of it, looking south), or behind it (south, looking north) for a negative distance. */
+    static void look(Subject s){
+        boolean behind=s.back()<0;float yaw=behind?180:0;double x=s.pos().getX()+.5+s.side(),z=behind?s.pos().getZ()+1-s.back():s.pos().getZ()-s.back();
+        srv(()->sp().teleportTo(sl(),x,s.pos().getY()+s.eye()-1.62,z,yaw,s.pitch()));mc().player.setYRot(yaw);mc().player.setXRot(s.pitch());
+    }
+    static void script(){
+        // a still world: no day cycle, no weather, no clouds, the beacon's beam and zone outline off
+        step(5,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sp().getInventory().clearContent();// the starting kit's Defense Beacon would draw its placement ghost and zone lines in every frame
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.showBeam=false;d.showBoundary=false;d.setDirty();
+            sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"a still world");
+        subject("fob_beacon",0,()->ArsenalBeacon.FOB_BEACON.get().defaultBlockState(),3.2,1.1f+0f,-8,.15);
+        subject("satellite_beacon",6,()->ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),3.2,1.2,-6);
+        subject("command_table",12,()->ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState(),4.2,1.6,8,.5);
+        for(int mk=1;mk<=4;mk++){int level=mk;subject("defense_beacon_mk"+mk,20+mk*6,()->ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,level),level==4?5.5:2.6,level==4?1.6:.9,level==4?6:16,level==4?.5:0);}
+        subject("support_platform_mk1",50,()->ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,1),1.4,2.6,20);
+        subject("support_platform_mk4",54,()->ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,4),1.4,2.6,20);
+        subject("enchanting_table",58,()->ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState(),2.8,1.4,18,.5);
+        subject("mess_hall_mk1",64,()->ArsenalBeacon.MESS_HALL_I.get().defaultBlockState(),3,1.1,16,.5);
+        subject("cook_pot",70,()->ArsenalBeacon.COOK_POT.get().defaultBlockState(),2.4,1.2,24);
+        subject("brew_pot",74,()->ArsenalBeacon.BREW_POT.get().defaultBlockState(),2.4,1.4,28);
+        subject("mre_station",78,()->ArsenalBeacon.MRE_STATION.get().defaultBlockState(),2.2,1.3,22);
+        subject("support_cannon",84,()->ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState(),-1.6,1.9,4,-.3);
+        step(10,()->srv(()->{for(var s:SUBJECTS)sl().setBlock(s.pos(),s.state().get(),3);}),"every animated block, in a row (each facing north, toward the camera)");
+        step(40,()->{},"the client gets them");
+        // the models load and every block draws through its renderer
+        step(2,()->{
+            var models=mc().getModelManager();var missing=models.getMissingModel();var bad=new ArrayList<String>();int n=0;
+            for(var entry:Animations.PARTS.entrySet())for(var p:entry.getValue()){n++;if(models.getModel(Animations.part(entry.getKey(),p))==missing)bad.add(entry.getKey()+"_"+p);}
+            if(models.getModel(Animations.TURRET_STATIC)==missing)bad.add("turret_static");
+            check("all "+n+" part models and the cannon's static turret load",bad.isEmpty(),String.join(", ",bad));
+            var badStates=new ArrayList<String>();
+            for(var s:SUBJECTS){var st=mc().level.getBlockState(s.pos());if(mc().getBlockRenderer().getBlockModel(st)==missing)badStates.add(s.name());}
+            check("every animated block's static model loads (no missing-model cube)",badStates.isEmpty(),String.join(", ",badStates));
+            var noRenderer=new ArrayList<String>();
+            for(var s:SUBJECTS){var be=mc().level.getBlockEntity(s.pos());if(be==null||mc().getBlockEntityRenderDispatcher().getRenderer(be)==null)noRenderer.add(s.name()+(be==null?" (no block entity)":""));}
+            check("every animated block has a block entity and a renderer on the client (the FOB, satellite, table and enchanting table got theirs)",noRenderer.isEmpty(),String.join(", ",noRenderer));
+        },"models and renderers");
+        // a spectator: the camera stays where it is put (in creative it would fall to the ground or be pushed out of it)
+        step(2,()->{srv(()->sp().setGameMode(GameType.SPECTATOR));mc().options.hideGui=true;Animations.setEnabled(true);},"the HUD hidden, animations on, the camera a spectator");
+        for(var s:SUBJECTS){
+            step(4,()->look(s),"look at the "+s.name());
+            step(30,()->Animations.setEnabled(true),"animations on");
+            step(2,()->shot("a_"+s.name()+"_on_0"),"frame");
+            step(16,()->{},"0.8 s");
+            step(2,()->shot("a_"+s.name()+"_on_1"),"frame");
+            step(10,()->Animations.setEnabled(false),"Settings: animations off");
+            step(8,()->shot("a_"+s.name()+"_off_0"),"frame");
+            step(16,()->{},"0.8 s");
+            step(2,()->shot("a_"+s.name()+"_off_1"),"frame");
+            step(12,()->{
+                int on=diff("a_"+s.name()+"_on_0","a_"+s.name()+"_on_1"),off=diff("a_"+s.name()+"_off_0","a_"+s.name()+"_off_1");
+                check(s.name()+": with the animations on, its parts move (frames 0.8 s apart differ)",on>40,on+" pixels");
+                check(s.name()+": off in Settings, it stands still (frames identical)",off==0,off+" pixels");
+                Animations.setEnabled(true);},"compare");
+        }
+        // a short film of the flag and the dish for the record
+        for(var name:List.of("fob_beacon","satellite_beacon")){var s=SUBJECTS.stream().filter(x->x.name().equals(name)).findFirst().get();
+            step(4,()->look(s),"look at the "+name);
+            step(20,()->{},"settle");
+            for(int f=0;f<6;f++){int frame=f;step(2,()->shot("film_"+name+"_"+frame),"film frame");step(8,()->{},"0.4 s");}
+        }
+        // the dish from the side, a few seconds apart (it tracks: turns and tilts)
+        step(4,()->{var s=SUBJECTS.get(1);srv(()->sp().teleportTo(sl(),s.pos().getX()+3.6,s.pos().getY()+.2,s.pos().getZ()+.5,90,-8));mc().player.setYRot(90);mc().player.setXRot(-8);},"the dish from the east");
+        for(int f=0;f<4;f++){int frame=f;step(2,()->shot("film_satellite_side_"+frame),"frame");step(60,()->{},"3 s");}
+        step(2,()->mc().options.hideGui=false,"HUD back");
+        // the placement ghost shows the whole model (its moving parts at rest)
+        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();sp().getInventory().setItem(0,new ItemStack(ArsenalBeacon.SATELLITE_BEACON_ITEM.get()));sp().getInventory().selected=0;
+            sp().teleportTo(sl(),sx+.5,sy+.1,sz-6.5,0,25);});mc().player.getInventory().selected=0;mc().player.setYRot(0);mc().player.setXRot(25);},"hold a Satellite Beacon over empty ground");
+        step(30,()->shot("ghost_satellite"),"the ghost (the dish and whip are drawn at rest)");
+        step(5,()->srv(()->{sp().getInventory().clearContent();}),"empty hands");
+        // the Settings switch
+        step(5,()->srv(()->BeaconNetwork.open(sp(),"menu","")),"open the beacon");
+        until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
+        step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals("Settings")){b.onPress();break;}},"the Settings tab");
+        step(10,()->recordFrame=true,"record a frame");
+        step(4,()->{
+            var s=mc().screen;Ui.UiButton toggle=null;
+            if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals("Idle animations"))toggle=b;
+            check("Settings has the 'Idle animations' switch, on",toggle!=null&&toggle.on,"");
+            check("its note is shown",lastFrame.stream().anyMatch(d->d.text()!=null&&d.text().contains("Flags wave")),"");
+            layout("the Settings tab");shot("settings_switch_pressed_off");// taken a few frames later, after the press below
+            if(toggle!=null)toggle.onPress();},"press it");
+        step(6,()->{check("pressing it turns the animations off (saved for this player)",!Animations.enabled()&&!ArsenalClientConfig.get(ArsenalClientConfig.IDLE_ANIMATIONS),"");
+            var s=mc().screen;if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals("Idle animations"))b.onPress();},"press it again");
+        step(6,()->check("and on again",Animations.enabled(),""),"on");
+        for(var size:new int[][]{{960,540,2},{1280,720,3}}){
+            step(15,()->window(size[0],size[1]),"window");step(8,()->scale(size[2]),"scale");step(4,()->recordFrame=true,"record");
+            step(3,()->{layout("the Settings tab");shot("settings_"+size[0]+"x"+size[1]+"_"+size[2]);},"check");
+        }
+        step(15,()->window(1280,720),"back");step(8,()->scale(2),"scale 2");
+        step(4,()->{mc().options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(0.0);recordFrame=true;},"music volume 0");
+        step(4,()->{check("with the game's music at 0 the music switch says how loud it is",lastFrame.stream().anyMatch(d->d.text()!=null&&d.text().contains("now 0%")),"");shot("settings_music_volume_0");
+            mc().options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(1.0);},"volume note");
+        step(5,()->mc().setScreen(null),"close");
+        // an old world: a FOB Beacon, Satellite Beacon, Command Table and Tactical Enchanting Table saved before 0.0.39 have no block entity.
+        // Built far away in a forced chunk, their block entities taken out, the chunk saved and unloaded, then visited: the chunk load gives
+        // them their block entity back and the client receives it with the chunk.
+        int cx=(sx+3000)>>4,cz=sz>>4;
+        List<BlockPos> old=List.of(new BlockPos(cx*16+1,sy,cz*16+4),new BlockPos(cx*16+4,sy,cz*16+4),new BlockPos(cx*16+8,sy,cz*16+4),new BlockPos(cx*16+13,sy,cz*16+4));
+        List<Supplier<BlockState>> oldStates=List.of(()->ArsenalBeacon.FOB_BEACON.get().defaultBlockState(),()->ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),
+            ()->ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState(),()->ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState());
+        step(10,()->srv(()->{sl().setChunkForced(cx,cz,true);var chunk=sl().getChunk(cx,cz);int left=0;
+            for(int i=0;i<old.size();i++){sl().setBlock(old.get(i),oldStates.get(i).get(),3);chunk.removeBlockEntity(old.get(i));}
+            for(var p:old)if(chunk.getBlockEntity(p,net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK)!=null)left++;
+            chunk.setUnsaved(true);sl().setChunkForced(cx,cz,false);farLoaded=true;
+            check("old world: the four blocks stand in a far chunk without their block entity, as a world from before 0.0.39 saved them",left==0,left+" left");}),"build the old blocks far away");
+        until("the far chunk is saved and unloaded",400,()->{srv(()->farLoaded=sl().getChunkSource().getChunkNow(cx,cz)!=null);return !farLoaded;},()->{check("old world: the far chunk was saved and unloaded",!farLoaded,"");
+            srv(()->{try{var tag=sl().getChunkSource().chunkMap.read(new net.minecraft.world.level.ChunkPos(cx,cz)).join();int n=-1;
+                if(tag.isPresent()){n=0;for(var e:tag.get().getList("block_entities",10))if(e instanceof net.minecraft.nbt.CompoundTag c&&c.getString("id").equals(ArsenalBeacon.ID+":animated_parts"))n++;}savedParts=n;}catch(Throwable t){savedParts=-2;}});});
+        until("the saved chunk is read on the server",100,()->savedParts!=-3,()->check("old world: the chunk saved on disk holds no block entity for the four blocks",savedParts==0,savedParts+" saved"));
+        step(5,()->{srv(()->sp().teleportTo(sl(),cx*16+1.5,sy+.1,cz*16+.8,0,-8));mc().player.setYRot(0);mc().player.setXRot(-8);},"visit them");
+        step(100,()->{},"the chunk loads and reaches the client");
+        step(4,()->{srv(()->{var chunk=sl().getChunk(cx,cz);int n=0;for(var p:old)if(chunk.getBlockEntity(p,net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK) instanceof AnimatedParts.PartsEntity)n++;farServer=n;});
+            int n=0;for(var p:old){var be=mc().level.getChunkAt(p).getBlockEntity(p,net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK);if(be instanceof AnimatedParts.PartsEntity&&mc().getBlockEntityRenderDispatcher().getRenderer(be)!=null)n++;}
+            check("old world: on the client all four have their block entity again, with its renderer (received with the chunk)",n==4,n+" of 4");
+            mc().options.hideGui=true;},"client");
+        step(4,()->{check("old world: on the server all four have their block entity again",farServer==4,farServer+" of 4");shot("old_world_fob");},"server");
+        step(4,()->mc().options.hideGui=false,"HUD back");
+    }
+    static volatile boolean farLoaded=true;static volatile int farServer=-1,savedParts=-3;
+}

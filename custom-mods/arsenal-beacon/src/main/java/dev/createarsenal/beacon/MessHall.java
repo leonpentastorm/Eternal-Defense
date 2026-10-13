@@ -22,6 +22,8 @@ final class MessHall {
     }
     static final class HallEntity extends BlockEntity implements MenuProvider {
         UUID identity=UUID.randomUUID();final List<BlockPos> links=new ArrayList<>();
+        /** 0.0.39: the Mk I's turning spit and its fire are drawn while any of the two-wide model is in view. */
+        @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).inflate(2);}
         /** The table's standing order, kept with the ingredients: sandwich or stew, and the recipes chosen on the kitchen screen (empty = automatic). */
         boolean stewMode;final EnumSet<MealRules.Effect> order=EnumSet.noneOf(MealRules.Effect.class);
         boolean explicitOrder(){return !order.isEmpty();}

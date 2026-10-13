@@ -1,19 +1,19 @@
 {
   "variants": {
     "facing=north": {
-      "model": "arsenal_beacon:block/fob_station",
+      "model": "arsenal_beacon:block/fob_station_static",
       "y": 0
     },
     "facing=east": {
-      "model": "arsenal_beacon:block/fob_station",
+      "model": "arsenal_beacon:block/fob_station_static",
       "y": 90
     },
     "facing=south": {
-      "model": "arsenal_beacon:block/fob_station",
+      "model": "arsenal_beacon:block/fob_station_static",
       "y": 180
     },
     "facing=west": {
-      "model": "arsenal_beacon:block/fob_station",
+      "model": "arsenal_beacon:block/fob_station_static",
       "y": 270
     }
   }

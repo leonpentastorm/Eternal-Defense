@@ -80,7 +80,9 @@ final class TacticalEnchanting {
     }
 
     // ---- the block --------------------------------------------------------------------------------------------------------------------------------
-    static final class TableBlock extends Block {
+    static final class TableBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
+        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         TableBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->7).sound(SoundType.WOOD));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite());}

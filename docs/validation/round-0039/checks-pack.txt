@@ -1,0 +1,47 @@
+QA_CHECK PASS all 52 part models and the cannon's static turret load 
+QA_CHECK PASS every animated block's static model loads (no missing-model cube) 
+QA_CHECK PASS every animated block has a block entity and a renderer on the client (the FOB, satellite, table and enchanting table got theirs) 
+QA_CHECK PASS fob_beacon: with the animations on, its parts move (frames 0.8 s apart differ) 1584 pixels
+QA_CHECK PASS fob_beacon: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS satellite_beacon: with the animations on, its parts move (frames 0.8 s apart differ) 6320 pixels
+QA_CHECK PASS satellite_beacon: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS command_table: with the animations on, its parts move (frames 0.8 s apart differ) 258 pixels
+QA_CHECK PASS command_table: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS defense_beacon_mk1: with the animations on, its parts move (frames 0.8 s apart differ) 151 pixels
+QA_CHECK PASS defense_beacon_mk1: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS defense_beacon_mk2: with the animations on, its parts move (frames 0.8 s apart differ) 1216 pixels
+QA_CHECK PASS defense_beacon_mk2: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS defense_beacon_mk3: with the animations on, its parts move (frames 0.8 s apart differ) 1762 pixels
+QA_CHECK PASS defense_beacon_mk3: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS defense_beacon_mk4: with the animations on, its parts move (frames 0.8 s apart differ) 3140 pixels
+QA_CHECK PASS defense_beacon_mk4: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS support_platform_mk1: with the animations on, its parts move (frames 0.8 s apart differ) 756 pixels
+QA_CHECK PASS support_platform_mk1: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS support_platform_mk4: with the animations on, its parts move (frames 0.8 s apart differ) 940 pixels
+QA_CHECK PASS support_platform_mk4: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS enchanting_table: with the animations on, its parts move (frames 0.8 s apart differ) 2151 pixels
+QA_CHECK PASS enchanting_table: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS mess_hall_mk1: with the animations on, its parts move (frames 0.8 s apart differ) 1734 pixels
+QA_CHECK PASS mess_hall_mk1: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS cook_pot: with the animations on, its parts move (frames 0.8 s apart differ) 1193 pixels
+QA_CHECK PASS cook_pot: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS brew_pot: with the animations on, its parts move (frames 0.8 s apart differ) 1932 pixels
+QA_CHECK PASS brew_pot: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS mre_station: with the animations on, its parts move (frames 0.8 s apart differ) 4594 pixels
+QA_CHECK PASS mre_station: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS support_cannon: with the animations on, its parts move (frames 0.8 s apart differ) 759 pixels
+QA_CHECK PASS support_cannon: off in Settings, it stands still (frames identical) 0 pixels
+QA_CHECK PASS Settings has the 'Idle animations' switch, on 
+QA_CHECK PASS its note is shown 
+QA_CHECK PASS the Settings tab at 640x360: 13 texts, none over another or across a button 0 
+QA_CHECK PASS pressing it turns the animations off (saved for this player) 
+QA_CHECK PASS and on again 
+QA_CHECK PASS the Settings tab at 480x270: 7 texts, none over another or across a button 0 
+QA_CHECK PASS the Settings tab at 427x240: 7 texts, none over another or across a button 0 
+QA_CHECK PASS with the game's music at 0 the music switch says how loud it is 
+QA_CHECK PASS old world: the four blocks stand in a far chunk without their block entity, as a world from before 0.0.39 saved them 0 left
+QA_CHECK PASS old world: the far chunk was saved and unloaded 
+QA_CHECK PASS old world: the chunk saved on disk holds no block entity for the four blocks 0 saved
+QA_CHECK PASS old world: on the client all four have their block entity again, with its renderer (received with the chunk) 4 of 4
+QA_CHECK PASS old world: on the server all four have their block entity again 4 of 4
+QA_DONE pass=46 fail=0
