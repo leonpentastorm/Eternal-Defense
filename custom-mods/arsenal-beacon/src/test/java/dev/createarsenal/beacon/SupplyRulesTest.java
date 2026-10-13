@@ -81,4 +81,15 @@ final class SupplyRulesTest {
         assertTrue(SupplyRules.sameRun(100,140),"40 ticks later: the same running total");assertFalse(SupplyRules.sameRun(100,141),"41 ticks later: a new line");
         assertFalse(SupplyRules.due(100,140),"not sent while it may still grow");assertTrue(SupplyRules.due(100,141),"sent once 2 seconds pass with no new pull");
     }
+
+    // ---- the Hub's Home Zone check ----------------------------------------------------------------------------------------------------------
+    @Test void aHubJustPlacedChecksTheZoneAtOnceThenOnceASecond(){
+        // found in the client test: "never checked" was Long.MIN_VALUE and now - MIN_VALUE overflows, so a new Hub never checked and never worked
+        assertTrue(SupplyRules.recheck(SupplyRules.NEVER,0),"a new Hub checks at once");
+        assertTrue(SupplyRules.recheck(SupplyRules.NEVER,123_456_789L),"at any game time");
+        assertFalse(SupplyRules.recheck(100,119),"then not again within the second");
+        assertTrue(SupplyRules.recheck(100,120),"a second later it checks again");
+        assertTrue(SupplyRules.recheck(100,50),"a clock set back checks again");
+        assertEquals(20,SupplyRules.ZONE_CHECK_TICKS);
+    }
 }

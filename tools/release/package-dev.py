@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test bundles of the dev branch (project 0.0.39, branch feature/animation-pass: idle animations; 0.0.38: the MRE Station, the MRE and Marines Fuel; 0.0.37: bowls and cups used up, a guard against mods that take endless effects away; 0.0.36: the fire support rework, Ablaze, Spotter Arrows, the curse until death; 0.0.35: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
+"""Test bundles of the dev branch (project 0.0.40, branch feature/logistics-hub: the Logistics Center Hub and the supply source; 0.0.39: idle animations; 0.0.38: the MRE Station, the MRE and Marines Fuel; 0.0.37: bowls and cups used up, a guard against mods that take endless effects away; 0.0.36: the fire support rework, Ablaze, Spotter Arrows, the curse until death; 0.0.35: dearer meals, three new meal effects, the Drink Station, Brew Pot, Cup Dispenser, Paper Cup and Latte; 0.0.34: the live catapult, the box as a supply drop, fishing and husbandry as one, the specialty cap; 0.0.33: the Supply Catapult and the specialty seller, placement previews; 0.0.32: village research, the monster hunter guild, a 30-minute S-tier floor, icons; 0.0.31: tribute you choose, the Receiving Gate's storage, FOB management at the Command Table; 0.0.30: the owner's 4-wide two-lane gates, where a FOB counts, a bigger enchanting screen, a scrolling Workshop; 0.0.29: enchanting prices doubled; 0.0.28: the owner's list after the FOB slices; 0.0.27: FOB slice 4, the Tactical Enchanting Table; 0.0.26: the Return Flare needs the cannon, ammo parts on the platform; 0.0.25 FOB slice 3, SOS and repairs; 0.0.24 FOB slice 2, the supply rail; 0.0.23 FOB slice 1; 0.0.22 the supply and recall radio lines, ammo parts, a hunt's minimum pay; 0.0.21 armed raid skeletons, night raids, the one-block arrival, iron at the Exchange; 0.0.20 Tactical Operations and the owner's raid list; 0.0.19 the owner's music and radio chatter; 0.0.18 hand-tuned sounds and fire support rework; the merged 0.0.13 to 0.0.17), one ZIP per edition
 (each holds that edition's four JARs, the required unmodified backend JAR, the docs and the evidence; split so each stays under 30 MB)."""
 import argparse, hashlib, zipfile
 from pathlib import Path
@@ -25,16 +25,16 @@ for edition in ('pack','standalone'):
 files['pack/kubejs/server_scripts/20_guns_and_ammo.js']=(repo/'pack-integration/kubejs/server_scripts/20_guns_and_ammo.js').read_bytes()
 # 0.0.28: the restoration matrix recipe (8 per craft, a Brass Receiver); copy it over the pack's own
 files['pack/kubejs/server_scripts/15_beacon_recipes.js']=(repo/'pack-integration/kubejs/server_scripts/15_beacon_recipes.js').read_bytes()
-for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0039-TESTING.md','ROUND-0038-TESTING.md','ROUND-0037-TESTING.md','ROUND-0036-TESTING.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
+for name in ['STANDALONE.md','PACK-EDITION.md','ROUND-0040-TESTING.md','ROUND-0039-TESTING.md','ROUND-0038-TESTING.md','ROUND-0037-TESTING.md','ROUND-0036-TESTING.md','ROUND-0035-TESTING.md','ROUND-0034-TESTING.md','ROUND-0033-TESTING.md','ROUND-0032-TESTING.md','ROUND-0031-TESTING.md','ROUND-0030-TESTING.md','ROUND-0029-TESTING.md','ROUND-0028-TESTING.md','FOB-SLICE-4-TESTING.md','ROUND-0026-TESTING.md','FOB-SLICE-3-TESTING.md','FOB-SLICE-2-TESTING.md','FOB-SLICE-1-TESTING.md','ROUND-0022-TESTING.md','RAID-ROUND-0021-TESTING.md','TACTICAL-OPERATIONS-TESTING.md','NEW-SOUND-TESTING.md','HAND-TUNED-ROUND-TESTING.md','MUSIC-PLAYER-TESTING.md','BEAUTIFY-PATH-TESTING.md','OPTIMIZE-PATH.md','OPTIMIZE-PATH-TESTING.md','RAIDER-GATES-TESTING.md','STUCK-RAIDERS-TESTING.md','MESS-HALL-TIERS.md','TIERS-AND-TABLES-TESTING.md','GUIDE-STYLE.md','GAME-DESIGN-DOCUMENT.md','CHANGELOG.md','HANDOFF.md']:
     files['docs/'+name]=(repo/'docs'/name).read_bytes()
 # five screenshots of the latest round (the rest are in the repository): the ZIP must stay under 30 MB
-BUNDLED_SHOTS={'standalone-a01_motion_pairs.png','standalone-a02_fob_flag_film.png','standalone-a03_satellite_film.png','standalone-a04_satellite_side_3s.png','pack-a09_old_world_blocks.png'}
+BUNDLED_SHOTS={'standalone-hub02_placed.png','standalone-hub03_menu_page1.png','standalone-hub09_fob_catapult_bought.png','pack-hub10_table_fob_card.png','create-create01_coil_line.png'}
 # screenshots of the latest round only (each ZIP must stay under 30 MB, the beacon JAR alone is 24 MB); the older rounds' text evidence, their screenshots are in the repository
-for folder in ('round-0039','round-0038','round-0037','round-0036','round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
+for folder in ('round-0040','round-0039','round-0038','round-0037','round-0036','round-0035','round-0034','round-0033','round-0032','round-0031','round-0030','round-0029','round-0028','fob-slice-4','round-0026','fob-slice-3','fob-slice-2','fob-slice-1','round-0022','raid-round-0021','tactical-operations','new-sound','hand-tuned-round','music-player','optimize-path','raider-gates','stuck-raiders'):
     for evidence in (repo/'docs/validation'/folder).glob('*'):
         if evidence.is_file() and (evidence.name in BUNDLED_SHOTS or evidence.suffix=='.txt'):files[f'docs/validation/{folder}/'+evidence.name]=evidence.read_bytes()
 files['README.txt']=('''Eternal Defense - dev branch with every new feature - project '''+project_version+''' - local test build
-Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34; 0.0.36 to 0.0.39 change no packet): 0.0.35 adds the Drink Station screen's state,
+Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 40 since 0.0.35 (39 in 0.0.34; 0.0.36 to 0.0.40 change no packet): 0.0.35 adds the Drink Station screen's state,
 so an older client cannot join this server or the other way round. Install this build on the client AND the server.
 
 Start a FRESH world. A Supply Gate placed before 0.0.30 is not converted: take it back with the Recovery Shovel BEFORE you update
@@ -50,9 +50,29 @@ https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/90
 The pack edition requires the matching full pack's Create/KubeJS and scripts.
 This ZIP is an update/test bundle, not a complete modpack.
 
-THIS BUILD IS FROM THE FEATURE BRANCH feature/animation-pass (made from feature/drink-station; 0.0.34 is on dev).
+THIS BUILD IS FROM THE FEATURE BRANCH feature/logistics-hub (made from feature/animation-pass at 0.0.39; 0.0.34 is on dev).
 
-WHAT IS NEW IN 0.0.39: IDLE ANIMATIONS
+WHAT IS NEW IN 0.0.40: THE LOGISTICS CENTER HUB
+* A new installation, the dearest one, at Workshop Fabrication (last card): HUBPRICE, 64 iron ingots, 16 chests and 8 hoppers
+  (the price is a proposal; tell us if it feels wrong). It is 3 x 3 x 3 blocks: place it inside your zone, on open ground.
+* It holds 270 stacks (5 pages of 54; the arrows in its title bar turn the pages). Right-click any of its blocks to open it.
+* Every station in your zone now takes from your pack first, then from the Hub: Workshop Fabrication, the weapon tables, beacon
+  upgrades and repairs, the Exchange Shop, the Support Platform and Cannon, the Mess Hall and Drink Station (Gather and upgrades),
+  the Enchanting Table, the Command Table. If the whole price is not there, nothing is taken. Ardent Energy works the same way.
+* When the Hub pays part of it, you and everyone in your zone read a line such as "Dev just pulled 54 Iron Ingot from the Hub".
+* Hoppers, droppers and (pack) Create's belts, funnels, chutes and mechanical arms fill and empty it on every face.
+* It cannot be mined while it holds items ("Empty the Hub first"). The Recovery Shovel picks it up with its items inside.
+* Outside your zone it does nothing (it says so); FOBs keep paying from your pack only.
+* FOB Beacon: its shop now also builds a Supply Catapult (16 logs, 8 iron, 16 string and CATAPULTKEY, from your pack).
+
+PLAYTEST SCRIPT FOR 0.0.40 (about 10 minutes)
+1. Buy the Hub at Workshop Fabrication and place it in your zone. Open it, put a few stacks in, turn the pages.
+2. With iron only in the Hub, buy something at Workshop Fabrication: it works, and the chat says what came from the Hub.
+3. Put a hopper on top with items: they go in. (Pack) run a Create belt into its side, and a funnel out of it.
+4. Try to mine it while it holds items: it refuses. Pick it up with the Recovery Shovel and place it again: the items are back.
+5. Tell us: is the price right? Should anything else (or less) draw from the Hub?
+
+WHAT WAS NEW IN 0.0.39: IDLE ANIMATIONS
 * The mod's blocks move a little while they stand: the FOB flag waves and its antenna sways, the Satellite Beacon's dish turns and
   tilts to a new heading every few seconds, the Command Table's warning light turns and flashes and a sweep circles its radar, the
   Defense Beacon's rings pulse up the core and turn a quarter at a time, the Support Platform's emitter floats and turns, the
@@ -558,7 +578,9 @@ shared={n:d for n,d in files.items() if not n.startswith(('pack/','standalone/')
 for edition in ('pack','standalone'):
     part={n:d for n,d in files.items() if n.startswith(edition+'/')}
     part.update(shared)
-    part['README.txt']=part['README.txt'].replace(b'EDITIONPRICE',b'4 Ardent Energy' if edition=='standalone' else b'4 Reinforced Beacon Plating').replace(b'EDITION',edition.encode())
+    part['README.txt']=(part['README.txt'].replace(b'EDITIONPRICE',b'4 Ardent Energy' if edition=='standalone' else b'4 Reinforced Beacon Plating')
+        .replace(b'HUBPRICE',b'40 Ardent Energy' if edition=='standalone' else b'64 Reinforced Beacon Plating')
+        .replace(b'CATAPULTKEY',b'8 Ardent Energy' if edition=='standalone' else b'2 Logistics Modules').replace(b'EDITION',edition.encode()))
     part['SHA512SUMS']=(''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name,data in sorted(part.items()))).encode()
     out=repo/('dist/Arsenal-Dev-'+project_version+'-'+edition+'-test.zip');out.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:

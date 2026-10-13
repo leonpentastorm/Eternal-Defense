@@ -1,0 +1,591 @@
+package dev.createarsenal.beacon;
+
+import com.mojang.authlib.GameProfile;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HopperBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): the 0.0.40 Logistics Center Hub on a real client. Places a Hub with its item (a real right-click)
+ * across four chunks, opens it from a part, turns its pages, fills all 270 slots, feeds and drains it with vanilla hoppers and a dropper,
+ * runs every rerouted station from the pack alone, the Hub alone and both (and a request that cannot be paid), checks the Hub's chat line
+ * (one line per action, three kinds then "and N more", 2-second merge, sent to the players in the Home Zone and the log, never for
+ * automation), the Home Zone restriction, the break guard, the Recovery Shovel, the FOB Beacon's Supply Catapult and the Command Table's
+ * FOB card, then unloads the Hub's chunks, feeds it through a force-loaded part chunk, saves, quits and reloads the world.
+ * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaHub {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+
+    // ---- chat: the Hub line arrives as a system message; the action bar separately --------------------------------------------------------
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>()),BAR=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();
+        if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay()){BAR.add(t);log("QA_BAR {}",t);}else{CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    /** The integrated server's side of a right-click (the same event bus): proves a click arrived, and with what in hand. */
+    @SubscribeEvent public static void serverClick(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock e){
+        if(!e.getLevel().isClientSide)log("QA_SERVER_CLICK {} {} holding {} at {}",e.getPos().toShortString(),e.getFace(),e.getItemStack(),e.getEntity().position());
+    }
+    /** The chunk holding {@code pos} is loaded on the server and on the client. */
+    static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
+    static List<String> hubLines(){synchronized(CHAT){return new ArrayList<>(CHAT.stream().filter(c->c.endsWith("from the Hub")).toList());}}
+    static boolean barHas(String s){synchronized(BAR){return BAR.stream().anyMatch(b->b.contains(s));}}
+    static String who(){return mc().player.getGameProfile().getName();}
+
+    // ---- one frame's texts (Ui records them), for the Hub screen's layout -------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean hit(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return aw>0&&bw>0&&ax<bx+bw&&bx<ax+aw&&ay<by+bh&&by<ay+ah;}
+    static void layout(String name){
+        var s=mc().screen;var boxes=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();
+        for(int i=0;i<boxes.size();i++){var a=boxes.get(i);
+            for(int j=i+1;j<boxes.size();j++){var b=boxes.get(j);if(hit(a.x(),a.y(),a.w(),a.h(),b.x(),b.y(),b.w(),b.h()))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+            if(s!=null)for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&hit(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("'"+a.text()+"' under the button '"+w.getMessage().getString()+"'");
+        }
+        check(name+" at "+(s==null?"?":s.width+"x"+s.height)+": "+boxes.size()+" texts, none over another or under a button",bad.isEmpty()&&!boxes.isEmpty(),bad.size()+" "+String.join(" | ",bad.subList(0,Math.min(5,bad.size()))));
+    }
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+
+    // ---- the client's own clicks ----------------------------------------------------------------------------------------------------------------
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    /** The client's own right-click on a block face (what the mouse does), sent to the server. */
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static net.minecraft.client.gui.components.Button pageButton(String label){
+        if(mc().screen==null)return null;for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(label))return b;return null;
+    }
+    /** Moves the real mouse (the screen draws tooltips where the mouse handler says it is). */
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static HubScreen hubScreen(){return mc().screen instanceof HubScreen s?s:null;}
+    static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+
+    // ---- the places --------------------------------------------------------------------------------------------------------------------------------
+    /** A: Hub A's anchor on a chunk corner (its 27 blocks in four chunks); B: the beacon (radius 24); HB: Hub B, nearer the stations. */
+    static BlockPos A,B,HB,OUT,FOB,TABLE,SHOP,HALL,DRINK,PLAT,CANNON,STATION;
+    static void places(){
+        A=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy+1,Math.floorDiv(sz,16)*16);
+        B=A.offset(-20,-1,0);HB=B.offset(-16,1,0);OUT=A.offset(60,0,0);FOB=B.offset(-300,0,0);TABLE=B.offset(-8,0,-12);
+        SHOP=B.offset(-12,0,10);HALL=B.offset(-6,0,10);DRINK=B.offset(0,0,10);PLAT=B.offset(6,0,10);CANNON=B.offset(10,0,10);STATION=B.offset(14,0,10);
+    }
+
+    // ---- server-side helpers (call them only on the server thread: inside srv or srvGet) ---------------------------------------------------------
+    static HubData.Hub hub(BlockPos anchor){return sl().getBlockEntity(anchor) instanceof LogisticsHub.HubEntity be?HubData.get(sl()).hub(be.hubId):null;}
+    static int inHub(BlockPos anchor,Item item){var h=hub(anchor);return h==null?-1:h.storage.count(item);}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();for(var s:sp().getInventory().offhand)if(s.is(item))n+=s.getCount();return n;}
+    static int packTotal(){int n=0;for(var s:sp().getInventory().items)n+=s.getCount();return n;}
+    static int hubTotal(BlockPos anchor){var h=hub(anchor);int n=0;if(h!=null)for(var c:h.storage.kinds().values())n+=c;return n;}
+    static void pack(ItemStack... stacks){var inv=sp().getInventory();inv.clearContent();for(var s:stacks)inv.add(s.copy());}
+    static void fill(BlockPos anchor,ItemStack... stacks){var h=hub(anchor);h.storage.drain();for(var s:stacks){var rest=h.storage.insert(s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}}
+    static ItemStack st(Item item,int n){return new ItemStack(item,n);}
+    static ItemStack st(Supplier<Item> item,int n){return new ItemStack(item.get(),n);}
+    /** The whole Hub as text (slot, item, count, tag): equal before and after means nothing was lost or copied. */
+    static String sum(HubData.Hub h){var b=new StringBuilder();for(int i=0;i<HubStorage.SLOTS;i++){var s=h.storage.get(i);if(!s.isEmpty())b.append(i).append(':').append(BuiltInRegistries.ITEM.getKey(s.getItem())).append('x').append(s.getCount()).append(s.hasTag()?s.getTag().toString():"").append(';');}return b.toString();}
+    /** The count cache agrees with a full scan of the 270 slots. */
+    static boolean cacheMatches(HubStorage s){
+        var scan=new HashMap<HubStorage.Key,Integer>();int used=0;
+        for(int i=0;i<HubStorage.SLOTS;i++){var x=s.getStackInSlot(i);if(x.isEmpty())continue;used++;scan.merge(HubStorage.Key.of(x),x.getCount(),Integer::sum);}
+        return scan.equals(s.kinds())&&used==s.usedSlots();
+    }
+    /** The line the Hub must send when it pays all of {@code costs}: items in the recipe's order (three named), then the Ardent Energy. */
+    static String expected(String who,List<WeaponPlatform.Cost> costs){
+        var named=new ArrayList<String>();int kinds=0,ardent=0;
+        for(var c:costs){var ex=c.ingredient().getItems()[0];if(ex.is(ArsenalBeacon.ARDENT_ENERGY.get())){ardent+=c.count();continue;}kinds++;if(named.size()<3)named.add(c.count()+" "+ex.getHoverName().getString());}
+        String list=String.join(", ",named)+(kinds>3?" and "+(kinds-3)+" more":"");
+        if(kinds==0)return who+" just spent "+ardent+" Ardent Energy from the Hub";
+        return ardent>0?who+" just pulled "+list+" and spent "+ardent+" Ardent Energy from the Hub":who+" just pulled "+list+" from the Hub";
+    }
+    /** Puts every cost into Hub A (the amount asked, plus {@code extra} of each). */
+    static void fillCosts(List<WeaponPlatform.Cost> costs,int extra){var list=new ArrayList<ItemStack>();for(var c:costs)list.add(c.ingredient().getItems()[0].copyWithCount(c.count()+extra));fill(A,list.toArray(ItemStack[]::new));}
+    static boolean hubHolds(List<WeaponPlatform.Cost> costs){for(var c:costs)if(inHub(A,c.ingredient().getItems()[0].getItem())!=c.count())return false;return true;}
+    static String costText(List<WeaponPlatform.Cost> costs){var b=new StringBuilder();for(var c:costs)b.append(c.count()).append(' ').append(c.ingredient().getItems()[0].getItem()).append(", ");return b.toString();}
+    static List<WeaponPlatform.Cost> priceCosts(Economy.Price price){return List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(price.ardent()?ArsenalBeacon.ARDENT_ENERGY.get():price.item()),price.amount()));}
+
+    /** Waits (on the server's clock) until the last action's Hub line has gone out, then a moment for the chat packet, then checks. */
+    static void idleThen(Runnable check,String name){until(name+": the Hub line is out",600,()->srvGet(HubNotices::idle),()->{});step(10,()->{},"the line reaches the client");step(1,check,name);}
+    static volatile String result="";
+    /** The notice a station menu shows (its key), read from the server's menu. */
+    static String notice(Object menu){try{var f=menu.getClass().getDeclaredField("noticeKey");f.setAccessible(true);return String.valueOf(f.get(menu));}catch(Exception x){return x.toString();}}
+    static final List<String> BUDDY=Collections.synchronizedList(new ArrayList<>()),FAR=Collections.synchronizedList(new ArrayList<>());
+    static net.minecraftforge.common.util.FakePlayer buddy,far;
+    /** A second player (a stand-in on the server) who records the system messages sent to it. */
+    static net.minecraftforge.common.util.FakePlayer fake(String name,List<String> got,BlockPos at){
+        var f=new net.minecraftforge.common.util.FakePlayer(sl(),new GameProfile(UUID.nameUUIDFromBytes(name.getBytes()),name)){
+            @Override public void sendSystemMessage(Component c){got.add(c.getString());}
+        };
+        f.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);f.setGameMode(GameType.SURVIVAL);sl().addNewPlayer(f);return f;
+    }
+
+    // ---- the driver ----------------------------------------------------------------------------------------------------------------------------------
+    static boolean reloading;static int reloadTicks;
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_hub",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_hub",settings,new WorldOptions(40L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(reloading){   // the world was saved and closed: open it again from the title screen
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++reloadTicks>40){reloading=false;log("QA_NOTE reopening the world");mc.createWorldOpenFlows().loadLevel(new TitleScreen(),"qa_hub");}
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        boolean standalone=BuildFlavor.STANDALONE;
+        // ---- a base 2000 blocks out (so the spawn chunks never hold the Hub), a still world, a survival player ----------------------------------
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sp().teleportTo(sl(),A.getX()+.5,sy,A.getZ()-6.5,0,10);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"go to the base site, 2000 blocks out");
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon (core 3, radius 24); survival");
+        step(5,()->check("the base: Hub A's anchor sits on a chunk corner, inside the Home Zone",srvGet(()->BaseZone.problem(sl(),A)==null&&A.getX()%16==0&&A.getZ()%16==0&&BaseZone.problem(sl(),OUT)!=null),"A="+A.toShortString()+" B="+B.toShortString()),"the base");
+
+        // ---- placing: outside the zone refused, in the way refused, then a real placement with the item -------------------------------------------------
+        step(10,()->{BAR.clear();hold(new ItemStack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()));tp(OUT.getX()+.5,sy,OUT.getZ()-4.5,0,30);},"hold the Hub item at a spot outside the Home Zone");
+        until("the spot's chunk is loaded",100,()->loaded(OUT),()->{});
+        step(5,()->click(OUT.below(2),Direction.UP),"right-click the ground there");
+        step(10,()->check("placing outside the Home Zone is refused and says so",srvGet(()->!LogisticsHub.isHub(sl().getBlockState(OUT))&&inPack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get())==1)&&!BAR.isEmpty(),String.join(" | ",BAR)),"refused outside");
+        step(10,()->{BAR.clear();srv(()->sl().setBlock(A.offset(1,1,1),Blocks.STONE.defaultBlockState(),3));tp(A.getX()+.5,sy,A.getZ()-4.5,0,30);},"a stone block in one of the 27 cells; stand in front");
+        step(5,()->click(A.below(2),Direction.UP),"right-click the ground under the anchor");
+        step(10,()->{check("a block in the way: refused, nothing placed, the item kept",srvGet(()->!LogisticsHub.isHub(sl().getBlockState(A))&&inPack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get())==1)&&!BAR.isEmpty(),String.join(" | ",BAR));
+            srv(()->sl().setBlock(A.offset(1,1,1),Blocks.AIR.defaultBlockState(),3));look(A.offset(0,-1,-5),A.getX()+.5,A.getY()-1,A.getZ()+.5);},"clear it; look at the spot");
+        step(20,()->shot("hub01_ghost"),"the placement ghost while holding the Hub");
+        step(5,()->click(A.below(2),Direction.UP),"place the Hub (a real right-click on the ground)");
+        step(30,()->{
+            String cells=srvGet(()->{int ok=0;var anchor=sl().getBlockEntity(A) instanceof LogisticsHub.HubEntity be?be.hubId:null;if(anchor==null)return "no anchor";
+                for(var p:LogisticsHub.cells(A)){var s=sl().getBlockState(p);boolean right=p.equals(A)?s.is(ArsenalBeacon.LOGISTICS_HUB.get()):s.is(ArsenalBeacon.LOGISTICS_HUB_PART.get())&&LogisticsHub.anchor(sl(),p).equals(A);
+                    if(right&&sl().getBlockEntity(p) instanceof LogisticsHub.CellEntity c&&anchor.equals(c.hubId))ok++;}
+                return ok+"";});
+            check("all 27 blocks stand, each pointing at the same Hub id",cells.equals("27"),cells);
+            check("the item was used up (survival)",srvGet(()->inPack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get())==0),"");
+            var chunks=new HashSet<Long>();for(var p:LogisticsHub.cells(A))chunks.add(new net.minecraft.world.level.ChunkPos(p).toLong());
+            check("Hub A straddles four chunks",chunks.size()==4,chunks.size()+"");
+            check("its record is in the world's saved data, placed, empty",srvGet(()->{var h=hub(A);return h!=null&&h.placed&&h.anchor.equals(A)&&h.storage.isEmpty();}),"");
+            tp(A.getX()+.5,sy+1,A.getZ()-7.5,0,8);},"placed");
+        step(20,()->shot("hub02_placed"),"the Hub as placed (the owner's model)");
+        // Hub B, nearer the stations, placed the same way
+        step(5,()->{hold(new ItemStack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()));tp(HB.getX()+.5,sy,HB.getZ()-4.5,0,30);},"Hub B: hold the item in front of its spot");
+        step(5,()->click(HB.below(2),Direction.UP),"place Hub B");
+        step(30,()->check("Hub B stands with its own id",srvGet(()->{var a=hub(A);var b=hub(HB);return a!=null&&b!=null&&!a.id.equals(b.id)&&HubData.get(sl()).working(sl(),B).size()==2;}),""),"Hub B placed");
+
+        // ---- the item handler: the same inventory on every face of all 27 blocks ---------------------------------------------------------------
+        step(5,()->{String r=srvGet(()->{var h=hub(A);int same=0,total=0;
+                for(var p:LogisticsHub.cells(A)){var be=sl().getBlockEntity(p);for(var d:new Direction[]{Direction.UP,Direction.DOWN,Direction.NORTH,Direction.SOUTH,Direction.EAST,Direction.WEST,null}){total++;
+                    var cap=be==null?null:be.getCapability(ForgeCapabilities.ITEM_HANDLER,d).resolve().orElse(null);if(cap==h.storage)same++;}}
+                return same+"/"+total;});
+            check("every face of all 27 blocks (and no face) hands out the one Hub inventory",r.equals("189/189"),r);},"capability on all faces");
+
+        // ---- the storage itself: 270 slots, stacking, unstackables, the count cache against a full scan, per-slot cost ---------------------------------
+        step(5,()->{
+            String r=srvGet(()->{var s=new HubStorage();
+                var rest=s.insert(st(Items.COBBLESTONE,64*270+10),false);boolean full=s.usedSlots()==270&&rest.getCount()==10&&s.count(Items.COBBLESTONE)==64*270;
+                s.drain();for(int i=0;i<3;i++)s.insert(new ItemStack(Items.IRON_SWORD),false);boolean swords=s.usedSlots()==3&&s.count(Items.IRON_SWORD)==3;
+                s.insert(st(Items.ENDER_PEARL,20),false);boolean pearls=s.getSlotLimit(3)==16&&s.count(Items.ENDER_PEARL)==20&&s.usedSlots()==5;
+                s.insert(st(Items.IRON_INGOT,10),false);s.insert(st(Items.IRON_INGOT,60),false);boolean merged=s.count(Items.IRON_INGOT)==70&&s.usedSlots()==7;
+                return full+" "+swords+" "+pearls+" "+merged+" "+cacheMatches(s);});
+            check("270 slots fill with normal stacks and the rest is handed back; unstackables take a slot each; 16-stacks stay 16; same kind first",r.equals("true true true true true"),r);
+            String random=srvGet(()->{var s=new HubStorage();var rnd=new Random(40);Item[] items={Items.IRON_INGOT,Items.GOLD_INGOT,Items.DIAMOND,Items.IRON_SWORD,Items.ENDER_PEARL,Items.COBBLESTONE};int bad=0;
+                for(int op=0;op<4000;op++){var item=items[rnd.nextInt(items.length)];int slot=rnd.nextInt(270);
+                    switch(rnd.nextInt(6)){
+                        case 0->s.insert(st(item,1+rnd.nextInt(80)),false);
+                        case 1->s.extract(HubStorage.Key.of(new ItemStack(item)),1+rnd.nextInt(80),false);
+                        case 2->s.insertItem(slot,st(item,1+rnd.nextInt(64)),rnd.nextBoolean());
+                        case 3->s.extractItem(slot,1+rnd.nextInt(64),rnd.nextBoolean());
+                        case 4->s.set(slot,rnd.nextInt(3)==0?ItemStack.EMPTY:st(item,1));
+                        default->{var x=s.get(slot);if(!x.isEmpty()){x.shrink(1);s.resync(slot);}}   // a menu changes a stack in place, then says so
+                    }
+                    if(op%100==0&&!cacheMatches(s))bad++;}
+                return bad+" "+cacheMatches(s);});
+            check("4000 random inserts, pulls, per-slot moves and in-place changes: the count cache always equals a full scan",random.equals("0 true"),random);
+            String speed=srvGet(()->{var s=new HubStorage();s.insert(st(Items.COBBLESTONE,64*200),false);s.insert(st(Items.DIAMOND,64*20),false);
+                long t0=System.nanoTime();int n=0;for(int k=0;k<2000;k++)for(int i=0;i<270;i++)if(!s.getStackInSlot(i).isEmpty())n++;
+                long t1=System.nanoTime();var probe=st(Items.DIAMOND,1);for(int k=0;k<2000;k++)for(int i=0;i<270;i++)s.insertItem(i,probe,true);
+                long t2=System.nanoTime();for(int k=0;k<540000;k++)s.count(HubStorage.Key.of(probe));long t3=System.nanoTime();
+                return String.format("%.1f %.1f %.1f",(t1-t0)/540000.0,(t2-t1)/540000.0,(t3-t2)/540000.0);});
+            var ns=speed.split(" ");
+            check("per-slot calls copy and scan nothing: getStackInSlot, a simulated insert and a count each take well under a microsecond",Double.parseDouble(ns[0])<1000&&Double.parseDouble(ns[1])<1000&&Double.parseDouble(ns[2])<1000,"ns per call: get "+ns[0]+", simulated insert "+ns[1]+", count "+ns[2]);
+        },"the storage on its own");
+
+        // ---- the menu: opened from a part, five pages, real clicks, shift-clicks both ways ------------------------------------------------------------
+        step(5,()->{hold(ItemStack.EMPTY);srv(()->{var inv=sp().getInventory();inv.clearContent();inv.setItem(9,st(Items.IRON_INGOT,64));inv.setItem(10,st(Items.OAK_LOG,30));inv.setItem(11,new ItemStack(Items.SHIELD));inv.selected=0;var h=hub(A);h.storage.drain();
+                h.storage.set(0,st(Items.DIAMOND,10));h.storage.set(1,st(Items.EMERALD,64));h.storage.set(60,st(Items.GOLD_INGOT,33));h.storage.set(269,st(Items.APPLE,5));});
+            tp(A.getX()+.5,sy,A.getZ()-3.5,0,20);},"a few stacks in Hub A (slots 0, 1, 60 and 269); stand in front with an empty hand");
+        step(5,()->click(A.offset(1,-1,-1),Direction.NORTH),"right-click a bottom corner part (not the anchor)");
+        step(15,()->{var s=hubScreen();
+            check("the Hub's screen opens from a part block",s!=null&&s.getMenu().anchor.equals(A),String.valueOf(mc().screen));
+            if(s==null)return;var m=s.getMenu();
+            check("page 1 of 5 shows the Hub's first 54 slots",m.page()==0&&m.slots.get(0).getItem().is(Items.DIAMOND)&&m.slots.get(0).getItem().getCount()==10&&m.slots.get(1).getItem().is(Items.EMERALD),m.slots.get(0).getItem()+" "+m.slots.get(1).getItem());
+            check("the slots in use are counted",m.used()==4,""+m.used());
+            recordFrame=true;},"the screen");
+        step(3,()->{layout("the Hub screen, page 1");check("its title, page and slots-used texts",drawnHas("Logistics Center Hub")&&drawnHas("1/5")&&drawnHas("4 / 270 slots used"),lastFrame.stream().map(Ui.Drawn::text).toList().toString());shot("hub03_menu_page1");},"page 1");
+        step(5,()->{var b=pageButton(">");check("the previous-page button is off on page 1",pageButton("<")!=null&&!pageButton("<").active,"");if(b!=null)press(b);},"press Next page");
+        step(10,()->{var m=hubScreen().getMenu();check("Next page: page 2 shows slots 54 to 107 (gold in slot 60)",m.page()==1&&m.slots.get(6).getItem().is(Items.GOLD_INGOT)&&m.slots.get(6).getItem().getCount()==33&&m.slots.get(0).getItem().isEmpty(),m.page()+" "+m.slots.get(6).getItem());},"page 2");
+        step(3,()->{var b=pageButton(">");if(b!=null)press(b);},"next");step(3,()->{var b=pageButton(">");if(b!=null)press(b);},"next");step(3,()->{var b=pageButton(">");if(b!=null)press(b);},"next");
+        step(10,()->{var m=hubScreen().getMenu();check("page 5 shows the last slot (apples in slot 269), and Next is off there",m.page()==4&&m.slots.get(53).getItem().is(Items.APPLE)&&!pageButton(">").active,m.page()+" "+m.slots.get(53).getItem());
+            recordFrame=true;},"page 5");
+        step(3,()->{layout("the Hub screen, page 5");shot("hub04_menu_page5");mc().gameMode.handleInventoryButtonClick(hubScreen().getMenu().containerId,HubMenu.NEXT);},"a sixth page asked for anyway (a raced or cheating client)");
+        step(8,()->check("the server stays on page 5",hubScreen().getMenu().page()==4&&srvGet(()->sp().containerMenu instanceof HubMenu m&&m.page()==4),""),"no page 6");
+        step(5,()->{for(int i=0;i<4;i++)mc().gameMode.handleInventoryButtonClick(hubScreen().getMenu().containerId,HubMenu.PREV);},"back to page 1");
+        step(8,()->{check("back on page 1",hubScreen().getMenu().page()==0,"");slotClick(0,0,ClickType.QUICK_MOVE);},"shift-click the diamonds out");
+        step(8,()->check("shift-click from the Hub: into the pack, the slot empty, the counts right",srvGet(()->inPack(Items.DIAMOND)==10&&inHub(A,Items.DIAMOND)==0&&cacheMatches(hub(A).storage)),""),"diamonds out");
+        step(5,()->{int iron=-1;var m=hubScreen().getMenu();for(int i=54;i<m.slots.size();i++)if(m.slots.get(i).getItem().is(Items.IRON_INGOT)){iron=i;break;}slotClick(iron,0,ClickType.QUICK_MOVE);},"shift-click the iron in");
+        step(8,()->check("shift-click from the pack: into the Hub (the first free slot), the pack's stack gone",srvGet(()->inPack(Items.IRON_INGOT)==0&&inHub(A,Items.IRON_INGOT)==64&&hub(A).storage.get(0).is(Items.IRON_INGOT)&&cacheMatches(hub(A).storage)),srvGet(()->hub(A).storage.get(0).toString())),"iron in");
+        step(5,()->slotClick(1,0,ClickType.PICKUP),"pick up the emeralds");
+        step(5,()->slotClick(10,0,ClickType.PICKUP),"put them down in slot 10");
+        step(5,()->slotClick(10,1,ClickType.PICKUP),"pick up half again (right button)");
+        step(5,()->slotClick(11,0,ClickType.PICKUP),"put that half in slot 11");
+        step(8,()->check("clicks inside the page move stacks and keep the counts right (64 emeralds over slots 10 and 11)",srvGet(()->hub(A).storage.get(1).isEmpty()&&hub(A).storage.get(10).is(Items.EMERALD)&&hub(A).storage.get(11).is(Items.EMERALD)&&inHub(A,Items.EMERALD)==64&&cacheMatches(hub(A).storage)),srvGet(()->hub(A).storage.get(10)+" "+hub(A).storage.get(11))),"in-place clicks");
+        step(5,()->srv(()->{var h=hub(A);h.storage.drain();h.storage.insert(st(Items.COBBLESTONE,64*270),false);}),"fill all 270 slots");
+        step(10,()->{var m=hubScreen().getMenu();check("full: the screen reads 270 / 270",m.used()==270,""+m.used());recordFrame=true;},"full");
+        step(3,()->{layout("the Hub screen, full");shot("hub05_menu_full");
+            var s=hubScreen();hover(s.getGuiLeft()+16,s.getGuiTop()+26);},"hover the first slot");
+        step(6,()->shot("hub06_menu_tooltip"),"a stack's tooltip");
+        step(5,()->{closeAll();srv(()->hub(A).storage.drain());},"empty it; close");
+
+        // ---- automation: a hopper fills it, a hopper drains it, a dropper fills it; none of it says anything ----------------------------------------
+        step(5,()->{CHAT.clear();srv(()->{
+            var top=A.offset(0,2,0);sl().setBlock(top,Blocks.HOPPER.defaultBlockState().setValue(HopperBlock.FACING,Direction.DOWN),3);
+            if(sl().getBlockEntity(top) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity h){h.setItem(0,st(Items.COBBLESTONE,10));h.setItem(1,st(Items.REDSTONE,5));}
+            var drop=A.offset(-2,0,0);sl().setBlock(drop,Blocks.DROPPER.defaultBlockState().setValue(DispenserBlock.FACING,Direction.EAST),3);
+            if(sl().getBlockEntity(drop) instanceof net.minecraft.world.level.block.entity.DispenserBlockEntity d)d.setItem(0,st(Items.DIAMOND,5));});},"a hopper on top (15 items), a dropper against the west face (5 diamonds)");
+        step(170,()->{},"let the hopper run");
+        step(5,()->{check("a vanilla hopper on top moves its items into the Hub",srvGet(()->inHub(A,Items.COBBLESTONE)==10&&inHub(A,Items.REDSTONE)==5),srvGet(()->inHub(A,Items.COBBLESTONE)+" cobble, "+inHub(A,Items.REDSTONE)+" redstone"));
+            srv(()->sl().setBlock(A.offset(-3,0,0),Blocks.REDSTONE_BLOCK.defaultBlockState(),3));},"power the dropper");
+        step(10,()->srv(()->sl().setBlock(A.offset(-3,0,0),Blocks.AIR.defaultBlockState(),3)),"unpower");
+        step(10,()->srv(()->sl().setBlock(A.offset(-3,0,0),Blocks.REDSTONE_BLOCK.defaultBlockState(),3)),"power again");
+        step(10,()->srv(()->sl().setBlock(A.offset(-3,0,0),Blocks.AIR.defaultBlockState(),3)),"unpower");
+        step(5,()->{check("a powered dropper puts one diamond in per pulse, none on the ground",srvGet(()->inHub(A,Items.DIAMOND)==2&&sl().getEntitiesOfClass(ItemEntity.class,new AABB(A).inflate(4)).isEmpty()),srvGet(()->inHub(A,Items.DIAMOND)+" diamonds"));
+            srv(()->{sl().setBlock(A.offset(0,2,0),Blocks.AIR.defaultBlockState(),3);sl().setBlock(A.offset(-2,0,0),Blocks.AIR.defaultBlockState(),3);
+                var under=A.offset(1,-2,1);sl().setBlock(under,Blocks.HOPPER.defaultBlockState().setValue(HopperBlock.FACING,Direction.EAST),3);sl().setBlock(under.east(),Blocks.CHEST.defaultBlockState(),3);});},"a hopper under a bottom corner, into a chest");
+        step(200,()->{},"let it drain");
+        step(5,()->{String r=srvGet(()->{int chest=0;for(var p:new BlockPos[]{A.offset(1,-2,1),A.offset(2,-2,1)})if(sl().getBlockEntity(p) instanceof net.minecraft.world.Container c)for(int i=0;i<c.getContainerSize();i++)chest+=c.getItem(i).getCount();return chest+" "+hubTotal(A);});
+            var n=r.split(" ");check("a hopper under the Hub pulls from it: everything that left the Hub is in the hopper and the chest (17 in all, nothing lost or copied)",Integer.parseInt(n[0])+Integer.parseInt(n[1])==17&&Integer.parseInt(n[0])>=15,"moved "+n[0]+", left "+n[1]);
+            check("automation sends no Hub line",hubLines().isEmpty(),String.join(" | ",hubLines()));
+            srv(()->{var under=A.offset(1,-2,1);sl().setBlock(under.east(),Blocks.AIR.defaultBlockState(),3);sl().setBlock(under,Blocks.GRASS_BLOCK.defaultBlockState(),3);hub(A).storage.drain();});},"automation done");
+
+        // ---- the stations: the pack alone, the Hub alone, both, and a request that cannot be paid --------------------------------------------------
+        Item pot=WorkshopFabrication.item("cook_pot");
+        step(5,()->{CHAT.clear();tp(B.getX()+.5,sy,B.getZ()+4.5,180,10);srv(()->{fill(HB);pack(st(Items.IRON_INGOT,14),st(Items.OAK_SIGN,1));fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"Workshop, a Cook Pot (14 iron, 1 sign): the pack alone");
+        idleThen(()->check("the pack pays it all; the Hub keeps everything; no Hub line",srvGet(()->inPack(Items.IRON_INGOT)==0&&inPack(Items.OAK_SIGN)==0&&inPack(pot)==1&&inHub(A,Items.IRON_INGOT)==64&&inHub(A,Items.OAK_SIGN)==4)&&hubLines().isEmpty(),result+" / "+hubLines()),"pack alone");
+        step(5,()->{CHAT.clear();srv(()->{pack();fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"the Hub alone");
+        idleThen(()->{check("the Hub pays it all",srvGet(()->inPack(pot)==1&&inHub(A,Items.IRON_INGOT)==50&&inHub(A,Items.OAK_SIGN)==3),result);
+            check("one line, naming what the Hub paid",hubLines().equals(List.of(who()+" just pulled 14 Iron Ingot, 1 Oak Sign from the Hub")),String.join(" | ",hubLines()));},"Hub alone");
+        step(5,()->{CHAT.clear();srv(()->{pack(st(Items.IRON_INGOT,6),st(Items.OAK_SIGN,1));fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"both: 6 iron and the sign in the pack");
+        idleThen(()->{check("the pack first (6 iron, the sign), the Hub only the missing 8 iron",srvGet(()->inPack(Items.IRON_INGOT)==0&&inPack(Items.OAK_SIGN)==0&&inPack(pot)==1&&inHub(A,Items.IRON_INGOT)==56&&inHub(A,Items.OAK_SIGN)==4),result);
+            check("the line names only the Hub's part",hubLines().equals(List.of(who()+" just pulled 8 Iron Ingot from the Hub")),String.join(" | ",hubLines()));},"both");
+        step(5,()->{CHAT.clear();srv(()->{pack(st(Items.IRON_INGOT,3));fill(A,st(Items.IRON_INGOT,5),st(Items.GOLD_INGOT,10));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"cannot be paid: 3 + 5 iron and no sign");
+        idleThen(()->check("a failed request takes nothing from the pack or the Hub, and sends no line",srvGet(()->inPack(Items.IRON_INGOT)==3&&inPack(pot)==0&&inHub(A,Items.IRON_INGOT)==5&&inHub(A,Items.GOLD_INGOT)==10)&&hubLines().isEmpty()&&result.contains("Nothing consumed"),result),"failed");
+        step(5,()->{CHAT.clear();srv(()->{pack();fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"merge: a Cook Pot from the Hub");
+        step(20,()->srv(()->result=WorkshopFabrication.buy(sp(),"cook_pot")),"and another one second later");
+        idleThen(()->{check("two buys within 2 seconds: one line with the running total",hubLines().equals(List.of(who()+" just pulled 28 Iron Ingot, 2 Oak Sign from the Hub")),String.join(" | ",hubLines()));
+            srv(()->result=WorkshopFabrication.buy(sp(),"cook_pot"));},"a third one, 2.5 seconds after the second");
+        idleThen(()->check("a buy after the 2 seconds starts a new line",hubLines().size()==2&&hubLines().get(1).equals(who()+" just pulled 14 Iron Ingot, 1 Oak Sign from the Hub"),String.join(" | ",hubLines())),"new line");
+        step(5,()->{CHAT.clear();srv(()->{pack();fillCosts(Economy.fabrication("fob_beacon"),0);result=WorkshopFabrication.buy(sp(),"fob_beacon");});},"a FOB Beacon (5 or 6 kinds) from the Hub alone");
+        idleThen(()->{String want=srvGet(()->expected(who(),Economy.fabrication("fob_beacon")));
+            check("one line: three kinds named in the recipe's order, then 'and N more'",hubLines().equals(List.of(want)),String.join(" | ",hubLines())+" / wanted "+want);
+            check("the FOB Beacon was made",srvGet(()->inPack(ArsenalBeacon.FOB_BEACON_ITEM.get())==1),result);},"and N more");
+        step(5,()->{CHAT.clear();srv(()->{pack();fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));fill(HB,st(Items.IRON_INGOT,10));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"nearest first: Hub B (16 blocks from the beacon) holds 10 iron, Hub A (20 blocks) 64");
+        idleThen(()->check("the nearer Hub is emptied first, the farther pays the rest; one line for both",srvGet(()->inHub(HB,Items.IRON_INGOT)==0&&inHub(A,Items.IRON_INGOT)==60&&inHub(A,Items.OAK_SIGN)==3)&&hubLines().equals(List.of(who()+" just pulled 14 Iron Ingot, 1 Oak Sign from the Hub")),srvGet(()->inHub(HB,Items.IRON_INGOT)+" / "+inHub(A,Items.IRON_INGOT))+" "+hubLines()),"nearest first");
+
+        // the Exchange Shop: buying (Ardent Energy) and selling (the item) from the Hub
+        step(5,()->{CHAT.clear();tp(SHOP.getX()+.5,sy,SHOP.getZ()-2.5,0,10);srv(()->{fill(HB);sl().setBlock(SHOP,ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState(),3);pack();
+            var offer=ExchangeShop.offers().buy().get(0);fill(A,st(ArsenalBeacon.ARDENT_ENERGY,offer.value()+5));ExchangeShop.buy(sp(),SHOP,0,false);});},"Exchange: buy the first offer with Ardent Energy only in the Hub");
+        idleThen(()->{int value=srvGet(()->ExchangeShop.offers().buy().get(0).value());var id=srvGet(()->ExchangeShop.offers().buy().get(0).id());
+            check("bought: the Hub paid the Ardent Energy",srvGet(()->inHub(A,ArsenalBeacon.ARDENT_ENERGY.get())==5&&inPack(BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(id)))>0),id+" for "+value);
+            check("the line says the energy was spent from the Hub",hubLines().equals(List.of(who()+" just spent "+value+" Ardent Energy from the Hub")),String.join(" | ",hubLines()));
+            closeAll();CHAT.clear();srv(()->{pack();var offer=ExchangeShop.offers().sell().get(0);var item=BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(offer.id()));
+                fill(A,new ItemStack(item,Math.min(offer.count(),item.getMaxStackSize())));ExchangeShop.buy(sp(),SHOP,0,true);});},"sell the first offer with the item only in the Hub");
+        idleThen(()->{var offer=srvGet(()->ExchangeShop.offers().sell().get(0));var item=BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(offer.id()));int n=Math.min(offer.count(),item.getMaxStackSize());
+            check("sold: the item came from the Hub, the energy went to the pack",srvGet(()->inHub(A,item)==0&&inPack(ArsenalBeacon.ARDENT_ENERGY.get())==offer.value()),offer.id());
+            check("the line names the item",hubLines().equals(List.of(who()+" just pulled "+n+" "+new ItemStack(item).getHoverName().getString()+" from the Hub")),String.join(" | ",hubLines()));closeAll();},"sold");
+        // the beacon: repair and a branch upgrade
+        step(5,()->{CHAT.clear();tp(B.getX()+.5,sy,B.getZ()+3.5,180,10);srv(()->{var d=CampaignData.get(sl());d.health=d.maximumHealth()-500;d.setDirty();pack();
+            fill(A,st(standalone?ArsenalBeacon.ARDENT_ENERGY.get():ArsenalBeacon.PLATING.get(),Economy.repairAmount()));ArsenalBeacon.repair(sp());});},"beacon repair from the Hub");
+        idleThen(()->{check("repaired (+250 HP), paid by the Hub",srvGet(()->{var d=CampaignData.get(sl());return d.health==d.maximumHealth()-250&&hubTotal(A)==0;}),"");
+            check("the line",hubLines().size()==1&&hubLines().get(0).startsWith(who()+" just "),String.join(" | ",hubLines()));},"repaired");
+        step(5,()->{CHAT.clear();srv(()->{var d=CampaignData.get(sl());d.defense=0;d.setDirty();pack();var costs=new ArrayList<ItemStack>();
+            for(var part:Economy.beaconCost("defense",0))costs.add(new ItemStack(BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,part.id())),part.amount()));fill(A,costs.toArray(ItemStack[]::new));ArsenalBeacon.upgrade(sp(),"defense");});},"beacon Defense upgrade from the Hub");
+        idleThen(()->check("upgraded, paid by the Hub, one line",srvGet(()->CampaignData.get(sl()).defense==1&&hubTotal(A)==0)&&hubLines().size()==1,String.join(" | ",hubLines())),"upgraded");
+        // the Mess Hall: Gather (a move, not a payment) from the pack, the Hub and both; then its upgrade
+        Item[] foods={Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.COOKED_BEEF,Items.BREAD,Items.WHEAT,Items.CARROT,Items.POTATO,Items.COOKED_COD,Items.COOKED_SALMON,Items.APPLE,Items.BROWN_MUSHROOM,Items.RED_MUSHROOM};
+        Supplier<ItemStack[]> foodStacks=()->{var out=new ItemStack[foods.length];for(int i=0;i<foods.length;i++)out[i]=st(foods[i],foods[i]==Items.BREAD?32:20);return out;};
+        step(5,()->{CHAT.clear();tp(HALL.getX()+.5,sy,HALL.getZ()-2.5,0,10);srv(()->{sl().setBlock(HALL,ArsenalBeacon.MESS_HALL_I.get().defaultBlockState(),3);});},"a Mess Hall Mk I");
+        step(5,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(HALL);h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(HALL);b.writeVarInt(h.mk());});}),"open it");
+        step(10,()->srv(()->{var m=sp().containerMenu;m.clickMenuButton(sp(),MessHallMenu.RECIPE+MealRules.Effect.VITALITY.ordinal());pack(foodStacks.get());fill(A,foodStacks.get());result=""+m.clickMenuButton(sp(),MessHallMenu.GATHER);}),"order Vitality; Gather with food in the pack and the Hub");
+        Supplier<Integer> table=()->{var h=(MessHall.HallEntity)sl().getBlockEntity(HALL);int n=0;for(int i=0;i<8;i++)if(i!=6)n+=h.ingredients.getItem(i).getCount();return n;};
+        int fullPack=srvGet(()->{int n=0;for(var s:foodStacks.get())n+=s.getCount();return n;});
+        idleThen(()->{String r=srvGet(()->table.get()+" "+packTotal()+" "+hubTotal(A));var n=r.split(" ");
+            check("Gather, pack and Hub both full: the table is filled from the pack alone",result.equals("true")&&Integer.parseInt(n[0])>0&&Integer.parseInt(n[0])+Integer.parseInt(n[1])==fullPack&&Integer.parseInt(n[2])==fullPack&&hubLines().isEmpty(),"table "+n[0]+", pack "+n[1]+", Hub "+n[2]);
+            srv(()->{((MessHall.HallEntity)sl().getBlockEntity(HALL)).ingredients.clearContent();pack();fill(A,foodStacks.get());result=""+sp().containerMenu.clickMenuButton(sp(),MessHallMenu.GATHER);});},"Gather with food only in the Hub");
+        idleThen(()->{String r=srvGet(()->table.get()+" "+packTotal()+" "+hubTotal(A));var n=r.split(" ");
+            check("Gather from the Hub alone: what is on the table left the Hub",result.equals("true")&&Integer.parseInt(n[0])>0&&Integer.parseInt(n[1])==0&&Integer.parseInt(n[0])+Integer.parseInt(n[2])==fullPack,"table "+n[0]+", pack "+n[1]+", Hub "+n[2]);
+            check("and the line says so",hubLines().size()==1&&hubLines().get(0).startsWith(who()+" just pulled "),String.join(" | ",hubLines()));
+            CHAT.clear();srv(()->{((MessHall.HallEntity)sl().getBlockEntity(HALL)).ingredients.clearContent();pack(st(Items.BREAD,1));fill(A,foodStacks.get());result=""+sp().containerMenu.clickMenuButton(sp(),MessHallMenu.GATHER);});},"Gather with one bread in the pack, the rest in the Hub");
+        idleThen(()->{String r=srvGet(()->table.get()+" "+inPack(Items.BREAD)+" "+hubTotal(A)+" "+((MessHall.HallEntity)sl().getBlockEntity(HALL)).ingredients.getItem(7).getCount());var n=r.split(" ");
+            check("both: the pack's bread first, the Hub the rest",result.equals("true")&&Integer.parseInt(n[1])==0&&Integer.parseInt(n[3])==2&&Integer.parseInt(n[0])-1+Integer.parseInt(n[2])==fullPack,"table "+n[0]+", pack bread "+n[1]+", Hub "+n[2]+", bread on the table "+n[3]);
+            CHAT.clear();srv(()->{pack();var price=Economy.kitchen(1);fill(A,new ItemStack(price.ardent()?ArsenalBeacon.ARDENT_ENERGY.get():price.item(),price.amount()));result=""+sp().containerMenu.clickMenuButton(sp(),MessHallMenu.UPGRADE);});},"upgrade the hall to Mk II from the Hub");
+        idleThen(()->{check("upgraded to Mk II, paid by the Hub",srvGet(()->sl().getBlockState(HALL).is(ArsenalBeacon.MESS_HALL_II.get())&&hubTotal(A)==0),result);
+            check("one line",hubLines().size()==1,String.join(" | ",hubLines()));closeAll();},"hall upgraded");
+        // the Drink Station: Gather fetches a potion from the Hub
+        step(5,()->{CHAT.clear();tp(DRINK.getX()+.5,sy,DRINK.getZ()-2.5,0,10);srv(()->sl().setBlock(DRINK,ArsenalBeacon.DRINK_STATION_II.get().defaultBlockState(),3));},"a Drink Station Mk II (Mk I does not mix)");
+        step(5,()->srv(()->{var be=(DrinkStation.StationEntity)sl().getBlockEntity(DRINK);net.minecraftforge.network.NetworkHooks.openScreen(sp(),be,b->{b.writeBlockPos(DRINK);b.writeVarInt(be.mk());});}),"open it");
+        step(10,()->srv(()->{var m=sp().containerMenu;int swift=DrinkData.catalogue().indexOf(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED);
+            m.clickMenuButton(sp(),DrinkStationMenu.EFFECT+swift);pack();fill(A,PotionUtils.setPotion(new ItemStack(Items.POTION),Potions.SWIFTNESS),PotionUtils.setPotion(new ItemStack(Items.POTION),Potions.SWIFTNESS));
+            result=m.clickMenuButton(sp(),DrinkStationMenu.GATHER)+" (swiftness index "+swift+", notice "+notice(m)+")";}),"order Swiftness; Gather with the potion only in the Hub");
+        idleThen(()->{check("Gather fetched one Swiftness potion from the Hub",srvGet(()->{var be=(DrinkStation.StationEntity)sl().getBlockEntity(DRINK);return result.startsWith("true")&&be.mix.getItem(0).is(Items.POTION)&&inHub(A,Items.POTION)==1;}),result);
+            check("the line",hubLines().equals(List.of(who()+" just pulled 1 Potion of Swiftness from the Hub")),String.join(" | ",hubLines()));closeAll();},"drink gathered");
+        // the Tactical Enchanting Table's Warlord Seal
+        step(5,()->{CHAT.clear();tp(B.getX()+.5,sy,B.getZ()+3.5,180,10);srv(()->{pack();fill(A,st(ArsenalBeacon.WARLORD_SEAL,1));result=TacticalEnchanting.unlock(sp(),"minecraft:soul_speed");});},"a Warlord Seal from the Hub unlocks Soul Speed");
+        idleThen(()->check("unlocked with the Hub's seal; one line",result.equals("enchant.result.unlocked")&&srvGet(()->inHub(A,ArsenalBeacon.WARLORD_SEAL.get())==0)&&hubLines().equals(List.of(who()+" just pulled 1 Warlord Seal from the Hub")),result+" "+hubLines()),"seal");
+        // the Support Cannon's upgrade
+        step(5,()->{CHAT.clear();tp(CANNON.getX()+.5,sy,CANNON.getZ()-2.5,0,10);srv(()->{sl().setBlock(CANNON,ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(CANNON) instanceof SupportCannon.CannonEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            SupportData.get(sl()).ensure(sp().getUUID()).up[0]=0;pack();fill(A);var price=Economy.cannon(CannonUpgrades.Upgrade.values()[0],0);fillCosts(priceCosts(price),0);
+            CannonControl.act(sp(),CANNON,CannonControl.UPGRADE,0);});},"the Support Cannon's first upgrade from the Hub");
+        idleThen(()->{check("upgraded, paid by the Hub, one line",srvGet(()->SupportData.get(sl()).ensure(sp().getUUID()).up[0]==1&&hubTotal(A)==0)&&hubLines().size()==1,String.join(" | ",hubLines()));closeAll();},"cannon upgraded");
+        // the Support Platform's shop (Ardent Energy): the platform reads the energy it can reach
+        step(5,()->{CHAT.clear();tp(PLAT.getX()+.5,sy,PLAT.getZ()-2.5,0,10);srv(()->{sl().setBlock(PLAT,ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(PLAT) instanceof SupportPlatform.PlatformEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            pack();fill(A,st(ArsenalBeacon.ARDENT_ENERGY,SupportRules.SUPPLY_FLARE_PRICE+3));});},"a Support Platform; Ardent Energy only in the Hub");
+        step(5,()->srv(()->{var s=sl().getBlockState(PLAT);s.use(sl(),sp(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(PLAT),Direction.NORTH,PLAT,false));}),"open it");
+        step(10,()->{var menu=mc().player.containerMenu instanceof SupportPlatform.PlatformMenu m?m:null;
+            check("the platform shows the energy it can reach (the pack and the Hub)",menu!=null&&menu.energy.get()==SupportRules.SUPPLY_FLARE_PRICE+3,menu==null?"no menu":""+menu.energy.get());
+            srv(()->SupportShop.buy(sp(),1));},"buy a Supply Flare");
+        idleThen(()->{var menu=mc().player.containerMenu instanceof SupportPlatform.PlatformMenu m?m:null;
+            check("bought with the Hub's energy",srvGet(()->inPack(ArsenalBeacon.SUPPLY_FLARE.get())==1&&inHub(A,ArsenalBeacon.ARDENT_ENERGY.get())==3)&&menu!=null&&menu.energy.get()==3,menu==null?"":""+menu.energy.get());
+            check("the line",hubLines().equals(List.of(who()+" just spent "+SupportRules.SUPPLY_FLARE_PRICE+" Ardent Energy from the Hub")),String.join(" | ",hubLines()));closeAll();},"flare bought");
+        // the weapon table's Age upgrade (standalone: plain materials; the pack edition's need Create and KubeJS items, absent here)
+        if(standalone){
+            step(5,()->{CHAT.clear();tp(STATION.getX()+.5,sy,STATION.getZ()-2.5,0,10);srv(()->{sl().setBlock(STATION,ArsenalBeacon.GUN_PLATFORM.get().defaultBlockState(),3);pack();fillCosts(WeaponPlatform.upgrades(1),0);result=WeaponPlatform.upgrade(sp(),STATION);});},"the weapon table, Age 1 to 2, from the Hub");
+            idleThen(()->check("upgraded, paid by the Hub, one line",srvGet(()->sl().getBlockState(STATION).getValue(WeaponPlatform.AGE)==2&&hubTotal(A)==0)&&hubLines().size()==1,result+" "+hubLines()),"table upgraded");
+        }
+
+        // ---- two players: the line reaches the players in the Home Zone, not one outside it; a second player's pull reaches this one ----------------------
+        step(5,()->{CHAT.clear();BUDDY.clear();FAR.clear();tp(B.getX()+.5,sy,B.getZ()+4.5,180,10);srv(()->{buddy=fake("QaBuddy",BUDDY,B.offset(3,0,3));far=fake("QaFar",FAR,OUT.offset(6,0,6));
+            pack();fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(sp(),"cook_pot");});},"a second player in the zone, a third outside it; this player buys from the Hub");
+        idleThen(()->{String line=who()+" just pulled 14 Iron Ingot, 1 Oak Sign from the Hub";
+            check("the player in the Home Zone reads the same line",BUDDY.contains(line),String.join(" | ",BUDDY));
+            check("the player outside the zone does not",FAR.stream().noneMatch(s->s.endsWith("from the Hub")),String.join(" | ",FAR));
+            CHAT.clear();srv(()->{fill(A,st(Items.IRON_INGOT,64),st(Items.OAK_SIGN,4));result=WorkshopFabrication.buy(buddy,"cook_pot");});},"the second player buys from the Hub");
+        idleThen(()->{check("its line reaches this player",hubLines().equals(List.of("QaBuddy just pulled 14 Iron Ingot, 1 Oak Sign from the Hub")),result+" "+hubLines());
+            srv(()->{sl().removePlayerImmediately(buddy,net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);sl().removePlayerImmediately(far,net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);});},"the stand-ins go");
+        step(5,()->{boolean logged=false;try{for(var l:java.nio.file.Files.readAllLines(new File("logs/latest.log").toPath()))if(l.contains("[Logistics Hub] "+who()+" just pulled 14 Iron Ingot, 1 Oak Sign from the Hub")){logged=true;break;}}catch(Exception x){log("QA_NOTE log {}",x.toString());}
+            check("the server log has the line",logged,"");},"the server log");
+
+        // ---- the Home Zone only: a Hub outside it, and a Hub whose beacon is gone ---------------------------------------------------------------------
+        step(5,()->{BAR.clear();CHAT.clear();srv(()->{sl().setBlock(OUT,ArsenalBeacon.LOGISTICS_HUB.get().defaultBlockState(),3);pack();fill(A);});tp(OUT.getX()+.5,sy,OUT.getZ()-3.5,0,20);hold(ItemStack.EMPTY);},"a Hub set down outside the zone (by command: its item refuses)");
+        step(60,()->{},"the Hub's own block entity makes its record and puts its parts up");
+        step(5,()->srv(()->{var h=hub(OUT);if(h!=null){h.storage.insert(st(Items.GOLD_INGOT,64),false);}var top=OUT.offset(0,2,0);sl().setBlock(top,Blocks.HOPPER.defaultBlockState().setValue(HopperBlock.FACING,Direction.DOWN),3);
+            if(sl().getBlockEntity(top) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity hp)hp.setItem(0,st(Items.COBBLESTONE,4));}),"its record and parts appear; 64 gold in it; a hopper on top");
+        step(5,()->click(OUT.offset(0,0,-1),Direction.NORTH),"right-click it");
+        step(80,()->{
+            check("right-click: it does nothing outside the Home Zone and says so",barHas("outside the Home Zone")&&!(mc().screen instanceof HubScreen),String.join(" | ",BAR));
+            check("its parts stand (27 blocks)",srvGet(()->{int n=0;for(var p:LogisticsHub.cells(OUT))if(LogisticsHub.isHub(sl().getBlockState(p)))n++;return n;})==27,"");
+            check("hoppers get nothing from it: the hopper keeps its cobblestone",srvGet(()->sl().getBlockEntity(OUT.offset(0,2,0)) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity hp&&hp.getItem(0).getCount()==4&&inHub(OUT,Items.COBBLESTONE)==0),"");
+            check("stations never draw from it",srvGet(()->Supply.count(Supply.at(sp(),B),Items.GOLD_INGOT)==0),"");
+            srv(()->{sl().setBlock(OUT.offset(0,2,0),Blocks.AIR.defaultBlockState(),3);var h=hub(OUT);if(h!=null)h.storage.drain();sp().setGameMode(GameType.CREATIVE);sp().gameMode.destroyBlock(OUT);sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();});},"outside");
+        // the beacon is taken away (its block gone: the mod ends the campaign), then planted again on the same spot
+        step(5,()->{BAR.clear();srv(()->{fill(A,st(Items.IRON_INGOT,64));pack();sl().setBlock(B,Blocks.AIR.defaultBlockState(),3);});tp(A.getX()+.5,sy,A.getZ()-3.5,0,20);},"the beacon's block is removed");
+        until("the campaign notices: no beacon",400,()->srvGet(()->!CampaignData.get(sl()).installed()),()->{});
+        step(30,()->click(A.offset(0,0,-1),Direction.NORTH),"right-click Hub A");
+        step(10,()->{check("right-click: no beacon, no Hub, and it says so",barHas("No Defense Beacon is standing")&&!(mc().screen instanceof HubScreen),String.join(" | ",BAR));
+            check("no handler while there is no beacon",srvGet(()->sl().getBlockEntity(A.above()).getCapability(ForgeCapabilities.ITEM_HANDLER,Direction.UP).resolve().isEmpty()),"");
+            check("stations draw nothing from it",srvGet(()->Supply.count(Supply.at(sp(),A.offset(-5,-1,0)),Items.IRON_INGOT)==0),"");
+            check("its items wait in it",srvGet(()->inHub(A,Items.IRON_INGOT)==64),"");
+            srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+                sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);});},"no beacon; then the beacon planted again");
+        until("the Hub works again",400,()->srvGet(()->{var h=hub(A);return h!=null&&h.working(sl());}),()->{});
+        step(5,()->check("the beacon back: the handler and the supply come back",srvGet(()->sl().getBlockEntity(A.above()).getCapability(ForgeCapabilities.ITEM_HANDLER,Direction.UP).resolve().isPresent()&&Supply.count(Supply.at(sp(),B),Items.IRON_INGOT)==64),""),"beacon back");
+
+        // ---- the FOB Beacon: a Supply Catapult from the pack (a FOB is outside the Home Zone: never the Hub) ------------------------------------------------
+        step(5,()->{tp(FOB.getX()+.5,sy,FOB.getZ()-2.5,0,10);},"go to a FOB 300 blocks out");
+        until("the FOB's chunk is loaded",200,()->loaded(FOB),()->{});
+        step(60,()->srv(()->{var f=FobData.get(sl()).add(FOB,0,sl().getGameTime());f.state=FobRules.State.ACTIVE;f.activated=true;f.name="QA Hub FOB";FobData.get(sl()).setDirty();
+            sl().setBlock(FOB,ArsenalBeacon.FOB_BEACON.get().defaultBlockState(),3);sl().setBlock(FOB.above(),ArsenalBeacon.STRUCTURE_PART.get().defaultBlockState(),3);
+            pack();fillCosts(Economy.fabrication("supply_catapult"),0);Fobs.open(sp(),FOB);}),"an ACTIVE FOB; the catapult's materials only in the Hub; open the FOB Beacon");
+        step(20,()->{var s=mc().screen;check("the FOB screen opens",s instanceof FobClient.FobScreen,String.valueOf(s));recordFrame=true;},"FOB screen");
+        step(3,()->{shot("hub07_fob_catapult_short");net.minecraft.client.gui.components.AbstractWidget b=null;
+            try{var f=FobClient.FobScreen.class.getDeclaredField("catapultButton");f.setAccessible(true);b=(net.minecraft.client.gui.components.AbstractWidget)f.get(mc().screen);}catch(Exception x){log("QA_NOTE {}",x.toString());}
+            check("the Supply Catapult row is there; its Buy is off (the pack is short: the Hub does not count at a FOB)",b!=null&&b.visible&&!b.active,b==null?"no button":b.active+"");
+            srv(()->Fobs.button(sp(),FOB,Fobs.BUY_CATAPULT));},"press it anyway (server)");
+        step(15,()->check("refused, nothing taken from the pack or the Hub",srvGet(()->inPack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get())==0&&hubHolds(Economy.fabrication("supply_catapult"))),srvGet(()->costText(Economy.fabrication("supply_catapult")))),"refused");
+        step(5,()->srv(()->{fill(A);var list=new ArrayList<ItemStack>();for(var c:Economy.fabrication("supply_catapult"))list.add(c.ingredient().getItems()[0].copyWithCount(c.count()));pack(list.toArray(ItemStack[]::new));Fobs.open(sp(),FOB,"");}),"the same materials in the pack");
+        step(15,()->{net.minecraft.client.gui.components.AbstractWidget b=null;
+            try{var f=FobClient.FobScreen.class.getDeclaredField("catapultButton");f.setAccessible(true);b=(net.minecraft.client.gui.components.AbstractWidget)f.get(mc().screen);}catch(Exception x){log("QA_NOTE {}",x.toString());}
+            check("now its Buy is on",b!=null&&b.visible&&b.active,b==null?"no button":b.active+"");shot("hub08_fob_catapult_ready");if(b!=null)press(b);},"press Buy (a real click)");
+        step(20,()->{check("the catapult is built from the pack: the item in the pack, the materials gone",srvGet(()->{int left=0;for(var c:Economy.fabrication("supply_catapult"))left+=Supply.count(Supply.pack(sp()),c.ingredient().getItems()[0].getItem());return inPack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get())==1&&left==0;}),"");
+            recordFrame=true;},"bought");
+        step(10,()->{check("the screen says so",drawnHas("Supply Catapult built"),lastFrame.stream().map(Ui.Drawn::text).toList().toString());shot("hub09_fob_catapult_bought");},"bought, on screen");
+        step(5,()->srv(()->{pack();fill(A,st(ArsenalBeacon.ARDENT_ENERGY,64));Fobs.button(sp(),FOB,Fobs.BUY_SUPPLY);}),"a FOB flare with Ardent Energy only in the Hub");
+        step(15,()->check("refused: a FOB spends from the pack alone",srvGet(()->inHub(A,ArsenalBeacon.ARDENT_ENERGY.get())==64&&inPack(ArsenalBeacon.SUPPLY_FLARE.get())==0),""),"flare refused");
+        // the Command Table's FOB card: the Contact Specialty Seller button clears the card's lower edge
+        step(5,()->{closeAll();tp(TABLE.getX()+.5,sy,TABLE.getZ()-2.5,0,10);srv(()->fill(A));},"to the Command Table");
+        until("the beacon's chunk is loaded again",200,()->loaded(B)&&loaded(TABLE),()->{});
+        step(20,()->{TacticalClient.view=2;TacticalClient.TableScreen.sellerFob=-1;srv(()->{sl().setBlock(TABLE,ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState().setValue(TacticalBlocks.FACING,Direction.NORTH),3);Hunts.open(sp(),TABLE);});},"open it on its FOBs tab");
+        step(30,()->{var s=mc().screen;if(!(s instanceof TacticalClient.TableScreen t)){check("the Command Table opens",false,String.valueOf(s));return;}
+            int y=-1,h=-1;try{var f=TacticalClient.TableScreen.class.getDeclaredField("radarY");f.setAccessible(true);y=f.getInt(t)+14;var m=TacticalClient.TableScreen.class.getDeclaredMethod("fobRowH");m.setAccessible(true);h=(int)m.invoke(t);}catch(Exception x){log("QA_NOTE {}",x.toString());}
+            Ui.UiButton contact=null;for(var c:t.children())if(c instanceof Ui.UiButton b&&b.visible&&(b.getMessage().getString().equals(Ui.plain("tactical.seller.open"))||b.getMessage().getString().equals(Ui.plain("tactical.seller.open.short"))))contact=b;
+            int bottom=contact==null?-1:contact.getY()+contact.getHeight(),card=y+h-3;
+            check("the Contact Specialty Seller button sits inside the FOB card, 4 px above its lower edge (it touched it before)",contact!=null&&card-bottom>=3&&contact.getY()>y,contact==null?"no button":"button "+contact.getY()+".."+bottom+", card "+y+".."+card);
+            shot("hub10_table_fob_card");},"the FOB card");
+        step(5,()->{closeAll();srv(()->{var d=FobData.get(sl());for(var f:new ArrayList<>(d.fobs.values()))if(f.name.equals("QA Hub FOB")){d.fobs.remove(f.id);FobZone.forget(f.id);}d.setDirty();});},"the FOB goes again");
+
+        // ---- the break guard: survival mining, a forced break, an explosion; a creative break drops; the Recovery Shovel ------------------------------------
+        step(5,()->{BAR.clear();srv(()->fill(A,st(Items.DIAMOND,64),st(Items.IRON_INGOT,64)));tp(A.getX()+.5,sy,A.getZ()-2.5,0,30);hold(ItemStack.EMPTY);},"Hub A holds items; a survival player in front");
+        step(25,()->mc().gameMode.startDestroyBlock(A.offset(0,-1,-1),Direction.NORTH),"start mining a bottom part");
+        step(40,()->{mc().gameMode.stopDestroyBlock();check("mining a Hub that holds items: no progress, 'Empty the Hub first' in the action bar",barHas("Empty the Hub first")&&srvGet(()->LogisticsHub.isHub(sl().getBlockState(A.offset(0,-1,-1)))),String.join(" | ",BAR));
+            check("the client knows it is full (the anchor's synced flag): no cracks",LogisticsHub.occupied(mc().level,A.offset(0,-1,-1)),"");},"mined");
+        step(5,()->check("a forced break by a survival player is refused too",srvGet(()->{sp().gameMode.destroyBlock(A.offset(1,0,-1));return LogisticsHub.isHub(sl().getBlockState(A.offset(1,0,-1)))&&LogisticsHub.isHub(sl().getBlockState(A))&&inHub(A,Items.DIAMOND)==64;}),""),"destroyBlock refused");
+        step(5,()->{tp(A.getX()+.5,sy,A.getZ()-12.5,0,10);srv(()->sl().explode(null,A.getX()+.5,A.getY()+.5,A.getZ()-2.5,6f,Level.ExplosionInteraction.TNT));},"an explosion two blocks from it");
+        step(20,()->{check("blast-proof: all 27 blocks stand, nothing lost",srvGet(()->{int n=0;for(var p:LogisticsHub.cells(A))if(LogisticsHub.isHub(sl().getBlockState(p)))n++;return n==27&&inHub(A,Items.DIAMOND)==64&&inHub(A,Items.IRON_INGOT)==64;}),"");
+            shot("hub11_after_blast");},"after the blast");
+        step(5,()->{srv(()->{fill(HB,st(Items.EMERALD,64),st(Items.EMERALD,30),new ItemStack(Items.SHIELD));});tp(HB.getX()+.5,sy,HB.getZ()-3.5,0,20);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"Hub B holds 3 stacks; the Recovery Shovel in hand");
+        step(10,()->click(HB.offset(0,0,-1),Direction.NORTH),"right-click Hub B with the shovel");
+        step(15,()->{String r=srvGet(()->{ItemStack item=ItemStack.EMPTY;for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()))item=s;
+                var id=item.hasTag()&&item.getTag().hasUUID("HubId")?item.getTag().getUUID("HubId"):null;var h=HubData.get(sl()).hub(id);
+                return (!LogisticsHub.isHub(sl().getBlockState(HB)))+" "+(h!=null&&!h.placed&&h.storage.count(Items.EMERALD)==94&&h.storage.usedSlots()==3)+" "+(item.hasTag()?item.getTag().getInt("HubStacks"):-1)+" "+(sl().getEntitiesOfClass(ItemEntity.class,new AABB(HB).inflate(3)).isEmpty());});
+            check("the shovel picks the Hub up: gone from the world, its 3 stacks wait in the saved data, the item remembers it, nothing dropped",r.equals("true true 3 true"),r);},"picked up");
+        step(5,()->{srv(()->{for(int i=0;i<sp().getInventory().items.size();i++)if(sp().getInventory().items.get(i).is(ArsenalBeacon.LOGISTICS_HUB_ITEM.get())){var s=sp().getInventory().items.get(i);sp().getInventory().items.set(i,ItemStack.EMPTY);sp().getInventory().setItem(0,s);sp().getInventory().selected=0;}});mc().player.getInventory().selected=0;},"hold the picked-up Hub");
+        step(5,()->click(HB.below(2),Direction.UP),"place it again");
+        step(30,()->check("placed again with the same id and its 3 stacks",srvGet(()->{var h=hub(HB);return h!=null&&h.placed&&h.storage.count(Items.EMERALD)==94&&h.storage.usedSlots()==3;}),""),"placed again");
+        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().gameMode.destroyBlock(HB.offset(1,1,1));});},"a creative player breaks Hub B (it still holds 3 stacks)");
+        step(10,()->{String r=srvGet(()->{int emeralds=0,shields=0;for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(HB).inflate(4))){if(e.getItem().is(Items.EMERALD))emeralds+=e.getItem().getCount();if(e.getItem().is(Items.SHIELD))shields++;}
+                int left=0;for(var p:LogisticsHub.cells(HB))if(LogisticsHub.isHub(sl().getBlockState(p)))left++;
+                boolean forgotten=HubData.get(sl()).all().stream().noneMatch(h->h.anchor.equals(HB));
+                return emeralds+" "+shields+" "+left+" "+forgotten;});
+            check("creative break: the whole Hub goes, its contents drop (94 emeralds, the shield), the record is forgotten",r.equals("94 1 0 true"),r);
+            srv(()->{for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(HB).inflate(4)))e.discard();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();
+                pack(new ItemStack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()));sp().getInventory().selected=0;});mc().player.getInventory().selected=0;},"creative break");
+        step(5,()->click(HB.below(2),Direction.UP),"place a new, empty Hub B");
+        step(30,()->srv(()->sp().gameMode.destroyBlock(HB.offset(-1,-1,-1))),"a survival player breaks one of its parts (it is empty)");
+        step(10,()->{String r=srvGet(()->{int items=0;for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(HB).inflate(4)))if(e.getItem().is(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()))items+=e.getItem().getCount();
+                int left=0;for(var p:LogisticsHub.cells(HB))if(LogisticsHub.isHub(sl().getBlockState(p)))left++;return items+" "+left;});
+            check("an empty Hub breaks whole and drops its item once",r.equals("1 0"),r);
+            srv(()->{for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(HB).inflate(4)))e.discard();});},"empty break");
+
+        // ---- unloaded chunks: the Hub's four chunks unload, a force-loaded part chunk alone still takes items, then save, quit and reload ---------------------
+        final String[] before={""};
+        step(5,()->{srv(()->{var h=hub(A);h.storage.drain();for(int i=0;i<200;i++)h.storage.insert(st(i%2==0?Items.COBBLESTONE:Items.ANDESITE,64),false);h.storage.insert(new ItemStack(Items.SHIELD),false);
+                var named=new ItemStack(Items.DIAMOND_SWORD);named.setHoverName(Component.literal("QA Blade"));h.storage.insert(named,false);});
+            before[0]=srvGet(()->sum(hub(A)));tp(sx+.5,sy,sz+.5,0,10);},"Hub A holds 202 stacks (one named sword); walk back to spawn, 2000 blocks away");
+        until("Hub A's chunks unload",900,()->srvGet(()->{for(var p:LogisticsHub.cells(A))if(sl().hasChunkAt(p))return false;return true;}),()->{});
+        step(5,()->check("with all four of its chunks unloaded, the Hub's inventory is intact in the saved data",srvGet(()->{var h=HubData.get(sl()).all().stream().filter(x->x.anchor.equals(A)).findFirst().orElse(null);return h!=null&&sum(h).equals(before[0]);}),""),"unloaded");
+        // one chunk that holds only parts, loaded on its own (a ticket of level 33: the chunk itself, not its neighbours): the anchor's chunk stays unloaded
+        final net.minecraft.world.level.ChunkPos part=new net.minecraft.world.level.ChunkPos(A.offset(-1,0,-1));
+        final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> QA_TICKET=net.minecraft.server.level.TicketType.create("qa_hub",Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong));
+        step(5,()->srv(()->sl().getChunkSource().addRegionTicket(QA_TICKET,part,0,part)),"load only the chunk of the Hub's north-west parts");
+        until("that chunk loads",100,()->srvGet(()->sl().hasChunkAt(A.offset(-1,0,-1))),()->{});
+        step(5,()->{
+            check("the part's chunk is loaded, the anchor's is not",srvGet(()->sl().hasChunkAt(A.offset(-1,0,-1))&&!sl().hasChunkAt(A)),"");
+            String r=srvGet(()->{var be=sl().getBlockEntity(A.offset(-1,1,-1));if(be==null)return "no block entity";
+                var cap=be.getCapability(ForgeCapabilities.ITEM_HANDLER,Direction.UP).resolve().orElse(null);
+                if(cap==null){var h=HubData.get(sl()).all().stream().filter(x->x.anchor.equals(A)).findFirst().orElse(null);var d=CampaignData.get(sl());
+                    return "no handler: hub "+(h==null?"none":h.placed+" working "+h.working(sl()))+", cell id "+(be instanceof LogisticsHub.Cell c?c.hubId():"?")+", record id "+(h==null?"?":h.id)+", beacon chunk "+sl().hasChunkAt(d.beacon)+", installed "+d.installed()+", inside "+d.inside(A);}
+                var rest=net.minecraftforge.items.ItemHandlerHelper.insertItemStacked(cap,st(Items.GOLD_INGOT,8),false);
+                var out=cap.extractItem(0,64,false);
+                var h=HubData.get(sl()).all().stream().filter(x->x.anchor.equals(A)).findFirst().orElse(null);
+                return rest.getCount()+" "+out.getCount()+" "+(h==null?-1:h.storage.count(Items.GOLD_INGOT))+" "+(h==null?-1:h.storage.count(Items.COBBLESTONE)+h.storage.count(Items.ANDESITE))+" "+(h!=null&&cacheMatches(h.storage));});
+            check("its part hands out the one inventory: 8 gold in, a stack of 64 out, the rest untouched",r.equals("0 64 8 "+(200*64-64)+" true"),r);
+            srv(()->sl().getChunkSource().removeRegionTicket(QA_TICKET,part,0,part));
+            before[0]=srvGet(()->sum(HubData.get(sl()).all().stream().filter(x->x.anchor.equals(A)).findFirst().get()));},"used through a part while the anchor is unloaded");
+        step(60,()->{},"let the ticket go");
+        step(40,()->{log("QA_NOTE saving and quitting");CHAT.clear();
+            boolean local=mc().isLocalServer();mc().level.disconnect();if(local)mc().clearLevel(new net.minecraft.client.gui.screens.GenericDirtMessageScreen(Component.literal("Saving")));else mc().clearLevel();
+            mc().setScreen(new TitleScreen());reloading=true;reloadTicks=0;},"save and quit to the title screen");
+        step(100,()->{},"the world is open again; let it settle at spawn");
+        step(5,()->{check("after the reload, with the Hub's chunks not loaded, its inventory is exactly as saved",srvGet(()->{var h=HubData.get(sl()).all().stream().filter(x->x.anchor.equals(A)).findFirst().orElse(null);return !sl().hasChunkAt(A)&&h!=null&&h.placed&&sum(h).equals(before[0]);}),"");
+            srv(()->{sp().teleportTo(sl(),A.getX()+.5,sy,A.getZ()+3.5,180,20);sp().getInventory().clearContent();});},"reloaded; back to the Hub (its south side)");
+        until("the Hub's and the beacon's chunks load",300,()->loaded(A)&&loaded(B),()->{});
+        step(40,()->{hold(ItemStack.EMPTY);},"settle");
+        step(5,()->click(A.offset(-1,-1,1),Direction.SOUTH),"open it from a part");
+        step(15,()->{var s=hubScreen();check("its screen opens and reads 202 slots in use",s!=null&&s.getMenu().used()==202,s==null?String.valueOf(mc().screen):""+s.getMenu().used());
+            check("the named sword kept its name",srvGet(()->{var h=hub(A);for(int i=0;i<HubStorage.SLOTS;i++)if(h.storage.get(i).is(Items.DIAMOND_SWORD))return h.storage.get(i).getHoverName().getString().equals("QA Blade");return false;}),"");
+            check("still the same Hub: the anchor's id is the record's",srvGet(()->{var h=hub(A);return h!=null&&sum(h).equals(before[0]);}),"");
+            shot("hub12_after_reload");closeAll();},"after the reload");
+    }
+}

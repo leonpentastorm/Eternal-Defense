@@ -37,8 +37,12 @@ final class InventoryPayment {
         int sources=stacks.size(),count=costs.size();var accepts=new boolean[sources][count];var demand=new int[count];
         for(int c=0;c<count;c++){demand[c]=costs.get(c).ingredient().isEmpty()?0:costs.get(c).count();for(int s=0;s<sources;s++)accepts[s][c]=matches(costs.get(c),stacks.get(s));}
         var alloc=SupplyRules.allocate(supply.stream().mapToInt(Integer::intValue).toArray(),tier.stream().mapToInt(Integer::intValue).toArray(),demand,accepts);
-        var pulls=new ArrayList<Supply.Pull>();
-        for(int s=0;s<sources;s++){int n=alloc.from(s);if(n<=0)continue;if(kinds.get(s)==null)inventory.get(s).shrink(n);else pulls.add(new Supply.Pull(kinds.get(s).hub(),kinds.get(s).key(),n));}
+        var pulls=new ArrayList<Supply.Pull>();var firstCost=new IdentityHashMap<Supply.Pull,Integer>();
+        for(int s=0;s<sources;s++){int n=alloc.from(s);if(n<=0)continue;if(kinds.get(s)==null){inventory.get(s).shrink(n);continue;}
+            var pull=new Supply.Pull(kinds.get(s).hub(),kinds.get(s).key(),n);pulls.add(pull);
+            int c=0;while(c<count-1&&alloc.taken()[s][c]<=0)c++;firstCost.put(pull,c);}
+        // the Hub line names what it paid in the request's own order (the recipe's), not in the order the Hub happens to store it
+        pulls.sort(Comparator.comparingInt(firstCost::get));
         return new Plan(inventory,alloc.got(),alloc.payable(),pulls);
     }
     /** Pays and hands over {@code output}: everything or nothing (the output must fit in the pack). Creative players pay nothing. */

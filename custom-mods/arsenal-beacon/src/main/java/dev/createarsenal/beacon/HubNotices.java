@@ -27,6 +27,8 @@ final class HubNotices {
     }
     private static final Map<UUID,Running> RUNNING=new LinkedHashMap<>();
 
+    /** True when no line is waiting to go out (every running total has been sent). */
+    static boolean idle(){return RUNNING.isEmpty();}
     /** A request the Hubs paid part of: added to this player's running total (nothing for an empty list). */
     static void pulled(ServerPlayer p,List<Supply.Pull> pulls){
         if(pulls.isEmpty())return;

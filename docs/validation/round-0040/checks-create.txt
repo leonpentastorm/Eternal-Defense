@@ -1,0 +1,14 @@
+QA_CHECK PASS with Create loaded, the 26 parts are the Create-aware ones (belts can deliver to them) 26
+QA_CHECK PASS the mechanical arm knows the Hub (its interaction point type is registered) 
+QA_CHECK PASS the line runs: the belt moves east, the basin spills onto it, the burner is lit east -64.0 east Block{create:blaze_burner}[blaze=kindled,facing=north]
+QA_CHECK PASS Create made Resonance Coils (heated mixing) and the belt delivered all 8 straight into the Hub 8 coils in the Hub, basin {}, belt items 0
+QA_CHECK PASS nothing fell off the belt's end 
+QA_CHECK PASS a belt ending at an andesite funnel on the Hub's face delivers everything into the Hub (the belt's own end meets the ground) 32 gold, 16 lapis in the Hub, belt items 0, Block{create:andesite_belt_funnel}[facing=south,powered=false,shape=retracted,waterlogged=false]
+QA_CHECK PASS a brass funnel with an item filter pulls only diamonds out of the Hub, through a chute into a vault: all 64, nothing else vault {diamond=64}, Hub diamonds 0 cobble 64 bread 32 / filter set true
+QA_CHECK PASS with an attribute filter (food) it pulls the bread and leaves the cobblestone and the coils vault {bread=32, diamond=64}, Hub cobble 64 bread 0 / filter set true
+QA_CHECK PASS a chute and a filtered smart chute feed the Hub from above (16 redstone, 16 iron); the smart chute refuses what its filter does not pass 16 redstone, 16 iron / filter set true, Block{create:smart_chute}[powered=false], smart chute takes gold: false
+QA_CHECK PASS an arm puts the depot's 16 copper into the Hub depot {}, second depot {resonance_coil=8}, Hub 160 (was 152), arm holding 0 / 0
+QA_CHECK PASS an arm takes items out of the Hub onto a depot, and nothing is lost or copied (Hub + depot + arms = what was there + 16) depot {}, second depot {resonance_coil=8}, Hub 160 (was 152), arm holding 0 / 0
+QA_CHECK PASS the vault keeps its own inventory and the Hub its own (they do not merge), the Hub's 27 blocks stand 
+QA_CHECK PASS Create's extract and a simulated insert on a full Hub (270 slots) each take well under a millisecond microseconds per call: extract 16.0, simulated insert 6.2
+QA_DONE pass=13 fail=0

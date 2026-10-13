@@ -1,5 +1,19 @@
 # Change log
 
+## 0.0.40 — The Logistics Center Hub (2026-10-13, branch `feature/logistics-hub`)
+
+On `feature/logistics-hub`, made from `feature/animation-pass` at 0.0.39 (which holds the Drink Station, Mess Hall and MRE work). No packet changed: **network protocol 40**. Rules: GDD 0.0.40 (Part K, section 5.11); tests: `docs/ROUND-0040-TESTING.md`.
+
+* **Logistics Center Hub** (the owner's model): a 3 x 3 x 3 depot with 270 slots (5 pages of 54), sold at Workshop Fabrication, the dearest installation (proposed: 64 Reinforced Beacon Plating or 40 Ardent Energy, plus 64 iron, 16 chests, 8 hoppers). It works only inside the Home Zone; elsewhere it does nothing and says so. Right-click any of its 27 blocks to open it.
+* **Its items are kept with the world**, not in the block: chunk borders, unloaded chunks and reloads cannot lose or copy them. It cannot be mined while it holds items ("Empty the Hub first"); creative breaks drop the contents; explosions, fire, pistons and mobs cannot touch it. The Recovery Shovel picks it up with its items waiting inside.
+* **Automation:** every face of every block is the same inventory: hoppers and droppers, and in the pack Create's belts (straight in, no funnel needed), funnels with item or attribute filters, chutes, smart chutes and mechanical arms. Automation never posts a chat line.
+* **The supply source:** every recipe, upgrade, purchase, repair, Exchange trade and Gather in the Home Zone now takes from your pack first, then from the Home Zone's Hubs, nearest first, all or nothing. Ardent Energy is an item, so a Hub can hold it and pay with it. FOB actions stay pack-only.
+* **The Hub line:** when a Hub pays part of a request, you and everyone in the Home Zone read "Dev just pulled 54 Iron Ingot from the Hub" (or "... spent 12 Ardent Energy from the Hub"): one line per action, three kinds and then "and N more", your pulls within 2 seconds added up; also in the server log.
+* **FOB Beacon:** its shop now builds a Supply Catapult (the same materials as at Workshop Fabrication, from your pack). Workshop Fabrication still sells it.
+* **Command Table:** the FOB card's Contact Specialty Seller button moved up 3 px; it no longer touches the card's lower edge.
+* Fixes found while testing: a Hub that was just placed never checked the Home Zone (an overflow), so it never worked; the Recovery Shovel opened the Hub's screen instead of picking it up; for up to a second after items went in, a Hub could still be mined (the break guard now reads the Hub's own inventory on the server).
+* New Field Guide card: Logistics Center Hub.
+
 ## 0.0.39 — Idle animations (2026-10-13, branch `feature/animation-pass`)
 
 On `feature/animation-pass`, made from `feature/drink-station` at 0.0.38 (the owner asked for a new branch with everything so far). No packet changed: **network protocol 40**. Rules: GDD 0.0.39 (section 7); tests: `docs/ROUND-0039-TESTING.md`.

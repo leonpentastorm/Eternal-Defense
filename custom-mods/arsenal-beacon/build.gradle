@@ -33,7 +33,7 @@ repositories {
     mavenCentral(); maven { url = 'https://maven.blamejared.com' }
     maven { url = 'https://repo.spongepowered.org/repository/maven-public/'; content { includeGroup 'org.spongepowered' } }
     maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
-    maven { url = 'https://maven.createmod.net'; content { includeGroup 'com.simibubi.create' } }
+    maven { url = 'https://maven.createmod.net'; content { includeGroup 'com.simibubi.create'; includeGroup 'net.createmod.ponder' } }
 }
 dependencies {
     implementation project(":arsenal-displays")
@@ -47,6 +47,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
     // 0.0.40: compile only, for the pack's Create compat source set; never shaded, never in the standalone jar
     createCompileOnly(fg.deobf('com.simibubi.create:create-1.20.1:6.0.8-291:slim')){ transitive = false }
+    createCompileOnly('net.createmod.ponder:Ponder-Forge-1.20.1:1.0.91'){ transitive = false }   // Create's block entities implement a Ponder interface (a type name only: not remapped)
 }
 sourceSets.create.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
 mixin {

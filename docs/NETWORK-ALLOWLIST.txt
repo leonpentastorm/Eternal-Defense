@@ -13,3 +13,6 @@ cursemaven.com
 repo.spongepowered.org
 mediafilez.forgecdn.net
 edge.forgecdn.net
+maven.createmod.net
+maven.ithundxr.dev
+repo.maven.apache.org

@@ -1,0 +1,288 @@
+package dev.createarsenal.beacon;
+
+import com.simibubi.create.content.kinetics.belt.BeltBlockEntity;
+import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
+import com.simibubi.create.content.kinetics.motor.CreativeMotorBlockEntity;
+import com.simibubi.create.content.processing.burner.BlazeBurnerBlockEntity;
+import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
+import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.item.ItemHelper;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release; compiled in the Create compat source set of a QA copy made with QA_CREATE=1): the Logistics Center Hub
+ * with Create 6.0.8 itself running, in the pack edition. Builds and runs, with Create's own machines:
+ * <ol>
+ * <li>a production line that makes one of our materials, Resonance Coils (the pack's heated mixing recipe, mirrored as a datapack recipe):
+ *     a creative motor, a mechanical mixer, a basin on a fuelled blaze burner; the basin spills onto a belt and the belt runs straight into
+ *     the Hub (no funnel);</li>
+ * <li>a belt ending at an andesite funnel on the Hub's face (the belt sunk in the ground, so the funnel is the only way in);</li>
+ * <li>an extraction line: a brass funnel under the Hub with an item filter (diamonds), then an attribute filter (food), into a chute and
+ *     an item vault;</li>
+ * <li>a chute and a smart chute (with a filter) feeding the Hub from above;</li>
+ * <li>two mechanical arms: one puts items from a depot into the Hub, one takes items out of the Hub onto a second depot (arms have no chest point);</li>
+ * <li>an item vault standing against the Hub;</li>
+ * <li>Create's own item helper (what funnels and arms call) on a full Hub, timed.</li>
+ * </ol>
+ * Results: QA_CHECK lines, QA_SHOT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaHubCreate {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+
+    // ---- Create's blocks, by name (so nothing here depends on Create's registration helpers) -----------------------------------------------------
+    static Block create(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation("create",id));}
+    static Item createItem(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation("create",id));}
+    @SuppressWarnings({"unchecked","rawtypes"})
+    static BlockState with(BlockState s,String property,Object value){
+        for(Property p:s.getProperties())if(p.getName().equals(property)){var v=p.getValue(value.toString().toLowerCase(Locale.ROOT));if(v.isPresent())return s.setValue(p,(Comparable)v.get());}
+        log("QA_NOTE no property {}={} on {}",property,value,s);return s;
+    }
+    static void put(BlockPos p,BlockState s){sl().setBlock(p,s,3);}
+    static IItemHandler handler(BlockPos p,Direction side){var be=sl().getBlockEntity(p);return be==null?null:be.getCapability(ForgeCapabilities.ITEM_HANDLER,side).resolve().orElse(null);}
+    static int count(IItemHandler h,Item item){int n=0;if(h!=null)for(int i=0;i<h.getSlots();i++)if(h.getStackInSlot(i).is(item))n+=h.getStackInSlot(i).getCount();return n;}
+    static int total(IItemHandler h){int n=0;if(h!=null)for(int i=0;i<h.getSlots();i++)n+=h.getStackInSlot(i).getCount();return n;}
+    static String contents(IItemHandler h){var m=new TreeMap<String,Integer>();if(h!=null)for(int i=0;i<h.getSlots();i++){var s=h.getStackInSlot(i);if(!s.isEmpty())m.merge(BuiltInRegistries.ITEM.getKey(s.getItem()).getPath(),s.getCount(),Integer::sum);}return m.toString();}
+    static void insert(IItemHandler h,ItemStack s){if(h!=null){var rest=ItemHandlerHelper.insertItemStacked(h,s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}}
+    /** A creative motor at {@code pos} turning toward {@code facing} at {@code rpm}. */
+    static void motor(BlockPos pos,Direction facing,int rpm){
+        put(pos,with(create("creative_motor").defaultBlockState(),"facing",facing.getName()));
+        if(sl().getBlockEntity(pos) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(rpm);else log("QA_NOTE no motor entity at {}",pos);
+    }
+    static HubData.Hub hub(BlockPos anchor){return sl().getBlockEntity(anchor) instanceof LogisticsHub.HubEntity be?HubData.get(sl()).hub(be.hubId):null;}
+    static int inHub(Item item){var h=hub(HA);return h==null?-1:h.storage.count(item);}
+
+    /** HA: the Hub's anchor (its bottom layer on the ground); B: the beacon. */
+    static BlockPos HA,B;
+    static void places(){HA=new BlockPos(sx+2000,sy+1,sz);B=HA.offset(0,-1,-16);}
+    // the coil line: burner and basin west of the Hub, the belt on the ground running east into the Hub's west face
+    static BlockPos burner(){return HA.offset(-9,-1,0);}static BlockPos basin(){return HA.offset(-9,0,0);}static BlockPos mixer(){return HA.offset(-9,2,0);}
+    static BlockPos beltStart(){return HA.offset(-8,-1,0);}static BlockPos beltEnd(){return HA.offset(-2,-1,0);}
+    // the extraction line: a brass funnel in the ground under the Hub's middle, a chute and a vault below it
+    static BlockPos funnel(){return HA.offset(0,-2,0);}static BlockPos chute(){return HA.offset(0,-3,0);}static BlockPos vault(){return HA.offset(0,-4,0);}
+
+    static boolean reloading;
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_hub_create",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_hub_create",settings,new WorldOptions(41L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static volatile String note="";
+    static void script(){
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sp().getInventory().clearContent();sp().teleportTo(sl(),HA.getX()-4.5,sy,HA.getZ()-9.5,0,20);});   /* the starting kit's beacon would draw its ghost in every shot */
+            mc().options.cloudStatus().set(CloudStatus.OFF);},"go to the factory site, 2000 blocks out");
+        until("the site is loaded",200,()->srvGet(()->sl().hasChunkAt(HA)&&sl().hasChunkAt(B)&&sl().hasChunkAt(burner())),()->{});
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.setDirty();
+            put(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1));
+            put(HA,ArsenalBeacon.LOGISTICS_HUB.get().defaultBlockState());}),"the beacon; a Hub set down (its own block entity builds the rest)");
+        until("the Hub's 27 blocks stand",200,()->srvGet(()->{int n=0;for(var p:LogisticsHub.cells(HA))if(LogisticsHub.isHub(sl().getBlockState(p)))n++;return n==27&&hub(HA)!=null&&hub(HA).working(sl());}),()->{});
+        step(5,()->{
+            String r=srvGet(()->{int create=0;for(var p:LogisticsHub.cells(HA))if(!p.equals(HA)&&sl().getBlockEntity(p) instanceof CreateHubPart)create++;return create+"";});
+            check("with Create loaded, the 26 parts are the Create-aware ones (belts can deliver to them)",r.equals("26"),r);
+            check("the mechanical arm knows the Hub (its interaction point type is registered)",srvGet(()->com.simibubi.create.api.registry.CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE.get(new ResourceLocation(ArsenalBeacon.ID,"logistics_hub"))!=null),"");},"Create-aware parts");
+
+        // ---- 1. the coil line: mixer, basin, blaze burner, belt straight into the Hub ---------------------------------------------------------
+        step(10,()->srv(()->{
+            put(burner(),with(create("blaze_burner").defaultBlockState(),"blaze","smouldering"));/* "none" is the empty burner: no blaze, no block entity */put(basin(),create("basin").defaultBlockState());
+            put(mixer(),create("mechanical_mixer").defaultBlockState());
+            put(mixer().north(),with(create("cogwheel").defaultBlockState(),"axis","y"));motor(mixer().north().above(),Direction.DOWN,128);
+            put(beltStart(),with(create("shaft").defaultBlockState(),"axis","z"));put(beltEnd(),with(create("shaft").defaultBlockState(),"axis","z"));
+            BeltConnectorItem.createBelts(sl(),beltStart(),beltEnd());motor(beltStart().north(),Direction.SOUTH,64);}),"build the coil line");
+        step(40,()->srv(()->{
+            try{var m=BlazeBurnerBlockEntity.class.getDeclaredMethod("tryUpdateFuel",ItemStack.class,boolean.class,boolean.class);m.setAccessible(true);
+                note="fuel taken "+m.invoke(sl().getBlockEntity(burner()),new ItemStack(Items.COAL_BLOCK),true,false);}catch(Exception x){note=x.toString();}}),"light the blaze burner (a block of coal)");
+        step(40,()->{
+            String r=srvGet(()->{var belt=sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b?b:null;
+                return (belt==null?"no belt":"belt speed "+belt.getSpeed()+" moving "+belt.getMovementFacing())+", burner "+sl().getBlockState(burner())+", basin facing "+sl().getBlockState(basin()).getValue(BlockStateProperties.FACING_HOPPER);});
+            log("QA_NOTE {} / {}",r,note);
+            boolean wrong=srvGet(()->sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b&&b.getMovementFacing()==Direction.WEST);
+            if(wrong)srv(()->motor(beltStart().north(),Direction.SOUTH,-64));},"the belt must run east, into the Hub (flip the motor if not)");
+        step(60,()->{
+            String r=srvGet(()->{var belt=sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b?b:null;
+                return (belt==null?"no belt":belt.getMovementFacing()+" "+belt.getSpeed())+" "+sl().getBlockState(basin()).getValue(BlockStateProperties.FACING_HOPPER)+" "+sl().getBlockState(burner());});
+            check("the line runs: the belt moves east, the basin spills onto it, the burner is lit",r.startsWith("east")&&r.contains(" east ")&&(r.contains("blaze=kindled")||r.contains("blaze=seething")),r);
+            srv(()->{var in=handler(basin(),Direction.UP);
+                insert(in,new ItemStack(createItem("precision_mechanism"),2));insert(in,new ItemStack(Items.ENDER_PEARL,2));insert(in,new ItemStack(Items.REDSTONE,8));insert(in,new ItemStack(createItem("golden_sheet"),4));});
+            tp(HA.getX()-4.5,sy+3,HA.getZ()-8.5,20,25);},"two batches of the coil's ingredients into the basin");
+        until("the mixer makes 8 Resonance Coils and the belt brings them into the Hub",1200,()->srvGet(()->inHub(ArsenalBeacon.COIL.get())>=8),()->{});
+        step(5,()->{
+            String r=srvGet(()->inHub(ArsenalBeacon.COIL.get())+" coils in the Hub, basin "+contents(handler(basin(),Direction.UP))+", belt items "+(sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b?b.getInventory().getTransportedItems().size():-1));
+            check("Create made Resonance Coils (heated mixing) and the belt delivered all 8 straight into the Hub",srvGet(()->inHub(ArsenalBeacon.COIL.get())==8),r);
+            check("nothing fell off the belt's end",srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(beltEnd()).inflate(3)).isEmpty()),"");
+            shot("create01_coil_line");},"coils delivered");
+
+        // ---- 1b. a belt ending at a funnel: the belt sunk one block into the ground, its last segment under an andesite funnel on the Hub's south face.
+        // The belt's own end runs into the ground, not the Hub, so the funnel is the only way in.
+        final BlockPos fStart=HA.offset(0,-2,8),fEnd=HA.offset(0,-2,2),fFunnel=HA.offset(0,-1,2);
+        step(10,()->srv(()->{
+            put(fStart,with(create("shaft").defaultBlockState(),"axis","x"));put(fEnd,with(create("shaft").defaultBlockState(),"axis","x"));
+            BeltConnectorItem.createBelts(sl(),fStart,fEnd);motor(fStart.east(),Direction.WEST,64);
+            var shape=com.simibubi.create.content.logistics.funnel.BeltFunnelBlock.getShapeForPosition(sl(),fFunnel,Direction.SOUTH,false);
+            put(fFunnel,with(with(with(create("andesite_belt_funnel").defaultBlockState(),"facing","south"),"powered","false"),"shape",shape.name()));
+            note=""+sl().getBlockState(fFunnel);}),"a second belt, sunk in the ground, running north; an andesite funnel on its last segment, against the Hub's south face");
+        step(40,()->{
+            boolean wrong=srvGet(()->sl().getBlockEntity(fStart) instanceof BeltBlockEntity b&&b.getMovementFacing()==Direction.SOUTH);
+            if(wrong)srv(()->motor(fStart.east(),Direction.WEST,-64));
+            srv(()->{insert(handler(fStart,Direction.UP),new ItemStack(Items.GOLD_INGOT,32));insert(handler(fStart.north(2),Direction.UP),new ItemStack(Items.LAPIS_LAZULI,16));});},"32 gold and 16 lapis onto the belt (flip the motor first if it runs south)");
+        until("the funnel puts the belt's items into the Hub",600,()->srvGet(()->inHub(Items.GOLD_INGOT)>=32&&inHub(Items.LAPIS_LAZULI)>=16),()->{});
+        step(5,()->{
+            String r=srvGet(()->inHub(Items.GOLD_INGOT)+" gold, "+inHub(Items.LAPIS_LAZULI)+" lapis in the Hub, belt items "+(sl().getBlockEntity(fStart) instanceof BeltBlockEntity b?b.getInventory().getTransportedItems().size():-1)+", "+note);
+            check("a belt ending at an andesite funnel on the Hub's face delivers everything into the Hub (the belt's own end meets the ground)",
+                srvGet(()->inHub(Items.GOLD_INGOT)==32&&inHub(Items.LAPIS_LAZULI)==16&&sl().getBlockState(fFunnel).is(create("andesite_belt_funnel"))
+                    &&sl().getBlockEntity(fStart) instanceof BeltBlockEntity b&&b.getInventory().getTransportedItems().isEmpty()
+                    &&sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(fFunnel).inflate(4)).isEmpty()),r);
+            tp(HA.getX()+4.5,sy+2,HA.getZ()+8.5,150,30);},"funnel line");
+        step(20,()->shot("create04_funnel_line"),"the funnel line");
+
+        // ---- 2. extraction: a brass funnel under the Hub with an item filter, then an attribute filter, into a chute and a vault ---------------------
+        step(10,()->srv(()->{
+            var h=hub(HA);h.storage.insert(new ItemStack(Items.DIAMOND,64),false);h.storage.insert(new ItemStack(Items.COBBLESTONE,64),false);h.storage.insert(new ItemStack(Items.BREAD,32),false);
+            put(vault(),create("item_vault").defaultBlockState());put(chute(),create("chute").defaultBlockState());
+            put(funnel(),with(with(with(create("brass_funnel").defaultBlockState(),"facing","down"),"extracting","true"),"powered","false"));
+            // the filter goes on before the funnel's first tick, as a player sets it before the funnel has run
+            var f=BlockEntityBehaviour.get(sl().getBlockEntity(funnel()),FilteringBehaviour.TYPE);note=f==null?"no filter slot":"filter set "+f.setFilter(new ItemStack(Items.DIAMOND));}),"64 diamonds, 64 cobblestone, 32 bread in the Hub; a brass funnel under it (filter: diamonds), a chute and an item vault below");
+        until("the diamonds reach the vault",600,()->srvGet(()->count(handler(vault(),Direction.UP),Items.DIAMOND)>=64),()->{});
+        step(5,()->{
+            String r=srvGet(()->"vault "+contents(handler(vault(),Direction.UP))+", Hub diamonds "+inHub(Items.DIAMOND)+" cobble "+inHub(Items.COBBLESTONE)+" bread "+inHub(Items.BREAD));
+            check("a brass funnel with an item filter pulls only diamonds out of the Hub, through a chute into a vault: all 64, nothing else",
+                srvGet(()->count(handler(vault(),Direction.UP),Items.DIAMOND)==64&&total(handler(vault(),Direction.UP))==64&&inHub(Items.DIAMOND)==0&&inHub(Items.COBBLESTONE)==64&&inHub(Items.BREAD)==32),r+" / "+note);
+            srv(()->{var stack=new ItemStack(createItem("attribute_filter"));var tag=stack.getOrCreateTag();tag.putInt("WhitelistMode",0);var list=new ListTag();var a=new CompoundTag();a.putString("attributeId","create:consumable");a.putBoolean("Inverted",false);list.add(a);tag.put("MatchedAttributes",list);
+                var f=BlockEntityBehaviour.get(sl().getBlockEntity(funnel()),FilteringBehaviour.TYPE);note=f==null?"no filter slot":"filter set "+f.setFilter(stack);});},"swap in an attribute filter: food");
+        until("the bread reaches the vault",600,()->srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)>=32),()->{});
+        step(5,()->{
+            String r=srvGet(()->"vault "+contents(handler(vault(),Direction.UP))+", Hub cobble "+inHub(Items.COBBLESTONE)+" bread "+inHub(Items.BREAD));
+            check("with an attribute filter (food) it pulls the bread and leaves the cobblestone and the coils",srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)==32&&inHub(Items.BREAD)==0&&inHub(Items.COBBLESTONE)==64&&inHub(ArsenalBeacon.COIL.get())==8),r+" / "+note);
+            srv(()->put(funnel(),Blocks.GRASS_BLOCK.defaultBlockState()));},"attribute filter");
+
+        // ---- 3. a chute and a smart chute (filtered) feeding the Hub from above ----------------------------------------------------------------
+        step(10,()->srv(()->{put(HA.offset(0,2,0),create("chute").defaultBlockState());put(HA.offset(1,2,0),with(create("smart_chute").defaultBlockState(),"powered","false"));/* set down by hand it is unpowered */}),"a chute and a smart chute on top of the Hub");
+        step(10,()->srv(()->{
+            var f=BlockEntityBehaviour.get(sl().getBlockEntity(HA.offset(1,2,0)),FilteringBehaviour.TYPE);boolean set=f!=null&&f.setFilter(new ItemStack(Items.IRON_INGOT));
+            insert(handler(HA.offset(0,2,0),Direction.UP),new ItemStack(Items.REDSTONE,16));
+            var smart=handler(HA.offset(1,2,0),Direction.UP);note="filter set "+set+", "+sl().getBlockState(HA.offset(1,2,0))+", smart chute takes gold: "+(smart==null?"no handler":ItemHandlerHelper.insertItemStacked(smart,new ItemStack(Items.GOLD_INGOT,8),true).getCount()<8);insert(smart,new ItemStack(Items.IRON_INGOT,16));}),"16 redstone into the chute; 16 iron into the smart chute (filter: iron)");
+        until("the chutes empty into the Hub",400,()->srvGet(()->inHub(Items.REDSTONE)>=16&&inHub(Items.IRON_INGOT)>=16),()->{});
+        step(5,()->check("a chute and a filtered smart chute feed the Hub from above (16 redstone, 16 iron); the smart chute refuses what its filter does not pass",
+            srvGet(()->inHub(Items.REDSTONE)==16&&inHub(Items.IRON_INGOT)==16)&&note.endsWith("false"),srvGet(()->inHub(Items.REDSTONE)+" redstone, "+inHub(Items.IRON_INGOT)+" iron")+" / "+note),"chutes");
+
+        // ---- 4. mechanical arms: depot -> Hub, Hub -> depot --------------------------------------------------------------------------------------
+        final BlockPos arm1=HA.offset(-1,-1,-3),arm2=HA.offset(1,-1,-3),cog=HA.offset(0,-1,-3),depot=arm1.west(),chest=arm2.east();/* "chest": a second depot (arms have no chest point) */
+        step(10,()->srv(()->{
+            for(var p:new BlockPos[]{HA.offset(0,2,0),HA.offset(1,2,0)})put(p,Blocks.AIR.defaultBlockState());
+            put(depot,create("depot").defaultBlockState());put(chest,create("depot").defaultBlockState());
+            put(cog,with(create("cogwheel").defaultBlockState(),"axis","y"));
+            put(arm1,create("mechanical_arm").defaultBlockState());put(arm2,create("mechanical_arm").defaultBlockState());
+            arm(arm1,List.of(new Object[]{"create:depot",depot,"TAKE"},new Object[]{ArsenalBeacon.ID+":logistics_hub",HA.offset(-1,-1,-1),"DEPOSIT"}));
+            arm(arm2,List.of(new Object[]{ArsenalBeacon.ID+":logistics_hub",HA.offset(1,-1,-1),"TAKE"},new Object[]{"create:depot",chest,"DEPOSIT"}));
+            motor(cog.above(),Direction.DOWN,64);
+            insert(handler(depot,Direction.UP),new ItemStack(Items.COPPER_INGOT,16));}),"two arms: one takes from a depot (16 copper) and puts into the Hub, one takes from the Hub and puts onto a second depot");
+        final int[] before={0};
+        step(5,()->before[0]=srvGet(()->{var h=hub(HA);int n=0;for(var c:h.storage.kinds().values())n+=c;return n;}),"the Hub's count");
+        until("the arms move items",800,()->srvGet(()->total(handler(depot,Direction.UP))==0&&total(handler(chest,Direction.UP))>0),()->{});
+        step(5,()->{
+            String r=srvGet(()->{var h=hub(HA);int n=0;for(var c:h.storage.kinds().values())n+=c;return "depot "+contents(handler(depot,Direction.UP))+", second depot "+contents(handler(chest,Direction.UP))+", Hub "+n+" (was "+before[0]+"), arm holding "+armHeld(arm1)+" / "+armHeld(arm2);});
+            check("an arm puts the depot's 16 copper into the Hub",srvGet(()->total(handler(depot,Direction.UP))==0),r);
+            check("an arm takes items out of the Hub onto a depot, and nothing is lost or copied (Hub + depot + arms = what was there + 16)",srvGet(()->{var h=hub(HA);int n=0;for(var c:h.storage.kinds().values())n+=c;
+                return total(handler(chest,Direction.UP))>0&&n+total(handler(chest,Direction.UP))+armHeld(arm1)+armHeld(arm2)==before[0]+16;}),r);
+            tp(HA.getX()+.5,sy+2,HA.getZ()-8.5,0,20);},"arms");
+        step(20,()->{shot("create02_arms");srv(()->{for(var p:new BlockPos[]{arm1,arm2,cog,cog.above(),depot,chest})put(p,Blocks.AIR.defaultBlockState());});},"remove the arms");
+
+        // ---- 5. an item vault standing against the Hub ------------------------------------------------------------------------------------------------
+        final BlockPos side=HA.offset(2,-1,0);
+        step(10,()->srv(()->{put(side,create("item_vault").defaultBlockState());insert(handler(side,Direction.UP),new ItemStack(Items.EMERALD,20));}),"an item vault against the Hub's east face, 20 emeralds in it");
+        step(20,()->check("the vault keeps its own inventory and the Hub its own (they do not merge), the Hub's 27 blocks stand",
+            srvGet(()->count(handler(side,Direction.UP),Items.EMERALD)==20&&inHub(Items.EMERALD)==0&&count(handler(HA.offset(1,-1,0),Direction.EAST),Items.EMERALD)==0&&handler(HA.offset(1,-1,0),Direction.EAST).getSlots()==HubStorage.SLOTS),""),"vault beside");
+
+        // ---- 6. Create's item helper on a full Hub (what funnels, chutes and arms call) ---------------------------------------------------------------
+        step(5,()->{
+            String r=srvGet(()->{var s=new HubStorage();s.insert(new ItemStack(Items.COBBLESTONE,64*269),false);s.insert(new ItemStack(Items.DIAMOND,64),false);
+                long t0=System.nanoTime();int ok=0;for(int i=0;i<2000;i++)if(!ItemHelper.extract(s,st->st.is(Items.DIAMOND),ItemHelper.ExtractionCountMode.UPTO,64,true).isEmpty())ok++;
+                long t1=System.nanoTime();for(int i=0;i<2000;i++)ItemHandlerHelper.insertItemStacked(s,new ItemStack(Items.DIAMOND,1),true);long t2=System.nanoTime();
+                return ok+" "+String.format("%.1f %.1f",(t1-t0)/2000/1000.0,(t2-t1)/2000/1000.0);});
+            var n=r.split(" ");
+            check("Create's extract and a simulated insert on a full Hub (270 slots) each take well under a millisecond",n[0].equals("2000")&&Double.parseDouble(n[1])<1000&&Double.parseDouble(n[2])<1000,"microseconds per call: extract "+n[1]+", simulated insert "+n[2]);},"Create's helpers, timed");
+        step(5,()->{tp(HA.getX()-12.5,sy+4,HA.getZ()-6.5,-60,25);},"an overview");
+        step(30,()->shot("create03_overview"),"overview");
+    }
+    static int armHeld(BlockPos p){try{var be=sl().getBlockEntity(p);var f=be.getClass().getDeclaredField("heldItem");f.setAccessible(true);return ((ItemStack)f.get(be)).getCount();}catch(Exception x){return 0;}}
+    /** A mechanical arm's interaction points, as Create saves them: {type id, position, TAKE or DEPOSIT}. */
+    static void arm(BlockPos arm,List<Object[]> points){
+        var be=sl().getBlockEntity(arm);if(be==null){log("QA_NOTE no arm at {}",arm);return;}
+        var list=new ListTag();
+        for(var p:points){var t=new CompoundTag();t.putString("Type",(String)p[0]);t.put("Pos",NbtUtils.writeBlockPos(((BlockPos)p[1]).subtract(arm)));t.putString("Mode",(String)p[2]);list.add(t);}
+        var tag=be.saveWithoutMetadata();tag.put("InteractionPoints",list);be.load(tag);be.setChanged();
+    }
+}

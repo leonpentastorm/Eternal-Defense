@@ -88,6 +88,14 @@ final class SupplyRules {
     static boolean sameRun(long last,long now){return now-last<=MERGE_TICKS;}
     /** True when the running total last added to at {@code last} is due to be sent at {@code now}. */
     static boolean due(long last,long now){return now-last>MERGE_TICKS;}
+
+    // ---- the Hub's Home Zone check -----------------------------------------------------------------------------------------------------------
+    /** A Hub checks once a second whether it may work (inside the Home Zone of a standing beacon). */
+    static final int ZONE_CHECK_TICKS=20;
+    /** Not checked yet (a Hub just placed or loaded). */
+    static final long NEVER=Long.MIN_VALUE;
+    /** True when a Hub last checked at {@code checkedAt} must check again at {@code now} (also when the clock went back). */
+    static boolean recheck(long checkedAt,long now){return checkedAt==NEVER||now<checkedAt||now-checkedAt>=ZONE_CHECK_TICKS;}
     /** The kinds a line names (at most {@link #NAMED}) and how many more kinds it only counts. */
     record Line(List<Pulled> named,int more){}
     static Line line(List<Pulled> items){

@@ -62,8 +62,14 @@ final class LogisticsHub {
     /** All 27 blocks, the anchor first. */
     static List<BlockPos> cells(BlockPos anchor){var out=new ArrayList<BlockPos>();out.add(anchor);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)out.add(anchor.offset(x,y,z));return out;}
     static BlockState part(int x,int y,int z){return ArsenalBeacon.LOGISTICS_HUB_PART.get().defaultBlockState().setValue(DX,x+1).setValue(DY,y+1).setValue(DZ,z+1);}
-    /** True when the Hub holds items: known on both sides (the anchor's block entity is synced to the client), so mining shows no cracks. */
-    static boolean occupied(BlockGetter level,BlockPos pos){return level.getBlockEntity(anchor(level,pos)) instanceof HubEntity be&&be.occupied;}
+    /**
+     * True when the Hub holds items. The server reads the storage itself (so there is no moment, right after items go in, when it could be
+     * mined); the client reads the anchor's synced flag, so mining shows no cracks.
+     */
+    static boolean occupied(BlockGetter level,BlockPos pos){
+        if(level instanceof ServerLevel server){var hub=hub(server,pos);return hub!=null&&!hub.storage.isEmpty();}
+        return level.getBlockEntity(anchor(level,pos)) instanceof HubEntity be&&be.occupied;
+    }
     static HubData.Hub hub(Level level,BlockPos pos){
         if(!(level instanceof ServerLevel server)||!(level.getBlockEntity(anchor(level,pos)) instanceof HubEntity be))return null;
         return HubData.get(server).hub(be.hubId);
@@ -71,7 +77,9 @@ final class LogisticsHub {
     static void say(Player p,String key,Object... args){if(p!=null)p.displayClientMessage(Component.translatable("gui.arsenal_beacon.hub."+key,args),true);}
 
     // ---- shared behaviour of the anchor and its parts -------------------------------------------------------------------------------
-    static InteractionResult open(Level level,BlockPos pos,Player player){
+    static InteractionResult open(Level level,BlockPos pos,Player player,InteractionHand hand){
+        // the Recovery Shovel picks the Hub up (the shovel's own use, which runs only when the block lets it through)
+        if(player.getItemInHand(hand).is(ArsenalBeacon.CONTROLLER.get()))return InteractionResult.PASS;
         if(!(player instanceof ServerPlayer sp))return InteractionResult.SUCCESS;
         var anchor=anchor(level,pos);var hub=hub(level,anchor);
         if(hub==null)return InteractionResult.CONSUME;
@@ -88,7 +96,7 @@ final class LogisticsHub {
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(ArsenalStructures.FACING);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new HubEntity(pos,state);}
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level,BlockState state,BlockEntityType<T> type){return level.isClientSide||type!=ArsenalBeacon.LOGISTICS_HUB_ENTITY.get()?null:(l,p,s,be)->((HubEntity)be).serverTick();}
-        @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){return open(l,p,player);}
+        @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){return open(l,p,player,hand);}
         @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.BLOCK;}
         @Override public float getDestroyProgress(BlockState s,Player p,BlockGetter l,BlockPos pos){return guarded(l,pos,p)?0:super.getDestroyProgress(s,p,l,pos);}
         @Override public void attack(BlockState s,Level l,BlockPos pos,Player p){if(!l.isClientSide&&guarded(l,pos,p))say(p,"empty_first");}
@@ -121,10 +129,10 @@ final class LogisticsHub {
     static class PartBlock extends Block implements EntityBlock {
         PartBlock(){super(Properties.of().strength(5f,3600000f).noOcclusion().sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(DX,1).setValue(DY,1).setValue(DZ,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(DX,DY,DZ);}
-        @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new PartEntity(pos,state);}
+        @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return partFactory.create(pos,state);}
         @Override public RenderShape getRenderShape(BlockState s){return RenderShape.INVISIBLE;}
         @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.BLOCK;}
-        @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){return open(l,p,player);}
+        @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){return open(l,p,player,hand);}
         @Override public float getDestroyProgress(BlockState s,Player p,BlockGetter l,BlockPos pos){return guarded(l,pos,p)?0:super.getDestroyProgress(s,p,l,pos);}
         @Override public void attack(BlockState s,Level l,BlockPos pos,Player p){if(!l.isClientSide&&guarded(l,pos,p))say(p,"empty_first");}
         @Override public boolean onDestroyedByPlayer(BlockState s,Level l,BlockPos pos,Player p,boolean willHarvest,FluidState fluid){
@@ -146,16 +154,28 @@ final class LogisticsHub {
     }
 
     // ---- block entities: every one of the 27 hands out the Hub's inventory ------------------------------------------------------------
-    abstract static class CellEntity extends BlockEntity {
+    /** One of a Hub's 27 block entities: which Hub it belongs to (saved as "Hub"). */
+    interface Cell {UUID hubId();void link(UUID id);}
+    /** The item handler every block of Hub {@code id} hands out, on every face: the Hub's one inventory, empty while it does not work. */
+    static <T> LazyOptional<T> itemHandler(@Nullable Level level,@Nullable UUID id){
+        if(level instanceof ServerLevel server&&id!=null){var hub=HubData.get(server).hub(id);if(hub!=null)return hub.handler(server).cast();}
+        return LazyOptional.empty();
+    }
+    /**
+     * Makes a part's block entity: a plain one, or, in the pack edition with Create loaded, one Create's belts can hand items to directly
+     * (set by {@code CreateArmCompat} before any world loads). Both save the same data under the same id.
+     */
+    static BlockEntityType.BlockEntitySupplier<BlockEntity> partFactory=PartEntity::new;
+    abstract static class CellEntity extends BlockEntity implements Cell {
         UUID hubId;
         CellEntity(BlockEntityType<?> type,BlockPos pos,BlockState state){super(type,pos,state);}
         @Override public <T> LazyOptional<T> getCapability(Capability<T> cap,@Nullable Direction side){
-            if(cap==ForgeCapabilities.ITEM_HANDLER&&level instanceof ServerLevel server&&hubId!=null){var hub=HubData.get(server).hub(hubId);if(hub!=null)return hub.handler(server).cast();}
-            return super.getCapability(cap,side);
+            return cap==ForgeCapabilities.ITEM_HANDLER?itemHandler(level,hubId):super.getCapability(cap,side);
         }
         @Override protected void saveAdditional(CompoundTag tag){super.saveAdditional(tag);if(hubId!=null)tag.putUUID("Hub",hubId);}
         @Override public void load(CompoundTag tag){super.load(tag);hubId=tag.hasUUID("Hub")?tag.getUUID("Hub"):null;}
-        void link(UUID id){hubId=id;setChanged();}
+        @Override public UUID hubId(){return hubId;}
+        @Override public void link(UUID id){hubId=id;setChanged();}
     }
     static final class HubEntity extends CellEntity {
         /** Synced to the client: the Hub holds items (it cannot be mined). */
@@ -176,7 +196,7 @@ final class LogisticsHub {
             for(var p:cells(worldPosition)){if(p.equals(worldPosition)||!server.hasChunkAt(p))continue;
                 var s=server.getBlockState(p);var want=part(p.getX()-worldPosition.getX(),p.getY()-worldPosition.getY(),p.getZ()-worldPosition.getZ());
                 if(s!=want){if(!s.canBeReplaced()||server.getBlockEntity(p)!=null)continue;server.setBlock(p,want,3);}
-                if(server.getBlockEntity(p) instanceof PartEntity part&&!hubId.equals(part.hubId))part.link(hubId);
+                if(server.getBlockEntity(p) instanceof Cell part&&!hubId.equals(part.hubId()))part.link(hubId);
             }
         }
         @Override protected void saveAdditional(CompoundTag tag){super.saveAdditional(tag);tag.putBoolean("Occupied",occupied);}

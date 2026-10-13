@@ -30,8 +30,8 @@ final class HubData extends SavedData {
         /** False while it is picked up with the Recovery Shovel (its items stay here, waiting for it to be placed again). */
         boolean placed;
         final HubStorage storage=new HubStorage();
-        // not saved: whether it may work (inside the Home Zone), checked once a second, and the handler every one of its blocks hands out
-        private long checkedAt=Long.MIN_VALUE;private boolean working;private LazyOptional<IItemHandler> handler=LazyOptional.empty();
+        // not saved: whether it may work (inside the Home Zone), checked once a second (SupplyRules.recheck), and the handler every one of its blocks hands out
+        private long checkedAt=SupplyRules.NEVER;private boolean working;private LazyOptional<IItemHandler> handler=LazyOptional.empty();
         Hub(UUID id){this.id=id;}
         /**
          * True when it is placed in the Home Zone of a standing Defense Beacon. Looked up at most once a second; when it stops working, the
@@ -39,7 +39,7 @@ final class HubData extends SavedData {
          */
         boolean working(ServerLevel level){
             long now=level.getGameTime();
-            if(now-checkedAt>=20||now<checkedAt){checkedAt=now;boolean was=working;working=placed&&level.dimension()==dimension&&inZone(level);if(was&&!working)invalidate();}
+            if(SupplyRules.recheck(checkedAt,now)){checkedAt=now;boolean was=working;working=placed&&level.dimension()==dimension&&inZone(level);if(was&&!working)invalidate();}
             return working;
         }
         /**
@@ -73,7 +73,7 @@ final class HubData extends SavedData {
     Hub place(UUID wanted,ResourceKey<Level> dimension,BlockPos anchor,Direction facing){
         var hub=wanted==null?null:hubs.get(wanted);
         if(hub==null||hub.placed){hub=new Hub(UUID.randomUUID());hubs.put(hub.id,hub);hub.storage.onChange=this::setDirty;}
-        hub.dimension=dimension;hub.anchor=anchor.immutable();hub.facing=facing;hub.placed=true;hub.checkedAt=Long.MIN_VALUE;setDirty();return hub;
+        hub.dimension=dimension;hub.anchor=anchor.immutable();hub.facing=facing;hub.placed=true;hub.checkedAt=SupplyRules.NEVER;setDirty();return hub;
     }
     /** Picked up with the Recovery Shovel: its items wait for it. */
     void pickUp(Hub hub){hub.placed=false;hub.invalidate();setDirty();}

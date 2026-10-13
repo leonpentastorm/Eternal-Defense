@@ -96,7 +96,7 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Block> LOGISTICS_HUB_PART=BLOCKS.register("logistics_hub_part",LogisticsHub.PartBlock::new);
     public static final RegistryObject<Item> LOGISTICS_HUB_ITEM=ITEMS.register("logistics_hub",()->new LogisticsHub.HubItem(LOGISTICS_HUB.get()));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LogisticsHub.HubEntity>> LOGISTICS_HUB_ENTITY=ENTITIES.register("logistics_hub",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(LogisticsHub.HubEntity::new,LOGISTICS_HUB.get()).build(null));
-    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LogisticsHub.PartEntity>> LOGISTICS_HUB_PART_ENTITY=ENTITIES.register("logistics_hub_part",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(LogisticsHub.PartEntity::new,LOGISTICS_HUB_PART.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BlockEntity>> LOGISTICS_HUB_PART_ENTITY=ENTITIES.register("logistics_hub_part",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of((pos,state)->LogisticsHub.partFactory.create(pos,state),LOGISTICS_HUB_PART.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<HubMenu>> LOGISTICS_HUB_MENU=MENUS.register("logistics_hub",()->net.minecraftforge.common.extensions.IForgeMenuType.create(HubMenu::client));
     public static final RegistryObject<Item> MRE=ITEMS.register("mre",Mre::new);
     public static final RegistryObject<Item> MARINES_FUEL=ITEMS.register("marines_fuel",Mre.MarinesFuel::new);
