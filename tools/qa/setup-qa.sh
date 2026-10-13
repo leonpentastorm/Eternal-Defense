@@ -22,8 +22,8 @@ if [ "${QA_CREATE:-0}" = "1" ]; then
 else
   cp "$SRC/tools/qa/$SCENARIO.java.txt" "$B/java/dev/createarsenal/beacon/$SCENARIO.java"
 fi
-# TaCZ, Create, KubeJS and JEI are not all in the dev runtime: make them optional (the test pack has them all)
-sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/; /modId="create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs"/,/side=/ s/mandatory=true/mandatory=false/; /modId="jei"/,/side=/ s/mandatory=true/mandatory=false/' "$B/resources/META-INF/mods.toml"
+# TaCZ, Create, KubeJS, KubeJS Create, LesRaisins Tactical Equipments and JEI are not all in the dev runtime: make them optional (the test pack has them all)
+sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/; /modId="create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs"/,/side=/ s/mandatory=true/mandatory=false/; /modId="jei"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs_create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="lrtactical"/,/side=/ s/mandatory=true/mandatory=false/' "$B/resources/META-INF/mods.toml"
 # Gun Displays also needs TaCZ: optional here
 sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/' "$DST/custom-mods/arsenal-displays/src/main/resources/META-INF/mods.toml"
 # TaCZ and TaCZ Attributes are normal dependencies of the beacon since Mess Hall v4. Their production mixins use SRG names, so the client run

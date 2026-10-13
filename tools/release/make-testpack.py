@@ -28,6 +28,7 @@ REQUIRED = {
     'TaCZ': r'(^|/)tacz-1\.20\.1-1\.1\.',
     'TaCZ Attributes': r'(^|/)tacz[-_]attributes',
     'JEI': r'(^|/)jei-1\.20\.1-forge-',
+    'KubeJS Create': r'(^|/)kubejs-create-',
     'LesRaisins Tactical Equipments (raid rewards)': r'(^|/)lrtactical',
 }
 

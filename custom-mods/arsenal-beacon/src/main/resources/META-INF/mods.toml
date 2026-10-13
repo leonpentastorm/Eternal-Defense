@@ -27,7 +27,8 @@ ordering="NONE"
 side="BOTH"
 
 # 0.0.41: the pack edition is the only edition. Everything below marked mandatory=true must be installed on clients and the server:
-# TaCZ, TaCZ Attributes, Create, KubeJS (which brings Rhino and Architectury API) and, on clients, JEI. The test pack (dist/*.mrpack) pins them.
+# TaCZ, TaCZ Attributes, Create, KubeJS (which brings Rhino and Architectury API), KubeJS Create, LesRaisins Tactical Equipments and,
+# on clients, JEI. The test pack (dist/*.mrpack) pins them.
 [[dependencies.arsenal_beacon]]
 modId="tacz"
 mandatory=true
@@ -65,9 +66,20 @@ versionRange="[15,)"
 ordering="AFTER"
 side="CLIENT"
 
+# 0.0.41: also required. KubeJS Create runs the pack scripts' Create recipes (every factory part: plating, logistics modules, resonance
+# coils, restoration matrices, receivers); LesRaisins Tactical Equipments supplies the medkits and grenades every won raid pays
+# (RaidRewards fails without them). The owner's pack (Create Arsenal 0.22.1) has both. (TaCZ JS is not needed: TaCZ's own KubeJS plugin
+# lets the gun script work, as a dedicated server without TaCZ JS showed.)
+[[dependencies.arsenal_beacon]]
+modId="kubejs_create"
+mandatory=true
+versionRange="[2001,)"
+ordering="AFTER"
+side="BOTH"
+
 [[dependencies.arsenal_beacon]]
 modId="lrtactical"
-mandatory=false
-versionRange="[0,)"
+mandatory=true
+versionRange="[0.4.3,)"
 ordering="AFTER"
 side="BOTH"

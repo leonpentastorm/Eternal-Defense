@@ -59,3 +59,8 @@ tasks.named('test', Test) { useJUnitPlatform() }
 tasks.named('jar', Jar).configure { from sourceSets.create.output; finalizedBy 'reobfJar' }
 
 tasks.named('jar', Jar).configure { manifest { attributes('MixinConfigs': 'arsenal_beacon.mixins.json') } }
+
+// 0.0.41: the release jar's name mapping (official -> SRG) must see Create's classes too. Without them it cannot tell that CreateHubPart
+// (a Create SmartBlockEntity) inherits setChanged() and the level field from Minecraft's BlockEntity, leaves those names unmapped, and the
+// Hub crashed the real game when placed (NoSuchMethodError), while the development runtime, which uses the official names, never showed it.
+reobf { jar { libraries.from(sourceSets.create.compileClasspath) } }
