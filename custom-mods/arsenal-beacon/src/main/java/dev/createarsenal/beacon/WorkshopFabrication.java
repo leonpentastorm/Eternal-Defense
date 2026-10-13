@@ -10,9 +10,10 @@ import java.util.*;
 /** The beacon supplies starter installations; each installation owns its upgrades. */
 final class WorkshopFabrication {
     static final List<String> ITEMS=List.of("gun_platform","ammo_platform","attachment_platform","armor_platform",
-        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer_mk1","drink_pot","cup_dispenser","mre_maker","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult");
+        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer_mk1","drink_pot","cup_dispenser","mre_maker","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub");
     static ListTag state(ServerPlayer p){
-        var rows=new ListTag();for(String id:ITEMS){var row=new CompoundTag();row.putString("id",id);row.put("item",new ItemStack(item(id)).save(new CompoundTag()));row.put("costs",WeaponPlatform.costTags(p,Economy.fabrication(id)));rows.add(row);}return rows;
+        var d=CampaignData.get(p.server.overworld());var w=Supply.at(p,d.installed()?d.beacon:p.blockPosition());
+        var rows=new ListTag();for(String id:ITEMS){var row=new CompoundTag();row.putString("id",id);row.put("item",new ItemStack(item(id)).save(new CompoundTag()));row.put("costs",WeaponPlatform.costTags(w,Economy.fabrication(id)));rows.add(row);}return rows;
     }
     static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(ArsenalBeacon.ID,id));}
     static String buy(ServerPlayer p,String id){
@@ -25,6 +26,6 @@ final class WorkshopFabrication {
             case "supply_catapult"->". Place it in a FOB's village; it works once that FOB's research is at level "+CatapultRules.SELLER_LEVEL+".";
             default->". Place it inside your beacon zone.";
         };
-        return WeaponPlatform.transact(p,Economy.fabrication(id),new ItemStack(item(id)))?"Fabricated "+item(id).getDescription().getString()+where:"Missing materials or inventory space. Nothing consumed.";
+        return WeaponPlatform.transact(Supply.at(p,d.beacon),Economy.fabrication(id),new ItemStack(item(id)))?"Fabricated "+item(id).getDescription().getString()+where:"Missing materials or inventory space. Nothing consumed.";
     }
 }

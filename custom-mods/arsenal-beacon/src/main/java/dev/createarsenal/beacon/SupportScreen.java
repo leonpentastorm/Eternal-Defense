@@ -31,7 +31,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
     private void paintProduct(GuiGraphics g,Ui.UiButton row,int index){
         var product=SupportShop.PRODUCTS.get(index);var stack=new ItemStack(product.item().get());
         g.renderItem(stack,row.getX()+6,row.getY()+4);
-        boolean affordable=minecraft.player.isCreative()||ArdentEnergy.balance(minecraft.player)>=product.price();
+        boolean affordable=minecraft.player.isCreative()||menu.energy.get()>=product.price();
         Ui.text(g,font,Ui.t("support.product."+product.id()),row.getX()+28,row.getY()+4,affordable?Ui.INK:Ui.MUTED,row.getWidth()-100);
         Ui.text(g,font,Ui.t("support.product."+product.id()+".note"),row.getX()+28,row.getY()+14,Ui.MUTED,row.getWidth()-100);
         Component price=Ui.t("exchange.cost",product.price());
@@ -53,7 +53,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
             Ui.wrap(g,font,Ui.t("support.grid.note"),leftPos+SupportPlatform.INV_LEFT,topPos+SupportPlatform.INV_TOP+84,162,Ui.CYAN,3);
         }else{
             g.renderItem(energy,leftPos+14,topPos+H-30);
-            Ui.text(g,font,Ui.t("exchange.balance",ArdentEnergy.balance(minecraft.player)),leftPos+34,topPos+H-26,Ui.CYAN,140);
+            Ui.text(g,font,Ui.t("exchange.balance",menu.energy.get()),leftPos+34,topPos+H-26,Ui.CYAN,140);
         }
         if(tab==2){
             int mk=menu.mk,cost=SupportRules.upgradeCost(mk);
@@ -83,12 +83,12 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
         for(int i=0;i<rows.size();i++){rows.get(i).visible=tab==1;rows.get(i).selected=i==selected;}
         buyButton.visible=tab==1;upgradeButton.visible=tab==2;
         var product=SupportShop.PRODUCTS.get(Math.min(selected,SupportShop.PRODUCTS.size()-1));
-        buyButton.active=minecraft.player.isCreative()||ArdentEnergy.balance(minecraft.player)>=product.price();buyButton.warning=!buyButton.active;
+        buyButton.active=minecraft.player.isCreative()||menu.energy.get()>=product.price();buyButton.warning=!buyButton.active;
         upgradeButton.active=SupportRules.upgradeCost(menu.mk)>=0;
         super.render(g,mx,my,partial);
         if(!feedback.getString().isEmpty()&&net.minecraft.Util.getMillis()-shownAt<4000)Ui.text(g,font,feedback,leftPos+14,topPos+H-12,Ui.CYAN,W-28);
         renderTooltip(g,mx,my);
-        if(upgradeButton.visible&&upgradeButton.isHovered()&&SupportRules.upgradeCost(menu.mk)>=0)Ui.materialTooltip(g,font,List.of(Ui.t("support.tab.upgrade")),Ui.singleCost(new ItemStack(ArsenalBeacon.PLATING.get()),SupportRules.upgradeCost(menu.mk),Economy.have(minecraft.player,ArsenalBeacon.PLATING.get())),mx,my);
+        if(upgradeButton.visible&&upgradeButton.isHovered()&&SupportRules.upgradeCost(menu.mk)>=0)Ui.materialTooltip(g,font,List.of(Ui.t("support.tab.upgrade")),Ui.singleCost(new ItemStack(ArsenalBeacon.PLATING.get()),SupportRules.upgradeCost(menu.mk),menu.plating.get()),mx,my);
     }
     @Override public boolean mouseClicked(double mx,double my,int button){
         if(tab==1&&buyButton.isMouseOver(mx,my)&&buyButton.active&&button==0){BeaconNetwork.CHANNEL.sendToServer(new SupportShop.Buy(selected));return true;}

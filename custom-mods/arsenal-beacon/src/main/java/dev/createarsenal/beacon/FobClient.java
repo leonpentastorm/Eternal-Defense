@@ -43,14 +43,14 @@ public final class FobClient {
         private Ui.UiButton callButton,repairButton,outlineButton;
         /** The zone outline's switch sits where the zone line was (0.0.30). */
         static final int OUTLINE_Y=39;
-        private final List<Ui.UiButton> buy=new ArrayList<>();private Ui.UiButton gateButton;
+        private final List<Ui.UiButton> buy=new ArrayList<>();private Ui.UiButton gateButton,catapultButton;
         private String layout;
         FobScreen(FobBlocks.FobMenu menu,Inventory inv,Component title){super(menu,inv,title);data=menu.data;layout=layout(data);}
         /** 0.0.31: the state comes every second (the tribute's countdown); the buttons are rebuilt only when what they show changes. */
         void update(CompoundTag next){data=next;receivedAt=net.minecraft.Util.getMillis();String now=layout(next);if(!now.equals(layout)){layout=now;rebuildWidgets();}}
         private static String layout(CompoundTag d){
             var b=new StringBuilder();
-            for(String key:List.of("state","showZone","sections","mayCallRaid","raidsPossible","creative","energy","hasGate","gateCost","lost","repairTotal","mayRepair","level","researchXp","carry.emerald","carry.diamond","carry.ardent"))b.append(d.get(key)).append(';');
+            for(String key:List.of("state","showZone","sections","mayCallRaid","raidsPossible","creative","energy","hasGate","gateCost","catapultCost","lost","repairTotal","mayRepair","level","researchXp","carry.emerald","carry.diamond","carry.ardent"))b.append(d.get(key)).append(';');
             for(String id:Fobs.SHOP)b.append(d.getInt("price."+id)).append(';');
             return b.toString();
         }
@@ -72,7 +72,7 @@ public final class FobClient {
             for(int i=tabs.length-1;i>=0;i--){int index=i,tw=font.width(Ui.t(tabs[i]))+14;tx-=tw+2;
                 var b=addRenderableWidget(new Ui.UiButton(tx,topPos+4,tw,18,Ui.t(tabs[i]),Ui.Look.TAB,x->{tab=index;rebuildWidgets();}));b.selected=tab==i;}
             tabsX=tx;
-            callButton=repairButton=outlineButton=gateButton=null;
+            callButton=repairButton=outlineButton=gateButton=catapultButton=null;
             if(tab==1){research();return;}
             // a narrow column (a 426 px window) has room only for the short label; the tooltip says the rest
             Component outline=font.width(Ui.t("fob.screen.outline"))<=colW-30-font.width(Ui.t("off"))-24?Ui.t("fob.screen.outline"):Ui.t("fob.screen.outline.short");
@@ -93,6 +93,10 @@ public final class FobClient {
             boolean has=data.getBoolean("hasGate"),enough=data.getBoolean("creative")||enough(data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND));
             gateButton=addRenderableWidget(new Ui.UiButton(rightX+shopW-46,gateRowY()+3,44,18,has?Ui.t("fob.shop.placed"):Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_GATE)));
             gateButton.active=active()&&!has&&enough;gateButton.warning=active()&&!has&&!enough;
+            // the third listing (0.0.40, owner): a Supply Catapult, for the same materials as at Workshop Fabrication
+            boolean catapultEnough=data.getBoolean("creative")||enough(data.getList("catapultCost",net.minecraft.nbt.Tag.TAG_COMPOUND));
+            catapultButton=addRenderableWidget(new Ui.UiButton(rightX+shopW-46,catapultRowY()+3,44,18,Ui.t("fob.shop.buy"),Ui.Look.PRIMARY,b->click(Fobs.BUY_CATAPULT)));
+            catapultButton.active=active()&&catapultEnough;catapultButton.warning=active()&&!catapultEnough;
             // slice 3 (0.0.25): the repair (DOWN: on the right, instead of the shop) or bringing villagers lost in a won raid back (left)
             int lost=lost().size(),total=data.getInt("repairTotal");boolean afford=data.getBoolean("creative")||data.getInt("energy")>=total;
             if(down())repairButton=addRenderableWidget(new Ui.UiButton(rightX,topPos+imageHeight-50,shopW,20,Ui.t("fob.repair.button",total),Ui.Look.PRIMARY,b->click(Fobs.REPAIR)));
@@ -100,7 +104,7 @@ public final class FobClient {
             repairButton.visible=down()||lost>0&&!state().equals("planted");
             repairButton.active=data.getBoolean("mayRepair")&&afford;repairButton.warning=data.getBoolean("mayRepair")&&!afford;
             repairButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(down()?"fob.repair.tip.down":"fob.repair.tip.lost")));
-            if(down()){for(var b:buy)b.visible=false;gateButton.visible=false;}
+            if(down()){for(var b:buy)b.visible=false;gateButton.visible=false;catapultButton.visible=false;}
         }
         private int tabsX;
         private record Hover(int x,int y,ItemStack stack,int level){}
@@ -127,6 +131,9 @@ public final class FobClient {
         private boolean down(){return state().equals("down");}
         private net.minecraft.nbt.ListTag lost(){return data.getList("lost",net.minecraft.nbt.Tag.TAG_COMPOUND);}
         private int gateRowY(){return bodyY+16+Fobs.SHOP.size()*26;}
+        /** A materials card is 24 tall, 34 when its materials need a second line beside the button. */
+        private int costCardH(String key){int costW=0;for(var e:data.getList(key,net.minecraft.nbt.Tag.TAG_COMPOUND))costW+=12+font.width(Integer.toString(((CompoundTag)e).getInt("count")));return rightX+27+costW>rightX+shopW-50?34:24;}
+        private int catapultRowY(){return gateRowY()+costCardH("gateCost")+4;}
         private static boolean enough(net.minecraft.nbt.ListTag costs){for(var c:costs){var t=(CompoundTag)c;if(t.getInt("have")<t.getInt("count"))return false;}return true;}
         private void click(int id){BeaconNetwork.menuButton(menu.containerId,id);}
 
@@ -297,25 +304,27 @@ public final class FobClient {
                 boolean afford=data.getBoolean("creative")||data.getInt("energy")>=price;
                 Ui.text(g,font,Component.literal(Integer.toString(price)),x+37,ry+14,afford?Ui.CYAN:Ui.ORANGE,30);
             }
-            // the Supply Delivery Gate row: its materials, like the Workshop
-            // 0.0.31: five materials; when they do not fit beside the button, the rest go on a second line under it
-            var costs=data.getList("gateCost",net.minecraft.nbt.Tag.TAG_COMPOUND);int costW=0;
-            for(var e:costs)costW+=12+font.width(Integer.toString(((CompoundTag)e).getInt("count")));
-            boolean twoLines=x+27+costW>x+w-50;int gy=gateRowY(),cardH=twoLines?34:24;
-            Ui.card(g,x,gy,w,cardH,active()?OLIVE:Ui.EDGE);
-            g.renderItem(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()),x+7,gy+4);
-            Ui.text(g,font,new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),x+27,gy+3,active()?Ui.INK:Ui.MUTED,w-27-50);
-            int cx=x+27,cy=gy+13;
-            for(var e:costs){var c=(CompoundTag)e;var icon=ItemStack.of(c.getCompound("item"));boolean short_=!data.getBoolean("creative")&&c.getInt("have")<c.getInt("count");
-                var n=Component.literal(Integer.toString(c.getInt("count")));int cw=12+font.width(n);
-                if(cy==gy+13&&cx+cw>x+w-50){cx=x+27;cy=gy+23;}
-                g.pose().pushPose();g.pose().translate(cx,cy,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
-                Ui.text(g,font,n,cx+9,cy+1,short_?Ui.ORANGE:Ui.MUTED,30);cx+=cw;}
-            int ny=gy+cardH+4,bottom=topPos+imageHeight-20;
+            // the Supply Delivery Gate row and (0.0.40) the Supply Catapult row: their materials, like the Workshop
+            costCard(g,x,gateRowY(),w,new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()),"gateCost");
+            costCard(g,x,catapultRowY(),w,new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),"catapultCost");
+            int ny=catapultRowY()+costCardH("catapultCost")+4,bottom=topPos+imageHeight-20;
             Ui.text(g,font,data.getBoolean("creative")?Ui.t("fob.shop.creative"):Ui.t("fob.shop.energy",data.getInt("energy")),x,ny,Ui.MUTED,w);ny+=12;
             if(!active()){Ui.wrap(g,font,Ui.t("fob.shop.closed"),x,ny,w,Ui.ORANGE,Math.max(1,(bottom-ny)/10));return;}
-            if(!data.getBoolean("hasPlatform"))ny=Ui.wrap(g,font,Ui.t("fob.shop.no_platform"),x,ny,w,Ui.ORANGE,3)+2;
+            if(!data.getBoolean("hasPlatform")&&ny<bottom)ny=Ui.wrap(g,font,Ui.t("fob.shop.no_platform"),x,ny,w,Ui.ORANGE,Math.max(1,Math.min(3,(bottom-ny)/10)))+2;
             if(!data.getBoolean("hasCannon")&&ny<bottom)Ui.wrap(g,font,Ui.t("fob.shop.no_cannon"),x,ny,w,Ui.ORANGE,Math.max(1,Math.min(3,(bottom-ny)/10)));
+        }
+        /** One materials card of the shop: the item, its name and what it costs (orange where the pack is short), on one line or two. */
+        private void costCard(GuiGraphics g,int x,int y,int w,ItemStack item,String key){
+            var costs=data.getList(key,net.minecraft.nbt.Tag.TAG_COMPOUND);int cardH=costCardH(key);
+            Ui.card(g,x,y,w,cardH,active()?OLIVE:Ui.EDGE);
+            g.renderItem(item,x+7,y+4);
+            Ui.text(g,font,item.getHoverName(),x+27,y+3,active()?Ui.INK:Ui.MUTED,w-27-50);
+            int cx=x+27,cy=y+13;
+            for(var e:costs){var c=(CompoundTag)e;var icon=ItemStack.of(c.getCompound("item"));boolean short_=!data.getBoolean("creative")&&c.getInt("have")<c.getInt("count");
+                var n=Component.literal(Integer.toString(c.getInt("count")));int cw=12+font.width(n);
+                if(cy==y+13&&cx+cw>x+w-50){cx=x+27;cy=y+23;}
+                g.pose().pushPose();g.pose().translate(cx,cy,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                Ui.text(g,font,n,cx+9,cy+1,short_?Ui.ORANGE:Ui.MUTED,30);cx+=cw;}
         }
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
@@ -328,6 +337,7 @@ public final class FobClient {
             if(down())return;   // the repair replaces the shop
             // a shop row: the flare's own tooltip
             for(int i=0;i<Fobs.SHOP.size();i++){int ry=bodyY+16+i*26;if(Ui.inside(mx,my,rightX,ry,shopW-50,24)){g.renderTooltip(font,new ItemStack(flare(Fobs.SHOP.get(i))),mx,my);return;}}
+            if(Ui.inside(mx,my,rightX,catapultRowY(),shopW-50,24)){g.renderComponentTooltip(font,List.of(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()).getHoverName(),Ui.t("fob.shop.catapult.tip",CatapultRules.SELLER_LEVEL)),mx,my);return;}
             if(Ui.inside(mx,my,rightX,gateRowY(),shopW-50,24)){g.renderComponentTooltip(font,List.of(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()).getHoverName(),Ui.t(data.getBoolean("hasGate")?"fob.shop.gate.placed":"fob.shop.gate.tip")),mx,my);return;}
             for(int i=0;i<buy.size();i++)if(buy.get(i).isHovered()&&!buy.get(i).active){g.renderComponentTooltip(font,List.of(Ui.t(active()?"fob.result.no_energy":"fob.shop.closed")),mx,my);return;}
         }

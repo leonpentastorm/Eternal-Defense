@@ -197,10 +197,10 @@ final class TacticalEnchanting {
     /** What the screen needs besides the slot: the ACTIVE FOBs, the table's Mk and next price, the unlocks, the seals and energy carried. */
     static CompoundTag state(ServerPlayer p,String message){
         var l=p.serverLevel();var d=EnchantData.get(l);var n=new CompoundTag();
-        n.putBoolean("enchant",true);n.putInt("fobs",activeFobs(l));n.putInt("mk",d.mk);n.putInt("energy",ArdentEnergy.balance(p));n.putBoolean("creative",p.isCreative());
+        n.putBoolean("enchant",true);n.putInt("fobs",activeFobs(l));n.putInt("mk",d.mk);var w=Supply.here(p);n.putInt("energy",ArdentEnergy.balance(w));n.putBoolean("creative",p.isCreative());
         var next=Economy.enchantingUpgrade(d.mk+1);
-        if(next!=null){n.putInt("upgradeAmount",next.amount());n.put("upgradeItem",new ItemStack(next.item()).save(new CompoundTag()));n.putInt("upgradeHave",next.ardent()?ArdentEnergy.balance(p):Economy.have(p,next.item()));}
-        var seals=new CompoundTag();d.seals.forEach(seals::putInt);n.put("seals",seals);n.putInt("sealsCarried",Economy.have(p,ArsenalBeacon.WARLORD_SEAL.get()));
+        if(next!=null){n.putInt("upgradeAmount",next.amount());n.put("upgradeItem",new ItemStack(next.item()).save(new CompoundTag()));n.putInt("upgradeHave",next.ardent()?ArdentEnergy.balance(w):Economy.have(w,next.item()));}
+        var seals=new CompoundTag();d.seals.forEach(seals::putInt);n.put("seals",seals);n.putInt("sealsCarried",Economy.have(w,ArsenalBeacon.WARLORD_SEAL.get()));
         n.putString("message",message);return n;
     }
 
@@ -226,7 +226,7 @@ final class TacticalEnchanting {
         String problem=problem(gear,e,level,activeFobs(l),EnchantData.get(l).seals(id(e)));
         if(problem!=null)return "enchant.locked."+problem;
         int price=price(e,level,EnchantData.get(l).mk);
-        if(!ArdentEnergy.spend(p,price))return "enchant.result.no_energy";
+        if(!ArdentEnergy.spend(Supply.at(p,menu.pos),price))return "enchant.result.no_energy";
         var map=EnchantmentHelper.getEnchantments(gear);map.put(e,level);EnchantmentHelper.setEnchantments(map,gear);
         menu.gear.setChanged();menu.broadcastChanges();
         l.playSound(null,menu.pos,SoundEvents.ENCHANTMENT_TABLE_USE,SoundSource.BLOCKS,1f,1f);
@@ -237,7 +237,7 @@ final class TacticalEnchanting {
     static String upgrade(ServerPlayer p){
         var d=EnchantData.get(p.serverLevel());var price=Economy.enchantingUpgrade(d.mk+1);
         if(price==null)return "enchant.result.max_mk";
-        if(!Economy.pay(p,price))return price.ardent()?"enchant.result.no_energy":"enchant.result.no_parts";
+        if(!Economy.pay(Supply.here(p),price))return price.ardent()?"enchant.result.no_energy":"enchant.result.no_parts";
         d.mk++;d.setDirty();
         Fobs.announce(p.serverLevel(),Component.translatable("gui.arsenal_beacon.enchant.upgraded",p.getDisplayName(),EnchantRules.roman(d.mk),EnchantRules.DISCOUNT[d.mk]));
         return "enchant.result.upgraded";
@@ -248,8 +248,8 @@ final class TacticalEnchanting {
         var e=BuiltInRegistries.ENCHANTMENT.get(new net.minecraft.resources.ResourceLocation(id));if(e==null)return "enchant.result.gone";
         if(EnchantRules.sealsForNext(id,d.seals(id),e.getMaxLevel())==0)return "enchant.result.unlocked_all";
         if(!p.isCreative()){
-            if(Economy.have(p,ArsenalBeacon.WARLORD_SEAL.get())<1)return "enchant.result.no_seal";
-            p.getInventory().clearOrCountMatchingItems(st->st.is(ArsenalBeacon.WARLORD_SEAL.get()),1,p.inventoryMenu.getCraftSlots());
+            // 0.0.40: the seal comes from the pack, or else from a Hub in the Home Zone
+            if(!ArsenalBeacon.consume(Supply.here(p),ArsenalBeacon.WARLORD_SEAL.get(),1))return "enchant.result.no_seal";
         }
         d.seals.merge(id,1,Integer::sum);d.setDirty();
         int level=EnchantRules.unlockedLevel(id,d.seals(id),e.getMaxLevel());

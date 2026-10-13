@@ -67,6 +67,11 @@ public final class PlacementPreviewClient {
                 AABB box=new AABB(anchor);for(var c:cells)box=box.minmax(new AABB(c));
                 return new Ghost(cells,states,box,false);
             }
+            if(item instanceof LogisticsHub.HubItem){
+                // 0.0.40: the Hub stands 3 x 3 x 3 on the spot looked at; its model is drawn from the middle block
+                var anchor=LogisticsHub.HubItem.anchorFor(ctx);var state=item.getBlock().defaultBlockState().setValue(ArsenalStructures.FACING,ctx.getHorizontalDirection().getOpposite());
+                return new Ghost(List.of(anchor),List.of(state),new AABB(anchor).inflate(1),false);
+            }
             var pos=ctx.getClickedPos();if(!ctx.canPlace())return null;
             BlockState state=item.getBlock().getStateForPlacement(ctx);if(state==null)state=item.getBlock().defaultBlockState();
             AABB box=footprint(state,pos);

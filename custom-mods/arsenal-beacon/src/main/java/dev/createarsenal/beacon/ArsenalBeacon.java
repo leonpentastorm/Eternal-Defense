@@ -91,6 +91,13 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Item> MRE_STATION_ITEM=ITEMS.register("mre_maker",()->new KitchenBlock.KitchenItem(MRE_STATION.get()));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MreStation.StationEntity>> MRE_STATION_ENTITY=ENTITIES.register("mre_maker",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MreStation.StationEntity::new,MRE_STATION.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<MreStation.StationMenu>> MRE_STATION_MENU=MENUS.register("mre_maker",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MreStation.StationMenu::client));
+    // 0.0.40 (owner): the Logistics Center Hub, a 3 x 3 x 3 depot of 270 slots in the Home Zone (the owner's model); its inventory lives in HubData
+    public static final RegistryObject<Block> LOGISTICS_HUB=BLOCKS.register("logistics_hub",LogisticsHub.HubBlock::new);
+    public static final RegistryObject<Block> LOGISTICS_HUB_PART=BLOCKS.register("logistics_hub_part",LogisticsHub.PartBlock::new);
+    public static final RegistryObject<Item> LOGISTICS_HUB_ITEM=ITEMS.register("logistics_hub",()->new LogisticsHub.HubItem(LOGISTICS_HUB.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LogisticsHub.HubEntity>> LOGISTICS_HUB_ENTITY=ENTITIES.register("logistics_hub",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(LogisticsHub.HubEntity::new,LOGISTICS_HUB.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LogisticsHub.PartEntity>> LOGISTICS_HUB_PART_ENTITY=ENTITIES.register("logistics_hub_part",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(LogisticsHub.PartEntity::new,LOGISTICS_HUB_PART.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<HubMenu>> LOGISTICS_HUB_MENU=MENUS.register("logistics_hub",()->net.minecraftforge.common.extensions.IForgeMenuType.create(HubMenu::client));
     public static final RegistryObject<Item> MRE=ITEMS.register("mre",Mre::new);
     public static final RegistryObject<Item> MARINES_FUEL=ITEMS.register("marines_fuel",Mre.MarinesFuel::new);
     public static final RegistryObject<Block> SUPPORT_PLATFORM=BLOCKS.register("support_platform",SupportPlatform.PlatformBlock::new);
@@ -157,9 +164,13 @@ public final class ArsenalBeacon {
         net.minecraftforge.common.ForgeMod.enableMilkFluid();
         var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);ArsenalSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();MinecraftForge.EVENT_BUS.register(new StandaloneBalance());
         if(!BuildFlavor.STANDALONE&&Boolean.getBoolean("arsenal.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
+        // 0.0.40: pack edition with Create: mechanical arms may use the Logistics Center Hub (the class is in the pack jar only, compiled against Create)
+        if(!BuildFlavor.STANDALONE&&net.minecraftforge.fml.ModList.get().isLoaded("create"))
+            try{Class.forName("dev.createarsenal.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
+            catch(ReflectiveOperationException|LinkageError e){com.mojang.logging.LogUtils.getLogger().warn("[Logistics Hub] mechanical arms cannot use the Hub: {}",e.toString());}
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());MinecraftForge.EVENT_BUS.register(new EndlessEffects.EndlessEvents());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,ArsenalConfig.SPEC,"arsenal-beacon-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,ArsenalClientConfig.SPEC,"arsenal-beacon-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
-        MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
+        MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
         MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new PlayerDrinks.DrinkEvents());MinecraftForge.EVENT_BUS.register(new DrinkStation.GuardEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());MinecraftForge.EVENT_BUS.register(new Routes.RouteEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
         if(Boolean.getBoolean("arsenal.standaloneTests"))MinecraftForge.EVENT_BUS.register(new StandaloneBeaconTests.Runner());
@@ -327,10 +338,13 @@ public final class ArsenalBeacon {
         if(grade>=Rules.branchMaximum(branch))return feedback(p,"That branch is fully upgraded.");
         if(branch.equals("core")){var wanted=p.server.overworld().getBlockState(d.beacon).setValue(ArsenalStructures.MK,ArsenalStructures.mark(d.core+1));if(!ArsenalStructures.available(p.server.overworld(),d.beacon,wanted))return feedback(p,"Clear a 3 x 3 area, two blocks tall, centered on the beacon before upgrading to Mk-4. Nothing consumed.");}
         // every part of the price must be there before anything is taken (the Vertical zone takes all four factory parts)
-        var cost=Economy.beaconCost(branch,grade);var missing=new java.util.ArrayList<String>();
-        for(var part:cost){Item item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()));if(!p.isCreative()&&count(p,item)<part.amount())missing.add(part.amount()+" "+item.getDescription().getString());}
+        // 0.0.40: paid from the pack first, then the Home Zone's Logistics Center Hubs (Supply), all or nothing
+        var cost=Economy.beaconCost(branch,grade);var missing=new java.util.ArrayList<String>();var w=Supply.at(p,d.beacon);var costs=new java.util.ArrayList<WeaponPlatform.Cost>();
+        for(var part:cost)costs.add(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()))),part.amount()));
+        var plan=InventoryPayment.plan(w,costs);
+        for(int i=0;i<cost.size();i++){var part=cost.get(i);Item item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()));if(!p.isCreative()&&plan.allocated()[i]<part.amount())missing.add(part.amount()+" "+item.getDescription().getString());}
         if(!missing.isEmpty())return feedback(p,"Upgrade needs "+String.join(", ",missing)+(Economy.standalone()?". Kill hostile mobs, or trade rare materials at an Exchange Shop.":". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy."));
-        for(var part:cost)consume(p,net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id())),part.amount());
+        if(!InventoryPayment.commit(w,costs,ItemStack.EMPTY))return feedback(p,"Upgrade materials changed. Nothing consumed.");
         switch(branch){case "core"->{int oldMaximum=d.maximumHealth();d.core++;d.health=Math.min(d.maximumHealth(),d.health+d.maximumHealth()-oldMaximum);ArsenalStructures.syncBeacon(p.server.overworld(),d);}case "logistics"->d.logistics++;case "defense"->d.defense++;case "restoration"->d.restoration++;case "reconnaissance"->d.reconnaissance++;case "vertical"->d.vertical++;}
         d.setDirty();BaseSurvey.request(p.server.overworld());
         if(branch.equals("reconnaissance"))return feedback(p,Rules.revealTicks(d.reconnaissance)==0?"Reconnaissance complete: every raid attacker is highlighted from the moment it spawns.":"Reconnaissance upgraded: raid attackers are highlighted "+Rules.revealTicks(d.reconnaissance)/1200+" minute(s) into each wave.");
@@ -339,14 +353,11 @@ public final class ArsenalBeacon {
     static int repair(ServerPlayer p) {
         var d=CampaignData.get(p.server.overworld());if(!d.installed()||!near(p,d)||d.active())return feedback(p,"Repair between raids, near the beacon.");
         if(d.health>=d.maximumHealth())return feedback(p,"Already at full health.");
-        if(!consume(p,Economy.standalone()?ARDENT_ENERGY.get():PLATING.get(),Economy.repairAmount()))return feedback(p,Economy.standalone()?"Needs "+Economy.repairAmount()+" Ardent Energy.":"Needs 8 reinforced plating. JEI shows the recipe.");
+        if(!consume(Supply.at(p,d.beacon),Economy.standalone()?ARDENT_ENERGY.get():PLATING.get(),Economy.repairAmount()))return feedback(p,Economy.standalone()?"Needs "+Economy.repairAmount()+" Ardent Energy.":"Needs 8 reinforced plating. JEI shows the recipe.");
         d.health=Math.min(d.maximumHealth(),d.health+250);d.phase="preparation";d.setDirty();return feedback(p,"Repaired +250 HP. Campaign resumed.");
     }
-    static int count(ServerPlayer p,Item item){int found=0;for(ItemStack s:p.getInventory().items)if(s.is(item))found+=s.getCount();return found;}
-    static boolean consume(ServerPlayer p,Item item,int cost) {
-        if(p.isCreative())return true;int found=0;for(ItemStack s:p.getInventory().items)if(s.is(item))found+=s.getCount();if(found<cost)return false;
-        for(ItemStack s:p.getInventory().items)if(s.is(item)){int take=Math.min(cost,s.getCount());s.shrink(take);cost-=take;if(cost==0)break;}p.getInventory().setChanged();return true;
-    }
+    /** Takes {@code cost} of {@code item}: the pack first, then the Home Zone's Hubs (0.0.40); creative players pay nothing. False, nothing taken, if short. */
+    static boolean consume(Supply.Where w,Item item,int cost){return InventoryPayment.commit(w,java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(item),cost)),ItemStack.EMPTY);}
     static void claim(ServerPlayer p,CampaignData d) {
         if(!near(p,d))return;
         feedback(p,RewardCache.claim(p,d));

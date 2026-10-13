@@ -202,19 +202,20 @@ public final class TacticalClient {
         private int fobRows(){return Math.max(1,fobRoom()/fobRowH());}
         private List<CompoundTag> shownFobs(){var all=fobs();fobScroll=Math.max(0,Math.min(fobScroll,all.size()-fobRows()));return all.subList(fobScroll,Math.min(all.size(),fobScroll+fobRows()));}
         /** The FOB list: the SOS row gets Reprint SOS map, every row Contact Specialty Seller (0.0.33), under the state chip. */
+        // 0.0.40 (owner): the row's buttons sit 4 px above the card's lower edge (the card is h - 3 tall; they touched it at y + h - 22)
         private void fobView(){
             if(seller()!=null){sellerView();return;}
             int y=radarY+14,h=fobRowH();
             for(var f:shownFobs()){
                 int right=fobX()+fobW()-6;
                 if(f.getBoolean("sos")){
-                    sosButton=addRenderableWidget(new Ui.UiButton(right-112,y+h-22,112,18,Ui.t("tactical.fob.reprint"),Ui.Look.DANGER,b->click(TacticalBlocks.button(TacticalBlocks.REPRINT_SOS,0))));
+                    sosButton=addRenderableWidget(new Ui.UiButton(right-112,y+h-25,112,18,Ui.t("tactical.fob.reprint"),Ui.Look.DANGER,b->click(TacticalBlocks.button(TacticalBlocks.REPRINT_SOS,0))));
                     sosButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t(data.getBoolean("sosCarried")?"tactical.fob.reprint.carried":"tactical.fob.reprint.tip")));
                     right-=116;
                 }
                 long id=f.getLong("id");String closed=f.getString("seller");int sw=sellButtonWidth(f);
                 if(sw>0){
-                    var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-22,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;contact();rebuildWidgets();}).icon(RADIO));
+                    var sell=addRenderableWidget(new Ui.UiButton(right-sw,y+h-25,sw,18,sellLabel(sw),Ui.Look.PRIMARY,b->{sellerFob=id;sellerItem=0;sellerScroll=0;contact();rebuildWidgets();}).icon(RADIO));
                     sell.active=closed.isEmpty();
                     sell.setTooltip(net.minecraft.client.gui.components.Tooltip.create(closed.isEmpty()?Ui.t("tactical.seller.tip"):Ui.t("tactical.seller.closed."+closed,f.getInt("level"),CatapultRules.SELLER_LEVEL)));
                 }

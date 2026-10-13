@@ -219,7 +219,7 @@ final class Hunts {
         var m=h.board.mission;
         if(m!=null){n.putLong("mission",m.offer.id);n.putString("missionState",m.state.name());n.putInt("total",m.total);n.putInt("remaining",m.remaining);}
         var upgrade=Economy.satellite(sat);
-        if(upgrade!=null){n.putString("upgradeItem",net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(upgrade.item()).toString());n.putInt("upgradeAmount",upgrade.amount());n.putInt("upgradeHave",Economy.have(p,upgrade.item()));}
+        if(upgrade!=null){n.putString("upgradeItem",net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(upgrade.item()).toString());n.putInt("upgradeAmount",upgrade.amount());n.putInt("upgradeHave",Economy.have(Supply.at(p,h.table),upgrade.item()));}
         n.putBoolean("creative",p.isCreative());n.putString("message",message);
         fobs(l,d,p,n);
         return n;
@@ -243,7 +243,7 @@ final class Hunts {
             list.add(c);
         }
         n.put("fobs",list);n.putLong("sosTotal",SosRules.RESPONSE_TICKS);n.putInt("fobMax",FobRules.MAX_FOBS);
-        n.putInt("ardent",ArdentEnergy.balance(p));n.putInt("lotPrice",Economy.sellerLotPrice());n.putInt("maxQueue",CatapultRules.MAX_QUEUE);
+        n.putInt("ardent",ArdentEnergy.balance(Supply.here(p)));n.putInt("lotPrice",Economy.sellerLotPrice());n.putInt("maxQueue",CatapultRules.MAX_QUEUE);
         n.putBoolean("sosCarried",fd.sosFob!=0&&FobSos.carries(p,fd.sosSerial));
     }
     /** The SOS map again, for a player who lost theirs (it burns when the SOS ends, as before). */
@@ -299,7 +299,7 @@ final class Hunts {
         var mk=uplink(l,d,h);if(mk==null)return "tactical.result.no_uplink";
         var price=Economy.satellite(mk);if(price==null)return "tactical.result.maxed";
         if(h.satellite==null||p.distanceToSqr(h.table.getX()+.5,h.table.getY()+.5,h.table.getZ()+.5)>64)return "tactical.result.too_far";
-        if(!Economy.pay(p,price)){sound(p,ArsenalSounds.TACTICAL_REFUSED.get());return "tactical.result.short";}
+        if(!Economy.pay(Supply.at(p,h.table),price)){sound(p,ArsenalSounds.TACTICAL_REFUSED.get());return "tactical.result.short";}
         h.satelliteMk=TacticalRules.mk(mk+1);h.setDirty();showMk(l,h);
         fillIfLinked(l);sound(p,ArsenalSounds.TACTICAL_ACCEPT.get());
         return "tactical.result.upgraded";

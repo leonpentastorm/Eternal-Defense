@@ -86,6 +86,7 @@ final class BaseZone {
 
     /** Beacon Recovery Shovel on support gear: picks it up for free (a platform keeps its Mk level and grid). */
     static boolean relocate(ServerPlayer p,ServerLevel level,BlockPos clicked){
+        if(LogisticsHub.isHub(level.getBlockState(clicked)))return LogisticsHub.relocate(p,level,clicked);   // 0.0.40: its items wait for it in the saved data
         BlockPos root=ArsenalStructures.anchor(level,clicked);var state=level.getBlockState(root);
         ItemStack stack;UUID owner=null;
         if(state.is(ArsenalBeacon.EXCHANGE_SHOP.get())){stack=new ItemStack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get());}

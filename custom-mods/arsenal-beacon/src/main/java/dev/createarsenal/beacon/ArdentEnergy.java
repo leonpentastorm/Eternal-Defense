@@ -33,15 +33,12 @@ final class ArdentEnergy {
         for(var s:p.getInventory().offhand)if(s.is(ArsenalBeacon.ARDENT_ENERGY.get()))count+=s.getCount();
         return count;
     }
-    /** Takes energy from the inventory (creative players pay nothing). False, and nothing taken, if short. */
-    static boolean spend(ServerPlayer p,int cost){
-        if(p.isCreative()||cost<=0)return true;
-        var costs=java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(ArsenalBeacon.ARDENT_ENERGY.get()),cost));
-        var plan=InventoryPayment.plan(p,costs);if(!plan.payable())return false;
-        var slots=plan.inventory();int main=p.getInventory().items.size();
-        for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));
-        for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
-        p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();return true;
+    /** 0.0.40: the energy a request can reach: the pack, then the Home Zone's Hubs when the request is made inside the Home Zone. */
+    static int balance(Supply.Where w){return Supply.count(w,ArsenalBeacon.ARDENT_ENERGY.get());}
+    /** Takes energy, from the pack first and then the Home Zone's Hubs ({@link Supply}); creative players pay nothing. False, and nothing taken, if short. */
+    static boolean spend(Supply.Where w,int cost){
+        if(w.player().isCreative()||cost<=0)return true;
+        return InventoryPayment.commit(w,java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(ArsenalBeacon.ARDENT_ENERGY.get()),cost)),ItemStack.EMPTY);
     }
     @SubscribeEvent public void drops(LivingDropsEvent event){
         var entity=event.getEntity();

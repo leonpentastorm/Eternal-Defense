@@ -640,6 +640,7 @@ public final class BeaconClient {
                 case "mixes"->ArsenalBeacon.SANDWICH.get();
                 case "drinks"->ArsenalBeacon.DRINK_STATION_I.get().asItem();
                 case "mre"->ArsenalBeacon.MRE_STATION_ITEM.get();
+                case "hub"->ArsenalBeacon.LOGISTICS_HUB_ITEM.get();
                 case "gear"->ArsenalBeacon.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:ArsenalBeacon.RACKS.get(0).get().asItem();
                 case "coop"->net.minecraft.world.item.Items.PLAYER_HEAD;
                 default->net.minecraft.world.item.Items.WRITABLE_BOOK;

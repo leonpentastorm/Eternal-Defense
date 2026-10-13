@@ -150,7 +150,7 @@ final class DrinkStation {
             var price=Economy.drinkStation(mk());if(price==null||BaseZone.problem(level,worldPosition)!=null)return false;
             var next=switch(mk()){case 1->ArsenalBeacon.DRINK_STATION_II.get();case 2->ArsenalBeacon.DRINK_STATION_III.get();default->ArsenalBeacon.DRINK_STATION_IV.get();};
             var state=next.defaultBlockState().setValue(ArsenalStructures.FACING,getBlockState().getValue(ArsenalStructures.FACING));
-            if(!ArsenalStructures.available(level,worldPosition,state)||!Economy.pay(p,price))return false;
+            if(!ArsenalStructures.available(level,worldPosition,state)||!Economy.pay(Supply.at(p,worldPosition),price))return false;
             var saved=saveWithoutMetadata();level.setBlock(worldPosition,state,3);var replacement=(StationEntity)level.getBlockEntity(worldPosition);replacement.load(saved);replacement.changed();replacement.discover();
             net.minecraftforge.network.NetworkHooks.openScreen(p,replacement,b->{b.writeBlockPos(worldPosition);b.writeVarInt(replacement.mk());});return true;
         }

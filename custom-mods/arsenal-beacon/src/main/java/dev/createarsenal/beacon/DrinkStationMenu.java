@@ -160,7 +160,12 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         int slot=station.find(effect);if(slot>=0)return station.takeOne(slot);
         var inv=sp.getInventory();int best=-1,level=-1;
         for(int i=0;i<inv.items.size();i++){var s=inv.items.get(i);if(!DrinkData.mixable(s))continue;var fx=DrinkData.effectOf(s);if(fx.getEffect()==effect&&fx.getAmplifier()>level){best=i;level=fx.getAmplifier();}}
-        return best<0?ItemStack.EMPTY:inv.items.get(best).split(1);
+        if(best>=0)return inv.items.get(best).split(1);
+        // 0.0.40: not in the storage or the pack: the Home Zone's Logistics Center Hubs (the strongest such potion, nearest Hub first)
+        var w=Supply.at(sp,pos);Supply.Borrowed pick=null;
+        for(var b:Supply.borrow(w,s->DrinkData.mixable(s)&&DrinkData.effectOf(s).getEffect()==effect)){int amp=DrinkData.effectOf(b.stack).getAmplifier();if(pick==null||amp>level){pick=b;level=amp;}}
+        if(pick==null)return ItemStack.EMPTY;
+        var one=pick.stack.split(1);Supply.settle(w,List.of(pick));return one;
     }
     /** Returns a potion from the table: to the storage when it fits, else to the pack. */
     private void putBack(ServerPlayer sp,ItemStack s){if(s.isEmpty())return;int n=station.insert(s,s.getCount());s.shrink(n);if(!s.isEmpty())ArsenalBeacon.give(sp,s);}
@@ -181,7 +186,11 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         boolean cupMissing=false;
         if(latte()&&mix.getItem(3).isEmpty()){
             var inv=sp.getInventory();int at=-1;for(int i=0;i<inv.items.size();i++)if(CupDispenser.cup(inv.items.get(i))){at=i;break;}
-            if(at>=0)mix.setItem(3,inv.items.get(at).split(1));else cupMissing=true;
+            if(at>=0)mix.setItem(3,inv.items.get(at).split(1));
+            else{   // 0.0.40: a Paper Cup from a Hub in the Home Zone
+                var w=Supply.at(sp,pos);var cups=Supply.borrow(w,CupDispenser::cup);
+                if(cups.isEmpty())cupMissing=true;else{mix.setItem(3,cups.get(0).stack.split(1));Supply.settle(w,List.of(cups.get(0)));}
+            }
         }
         sp.getInventory().setChanged();mix.setChanged();
         if(!missing.isEmpty())notice(WARN,"gather_missing",fx(missing));
@@ -257,7 +266,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         n.putInt("NoticeSeq",noticeSeq);n.putInt("NoticeKind",noticeKind);n.putString("Notice",noticeKey);var args=new ListTag();noticeArgs.forEach(a->args.add(StringTag.valueOf(a)));n.put("NoticeArgs",args);
         if(selected!=null)n.putLong("Selected",selected.asLong());
         var list=new ListTag();for(var pot:pots){var c=new CompoundTag();c.putLong("Pos",pot.getBlockPos().asLong());if(pot.drink!=null)c.put("Drink",pot.drink.save());list.add(c);}n.put("Pots",list);n.putInt("Capacity",DrinkRules.tier(mk).pots());
-        var price=Economy.drinkStation(mk);if(price!=null){n.put("UpgradeItem",new ItemStack(price.item(),price.amount()).save(new CompoundTag()));n.putInt("UpgradeCost",price.amount());n.putInt("UpgradeHave",sp.isCreative()?price.amount():Economy.have(sp,price.item()));}
+        var price=Economy.drinkStation(mk);if(price!=null){n.put("UpgradeItem",new ItemStack(price.item(),price.amount()).save(new CompoundTag()));n.putInt("UpgradeCost",price.amount());n.putInt("UpgradeHave",sp.isCreative()?price.amount():Economy.have(Supply.at(sp,pos),price.item()));}
         if(!n.equals(lastView)||!catalogueSent){
             lastView=n.copy();var packet=n.copy();
             if(!catalogueSent){var ids=new ListTag();for(var e:cat)ids.add(StringTag.valueOf(DrinkData.id(e).toString()));packet.put("Catalogue",ids);catalogueSent=true;}

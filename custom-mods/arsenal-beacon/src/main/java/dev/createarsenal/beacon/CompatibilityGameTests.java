@@ -19,7 +19,7 @@ public final class CompatibilityGameTests {
         var p=player(h,"ingredients");List<String> missing=new ArrayList<>();
         for(var e:WeaponPlatform.entries(p,"gun",""))for(var cost:WeaponPlatform.costs(e)){
             var choices=cost.ingredient().getItems();if(choices.length==0||Arrays.stream(choices).allMatch(ItemStack::isEmpty))missing.add(e.recipeId()+" -> "+cost.ingredient().toJson());
-            var encoded=WeaponPlatform.costTags(p,List.of(cost)).getCompound(0);h.assertTrue(!ItemStack.of(encoded.getCompound("item")).isEmpty(),"Display material survives NBT encoding: "+e.recipeId()+" "+cost.ingredient().toJson()+" amount="+cost.count());
+            var encoded=WeaponPlatform.costTags(Supply.pack(p),List.of(cost)).getCompound(0);h.assertTrue(!ItemStack.of(encoded.getCompound("item")).isEmpty(),"Display material survives NBT encoding: "+e.recipeId()+" "+cost.ingredient().toJson()+" amount="+cost.count());
         }
         com.mojang.logging.LogUtils.getLogger().info("Gun ingredient audit: {} missing materials: {}",missing.size(),missing);
         h.assertTrue(missing.isEmpty(),"Unresolved gun crafting materials: "+missing);h.succeed();
@@ -27,9 +27,9 @@ public final class CompatibilityGameTests {
     @GameTest(template="empty3x3x3",batch="ingredientaudit",timeoutTicks=100)
     public static void flamethrowerIronPreviewKeeps128CostAndPayment(GameTestHelper h)throws Exception{
         var p=player(h,"m2iron");p.getInventory().add(new ItemStack(Items.IRON_INGOT,40));var gun=WeaponPlatform.entries(p,"gun","").stream().filter(e->e.gate().id().equals("bf1:m2_2")).findFirst().orElseThrow();
-        var costs=WeaponPlatform.costs(gun);var iron=costs.stream().filter(c->c.count()==128&&c.ingredient().test(new ItemStack(Items.IRON_INGOT))).findFirst().orElseThrow();var row=WeaponPlatform.costTags(p,List.of(iron)).getCompound(0);
+        var costs=WeaponPlatform.costs(gun);var iron=costs.stream().filter(c->c.count()==128&&c.ingredient().test(new ItemStack(Items.IRON_INGOT))).findFirst().orElseThrow();var row=WeaponPlatform.costTags(Supply.pack(p),List.of(iron)).getCompound(0);
         h.assertTrue(ItemStack.of(row.getCompound("item")).is(Items.IRON_INGOT)&&row.getInt("count")==128&&row.getInt("have")==40,"M2 preview shows Iron Ingot 40 / 128, not Air");
-        var buffer=new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());var state=new CompoundTag();state.put("materials",WeaponPlatform.costTags(p,costs));WeaponPlatform.State.encode(new WeaponPlatform.State(state,true,""),buffer);var decoded=WeaponPlatform.State.decode(buffer);buffer.release();
+        var buffer=new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());var state=new CompoundTag();state.put("materials",WeaponPlatform.costTags(Supply.pack(p),costs));WeaponPlatform.State.encode(new WeaponPlatform.State(state,true,""),buffer);var decoded=WeaponPlatform.State.decode(buffer);buffer.release();
         for(var tag:decoded.data().getList("materials",Tag.TAG_COMPOUND))h.assertTrue(!ItemStack.of(((CompoundTag)tag).getCompound("item")).isEmpty(),"All M2 ingredient icons survive actual client packet encoding");
         p.getInventory().clearContent();for(var c:costs)if(c!=iron)supply(p,List.of(c));p.getInventory().add(new ItemStack(Items.IRON_INGOT,64));p.getInventory().add(new ItemStack(Items.IRON_INGOT,63));var pos=h.absolutePos(new BlockPos(1,1,1));h.getLevel().setBlock(pos,ArsenalBeacon.GUN_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,2),3);var before=p.getInventory().save(new ListTag());
         h.assertTrue(WeaponPlatform.craft(p,pos,gun.recipeId()).startsWith("Need 1 more")&&before.equals(p.getInventory().save(new ListTag())),"127 iron reports the missing one without partially spending inputs");p.getInventory().add(new ItemStack(Items.IRON_INGOT));h.assertTrue(WeaponPlatform.craft(p,pos,gun.recipeId()).startsWith("Crafted"),"Exactly 128 iron pays for the real flamethrower");

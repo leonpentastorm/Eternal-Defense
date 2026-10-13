@@ -287,10 +287,10 @@ final class ExchangeShop {
         return out;
     }
     static void send(ServerPlayer p,BlockPos pos,String message){
-        var data=new CompoundTag();data.putInt("energy",ArdentEnergy.balance(p));data.putBoolean("creative",p.isCreative());
+        var w=Supply.at(p,pos);var data=new CompoundTag();data.putInt("energy",ArdentEnergy.balance(w));data.putBoolean("creative",p.isCreative());
         var all=offers();data.put("buy",rows(all.buy(),false));data.put("sell",rows(all.sell(),true));
         var have=new ListTag();   // how many of each item to sell the player is carrying
-        for(var offer:all.sell()){var c=new CompoundTag();c.putInt("have",Economy.have(p,BuiltInRegistries.ITEM.get(new ResourceLocation(offer.id()))));have.add(c);}
+        for(var offer:all.sell()){var c=new CompoundTag();c.putInt("have",Economy.have(w,BuiltInRegistries.ITEM.get(new ResourceLocation(offer.id()))));have.add(c);}
         data.put("have",have);
         BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->p),new Open(pos,data,message));
     }
@@ -303,10 +303,10 @@ final class ExchangeShop {
         String result;
         if(sell){
             var costs=List.of(new WeaponPlatform.Cost(Ingredient.of(item),stack.getCount()));
-            result=InventoryPayment.commit(p,costs,new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),offer.value()))?"Sold "+stack.getCount()+" x "+stack.getHoverName().getString()+" for "+offer.value()+" Ardent Energy.":"You need "+stack.getCount()+" x "+stack.getHoverName().getString()+" (and room for the energy). Nothing taken.";
+            result=InventoryPayment.commit(Supply.at(p,pos),costs,new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),offer.value()))?"Sold "+stack.getCount()+" x "+stack.getHoverName().getString()+" for "+offer.value()+" Ardent Energy.":"You need "+stack.getCount()+" x "+stack.getHoverName().getString()+" (and room for the energy). Nothing taken.";
         }else{
             var costs=List.of(new WeaponPlatform.Cost(Ingredient.of(ArsenalBeacon.ARDENT_ENERGY.get()),offer.value()));
-            result=InventoryPayment.commit(p,costs,stack)?"Bought "+stack.getCount()+" x "+stack.getHoverName().getString()+(p.isCreative()?" (free in Creative).":" for "+offer.value()+" Ardent Energy."):InventoryPayment.failure(p,costs);
+            result=InventoryPayment.commit(Supply.at(p,pos),costs,stack)?"Bought "+stack.getCount()+" x "+stack.getHoverName().getString()+(p.isCreative()?" (free in Creative).":" for "+offer.value()+" Ardent Energy."):InventoryPayment.failure(Supply.at(p,pos),costs);
         }
         send(p,pos,result);
     }

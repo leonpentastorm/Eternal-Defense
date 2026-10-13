@@ -144,17 +144,22 @@ final class SupportPlatform {
     static final class PlatformMenu extends AbstractContainerMenu {
         final GridContainer grid;final BlockPos pos;final int mk;
         final DataSlot result=DataSlot.standalone(),serial=DataSlot.standalone();
+        /** 0.0.40: the Ardent Energy and plating the platform can reach (the pack, then the Home Zone's Hubs), worked out on the server. */
+        final DataSlot energy=DataSlot.standalone(),plating=DataSlot.standalone();final Player player;
         /** Client only: slots are hidden while the Shop or Upgrade tab is showing. */
         boolean slotsVisible=true;
         final List<Slot> gridSlots=new ArrayList<>();
         PlatformMenu(int id,Inventory inv,GridContainer grid,BlockPos pos,int mk){
-            super(ArsenalBeacon.SUPPORT_MENU.get(),id);this.grid=grid;this.pos=pos;this.mk=mk;
+            super(ArsenalBeacon.SUPPORT_MENU.get(),id);this.grid=grid;this.pos=pos;this.mk=mk;this.player=inv.player;
             int n=SupportRules.grid(mk);
             for(int r=0;r<n;r++)for(int c=0;c<n;c++){var slot=new Slot(grid,r*6+c,GRID_LEFT+1+c*18,GRID_TOP+1+r*18){@Override public boolean isActive(){return slotsVisible;}};gridSlots.add(slot);addSlot(slot);}
             for(int r=0;r<3;r++)for(int c=0;c<9;c++)addSlot(new Slot(inv,9+r*9+c,INV_LEFT+1+c*18,INV_TOP+1+r*18){@Override public boolean isActive(){return slotsVisible;}});
             for(int c=0;c<9;c++)addSlot(new Slot(inv,c,INV_LEFT+1+c*18,INV_TOP+1+58){@Override public boolean isActive(){return slotsVisible;}});
-            addDataSlot(result);addDataSlot(serial);
+            addDataSlot(result);addDataSlot(serial);addDataSlot(energy);addDataSlot(plating);reach();
         }
+        /** Data slots travel as shorts: the counts are capped at 32767. */
+        private void reach(){if(player instanceof net.minecraft.server.level.ServerPlayer sp){var w=Supply.at(sp,pos);energy.set(Math.min(32767,ArdentEnergy.balance(w)));plating.set(Math.min(32767,Economy.have(w,ArsenalBeacon.PLATING.get())));}}
+        @Override public void broadcastChanges(){reach();super.broadcastChanges();}
         static PlatformMenu client(int id,Inventory inv,FriendlyByteBuf buf){return new PlatformMenu(id,inv,new GridContainer(null),buf.readBlockPos(),buf.readVarInt());}
         void report(int code){result.set(code);serial.set((serial.get()+1)&0x7fff);}
         @Override public ItemStack quickMoveStack(Player p,int index){

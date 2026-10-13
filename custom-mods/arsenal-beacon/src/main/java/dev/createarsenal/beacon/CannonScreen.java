@@ -29,6 +29,12 @@ final class CannonScreen extends BeaconClient.PanelScreen {
     }
     @Override Component subtitle(){return Ui.t("cannon.owner",data.getString("owner"));}
     private int level(int up){int[] l=data.getIntArray("up");return up<l.length?l[up]:0;}
+    /** 0.0.40: how many of a price's item the cannon can reach (the pack, then the Home Zone's Hubs), as the server counted them. */
+    private int reach(Economy.Price price){
+        if(price.ardent())return data.getInt("energy");
+        int[] stock=data.getIntArray("stock");var parts=java.util.List.of(ArsenalBeacon.PLATING.get(),ArsenalBeacon.LOGISTICS.get(),ArsenalBeacon.COIL.get(),ArsenalBeacon.REPAIR.get());
+        int i=parts.indexOf(price.item());return i>=0&&i<stock.length?stock[i]:0;
+    }
     private boolean affordable(Economy.Price price){
         if(data.getBoolean("creative"))return true;
         if(price.ardent())return data.getInt("energy")>=price.amount();
@@ -162,7 +168,7 @@ final class CannonScreen extends BeaconClient.PanelScreen {
         Ui.text(g,font,data.getBoolean("creative")?Ui.t("exchange.creative"):Ui.t("exchange.balance",data.getInt("energy")),left+32,top+ph-14,Ui.CYAN,pw-50);
         for(int i=0;i<ups.size();i++)if(ups.get(i).isHovered()){
             var up=ORDER.get(i);var price=Economy.cannon(up,level(up.ordinal()));
-            if(price!=null)Ui.materialTooltip(g,font,List.of(Ui.t("cannon.up."+up.id),Ui.t("cannon.up."+up.id+".desc")),Ui.singleCost(new ItemStack(price.item()),price.amount(),Economy.have(Minecraft.getInstance().player,price.item())),mx,my);
+            if(price!=null)Ui.materialTooltip(g,font,List.of(Ui.t("cannon.up."+up.id),Ui.t("cannon.up."+up.id+".desc")),Ui.singleCost(new ItemStack(price.item()),price.amount(),reach(price)),mx,my);
             else g.renderTooltip(font,List.of(Ui.t("cannon.up."+up.id)),Optional.of(new Ui.InfoTip(List.of(Ui.Block.line(Ui.t("cannon.up."+up.id+".desc"),Ui.MUTED),Ui.Block.marked(1,Ui.t("cannon.maxed"),Ui.BRASS)))),mx,my);
         }
     }

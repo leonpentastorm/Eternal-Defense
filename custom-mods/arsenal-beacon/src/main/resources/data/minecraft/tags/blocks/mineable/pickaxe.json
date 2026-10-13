@@ -18,6 +18,8 @@
     "arsenal_beacon:drink_mixer_mk4",
     "arsenal_beacon:drink_pot",
     "arsenal_beacon:cup_dispenser",
-    "arsenal_beacon:mre_maker"
+    "arsenal_beacon:mre_maker",
+    "arsenal_beacon:logistics_hub",
+    "arsenal_beacon:logistics_hub_part"
   ]
 }

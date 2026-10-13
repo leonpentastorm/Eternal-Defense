@@ -39,7 +39,7 @@ final class Fobs {
     /** Persistent data key on a villager: the id of the FOB whose village it lives in (it stays protected wherever it walks). */
     static final String VILLAGER_TAG="arsenalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
-    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6,OUTLINE=7;
+    static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6,OUTLINE=7,BUY_CATAPULT=8;
     /** 0.0.32: research buttons: 10 + what is given (0 emerald, 1 diamond, 2 Ardent Energy), + 3 for ten at once. */
     static final int RESEARCH=10,RESEARCH_TEN=3;
     static final List<String> RESEARCH_ITEMS=List.of("emerald","diamond","ardent");
@@ -198,7 +198,9 @@ final class Fobs {
         var base=SupportData.get(l).of(p.getUUID());n.putBoolean("hasPlatform",base!=null&&base.platform!=null);n.putBoolean("hasCannon",base!=null&&base.cannon!=null);
         for(String id:SHOP)n.putInt("price."+id,price(id));
         // the second listing (0.0.24): this FOB's Supply Delivery Gate, one per FOB
-        n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(p,Economy.fabrication("supply_delivery_gate")));
+        n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(Supply.pack(p),Economy.fabrication("supply_delivery_gate")));
+        // 0.0.40 (owner): the Supply Catapult can be built here too, for the same materials as at Workshop Fabrication (paid from the pack: a FOB is outside the Home Zone)
+        n.put("catapultCost",WeaponPlatform.costTags(Supply.pack(p),Economy.fabrication("supply_catapult")));
         // the tribute (0.0.31): the loot slots, the next delivery, the storage at the Receiving Gate
         Routes.tribute(f,n);n.putBoolean("hasRoute",f.hasRoute()&&f.commissioned);
         n.putInt("villagers",villagers);   // 0.0.32: the tribute writes its own villagers (the workers, at most 20); the screen shows the living ones
@@ -217,6 +219,7 @@ final class Fobs {
         if(f==null||!(p.containerMenu instanceof FobBlocks.FobMenu menu)||!menu.stillValid(p))return;
         if(id==CALL_RAID){String problem=callRaid(l,f,p);open(p,pos,problem==null?"fob.result.raid_called":"fob.raid."+problem);return;}
         if(id==BUY_GATE){String result=Routes.buyGate(p,f);log("{}: {} asked for the Delivery Gate: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
+        if(id==BUY_CATAPULT){String result=buyCatapult(p,f);log("{}: {} asked for a Supply Catapult: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
         if(id==REPAIR){String result=FobSos.repair(p,f);open(p,pos,result);return;}
         if(id>=RESEARCH&&id<RESEARCH+2*RESEARCH_TEN){int kind=(id-RESEARCH)%RESEARCH_TEN;open(p,pos,research(l,f,p,kind,id-RESEARCH>=RESEARCH_TEN?10:1));return;}
         if(id==OUTLINE){   // 0.0.30: the zone outline of this FOB, on or off for everyone
@@ -226,7 +229,7 @@ final class Fobs {
         int index=id-BUY_SUPPLY;if(index<0||index>=SHOP.size())return;
         String item=SHOP.get(index);
         if(!FobRules.working(f.state)){open(p,pos,"fob.result.closed");return;}
-        if(!ArdentEnergy.spend(p,price(item))){open(p,pos,"fob.result.no_energy");return;}
+        if(!ArdentEnergy.spend(Supply.pack(p),price(item))){open(p,pos,"fob.result.no_energy");return;}   // 0.0.40: outside the Home Zone, the pack alone
         var stack=new ItemStack(flare(item));if(!p.getInventory().add(stack))p.drop(stack,false);
         log("{}: {} bought a {} flare",f.name,p.getGameProfile().getName(),item);
         open(p,pos,"fob.result.bought."+item);
@@ -235,6 +238,11 @@ final class Fobs {
     static int researchXp(int kind){return switch(kind){case 0->RouteRules.XP_EMERALD;case 1->RouteRules.XP_DIAMOND;default->RouteRules.XP_ARDENT;};}
     static net.minecraft.world.item.Item researchItem(int kind){return switch(kind){case 0->net.minecraft.world.item.Items.EMERALD;case 1->net.minecraft.world.item.Items.DIAMOND;default->ArsenalBeacon.ARDENT_ENERGY.get();};}
     static int carried(net.minecraft.world.entity.player.Player p,net.minecraft.world.item.Item item){int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;}
+    /** 0.0.40 (owner): a Supply Catapult built at the FOB Beacon, the same materials as at Workshop Fabrication, from the pack (the FOB is outside the Home Zone). */
+    static String buyCatapult(ServerPlayer p,FobData.Fob f){
+        if(!FobRules.working(f.state))return "fob.result.closed";
+        return WeaponPlatform.transact(Supply.pack(p),Economy.fabrication("supply_catapult"),new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()))?"fob.result.bought.catapult":"fob.result.no_materials";
+    }
     /**
      * 0.0.32 (owner): gives up to {@code count} emeralds, diamonds or Ardent Energy to the FOB's research (creative players give for free),
      * never more than the last level needs; a new level is announced with what it opens. Returns the screen's message.
@@ -246,7 +254,7 @@ final class Fobs {
         var item=researchItem(kind);int n=Math.min(count,need);if(!p.isCreative())n=Math.min(n,carried(p,item));
         if(n<=0)return "fob.research.short."+RESEARCH_ITEMS.get(kind);
         if(!p.isCreative()){
-            var plan=InventoryPayment.plan(p,List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(item),n)));if(!plan.payable())return "fob.research.short."+RESEARCH_ITEMS.get(kind);
+            var plan=InventoryPayment.plan(Supply.pack(p),List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(item),n)));if(!plan.payable())return "fob.research.short."+RESEARCH_ITEMS.get(kind);
             var slots=plan.inventory();int main=p.getInventory().items.size();
             for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));
             for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));

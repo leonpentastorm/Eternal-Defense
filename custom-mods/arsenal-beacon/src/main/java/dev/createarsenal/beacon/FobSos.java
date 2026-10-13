@@ -201,7 +201,7 @@ final class FobSos {
         var l=p.serverLevel();var d=FobData.get(l);
         if(!SosRules.mayRepair(f.state,f.deadVillagers.size(),f.raidRunning()))return "fob.result.no_repair";
         int price=cost(f);
-        if(!ArdentEnergy.spend(p,price))return "fob.result.no_energy";
+        if(!ArdentEnergy.spend(Supply.pack(p),price))return "fob.result.no_energy";   // 0.0.40: a FOB is outside the Home Zone: the pack alone
         int back=0;
         for(int i=0;i<f.deadVillagers.size();i++)if(respawn(l,f,f.deadVillagers.getCompound(i)))back++;
         f.deadVillagers=new net.minecraft.nbt.ListTag();

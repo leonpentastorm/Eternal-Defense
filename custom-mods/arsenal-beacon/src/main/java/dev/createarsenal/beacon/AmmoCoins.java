@@ -26,6 +26,6 @@ final class AmmoCoins {
         if(entry==null||!WeaponPlatform.compatible(p,entry))return "Equip a compatible gun. Ammunition unavailable.";
         if(!CreateUnlocks.unlocked(p,entry,state.getValue(WeaponPlatform.AGE)))return "Upgrade your ammo table or unlock its Create milestone.";
         int amount=price(p,entry);var costs=List.of(WeaponPlatform.cost("arsenal_beacon:universal_ammo_coin",amount));
-        return WeaponPlatform.transact(p,costs,entry.output())?"Purchased "+entry.output().getCount()+(MagazineBridge.isMagazine(entry.output())?" empty magazine(s) for ":" rounds for ")+(p.isCreative()?"free":amount+" Ammo Coins")+".":InventoryPayment.failure(p,costs);
+        return WeaponPlatform.transact(Supply.at(p,pos),costs,entry.output())?"Purchased "+entry.output().getCount()+(MagazineBridge.isMagazine(entry.output())?" empty magazine(s) for ":" rounds for ")+(p.isCreative()?"free":amount+" Ammo Coins")+".":InventoryPayment.failure(Supply.at(p,pos),costs);
     }
 }

@@ -26,7 +26,7 @@ final class SupportShop {
     static void buy(ServerPlayer p,int index){
         if(!(p.containerMenu instanceof SupportPlatform.PlatformMenu menu)||!menu.stillValid(p)||index<0||index>=PRODUCTS.size())return;
         var product=PRODUCTS.get(index);
-        if(!ArdentEnergy.spend(p,product.price())){menu.report(NO_ENERGY);return;}
+        if(!ArdentEnergy.spend(Supply.at(p,menu.pos),product.price())){menu.report(NO_ENERGY);return;}
         var stack=new ItemStack(product.item().get());
         if(!p.getInventory().add(stack))p.drop(stack,false);
         menu.report(BOUGHT);
@@ -36,7 +36,7 @@ final class SupportShop {
         int cost=SupportRules.upgradeCost(menu.mk);
         if(cost<0){menu.report(MAXED);return;}
         var costs=List.of(new WeaponPlatform.Cost(Ingredient.of(ArsenalBeacon.PLATING.get()),cost));
-        if(!InventoryPayment.commit(p,costs,ItemStack.EMPTY)){menu.report(NO_PLATING);return;}
+        if(!InventoryPayment.commit(Supply.at(p,menu.pos),costs,ItemStack.EMPTY)){menu.report(NO_PLATING);return;}
         var level=p.serverLevel();BlockPos pos=menu.pos;var state=level.getBlockState(pos);
         level.setBlock(pos,state.setValue(SupportPlatform.MK,menu.mk+1),3);
         var be=level.getBlockEntity(pos);

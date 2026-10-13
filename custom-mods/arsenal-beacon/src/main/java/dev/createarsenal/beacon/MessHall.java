@@ -38,7 +38,7 @@ final class MessHall {
             var price=Economy.kitchen(mk());if(price==null||BaseZone.problem(level,worldPosition)!=null)return false;
             var next=switch(mk()){case 1->ArsenalBeacon.MESS_HALL_II.get();case 2->ArsenalBeacon.MESS_HALL_III.get();default->ArsenalBeacon.MESS_HALL_IV.get();};
             var state=next.defaultBlockState().setValue(ArsenalStructures.FACING,getBlockState().getValue(ArsenalStructures.FACING));
-            if(!ArsenalStructures.available(level,worldPosition,state)||!Economy.pay(p,price))return false;
+            if(!ArsenalStructures.available(level,worldPosition,state)||!Economy.pay(Supply.at(p,worldPosition),price))return false;
             var saved=saveWithoutMetadata();level.setBlock(worldPosition,state,3);var replacement=(HallEntity)level.getBlockEntity(worldPosition);replacement.load(saved);replacement.setChanged();
             net.minecraftforge.network.NetworkHooks.openScreen(p,replacement,b->{b.writeBlockPos(worldPosition);b.writeVarInt(replacement.mk());});return true;
         }

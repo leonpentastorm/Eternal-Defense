@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "arsenal_beacon:block/logistics_hub_part"
+      }
+    }
+  ]
+}

@@ -25,7 +25,7 @@ public final class ReleaseTwelveGameTests {
             seen.add(MagazineBridge.family(e.output()));h.assertTrue(e.gate().kind().equals("ammo")&&WeaponPlatform.validIndex(e.output()),"Empty native magazines are usable despite having no AmmoId");
             p.getInventory().clearContent();var costs=WeaponPlatform.costs(e);UpgradeGameTests.supply(p,costs);
             h.assertTrue(costs.stream().noneMatch(c->Arrays.stream(c.ingredient().getItems()).anyMatch(s->s.getDescriptionId().contains("propellant")||s.getDescriptionId().contains("cartridge_case"))),"Reusable empty magazines do not charge cartridge powder/cases");
-            h.assertTrue(WeaponPlatform.transact(p,costs,e.output()),"Every native family crafts from its declared materials");
+            h.assertTrue(WeaponPlatform.transact(Supply.pack(p),costs,e.output()),"Every native family crafts from its declared materials");
             var output=p.getInventory().items.stream().filter(MagazineBridge::isMagazine).findFirst().orElseThrow();
             h.assertTrue(MagazineBridge.family(output).equals(MagazineBridge.family(e.output()))&&MagazineBridge.capacity(output)==MagazineBridge.capacity(e.output())&&output.getOrCreateTag().getInt("AmmoCount")==0,"Family/capacity survives crafting; no ammunition is manufactured for free");crafted++;
         }

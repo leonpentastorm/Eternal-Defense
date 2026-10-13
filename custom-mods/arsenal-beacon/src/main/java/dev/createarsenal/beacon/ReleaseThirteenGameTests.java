@@ -60,7 +60,7 @@ public final class ReleaseThirteenGameTests {
         h.assertTrue(expanded.size()==258,"All 258 usable new weapons are available in the Universal Weapon Platform, with unfinished author variants excluded: "+expanded.size());
         Map<Integer,Integer> counts=new HashMap<>();int noAmmo=0;List<String> failures=new ArrayList<>();
         for(var e:expanded.values()){
-            counts.merge(e.gate().age(),1,Integer::sum);p.getInventory().clearContent();UpgradeGameTests.supply(p,WeaponPlatform.costs(e));h.assertTrue(WeaponPlatform.transact(p,WeaponPlatform.costs(e),e.output()),"Every new gun crafts atomically: "+e.gate().id());
+            counts.merge(e.gate().age(),1,Integer::sum);p.getInventory().clearContent();UpgradeGameTests.supply(p,WeaponPlatform.costs(e));h.assertTrue(WeaponPlatform.transact(Supply.pack(p),WeaponPlatform.costs(e),e.output()),"Every new gun crafts atomically: "+e.gate().id());
             p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,e.output().copy());boolean hasAmmo=ammo.stream().anyMatch(a->!MagazineBridge.isMagazine(a.output())&&WeaponPlatform.compatible(p,a)&&a.gate().age()<=e.gate().age());
             // Melee weapons and infinite-energy authors explicitly have no physical ammo requirement.
             var api=Class.forName("com.tacz.guns.api.TimelessAPI");var idx=((Optional<?>)api.getMethod("getCommonGunIndex",net.minecraft.resources.ResourceLocation.class).invoke(null,new net.minecraft.resources.ResourceLocation(e.gate().id()))).orElseThrow();var data=idx.getClass().getMethod("getGunData").invoke(idx);var ammoId=(net.minecraft.resources.ResourceLocation)data.getClass().getMethod("getAmmoId").invoke(data);

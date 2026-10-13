@@ -60,6 +60,12 @@ final class Economy {
     static final int[] DRINKS_ARDENT={4,8,14},DRINKS_PLATING={8,16,32};
     /** 0.0.38: the MRE Station, as the Mess Hall Mk I: 4 Ardent Energy (standalone) or 4 Reinforced Beacon Plating (pack) and 8 iron, plus a smoker. */
     static final int MRE_STATION_KEY=4,MRE_STATION_IRON=8;
+    /**
+     * 0.0.40: the Logistics Center Hub. Twice the Mess Hall Mk IV's last upgrade (32 plating, 14 Ardent Energy) and more than a whole Mess Hall
+     * brought to Mk IV (60 plating, 30 Ardent Energy), so it is clearly the dearest installation: 64 plating or 40 Ardent Energy, plus 64 iron,
+     * 16 chests (its 270 slots) and 8 hoppers.
+     */
+    static final int HUB_PLATING=64,HUB_ARDENT=40,HUB_IRON=64,HUB_CHESTS=16,HUB_HOPPERS=8;
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?DRINKS_ARDENT:DRINKS_PLATING)[mk-1]);}
 
     static List<WeaponPlatform.Cost> stationCosts(String kind){
@@ -100,6 +106,10 @@ final class Economy {
             case "cup_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:paper",4));
             // 0.0.38 (owner): the MRE Station, in the Mess Hall's style; the smoker is its heat sealer
             case "mre_maker"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",MRE_STATION_KEY),WeaponPlatform.cost("minecraft:iron_ingot",MRE_STATION_IRON),WeaponPlatform.cost("minecraft:smoker",1));
+            // 0.0.40 (owner): the Logistics Center Hub, the most expensive installation: 64 plating (pack) or 40 Ardent Energy (standalone), with
+            // iron, chests and hoppers in both editions (proposed numbers, for the owner to adjust: see HANDOFF)
+            case "logistics_hub"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",standalone()?HUB_ARDENT:HUB_PLATING),
+                WeaponPlatform.cost("minecraft:iron_ingot",HUB_IRON),WeaponPlatform.cost("minecraft:chest",HUB_CHESTS),WeaponPlatform.cost("minecraft:hopper",HUB_HOPPERS));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };
@@ -125,11 +135,13 @@ final class Economy {
         if(standalone())return new Price(null,u.prices[level]);
         return new Price(packPart(u),PACK_AMOUNTS.get(u)[level]);
     }
-    /** Takes the price from the player (creative players pay nothing). False, with nothing taken, if short. */
-    static boolean pay(ServerPlayer p,Price price){
-        if(price.ardent())return ArdentEnergy.spend(p,price.amount());
-        return InventoryPayment.commit(p,List.of(new WeaponPlatform.Cost(Ingredient.of(price.item()),price.amount())),ItemStack.EMPTY);
+    /** Takes the price, from the pack first and then the Home Zone's Hubs (creative players pay nothing). False, with nothing taken, if short. */
+    static boolean pay(Supply.Where w,Price price){
+        if(price.ardent())return ArdentEnergy.spend(w,price.amount());
+        return InventoryPayment.commit(w,List.of(new WeaponPlatform.Cost(Ingredient.of(price.item()),price.amount())),ItemStack.EMPTY);
     }
+    /** 0.0.40: how many of the item a request can reach: the pack, then the Home Zone's Hubs. */
+    static int have(Supply.Where w,Item item){return Supply.count(w,item);}
     static int have(net.minecraft.world.entity.player.Player p,Item item){
         int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;
     }

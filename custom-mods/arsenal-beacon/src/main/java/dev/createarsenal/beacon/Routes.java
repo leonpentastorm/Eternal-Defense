@@ -377,7 +377,8 @@ final class Routes {
         if(!FobRules.working(f.state))return "fob.result.closed";
         if(f.deliveryGate!=null)return "fob.result.has_gate";
         var stack=new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get());stack.getOrCreateTag().putLong("Fob",f.id);stack.getOrCreateTag().putString("FobName",f.name);
-        return WeaponPlatform.transact(p,Economy.fabrication("supply_delivery_gate"),stack)?"fob.result.bought.gate":"fob.result.no_materials";
+        return WeaponPlatform.transact(Supply.pack(p),Economy.fabrication("supply_delivery_gate"),stack)?   // 0.0.40: at the FOB, the pack alone
+            "fob.result.bought.gate":"fob.result.no_materials";
     }
 
     static void say(ServerPlayer p,String key,Object... args){p.displayClientMessage(Component.translatable("gui.arsenal_beacon."+key,args),true);}

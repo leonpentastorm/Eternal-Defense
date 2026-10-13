@@ -125,6 +125,9 @@ final class MessHallMenu extends AbstractContainerMenu {
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();var inv=sp.getInventory();
         for(int i=0;i<6;i++){var food=IngredientTraits.foodOf(ingredients.getItem(i));if(food!=null){stock.merge(food.key(),ingredients.getItem(i).getCount(),Integer::sum);onTable.add(food.key());}}
         for(var stack:inv.items){var food=IngredientTraits.foodOf(stack);if(food!=null)stock.merge(food.key(),stack.getCount(),Integer::sum);}
+        // 0.0.40: after the table and the pack, the Home Zone's Logistics Center Hubs (nearest first)
+        var w=Supply.at(sp,pos);var borrowed=Supply.borrow(w,s->IngredientTraits.foodOf(s)!=null);
+        for(var b:borrowed){var food=IngredientTraits.foodOf(b.stack);if(food!=null)stock.merge(food.key(),b.stack.getCount(),Integer::sum);}
         // 0.0.35: the base takes two bread; what is already in it counts
         int baseHas=ingredients.getItem(7).is(Items.BREAD)?ingredients.getItem(7).getCount():0,baseNeed=stew?0:Math.max(0,MealRules.SANDWICH_BREAD-baseHas);boolean needBase=baseNeed>0;
         if(needBase){int bread=stock.getOrDefault("minecraft:bread",0);if(bread<baseNeed){notice(WARN,"gather_bread",MealRules.SANDWICH_BREAD);return false;}stock.put("minecraft:bread",bread-baseNeed);}
@@ -134,10 +137,11 @@ final class MessHallMenu extends AbstractContainerMenu {
             if(lacking.isEmpty())notice(WARN,"gather_blocked");else notice(WARN,"gather_missing",fx(lacking));return false;
         }
         var lifted=new ArrayList<ItemStack>();for(int i=0;i<6;i++){var s=ingredients.removeItemNoUpdate(i);if(!s.isEmpty())lifted.add(s);}
-        var sources=new ArrayList<ItemStack>(lifted);sources.addAll(inv.items);
+        var sources=new ArrayList<ItemStack>(lifted);sources.addAll(inv.items);for(var b:borrowed)sources.add(b.stack);
         for(int i=0;i<plan.keys().size();i++)ingredients.setItem(i,take(sources,plan.keys().get(i),plan.units()[i]));
         if(needBase){var bread=take(sources,"minecraft:bread",baseNeed);if(baseHas>0)ingredients.getItem(7).grow(bread.getCount());else ingredients.setItem(7,bread);}
         for(var rest:lifted)if(!rest.isEmpty())ArsenalBeacon.give(sp,rest);
+        Supply.settle(w,borrowed);
         inv.setChanged();ingredients.setChanged();
         if(plan.covered())notice(DONE,"gathered",plan.keys().size());else notice(WARN,"gather_short",plan.keys().size(),Math.max(0,(stew?hall.tier().ingredients():plan.keys().size()*MealRules.SANDWICH_FILLING)-Arrays.stream(plan.units()).sum()));
         sound(SoundEvents.BUNDLE_INSERT,1f);return true;
@@ -226,7 +230,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         n.putInt("NoticeSeq",noticeSeq);n.putInt("NoticeKind",noticeKind);n.putString("Notice",noticeKey);var args=new ListTag();noticeArgs.forEach(a->args.add(StringTag.valueOf(a)));n.put("NoticeArgs",args);
         n.put("LegendaryLinks",linkTags);var fx=new ListTag();for(int[] effects:slotEffects)fx.add(new IntArrayTag(effects));n.put("SlotFx",fx);
         var groups=new ListTag();for(int i=0;i<6;i++)groups.add(StringTag.valueOf(IngredientTraits.groupOf(ingredients.getItem(i))));n.put("SlotGroups",groups);if(selected!=null)n.putLong("Selected",selected.asLong());
-        var price=Economy.kitchen(mk);if(price!=null){n.put("UpgradeItem",new ItemStack(price.item(),price.amount()).save(new CompoundTag()));n.putInt("UpgradeCost",price.amount());n.putInt("UpgradeHave",sp.isCreative()?price.amount():Economy.have(sp,price.item()));}
+        var price=Economy.kitchen(mk);if(price!=null){n.put("UpgradeItem",new ItemStack(price.item(),price.amount()).save(new CompoundTag()));n.putInt("UpgradeCost",price.amount());n.putInt("UpgradeHave",sp.isCreative()?price.amount():Economy.have(Supply.at(sp,pos),price.item()));}
         var list=new ListTag();for(var pot:pots){var c=new CompoundTag();c.putLong("Pos",pot.getBlockPos().asLong());c.putInt("Servings",pot.servings);if(pot.stew!=null)c.put("Meal",pot.stew.save());list.add(c);}n.put("Pots",list);
         if(!n.equals(lastView)||!catalogueSent){
             lastView=n.copy();var packet=n.copy();if(!catalogueSent){packet.put("Catalogue",catalogueTag());catalogueSent=true;}

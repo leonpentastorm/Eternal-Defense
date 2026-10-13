@@ -12,7 +12,7 @@ final class RaidRespite {
         if(!d.installed()||!ArsenalBeacon.near(p,d)||!d.phase.equals("preparation"))return "Buy a raid break near the beacon during preparation.";
         if(!d.introCompleted)return "Complete the introductory raid before buying a raid break.";
         if(d.respitePurchases>=1000)return "This preparation period already has the maximum 5,000 purchased days.";
-        if(!p.isCreative()&&!InventoryPayment.commit(p,costs(d),net.minecraft.world.item.ItemStack.EMPTY))return "Missing raid-break materials. Nothing consumed.";
+        if(!p.isCreative()&&!InventoryPayment.commit(Supply.at(p,d.beacon),costs(d),net.minecraft.world.item.ItemStack.EMPTY))return "Missing raid-break materials. Nothing consumed.";
         d.respiteTicks+=DAYS;d.respitePurchases++;d.nextRaidBonus=Math.min(3,d.nextRaidBonus+1);d.setDirty();
         return "Added five active days without scheduled raids. Next-raid bonus: +"+d.nextRaidBonus+" tiers (within your chosen raid cap). Ambient hostiles remain active.";
     }

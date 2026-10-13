@@ -1,13 +1,16 @@
 package dev.createarsenal.beacon;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-/** Maximum-flow allocation prevents overlapping tags and repeated inputs from double-counting slots. */
+/**
+ * Pays a request's costs. 0.0.40: from the player's pack first, then from the Home Zone's Logistics Center Hubs, nearest first
+ * ({@link Supply}). The allocation is a minimum-cost maximum flow ({@link SupplyRules#allocate}), so overlapping tags and repeated inputs never
+ * count a slot twice and never block a request that could be paid. Planned on copies, carried out only when everything is there.
+ */
 final class InventoryPayment {
-    record Plan(List<ItemStack> inventory,int[] allocated,boolean payable){}
+    /** {@code inventory}: copies of the pack's slots (main, then off hand) after paying; {@code pulls}: what the Hubs pay. */
+    record Plan(List<ItemStack> inventory,int[] allocated,boolean payable,List<Supply.Pull> pulls){}
     static boolean matches(WeaponPlatform.Cost cost,ItemStack stack){
         if(stack.isEmpty())return false;
         // Gun conversions accept a used weapon of the exact indexed model, never any generic gun.
@@ -20,29 +23,39 @@ final class InventoryPayment {
         for(var c:costs){String key=c.ingredient().toJson().toString();var old=groups.get(key);groups.put(key,new WeaponPlatform.Cost(c.ingredient(),c.count()+(old==null?0:old.count())));}
         return new ArrayList<>(groups.values());
     }
-    static Plan plan(ServerPlayer p,List<WeaponPlatform.Cost> costs){
+    static Plan plan(Supply.Where w,List<WeaponPlatform.Cost> costs){
+        var p=w.player();
         var inventory=new ArrayList<>(p.getInventory().items.stream().map(ItemStack::copy).toList());p.getInventory().offhand.forEach(s->inventory.add(s.copy()));
-        int slots=inventory.size(),count=costs.size(),sink=1+slots+count,n=sink+1,total=0;int[][] capacity=new int[n][n];
-        for(int s=0;s<slots;s++){capacity[0][1+s]=inventory.get(s).getCount();for(int c=0;c<count;c++)if(matches(costs.get(c),inventory.get(s)))capacity[1+s][1+slots+c]=inventory.get(s).getCount();}
-        for(int c=0;c<count;c++){if(costs.get(c).count()<=0||costs.get(c).ingredient().isEmpty())return new Plan(inventory,new int[count],false);capacity[1+slots+c][sink]=costs.get(c).count();total+=costs.get(c).count();}
-        int flow=0;while(true){int[] parent=new int[n];Arrays.fill(parent,-1);parent[0]=0;var q=new ArrayDeque<Integer>();q.add(0);
-            while(!q.isEmpty()&&parent[sink]<0){int u=q.remove();for(int v=1;v<n;v++)if(parent[v]<0&&capacity[u][v]>0){parent[v]=u;q.add(v);}}
-            if(parent[sink]<0)break;int amount=Integer.MAX_VALUE;for(int v=sink;v!=0;v=parent[v])amount=Math.min(amount,capacity[parent[v]][v]);
-            for(int v=sink;v!=0;v=parent[v]){capacity[parent[v]][v]-=amount;capacity[v][parent[v]]+=amount;}flow+=amount;
-        }
-        int[] allocated=new int[count];for(int c=0;c<count;c++)allocated[c]=costs.get(c).count()-capacity[1+slots+c][sink];
-        for(int s=0;s<slots;s++)inventory.get(s).shrink(capacity[1+s][0]);return new Plan(inventory,allocated,flow==total);
+        // the sources: every pack slot (tier 0), then every kind of item each Hub holds that some cost accepts (tier 1 = nearest Hub)
+        var stacks=new ArrayList<ItemStack>(inventory);var supply=new ArrayList<Integer>();var tier=new ArrayList<Integer>();var kinds=new ArrayList<Supply.Pull>();
+        for(var s:inventory){supply.add(s.getCount());tier.add(0);kinds.add(null);}
+        if(!costs.isEmpty()){var hubs=Supply.hubs(w);
+            for(int r=0;r<hubs.size();r++)for(var e:hubs.get(r).storage.kinds().entrySet()){
+                var example=e.getKey().stack(1);if(costs.stream().noneMatch(c->matches(c,example)))continue;
+                stacks.add(example);supply.add(e.getValue());tier.add(r+1);kinds.add(new Supply.Pull(hubs.get(r),e.getKey(),e.getValue()));
+            }}
+        int sources=stacks.size(),count=costs.size();var accepts=new boolean[sources][count];var demand=new int[count];
+        for(int c=0;c<count;c++){demand[c]=costs.get(c).ingredient().isEmpty()?0:costs.get(c).count();for(int s=0;s<sources;s++)accepts[s][c]=matches(costs.get(c),stacks.get(s));}
+        var alloc=SupplyRules.allocate(supply.stream().mapToInt(Integer::intValue).toArray(),tier.stream().mapToInt(Integer::intValue).toArray(),demand,accepts);
+        var pulls=new ArrayList<Supply.Pull>();
+        for(int s=0;s<sources;s++){int n=alloc.from(s);if(n<=0)continue;if(kinds.get(s)==null)inventory.get(s).shrink(n);else pulls.add(new Supply.Pull(kinds.get(s).hub(),kinds.get(s).key(),n));}
+        return new Plan(inventory,alloc.got(),alloc.payable(),pulls);
     }
-    static boolean commit(ServerPlayer p,List<WeaponPlatform.Cost> costs,ItemStack output){
-        var plan=plan(p,p.isCreative()?List.of():costs);if(!plan.payable())return false;var slots=plan.inventory();var rest=output.copy();int main=p.getInventory().items.size();
+    /** Pays and hands over {@code output}: everything or nothing (the output must fit in the pack). Creative players pay nothing. */
+    static boolean commit(Supply.Where w,List<WeaponPlatform.Cost> costs,ItemStack output){
+        var p=w.player();
+        var plan=plan(w,p.isCreative()?List.of():costs);if(!plan.payable())return false;var slots=plan.inventory();var rest=output.copy();int main=p.getInventory().items.size();
         for(int i=0;i<main&&!rest.isEmpty();i++){var stack=slots.get(i);if(!stack.isEmpty()&&ItemStack.isSameItemSameTags(stack,rest)){int fit=Math.min(rest.getCount(),Math.max(0,stack.getMaxStackSize()-stack.getCount()));stack.grow(fit);rest.shrink(fit);}}
         for(int i=0;i<main&&!rest.isEmpty();i++)if(slots.get(i).isEmpty()){int amount=Math.min(rest.getCount(),rest.getMaxStackSize());slots.set(i,rest.copyWithCount(amount));rest.shrink(amount);}
         if(!rest.isEmpty())return false;
+        for(var pull:plan.pulls())if(pull.hub().storage.count(pull.key())<pull.count())return false;   // planned this tick on the server thread: always there
         for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
+        var paid=new ArrayList<Supply.Pull>();for(var pull:plan.pulls()){int n=pull.hub().storage.extract(pull.key(),pull.count(),false);if(n>0)paid.add(new Supply.Pull(pull.hub(),pull.key(),n));}
+        HubNotices.pulled(p,paid);
         p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();if(p.containerMenu!=p.inventoryMenu)p.containerMenu.broadcastChanges();return true;
     }
-    static String failure(ServerPlayer p,List<WeaponPlatform.Cost> costs){
-        var plan=plan(p,costs);if(p.isCreative()||plan.payable())return "Inventory full. Make room for the output. Nothing consumed.";
+    static String failure(Supply.Where w,List<WeaponPlatform.Cost> costs){
+        var p=w.player();var plan=plan(w,costs);if(p.isCreative()||plan.payable())return "Inventory full. Make room for the output. Nothing consumed.";
         for(int i=0;i<costs.size();i++)if(plan.allocated()[i]<costs.get(i).count()){var choices=costs.get(i).ingredient().getItems();String name=choices.length==0?"unavailable ingredient":choices[0].getHoverName().getString();return "Need "+(costs.get(i).count()-plan.allocated()[i])+" more "+name+". Nothing consumed.";}
         return "Missing required materials. Nothing consumed.";
     }

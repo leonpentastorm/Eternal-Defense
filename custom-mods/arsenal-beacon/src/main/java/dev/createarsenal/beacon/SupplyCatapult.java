@@ -314,7 +314,7 @@ final class SupplyCatapult {
         var loot=options.get(item);var type=BuiltInRegistries.ITEM.get(new ResourceLocation(loot.id()));
         if(type==net.minecraft.world.item.Items.AIR)return "tactical.seller.gone";
         int lots=CatapultRules.LOTS[kind],count=CatapultRules.lotSize(loot)*lots,price=CatapultRules.price(lots);
-        if(!ArdentEnergy.spend(p,price))return "tactical.seller.short";
+        if(!ArdentEnergy.spend(Supply.here(p),price))return "tactical.seller.short";
         var items=new ListTag();int left=count,max=Math.max(1,new ItemStack(type).getMaxStackSize());
         while(left>0){int n=Math.min(max,left);items.add(new ItemStack(type,n).save(new CompoundTag()));left-=n;}
         var ship=new CompoundTag();ship.put("items",items);ship.putUUID("buyer",p.getUUID());ship.putString("buyerName",p.getGameProfile().getName());

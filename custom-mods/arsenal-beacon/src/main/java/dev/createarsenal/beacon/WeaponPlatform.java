@@ -105,11 +105,11 @@ public final class WeaponPlatform {
     static String purchase(ServerPlayer p,String kind){
         if(kind.equals("support")||kind.equals("exchange")){
             ItemStack gear=new ItemStack(kind.equals("support")?ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get():ArsenalBeacon.EXCHANGE_SHOP_ITEM.get());
-            return transact(p,purchaseCosts(kind),gear)?"Purchased "+(kind.equals("support")?"Support Platform":"Exchange Shop")+". Place it inside your Defense Beacon zone.":"Missing materials or inventory space. Nothing consumed.";
+            return transact(Supply.here(p),purchaseCosts(kind),gear)?"Purchased "+(kind.equals("support")?"Support Platform":"Exchange Shop")+". Place it inside your Defense Beacon zone.":"Missing materials or inventory space. Nothing consumed.";
         }
         if(!kind.equals("ammo")&&!kind.equals("attachment")&&!kind.equals("armor"))return "Unknown station.";
         ItemStack output=new ItemStack(ArmorPlatform.station(kind).get());
-        return transact(p,purchaseCosts(kind),output)?"Purchased "+kind+" platform. Place within 8 blocks of this weapon table.":"Missing materials or inventory space. Nothing consumed.";
+        return transact(Supply.here(p),purchaseCosts(kind),output)?"Purchased "+kind+" platform. Place within 8 blocks of this weapon table.":"Missing materials or inventory space. Nothing consumed.";
     }
     static String manageUpgrade(ServerPlayer p,BlockPos weapon,BlockPos target){
         if(!(p.level().getBlockState(weapon).getBlock() instanceof Station source)||!source.kind.equals("gun"))return "Manage Ages at the weapon table.";
@@ -201,15 +201,15 @@ public final class WeaponPlatform {
     private static boolean is(Cost c,String id){var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id));return item!=net.minecraft.world.item.Items.AIR&&c.ingredient.test(new ItemStack(item));}
     private static void addUnlessPresent(List<Cost> list,Cost cost){if(list.stream().noneMatch(c->Arrays.stream(cost.ingredient.getItems()).anyMatch(c.ingredient::test)))list.add(cost);}
     /** Plan on copies, including output capacity; commit once, never consume partial inputs. */
-    static boolean transact(ServerPlayer p,List<Cost> costs,ItemStack output){
-        return InventoryPayment.commit(p,costs,output);
+    static boolean transact(Supply.Where w,List<Cost> costs,ItemStack output){
+        return InventoryPayment.commit(w,costs,output);
     }
     static String upgrade(ServerPlayer p,BlockPos pos){
         var state=p.level().getBlockState(pos);if(!(state.getBlock() instanceof Station))return "Station missing.";
         CampaignData d=CampaignData.get(p.server.overworld());if(p.level().dimension()==Level.OVERWORLD&&d.active()&&d.inside(pos))return "Upgrade after the raid and repairs finish.";
         int age=state.getValue(AGE);if(age>=5)return "Maximum Age reached.";
         if(age==2&&!p.isCreative()&&!visitedNether(p))return "Your team must visit the Nether before Modern unlocks.";
-        if(!transact(p,upgrades(age),ItemStack.EMPTY))return "Carry all required materials to upgrade.";
+        if(!transact(Supply.at(p,pos),upgrades(age),ItemStack.EMPTY))return "Carry all required materials to upgrade.";
         var upgraded=state.setValue(AGE,age+1);p.level().setBlock(pos,upgraded,3);PlatformRegistry.get(p.serverLevel()).track(pos,upgraded);return "Upgraded to Age "+(age+1)+": "+AGES[age+1]+".";
     }
     static String craft(ServerPlayer p,BlockPos pos,ResourceLocation id){
@@ -219,7 +219,7 @@ public final class WeaponPlatform {
         if(entry==null||!WeaponCompatibility.craftable(entry.output))return "Recipe unavailable. Try refreshing the page.";
         if(ArmorPlatform.component(station.kind)&&!compatible(p,entry))return "Equip a compatible gun. This component does not fit your current weapon.";
         if(!CreateUnlocks.unlocked(p,entry,state.getValue(AGE)))return CreateUnlocks.armory(entry)||CreateUnlocks.turret(entry)?CreateUnlocks.requirement(CreateUnlocks.turret(entry)?2:CreateUnlocks.required(entry))+" to unlock this category.":"Requires Age "+entry.gate.age+": "+AGES[entry.gate.age]+".";
-        try{var payment=costs(entry);return transact(p,payment,entry.output)?"Crafted "+entry.output.getCount()+" item(s).":InventoryPayment.failure(p,payment);}
+        try{var payment=costs(entry);var w=Supply.at(p,pos);return transact(w,payment,entry.output)?"Crafted "+entry.output.getCount()+" item(s).":InventoryPayment.failure(w,payment);}
         catch(ReflectiveOperationException ex){com.mojang.logging.LogUtils.getLogger().error("Platform recipe failed: {}",id,ex);return "Recipe could not load; nothing consumed.";}
     }
     @SubscribeEvent public void nativeMenu(PlayerContainerEvent.Open event){
@@ -280,7 +280,7 @@ public final class WeaponPlatform {
         var block=p.level().getBlockState(pos);var station=(Station)block.getBlock();var n=new CompoundTag();int age=block.getValue(AGE);
         CreateUnlocks.sync(p);n.putInt("createLevel",CreateUnlocks.level(p));
         for(String type:List.of("gun","ammo","attachment","armor")){int nearbyAge=station.kind.equals(type)?age:0;double nearest=Double.MAX_VALUE;for(BlockPos test:PlatformRegistry.get(p.serverLevel()).nearbyAll(p.serverLevel(),pos)){if(test.distSqr(pos)>64||!p.level().hasChunkAt(test))continue;var candidate=p.level().getBlockState(test);if(candidate.getBlock() instanceof Station other&&other.kind.equals(type)&&test.distSqr(pos)<nearest){nearbyAge=candidate.getValue(AGE);nearest=test.distSqr(pos);}}n.putInt(type+"Age",nearbyAge);}
-        n.putBoolean("standalone",BuildFlavor.STANDALONE);n.putInt("ammoCoins",AmmoCoins.balance(p));n.putBoolean("creative",p.isCreative());n.putString("kind",station.kind);n.putInt("age",age);n.putInt("score",Rules.platformScore(age));n.putString("query",request.query);n.putBoolean("netherVisited",p.isCreative()||visitedNether(p));
+        n.putBoolean("standalone",BuildFlavor.STANDALONE);var w=Supply.at(p,pos);n.putInt("ammoCoins",Supply.count(w,ArsenalBeacon.AMMO_COIN.get()));n.putBoolean("creative",p.isCreative());n.putString("kind",station.kind);n.putInt("age",age);n.putInt("score",Rules.platformScore(age));n.putString("query",request.query);n.putBoolean("netherVisited",p.isCreative()||visitedNether(p));
         boolean armor=station.kind.equals("armor"),components=ArmorPlatform.component(station.kind);int filter=Math.max(0,Math.min(station.kind.equals("ammo")?11:components||armor?5:9,request.ageFilter));n.putInt("ageFilter",filter);
         List<Entry> compatible=entries(p,station.kind,"").stream().filter(e->!components||compatible(p,e)).toList();
         n.putInt("locked",(int)compatible.stream().filter(e->!CreateUnlocks.unlocked(p,e,age)).map(e->e.gate.id).distinct().count());
@@ -295,14 +295,14 @@ public final class WeaponPlatform {
         n.putInt("page",page);n.putInt("total",entries.size());ListTag recipes=new ListTag();
         for(int i=page*pageSize;i<Math.min(entries.size(),(page+1)*pageSize);i++){
             Entry e=entries.get(i);var row=new CompoundTag();row.putString("recipe",e.recipeId.toString());row.putString("id",e.gate.id);row.putInt("age",e.gate.age);row.putBoolean("unlocked",CreateUnlocks.unlocked(p,e,age));row.putBoolean("special",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e));row.putString("progression",CreateUnlocks.label(e));row.putString("requirement",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e)?CreateUnlocks.requirement(CreateUnlocks.turret(e)?2:CreateUnlocks.required(e)):"Upgrade this table to "+CreateUnlocks.label(e));if(BuildFlavor.STANDALONE&&CreateUnlocks.armory(e))row.putString("requirement","Upgrade this table to Age "+e.gate.age+": "+AGES[e.gate.age]);row.put("output",e.output.copyWithCount(1).save(new CompoundTag()));row.putInt("outputCount",e.output.getCount());row.putBoolean("magazine",MagazineBridge.isMagazine(e.output));if(MagazineBridge.isMagazine(e.output))row.putInt("capacity",MagazineBridge.capacity(e.output));
-            try{row.put("costs",costTags(p,costs(e)));}catch(ReflectiveOperationException ex){row.putBoolean("invalid",true);}
+            try{row.put("costs",costTags(w,costs(e)));}catch(ReflectiveOperationException ex){row.putBoolean("invalid",true);}
             if(station.kind.equals("ammo"))row.putInt("coinCost",AmmoCoins.price(p,e));recipes.add(row);
         }
-        n.put("recipes",recipes);n.put("upgrades",costTags(p,upgrades(age)));
+        n.put("recipes",recipes);n.put("upgrades",costTags(w,upgrades(age)));
         return n;
     }
-    static ListTag costTags(ServerPlayer p,List<Cost> costs){
+    static ListTag costTags(Supply.Where w,List<Cost> costs){
         // Count is a signed byte in ItemStack NBT. Icons always use one item; quantities travel as ints.
-        ListTag rows=new ListTag();var plan=InventoryPayment.plan(p,costs);int index=0;for(Cost cost:costs){var row=new CompoundTag();ItemStack[] choices=cost.ingredient.getItems();row.put("item",(choices.length==0?ItemStack.EMPTY:choices[0].copyWithCount(1)).save(new CompoundTag()));row.putString("label",UniversalWood.label(cost.ingredient));row.putInt("count",cost.count);row.putInt("have",p.isCreative()?cost.count:plan.allocated()[index]);index++;rows.add(row);}return rows;
+        ListTag rows=new ListTag();var plan=InventoryPayment.plan(w,costs);int index=0;for(Cost cost:costs){var row=new CompoundTag();ItemStack[] choices=cost.ingredient.getItems();row.put("item",(choices.length==0?ItemStack.EMPTY:choices[0].copyWithCount(1)).save(new CompoundTag()));row.putString("label",UniversalWood.label(cost.ingredient));row.putInt("count",cost.count);row.putInt("have",w.player().isCreative()?cost.count:plan.allocated()[index]);index++;rows.add(row);}return rows;
     }
 }
