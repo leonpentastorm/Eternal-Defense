@@ -65,17 +65,26 @@ final class PlayerMeals extends SavedData {
         for(var e:MealRules.Effect.values()){
             var effect=MealEffects.of(e);var current=p.getEffect(effect);MealData.Bonus bonus=null;
             if(s!=null)for(var b:s.meal.bonuses())if(b.effect()==e)bonus=b;
-            if(bonus==null){if(current!=null)p.removeEffect(effect);continue;}
-            boolean ok=current!=null&&current.getAmplifier()==bonus.amplifier()&&(s.home?current.isInfiniteDuration():!current.isInfiniteDuration()&&Math.abs(current.getDuration()-s.remaining)<=40);
-            if(!ok){p.removeEffect(effect);var shown=new MobEffectInstance(effect,s.home?MobEffectInstance.INFINITE_DURATION:s.remaining,bonus.amplifier(),false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);}
+            if(bonus==null){if(current!=null)EndlessEffects.run(()->p.removeEffect(effect));continue;}
+            boolean ok=current!=null&&current.getAmplifier()==bonus.amplifier()&&(s.home?EndlessEffects.settled(p,current):!current.isInfiniteDuration()&&Math.abs(current.getDuration()-s.remaining)<=40);
+            if(!ok){
+                // 0.0.37: the long timer that stands in for endless (see EndlessEffects) is topped up in place, never taken off first
+                boolean extend=s.home&&current!=null&&current.getAmplifier()==bonus.amplifier()&&!current.isInfiniteDuration()&&EndlessEffects.steady(p,effect);
+                if(!extend)EndlessEffects.run(()->p.removeEffect(effect));
+                var shown=new MobEffectInstance(effect,s.home?EndlessEffects.home(p,effect):s.remaining,bonus.amplifier(),false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);
+            }
         }
         // the Home Zone effect at home, the FOB Zone effect (0.0.23) in an ACTIVE FOB's zone: same bonus, its own name and icon
         zoneEffect(p,MealEffects.HOME.get(),s!=null&&s.home&&s.zone!=MealZone.Kind.FOB);
         zoneEffect(p,MealEffects.FOB.get(),s!=null&&s.home&&s.zone==MealZone.Kind.FOB);
     }
     private static void zoneEffect(ServerPlayer p,net.minecraft.world.effect.MobEffect effect,boolean wanted){
-        if(wanted&&!p.hasEffect(effect)){var shown=new MobEffectInstance(effect,MobEffectInstance.INFINITE_DURATION,0,false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);}
-        else if(!wanted&&p.hasEffect(effect))p.removeEffect(effect);
+        var current=p.getEffect(effect);
+        if(wanted&&(current==null||!EndlessEffects.settled(p,current))){
+            if(current!=null&&current.isInfiniteDuration())EndlessEffects.run(()->p.removeEffect(effect));   // endless turned into the long timer
+            var shown=new MobEffectInstance(effect,EndlessEffects.home(p,effect),0,false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);
+        }
+        else if(!wanted&&current!=null)EndlessEffects.run(()->p.removeEffect(effect));
     }
     static void place(State s,MealZone.Kind zone){s.zone=zone;s.home=zone.home();}
     static void eat(ServerPlayer p,MealData meal){EXHAUSTION.remove(p.getUUID());var d=get(p.serverLevel());var s=new State(meal,meal.duration());place(s,MealZone.at(p));d.players.put(p.getUUID(),s);applyModifiers(p,s);d.setDirty();syncEffects(p,s);}

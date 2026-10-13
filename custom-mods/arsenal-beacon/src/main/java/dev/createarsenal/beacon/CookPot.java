@@ -53,8 +53,9 @@ final class CookPot {
             if(!p.getItemInHand(hand).is(Items.BOWL)){p.sendSystemMessage(empty()?Component.translatable("gui.arsenal_beacon.kitchen.pot_empty"):Component.translatable("gui.arsenal_beacon.kitchen.pot_status",stew.name(),servings));if(!empty())for(var b:stew.bonuses())p.sendSystemMessage(b.description(false));if(hall==null)p.sendSystemMessage(Component.translatable("gui.arsenal_beacon.kitchen.no_hall"));return;}
             if(hall==null||BaseZone.problem(level,hall.getBlockPos())!=null){p.displayClientMessage(Component.translatable("gui.arsenal_beacon.kitchen.no_hall"),true);return;}
             if(empty()){p.displayClientMessage(Component.translatable("gui.arsenal_beacon.kitchen.pot_empty"),true);return;}
-            // Direct serving consumes the stew immediately and returns the reusable empty bowl.
+            // Direct serving consumes the stew immediately; the bowl is used up (0.0.37, owner: a sink for bowls; creative keeps it, as vanilla).
             PlayerMeals.eat(p,stew);p.getFoodData().eat(10,.8f);servings--;if(servings==0)stew=null;changed();
+            if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);
             p.displayClientMessage(Component.translatable("gui.arsenal_beacon.kitchen.served",servings),true);
         }
         @Override protected void saveAdditional(CompoundTag n){super.saveAdditional(n);n.putInt("Servings",servings);if(stew!=null)n.put("Stew",stew.save());if(linkedHall!=null)n.putLong("Hall",linkedHall.asLong());if(hallIdentity!=null)n.putUUID("HallIdentity",hallIdentity);}

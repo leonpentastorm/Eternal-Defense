@@ -14,7 +14,7 @@ import java.util.*;
 
 /**
  * 0.0.35 (owner): the Brew Pot, the Cook Pot's sibling for drinks (the owner's copper kettle, 1 x 1 x 2). It is linked to a Drink Station
- * within 8 blocks and holds ONE serving: right-click it with a Paper Cup and you drink it at once (the cup stays, like the bowl). Its
+ * within 8 blocks and holds ONE serving: right-click it with a Paper Cup and you drink it at once (the cup is used up, as the bowl at a Cook Pot; 0.0.37). Its
  * chalkboard shows the drink, its effects and its time.
  */
 final class BrewPot {
@@ -64,8 +64,9 @@ final class BrewPot {
             }
             if(station==null||BaseZone.problem(level,station.getBlockPos())!=null){p.displayClientMessage(Component.translatable("gui.arsenal_beacon.drinks.no_station"),true);return;}
             if(empty()){p.displayClientMessage(Component.translatable("gui.arsenal_beacon.drinks.pot_empty"),true);return;}
-            // one serving: drunk at once, the cup is kept
+            // one serving: drunk at once; the cup is used up (0.0.37, owner: a sink for cups; creative keeps it, as vanilla)
             var served=drink;drink=null;changed();PlayerDrinks.drink(p,served);
+            if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);
             level.playSound(null,p.blockPosition(),SoundEvents.GENERIC_DRINK,SoundSource.PLAYERS,.8f,1f);
             p.displayClientMessage(Component.translatable("gui.arsenal_beacon.drinks.served",served.name(),DrinkRules.minutes(served.duration())),true);
         }

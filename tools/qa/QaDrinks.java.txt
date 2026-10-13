@@ -329,7 +329,7 @@ public final class QaDrinks {
         step(5,()->{close();srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),3)));},"a Paper Cup in hand");
         step(5,()->useBlock(pot(0)),"right-click the Brew Pot");
         step(10,()->{check("the drink is the active drink, its pot empty",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&!s.drink.latte()&&potAt(0).drink==null;}),"");
-            check("the cup is kept",srvGet(()->sp().getMainHandItem().getCount()==3),"");
+            check("in creative the cup is kept (as vanilla keeps items in creative; survival uses it up, see QaDrinkLoop)",srvGet(()->sp().getMainHandItem().getCount()==3),"");
             var fx=clientEffect(MobEffects.MOVEMENT_SPEED);check("Speed I shows as an endless vanilla effect at home",fx!=null&&fx.getAmplifier()==0&&fx.isInfiniteDuration(),String.valueOf(fx));
             check("and says so",barHas("You drank a Speed Brew"),String.join(" / ",BAR));},"drunk");
         step(5,()->{mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"the inventory");

@@ -61,7 +61,7 @@ final class PlayerDrinks extends SavedData {
      */
     static boolean ours(int amplifier,boolean infinite,int duration,int wantedAmplifier,boolean home,int remaining){
         if(amplifier!=wantedAmplifier)return false;
-        return infinite||Math.abs(duration-remaining)<=TOLERANCE;
+        return infinite||EndlessEffects.steadyTime(duration)||Math.abs(duration-remaining)<=TOLERANCE;
     }
     /** Pure: may the drink put its effect on now? Only over nothing or over a weaker effect; an equal or stronger one is left to run out. */
     static boolean mayApply(boolean present,int amplifier,int wantedAmplifier){return !present||amplifier<wantedAmplifier;}
@@ -99,8 +99,13 @@ final class PlayerDrinks extends SavedData {
         for(var part:s.drink.parts()){
             var e=part.mobEffect();if(e==null)continue;var current=p.getEffect(e);
             if(current!=null&&ours(current,part,s)){
-                if(s.home&&!current.isInfiniteDuration())apply(p,e,part.amplifier(),MobEffectInstance.INFINITE_DURATION); // same level, longer: vanilla extends it in place
-                else if(!s.home&&current.isInfiniteDuration()){strip(p,e,part.amplifier(),true,s);apply(p,e,part.amplifier(),s.remaining);}
+                if(s.home&&!EndlessEffects.settled(p,current)){
+                    // endless at home (or, when another mod keeps taking endless effects away, the long timer): a longer time of the same
+                    // level is extended in place; only an endless one turned into the long timer has to come off first
+                    if(current.isInfiniteDuration())strip(p,e,part.amplifier(),true,s);
+                    apply(p,e,part.amplifier(),EndlessEffects.home(p,e));
+                }
+                else if(!s.home&&(current.isInfiniteDuration()||EndlessEffects.steadyTime(current.getDuration()))){strip(p,e,part.amplifier(),true,s);apply(p,e,part.amplifier(),s.remaining);}
                 continue;
             }
             // in the field an endless copy of the drink's own may wait underneath a stronger potion: it would come back endless, so it goes
@@ -109,7 +114,7 @@ final class PlayerDrinks extends SavedData {
             if(mayApply(current!=null,current==null?0:current.getAmplifier(),part.amplifier())){
                 // a weaker potion goes underneath: remember it, in case vanilla's stacking drops it under the drink's longer effect
                 if(current!=null)for(var l:layers(current))s.cover(part.effect(),l);
-                apply(p,e,part.amplifier(),s.home?MobEffectInstance.INFINITE_DURATION:s.remaining);
+                apply(p,e,part.amplifier(),s.home?EndlessEffects.home(p,e):s.remaining);
             }
         }
     }
@@ -144,12 +149,12 @@ final class PlayerDrinks extends SavedData {
         if(current==null&&!owed)return;
         var layers=current==null?List.<Layer>of():layers(current);var kept=kept(layers,amplifier,topIsOurs);
         if(kept.size()==layers.size()&&!owed)return;
-        applying=true;
+        applying=true;EndlessEffects.own++;
         try{
             if(current!=null&&kept.size()!=layers.size()){p.removeEffect(effect);for(var l:kept)if(l.duration()!=0)p.addEffect(new MobEffectInstance(effect,l.duration(),l.amplifier(),l.ambient(),l.particles(),l.icon()));}
             // and the potions it covered come back with their own level and remaining time
             if(s!=null)for(var c:s.covered)if(c.effect.equals(id)&&c.duration!=0&&!(c.amplifier==amplifier&&c.duration==MobEffectInstance.INFINITE_DURATION))p.addEffect(new MobEffectInstance(effect,c.duration,c.amplifier,c.ambient,c.particles,c.icon));
-        }finally{applying=false;}
+        }finally{applying=false;EndlessEffects.own--;}
     }
     /**
      * A potion drunk over the drink's own effect: vanilla drops a weaker or equal one that the drink's longer effect outlasts (always, while

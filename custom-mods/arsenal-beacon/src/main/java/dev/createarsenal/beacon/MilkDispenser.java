@@ -47,7 +47,7 @@ final class MilkDispenser {
         for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&effect.getEffect()!=MealEffects.HOME.get()&&effect.getEffect()!=MealEffects.FOB.get())names.add(effect.getEffect().getDisplayName());
         // 0.0.35: milk from the dispenser or a Milk Bottle also ends the active drink (the vanilla milk bucket does not)
         var drink=PlayerDrinks.of(player);if(drink!=null)names.add(Component.translatable("gui.arsenal_beacon.milk.drink",drink.drink.name()));
-        PlayerMeals.clear(player);player.removeAllEffects();PlayerDrinks.forget(player);return new Cleansed(names,meal);
+        EndlessEffects.run(()->{PlayerMeals.clear(player);player.removeAllEffects();});PlayerDrinks.forget(player);return new Cleansed(names,meal);
     }
     /** "Strength, Speed and your Stew of Firepower": at most three names, then a count. */
     static Component describe(Cleansed cleansed){

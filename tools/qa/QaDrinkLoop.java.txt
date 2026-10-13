@@ -1,0 +1,179 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
+import net.minecraft.world.effect.MobEffect;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): an active drink's effect at home must sit still. Drinks Haste at home and counts every time Haste is
+ * added, removed or runs out on the player, alone, with a meal, next to a vanilla beacon giving Haste I and then Haste II, and across the
+ * zone's edge. Copied in by tools/qa/setup-qa.sh.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaDrinkLoop {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
+    static BlockPos B(){return at(0,0,-6);}
+
+    // ---- every change of Haste on the player, with who made it (the first few) ----------------------------------------------------------
+    static final List<String> EVENTS=Collections.synchronizedList(new ArrayList<>());static int traced;
+    static void record(String kind,MobEffectInstance i){
+        if(i==null||i.getEffect()!=MobEffects.DIG_SPEED)return;
+        EVENTS.add(kind+" "+i.getAmplifier()+"/"+(i.isInfiniteDuration()?"inf":String.valueOf(i.getDuration()))+(i.isAmbient()?"/ambient":""));
+        if(!kind.equals("added")&&traced++<6){var st=new StringBuilder();for(var f:Thread.currentThread().getStackTrace()){var c=f.getClassName();if(c.startsWith("dev.createarsenal")&&!c.contains("QaDrinkLoop")||c.contains("BeaconBlockEntity")||c.contains("LivingEntity"))st.append(f.getClassName().replaceAll(".*\\.","")).append('.').append(f.getMethodName()).append(':').append(f.getLineNumber()).append(" < ");}log("QA_NOTE {} by {}",kind,st);}
+    }
+    @SubscribeEvent public static void added(MobEffectEvent.Added e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer)record("added",e.getEffectInstance());}
+    @SubscribeEvent public static void removed(MobEffectEvent.Remove e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer)record("removed",e.getEffectInstance());}
+    @SubscribeEvent public static void expired(MobEffectEvent.Expired e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer)record("expired",e.getEffectInstance());}
+    static long count(String kind){synchronized(EVENTS){return EVENTS.stream().filter(s->s.startsWith(kind)).count();}}
+    static String haste(){return srvGet(()->{var i=sp().getEffect(MobEffects.DIG_SPEED);return i==null?"none":i.getAmplifier()+"/"+(i.isInfiniteDuration()?"inf":String.valueOf(i.getDuration()));});}
+    /** Watches for 20 seconds: Haste must not be removed or run out, and the drink's must stand still. */
+    static void watch(String name,String expect){
+        step(5,()->{EVENTS.clear();traced=0;},"watch "+name);
+        step(400,()->{},"20 seconds");
+        step(2,()->{var all=String.join(", ",EVENTS.subList(0,Math.min(12,EVENTS.size())));
+            check(name+": Haste is never removed or run out ("+EVENTS.size()+" changes)",count("removed")==0&&count("expired")==0,all);
+            check(name+": the player has Haste "+expect,haste().startsWith(expect),haste());},"verdict "+name);
+    }
+    // ---- a rogue mod: every 15 ticks it takes every endless effect off the player (what some mods do to endless effects) ----------------------
+    static boolean rogue;static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    static final class RogueMod {
+        static void takeEndless(net.minecraft.server.level.ServerPlayer p){for(var i:new ArrayList<>(p.getActiveEffects()))if(i.isInfiniteDuration())p.removeEffect(i.getEffect());}
+    }
+    @SubscribeEvent public static void rogueTick(TickEvent.PlayerTickEvent e){if(rogue&&e.phase==TickEvent.Phase.END&&e.player instanceof net.minecraft.server.level.ServerPlayer p&&p.tickCount%15==0)RogueMod.takeEndless(p);}
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){CHAT.add(e.getMessage().getString());}
+    static int time(MobEffect e){return srvGet(()->{var i=sp().getEffect(e);return i==null?0:i.isInfiniteDuration()?-1:i.getDuration();});}
+    static void beacon(int levels,boolean second){srv(()->{
+        var c=at(14,-1,0);
+        for(int l=1;l<=4;l++){int r=l;for(int dx=-r;dx<=r;dx++)for(int dz=-r;dz<=r;dz++)sl().setBlock(c.offset(dx,-l,dz),l<=levels?Blocks.IRON_BLOCK.defaultBlockState():Blocks.GRASS_BLOCK.defaultBlockState(),3);}
+        sl().setBlock(c,Blocks.BEACON.defaultBlockState(),3);
+        if(sl().getBlockEntity(c) instanceof net.minecraft.world.level.block.entity.BeaconBlockEntity be){var t=be.saveWithoutMetadata();t.putInt("Primary",net.minecraft.world.effect.MobEffect.getId(MobEffects.DIG_SPEED));t.putInt("Secondary",second?net.minecraft.world.effect.MobEffect.getId(MobEffects.DIG_SPEED):-1);be.load(t);be.setChanged();}});}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_loop",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_loop",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(wait>0){wait--;return;}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        step(5,()->srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
+            sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);}),"a Defense Beacon: the player stands in its Home Zone");
+        step(20,()->check("the player is at home",srvGet(()->MealZone.at(sp()).home()),""),"home");
+        step(5,()->srv(()->PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new ResourceLocation("minecraft:haste"),0)),12000,false))),"drink Haste I at home");
+        watch("a Haste drink at home","0/inf");
+        step(5,()->srv(()->PlayerMeals.eat(sp(),new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.values()[0],1)),MealRules.FIELD_TICKS))),"and a meal");
+        watch("with a meal","0/inf");
+        step(5,()->beacon(1,false),"a vanilla beacon (one level) giving Haste I, 14 blocks away");
+        watch("next to a vanilla beacon giving Haste I","0/inf");
+        step(5,()->beacon(4,true),"the vanilla beacon at four levels, Haste II");
+        step(100,()->{},"its pulse");
+        watch("next to a vanilla beacon, four levels","0/");
+        step(5,()->srv(()->sl().setBlock(at(14,-1,0),Blocks.AIR.defaultBlockState(),3)),"the vanilla beacon gone");
+        step(400,()->{},"its Haste II runs out");
+        watch("after the vanilla beacon","0/inf");
+        step(5,()->srv(()->PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new ResourceLocation("minecraft:haste"),1),new DrinkData.Part(new ResourceLocation("minecraft:speed"),0)),12000,false))),"a new drink: Haste II and Speed");
+        watch("a Haste II drink at home","1/inf");
+        step(5,()->srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+200.5,0,0)),"out of the zone");
+        step(60,()->{},"in the field");
+        step(5,()->{EVENTS.clear();traced=0;srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0));},"back home");
+        step(300,()->check("coming home turns it endless once and then it stands still",count("removed")==0&&count("expired")==0&&haste().equals("1/inf"),String.join(", ",EVENTS)),"home again");
+
+        // ---- 0.0.37: another mod keeps taking endless effects away: the trackers stop fighting it ----------------------------------------------
+        step(5,()->{EVENTS.clear();traced=0;CHAT.clear();rogue=true;},"a rogue mod starts taking every endless effect off the player");
+        step(200,()->{},"ten seconds of it");
+        step(2,()->{
+            long removed=count("removed");
+            check("the drink's Haste is taken away only a couple of times before the tracker stops fighting",removed>=2&&removed<=4,removed+": "+String.join(", ",EVENTS.subList(0,Math.min(10,EVENTS.size()))));
+            check("now Haste II has the 20-minute timer at home",haste().startsWith("1/")&&EndlessEffects.steadyTime(time(MobEffects.DIG_SPEED)),haste());
+            check("so do the drink's Speed, the meal's effect and the Home Zone effect",EndlessEffects.steadyTime(time(MobEffects.MOVEMENT_SPEED))&&EndlessEffects.steadyTime(time(MealEffects.of(MealRules.Effect.values()[0])))&&EndlessEffects.steadyTime(time(MealEffects.HOME.get())),
+                time(MobEffects.MOVEMENT_SPEED)+" / "+time(MealEffects.of(MealRules.Effect.values()[0]))+" / "+time(MealEffects.HOME.get()));
+            check("the player is told once, in one line",CHAT.stream().filter(c->c.contains("Another mod keeps taking away endless effects")).count()==1,String.join(" | ",CHAT));
+            check("the server log names what took them away",EndlessEffects.lastBy.contains("RogueMod.takeEndless"),EndlessEffects.lastBy);
+            EVENTS.clear();},"verdict: no more fight");
+        step(1300,()->{},"65 seconds with the rogue mod still on (the timer is topped up after a minute)");
+        step(2,()->check("in 65 seconds Haste was never taken off again and its timer was topped up in place",count("removed")==0&&count("expired")==0&&time(MobEffects.DIG_SPEED)>EndlessEffects.STEADY-EndlessEffects.REFRESH,count("removed")+" removed, time "+time(MobEffects.DIG_SPEED)+": "+String.join(", ",EVENTS.subList(0,Math.min(8,EVENTS.size())))),"steady");
+        step(5,()->{rogue=false;srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+200.5,0,0));},"the rogue mod off; out to the field");
+        step(40,()->check("in the field the drink counts down again (its field time, not the long timer)",time(MobEffects.DIG_SPEED)>0&&!EndlessEffects.steadyTime(time(MobEffects.DIG_SPEED)),""+time(MobEffects.DIG_SPEED)),"field");
+        step(5,()->srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0)),"home again");
+
+        // ---- 0.0.37 (owner): eating at a Cook Pot uses up the bowl, drinking at a Brew Pot uses up the Paper Cup (creative keeps them, as vanilla) --
+        step(5,()->srv(()->{
+            sl().setBlock(at(-8,0,6),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(-4,0,6),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
+            sl().setBlock(at(8,0,6),ArsenalBeacon.DRINK_STATION_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,6),ArsenalBeacon.BREW_POT.get().defaultBlockState(),3);
+            sp().teleportTo(sl(),sx+.5,sy,sz+4.5,0,0);}),"a Mess Hall with a Cook Pot, a Drink Station with a Brew Pot");
+        step(10,()->srv(()->{
+            var pot=(CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6));var hall=pot.connect();
+            if(hall!=null)pot.fill(hall,new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.values()[0],1)),MealRules.FIELD_TICKS),3);
+            var brew=(BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6));var station=brew.connect();
+            if(station!=null)brew.fill(station,new DrinkData(List.of(new DrinkData.Part(new ResourceLocation("minecraft:speed"),0)),12000,false),false);}),"a stew of 3 servings, one drink");
+        step(5,()->check("the pots are linked and full",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==3&&!((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).empty()),""),"full");
+        step(5,()->srv(()->{sp().setGameMode(GameType.SURVIVAL);sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.BOWL,3));((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: eat from the Cook Pot with 3 bowls");
+        step(5,()->check("survival: the serving is eaten and the bowl used up (3 -> 2)",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==2&&sp().getMainHandItem().is(net.minecraft.world.item.Items.BOWL)&&sp().getMainHandItem().getCount()==2),srvGet(()->sp().getMainHandItem().toString())),"bowl used");
+        step(5,()->srv(()->{sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),3));((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: drink from the Brew Pot with 3 cups");
+        step(5,()->check("survival: the drink is drunk and the Paper Cup used up (3 -> 2)",srvGet(()->((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).empty()&&PlayerDrinks.of(sp())!=null&&sp().getMainHandItem().getCount()==2),srvGet(()->sp().getMainHandItem().toString())),"cup used");
+        step(5,()->srv(()->{sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.BOWL,1));((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: the last bowl");
+        step(5,()->check("survival: the last bowl is used up too (the hand is empty)",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==1&&sp().getMainHandItem().isEmpty()),srvGet(()->sp().getMainHandItem().toString())),"last bowl");
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.BOWL,3));((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"creative: eat with 3 bowls");
+        step(5,()->check("creative: the bowl is kept, as vanilla keeps items in creative",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==0&&sp().getMainHandItem().getCount()==3),srvGet(()->sp().getMainHandItem().toString())),"creative");
+    }
+}

@@ -1,0 +1,33 @@
+QA_CHECK PASS the player is at home 
+QA_CHECK PASS a Haste drink at home: Haste is never removed or run out (0 changes) 
+QA_CHECK PASS a Haste drink at home: the player has Haste 0/inf 0/inf
+QA_CHECK PASS with a meal: Haste is never removed or run out (0 changes) 
+QA_CHECK PASS with a meal: the player has Haste 0/inf 0/inf
+QA_CHECK PASS next to a vanilla beacon giving Haste I: Haste is never removed or run out (5 changes) added 0/220/ambient, added 0/220/ambient, added 0/220/ambient, added 0/220/ambient, added 0/220/ambient
+QA_CHECK PASS next to a vanilla beacon giving Haste I: the player has Haste 0/inf 0/inf
+QA_CHECK PASS next to a vanilla beacon, four levels: Haste is never removed or run out (5 changes) added 0/300/ambient, added 0/300/ambient, added 0/300/ambient, added 0/300/ambient, added 0/300/ambient
+QA_CHECK PASS next to a vanilla beacon, four levels: the player has Haste 0/ 0/inf
+QA_CHECK PASS after the vanilla beacon: Haste is never removed or run out (0 changes) 
+QA_CHECK PASS after the vanilla beacon: the player has Haste 0/inf 0/inf
+QA_NOTE removed by LivingEntity.removeEffect:979 < PlayerDrinks.strip:154 < PlayerDrinks.takeOff:80 < PlayerDrinks.drink:72 < 
+QA_CHECK PASS a Haste II drink at home: Haste is never removed or run out (0 changes) 
+QA_CHECK PASS a Haste II drink at home: the player has Haste 1/inf 1/inf
+QA_NOTE removed by LivingEntity.removeEffect:979 < PlayerDrinks.strip:154 < PlayerDrinks.sync:108 < PlayerDrinks.tick:85 < PlayerDrinks$DrinkEvents.tick:170 < __DrinkEvents_tick_PlayerTickEvent.invoke:-1 < 
+QA_CHECK PASS coming home turns it endless once and then it stands still added 1/inf
+QA_NOTE removed by LivingEntity.removeEffect:979 < 
+QA_NOTE removed by LivingEntity.removeEffect:979 < 
+QA_CHECK PASS the drink's Haste is taken away only a couple of times before the tracker stops fighting 2: removed 1/inf, added 1/inf, removed 1/inf, added 1/24000
+QA_CHECK PASS now Haste II has the 20-minute timer at home 1/23821
+QA_CHECK PASS so do the drink's Speed, the meal's effect and the Home Zone effect 23821 / 23831 / 23831
+QA_CHECK PASS the player is told once, in one line Another mod keeps taking away endless effects, so at home they now show a 20-minute timer instead, topped up every minute.
+QA_CHECK PASS the server log names what took them away dev.createarsenal.beacon.QaDrinkLoop$RogueMod.takeEndless:87
+QA_CHECK PASS in 65 seconds Haste was never taken off again and its timer was topped up in place 0 removed, time 23718: added 1/24000
+QA_NOTE removed by LivingEntity.removeEffect:979 < PlayerDrinks.strip:154 < PlayerDrinks.sync:108 < PlayerDrinks.tick:85 < PlayerDrinks$DrinkEvents.tick:170 < __DrinkEvents_tick_PlayerTickEvent.invoke:-1 < 
+QA_CHECK PASS in the field the drink counts down again (its field time, not the long timer) 11928
+QA_CHECK PASS the pots are linked and full 
+QA_CHECK PASS survival: the serving is eaten and the bowl used up (3 -> 2) 2 bowl
+QA_NOTE removed by LivingEntity.removeEffect:979 < PlayerDrinks.strip:154 < PlayerDrinks.takeOff:80 < PlayerDrinks.drink:72 < BrewPot$PotEntity.use:68 < 
+QA_CHECK PASS survival: the drink is drunk and the Paper Cup used up (3 -> 2) 2 drink_cup_empty
+QA_CHECK PASS survival: the last bowl is used up too (the hand is empty) 0 air
+QA_CHECK PASS creative: the bowl is kept, as vanilla keeps items in creative 3 bowl
+QA_DONE pass=26 fail=0

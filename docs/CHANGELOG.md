@@ -1,5 +1,12 @@
 # Change log
 
+## 0.0.37 — Bowls and cups are used up; endless home effects stop blinking (2026-10-13, branch `feature/drink-station`)
+
+On `feature/drink-station`, after 0.0.36. No packet changed: **network protocol 40**. Rules: GDD 0.0.37; tests: `docs/ROUND-0037-TESTING.md`.
+
+* **Bowls and Paper Cups are used up** (owner): eating a serving at a Cook Pot uses up the bowl, drinking at a Brew Pot uses up the Paper Cup, so the Bowl and Cup Dispensers are worth keeping stocked. In creative they are kept, as vanilla does.
+* **A drink's effect no longer comes and goes at home** (owner's report: Haste granted and taken away over and over). The mod's own trackers hold still (checked in the real client); another mod in the pack takes the endless effect away and the tracker puts it back. Now, when something takes one of the mod's endless home effects (drink, meal, Home or FOB Zone) away twice within 30 seconds, that effect shows at home as a 20-minute timer, topped up every minute, instead of endless. You see one chat line, and the server log names what took it away.
+
 ## 0.0.36 — Fire support rework: Ablaze, Spotter Arrows, a curse until death (2026-10-12, branch `feature/drink-station`)
 
 On `feature/drink-station`, after 0.0.35. No packet changed: **network protocol 40** as in 0.0.35. Rules: GDD 0.0.36; tests: `docs/ROUND-0036-TESTING.md`. The three types keep their ids and places in the list, so saved choices stay.

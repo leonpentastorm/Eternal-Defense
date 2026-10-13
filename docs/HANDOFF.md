@@ -1,6 +1,20 @@
 # Handoff: where the project stands
 
-Last updated for **0.0.36 (fire support rework: Napalm Carpet's Ablaze, Spotter Arrows, the Curse of Debilitation until death)**, on the feature branch **`feature/drink-station`** after 0.0.35 (`dev` holds 0.0.34). Network protocol **40-pack / 40-standalone** (unchanged in 0.0.36). The earlier states are described below.
+Last updated for **0.0.37 (bowls and Paper Cups used up at the pots; a guard against other mods taking endless home effects away)**, on the feature branch **`feature/drink-station`** after 0.0.36 (`dev` holds 0.0.34). Network protocol **40-pack / 40-standalone** (unchanged since 0.0.35). The earlier states are described below.
+
+## Bowls and cups used up; endless home effects that stop blinking (0.0.37, branch `feature/drink-station`)
+
+* **What it is.** The owner's two notes after 0.0.36: "some effect like haste drink when standing in the home zone keep getting granted and then cleanse over and over", and "make the bowls and paper cup used up when you drink and eat at pots, so there is a sink for those items and the dispenser matters more". Rules: GDD 0.0.37. Tests: `docs/ROUND-0037-TESTING.md`.
+* **Code map.** `CookPot.PotEntity.use` and `BrewPot.PotEntity.use` shrink the held bowl or cup by one after a serving (not in creative). New `EndlessEffects` (the guard: losses counted from `MobEffectEvent.Remove`/`Expired` at home, the mod's own removals excluded with `own`, the long timer `STEADY`, its top-up `REFRESH`, the culprit from the stack, `EndlessEvents`); `PlayerDrinks.sync`/`ours`/`strip`, `PlayerMeals.syncEffects`/`zoneEffect` and `MilkDispenser.cleanse` use it. Lang: the bowl and cup texts, `endless.fallback`. Tests: `Round0037Test`, `MessHallGameTests` (bowls used up; compiled, not run). QA: `tools/qa/QaDrinkLoop.java.txt`.
+* **Decisions and interpretations to confirm with the owner.**
+  1. Version 0.0.37 (the next after 0.0.36).
+  2. Creative keeps the bowl and the cup (vanilla never uses up items in creative); survival uses them up. The Latte already used its cup.
+  3. The flicker: in the development runtime (vanilla, TaCZ, this mod) a Haste drink at home held still for minutes, alone, with a meal, beside a vanilla beacon giving Haste, across the zone's edge: no removal at all. So another mod in the owner's pack takes the endless effect away (many read the endless time, -1, as run out) and the tracker re-grants it every half second. Not knowing the mod, the guard stops the fight: after two losses of one effect within 30 s that effect gets a 20-minute timer at home instead of endless (a timer is what such mods leave alone), topped up in place every minute; the player is told once; the server log line `[Eternal Defense] ... was taken away ... last by <class.method:line>` names the code. **Owner: please send that log line (latest.log) so the real cause can be fixed.**
+  4. The guard is per player and effect and resets when the player logs out or the server restarts (then the effect is endless again until the next two losses).
+  5. A totem of undying clears effects once: one loss, not two, so it does not trip the guard.
+* **Validation.** Unit tests 350 pass. Real client (`tools/qa/QaDrinkLoop.java.txt`, 26 checks): standalone 26 of 26, pack 26 of 26. Without a rogue mod no endless home effect was ever taken off (alone, with a meal, beside a vanilla Haste beacon, across the zone's edge); with the harness's rogue mod the guard trips after two losses per effect, tells the player once, names the culprit in the log, and nothing is taken off for the next 65 s (the timer topped up in place); bowls and cups are used up in survival and kept in creative.
+* **Not tested.** The owner's pack itself (the mod that takes the endless effects away is unknown until the log line comes); a dedicated server; a totem at home; an ACTIVE FOB as home; `QaDrinks` and `QaKitchen` not run again (their pot steps run in creative, where nothing changed).
+* **Next steps.** Owner: find the mod from the log line; then decide whether to keep the guard or handle that mod directly.
 
 ## Fire support rework: Ablaze, Spotter Arrows, a curse until death (0.0.36, branch `feature/drink-station`)
 
