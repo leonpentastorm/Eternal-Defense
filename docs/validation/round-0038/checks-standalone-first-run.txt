@@ -1,0 +1,79 @@
+QA_CHECK PASS its item says it is a 1 x 1 x 2 kitchen block 
+QA_CHECK PASS the MRE Station stands there, its front to the player (north) Block{arsenal_beacon:mre_maker}[facing=north]
+QA_CHECK PASS its upper cell is the invisible filler (1 x 1 x 2) Block{arsenal_beacon:structure_part}[offset_x=1,offset_y=1,offset_z=1]
+QA_CHECK FAIL the item was used up 
+QA_CHECK PASS the MRE Station screen opens dev.createarsenal.beacon.MreStationScreen@77e28cae
+QA_CHECK PASS an empty station says what to do: put food in Food | Seal | MRE | Nutrition 0 / 20 | Saturation 0 | Put food in the food slots. | Inventory | 
+QA_CHECK PASS Make is off and Take back is off 
+QA_CHECK FAIL its title, the slots' labels and the totals at 0 Food | Seal | MRE | Nutrition 0 / 20 | Saturation 0 | Put food in the food slots. | Inventory | 
+QA_CHECK PASS stone, fuel in the paper slot and paper in the fuel slot are all refused 0=- 1=- 2=- 3=- 4=- 5=- 6=- 7=- 8=- 
+QA_CHECK PASS the slots hold two of each, two fuel, two paper (real clicks, one at a time) 0=2 bread 1=2 apple 2=2 carrot 3=2 dried_kelp 4=- 5=- 6=2 marines_fuel 7=2 paper 8=- 
+QA_CHECK PASS vanilla gives 13 nutrition and 12.6 saturation for them, each alone Totals[nutrition=13, saturation=12.6]
+QA_CHECK PASS the screen's live totals are vanilla's exact sums null Totals[nutrition=13, saturation=12.6]
+QA_CHECK FAIL the bar reads Nutrition 13 / 20 and Saturation 12.6, and Make is ready Food | Seal | MRE | Nutrition 13 / ? | Saturation 12.6 | Ready to pack 1 MRE. | Inventory | 
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 2 1280x720 scale 2.0
+QA_CHECK FAIL the MRE Station screen, ready at 640x360: 7 texts, none over another, a slot or across a button, all in the panel 1 'Nutrition 13 / ?' over 'Saturation 12.6'
+QA_CHECK FAIL the MRE Station screen, ready at 640x360: no text cut short Nutrition 13 / ? | button 'Take back'
+QA_CHECK PASS the window is 960 x 540 at GUI scale 2 960x540 scale 2.0
+QA_CHECK FAIL the MRE Station screen, ready at 480x270: 7 texts, none over another, a slot or across a button, all in the panel 1 'Nutrition 13 / ?' over 'Saturation 12.6'
+QA_CHECK FAIL the MRE Station screen, ready at 480x270: no text cut short Nutrition 13 / ? | button 'Take back'
+QA_CHECK PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
+QA_CHECK FAIL the MRE Station screen, ready at 427x240: 7 texts, none over another, a slot or across a button, all in the panel 1 'Nutrition 13 / ?' over 'Saturation 12.6'
+QA_CHECK FAIL the MRE Station screen, ready at 427x240: no text cut short Nutrition 13 / ? | button 'Take back'
+QA_CHECK PASS one MRE in the output with vanilla's exact sums (no gain, no loss) Totals[nutrition=13, saturation=12.6] vs Totals[nutrition=13, saturation=12.6]
+QA_CHECK PASS one of each food, 1 Marines Fuel and 1 Paper used 0=1 bread 1=1 apple 2=1 carrot 3=1 dried_kelp 4=- 5=- 6=1 marines_fuel 7=1 paper 8=1 mre 
+QA_CHECK PASS the action bar says what was packed Packed an MRE: 13 nutrition, 12.6 saturation.
+QA_CHECK PASS the second MRE has the same totals and stacks on the first (2 in the output) 0=- 1=- 2=- 3=- 4=- 5=- 6=- 7=- 8=2 mre 
+QA_CHECK PASS the food, fuel and paper slots are empty now 0=- 1=- 2=- 3=- 4=- 5=- 6=- 7=- 8=2 mre 
+QA_CHECK PASS with no food left the screen says so again, Make is off Food | Seal | MRE | Nutrition 0 / 20 | Saturation 0 | Put food in the food slots. | Inventory | 
+QA_CHECK PASS the MRE's tooltip: 13 of 20 nutrition, 12.6 saturation, no effects MRE / 13 of 20 nutrition, 12.6 saturation / Eat it when you are hungry. No effects.
+QA_CHECK PASS four bread make exactly 20 nutrition: allowed 0=1 bread 1=1 bread 2=1 bread 3=1 bread 4=- 5=- 6=1 marines_fuel 7=1 paper 8=2 mre 
+QA_CHECK PASS the slot refuses it, on the server and on the client 0=1 bread 1=1 bread 2=1 bread 3=1 bread 4=- 5=- 6=1 marines_fuel 7=1 paper 8=2 mre 
+QA_CHECK FAIL the bar shows the would-be total in red: Nutrition 24 / 20 Food | Seal | MRE | Nutrition 20 / ? | Saturation 20 | Take the MREs out first. | Inventory | 
+QA_CHECK PASS the server refuses the cheating click: slot 5 stays empty 0=1 bread 1=1 bread 2=1 bread 3=1 bread 4=- 5=- 6=1 marines_fuel 7=1 paper 8=2 mre 
+QA_CHECK PASS the server still holds the apples on the cursor 6 apple
+QA_CHECK PASS and corrects the client 
+QA_CHECK PASS the apples are back in the pack 
+QA_CHECK PASS the output holds other MREs: the screen says take them out, Make is off Food | Seal | MRE | Nutrition 20 / ? | Saturation 20 | Take the MREs out first. | Inventory | 
+QA_CHECK PASS the server refuses it and uses up nothing 0=1 bread 1=1 bread 2=1 bread 3=1 bread 4=- 5=- 6=1 marines_fuel 7=1 paper 8=2 mre  / Take the MREs out first.
+QA_CHECK PASS the two MREs sit in the pack as one stack of 2 2 mre
+QA_CHECK PASS four bread: 20 nutrition, saturation 24 stored as 20 (no more than 20) Totals[nutrition=20, saturation=20.0] vs Totals[nutrition=20, saturation=20.0]
+QA_CHECK PASS the 20 MRE does not stack with the 13s 
+QA_CHECK PASS an MRE does not go into an MRE 0=- 1=- 2=- 3=- 4=- 5=- 6=- 7=- 8=- 
+QA_CHECK PASS the stews and honey: vanilla's exact sums (20, 18.8) Totals[nutrition=20, saturation=18.800001] vs Totals[nutrition=20, saturation=18.800001]
+QA_CHECK PASS two bowls and a glass bottle came back to the pack 2 bowls, 1 bottles
+QA_CHECK PASS the action bar says so Take the MREs out first. | Packed an MRE: 20 nutrition, 20 saturation. | Packed an MRE: 20 nutrition, 18.8 saturation. 3 empty containers back in your pack.
+QA_CHECK PASS six foods: vanilla's exact sums (19 nutrition, 23.8 saturation stored as 20) Totals[nutrition=19, saturation=20.0] vs Totals[nutrition=19, saturation=20.0]
+QA_CHECK PASS the screen reads the overflow and turns Make off Food | Seal | MRE | Nutrition 23 / ? | Saturation 20 | Too much food: over 20. | Inventory | 
+QA_CHECK PASS the server refuses 23 nutrition, says why and uses up nothing 0=1 bread 1=1 bread 2=1 bread 3=1 cooked_beef 4=- 5=- 6=1 marines_fuel 7=1 paper 8=-  / Too much food: over 20.
+QA_CHECK PASS Take back empties the station into the pack 0=- 1=- 2=- 3=- 4=- 5=- 6=- 7=- 8=-  / Took back 6 items.
+QA_CHECK PASS without paper: 'Add Paper.', Make off Food | Seal | MRE | Nutrition 5 / 20 | Saturation 6 | Add Paper. | Inventory | 
+QA_CHECK PASS the server makes nothing without paper 0=1 bread 1=- 2=- 3=- 4=- 5=- 6=1 marines_fuel 7=- 8=- 
+QA_CHECK FAIL the pack is full: the bowl drops at the player's feet 3 Totals[nutrition=6, saturation=7.2000003]
+QA_CHECK PASS E1: the server ate an MRE: it took 16 ticks to start-to-finish 16 mre 16 16
+QA_CHECK PASS E1: the whole 13 at once: the bar went 7 -> 20, saturation 0 -> the stored 12.6 (vanilla's formula with the MRE's modifier) 20.0 / 12.6 stored 12.6
+QA_CHECK PASS E1: the same as vanilla eating the bread, apple, carrot and kelp one by one 20.0/12.6 vs 20.0/12.6
+QA_CHECK PASS E1: one MRE used (2 -> 1), nothing came back 
+QA_CHECK PASS E1: no effects 
+QA_CHECK PASS E2: with a full bar the MRE is not eaten (vanilla's hunger rule) -1 
+QA_CHECK PASS E3: always-edible is ignored: not eaten at a full bar -1 
+QA_CHECK PASS E3 control: vanilla's golden apple IS eaten at a full bar (so the check above means something) golden_apple
+QA_CHECK PASS E4: eaten, the bar 1 -> 20, saturation the stored 20 (vanilla's cap is the bar) 20.0 / 20.0
+QA_CHECK PASS E4: no effects at all (golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish) []
+QA_CHECK PASS E4: no chorus fruit teleport (-6.5, -60.0, 4.5) vs (-6.5, -60.0, 4.5)
+QA_CHECK FAIL E5: eaten from an empty bar: 20 food, saturation 18.8 (the stored sum, below the bar) 20.0 / 17.800001
+QA_CHECK PASS E5: the honey inside does not cure Poison, and the spider eye adds none (same level, not longer) effect.minecraft.poison, Duration: 1165
+QA_CHECK PASS E5: no Blindness from the suspicious stew 
+QA_CHECK PASS E5: nothing comes back when an MRE is eaten (no bowl, no bottle) 
+QA_CHECK PASS E5 control: vanilla's honey bottle does cure Poison (so the check above means something) 
+QA_CHECK PASS E6: 0 -> 20 food and 20 saturation at once 20.0 / 20.0
+QA_CHECK PASS an MRE takes as long as vanilla's dried kelp (16 ticks): 16 vs 16 16 vs 16
+QA_CHECK PASS a clay ball and lime dye craft 2 Marines Fuel 2 marines_fuel
+QA_CHECK PASS any dye, anywhere in the grid (shapeless): black dye too 2 marines_fuel
+QA_CHECK PASS Marines Fuel is not food and stacks to 64 
+QA_CHECK PASS Workshop Fabrication sells the MRE Station for 4 Ardent Energy, 8 iron and a smoker Fabricated MRE Station. Place it inside your beacon zone.
+QA_CHECK PASS the MRE Station is the Kitchen group's 8th card: right column, bottom row mre 515,153 cup 271,153
+QA_CHECK PASS the Field Guide has the MRE page 
+QA_CHECK PASS broken: the station drops itself, its 3 bread and 5 paper {mre=1, bread=3, paper=5, mre_maker=1}
+QA_CHECK PASS and its upper filler is gone Block{minecraft:air}
+QA_DONE pass=66 fail=12

@@ -30,7 +30,8 @@ public final class ArmorPlatform {
     static net.minecraftforge.registries.RegistryObject<net.minecraft.world.level.block.Block> station(String kind){return switch(kind){case "ammo"->ArsenalBeacon.AMMO_PLATFORM;case "attachment"->ArsenalBeacon.ATTACHMENT_PLATFORM;case "armor"->ArsenalBeacon.ARMOR_PLATFORM;default->ArsenalBeacon.GUN_PLATFORM;};}
     static String key(Item item){return BuiltInRegistries.ITEM.getKey(item).getPath().toLowerCase(Locale.ROOT);}
     static boolean allowed(Item item){
-        if(BuildFlavor.STANDALONE)return item instanceof ArmorItem||!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("minecraft")&&!(item instanceof BlockItem)&&!(item instanceof SpawnEggItem)&&matches(key(item),"pouch","backpack","armor_plate","armorplate","nvg","night_vision","grenade","medkit","bandage","mre","ration");
+        // 0.0.38: never this mod's own items (the MRE's id contains "mre"; it is made at the MRE Station, never sold as gear)
+        if(BuildFlavor.STANDALONE)return item instanceof ArmorItem||!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("minecraft")&&!BuiltInRegistries.ITEM.getKey(item).getNamespace().equals(ArsenalBeacon.ID)&&!(item instanceof BlockItem)&&!(item instanceof SpawnEggItem)&&matches(key(item),"pouch","backpack","armor_plate","armorplate","nvg","night_vision","grenade","medkit","bandage","mre","ration");
         if(!MODS.contains(BuiltInRegistries.ITEM.getKey(item).getNamespace())||item instanceof BlockItem||item instanceof SpawnEggItem)return false;
         String id=key(item);
         if(id.endsWith("_tab")||id.contains("itemtab")||id.contains("logo")||id.contains("spawn_egg")||id.contains("test")||id.contains("tape_1")||id.contains("brokenwatch"))return false;

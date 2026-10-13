@@ -86,6 +86,13 @@ public final class ArsenalBeacon {
     public static final RegistryObject<Item> MILK_BOTTLE=ITEMS.register("milk_bottle",MilkDispenser.MilkBottle::new);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MilkDispenser.DispenserEntity>> MILK_DISPENSER_ENTITY=ENTITIES.register("milk_dispenser",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MilkDispenser.DispenserEntity::new,MILK_DISPENSER.get()).build(null));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<MilkDispenser.DispenserMenu>> MILK_DISPENSER_MENU=MENUS.register("milk_dispenser",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MilkDispenser.DispenserMenu::client));
+    // 0.0.38 (owner): the MRE Station (registered as mre_maker, the owner's model name, shown as "MRE Station"), the MRE and Marines Fuel
+    public static final RegistryObject<Block> MRE_STATION=BLOCKS.register("mre_maker",MreStation.StationBlock::new);
+    public static final RegistryObject<Item> MRE_STATION_ITEM=ITEMS.register("mre_maker",()->new KitchenBlock.KitchenItem(MRE_STATION.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MreStation.StationEntity>> MRE_STATION_ENTITY=ENTITIES.register("mre_maker",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MreStation.StationEntity::new,MRE_STATION.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<MreStation.StationMenu>> MRE_STATION_MENU=MENUS.register("mre_maker",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MreStation.StationMenu::client));
+    public static final RegistryObject<Item> MRE=ITEMS.register("mre",Mre::new);
+    public static final RegistryObject<Item> MARINES_FUEL=ITEMS.register("marines_fuel",Mre.MarinesFuel::new);
     public static final RegistryObject<Block> SUPPORT_PLATFORM=BLOCKS.register("support_platform",SupportPlatform.PlatformBlock::new);
     public static final RegistryObject<Item> SUPPORT_PLATFORM_ITEM=ITEMS.register("support_platform",()->new SupportPlatform.PlatformItem(SUPPORT_PLATFORM.get()));
     public static final RegistryObject<Block> SUPPORT_CANNON=BLOCKS.register("support_cannon",SupportCannon.CannonBlock::new);

@@ -224,7 +224,8 @@ final class LangKeysTest {
             Map.entry("command_table","Command Table"),Map.entry("satellite_beacon","Satellite Beacon"),
             Map.entry("fob_beacon","FOB Beacon"),Map.entry("supply_delivery_gate","Supply Delivery Gate"),Map.entry("supply_receiving_gate","Supply Receiving Gate"),
             Map.entry("tactical_enchanting_table","Tactical Enchanting Table"),Map.entry("warlord_seal","Warlord Seal"),Map.entry("supply_catapult","Supply Catapult"),
-            Map.entry("drink_mixer_mk1","Drink Station"),Map.entry("drink_pot","Brew Pot"),Map.entry("cup_dispenser","Cup Dispenser"),Map.entry("drink_cup_empty","Paper Cup"),Map.entry("drink_cup","Latte"));
+            Map.entry("drink_mixer_mk1","Drink Station"),Map.entry("drink_pot","Brew Pot"),Map.entry("cup_dispenser","Cup Dispenser"),Map.entry("drink_cup_empty","Paper Cup"),Map.entry("drink_cup","Latte"),
+            Map.entry("mre_maker","MRE Station"),Map.entry("mre","MRE"),Map.entry("marines_fuel","Marines Fuel"));
         var ignored=Set.of("structure_part","gate_part","supply_delivery_gate_left","supply_receiving_gate_left","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArsenalBeacon.java"));
         var registered=new TreeSet<String>();

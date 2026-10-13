@@ -1,5 +1,14 @@
 # Change log
 
+## 0.0.38 — The MRE Station (2026-10-13, branch `feature/drink-station`)
+
+On `feature/drink-station`, after 0.0.37. No packet changed: **network protocol 40** (the station's buttons use the existing menu-button packet). Rules: GDD 0.0.38 (Part F3); tests: `docs/ROUND-0038-TESTING.md`.
+
+* **MRE Station** (owner): a new kitchen block (the owner's model, 1 x 1 x 2), the 8th card of Workshop Fabrication's Kitchen group (right column, bottom): 4 Reinforced Beacon Plating (pack) or 4 Ardent Energy (standalone), 8 iron ingots and a smoker. One screen: six food slots, a Marines Fuel slot, a Paper slot, the output, **Make MRE** and **Take back**, and the live totals of one MRE (nutrition out of 20 with a mark per point, saturation). Holding a food over a slot previews it; one that would pass 20 is shown in red and the slot refuses it.
+* **MRE**: no gain, no loss. Its nutrition is the sum of the foods' nutrition (at most 20, one food is enough); its saturation the sum of what each food adds when eaten alone (vanilla's nutrition x modifier x 2), stored as the plain sum, at most 20. Each MRE takes one of each food in the slots, 1 Marines Fuel and 1 Paper; the server checks everything again on Make and spends nothing when it refuses. Any food, modded too; every effect and always-edible are dropped (golden apples, honey, suspicious stew, pufferfish and the rest give only their food); bowls and bottles come back to the pack (or drop when it is full). Eaten through vanilla's own eating in 16 ticks (as fast as dried kelp), only when hungry, the whole amount at once, nothing left over. MREs with the same totals stack to 64.
+* **Marines Fuel**: a wax crayon; a clay ball and any dye make 2. Not food.
+* Field Guide page "MRE Station & MREs" (cards MRE Station, MRE, Marines Fuel, and the numbers in Reference). The Armor Platform's standalone gear list no longer picks up the mod's own items (it matched the MRE's id).
+
 ## 0.0.37 — Bowls and cups are used up; endless home effects stop blinking (2026-10-13, branch `feature/drink-station`)
 
 On `feature/drink-station`, after 0.0.36. No packet changed: **network protocol 40**. Rules: GDD 0.0.37; tests: `docs/ROUND-0037-TESTING.md`.

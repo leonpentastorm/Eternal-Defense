@@ -1,0 +1,446 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.food.FoodData;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+
+/**
+ * QA ONLY (never part of a release): the 0.0.38 MRE Station on a real client. Places it with its item, fills it with real slot clicks,
+ * presses its real buttons, sends a cheating click, checks every MRE against vanilla's own FoodData fed each food alone, eats MREs in
+ * survival by holding the use key (time, hunger rule, effects, containers), the Marines Fuel recipe, the Workshop, the Field Guide, and
+ * takes screenshots. Copied in by tools/qa/setup-qa.sh.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaMre {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static final List<String> BAR=Collections.synchronizedList(new ArrayList<>()),CHAT=Collections.synchronizedList(new ArrayList<>());
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var text=e.getMessage().getString();if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())BAR.add(text);else CHAT.add(text);
+    }
+    static boolean barHas(String s){synchronized(BAR){return BAR.stream().anyMatch(b->b.contains(s));}}
+    static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
+    static BlockPos B(){return at(0,0,-14);}
+    static BlockPos S(){return at(0,0,0);}
+
+    // ---- one frame's texts and the window sizes (as QaDrinks) ----------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawnAll(){var b=new StringBuilder();for(var d:lastFrame)b.append(d.text()).append(" | ");return b.toString();}
+    static boolean hit(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return aw>0&&bw>0&&ax<bx+bw&&bx<ax+aw&&ay<by+bh&&by<ay+ah;}
+    static boolean inside(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return ax>=bx&&ay>=by&&ax+aw<=bx+bw&&ay+ah<=by+bh;}
+    static void layout(String name,boolean strict){
+        var s=mc().screen;var boxes=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();var cut=new ArrayList<String>();
+        String size=(s==null?0:s.width)+"x"+(s==null?0:s.height);
+        for(int i=0;i<boxes.size();i++){var a=boxes.get(i);
+            if(a.cut())cut.add(a.text());
+            if(s!=null&&(a.x()<0||a.y()<0||a.x()+a.w()>s.width||a.y()+a.h()>s.height))bad.add("off the window: '"+a.text()+"'");
+            for(int j=i+1;j<boxes.size();j++){var b=boxes.get(j);if(hit(a.x(),a.y(),a.w(),a.h(),b.x(),b.y(),b.w(),b.h()))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+            if(s!=null)for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&hit(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight())&&!inside(a.x(),a.y(),a.w(),a.h(),w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("'"+a.text()+"' across the button '"+w.getMessage().getString()+"'");
+        }
+        if(s instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> cs){int px=cs.getGuiLeft(),py=cs.getGuiTop(),pw=cs.getXSize(),ph=cs.getYSize();
+            for(var a:boxes)if(a.x()<px||a.y()<py||a.x()+a.w()>px+pw||a.y()+a.h()>py+ph)bad.add("outside the panel: '"+a.text()+"'");
+            for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&(w.getX()<px||w.getY()<py||w.getX()+w.getWidth()>px+pw||w.getY()+w.getHeight()>py+ph))bad.add("the button '"+w.getMessage().getString()+"' outside the panel");
+            var ws=new ArrayList<net.minecraft.client.gui.components.AbstractWidget>();for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible)ws.add(w);
+            for(int i=0;i<ws.size();i++)for(int j=i+1;j<ws.size();j++){var a=ws.get(i);var b=ws.get(j);if(hit(a.getX(),a.getY(),a.getWidth(),a.getHeight(),b.getX(),b.getY(),b.getWidth(),b.getHeight()))bad.add("button over button");}
+            for(var slot:cs.getMenu().slots)if(slot.isActive())for(var w:ws)if(hit(px+slot.x,py+slot.y,16,16,w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("a slot under the button '"+w.getMessage().getString()+"'");
+            // and no text over a slot
+            for(var slot:cs.getMenu().slots)if(slot.isActive())for(var a:boxes)if(hit(px+slot.x-1,py+slot.y-1,18,18,a.x(),a.y(),a.w(),a.h()))bad.add("'"+a.text()+"' over a slot");
+        }
+        if(s instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> whole&&(whole.getGuiTop()<0||whole.getGuiTop()+whole.getYSize()>s.height||whole.getGuiLeft()<0||whole.getGuiLeft()+whole.getXSize()>s.width))bad.add("the panel ("+whole.getXSize()+" x "+whole.getYSize()+") does not fit the window");
+        if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.label&&!b.getMessage().getString().isEmpty()){int room=b.getWidth()-10;if(mc().font.width(b.getMessage())>room)cut.add("button '"+b.getMessage().getString()+"'");}
+        check(name+" at "+size+": "+boxes.size()+" texts, none over another, a slot or across a button, all in the panel",bad.isEmpty()&&!boxes.isEmpty(),bad.size()+" "+String.join(" | ",bad.subList(0,Math.min(5,bad.size()))));
+        if(strict)check(name+" at "+size+": no text cut short",cut.isEmpty(),String.join(" | ",cut));
+    }
+    static final int[][] SIZES={{1280,720,2},{960,540,2},{1280,720,3}};
+    static void window(int w,int h){org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc().getWindow().getWindow(),w,h);}
+    static void scale(int scale){mc().options.guiScale().set(scale);mc().resizeDisplay();}
+    static void atSizes(String name,String picture){
+        for(var sz:SIZES){
+            step(15,()->window(sz[0],sz[1]),"window "+sz[0]+" x "+sz[1]);
+            step(8,()->scale(sz[2]),"GUI scale "+sz[2]);
+            step(4,()->recordFrame=true,"record a frame");
+            step(2,()->{var w=mc().getWindow();check("the window is "+sz[0]+" x "+sz[1]+" at GUI scale "+sz[2],w.getWidth()==sz[0]&&w.getHeight()==sz[1]&&w.getGuiScale()==sz[2],w.getWidth()+"x"+w.getHeight()+" scale "+w.getGuiScale());
+                layout(name,true);shot(picture+"_"+w.getGuiScaledWidth()+"x"+w.getGuiScaledHeight());},"check "+name);
+        }
+        step(15,()->window(1280,720),"back to 1280 x 720");step(8,()->scale(2),"GUI scale 2");
+    }
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+
+    // ---- the station and its screen ---------------------------------------------------------------------------------------------------
+    static MreStationScreen screen(){return mc().screen instanceof MreStationScreen s?s:null;}
+    /** Server thread only. */
+    static MreStation.StationEntity st(){return (MreStation.StationEntity)sl().getBlockEntity(S());}
+    static ItemStack slotS(int i){return srvGet(()->st().items.getItem(i).copy());}
+    static String slots(){return srvGet(()->{var b=new StringBuilder();for(int i=0;i<MreStation.SLOTS;i++){var s=st().items.getItem(i);b.append(i).append('=').append(s.isEmpty()?"-":s.getCount()+" "+s.getItem()).append(' ');}return b.toString();});}
+    static void click(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    /** The menu's slot of the player's inventory slot k (9..35 the pack, 0..8 the hotbar). */
+    static int invSlot(int k){return k>=9?k:36+k;}
+    static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
+    /** As a player does it: pick up the stack in pack slot k, right-click one into station slot target, put the rest back. */
+    static void placeOne(int k,int target){slotClick(invSlot(k),0,ClickType.PICKUP);slotClick(target,1,ClickType.PICKUP);slotClick(invSlot(k),0,ClickType.PICKUP);}
+    static void useBlock(BlockPos pos){mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos),Direction.NORTH,pos,false));}
+    static void close(){mc().player.closeContainer();}
+    static int count(net.minecraft.world.item.Item item){return srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;});}
+    static void give(int k,ItemStack s){srv(()->sp().getInventory().setItem(k,s));}
+
+    // ---- what vanilla gives for one food alone: its own FoodData, a bar with room, fed the real item --------------------------------------
+    /** {nutrition, saturation gained}: FoodData.eat(item, stack, player), Forge's path with the stack's own food properties. Server thread. */
+    static float[] alone(ItemStack food){
+        var fp=food.getFoodProperties(sp());int n=fp.getNutrition();var fd=new FoodData();fd.setFoodLevel(20-n);fd.setSaturation(0);fd.eat(food.getItem(),food,sp());
+        return new float[]{fd.getFoodLevel()-(20-n),fd.getSaturationLevel()};
+    }
+    /** The exact sums vanilla would give for these foods eaten one at a time, each alone. */
+    static MreRules.Totals expected(ItemStack... foods){return srvGet(()->{int n=0;double s=0;for(var f:foods){var a=alone(f);n+=(int)a[0];s+=a[1];}return new MreRules.Totals(n,(float)Math.min(s,20));});}
+    static MreRules.Totals output(){return srvGet(()->Mre.totals(st().items.getItem(MreStation.OUTPUT)));}
+    /** The foods one by one through vanilla's FoodData from {food, saturation}: the bar after. Server thread. */
+    static float[] oneByOne(int food,float sat,ItemStack... foods){var fd=new FoodData();fd.setFoodLevel(food);fd.setSaturation(sat);for(var f:foods)fd.eat(f.getItem(),f,sp());return new float[]{fd.getFoodLevel(),fd.getSaturationLevel()};}
+    static ItemStack suspicious(){var s=new ItemStack(Items.SUSPICIOUS_STEW);net.minecraft.world.item.SuspiciousStewItem.saveMobEffect(s,MobEffects.BLINDNESS,200);return s;}
+
+    // ---- eating by holding the use key, and the server's view of it --------------------------------------------------------------------
+    static int eatState,eatWait,eatTicks;static long useStart=-1,useEnd=-1;static int useDuration=-1;static String usedItem="";
+    @SubscribeEvent public static void useStart(LivingEntityUseItemEvent.Start e){if(e.getEntity() instanceof ServerPlayer p){useStart=p.serverLevel().getGameTime();useDuration=e.getDuration();usedItem=e.getItem().getItem().toString();}}
+    static float[] atFinish={-1,-1};
+    @SubscribeEvent public static void useFinish(LivingEntityUseItemEvent.Finish e){if(e.getEntity() instanceof ServerPlayer p){useEnd=p.serverLevel().getGameTime();atFinish=new float[]{p.getFoodData().getFoodLevel(),p.getFoodData().getSaturationLevel()};}}
+    static void holdUse(){useStart=useEnd=-1;atFinish=new float[]{-1,-1};useDuration=-1;usedItem="";var p=mc().player;p.setXRot(-90);mc().options.keyUse.setDown(true);eatState=1;eatWait=0;eatTicks=0;}
+    static void eatWatch(){
+        if(eatState==0)return;var p=mc().player;
+        if(p.isUsingItem()){eatState=2;eatTicks++;}
+        else if(eatState==2||++eatWait>40){mc().options.keyUse.setDown(false);eatState=0;}
+    }
+    static void hungry(int food,float sat){srv(()->{var fd=sp().getFoodData();fd.setFoodLevel(food);fd.setSaturation(sat);fd.setExhaustion(0);sp().setHealth(sp().getMaxHealth());});}
+    /** The food bar the moment the last eating finished (the server's Finish event). */
+    static float[] bar(){return atFinish.clone();}
+    /** The hotbar slot 0 holds this; the client selects it. */
+    static void inHand(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    /** What vanilla's FoodData.eat adds to saturation for this MRE: nutrition x the MRE's modifier x 2 (before the bar's cap). */
+    static float got(MreRules.Totals t){return MreRules.saturation(t.nutrition(),MreRules.modifier(t.nutrition(),t.saturation()));}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_mre",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_mre",settings,new WorldOptions(77L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        eatWatch();
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static MreRules.Totals P1,P2,P3,P4;
+    static ItemStack mre1,mre2,mre3,mre4;
+    static int bowlsBefore,bottlesBefore;
+
+    static void script(){
+        // ---- a planted beacon (the Home Zone); the player north of where the station goes, facing south --------------------------------------
+        step(5,()->srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
+            sp().getInventory().clearContent();sp().teleportTo(sl(),sx+.5,sy,sz-2.5,0,20);}),"a Defense Beacon; the player stands north of the spot");
+        step(5,()->srv(()->{sp().setGameMode(GameType.SURVIVAL);sp().setHealth(sp().getMaxHealth());}),"survival from here on");
+        step(10,()->give(0,new ItemStack(ArsenalBeacon.MRE_STATION_ITEM.get())),"an MRE Station in hand");
+        step(10,()->{mc().player.getInventory().selected=0;check("its item says it is a 1 x 1 x 2 kitchen block",ArsenalBeacon.MRE_STATION_ITEM.get().getDescription().getString().equals("MRE Station")&&String.join(" ",new ItemStack(ArsenalBeacon.MRE_STATION_ITEM.get()).getTooltipLines(mc().player,net.minecraft.world.item.TooltipFlag.NORMAL).stream().map(c->c.getString()).toList()).contains("1 wide, 1 deep, 2 tall"),"");},"tooltip");
+        step(10,()->mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(at(0,-1,0)).add(0,.5,0),Direction.UP,at(0,-1,0),false)),"place it with its item (a real right-click on the ground)");
+        step(10,()->{
+            check("the MRE Station stands there, its front to the player (north)",srvGet(()->sl().getBlockState(S()).is(ArsenalBeacon.MRE_STATION.get())&&sl().getBlockState(S()).getValue(ArsenalStructures.FACING)==Direction.NORTH),srvGet(()->sl().getBlockState(S()).toString()));
+            check("its upper cell is the invisible filler (1 x 1 x 2)",srvGet(()->sl().getBlockState(S().above()).is(ArsenalBeacon.STRUCTURE_PART.get())),srvGet(()->sl().getBlockState(S().above()).toString()));
+            check("the item was used up (survival)",srvGet(()->sp().getInventory().getItem(0).isEmpty()),"");},"placed");
+        step(30,()->{mc().options.hideGui=true;var p=mc().player;p.setYRot(0);p.setXRot(18);},"look at it");
+        step(10,()->shot("m01_station_world"),"world shot");
+        step(5,()->{mc().options.hideGui=false;mc().player.setXRot(10);},"HUD back");
+
+        // ---- the pack: foods, fuel, paper ---------------------------------------------------------------------------------------------
+        step(5,()->srv(()->{var inv=sp().getInventory();
+            inv.setItem(9,new ItemStack(Items.BREAD,16));inv.setItem(10,new ItemStack(Items.APPLE,8));inv.setItem(11,new ItemStack(Items.CARROT,8));inv.setItem(12,new ItemStack(Items.DRIED_KELP,8));
+            inv.setItem(13,new ItemStack(Items.COOKED_BEEF,4));inv.setItem(14,new ItemStack(Items.GOLDEN_CARROT,4));inv.setItem(15,new ItemStack(Items.MUSHROOM_STEW));inv.setItem(16,new ItemStack(Items.BEETROOT_SOUP));
+            inv.setItem(17,new ItemStack(Items.HONEY_BOTTLE,4));inv.setItem(18,suspicious());inv.setItem(19,new ItemStack(Items.SPIDER_EYE,4));inv.setItem(20,new ItemStack(Items.GOLDEN_APPLE,4));
+            inv.setItem(21,new ItemStack(Items.ENCHANTED_GOLDEN_APPLE,2));inv.setItem(22,new ItemStack(Items.ROTTEN_FLESH,4));inv.setItem(23,new ItemStack(Items.CHICKEN,4));inv.setItem(24,new ItemStack(Items.PUFFERFISH,4));
+            inv.setItem(25,new ItemStack(Items.CHORUS_FRUIT,4));inv.setItem(26,new ItemStack(Items.POISONOUS_POTATO,4));inv.setItem(27,new ItemStack(Items.STONE,1));
+            inv.setItem(28,new ItemStack(ArsenalBeacon.MARINES_FUEL.get(),16));inv.setItem(29,new ItemStack(Items.PAPER,16));
+            inv.setItem(1,new ItemStack(ArsenalBeacon.MARINES_FUEL.get(),3));inv.setItem(2,new ItemStack(ArsenalBeacon.MRE_STATION_ITEM.get()));}),"the pack");
+        step(10,()->{mc().player.getInventory().selected=8;useBlock(S());},"right-click the station with an empty hand");
+        until("the MRE Station screen",60,()->screen()!=null,()->{});
+        step(10,()->{check("the MRE Station screen opens",screen()!=null,String.valueOf(mc().screen));recordFrame=true;},"screen");
+        step(3,()->{
+            check("an empty station says what to do: put food in",drawnHas("Put food in the food slots."),drawnAll());
+            check("Make is off and Take back is off",screen()!=null&&!screen().make.active&&!screen().takeBack.active,"");
+            check("its title, the slots' labels and the totals at 0",screen().getTitle().getString().equals("MRE Station")&&drawnHas("Food")&&drawnHas("Seal")&&drawnHas("Nutrition")&&drawnHas("0 / 20")&&drawnHas("Saturation"),drawnAll());
+            shot("m02_screen_empty");},"empty");
+        // ---- refusals: no stone in a food slot, fuel and paper only in their own slots ------------------------------------------------
+        step(4,()->placeOne(27,0),"try the stone in a food slot");
+        step(4,()->placeOne(28,MreStation.PAPER),"try Marines Fuel in the paper slot");
+        step(4,()->placeOne(29,MreStation.FUEL),"try Paper in the fuel slot");
+        step(6,()->check("stone, fuel in the paper slot and paper in the fuel slot are all refused",slotS(0).isEmpty()&&slotS(MreStation.PAPER).isEmpty()&&slotS(MreStation.FUEL).isEmpty()&&count(Items.STONE)==1&&count(Items.PAPER)==16&&count(ArsenalBeacon.MARINES_FUEL.get())==19,slots()),"refused");
+
+        // ---- P1: bread, apple, carrot, dried kelp, two of each (two MREs) -----------------------------------------------------------------
+        step(3,()->{placeOne(9,0);placeOne(9,0);placeOne(10,1);placeOne(10,1);placeOne(11,2);placeOne(11,2);placeOne(12,3);placeOne(12,3);},"two bread, two apples, two carrots, two dried kelp");
+        step(3,()->{placeOne(28,MreStation.FUEL);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);placeOne(29,MreStation.PAPER);},"two Marines Fuel, two Paper");
+        step(8,()->{P1=expected(new ItemStack(Items.BREAD),new ItemStack(Items.APPLE),new ItemStack(Items.CARROT),new ItemStack(Items.DRIED_KELP));recordFrame=true;},"what vanilla gives for each alone");
+        step(3,()->{
+            check("the slots hold two of each, two fuel, two paper (real clicks, one at a time)",slotS(0).getCount()==2&&slotS(3).getCount()==2&&slotS(MreStation.FUEL).getCount()==2&&slotS(MreStation.PAPER).getCount()==2,slots());
+            check("vanilla gives 13 nutrition and 12.6 saturation for them, each alone",P1.nutrition()==13&&Math.abs(P1.saturation()-12.6f)<1e-5,P1.toString());
+            var c=screen().getMenu().check();
+            check("the screen's live totals are vanilla's exact sums",c.ready()&&c.totals().equals(P1),c.problem()+" "+c.totals());
+            check("the bar reads Nutrition 13 / 20 and Saturation 12.6, and Make is ready",drawnHas("13 / 20")&&drawnHas("12.6")&&drawnHas("Ready to pack 1 MRE.")&&screen().make.active,drawnAll());
+            shot("m03_screen_ready");},"ready");
+        atSizes("the MRE Station screen, ready","m04_station");
+        step(4,()->{BAR.clear();click(screen().make);},"press Make MRE");
+        step(8,()->{
+            check("one MRE in the output with vanilla's exact sums (no gain, no loss)",P1.equals(output())&&slotS(MreStation.OUTPUT).getCount()==1,output()+" vs "+P1);
+            check("one of each food, 1 Marines Fuel and 1 Paper used",slotS(0).getCount()==1&&slotS(1).getCount()==1&&slotS(2).getCount()==1&&slotS(3).getCount()==1&&slotS(MreStation.FUEL).getCount()==1&&slotS(MreStation.PAPER).getCount()==1,slots());
+            check("the action bar says what was packed",barHas("Packed an MRE: 13 nutrition, 12.6 saturation."),String.join(" | ",BAR));},"made");
+        step(4,()->click(screen().make),"Make again");
+        step(8,()->{
+            check("the second MRE has the same totals and stacks on the first (2 in the output)",P1.equals(output())&&slotS(MreStation.OUTPUT).getCount()==2,slots());
+            check("the food, fuel and paper slots are empty now",slotS(0).isEmpty()&&slotS(3).isEmpty()&&slotS(MreStation.FUEL).isEmpty()&&slotS(MreStation.PAPER).isEmpty(),slots());
+            recordFrame=true;},"made twice");
+        step(3,()->{check("with no food left the screen says so again, Make is off",drawnHas("Put food in the food slots.")&&!screen().make.active,drawnAll());
+            var out=screen().getMenu().slots.get(MreStation.OUTPUT);hover(screen().getGuiLeft()+out.x+8,screen().getGuiTop()+out.y+8);},"hover the output");
+        step(6,()->{var lines=String.join(" / ",screen().getMenu().slots.get(MreStation.OUTPUT).getItem().getTooltipLines(mc().player,net.minecraft.world.item.TooltipFlag.NORMAL).stream().map(c->c.getString()).toList());
+            check("the MRE's tooltip: 13 of 20 nutrition, 12.6 saturation, no effects",lines.contains("MRE")&&lines.contains("13 of 20 nutrition, 12.6 saturation")&&lines.contains("Eat it when you are hungry. No effects."),lines);shot("m05_mre_tooltip");},"tooltip");
+
+        // ---- P2: four bread = 20, the cap -------------------------------------------------------------------------------------------------
+        step(3,()->{placeOne(9,0);placeOne(9,1);placeOne(9,2);placeOne(9,3);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"four bread (20 nutrition), fuel, paper");
+        step(6,()->{P2=expected(new ItemStack(Items.BREAD),new ItemStack(Items.BREAD),new ItemStack(Items.BREAD),new ItemStack(Items.BREAD));
+            check("four bread make exactly 20 nutrition: allowed",srvGet(()->MreStation.check(st().items,sp()).totals().nutrition())==20,slots());},"20");
+        step(3,()->placeOne(10,4),"try an apple in the fifth slot (20 + 4)");
+        step(6,()->check("the slot refuses it, on the server and on the client",slotS(4).isEmpty()&&screen().getMenu().slots.get(4).getItem().isEmpty()&&count(Items.APPLE)==6,slots()),"refused");
+        step(3,()->slotClick(invSlot(10),0,ClickType.PICKUP),"pick up the apples");
+        step(6,()->{var s=screen();var slot=s.getMenu().slots.get(4);hover(s.getGuiLeft()+slot.x+8,s.getGuiTop()+slot.y+8);},"hold them over the fifth slot");
+        step(4,()->recordFrame=true,"record a frame");
+        step(4,()->{check("the bar shows the would-be total in red: Nutrition 24 / 20",drawnHas("24 / 20"),drawnAll());shot("m06_over_twenty");},"preview");
+        step(3,()->{
+            // a cheating client: it claims the apple went into slot 4 and its cursor is empty
+            var p=mc().player;var menu=p.containerMenu;var changed=new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemStack>();changed.put(4,new ItemStack(Items.APPLE));
+            mc().getConnection().send(new net.minecraft.network.protocol.game.ServerboundContainerClickPacket(menu.containerId,menu.getStateId(),4,0,ClickType.PICKUP,ItemStack.EMPTY,changed));},"a cheating click packet: 'the apple is in slot 5'");
+        step(8,()->{
+            check("the server refuses the cheating click: slot 5 stays empty",slotS(4).isEmpty(),slots());
+            check("the server still holds the apples on the cursor",srvGet(()->sp().containerMenu.getCarried().is(Items.APPLE)&&sp().containerMenu.getCarried().getCount()==6),srvGet(()->sp().containerMenu.getCarried().toString()));
+            check("and corrects the client",screen().getMenu().slots.get(4).getItem().isEmpty(),"");},"server");
+        step(3,()->slotClick(invSlot(10),0,ClickType.PICKUP),"put the apples back");
+        step(5,()->{recordFrame=true;check("the apples are back in the pack",count(Items.APPLE)==6,"");},"back");
+        step(3,()->{check("the output holds other MREs: the screen says take them out, Make is off",drawnHas("Take the MREs out first.")&&!screen().make.active,drawnAll());BAR.clear();BeaconNetwork.menuButton(screen().getMenu().containerId,MreStation.StationMenu.MAKE);},"Make sent anyway (a raced or cheating client)");
+        step(8,()->check("the server refuses it and uses up nothing",slotS(0).getCount()==1&&slotS(MreStation.FUEL).getCount()==1&&slotS(MreStation.OUTPUT).getCount()==2&&barHas("Take the MREs out first."),slots()+" / "+String.join(" | ",BAR)),"refused");
+        step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"shift-click the two MREs into the pack");
+        step(6,()->{mre1=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.MRE.get()))return s.copy();return ItemStack.EMPTY;});
+            check("the two MREs sit in the pack as one stack of 2",mre1.getCount()==2&&P1.equals(Mre.totals(mre1)),mre1.toString());},"taken");
+        step(4,()->click(screen().make),"Make the 20");
+        step(8,()->{check("four bread: 20 nutrition, saturation 24 stored as 20 (no more than 20)",output()!=null&&output().nutrition()==20&&output().saturation()==20f&&P2.equals(output()),output()+" vs "+P2);},"made 20");
+        step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"into the pack");
+        step(6,()->{mre2=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.MRE.get())&&Mre.totals(s).nutrition()==20)return s.copy();return ItemStack.EMPTY;});
+            check("the 20 MRE does not stack with the 13s",!mre2.isEmpty()&&mre2.getCount()==1&&count(ArsenalBeacon.MRE.get())==3,"");},"apart");
+        step(3,()->{var k=srvGet(()->{for(int i=0;i<36;i++)if(sp().getInventory().getItem(i).is(ArsenalBeacon.MRE.get()))return i;return -1;});placeOne(k,0);},"try an MRE in a food slot");
+        step(6,()->check("an MRE does not go into an MRE",slotS(0).isEmpty()&&count(ArsenalBeacon.MRE.get())==3,slots()),"refused");
+
+        // ---- P3: mushroom stew, honey, suspicious stew, spider eye = 20; the bowls and the bottle come back --------------------------------
+        step(3,()->{placeOne(15,0);placeOne(17,1);placeOne(18,2);placeOne(19,3);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);
+            bowlsBefore=count(Items.BOWL);bottlesBefore=count(Items.GLASS_BOTTLE);},"mushroom stew, honey bottle, suspicious stew (Blindness), spider eye");
+        step(6,()->{P3=expected(new ItemStack(Items.MUSHROOM_STEW),new ItemStack(Items.HONEY_BOTTLE),suspicious(),new ItemStack(Items.SPIDER_EYE));click(screen().make);},"Make");
+        step(8,()->{
+            check("the stews and honey: vanilla's exact sums (20, 18.8)",P3.equals(output())&&P3.nutrition()==20&&Math.abs(P3.saturation()-18.8f)<1e-5,output()+" vs "+P3);
+            check("two bowls and a glass bottle came back to the pack",count(Items.BOWL)==bowlsBefore+2&&count(Items.GLASS_BOTTLE)==bottlesBefore+1,count(Items.BOWL)+" bowls, "+count(Items.GLASS_BOTTLE)+" bottles");
+            check("the action bar says so",barHas("3 empty containers back in your pack."),String.join(" | ",BAR));},"made");
+        step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"into the pack");
+        step(4,()->mre3=srvGet(()->{for(var s:sp().getInventory().items)if(P3.equals(Mre.totals(s)))return s.copy();return ItemStack.EMPTY;}),"found");
+
+        // ---- P4: golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish, chorus fruit = 19 --------------------------------
+        step(3,()->{placeOne(20,0);placeOne(21,1);placeOne(22,2);placeOne(23,3);placeOne(24,4);placeOne(25,5);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"six foods with effects");
+        step(6,()->{P4=expected(new ItemStack(Items.GOLDEN_APPLE),new ItemStack(Items.ENCHANTED_GOLDEN_APPLE),new ItemStack(Items.ROTTEN_FLESH),new ItemStack(Items.CHICKEN),new ItemStack(Items.PUFFERFISH),new ItemStack(Items.CHORUS_FRUIT));click(screen().make);},"Make");
+        step(8,()->check("six foods: vanilla's exact sums (19 nutrition, 23.8 saturation stored as 20)",P4.equals(output())&&P4.nutrition()==19&&P4.saturation()==20f,output()+" vs "+P4),"made");
+        step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"into the pack");
+        step(4,()->mre4=srvGet(()->{for(var s:sp().getInventory().items)if(P4.equals(Mre.totals(s)))return s.copy();return ItemStack.EMPTY;}),"found");
+
+        // ---- an overflow put in behind the screen's back: the server counts again on Make --------------------------------------------------
+        step(3,()->{placeOne(9,0);placeOne(9,1);placeOne(9,2);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"three bread (15)");
+        step(5,()->srv(()->st().items.setItem(3,new ItemStack(Items.COOKED_BEEF))),"a cooked beef (8) set straight into slot 4 on the server, past the slot's check");
+        step(6,()->{recordFrame=true;},"frame");
+        step(3,()->{check("the screen reads the overflow and turns Make off",drawnHas("Too much food: over 20.")&&!screen().make.active,drawnAll());BAR.clear();BeaconNetwork.menuButton(screen().getMenu().containerId,MreStation.StationMenu.MAKE);},"Make sent anyway");
+        step(8,()->check("the server refuses 23 nutrition, says why and uses up nothing",slotS(0).getCount()==1&&slotS(3).is(Items.COOKED_BEEF)&&slotS(MreStation.FUEL).getCount()==1&&slotS(MreStation.PAPER).getCount()==1&&slotS(MreStation.OUTPUT).isEmpty()&&barHas("Too much food: over 20."),slots()+" / "+String.join(" | ",BAR)),"refused");
+        step(4,()->{BAR.clear();click(screen().takeBack);},"press Take back");
+        step(8,()->{boolean empty=true;for(int i=0;i<MreStation.SLOTS;i++)empty&=slotS(i).isEmpty();
+            check("Take back empties the station into the pack",empty&&count(Items.COOKED_BEEF)==5&&barHas("Took back 6 items."),slots()+" / "+String.join(" | ",BAR));},"taken back");
+        // ---- no paper: Make is off and says so ---------------------------------------------------------------------------------------------
+        step(3,()->{placeOne(9,0);placeOne(28,MreStation.FUEL);},"bread and fuel, no paper");
+        step(6,()->recordFrame=true,"frame");
+        step(3,()->{check("without paper: 'Add Paper.', Make off",drawnHas("Add Paper.")&&!screen().make.active,drawnAll());BeaconNetwork.menuButton(screen().getMenu().containerId,MreStation.StationMenu.MAKE);},"Make sent anyway");
+        step(6,()->check("the server makes nothing without paper",slotS(0).getCount()==1&&slotS(MreStation.FUEL).getCount()==1&&slotS(MreStation.OUTPUT).isEmpty(),slots()),"refused");
+        step(3,()->click(screen().takeBack),"Take back");
+        // ---- a full pack: the bowl drops at the player's feet --------------------------------------------------------------------------------
+        step(3,()->{placeOne(16,0);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"beetroot soup, fuel, paper");
+        step(5,()->srv(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(inv.getItem(i).isEmpty()||inv.getItem(i).is(Items.BOWL))inv.setItem(i,new ItemStack(Items.COBBLESTONE,64));}),"fill every free slot of the pack (no bowl stack with room either)");
+        step(5,()->{bowlsBefore=count(Items.BOWL);click(screen().make);},"Make");
+        step(10,()->check("the pack is full: the bowl drops at the player's feet",count(Items.BOWL)==0&&srvGet(()->!sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,sp().getBoundingBox().inflate(3),ie->ie.getItem().is(Items.BOWL)).isEmpty())
+            &&output()!=null&&output().nutrition()==6,count(Items.BOWL)+" "+output()),"dropped");
+        step(5,()->srv(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(inv.getItem(i).is(Items.COBBLESTONE))inv.setItem(i,ItemStack.EMPTY);for(var ie:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,sp().getBoundingBox().inflate(4)))ie.discard();}),"clear the cobblestone");
+        step(5,()->close(),"close the screen");
+
+        // ---- eating in survival -------------------------------------------------------------------------------------------------------------
+        // E1: P1 (13, 12.6) with room on the bar: all of it lands, in 16 ticks, exactly as the four foods one by one
+        step(3,()->{hungry(7,0);inHand(mre1.copyWithCount(2));bowlsBefore=count(Items.BOWL);},"E1: the two P1 MREs in hand, the food bar at 7");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"E1: hold the use key");
+        until("E1 eaten",80,()->eatState==0,()->{});
+        step(5,()->{
+            var b=bar();var one=srvGet(()->oneByOne(7,0,new ItemStack(Items.BREAD),new ItemStack(Items.APPLE),new ItemStack(Items.CARROT),new ItemStack(Items.DRIED_KELP)));
+            check("E1: the server ate an MRE: it took "+useDuration+" ticks to start-to-finish "+(useEnd-useStart),usedItem.contains("mre")&&useDuration==MreRules.EAT_TICKS&&useEnd-useStart>=15&&useEnd-useStart<=17,usedItem+" "+useDuration+" "+(useEnd-useStart));
+            check("E1: the whole 13 at once: the bar went 7 -> 20, saturation 0 -> the stored 12.6 (vanilla's formula with the MRE's modifier)",b[0]==20&&b[1]==got(P1)&&Math.abs(got(P1)-P1.saturation())<=Math.ulp(P1.saturation()),b[0]+" / "+b[1]+" stored "+P1.saturation());
+            check("E1: the same as vanilla eating the bread, apple, carrot and kelp one by one",b[0]==one[0]&&Math.abs(b[1]-one[1])<1e-5,b[0]+"/"+b[1]+" vs "+one[0]+"/"+one[1]);
+            check("E1: one MRE used (2 -> 1), nothing came back",srvGet(()->sp().getInventory().getItem(0).getCount())==1&&count(Items.BOWL)==bowlsBefore,"");
+            check("E1: no effects",srvGet(()->sp().getActiveEffects().isEmpty()),"");},"E1");
+        // E2: not hungry: the MRE cannot be eaten
+        step(3,()->{hungry(20,5);},"E2: a full food bar");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"E2: hold the use key");
+        until("E2 given up",80,()->eatState==0,()->{});
+        step(3,()->check("E2: with a full bar the MRE is not eaten (vanilla's hunger rule)",useStart==-1&&srvGet(()->sp().getInventory().getItem(0).getCount())==1,useStart+" "+usedItem),"E2");
+        // E3: the golden apples' always-edible is gone: P4 at a full bar is not eaten; a real golden apple is
+        step(3,()->inHand(mre4.copy()),"E3: the P4 MRE (golden apples inside) in hand, a full bar");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"E3: hold the use key");
+        until("E3 given up",80,()->eatState==0,()->{});
+        step(3,()->check("E3: always-edible is ignored: not eaten at a full bar",useStart==-1&&srvGet(()->sp().getInventory().getItem(0).getCount())==1,useStart+" "+usedItem),"E3");
+        step(3,()->inHand(new ItemStack(Items.GOLDEN_APPLE)),"E3 control: a real golden apple at a full bar");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"control: hold");
+        until("control eaten",80,()->eatState==0,()->{});
+        step(3,()->{check("E3 control: vanilla's golden apple IS eaten at a full bar (so the check above means something)",useStart>=0&&usedItem.contains("golden_apple"),usedItem);srv(()->sp().removeAllEffects());},"control");
+        // E4: P4 eaten: no effect from any of the six, no teleport from the chorus fruit
+        step(3,()->{hungry(1,0);inHand(mre4.copy());srv(()->sp().removeAllEffects());},"E4: the P4 MRE, the bar at 1");
+        step(10,()->{},"sync");
+        final Vec3[] where=new Vec3[1];
+        step(1,()->{where[0]=srvGet(()->sp().position());QaMre.holdUse();},"E4: hold the use key (where the player stands)");
+        until("E4 eaten",80,()->eatState==0,()->{});
+        step(5,()->{var b=bar();
+            check("E4: eaten, the bar 1 -> 20, saturation the stored 20 (vanilla's cap is the bar)",useEnd>0&&b[0]==20&&b[1]==Math.min(got(P4),20f)&&Math.abs(b[1]-20f)<=Math.ulp(20f),b[0]+" / "+b[1]);
+            check("E4: no effects at all (golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish)",srvGet(()->sp().getActiveEffects().isEmpty()),srvGet(()->sp().getActiveEffects().toString()));
+            check("E4: no chorus fruit teleport",srvGet(()->sp().position().distanceTo(where[0])<.01),srvGet(()->sp().position().toString())+" vs "+where[0]);},"E4");
+        // E5: P3 with Poison on: the honey does not cure it, no Blindness from the stew, no more poison from the spider eye
+        step(3,()->{hungry(0,0);inHand(mre3.copy());srv(()->{sp().removeAllEffects();sp().addEffect(new MobEffectInstance(MobEffects.POISON,1200,0));});bowlsBefore=count(Items.BOWL);bottlesBefore=count(Items.GLASS_BOTTLE);},"E5: Poison on, the P3 MRE, an empty bar");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"E5: hold the use key");
+        until("E5 eaten",80,()->eatState==0,()->{});
+        step(5,()->{var b=bar();var poison=srvGet(()->sp().getEffect(MobEffects.POISON));
+            check("E5: eaten from an empty bar: 20 food, saturation 18.8 (the stored sum, below the bar)",useEnd>0&&b[0]==20&&b[1]==got(P3)&&Math.abs(b[1]-P3.saturation())<=Math.ulp(P3.saturation()),b[0]+" / "+b[1]);
+            check("E5: the honey inside does not cure Poison, and the spider eye adds none (same level, not longer)",poison!=null&&poison.getAmplifier()==0&&poison.getDuration()<=1200,String.valueOf(poison));
+            check("E5: no Blindness from the suspicious stew",srvGet(()->!sp().hasEffect(MobEffects.BLINDNESS)),"");
+            check("E5: nothing comes back when an MRE is eaten (no bowl, no bottle)",count(Items.BOWL)==bowlsBefore&&count(Items.GLASS_BOTTLE)==bottlesBefore,"");},"E5");
+        step(3,()->srv(()->{var honey=new ItemStack(Items.HONEY_BOTTLE);honey.finishUsingItem(sl(),sp());}),"E5 control: a real honey bottle");
+        step(3,()->{check("E5 control: vanilla's honey bottle does cure Poison (so the check above means something)",srvGet(()->!sp().hasEffect(MobEffects.POISON)),"");srv(()->sp().removeAllEffects());},"control");
+        // E6: the 20 MRE from an empty bar; and its time against vanilla's dried kelp (a 16-tick food)
+        step(3,()->{hungry(0,0);inHand(mre2.copy());},"E6: the 20 MRE, an empty bar");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"E6: hold");
+        until("E6 eaten",80,()->eatState==0,()->{});
+        final long[] mreTime=new long[1];
+        step(5,()->{var b=bar();mreTime[0]=useEnd-useStart;check("E6: 0 -> 20 food and 20 saturation at once",b[0]==20&&b[1]==Math.min(got(P2),20f)&&Math.abs(b[1]-20f)<=Math.ulp(20f),b[0]+" / "+b[1]);},"E6");
+        step(3,()->{hungry(10,0);inHand(new ItemStack(Items.DRIED_KELP));},"control: vanilla's dried kelp");
+        step(10,()->{},"sync");
+        step(1,QaMre::holdUse,"control: hold");
+        until("kelp eaten",80,()->eatState==0,()->{});
+        step(3,()->check("an MRE takes as long as vanilla's dried kelp (16 ticks): "+mreTime[0]+" vs "+(useEnd-useStart),useDuration==16&&mreTime[0]==useEnd-useStart,mreTime[0]+" vs "+(useEnd-useStart)),"time");
+
+        // ---- Marines Fuel's recipe, in this edition's data ------------------------------------------------------------------------------------
+        step(5,()->{
+            var result=srvGet(()->{
+                var grid=new net.minecraft.world.inventory.TransientCraftingContainer(sp().inventoryMenu,2,2);grid.setItem(0,new ItemStack(Items.CLAY_BALL));grid.setItem(3,new ItemStack(Items.LIME_DYE));
+                var r=sl().getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING,grid,sl());
+                return r.map(x->x.assemble(grid,sl().registryAccess())).orElse(ItemStack.EMPTY);});
+            check("a clay ball and lime dye craft 2 Marines Fuel",result.is(ArsenalBeacon.MARINES_FUEL.get())&&result.getCount()==2,result.toString());
+            var other=srvGet(()->{
+                var grid=new net.minecraft.world.inventory.TransientCraftingContainer(sp().inventoryMenu,2,2);grid.setItem(1,new ItemStack(Items.BLACK_DYE));grid.setItem(2,new ItemStack(Items.CLAY_BALL));
+                return sl().getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING,grid,sl()).map(x->x.assemble(grid,sl().registryAccess())).orElse(ItemStack.EMPTY);});
+            check("any dye, anywhere in the grid (shapeless): black dye too",other.is(ArsenalBeacon.MARINES_FUEL.get())&&other.getCount()==2,other.toString());
+            check("Marines Fuel is not food and stacks to 64",!new ItemStack(ArsenalBeacon.MARINES_FUEL.get()).isEdible()&&new ItemStack(ArsenalBeacon.MARINES_FUEL.get()).getMaxStackSize()==64,"");},"recipe");
+
+        // ---- Workshop Fabrication: the 8th Kitchen card, bought with this edition's price -----------------------------------------------------
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();
+            inv.add(new ItemStack(BuildFlavor.STANDALONE?ArsenalBeacon.ARDENT_ENERGY.get():ArsenalBeacon.PLATING.get(),4));inv.add(new ItemStack(Items.IRON_INGOT,8));inv.add(new ItemStack(Items.SMOKER));}),"the price in the pack");
+        step(5,()->{var msg=srvGet(()->WorkshopFabrication.buy(sp(),"mre_maker"));
+            check("Workshop Fabrication sells the MRE Station for "+(BuildFlavor.STANDALONE?"4 Ardent Energy":"4 Reinforced Beacon Plating")+", 8 iron and a smoker",msg.startsWith("Fabricated MRE Station")&&count(ArsenalBeacon.MRE_STATION_ITEM.get())==1&&count(Items.IRON_INGOT)==0&&count(Items.SMOKER)==0,msg);},"bought");
+        step(5,()->srv(()->{CampaignData.get(sl()).phase="preparation";BeaconNetwork.open(sp(),"menu","");}),"open the beacon");
+        until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
+        step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals("Workshop Fabrication")){b.onPress();break;}},"the Workshop Fabrication tab");
+        step(15,()->{var s=(BeaconClient.ControlScreen)mc().screen;s.mouseScrolled(s.width/2.0,s.height/2.0,-3);},"scroll down to the Kitchen group's end");
+        step(15,()->{var s=(BeaconClient.ControlScreen)mc().screen;var buttons=s.fabricationButtons;int at=WorkshopFabrication.ITEMS.indexOf("mre_maker"),cup=WorkshopFabrication.ITEMS.indexOf("cup_dispenser"),above=WorkshopFabrication.ITEMS.indexOf("drink_pot");
+            boolean ok=buttons.size()==WorkshopFabrication.ITEMS.size()&&buttons.get(at).getY()==buttons.get(cup).getY()&&buttons.get(at).getX()>buttons.get(cup).getX()&&buttons.get(at).getX()==buttons.get(above).getX()&&buttons.get(at).getY()>buttons.get(above).getY();
+            for(int i=WorkshopFabrication.ITEMS.indexOf("mess_hall_mk1");i<at;i++)ok&=buttons.get(i).getY()<=buttons.get(at).getY();
+            check("the MRE Station is the Kitchen group's 8th card: right column, bottom row",ok,"mre "+buttons.get(at).getX()+","+buttons.get(at).getY()+" cup "+buttons.get(cup).getX()+","+buttons.get(cup).getY());
+            shot("m07_workshop");},"workshop");
+        step(5,()->mc().setScreen(null),"close");
+        // ---- the Field Guide -------------------------------------------------------------------------------------------------------------
+        step(5,()->{var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
+        step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("mre");g.scroll=0;}},"the MRE page");
+        step(30,()->{check("the Field Guide has the MRE page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("mre"),"");shot("m08_guide_mre");},"guide");
+        step(5,()->{if(mc().screen instanceof BeaconClient.GuideScreen g)g.scroll=200;},"scroll");
+        step(20,()->shot("m09_guide_mre_more"),"guide 2");
+        step(5,()->mc().setScreen(null),"close");
+        // ---- breaking the station drops it and what it holds ---------------------------------------------------------------------------------
+        step(5,()->srv(()->{st().items.setItem(0,new ItemStack(Items.BREAD,3));st().items.setItem(MreStation.PAPER,new ItemStack(Items.PAPER,5));}),"three bread and five paper inside");
+        step(5,()->srv(()->sl().destroyBlock(S(),true)),"break it");
+        step(10,()->{
+            var drops=srvGet(()->{var m=new HashMap<String,Integer>();for(var ie:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(S()).inflate(3)))m.merge(ie.getItem().getItem().toString(),ie.getItem().getCount(),Integer::sum);return m;});
+            check("broken: the station drops itself, its 3 bread and 5 paper",drops.getOrDefault("mre_maker",0)==1&&drops.getOrDefault("bread",0)==3&&drops.getOrDefault("paper",0)==5,drops.toString());
+            check("and its upper filler is gone",srvGet(()->sl().getBlockState(S().above()).isAir()),srvGet(()->sl().getBlockState(S().above()).toString()));},"broken");
+    }
+}

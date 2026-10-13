@@ -58,6 +58,8 @@ final class Economy {
     static Price kitchen(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?KITCHEN_ARDENT:KITCHEN_PLATING)[mk-1]);}
     /** 0.0.35 (owner): Drink Station upgrades to Mk II, III and IV, like the Mess Hall's: 8/16/32 plating (pack) or 4/8/14 Ardent Energy (standalone). */
     static final int[] DRINKS_ARDENT={4,8,14},DRINKS_PLATING={8,16,32};
+    /** 0.0.38: the MRE Station, as the Mess Hall Mk I: 4 Ardent Energy (standalone) or 4 Reinforced Beacon Plating (pack) and 8 iron, plus a smoker. */
+    static final int MRE_STATION_KEY=4,MRE_STATION_IRON=8;
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(standalone()?null:ArsenalBeacon.PLATING::get,(standalone()?DRINKS_ARDENT:DRINKS_PLATING)[mk-1]);}
 
     static List<WeaponPlatform.Cost> stationCosts(String kind){
@@ -96,6 +98,8 @@ final class Economy {
             case "drink_mixer_mk1"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",4),WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:brewing_stand",1));
             case "drink_pot"->List.of(WeaponPlatform.cost("minecraft:copper_ingot",14),WeaponPlatform.cost("minecraft:oak_sign",1));
             case "cup_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),WeaponPlatform.cost("minecraft:paper",4));
+            // 0.0.38 (owner): the MRE Station, in the Mess Hall's style; the smoker is its heat sealer
+            case "mre_maker"->List.of(WeaponPlatform.cost(standalone()?"arsenal_beacon:ardent_energy":"arsenal_beacon:reinforced_plating",MRE_STATION_KEY),WeaponPlatform.cost("minecraft:iron_ingot",MRE_STATION_IRON),WeaponPlatform.cost("minecraft:smoker",1));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };
