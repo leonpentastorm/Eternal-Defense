@@ -1,0 +1,44 @@
+QA_NOTE sound packets are counted at the client's connection
+QA_CHECK PASS FOB Beacon in a hole: the ghost is red and the line says something is in the way target=2064, -60, 0 red=true line=Something is in the way: the FOB Beacon needs 2 free blocks, one on the other.
+QA_CHECK PASS FOB Beacon in a hole: refused, it never left the hand (client and server) placed=false hand before/after the click 2 2, now client 2 server 2
+QA_CHECK PASS open ground: not red (nothing in the way); the server's verdict says why not preview=no_raids
+QA_CHECK PASS no village: the client had taken the item (its guess), the server refused and sent the hand back: 2 on both sides, no FOB placed=false hand before/after the click 2 1, now client 2 server 2
+QA_CHECK PASS Exchange outside the zone: the client guessed, the server refused and sent the hand back placed=false hand before/after 2 1, now client 2 server 2
+QA_CHECK PASS Exchange in a hole one block high: the preview is red (something in the way) blocked=true at 1974, -60, -10
+QA_CHECK PASS Exchange in a hole one block high: refused, the item never left the hand (client and server) placed=false hand before/after click 2 2 client now 2 server 2
+QA_CHECK PASS Mess Hall with a block on its second column: the preview is red (something in the way) blocked=true at 1980, -60, -10
+QA_CHECK PASS Mess Hall with a block on its second column: refused, the item never left the hand (client and server) placed=false hand before/after click 2 2 client now 2 server 2
+QA_CHECK PASS Support Cannon with a block in its 3 x 3 x 2: the preview is red (something in the way) blocked=true at 1988, -60, -12
+QA_CHECK PASS Support Cannon with a block in its 3 x 3 x 2: refused, the item never left the hand (client and server) placed=false hand before/after click 2 2 client now 2 server 2
+QA_CHECK PASS Logistics Hub with a block in its 3 x 3 x 3: the preview is red (something in the way) blocked=true at 1996, -59, -12
+QA_CHECK PASS Logistics Hub with a block in its 3 x 3 x 3: refused, the item never left the hand (client and server) placed=false hand before/after click 1 1 client now 1 server 1
+QA_CHECK PASS Weapon table with a block on its second cell: the preview is red (something in the way) blocked=true at 1996, -60, 0
+QA_CHECK PASS Weapon table with a block on its second cell: refused, the item never left the hand (client and server) placed=false hand before/after click 2 2 client now 2 server 2
+QA_CHECK PASS free spot: the preview is not red blocked=false
+QA_CHECK PASS free spot: placed, one Exchange spent on both sides client 1 server 1
+QA_CHECK PASS the platform stands 545357767421892 north
+QA_CHECK PASS falling blocks are broken out of the return zone (dropped as items); the sand beside the zone stays solid cells in the zone, sand outside stays, sand/gravel items: 0 true 3
+QA_CHECK PASS placing into the zone is still refused, and the stone comes back to the hand at once client 64 server 64
+QA_NOTE taczmagazines loaded: true
+QA_NOTE ammo age 1: total=0 locked=5 notice='Upgrade your ammo table' filter=0 rows=[]
+QA_CHECK PASS Age 1 ammo table (the AK-47 and its 7.62x39 rounds are Age 3): nothing listed yet, the table counts what waits in later Ages total 0 locked 5
+QA_NOTE ammo age 1 magazines filter: filter=11 total=0 rows=[]
+QA_NOTE coins button inactive
+QA_NOTE taczmagazines loaded: true
+QA_NOTE ammo age 3: total=3 locked=2 notice='' filter=0 rows=[7.62x39mm 30-Round Magazine [MAG cap 30], 7.62x39mm Bullet, 7.62x39mm 34-Round Extended I Magazine [MAG cap 34]]
+QA_CHECK PASS Age 3 ammo table, AK-47 in hand, All: the list has its rounds and at least its standard 30-round magazine total 3 locked 2 rows [7.62x39mm 30-Round Magazine [MAG cap 30], 7.62x39mm Bullet, 7.62x39mm 34-Round Extended I Magazine [MAG cap 34]]
+QA_NOTE ammo age 3 magazines filter: filter=11 total=2 rows=[7.62x39mm 30-Round Magazine cost=6, 7.62x39mm 34-Round Extended I Magazine cost=8]
+QA_CHECK PASS Age 3: the Compatible magazines filter lists them filter 11 rows [7.62x39mm 30-Round Magazine cost=6, 7.62x39mm 34-Round Extended I Magazine cost=8]
+QA_CHECK PASS Age 3: bought with Ammo Coins, an empty magazine is in the pack magazines before 0 after 1
+QA_NOTE taczmagazines loaded: true
+QA_NOTE ammo age 5: total=5 locked=0 notice='' filter=0 rows=[7.62x39mm 30-Round Magazine [MAG cap 30], 7.62x39mm Bullet, 7.62x39mm 34-Round Extended I Magazine [MAG cap 34], 7.62x39mm 37-Round Extended II Magazine [MAG cap 37], 7.62x39mm 40-Round Extended III Magazine [MAG cap 40]]
+QA_CHECK PASS Age 5 ammo table, AK-47 in hand, All: the list has its rounds and every magazine size total 5 locked 0 rows [7.62x39mm 30-Round Magazine [MAG cap 30], 7.62x39mm Bullet, 7.62x39mm 34-Round Extended I Magazine [MAG cap 34], 7.62x39mm 37-Round Extended II Magazine [MAG cap 37], 7.62x39mm 40-Round Extended III Magazine [MAG cap 40]]
+QA_NOTE ammo age 5 magazines filter: filter=11 total=4 rows=[7.62x39mm 30-Round Magazine cost=6, 7.62x39mm 34-Round Extended I Magazine cost=8, 7.62x39mm 37-Round Extended II Magazine cost=10, 7.62x39mm 40-Round Extended III Magazine cost=12]
+QA_CHECK PASS Age 5: the Compatible magazines filter lists them filter 11 rows [7.62x39mm 30-Round Magazine cost=6, 7.62x39mm 34-Round Extended I Magazine cost=8, 7.62x39mm 37-Round Extended II Magazine cost=10, 7.62x39mm 40-Round Extended III Magazine cost=12]
+QA_CHECK PASS Age 5: bought with Ammo Coins, an empty magazine is in the pack magazines before 0 after 1
+QA_CHECK PASS a corpse lies where the player died BlockPos{x=1963, y=-60, z=20}
+QA_CHECK PASS fix off: the corpse is drawn as a player not in the world, and TaCZ's fades pile up on it (one more each frame) frames 218, most fades in one layer 218 (DummyPlayer)
+QA_CHECK PASS fix on: the long chain built up with the fix off is gone within three seconds fades in the latest frame 12 (the most before: 235)
+QA_CHECK PASS fix on: the fades end and drop off, the chain stays short frames 724 in 30 s, most fades in one layer 14 (bound 20)
+QA_CHECK PASS idle animations off: the same (the fix does not depend on them) frames 233 in 10 s, most 13 (bound 19)
+QA_DONE pass=32 fail=0

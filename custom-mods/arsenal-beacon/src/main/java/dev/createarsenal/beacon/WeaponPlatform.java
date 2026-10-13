@@ -41,7 +41,7 @@ public final class WeaponPlatform {
     static final class StationItem extends BlockItem{
         StationItem(Block block){super(block,new Item.Properties());}
         @Override public InteractionResult place(net.minecraft.world.item.context.BlockPlaceContext context){
-            var result=super.place(context);if(result.consumesAction()&&context.getLevel() instanceof net.minecraft.server.level.ServerLevel level)PlatformRegistry.get(level).track(context.getClickedPos(),level.getBlockState(context.getClickedPos()));return result;
+            var result=super.place(context);if(result.consumesAction()&&context.getLevel() instanceof net.minecraft.server.level.ServerLevel level)PlatformRegistry.get(level).track(context.getClickedPos(),level.getBlockState(context.getClickedPos()));return PlacementGuard.settled(context,result);
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> tooltip,TooltipFlag flag){
             super.appendHoverText(stack,level,tooltip,flag);int age=1;
@@ -134,21 +134,28 @@ public final class WeaponPlatform {
     }
     static List<Entry> entries(ServerPlayer p,String kind,String query){
         if(kind.equals("armor"))return ArmorPlatform.entries(p,query);
-        String filter=query.toLowerCase(Locale.ROOT);List<Entry> list=new ArrayList<>();
+        String filter=query.toLowerCase(Locale.ROOT);List<Entry> list=new ArrayList<>();List<Object[]> magazines=new ArrayList<>();
         for(var recipe:p.level().getRecipeManager().getRecipes()){
             if(!recipe.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe"))continue;
             var id=recipe.getId();
             try{
                 ItemStack output=(ItemStack)recipe.getClass().getMethod("getOutput").invoke(recipe);
                 if(output.isEmpty()||!validIndex(output)||!WeaponCompatibility.craftable(output))continue;
-                Gate gate=MagazineBridge.isMagazine(output)?MagazineBridge.gate(output):catalogue().get(id.toString());
+                if(MagazineBridge.isMagazine(output)){if(kind.equals("ammo"))magazines.add(new Object[]{id,recipe,output});continue;}   // after the rounds: a magazine's Age looks at theirs
+                Gate gate=catalogue().get(id.toString());
                 if(gate==null){var tag=output.getOrCreateTag();String type=tag.contains("GunId")?"gun":tag.contains("AmmoId")?"ammo":"attachment";
                     String indexed=tag.getString(type.equals("gun")?"GunId":type.equals("ammo")?"AmmoId":"AttachmentId");gate=new Gate(5,type,indexed.isEmpty()?id.toString():indexed);}
                 if(!gate.kind.equals(kind))continue;
                 list.add(new Entry(id,recipe,gate,output));
             }catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",id,e);}
         }
-        if(kind.equals("ammo"))list=AmmoCatalogue.canonical(list);
+        if(kind.equals("ammo")){
+            // 0.0.42 (owner): a magazine is listed no later than the rounds it holds, as the table lists them
+            Map<String,Integer> rounds=new HashMap<>();for(var e:list)if(e.output.hasTag()&&e.output.getTag().contains("AmmoId"))rounds.merge(e.output.getTag().getString("AmmoId"),e.gate.age,Math::min);
+            for(var m:magazines)try{list.add(new Entry((ResourceLocation)m[0],m[1],MagazineBridge.gate((ItemStack)m[2],rounds),(ItemStack)m[2]));}
+                catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",m[0],e);}
+            list=AmmoCatalogue.canonical(list);
+        }
         if(!filter.isEmpty())list=list.stream().filter(e->e.gate.name.toLowerCase(Locale.ROOT).contains(filter)||e.output.getHoverName().getString().toLowerCase(Locale.ROOT).contains(filter)||e.gate.id.toLowerCase(Locale.ROOT).contains(filter)||e.recipeId.toString().toLowerCase(Locale.ROOT).contains(filter)).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         list.sort(Comparator.comparingInt((Entry e)->e.gate.age).thenComparing(e->e.gate.id).thenComparing(e->e.recipeId.toString()));return list;
     }

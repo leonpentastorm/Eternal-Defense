@@ -14,6 +14,6 @@ reports/
 .env.*
 __pycache__/
 custom-mods/*/logs/
-dist/hotfix-0.0.41-preview/
+dist/hotfix-*/
 dist/*.mrpack
 dist/*.mrpack.sha512

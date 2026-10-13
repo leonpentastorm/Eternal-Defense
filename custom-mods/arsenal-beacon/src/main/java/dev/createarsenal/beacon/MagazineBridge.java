@@ -18,11 +18,23 @@ final class MagazineBridge {
         return (Set<net.minecraft.resources.ResourceLocation>)families().getMethod("getCompatibleGuns",String.class).invoke(null,family(stack));
     }
     static int extension(ItemStack stack)throws ReflectiveOperationException{return ((Number)families().getMethod("getExtLevelForFamily",String.class).invoke(null,family(stack))).intValue();}
-    static WeaponPlatform.Gate gate(ItemStack stack)throws ReflectiveOperationException{
+    /** The cartridge this magazine holds (its family's ammo), or null. */
+    static net.minecraft.resources.ResourceLocation ammo(ItemStack stack)throws ReflectiveOperationException{return (net.minecraft.resources.ResourceLocation)families().getMethod("getAmmoTypeForFamily",String.class).invoke(null,family(stack));}
+    /**
+     * The Age of a magazine: its family's earliest gun, or (0.0.42, owner) the Age of the rounds it holds when those come earlier, so a
+     * table that sells a gun's rounds sells its standard magazine too (cartridges are shared by many guns and families, one per round
+     * count, are not: the HK45's .45 ACP rounds were Age 2, its 10-round magazine Age 3). Extended magazines stay one Age per level above.
+     */
+    static WeaponPlatform.Gate gate(ItemStack stack)throws ReflectiveOperationException{return gate(stack,Map.of());}
+    /** As above, with the Age at which the table lists each kind of round (by ammo id). */
+    static WeaponPlatform.Gate gate(ItemStack stack,Map<String,Integer> rounds)throws ReflectiveOperationException{
         int minimum=5,createStage=3;boolean ordinary=false;
         for(var gun:guns(stack)){var g=WeaponPlatform.indexedGun(gun.toString());var e=new WeaponPlatform.Entry(new net.minecraft.resources.ResourceLocation(g.id()),null,g,ItemStack.EMPTY);if(CreateUnlocks.armory(e))createStage=Math.min(createStage,CreateUnlocks.required(e));else{ordinary=true;minimum=Math.min(minimum,g.age());}}
-        return new WeaponPlatform.Gate(Math.min(5,(ordinary?minimum:createStage)+extension(stack)),"ammo",(ordinary?"magazine/":"create_armorer:magazine/")+family(stack),stack.getHoverName().getString());
+        if(ordinary){var held=ammo(stack);if(held!=null)minimum=Math.min(minimum,rounds.getOrDefault(held.toString(),5));}
+        return new WeaponPlatform.Gate(age(ordinary?minimum:createStage,extension(stack)),"ammo",(ordinary?"magazine/":"create_armorer:magazine/")+family(stack),stack.getHoverName().getString());
     }
+    /** A magazine's Age from its base Age and its extension level (one Age per level, at most Age 5). */
+    static int age(int base,int extension){return Math.min(5,base+extension);}
     static boolean unlocked(ServerPlayer p,WeaponPlatform.Entry entry,int age){
         if(p.isCreative())return true;
         try{

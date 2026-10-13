@@ -217,17 +217,22 @@ final class LogisticsHub {
         HubItem(Block block){super(block,new Item.Properties().stacksTo(1).fireResistant());}
         /** The anchor for a Hub placed with this context: the block above the clicked spot, so the Hub stands on the ground. */
         static BlockPos anchorFor(BlockPlaceContext c){return c.getClickedPos().above();}
+        /** 0.0.42: is every one of the 27 cells free (nothing solid, no block entity, no creature)? The preview is red when not. */
+        static boolean free(Level level,BlockPos anchor){
+            for(var p:cells(anchor)){
+                if(!level.isInWorldBounds(p)||!level.getWorldBorder().isWithinBounds(p)||!level.hasChunkAt(p)||!level.getBlockState(p).canBeReplaced()||level.getBlockEntity(p)!=null
+                    ||!level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,new net.minecraft.world.phys.AABB(p),e->!e.isSpectator()).isEmpty())return false;
+            }
+            return true;
+        }
         @Override public InteractionResult place(BlockPlaceContext c){
             var level=c.getLevel();var player=c.getPlayer();var anchor=anchorFor(c);var facing=c.getHorizontalDirection().getOpposite();
-            if(level.isClientSide)return InteractionResult.SUCCESS;
+            if(level.isClientSide)return free(level,anchor)?InteractionResult.SUCCESS:InteractionResult.FAIL;   // the server places it; the client only does not swing at a red preview
             for(var p:cells(anchor)){
                 String zone=BaseZone.problem(level,p);if(zone!=null){BaseZone.say(player,"zone."+zone);return InteractionResult.FAIL;}
                 if(level instanceof ServerLevel server&&ReturnZone.inside(server,p)){BaseZone.say(player,"keep_clear");return InteractionResult.FAIL;}
             }
-            for(var p:cells(anchor)){
-                if(!level.isInWorldBounds(p)||!level.getWorldBorder().isWithinBounds(p)||!level.hasChunkAt(p)||!level.getBlockState(p).canBeReplaced()||level.getBlockEntity(p)!=null
-                    ||!level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,new net.minecraft.world.phys.AABB(p),e->!e.isSpectator()).isEmpty()){BaseZone.say(player,"no_room");return InteractionResult.FAIL;}
-            }
+            if(!free(level,anchor)){BaseZone.say(player,"no_room");return InteractionResult.FAIL;}
             var server=(ServerLevel)level;var stack=c.getItemInHand();
             UUID wanted=stack.hasTag()&&stack.getTag().hasUUID("HubId")?stack.getTag().getUUID("HubId"):null;
             var hub=HubData.get(server).place(wanted,server.dimension(),anchor,facing);

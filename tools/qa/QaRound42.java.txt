@@ -1,0 +1,323 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): the owner's 0.0.42 list on a real client, run with TaCZ Magazines 0.2.5-Beta, Corpse 1.0.23 and
+ * Player Animator 1.0.2-rc1 from the owner's pack (setup-qa.sh with QA_MODS). Placement: a FOB Beacon in a hole one block high (red
+ * preview, refused on the client, the item stays), a FOB Beacon and an Exchange outside their places (the client guesses, the server
+ * refuses, the hand comes back at once), red previews for the Exchange, the Mess Hall, the cannon, the Hub and a weapon table with a
+ * block in the way; the return zone with sand and gravel dropped into it; the ammo table's magazines for a held AK-47; and a corpse
+ * holding a gun, watched with the stand-in fix off (the fade chain grows) and on (it stays short).
+ * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaRound42 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    /** A step runs, then the next one waits {@code delay} ticks. */
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    /** Waits {@code ticks}, then runs the check. */
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    /** Every sound of the mod the client actually starts. */
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
+    }
+    static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
+    /**
+     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
+     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
+     * connection's own, in the integrated server's local channel the packets arrive as objects).
+     */
+    static boolean hooked;
+    static void hookSounds(){
+        if(hooked||mc().getConnection()==null)return;hooked=true;
+        mc().getConnection().getConnection().channel().pipeline().addBefore("packet_handler","qa_sounds",new io.netty.channel.ChannelInboundHandlerAdapter(){
+            @Override public void channelRead(io.netty.channel.ChannelHandlerContext ctx,Object msg)throws Exception{
+                ResourceLocation id=null;
+                if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
+                else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
+                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                super.channelRead(ctx,msg);
+            }
+        });
+        log("QA_NOTE sound packets are counted at the client's connection");
+    }
+
+    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+
+    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static net.minecraft.client.gui.components.AbstractWidget button(String label){
+        if(mc().screen==null)return null;for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget b&&b.getMessage().getString().equals(label))return b;return null;
+    }
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
+
+    // ---- the places --------------------------------------------------------------------------------------------------------------------
+    /** B: the beacon (core 3, radius 24); FOB: a FOB spot far outside it; IN: spots inside the Home Zone; PLAT: the Support Platform; AMMO: an ammo table. */
+    static BlockPos B,FOBH,FOBO,EXO,EXH,EXF,HALL,CAN,HUB,TAB,PLAT,AMMO;
+    static void places(){
+        B=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy,Math.floorDiv(sz,16)*16);
+        FOBH=B.offset(80,0,0);FOBO=B.offset(80,0,12);EXO=B.offset(80,0,24);
+        EXH=B.offset(-10,0,-10);EXF=B.offset(-10,0,-4);HALL=B.offset(-4,0,-10);CAN=B.offset(4,0,-12);HUB=B.offset(12,0,-12);TAB=B.offset(12,0,0);PLAT=B.offset(0,0,10);AMMO=B.offset(-12,0,8);
+    }
+    static ItemStack st(Item item,int n){return new ItemStack(item,n);}
+    static void sync(){srv(()->BeaconNetwork.syncNearby(sl(),CampaignData.get(sl())));}
+    static Object field(Object o,String name){try{var f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(Exception x){return null;}}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(Exception x){return null;}}
+    static volatile String note="";
+    /** The hand as each side has it. */
+    static int clientHand(){return mc().player.getMainHandItem().getCount();}
+    static int serverHand(){return srvGet(()->sp().getMainHandItem().getCount());}
+    static boolean blockAt(BlockPos p,net.minecraft.world.level.block.Block b){return srvGet(()->sl().getBlockState(p).is(b))||mc().level.getBlockState(p).is(b);}
+    /** Stands three blocks south of {@code at} and looks at the top of the block under it (where a piece used now would go). */
+    static void aimAt(BlockPos at){look(at.offset(0,0,-3),at.getX()+.5,at.getY()+.02,at.getZ()+.5);}
+    static PlacementPreviewClient.Ghost ghost(){return PlacementPreviewClient.ghost();}
+    /** The placement checks: red preview, the click refused on the client, nothing placed, the item kept on both sides. */
+    static void refusedHere(String what,BlockPos at,java.util.function.Supplier<ItemStack> item,net.minecraft.world.level.block.Block block,Runnable obstruct,String shotName){
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(at.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);obstruct.run();});hold(item.get());},what+": clear the spot, then put something in the way");
+        until(what+": the spot is loaded",100,()->loaded(at),()->{});
+        step(10,()->aimAt(at),what+": aim at the spot");
+        step(10,()->{var g=ghost();check(what+": the preview is red (something in the way)",g!=null&&g.blocked(),g==null?"no ghost":"blocked="+g.blocked()+" at "+g.cells().get(0).toShortString());shot(shotName);},what+": the preview");
+        step(5,()->{note=clientHand()+"";click(at.below(),Direction.UP);note+=" "+clientHand();},what+": use it on the spot (a real click)");
+        step(10,()->{boolean placed=blockAt(at,block)||blockAt(at.above(),block);int c=clientHand(),s=serverHand();
+            check(what+": refused, the item never left the hand (client and server)",!placed&&c==Integer.parseInt(note.split(" ")[0])&&note.split(" ")[1].equals(note.split(" ")[0])&&s==c,"placed="+placed+" hand before/after click "+note+" client now "+c+" server "+s);},what+": refused");
+    }
+
+    // ---- the corpse: the stand-in's Player Animator layers -------------------------------------------------------------------------------------
+    /** The most fade modifiers seen in one layer of a body drawn as a player but not in the world (Corpse's copy), since the last reset. */
+    static volatile int standInMost=-1,standInFrames,standInNow=-1;static volatile String standInWho="";
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST) public static void drawnPlayer(net.minecraftforge.client.event.RenderPlayerEvent.Post e){
+        var p=e.getEntity();if(p.level()==null||p.level().getEntity(p.getId())==p)return;
+        standInFrames++;standInWho=p.getClass().getSimpleName();
+        try{
+            var stack=Class.forName("dev.kosmx.playerAnim.api.IPlayer").getMethod("getAnimationStack").invoke(p);
+            var f=stack.getClass().getDeclaredField("layers");f.setAccessible(true);int most=0;
+            for(Object pair:(List<?>)f.get(stack)){var layer=pair.getClass().getMethod("getRight").invoke(pair);if(layer.getClass().getSimpleName().equals("ModifierLayer"))most=Math.max(most,(int)layer.getClass().getMethod("size").invoke(layer));}
+            standInMost=Math.max(standInMost,most);standInNow=most;
+        }catch(Exception x){standInWho="error "+x;}
+    }
+
+    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r42",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r42",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;hookSounds();sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        // ---- the base: a beacon 2000 blocks out, survival, a still world ---------------------------------------------------------------
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
+            sp().teleportTo(sl(),B.getX()+.5,sy,B.getZ()-6.5,0,10);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"go to the base site");
+        until("the base site is loaded",200,()->loaded(B),()->{});
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon; survival");
+        step(5,()->sync(),"sync");
+
+        // ---- the FOB Beacon in a hole one block high: red, refused on the client, the item stays ------------------------------------------------
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(FOBH.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
+            sl().setBlock(FOBH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);});hold(st(ArsenalBeacon.FOB_BEACON_ITEM.get(),2));tp(FOBH.getX()+.5,sy,FOBH.getZ()-2.5,0,30);},"a hole one block high (stone on top); two FOB Beacons in hand");
+        until("the hole is loaded",200,()->loaded(FOBH),()->{});
+        step(20,()->aimAt(FOBH),"aim at the floor of the hole");
+        step(20,()->{var at=FobOutlineClient.target();boolean red=at!=null&&FobOutlineClient.colour(at)==PlacementGuard.RED;var line=FobOutlineClient.line();
+            check("FOB Beacon in a hole: the ghost is red and the line says something is in the way",red&&line!=null&&line.getString().startsWith("Something is in the way"),"target="+(at==null?"none":at.toShortString())+" red="+red+" line="+(line==null?"none":line.getString()));
+            shot("r42_01_fob_hole_red");},"the FOB preview");
+        step(5,()->{note=clientHand()+"";click(FOBH.below(),Direction.UP);note+=" "+clientHand();},"use it on the floor of the hole (a real click)");
+        step(10,()->{boolean placed=blockAt(FOBH,ArsenalBeacon.FOB_BEACON.get());int c=clientHand(),s=serverHand();
+            check("FOB Beacon in a hole: refused, it never left the hand (client and server)",!placed&&note.equals("2 2")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"refused in the hole");
+
+        // ---- a FOB Beacon where only the server can say no (no village): the client guesses, the server refuses, the hand comes back ----------------
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(FOBO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});tp(FOBO.getX()+.5,sy,FOBO.getZ()-2.5,0,30);},"open ground, no village");
+        until("the open ground is loaded",200,()->loaded(FOBO),()->{});
+        step(20,()->aimAt(FOBO),"aim at it");
+        step(40,()->{var at=FobOutlineClient.target();check("open ground: not red (nothing in the way); the server's verdict says why not",at!=null&&FobOutlineClient.colour(at)!=PlacementGuard.RED&&FobOutlineClient.preview!=null&&!FobOutlineClient.preview.getString("problem").isEmpty(),
+            "preview="+(FobOutlineClient.preview==null?"none":FobOutlineClient.preview.getString("problem")));shot("r42_02_fob_no_village");},"the FOB preview on open ground");
+        step(5,()->{FobOutlineClient.preview=null;note=clientHand()+"";click(FOBO.below(),Direction.UP);note+=" "+clientHand();},"use it before the client has the server's verdict (the client guesses it will stand)");
+        step(10,()->{boolean placed=blockAt(FOBO,ArsenalBeacon.FOB_BEACON.get());int c=clientHand(),s=serverHand();
+            check("no village: the client had taken the item (its guess), the server refused and sent the hand back: 2 on both sides, no FOB",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"the hand comes back");
+
+        // ---- the Exchange outside the Home Zone (a rule only the server knows): the same ----------------------------------------------------------
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges in hand, outside the Home Zone");
+        until("the spot is loaded",200,()->loaded(EXO),()->{});
+        step(20,()->aimAt(EXO),"aim at it");
+        step(5,()->{note=clientHand()+"";click(EXO.below(),Direction.UP);note+=" "+clientHand();},"use it there");
+        step(10,()->{boolean placed=blockAt(EXO,ArsenalBeacon.EXCHANGE_SHOP.get());int c=clientHand(),s=serverHand();
+            check("Exchange outside the zone: the client guessed, the server refused and sent the hand back",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after "+note+", now client "+c+" server "+s);},"the hand comes back");
+
+        // ---- red previews in the Home Zone, each refused with the item kept ------------------------------------------------------------------------
+        step(5,()->tp(B.getX()+.5,sy,B.getZ()-6.5,0,10),"back in the base");
+        refusedHere("Exchange in a hole one block high",EXH,()->st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2),ArsenalBeacon.EXCHANGE_SHOP.get(),()->sl().setBlock(EXH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_03_exchange_hole_red");
+        refusedHere("Mess Hall with a block on its second column",HALL,()->st(ArsenalBeacon.MESS_HALL_I.get().asItem(),2),ArsenalBeacon.MESS_HALL_I.get(),()->{sl().setBlock(HALL.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(HALL.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_04_mess_hall_red");
+        refusedHere("Support Cannon with a block in its 3 x 3 x 2",CAN,()->st(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),2),ArsenalBeacon.SUPPORT_CANNON.get(),()->sl().setBlock(CAN.offset(1,1,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_05_cannon_red");
+        refusedHere("Logistics Hub with a block in its 3 x 3 x 3",HUB,()->st(ArsenalBeacon.LOGISTICS_HUB_ITEM.get(),1),ArsenalBeacon.LOGISTICS_HUB.get(),()->sl().setBlock(HUB.offset(1,2,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_06_hub_red");
+        refusedHere("Weapon table with a block on its second cell",TAB,()->st(ArsenalBeacon.GUN_PLATFORM.get().asItem(),2),ArsenalBeacon.GUN_PLATFORM.get(),()->{sl().setBlock(TAB.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(TAB.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_07_weapon_table_red");
+        // and a free spot: cyan, placed, one item spent
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXF.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges, a free spot");
+        step(10,()->aimAt(EXF),"aim at it");
+        step(10,()->{var g=ghost();check("free spot: the preview is not red",g!=null&&!g.blocked(),g==null?"no ghost":"blocked="+g.blocked());shot("r42_08_exchange_free");},"cyan");
+        step(5,()->click(EXF.below(),Direction.UP),"use it");
+        step(15,()->check("free spot: placed, one Exchange spent on both sides",blockAt(EXF,ArsenalBeacon.EXCHANGE_SHOP.get())&&clientHand()==1&&serverHand()==1,"client "+clientHand()+" server "+serverHand()),"placed");
+
+        // ---- the return zone: sand and gravel dropped into it are broken out; outside it they stay ---------------------------------------------------
+        step(5,()->{srv(()->{for(int x=-3;x<=3;x++)for(int y=0;y<=6;y++)for(int z=-4;z<=2;z++)sl().setBlock(PLAT.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));},"a Support Platform in hand");
+        step(10,()->aimAt(PLAT),"aim at its spot (facing it from the north)");
+        step(5,()->click(PLAT.below(),Direction.UP),"place it");
+        step(20,()->{note=srvGet(()->{var b=SupportData.get(sl()).of(sp().getUUID());if(b==null||b.platform==null)return "none";var s=sl().getBlockState(b.platform);return b.platform.asLong()+" "+s.getValue(SupportPlatform.FACING).getName();});
+            check("the platform stands",!note.equals("none"),note);},"placed");
+        step(5,()->srv(()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var zone=SupportCalls.returnZone(pos,f);
+            sl().setBlock(zone.get(0).above(5),net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),3);
+            sl().setBlock(zone.get(2).above(5),net.minecraft.world.level.block.Blocks.GRAVEL.defaultBlockState(),3);sl().setBlock(zone.get(2).above(6),net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),3);
+            var outside=pos.relative(f).relative(f.getClockWise(),2);sl().setBlock(outside.above(5),net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),3);
+            sp().teleportTo(sl(),pos.getX()-6.5,sy,pos.getZ()-6.5,-45,20);}),"drop sand into the zone's first row, gravel and sand into its second, and sand beside the zone (the player steps back, out of pick-up reach)");
+        step(1,()->shot("r42_09_sand_falling"),"falling");
+        after(70,()->{String r=srvGet(()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var zone=SupportCalls.returnZone(pos,f);
+                int solid=0;for(var c:zone)if(ReturnZone.inTheWay(sl(),c,sl().getBlockState(c)))solid++;
+                var outside=pos.relative(f).relative(f.getClockWise(),2);boolean stays=sl().getBlockState(outside).is(net.minecraft.world.level.block.Blocks.SAND);
+                int drops=0;for(var it:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(pos).inflate(6)))if(it.getItem().is(Items.SAND)||it.getItem().is(Items.GRAVEL))drops+=it.getItem().getCount();
+                return solid+" "+stays+" "+drops;});
+            check("falling blocks are broken out of the return zone (dropped as items); the sand beside the zone stays",r.equals("0 true 3"),"solid cells in the zone, sand outside stays, sand/gravel items: "+r);shot("r42_10_zone_clear");},"the zone is clear");
+        step(20,()->{},"settle");
+        step(5,()->hold(st(Items.STONE,64)),"stone in hand");
+        step(5,()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var cell=SupportCalls.returnZone(pos,f).get(0);
+            srv(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(pos).inflate(8)).forEach(e->e.discard()));
+            look(cell.relative(f,2).relative(f.getClockWise()),cell.getX()+.5,cell.getY()+.02,cell.getZ()+.5);},"look at the zone's floor");
+        step(10,()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var cell=SupportCalls.returnZone(pos,f).get(0);
+            click(cell.below(),Direction.UP);},"place stone into the zone (a real click)");
+        step(10,()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var cell=SupportCalls.returnZone(pos,f).get(0);
+            check("placing into the zone is still refused, and the stone comes back to the hand at once",!blockAt(cell,net.minecraft.world.level.block.Blocks.STONE)&&clientHand()==64&&serverHand()==64,"client "+clientHand()+" server "+serverHand());},"refused, hand kept");
+
+        // ---- the ammo table's magazines for a held AK-47 (TaCZ Magazines 0.2.5-Beta) ----------------------------------------------------------------
+        for(int age:new int[]{1,3,5}){
+            step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(AMMO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
+                var s=ArsenalBeacon.AMMO_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,age).setValue(ArsenalStructures.FACING,Direction.NORTH).setValue(ArsenalStructures.WIDE,true).setValue(ArsenalStructures.TALL,true);
+                sl().setBlock(AMMO,s,3);PlatformRegistry.get(sl()).track(AMMO,s);
+                sp().getInventory().clearContent();MessHallV4GameTests.gun(sp(),"tacz:ak47");sp().getInventory().setItem(8,st(ArsenalBeacon.AMMO_COIN.get(),64));
+                note=String.valueOf(net.minecraftforge.fml.ModList.get().isLoaded("taczmagazines"));});
+                tp(AMMO.getX()+.5,sy,AMMO.getZ()-2.5,0,20);},"an Age "+age+" ammo table; an AK-47 in hand; Ammo Coins");
+            step(10,()->{log("QA_NOTE taczmagazines loaded: {}",note);look(AMMO.offset(0,0,-2),AMMO.getX()+.5,AMMO.getY()+.5,AMMO.getZ()+.1);},"face it");
+            step(5,()->click(AMMO,Direction.NORTH),"open it (a real right-click)");
+            step(30,()->{var d=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=d.getList("recipes",10);int mags=0;var names=new ArrayList<String>();
+                for(int i=0;i<rows.size();i++){var r=rows.getCompound(i);names.add(ItemStack.of(r.getCompound("output")).getHoverName().getString()+(r.getBoolean("magazine")?" [MAG cap "+r.getInt("capacity")+"]":"")+(r.getBoolean("unlocked")?"":" [locked]"));if(r.getBoolean("magazine"))mags++;}
+                log("QA_NOTE ammo age {}: total={} locked={} notice='{}' filter={} rows={}",age,d.getInt("total"),d.getInt("locked"),d.getString("notice"),d.getInt("ageFilter"),names);
+                if(age==1)check("Age 1 ammo table (nothing for the AK-47 below Age 2): nothing listed yet, the table counts what waits in later Ages",rows.isEmpty()&&d.getInt("locked")>=5,"total "+d.getInt("total")+" locked "+d.getInt("locked"));
+                else check("Age "+age+" ammo table, AK-47 in hand, All: the list has its rounds and "+(age==3?"at least its standard 30-round magazine":"every magazine size"),(age==3?mags>=1:mags==4)&&rows.size()==mags+1,"total "+d.getInt("total")+" locked "+d.getInt("locked")+" rows "+names);
+                shot("r42_11_ammo_age"+age+"_all");},"the list (All)");
+            for(int press=0;press<7;press++){int n=press;step(15,()->{var b=(Ui.UiButton)field(mc().screen,"ageButton");if(b!=null)press(b);else log("QA_NOTE no age button");},"the filter button ("+(n+1)+" of 7, to Compatible magazines)");}
+            step(20,()->{var d=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=d.getList("recipes",10);var names=new ArrayList<String>();int mags=0;
+                for(int i=0;i<rows.size();i++){var r=rows.getCompound(i);names.add(ItemStack.of(r.getCompound("output")).getHoverName().getString()+" cost="+r.getInt("coinCost"));if(r.getBoolean("magazine"))mags++;}
+                log("QA_NOTE ammo age {} magazines filter: filter={} total={} rows={}",age,d.getInt("ageFilter"),d.getInt("total"),names);
+                if(age>1)check("Age "+age+": the Compatible magazines filter lists them",d.getInt("ageFilter")==11&&mags>0&&mags==rows.size(),"filter "+d.getInt("ageFilter")+" rows "+names);shot("r42_12_ammo_age"+age+"_magazines");},"the magazines filter");
+            step(5,()->{var rows=(List<?>)field(mc().screen,"rows");if(rows!=null&&!rows.isEmpty())press((Ui.UiButton)rows.get(0));},"select the first magazine");
+            step(5,()->{note=srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(MagazineBridge.isMagazine(s))n+=s.getCount();return ""+n;});var c=(Ui.UiButton)field(mc().screen,"coins");if(c!=null&&c.active)press(c);else log("QA_NOTE coins button {}",c==null?"missing":"inactive");},"buy it with Ammo Coins");
+            step(20,()->{int n=srvGet(()->{int k=0;for(var s:sp().getInventory().items)if(MagazineBridge.isMagazine(s))k+=s.getCount();return k;});
+                if(age>1)check("Age "+age+": bought with Ammo Coins, an empty magazine is in the pack",n>Integer.parseInt(note),"magazines before "+note+" after "+n);},"bought");
+            step(5,()->closeAll(),"close");
+        }
+
+        // ---- a corpse holding a gun (Corpse 1.0.23 + Player Animator + TaCZ): the stand-in's fades, fix off then on ------------------------------------
+        step(5,()->srv(()->{sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(false,server());sp().getInventory().clearContent();MessHallV4GameTests.gun(sp(),"tacz:ak47");sp().teleportTo(sl(),B.getX()-20.5,sy,B.getZ()+20.5,0,10);}),"an AK-47 in hand, away from the beacon; no keep-inventory");
+        step(20,()->srv(()->sp().kill()),"die (Corpse lays out the body with the gun)");
+        step(5,()->{var corpse=srvGet(()->{for(var e:sl().getAllEntities())if(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString().equals("corpse:corpse"))return e.blockPosition();return null;});
+            check("a corpse lies where the player died",corpse!=null,String.valueOf(corpse));note=corpse==null?"":""+corpse.asLong();
+            if(corpse!=null){var c=corpse;srv(()->sl().setBlock(c.offset(3,0,0),ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),3));}},"find the corpse (before respawning: the world spawn is far away); a Satellite Beacon beside it (idle animations on)");
+        step(40,()->{if(mc().player!=null)mc().player.respawn();},"respawn");
+        step(5,()->{if(note.isEmpty())return;var c=BlockPos.of(Long.parseLong(note));srv(()->sp().getInventory().clearContent());look(c.offset(1,0,-4),c.getX()+1.5,c.getY()+.3,c.getZ()+.5);},"stand by it and look at it and the satellite");
+        until("the corpse is loaded",200,()->!note.isEmpty()&&loaded(BlockPos.of(Long.parseLong(note))),()->{});
+        step(5,()->{net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(StandInAnimations.class);standInMost=-1;standInFrames=0;},"the fix off (the stand-in handler is taken off the event bus)");
+        step(200,()->{},"ten seconds looking at the corpse, fix off");
+        step(1,()->{check("fix off: the corpse is drawn as a player not in the world, and TaCZ's fades pile up on it (one more each frame)",standInFrames>50&&standInMost>=standInFrames/2,"frames "+standInFrames+", most fades in one layer "+standInMost+" ("+standInWho+")");shot("r42_13_corpse_fix_off");},"the chain grows");
+        step(5,()->{net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(StandInAnimations.class);},"the fix on");
+        after(60,()->{check("fix on: the long chain built up with the fix off is gone within three seconds",standInNow>=0&&standInNow<=30,"fades in the latest frame "+standInNow+" (the most before: "+standInMost+")");standInMost=-1;standInFrames=0;},"three seconds for the old fades to run out");
+        after(600,()->{int bound=standInFrames*6/300+6;   // a fade lasts 8 ticks (0.4 s): about 0.4 s worth of frames' fades are alive at once (0.6 s allowed)
+            check("fix on: the fades end and drop off, the chain stays short",standInFrames>50&&standInMost>=0&&standInMost<=bound,"frames "+standInFrames+" in 30 s, most fades in one layer "+standInMost+" (bound "+bound+")");shot("r42_14_corpse_fix_on");},"the chain stays short");
+        step(5,()->{Animations.setEnabled(false);standInMost=-1;standInFrames=0;},"idle animations off (the owner's switch)");
+        after(200,()->{int bound=standInFrames*6/100+6;check("idle animations off: the same (the fix does not depend on them)",standInFrames>50&&standInMost<=bound,"frames "+standInFrames+" in 10 s, most "+standInMost+" (bound "+bound+")");},"switch off");
+        step(5,()->Animations.setEnabled(true),"idle animations back on");
+    }
+}

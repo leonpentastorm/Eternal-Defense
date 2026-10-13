@@ -29,7 +29,8 @@ import java.util.List;
 /**
  * 0.0.33 (owner): the FOB Beacon's placement preview (0.0.30, {@link FobOutlineClient}) for every block of the mod. While one is in hand and
  * aimed at the ground, a see-through copy of it stands where it would be placed, outlined so its size can be judged; the Defense Beacon also
- * shows the base zone it would get (as the FOB Beacon shows its village). Only drawn; the server still decides where things may stand.
+ * shows the base zone it would get (as the FOB Beacon shows its village). 0.0.42 (owner): with anything in the way of any of its cells the
+ * ghost and its outline turn red, and the piece is not placed ({@link PlacementGuard}). The server still decides the other rules.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class PlacementPreviewClient {
@@ -37,8 +38,8 @@ public final class PlacementPreviewClient {
     private static final MultiBufferSource.BufferSource BUFFER=MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<17));
     /** The base zone's cyan. */
     static final int[] CYAN={70,235,221};
-    /** A block placed now: where, which state, and what the outline holds (block-space boxes). */
-    record Ghost(List<BlockPos> cells,List<BlockState> states,AABB box,boolean beacon){}
+    /** A block placed now: where, which state, what the outline holds (block-space boxes), and (0.0.42) whether something is in the way. */
+    record Ghost(List<BlockPos> cells,List<BlockState> states,AABB box,boolean beacon,boolean blocked){}
 
     /** The mod's own placeables, but the FOB Beacon (it has its own preview, with its village). */
     static boolean previewed(ItemStack stack){
@@ -65,18 +66,25 @@ public final class PlacementPreviewClient {
                 if(item.getBlock() instanceof RailGates.GateBlock gate){cells.add(column);states.add(gate.kind.column().defaultBlockState().setValue(RailGates.FACING,facing));}
                 for(int[] f:RailGates.Frame.PARTS){cells.add(RailGates.cell(anchor,facing,f[0],f[1]));states.add(ArsenalBeacon.GATE_PART.get().defaultBlockState().setValue(RailGates.FACING,facing).setValue(RailGates.SIDE,f[0]));}
                 AABB box=new AABB(anchor);for(var c:cells)box=box.minmax(new AABB(c));
-                return new Ghost(cells,states,box,false);
+                return new Ghost(cells,states,box,false,!RailGates.available(mc.level,anchor,facing));
             }
             if(item instanceof LogisticsHub.HubItem){
                 // 0.0.40: the Hub stands 3 x 3 x 3 on the spot looked at; its model is drawn from the middle block
                 var anchor=LogisticsHub.HubItem.anchorFor(ctx);var state=item.getBlock().defaultBlockState().setValue(ArsenalStructures.FACING,ctx.getHorizontalDirection().getOpposite());
-                return new Ghost(List.of(anchor),List.of(state),new AABB(anchor).inflate(1),false);
+                return new Ghost(List.of(anchor),List.of(state),new AABB(anchor).inflate(1),false,!LogisticsHub.HubItem.free(mc.level,anchor));
             }
-            var pos=ctx.getClickedPos();if(!ctx.canPlace())return null;
-            BlockState state=item.getBlock().getStateForPlacement(ctx);if(state==null)state=item.getBlock().defaultBlockState();
+            // 0.0.42: a spot the block refuses (no state) or with anything in the way of a cell is shown in red where it would stand
+            var pos=ctx.getClickedPos();BlockState wanted=ctx.canPlace()?item.getBlock().getStateForPlacement(ctx):null;
+            boolean blocked=PlacementGuard.blocked(ctx,wanted);
+            BlockState state=wanted!=null?wanted:facing(item.getBlock().defaultBlockState(),ctx);
             AABB box=footprint(state,pos);
-            return new Ghost(List.of(pos),List.of(state),box,stack.is(ArsenalBeacon.BEACON_ITEM.get()));
+            return new Ghost(List.of(pos),List.of(state),box,stack.is(ArsenalBeacon.BEACON_ITEM.get()),blocked);
         }catch(RuntimeException e){return null;}   // a block whose placement needs the server: no preview
+    }
+    /** A refused piece still faces the player, as it would when placed. */
+    static BlockState facing(BlockState state,BlockPlaceContext ctx){
+        var property=net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+        return state.hasProperty(property)?state.setValue(property,ctx.getHorizontalDirection().getOpposite()):state;
     }
     /** The space a block takes: the whole structure for the mod's multi-block ones, else its own shape. */
     static AABB footprint(BlockState state,BlockPos pos){
@@ -91,23 +99,26 @@ public final class PlacementPreviewClient {
         var ghost=ghost();if(ghost==null)return;
         var mc=Minecraft.getInstance();var camera=e.getCamera().getPosition();var pose=e.getPoseStack();
         pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);
-        VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());
-        LevelRenderer.renderLineBox(pose,lines,ghost.box().inflate(.004),CYAN[0]/255f,CYAN[1]/255f,CYAN[2]/255f,.85f);
-        if(ghost.beacon())zone(lines,pose.last(),ghost.cells().get(0),mc.level.getGameTime()+e.getPartialTick());
+        VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());int[] tint=ghost.blocked()?PlacementGuard.RED:CYAN;
+        LevelRenderer.renderLineBox(pose,lines,ghost.box().inflate(.004),tint[0]/255f,tint[1]/255f,tint[2]/255f,.85f);
+        if(ghost.beacon()&&!ghost.blocked())zone(lines,pose.last(),ghost.cells().get(0),mc.level.getGameTime()+e.getPartialTick());
         BUFFER.endBatch(RenderType.lines());
-        var consumer=new FobOutlineClient.Faint(BUFFER.getBuffer(RenderType.translucent()),.45f);
+        var consumer=ghost.blocked()?FobOutlineClient.Faint.blocked(BUFFER.getBuffer(RenderType.translucent())):new FobOutlineClient.Faint(BUFFER.getBuffer(RenderType.translucent()),.45f);
         for(int i=0;i<ghost.cells().size();i++){
             var at=ghost.cells().get(i);var state=ghost.states().get(i);
             pose.pushPose();pose.translate(at.getX(),at.getY(),at.getZ());
+            float[] rgb=ghostTint(ghost.blocked());
             mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),consumer,state,mc.getBlockRenderer().getBlockModel(state),
-                .55f+.45f*CYAN[0]/255f,.55f+.45f*CYAN[1]/255f,.55f+.45f*CYAN[2]/255f,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
+                rgb[0],rgb[1],rgb[2],LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
             // 0.0.39: the moving parts are no longer in the block's model; the ghost shows them at rest
-            if(Animations.animated(state))Animations.drawRest(state,pose,consumer,.55f+.45f*CYAN[0]/255f,.55f+.45f*CYAN[1]/255f,.55f+.45f*CYAN[2]/255f);
+            if(Animations.animated(state))Animations.drawRest(state,pose,consumer,rgb[0],rgb[1],rgb[2]);
             pose.popPose();
         }
         BUFFER.endBatch(RenderType.translucent());
         pose.popPose();
     }
+    /** The ghost's tint: the model's own colours washed toward cyan, or (0.0.42) strongly toward red when something is in the way. */
+    static float[] ghostTint(boolean blocked){return PlacementGuard.tint(blocked,CYAN);}
     /** The base zone a Defense Beacon planted at {@code at} would get, drawn as the planted beacon draws its own: its box, the ground plane with a tick every block. */
     static void zone(VertexConsumer v,PoseStack.Pose p,BlockPos at,double time){
         int[] size=BeaconClient.zoneSize();int r=size[0];

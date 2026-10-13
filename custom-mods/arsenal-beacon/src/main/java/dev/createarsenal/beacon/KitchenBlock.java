@@ -45,11 +45,11 @@ abstract class KitchenBlock extends Block implements EntityBlock {
         @Override public String getDescriptionId(){return getBlock()==ArsenalBeacon.MESS_HALL_I.get()?"item.arsenal_beacon.mess_hall":getBlock()==ArsenalBeacon.DRINK_STATION_I.get()?"item.arsenal_beacon.drink_station":super.getDescriptionId();}
         @Override public InteractionResult place(BlockPlaceContext c){
             var s=getBlock().getStateForPlacement(c);var level=c.getLevel();var root=c.getClickedPos();
-            if(s==null)return InteractionResult.FAIL;
+            // 0.0.42: anything in the way is refused on both sides (the preview is red); a refusal from the server sends the hand slot back
+            if(PlacementGuard.blocked(c,s)){if(s!=null&&!level.isClientSide)BaseZone.say(c.getPlayer(),"no_room");return PlacementGuard.refuse(c);}
             if(!level.isClientSide){var all=new ArrayList<>(((KitchenBlock)getBlock()).cells(root,s));all.add(root);
-                for(var p:all){var problem=BaseZone.problem(level,p);if(problem!=null){BaseZone.say(c.getPlayer(),"zone."+problem);return InteractionResult.FAIL;}if(level instanceof ServerLevel server&&ReturnZone.inside(server,p)){BaseZone.say(c.getPlayer(),"keep_clear");return InteractionResult.FAIL;}}
-                if(!ArsenalStructures.available(level,root,s)){BaseZone.say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
-            }return super.place(c);
+                for(var p:all){var problem=BaseZone.problem(level,p);if(problem!=null){BaseZone.say(c.getPlayer(),"zone."+problem);return PlacementGuard.refuse(c);}if(level instanceof ServerLevel server&&ReturnZone.inside(server,p)){BaseZone.say(c.getPlayer(),"keep_clear");return PlacementGuard.refuse(c);}}
+            }return PlacementGuard.settled(c,super.place(c));
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<net.minecraft.network.chat.Component> lines,TooltipFlag flag){lines.add(net.minecraft.network.chat.Component.translatable("tooltip.arsenal_beacon.zone_only"));if(getBlock() instanceof BowlDispenser.DispenserBlock||getBlock() instanceof MilkDispenser.DispenserBlock||getBlock() instanceof CupDispenser.DispenserBlock)lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.dispenser.empty_hands"));lines.add(net.minecraft.network.chat.Component.translatable("gui.arsenal_beacon.kitchen.footprint",((KitchenBlock)getBlock()).hall?"2 wide, 1 deep, 2 tall":"1 wide, 1 deep, 2 tall"));}
     }

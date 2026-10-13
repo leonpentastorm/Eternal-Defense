@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
-# QA_CREATE=1 (pack only): Create runs too; the scenario is compiled in the Create compat source set; the first run needs the network.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41]   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
+# QA_CREATE=1 (pack only): Create runs too; QA_MODS=<dir>: the jars in it run too (0.0.42); the scenario is compiled in the Create compat source set; the first run needs the network.
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaMagazines]   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
@@ -51,6 +51,13 @@ if os.environ.get('QA_CREATE')=='1':
         "    runtimeOnly(fg.deobf('com.tterrag.registrate:Registrate:MC1.20-1.3.3')){ transitive = false }\n}\n")
 open(path,'w').write(s)
 PY
+# 0.0.42: QA_MODS=<dir> adds every jar in that directory to the client as a runtime mod (remapped like TaCZ; their mixins' refmaps are remapped
+# by the run's refmap setting), e.g. TaCZ Magazines, Corpse and Player Animator from the owner's pack
+if [ -n "${QA_MODS:-}" ]; then
+  mkdir -p "$DST/qa-mods"; n=0; deps=""
+  for jar in "$QA_MODS"/*.jar; do n=$((n+1)); cp "$jar" "$DST/qa-mods/qamod$n-1.jar"; deps="$deps    runtimeOnly(fg.deobf('blank:qamod$n:1')){ transitive = false }\n"; echo "QA mod $n: $(basename "$jar")"; done
+  printf "\nrepositories { flatDir { dirs rootProject.file('qa-mods') } }\ndependencies {\n$deps}\n" >> "$DST/custom-mods/arsenal-beacon/build.gradle"
+fi
 # first launch would stop at the narrator screen: start with known client options
 mkdir -p "$DST/custom-mods/arsenal-beacon/run-client" && cp "$SRC/tools/qa/qa-options.txt" "$DST/custom-mods/arsenal-beacon/run-client/options.txt"
 echo "QA copy ready in $DST (pack edition)."

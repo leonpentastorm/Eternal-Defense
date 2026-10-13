@@ -83,13 +83,16 @@ final class FobBlocks {
     static final class FobItem extends BlockItem {
         FobItem(Block block){super(block,new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));}
         @Override public InteractionResult place(BlockPlaceContext c){
+            // 0.0.42 (owner): in a hole one block high, or where the server already said no, the FOB is refused on the player's own screen too
+            // (the preview is red or orange), and any refusal from the server sends the hand slot back: the beacon never vanishes from the hand
+            var state=getBlock().getStateForPlacement(c);
+            if(PlacementGuard.blocked(c,state)){if(c.getPlayer() instanceof ServerPlayer p)Fobs.say(p,"fob.refused.no_room");return PlacementGuard.refuse(c);}
             if(c.getLevel() instanceof ServerLevel server){
                 String problem=Fobs.plantProblem(server,c.getClickedPos());
-                if(problem!=null){if(c.getPlayer() instanceof ServerPlayer p)Fobs.say(p,"fob.refused."+problem,FobRules.MAX_FOBS,FobRules.MIN_VILLAGERS);return InteractionResult.FAIL;}
-                var state=getBlock().getStateForPlacement(c);
-                if(state==null||!ArsenalStructures.available(server,c.getClickedPos(),state)){if(c.getPlayer() instanceof ServerPlayer p)Fobs.say(p,"fob.refused.no_room");return InteractionResult.FAIL;}
+                if(problem!=null){if(c.getPlayer() instanceof ServerPlayer p)Fobs.say(p,"fob.refused."+problem,FobRules.MAX_FOBS,FobRules.MIN_VILLAGERS);return PlacementGuard.refuse(c);}
             }
-            return super.place(c);
+            else if(Boolean.TRUE.equals(net.minecraftforge.fml.DistExecutor.unsafeCallWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->FobOutlineClient.refused(c.getClickedPos()))))return InteractionResult.FAIL;
+            return PlacementGuard.settled(c,super.place(c));
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){
             lines.add(Component.translatable("tooltip.arsenal_beacon.fob_beacon").withStyle(ChatFormatting.GRAY));

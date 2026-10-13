@@ -32,7 +32,8 @@ import java.util.*;
  * Client side of {@link FobOutline} (0.0.30): each FOB zone near the player as an olive outline of its village sections (walls with a slow
  * moving grid, like the base zone's cyan one), and, while a FOB Beacon is in hand, a see-through FOB where it would stand, the zone that spot
  * would get (green when the FOB may be planted, orange when not) and one line under the crosshair: the villagers, beds and workstations it
- * counts, or why not.
+ * counts, or why not. 0.0.42 (owner): with a block or a creature in the way of the beacon's two cells (a hole one block high) the ghost
+ * and its box are red, the line says so, and the beacon is not placed.
  */
 @Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
 public final class FobOutlineClient {
@@ -63,6 +64,16 @@ public final class FobOutlineClient {
         return new BlockPlaceContext(mc.player,hand,mc.player.getItemInHand(hand),hit).getClickedPos();
     }
     static boolean previewGood(){return preview!=null&&preview.getString("problem").isEmpty();}
+    /** 0.0.42: is something in the way of a FOB Beacon placed at {@code at} (its two cells, as the item checks them)? */
+    static boolean blocked(BlockPos at){
+        var mc=Minecraft.getInstance();if(mc.level==null||mc.player==null||at==null)return false;
+        var state=ArsenalBeacon.FOB_BEACON.get().defaultBlockState().setValue(FobBlocks.FACING,mc.player.getDirection().getOpposite());
+        return PlacementGuard.blocked(mc.level,at,state,mc.player);
+    }
+    /** 0.0.42: does this client already know the FOB Beacon cannot stand at {@code at}: something in the way, or the server's verdict for that very spot? */
+    static boolean refused(BlockPos at){return blocked(at)||preview!=null&&preview.getLong("pos")==at.asLong()&&!preview.getString("problem").isEmpty();}
+    /** The ghost's colour: red with something in the way, else olive (no verdict yet), green or orange. */
+    static int[] colour(BlockPos at){return blocked(at)?PlacementGuard.RED:preview==null?OLIVE:previewGood()?GOOD:BAD;}
 
     // ---- the world: outlines and the ghost FOB ----------------------------------------------------------------------------------------------------
     @SubscribeEvent public static void render(RenderLevelStageEvent e){
@@ -77,7 +88,7 @@ public final class FobOutlineClient {
         BlockPos at=holding?target():null;
         if(holding&&preview!=null&&!previewSections.isEmpty())outline(lines,pose.last(),previewSections,previewGood()?GOOD:BAD,time,210,at!=null?at.getY():(int)Math.floor(mc.player.getY()));
         if(at!=null){
-            int[] c=preview==null?OLIVE:previewGood()?GOOD:BAD;
+            int[] c=colour(at);
             LevelRenderer.renderLineBox(pose,lines,new AABB(at.getX(),at.getY(),at.getZ(),at.getX()+1,at.getY()+FobBlocks.TALL,at.getZ()+1).inflate(.002),c[0]/255f,c[1]/255f,c[2]/255f,.9f);
         }
         BUFFER.endBatch(RenderType.lines());
@@ -127,18 +138,26 @@ public final class FobOutlineClient {
     /** The FOB Beacon's own model, see-through and tinted, where it would stand (facing the player, as when placed). */
     private static void ghost(PoseStack pose,BlockPos at,Minecraft mc){
         var state=ArsenalBeacon.FOB_BEACON.get().defaultBlockState().setValue(FobBlocks.FACING,mc.player.getDirection().getOpposite());
-        int[] c=preview==null?OLIVE:previewGood()?GOOD:BAD;
+        int[] c=colour(at);boolean red=c==PlacementGuard.RED;
         pose.pushPose();pose.translate(at.getX(),at.getY(),at.getZ());
-        var consumer=new Faint(BUFFER.getBuffer(RenderType.translucent()),.45f);
+        var consumer=red?Faint.blocked(BUFFER.getBuffer(RenderType.translucent())):new Faint(BUFFER.getBuffer(RenderType.translucent()),.45f);
+        float[] rgb=PlacementGuard.tint(red,c);
         mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),consumer,state,mc.getBlockRenderer().getBlockModel(state),
-            .55f+.45f*c[0]/255f,.55f+.45f*c[1]/255f,.55f+.45f*c[2]/255f,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
+            rgb[0],rgb[1],rgb[2],LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
+        if(Animations.animated(state))Animations.drawRest(state,pose,consumer,rgb[0],rgb[1],rgb[2]);   // the flag and the rest, as placed
         BUFFER.endBatch(RenderType.translucent());
         pose.popPose();
     }
-    /** Passes every vertex on with its alpha scaled down. */
-    record Faint(VertexConsumer to,float alpha) implements VertexConsumer {
+    /**
+     * Passes every vertex on with its alpha scaled down and (0.0.42) its colour multiplied: a block model's colour argument only reaches
+     * its tinted faces (grass, leaves), so a ghost is turned red here, on every vertex.
+     */
+    record Faint(VertexConsumer to,float alpha,float red,float green,float blue) implements VertexConsumer {
+        Faint(VertexConsumer to,float alpha){this(to,alpha,1f,1f,1f);}
+        /** A ghost with something in the way: red, and a little less faint so the red reads. */
+        static Faint blocked(VertexConsumer to){return new Faint(to,.6f,1f,.22f,.2f);}
         @Override public VertexConsumer vertex(double x,double y,double z){to.vertex(x,y,z);return this;}
-        @Override public VertexConsumer color(int r,int g,int b,int a){to.color(r,g,b,Math.round(a*alpha));return this;}
+        @Override public VertexConsumer color(int r,int g,int b,int a){to.color(Math.round(r*red),Math.round(g*green),Math.round(b*blue),Math.round(a*alpha));return this;}
         @Override public VertexConsumer uv(float u,float v){to.uv(u,v);return this;}
         @Override public VertexConsumer overlayCoords(int u,int v){to.overlayCoords(u,v);return this;}
         @Override public VertexConsumer uv2(int u,int v){to.uv2(u,v);return this;}
@@ -152,6 +171,7 @@ public final class FobOutlineClient {
     /** What the spot looked at gives: "FOB here: 5 villagers (3 needed), 9 beds, 4 workstations" or why not. Null with no FOB Beacon in hand. */
     static Component line(){
         if(!holding()||!overworld())return null;
+        if(blocked(target()))return Ui.t("fob.preview.blocked");
         if(preview==null)return Ui.t("fob.preview.look");
         String problem=preview.getString("problem");int villagers=preview.getInt("villagers"),beds=preview.getInt("beds"),jobs=preview.getInt("jobs");
         if(problem.isEmpty())return Ui.t("fob.preview.good",villagers,FobRules.MIN_VILLAGERS,beds,jobs);
@@ -165,7 +185,7 @@ public final class FobOutlineClient {
         var g=e.getGuiGraphics();var font=mc.font;int w=e.getWindow().getGuiScaledWidth(),h=e.getWindow().getGuiScaledHeight();
         int tw=Math.min(font.width(text),w-20),x=(w-tw)/2,y=h/2+14;
         g.fill(x-4,y-3,x+tw+4,y+11,0xa0101820);
-        int color=preview==null?Ui.MUTED:previewGood()?FobClient.OLIVE:Ui.ORANGE;
+        int color=blocked(target())?0xff000000|PlacementGuard.RED[0]<<16|PlacementGuard.RED[1]<<8|PlacementGuard.RED[2]:preview==null?Ui.MUTED:previewGood()?FobClient.OLIVE:Ui.ORANGE;
         Ui.text(g,font,text,x,y,color,tw);
     }
 }

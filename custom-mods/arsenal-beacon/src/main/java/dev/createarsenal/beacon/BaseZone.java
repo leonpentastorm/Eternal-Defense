@@ -65,16 +65,19 @@ final class BaseZone {
         /** Extra rules of the subclass; a language key suffix under {@code support.} or null. */
         String extra(BlockPlaceContext c){return null;}
         @Override public InteractionResult place(BlockPlaceContext c){
+            // 0.0.42: anything in the way of any cell is refused on both sides (the preview is red), so the item is never spent on a guess;
+            // the footprint is checked in the state the piece will be placed in (the Command Table's depends on which way it faces)
+            var state=getBlock().getStateForPlacement(c);
+            if(PlacementGuard.blocked(c,state)){if(state!=null&&!c.getLevel().isClientSide)say(c.getPlayer(),"no_room");return PlacementGuard.refuse(c);}
             if(!c.getLevel().isClientSide){
                 String zone=problem(c.getLevel(),c.getClickedPos());
-                if(zone!=null){say(c.getPlayer(),"zone."+zone);return InteractionResult.FAIL;}
-                // the Command Table's footprint depends on which way it faces, so it is checked in the state it will be placed in
-                var state=getBlock() instanceof TacticalBlocks.TableBlock table?table.getStateForPlacement(c):getBlock() instanceof TacticalEnchanting.TableBlock bench?bench.getStateForPlacement(c):getBlock().defaultBlockState();
-                if(state!=null&&(ArsenalStructures.big(state)||ArsenalStructures.tallSupport(state)||ArsenalStructures.table(state)||ArsenalStructures.enchanting(state))&&!ArsenalStructures.available(c.getLevel(),c.getClickedPos(),state)){say(c.getPlayer(),"no_room");return InteractionResult.FAIL;}
+                if(zone!=null){say(c.getPlayer(),"zone."+zone);return PlacementGuard.refuse(c);}
+                // 0.0.42: no cell of a bigger piece (the cannon's 3 x 3 x 2) may stand in a Support Platform's return zone
+                if(c.getLevel() instanceof net.minecraft.server.level.ServerLevel server)for(var cell:ArsenalStructures.cells(c.getClickedPos(),state))if(ReturnZone.inside(server,cell)){say(c.getPlayer(),"keep_clear");return PlacementGuard.refuse(c);}
                 String extra=extra(c);
-                if(extra!=null){say(c.getPlayer(),extra);return InteractionResult.FAIL;}
+                if(extra!=null){say(c.getPlayer(),extra);return PlacementGuard.refuse(c);}
             }
-            return super.place(c);
+            return PlacementGuard.settled(c,super.place(c));
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){
             lines.add(Component.translatable("tooltip.arsenal_beacon.zone_only").withStyle(net.minecraft.ChatFormatting.GRAY));

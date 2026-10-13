@@ -95,31 +95,28 @@ HOW TO INSTALL INTO YOUR PROFILE (the full test pack, Create-Arsenal-VERSION-tes
 3. A dedicated server: Tactical Movement 1.0.0 (tacticalmovement-1.0.0.jar) is client-only and stops a server from starting; keep it
    on the clients only (the test pack puts it in client-overrides).
 
-WHAT IS NEW IN 0.0.41
-* The Logistics Hub no longer crashes the game when placed (0.0.40's release jar called a Create method by a wrong name).
-* MRE Station: your new model; the press rod runs up into the hopper, so the press does not float.
-* Ammo and attachment tables: holding a gun whose parts all wait in later Ages, the list says "There are 3 more attachments for this
-  weapon in later Ages. Upgrade your table (Upgrade tab) to unlock them." "Hold a gun ..." only shows with no gun in hand.
-* Radio: one line at a time. Calling flares or buying from the Specialty Seller while a radio line plays still works, but adds no voice.
-* Reinforced Beacon Plating: compacting 2 iron sheets + 2 golden sheets + 2 copper sheets gives 1 plating, no heat.
-* Exchange: a blaze rod costs 6 Ardent Energy.
-* Mess Hall: with the food only in a Logistics Hub, pick effects and press Gather ingredients: it works now (the button used to
-  stay off). Take back puts the food in your inventory.
-* Raids: the beacon's health bar shows a skull and the deaths left before the next one costs the beacon 10% of its health (3, 2, 1).
-* Logistics Hub Zone: an effect while you stand in a base with a working Hub; the beacon's Overview says how many Hubs work.
-* Base score: each of the mod's 20 installations standing in your zone adds 25 points; all 20 add 500, one more reward tier.
-  The beacon's Overview shows Installations (for example "100 (4/20)") and the Total in its score grid.
+WHAT IS NEW IN 0.0.42 (no packet changed; protocol still 41)
+* The crash looking at a corpse is fixed: a Corpse mod body holding a gun piled up one Player Animator fade per frame (TaCZ starts
+  one each frame, only a game tick ends it, and the body never ticks) until the game ran out of stack. The mod now moves such a
+  body's animations on once a tick, as for a real player.
+* Placing: every piece of the mod refuses a spot with a block or a creature in the way of any part of it, and its see-through
+  preview turns red there (the FOB Beacon's too, with "Something is in the way" under the crosshair). A refused placement never
+  takes the item from your hand any more (it used to vanish until you opened a chest-like screen).
+* Return zone: sand, gravel or any block that falls or is pushed into the 2 blocks in front of your Support Platform pops out and
+  drops as an item.
+* Ammo table: a gun's standard magazine is listed as soon as its rounds are (before, many guns' rounds came an Age or more before
+  their magazine: 108 of the 425 magazine guns in your pack).
 
-PLAYTEST SCRIPT FOR 0.0.41 (about 15 minutes)
-1. Place a Logistics Hub in your zone: no crash. Look at your effects: "Logistics Hub Zone". Open the beacon: "This base has 1 active
-   Logistics Hub". Walk out of the zone: the effect goes.
-2. Put food in the Hub only, open the Mess Hall, click an effect, press Gather ingredients, then Make sandwich.
-3. Start a raid and die near the beacon: the skull on the health bar counts 3, 2, 1; the third death costs 10%.
-4. Hold a gun at an Age 1 attachment table: read the line about later Ages.
-5. Throw three fire support flares quickly, and buy at the Specialty Seller twice in a row: one radio line at a time.
-6. JEI: Reinforced Beacon Plating shows the new compacting recipe. Exchange: a blaze rod costs 6.
-7. Watch the MRE Station press.
-8. Open the beacon's Overview: the Installations cell counts your installations (25 points each).
+PLAYTEST SCRIPT FOR 0.0.42 (about 10 minutes)
+1. Die holding a gun so a corpse lies there, then stand looking at it (and at a Satellite Beacon) for a few minutes: no crash.
+2. Dig a hole one block high and look into it with a FOB Beacon: the FOB is red, the line says something is in the way; right-click:
+   nothing is placed and the beacon stays in your hand. Try it on open ground away from a village: refused, still in your hand.
+3. Hold a Mess Hall, a Support Cannon, a Logistics Hub or a weapon table with a block in the way: red, refused, kept.
+4. Drop sand onto the 2 blocks in front of your Support Platform: it pops out as an item.
+5. At the ammo table, hold a gun whose rounds are listed: its standard magazine is listed too (Compatible magazines filter).
+
+(0.0.41 brought the one edition, the Hub crash fix, the MRE rod, the later-Age line, the radio, the plating recipe, blaze rods at 6,
+cooking from the Hub, the raid skull, the Hub zone and the installations in the base score: docs/CHANGELOG.md.)
 
 Every round's changes: docs/CHANGELOG.md. What was tested and what was not: docs/ROUND-VERSIONCOMPACT-TESTING.md.
 '''

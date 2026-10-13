@@ -89,11 +89,13 @@ final class SupplyCatapult {
     static final class CatapultItem extends BlockItem {
         CatapultItem(Block block){super(block,new Item.Properties());}
         @Override public InteractionResult place(BlockPlaceContext c){
+            // 0.0.42: its 3 x 3 x 2 body with anything in the way is refused on both sides (the preview is red); the server's refusals send the hand slot back
+            if(c.getLevel().isClientSide&&PlacementGuard.blocked(c,getBlock().getStateForPlacement(c)))return InteractionResult.FAIL;
             if(c.getLevel() instanceof ServerLevel l){
                 String problem=placeProblem(l,c.getClickedPos());
-                if(problem!=null){if(c.getPlayer()!=null)c.getPlayer().displayClientMessage(Component.translatable("gui.arsenal_beacon.catapult.refused."+problem).withStyle(ChatFormatting.RED),true);return InteractionResult.FAIL;}
+                if(problem!=null){if(c.getPlayer()!=null)c.getPlayer().displayClientMessage(Component.translatable("gui.arsenal_beacon.catapult.refused."+problem).withStyle(ChatFormatting.RED),true);return PlacementGuard.refuse(c);}
             }
-            return super.place(c);
+            return PlacementGuard.settled(c,super.place(c));
         }
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){
             lines.add(Component.translatable("tooltip.arsenal_beacon.catapult").withStyle(ChatFormatting.GRAY));

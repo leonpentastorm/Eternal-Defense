@@ -620,7 +620,7 @@ public final class ArsenalBeacon {
     }
     @SubscribeEvent public void placeBlock(BlockEvent.EntityPlaceEvent event) {
         if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
-        CampaignData d=CampaignData.get(l);if(d.active()&&d.inside(event.getPos())&&event.getEntity() instanceof Player)event.setCanceled(true);
+        CampaignData d=CampaignData.get(l);if(d.active()&&d.inside(event.getPos())&&event.getEntity() instanceof Player){event.setCanceled(true);PlacementGuard.resyncLater(event.getEntity());}
     }
     @SubscribeEvent public void sleep(SleepingTimeCheckEvent event) {
         if(!(event.getEntity().level() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
