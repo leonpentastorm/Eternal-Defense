@@ -51,20 +51,6 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         @Override public void onClose(){Minecraft.getInstance().setScreen(parent);}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){panel(g);Ui.text(g,font,Ui.t("platform.type.note"),left+14,top+36,Ui.MUTED,pw-28);super.render(g,mx,my,partial);}
     }
-    private static final class NoticeScreen extends BeaconClient.PanelScreen {
-        private final CompoundTag state;
-        NoticeScreen(CompoundTag state){super(title());this.state=state.copy();}
-        @Override protected void init(){super.init();pw=Math.min(400,width-16);ph=Math.min(190,height-16);left=(width-pw)/2;top=(height-ph)/2;clearWidgets();button(Ui.t("platform.notice.ok"),left+pw/2-45,top+ph-34,90,Ui.Look.PRIMARY,b->onClose());}
-        @Override public void onClose(){WeaponPlatform.request("close","",0,"");super.onClose();}
-        @Override public void render(GuiGraphics g,int mx,int my,float partial){
-            panel(g);String notice=state.getString("notice");boolean equip=notice.equals("Equip a gun");
-            // The server sends these two notices as English text; recognise them and show the localized copy.
-            Component heading=equip?Ui.t("platform.notice.equip"):notice.startsWith("Upgrade your ")?Ui.t("platform.notice.upgrade",notice.substring("Upgrade your ".length())):Component.literal(notice);
-            Ui.card(g,left+14,top+38,pw-28,22,Ui.ORANGE);Ui.text(g,font,heading,left+26,top+45,Ui.INK,pw-52);
-            Component hint=equip?Ui.t("platform.notice.equip.hint",ControlHints.interact()):state.getInt("locked")>0?Ui.t("platform.notice.locked",state.getInt("locked")):Ui.t("platform.notice.none");
-            Ui.wrap(g,font,hint,left+16,top+72,pw-32,Ui.MUTED,5);super.render(g,mx,my,partial);
-        }
-    }
     @Override protected void init(){
         String query=search==null?data.getString("query"):search.getValue();super.init();layout=WeaponBrowser.layout(width,height,weapons()||armor(),armor());pw=layout.width();ph=layout.height();left=(width-pw)/2;top=(height-ph)/2;clearWidgets();rows.clear();int leftWidth=layout.listWidth();ageFilter=data.getInt("ageFilter");if(search==null)weaponType=armor()?ArmorPlatform.normalize(data.getString("weaponType")):WeaponBrowser.normalize(data.getString("weaponType"));
         search=addRenderableWidget(new EditBox(font,left+19,top+70,leftWidth-68,10,Ui.t("platform.search")));
@@ -108,6 +94,16 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     private void navigate(int page){int target=WeaponBrowser.page(page,total(),layout.capacity());if(upgrades){upgradePage=target;selected=costScroll=0;}else if(!navigating&&target!=data.getInt("page"))browse(target);}
     private void jump(){try{navigate(Integer.parseInt(pageJump.getValue())-1);}catch(NumberFormatException ignored){}pageJump.setFocused(false);}
     private static boolean armor(){return data.getString("kind").equals("armor");}
+    /**
+     * Why an ammo or attachment table shows nothing: no gun in hand, or (0.0.41, back from before the UI redo) a gun whose parts
+     * all need a later Age of this table, counted, or a gun with nothing in the catalogue. Null while a search or Age filter is on.
+     */
+    private Component emptyHint(){
+        if(data.getString("notice").equals("Equip a gun"))return Ui.t("platform.hold_gun",ControlHints.interact());
+        if(!search.getValue().isBlank()||ageFilter!=0)return null;
+        int locked=data.getInt("locked");String kind=data.getString("kind");
+        return locked>0?Ui.t("platform.later_gun."+kind+(locked==1?".one":""),locked):Ui.t("platform.notice.none");
+    }
     private boolean weapons(){return data.getString("kind").equals("gun");}
     private ListTag management(){
         var list=new ListTag();var kind=data.getString("kind");
@@ -215,7 +211,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         if(upgrades&&targetAge==2)Ui.text(g,font,!data.getBoolean("netherVisited")?Ui.t("platform.nether"):costs.size()>visible?Ui.t("platform.nether_scroll"):Ui.t("platform.nether_materials"),right,top+ph-70,Ui.ORANGE,rw);
         else if(costs.size()>visible&&!locked&&(!compact||chosen==null||!chosen.getBoolean("magazine")))Ui.text(g,font,Ui.t("platform.scroll",costs.size()),right,top+ph-70,Ui.MUTED,rw);
         if(ArmorPlatform.component(data.getString("kind"))&&!upgrades)Ui.text(g,font,Ui.t("platform.later",data.getInt("locked")),right,top+ph-33,Ui.MUTED,rw);
-        if(ArmorPlatform.component(data.getString("kind"))&&chosen==null)Ui.wrap(g,font,Ui.t("platform.hold_gun",ControlHints.interact()),left+14,top+149,lw,Ui.MUTED,3);
+        if(ArmorPlatform.component(data.getString("kind"))&&chosen==null){var hint=emptyHint();if(hint!=null)Ui.wrap(g,font,hint,left+14,top+149,lw-12,Ui.MUTED,4);}   // 12 px short of the list: clear of the scrollbar (left+lw+6)
         if(!upgrades){Ui.field(g,left+14,top+64,lw-58,20,search.isFocused());Ui.field(g,left+68,top+ph-34,32,20,pageJump.isFocused());}
         super.render(g,mx,my,partial);
         footerLine(g,top+ph-12);

@@ -50,8 +50,42 @@ final class ExchangeShop {
     /**
      * The default: sell the surplus of a factory, buy parts at a premium when farming instead; since 0.0.21 also rare vanilla materials (gold,
      * blaze rods, ender pearls, diamonds) and iron, plus iron in bulk (16 blocks, a little cheaper per ingot than nine lots of 16 ingots).
+     * 0.0.41 (owner): a blaze rod costs 6 (was 3).
      */
     static final String PACK="""
+        [sell]
+        arsenal_beacon:warlord_seal = 4
+        arsenal_beacon:reinforced_plating x2 = 1
+        arsenal_beacon:logistics_module x2 = 1
+        arsenal_beacon:resonance_coil x2 = 1
+        arsenal_beacon:restoration_matrix = 1
+        create:brass_ingot x16 = 1
+        create:andesite_alloy x32 = 1
+        create:precision_mechanism x2 = 1
+        create:electron_tube x8 = 1
+        kubejs:cartridge_case x32 = 1
+        kubejs:propellant x32 = 1
+
+        [buy]
+        arsenal_beacon:universal_ammo_coin x16 = 3
+        arsenal_beacon:reinforced_plating = 2
+        arsenal_beacon:logistics_module = 2
+        arsenal_beacon:resonance_coil = 3
+        arsenal_beacon:restoration_matrix = 4
+        create:precision_mechanism = 3
+        create:brass_ingot x8 = 3
+        create:andesite_alloy x16 = 2
+        kubejs:cartridge_case x16 = 2
+        kubejs:propellant x16 = 2
+        minecraft:iron_ingot x16 = 1
+        minecraft:iron_block x16 = 8
+        minecraft:gold_ingot x8 = 2
+        minecraft:blaze_rod = 6
+        minecraft:ender_pearl = 3
+        minecraft:diamond = 6
+        """;
+    /** The pack edition's default from 0.0.28 to 0.0.40 (a blaze rod for 3): an untouched file gets the new default. */
+    static final String PACK_0028="""
         [sell]
         arsenal_beacon:warlord_seal = 4
         arsenal_beacon:reinforced_plating x2 = 1
@@ -147,7 +181,7 @@ final class ExchangeShop {
     static String normal(String text){return text.lines().map(String::stripTrailing).collect(java.util.stream.Collectors.joining("\n")).strip();}
     /** Pure: is this file the untouched default of an earlier version (so it may be replaced by the current one)? */
     static boolean oldDefault(String text){
-        for(String old:List.of(PACK_BEFORE_0021,PACK_0021))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
+        for(String old:List.of(PACK_BEFORE_0021,PACK_0021,PACK_0028))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
         return false;
     }
 
@@ -171,7 +205,7 @@ final class ExchangeShop {
                 com.mojang.logging.LogUtils.getLogger().warn("{} used the old single-list format; it was kept as an .old file and replaced with buy and sell sections",FILE);
             }
             if(!lines.isEmpty()&&oldDefault(String.join("\n",lines))){
-                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.28 default (the Warlord Seal sells for Ardent Energy)",FILE);
+                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.41 default (a blaze rod costs 6 Ardent Energy)",FILE);
             }
             if(lines.isEmpty()){Files.writeString(file,template());lines=Files.readAllLines(file);}
             var parts=sections(lines);java.util.function.Predicate<String> exists=id->{var rl=ResourceLocation.tryParse(id);return rl!=null&&BuiltInRegistries.ITEM.containsKey(rl)&&BuiltInRegistries.ITEM.get(rl)!=net.minecraft.world.item.Items.AIR;};

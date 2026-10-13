@@ -1,4 +1,23 @@
-# Arsenal custom mods — pack edition, 0.21.0
+# Arsenal custom mods — pack edition
+
+## Since 0.0.41: the only edition
+
+The standalone edition is discontinued; every build is the pack edition (`build releaseJars` makes `arsenal-beacon-0.21.0.jar`, `arsenal-gun-guide-0.21.0.jar` and `arsenal-displays-1.1.0.jar`). The beacon's `mods.toml` requires, and Forge refuses to start without:
+
+| Mod | Version range | Side | Why |
+| --- | --- | --- | --- |
+| TaCZ (`tacz`) | `[1.1.8,1.2)` (the pack: 1.1.8-hotfix2) | both | the guns |
+| TaCZ Attributes (`tacz_attributes`) | `[1.4]` | both | meal and drink gun bonuses |
+| Create (`create`) | `[6.0,7)` (the pack: 6.0.8) | both | factory parts, belts into the Logistics Hub |
+| KubeJS (`kubejs`) and KubeJS Create (`kubejs_create`) | `[2001,)` each | both | the pack's recipes (`pack-integration/kubejs`), `event.recipes.create.*` |
+| LesRaisins Tactical Equipments (`lrtactical`) | `[0.4.3,)` | both | raid rewards hand out its grenades |
+| JEI (`jei`) | `[15,)` | client | recipe look-ups from the mod's screens |
+
+Rhino and Architectury come with KubeJS. Born in Chaos, Cataclysm, the qkl gun pack, the gear mods of the Armor Platform and the TaCZ add-ons stay optional: the mod falls back when they are missing.
+
+**The test pack** is the owner's own Modrinth profile (Create Arsenal 0.22.1, exported as `.mrpack`) rebuilt by `tools/release/make-testpack.py`: our three jars in `overrides/mods`, the repository's KubeJS scripts, the jars that only work on a client moved to `client-overrides` (Tactical Movement 1.0.0 stops a dedicated server), and a check that every required mod above is in it. `tools/release/install-mrpack.py` installs such a pack into a server or client folder, checking every download against the pack's SHA-1 and SHA-512. Results of each round: `docs/ROUND-00xx-TESTING.md`.
+
+## The 0.21.0 release (history)
 
 The historical release names below are the **pack edition** for Create Arsenal 0.21.0. Current **0.0.5 / Mess Hall v4** work on `feature/messhall-ver-4` has a test ZIP containing both editions and the newly required backend JAR. Pack artifacts build successfully; full Create/KubeJS pack runtime remains unverified. See [test details](MESS-HALL-V4-TESTING.md). Older update archives do not include v4. Until final 1.0 the owner starts a fresh world per feature.
 

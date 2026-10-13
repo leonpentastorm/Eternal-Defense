@@ -8,11 +8,11 @@ Editable Java, assets, recipes and Gradle projects for the three Create Arsenal 
 | `custom-mods/arsenal-gun-guide` | 0.21.0 | Client weapon controls guide and supported gun-jam warning |
 | `custom-mods/arsenal-displays` | 1.1.0 | Eleven weapon stands, racks and glass cases |
 
-Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Both the curated modpack and standalone editions are included. They share Java and registry IDs, with different release metadata, recipes and guide content.
+Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Since 0.0.41 only the curated modpack (pack) edition is built.
 
-Project **0.0.12** lives on `dev` (the Mess Hall v6 line, the Field Guide pass and the Mess Hall levels were merged there on 2026-10-09). The game design document has a [feature guide for designers](docs/GAME-DESIGN-DOCUMENT.md#feature-guide-for-designers). [Prepared food](docs/MESS-HALL.md) defaults to ordinary bonuses; the new Mix guide lets players deliberately choose effects and legendary recipes. Separate base bread contributes no Grain. Every ordinary effect has a vanilla ×2 pair. New artist models and a milk tank dispenser join the kitchen; milk clears every effect and saved food buffs. Workshop Fabrication shows all eleven installations and materials on one page; Settings moves beside Guide. Protocol **26**. The test bundle includes TaCZ Attributes 1.4 separately in both editions. Project versions (`VERSION`) remain separate from JAR versions above.
+**Project 0.0.41** (file `VERSION`): the standalone edition is discontinued; the pack edition is the only one, and the mods it cannot run without are required in `mods.toml` (see [PACK-EDITION.md](docs/PACK-EDITION.md)). Where the project stands, how to build and test, and what is unverified: [docs/HANDOFF.md](docs/HANDOFF.md); every round: [docs/CHANGELOG.md](docs/CHANGELOG.md); the rules: [docs/GAME-DESIGN-DOCUMENT.md](docs/GAME-DESIGN-DOCUMENT.md). Network protocol **41**. Project versions (`VERSION`) are separate from the JAR versions above.
 
-V6 has a **feature test build**: [download the test bundle](dist/Arsenal-MessHall-v6-0.0.7-test.zip) and read [installation and actual validation](docs/MESS-HALL-V6-TESTING.md). The owner authorized delivery to the new v6 feature branch; this round includes no PR or public release. Until 1.0, start a fresh world for each feature. Both editions are built and bundled; the standalone runtime is the automated gameplay/UI target.
+The test pack for a round is the owner's exported Modrinth profile with this build's jars and scripts (`tools/release/make-testpack.py`); it is too large for the repository and is handed over directly. Until 1.0, start a fresh world for each feature.
 
 ## Build
 
@@ -30,24 +30,20 @@ Windows PowerShell:
 .\gradlew.bat --no-daemon build releaseJars
 ```
 
-After building, each project's `build/libs` contains its pack JAR and `-standalone.jar`. The displays project also produces a sources JAR, which is for developers rather than installation. `build` runs the Java unit tests; `releaseJars` additionally builds all three standalone releases. The beacon now compiles against pinned public TaCZ and TaCZ Attributes artifacts from Curse Maven and JEI APIs. First dependency resolution needs network access; offline builds require those artifacts and MixinGradle already cached. No launcher-instance dependency paths or embedded addon JARs are used. **These commands passed for v6; see its validation record for runtime coverage.**
+After building, each project's `build/libs` contains its JAR (the pack edition; since 0.0.41 there is no `-standalone.jar`). The displays project also produces a sources JAR, which is for developers rather than installation. `build` runs the Java unit tests. The beacon now compiles against pinned public TaCZ and TaCZ Attributes artifacts from Curse Maven and JEI APIs. First dependency resolution needs network access; offline builds require those artifacts and MixinGradle already cached. No launcher-instance dependency paths or embedded addon JARs are used. **These commands passed for v6; see its validation record for runtime coverage.**
 
 For a cloud environment's first build, see [NETWORK-ALLOWLIST.txt](docs/NETWORK-ALLOWLIST.txt) and [network setup](docs/CLOUD-SETUP.md).
 
-## Playtest the correct edition
+## Playtest
 
-Install exactly one edition of each mod, with its runtime dependencies, into a separate Forge test instance. Pack and standalone JARs use the same mod IDs and cannot be installed together. A headless build does not confirm that a screen looks correct in Minecraft.
+Use the test pack of the round (the owner's Create Arsenal profile with this build's jars), or install the three jars into a copy of that profile. The required mods are listed in [PACK-EDITION.md](docs/PACK-EDITION.md); Forge names any that is missing. A headless build does not confirm that a screen looks correct in Minecraft.
 
-- **Pack beacon v4:** requires TaCZ **1.1.8-hotfix2**, [leopoko's TaCZ Attributes **1.4**](https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731), Create and KubeJS, plus the curated recipes/catalogue from the complete Create Arsenal pack. The small `pack-integration` folder provides authored recipe and quest context; it is not the complete modpack.
-- **Standalone beacon v4:** requires the same TaCZ and TaCZ Attributes versions on clients and server. Create, KubeJS, JEI and Gun Displays are optional for the beacon. Gun Guide is client-only. See [standalone installation and balance](docs/STANDALONE.md).
-
-The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989) and TaCZ Attributes project 1113285 / file 8470731. LesRaisins Tactical Equipements (`lrtactical`) is optional; its Demolition adapter is gated to 0.4.3 (`[0.4.3,0.4.4)`). TAA, GunsmithLib, Apotheosis and Apothic Attributes are not required. Download third-party mods from their authors; they are not vendored into the source projects.
+The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989) and TaCZ Attributes project 1113285 / file 8470731. Download third-party mods from their authors; they are not vendored into the source projects.
 
 ## Contents and baseline
 
 - `src/main/java`: shared behavior and screens.
 - `src/main/resources`: pack release metadata, authored assets, language files and data.
-- `src/standalone/resources`: standalone metadata and replacement recipes.
 - `src/test/java`: Java unit tests where present.
 - `pack-integration`: authored KubeJS recipes and FTB Quests for reference.
 - `docs/RELEASE-VALIDATION-0.21.0.json`: prior release validation, with its scope and limits. It is a historical baseline, not a claim that future UI changes have been tested.

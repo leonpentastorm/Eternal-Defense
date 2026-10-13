@@ -4,6 +4,8 @@ import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,6 +53,25 @@ final class RadioAndWhistleTest {
         assertEquals(103,SupportRules.BLAST_FLIGHT_TICKS,"the pace the owner kept: 5.15 s from shot to impact");
         assertFalse(OrdnanceClient.incomingDue(0));assertTrue(OrdnanceClient.incomingDue(1),"played the first tick a client sees the round");
         assertTrue(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK));assertFalse(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK+1),"too late: it would end after the impact");
+    }
+    /** 0.0.41: one radio line at a time per player; spamming flares or seller orders adds no second voice. */
+    @Test void theRadioWaitsForTheLineThatIsPlaying() throws Exception{
+        for(var kind:SupportCalls.Kind.values())for(int n:SupportChatter.lines(kind)){
+            double seconds=HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/"+SupportChatter.event(kind,n).substring("flare.".length())+".ogg").seconds();
+            assertEquals((int)Math.ceil(seconds*20),SupportChatter.ticks(kind,n),kind+" line "+n+" is "+seconds+" s");
+            assertTrue(SupportChatter.ticks(kind,n)<=SupportChatter.LONGEST);
+        }
+        for(int n=1;n<=SupplyCatapult.ORDER_LINES;n++){
+            double seconds=HandTunedRoundTest.ogg("/assets/arsenal_beacon/sounds/sfx/order_chatter_"+n+".ogg").seconds();
+            assertEquals((int)Math.ceil(seconds*20),SupplyCatapult.ORDER_TICKS[n-1],"order line "+n+" is "+seconds+" s");
+            assertTrue(SupplyCatapult.ORDER_TICKS[n-1]<=SupportChatter.LONGEST);
+        }
+        assertTrue(SupportChatter.free(100,100),"the line ended: the next one may play");
+        assertFalse(SupportChatter.free(99,100),"still playing: nothing new");
+        assertTrue(SupportChatter.free(5,5000),"a line claimed in an earlier server run (the tick count restarted) does not block");
+        String chatter=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/SupportChatter.java")),seller=Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/SupplyCatapult.java"));
+        assertTrue(chatter.contains("if(!claim(owner,ticks(kind,line)))return;"),"flare calls wait for the radio");
+        assertTrue(seller.contains("if(!SupportChatter.claim(p,ORDER_TICKS[line-1]))return;"),"seller orders share the same radio");
     }
     private static com.google.gson.JsonObject json(String path) throws Exception{
         try(var in=RadioAndWhistleTest.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in,path),StandardCharsets.UTF_8)).getAsJsonObject();}

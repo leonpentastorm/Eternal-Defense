@@ -7,7 +7,12 @@ public final class Rules {
     public static int rewardTier(int logistics, int baseScore) {
         return Math.min(5,Math.max(0,logistics)) + buildingTier(baseScore);
     }
-    public static int buildingTier(int score){return Math.min(5,Math.max(0,score)/500);}
+    /** Base score points per building tier (5 at most). */
+    public static final int BUILDING_TIER_SCORE=500;
+    public static int buildingTier(int score){return Math.min(5,Math.max(0,score)/BUILDING_TIER_SCORE);}
+    /** 0.0.41 (owner): the whole set of the mod's installations in the Home Zone is worth one building tier; each one present its share. */
+    public static final int INSTALLATION_SET_SCORE=BUILDING_TIER_SCORE;
+    public static int installationScore(int present,int of){return of<=0?0:INSTALLATION_SET_SCORE*Math.max(0,Math.min(present,of))/of;}
     public static int branchMaximum(String branch){return branch.equals("reconnaissance")?3:branch.equals("logistics")?5:branch.equals("core")?3:4;}
     /** Active days between raids: 10 at reward tier 0, one less each tier, never below 3 (tier 7 and up). Was 7 down to 2 before 0.0.21. */
     public static int intervalDays(int tier) { return Math.max(3, 10 - Math.max(0, Math.min(10, tier))); }
@@ -46,6 +51,10 @@ public final class Rules {
     public static int above(int vertical){return ABOVE[Math.max(0,Math.min(4,vertical))];}
     public static boolean showHud(String phase,boolean holdingController,boolean nearby){return nearby&&!phase.equals("unplaced")&&!phase.equals("decommissioning")&&(phase.equals("raid")||holdingController);}
     public static int upgradeCost(int currentLevel) { return 8 * (1 << Math.min(4, Math.max(0, currentLevel))); }
+    /** Defender deaths near the beacon during a raid that cost it a tenth of its health (every third one). */
+    public static final int DEATHS_PER_PENALTY = 3;
+    /** 0.0.41: the deaths left before the next one costs the beacon health (3, 2, 1, then 3 again): the skull on the raid health bar. */
+    public static int livesLeft(int deaths) { return DEATHS_PER_PENALTY - Math.floorMod(deaths, DEATHS_PER_PENALTY); }
     public static int deathPenalty(int deaths, int threshold, int maximumHealth) {
         return deaths > 0 && deaths % threshold == 0 ? maximumHealth / 10 : 0;
     }

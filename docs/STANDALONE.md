@@ -1,4 +1,6 @@
-# Arsenal standalone mods — 0.21.0
+# Arsenal standalone mods — 0.21.0 (discontinued)
+
+> **Discontinued in 0.0.41** (owner, 2026-10-13): from 0.0.41 on there is only the pack edition. No standalone jar is built or tested any more; this page is kept as the record of what the standalone edition was. See [PACK-EDITION.md](PACK-EDITION.md) for what the pack needs.
 
 Three independent mods for **Minecraft Java 1.20.1 / Forge 47.4.x**. The older 0.21.0 baseline used Forge 47.4.20 and TaCZ 1.1.8-hotfix2. The current **0.0.5 / Mess Hall v4 test build** is on `feature/messhall-ver-4`; use `Arsenal-MessHall-v4-0.0.5-test.zip` and its [validation notes](MESS-HALL-V4-TESTING.md). Until final 1.0, use a fresh world for each feature.
 

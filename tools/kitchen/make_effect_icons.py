@@ -96,6 +96,12 @@ def flag(d, c):
     d.rectangle((4, 2, 4, 14), fill=hexc('#c9ced4')); d.polygon([(5, 2), (13, 4), (5, 7)], fill=c)
     d.point((7, 4), fill=hexc('#f3d34a')); d.rectangle((2, 13, 13, 14), fill=shade(c, .55)); d.rectangle((3, 12, 11, 12), fill=shade(c, .7))
 
+def crates(d, c):
+    # the Logistics Hub Zone (0.0.41): three stacked supply crates
+    for (x0, y0) in ((2, 9), (9, 9), (5, 3)):
+        d.rectangle((x0, y0, x0 + 6, y0 + 5), fill=c, outline=shade(c, .45)); d.line((x0 + 1, y0 + 1, x0 + 5, y0 + 1), fill=shade(c, 1.3))
+        d.line((x0 + 1, y0 + 3, x0 + 5, y0 + 3), fill=shade(c, .7)); d.point((x0 + 3, y0 + 3), fill=hexc('#f3d34a'))
+
 def recoil(d, c):
     d.rectangle((4, 6, 13, 8), fill=c); d.rectangle((5, 9, 7, 13), fill=shade(c, .7))
     d.line((3, 3, 3, 7, 1, 5), fill=shade(c, 1.3)); d.line((11, 11, 14, 14, 14, 11), fill=c)
@@ -172,4 +178,6 @@ im, d = tile(hexc('#e8c17b'))
 sub = Image.new('RGBA', (18, 18), (0, 0, 0, 0)); house(ImageDraw.Draw(sub), hexc('#e8c17b')); im.alpha_composite(sub); im.save(OUT / 'home_zone.png')
 im, d = tile(hexc('#9cc26a'))
 sub = Image.new('RGBA', (18, 18), (0, 0, 0, 0)); flag(ImageDraw.Draw(sub), hexc('#9cc26a')); im.alpha_composite(sub); im.save(OUT / 'fob_zone.png')
-print('wrote', len(ICONS) + 2, 'icons')
+im, d = tile(hexc('#58c4e0'))
+sub = Image.new('RGBA', (18, 18), (0, 0, 0, 0)); crates(ImageDraw.Draw(sub), hexc('#58c4e0')); im.alpha_composite(sub); im.save(OUT / 'logistics_hub_zone.png')
+print('wrote', len(ICONS) + 3, 'icons')

@@ -78,7 +78,7 @@ final class PlayerMeals extends SavedData {
         zoneEffect(p,MealEffects.HOME.get(),s!=null&&s.home&&s.zone!=MealZone.Kind.FOB);
         zoneEffect(p,MealEffects.FOB.get(),s!=null&&s.home&&s.zone==MealZone.Kind.FOB);
     }
-    private static void zoneEffect(ServerPlayer p,net.minecraft.world.effect.MobEffect effect,boolean wanted){
+    static void zoneEffect(ServerPlayer p,net.minecraft.world.effect.MobEffect effect,boolean wanted){
         var current=p.getEffect(effect);
         if(wanted&&(current==null||!EndlessEffects.settled(p,current))){
             if(current!=null&&current.isInfiniteDuration())EndlessEffects.run(()->p.removeEffect(effect));   // endless turned into the long timer
@@ -124,7 +124,7 @@ final class PlayerMeals extends SavedData {
             ||source.is(net.minecraft.world.damagesource.DamageTypes.FIREBALL)||source.is(net.minecraft.world.damagesource.DamageTypes.UNATTRIBUTED_FIREBALL);
     }
     static final class MealEvents {
-        @SubscribeEvent public void tick(TickEvent.PlayerTickEvent e){if(e.phase==TickEvent.Phase.END&&e.player instanceof ServerPlayer p&&p.isAlive())PlayerMeals.tick(p);}
+        @SubscribeEvent public void tick(TickEvent.PlayerTickEvent e){if(e.phase==TickEvent.Phase.END&&e.player instanceof ServerPlayer p&&p.isAlive()){PlayerMeals.tick(p);HubZone.tick(p);}}
         @SubscribeEvent public void login(PlayerEvent.PlayerLoggedInEvent e){if(e.getEntity() instanceof ServerPlayer p)refresh(p);}
         @SubscribeEvent public void logout(PlayerEvent.PlayerLoggedOutEvent e){if(e.getEntity() instanceof ServerPlayer p)get(p.serverLevel()).setDirty();}
         @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST) public void death(LivingDeathEvent e){if(e.getEntity() instanceof ServerPlayer p)clear(p);}

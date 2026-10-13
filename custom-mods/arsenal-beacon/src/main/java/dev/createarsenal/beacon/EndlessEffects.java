@@ -66,7 +66,7 @@ final class EndlessEffects {
     static boolean tracked(ServerPlayer p,MobEffectInstance i){
         if(i==null||!(i.isInfiniteDuration()||steadyTime(i.getDuration())))return false;
         var e=i.getEffect();
-        if(e==MealEffects.HOME.get()||e==MealEffects.FOB.get()||MealEffects.isMeal(e))return true;
+        if(MealEffects.zone(e)||MealEffects.isMeal(e))return true;
         var s=PlayerDrinks.of(p);if(s!=null)for(var part:s.drink.parts())if(part.mobEffect()==e)return true;
         return false;
     }

@@ -44,7 +44,7 @@ final class MilkDispenser {
     record Cleansed(List<Component> effects,Component meal){int count(){return effects.size()+(meal==null?0:1);}}
     static Cleansed cleanse(ServerPlayer player){
         var names=new ArrayList<Component>();var state=PlayerMeals.get(player.serverLevel()).players.get(player.getUUID());Component meal=state==null?null:state.meal.name();
-        for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&effect.getEffect()!=MealEffects.HOME.get()&&effect.getEffect()!=MealEffects.FOB.get())names.add(effect.getEffect().getDisplayName());
+        for(var effect:player.getActiveEffects())if(!MealEffects.isMeal(effect.getEffect())&&!MealEffects.zone(effect.getEffect()))names.add(effect.getEffect().getDisplayName());
         // 0.0.35: milk from the dispenser or a Milk Bottle also ends the active drink (the vanilla milk bucket does not)
         var drink=PlayerDrinks.of(player);if(drink!=null)names.add(Component.translatable("gui.arsenal_beacon.milk.drink",drink.drink.name()));
         EndlessEffects.run(()->{PlayerMeals.clear(player);player.removeAllEffects();});PlayerDrinks.forget(player);return new Cleansed(names,meal);

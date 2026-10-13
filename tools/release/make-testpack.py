@@ -8,7 +8,9 @@ listed by its author's download link (so the launcher fetches each one from its 
 carried in its overrides. This script only reads it (nothing in it is executed) and writes a new .mrpack that
   * drops the old Create Arsenal jars (arsenal_beacon, arsenal_gun_guide, arsenal_displays), wherever the base had them;
   * adds this build's three jars (custom-mods/*/build/libs, run `build releaseJars` first) to overrides/mods;
-  * copies the repository's pack scripts (pack-integration/kubejs) over the pack's own;
+  * copies the repository's pack scripts (pack-integration/kubejs) over the pack's own (a copy that differs only in line endings stays);
+  * moves the client-only jars the base carries in overrides/mods to client-overrides/mods (see CLIENT_ONLY), so a dedicated
+    server installed from the pack starts;
   * checks that every mod the pack edition requires is listed (see REQUIRED), and fails if one is missing;
   * keeps everything else of the base exactly as it was.
 Writes dist/Create-Arsenal-<project version>-test.mrpack and its .sha512, and prints the mod list.
@@ -30,6 +32,11 @@ REQUIRED = {
     'JEI': r'(^|/)jei-1\.20\.1-forge-',
     'KubeJS Create': r'(^|/)kubejs-create-',
     'LesRaisins Tactical Equipments (raid rewards)': r'(^|/)lrtactical',
+}
+# Jars of the base's overrides that only work on a client: a dedicated server refuses to start with them (by mod id, and why).
+CLIENT_ONLY = {
+    'tacticalmovement': 'Tactical Movement 1.0.0 loads LocalPlayer when it is built: "invalid dist DEDICATED_SERVER" (0.0.41 server boot); '
+                        'it has no network channel (camera lean and keybinds only)',
 }
 
 
@@ -64,6 +71,10 @@ def main() -> None:
     for name in [n for n in entries if re.match(r'(client-|server-)?overrides/mods/[^/]+\.jar$', n)]:
         if set(jar_mod_ids(entries[name])) & set(OUR_IDS):
             dropped.append(name); del entries[name]
+    moved = []
+    for name in [n for n in entries if re.match(r'overrides/mods/[^/]+\.jar$', n)]:
+        if set(jar_mod_ids(entries[name])) & set(CLIENT_ONLY):
+            entries['client-' + name] = entries.pop(name); moved.append(name.rsplit('/', 1)[1])
     added = []
     for mod, jar_version in OURS:
         jar = REPO / 'custom-mods' / mod / 'build' / 'libs' / f'{mod}-{jar_version}.jar'
@@ -72,9 +83,11 @@ def main() -> None:
     for path in sorted((REPO / 'pack-integration' / 'kubejs').rglob('*')):
         if path.is_file():
             name = 'overrides/kubejs/' + path.relative_to(REPO / 'pack-integration' / 'kubejs').as_posix()
-            if entries.get(name) != path.read_bytes():
-                scripts.append(name)
-            entries[name] = path.read_bytes()
+            ours, theirs = path.read_bytes(), entries.get(name)
+            if theirs is not None and theirs.replace(b'\r\n', b'\n') == ours.replace(b'\r\n', b'\n'):
+                continue  # the same script, only saved with other line endings: the base's copy stays
+            scripts.append(name)
+            entries[name] = ours
     listed = [f['path'] for f in index['files']] + [n for n in entries if '/mods/' in n]
     missing = [label for label, pattern in REQUIRED.items() if not any(re.search(pattern, p, re.I) for p in listed)]
     if missing:
@@ -93,6 +106,7 @@ def main() -> None:
     print(f'{out} {out.stat().st_size / 2**20:.1f} MiB')
     print('dropped', dropped)
     print('added', added)
+    print('moved to client-overrides (client only)', moved)
     print('pack scripts replaced or added', len(scripts), scripts[:12])
     print('mods listed', len(index['files']), '+ in overrides', sum(1 for n in entries if re.match(r'(client-|server-)?overrides/mods/', n)))
 

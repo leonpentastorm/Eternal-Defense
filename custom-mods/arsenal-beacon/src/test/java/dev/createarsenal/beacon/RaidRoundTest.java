@@ -136,8 +136,8 @@ final class RaidRoundTest {
     static List<TextTable.Row> buys(String template){return TextTable.parse(ExchangeShop.sections(List.of(template.split("\n"))).get("buy"),id->true,64,9999).rows();}
     @Test void theShopSellsRareVanillaMaterialsToo(){
         var pack=buys(ExchangeShop.PACK);
-        // 0.0.21: the prices the (since discontinued) standalone edition asked: 8 gold 2, a blaze rod 3, an ender pearl 3, a diamond 6
-        for(var rare:List.of(new TextTable.Row("minecraft:gold_ingot",8,2),new TextTable.Row("minecraft:blaze_rod",1,3),new TextTable.Row("minecraft:ender_pearl",1,3),new TextTable.Row("minecraft:diamond",1,6))){
+        // 0.0.21: 8 gold 2, an ender pearl 3, a diamond 6; a blaze rod 3, 6 since 0.0.41 (owner)
+        for(var rare:List.of(new TextTable.Row("minecraft:gold_ingot",8,2),new TextTable.Row("minecraft:blaze_rod",1,6),new TextTable.Row("minecraft:ender_pearl",1,3),new TextTable.Row("minecraft:diamond",1,6))){
             var p=pack.stream().filter(r->r.id().equals(rare.id())).findFirst().orElse(null);
             assertNotNull(p,rare.id()+" can be bought");
             assertEquals(rare.count(),p.count(),rare.id());assertEquals(rare.value(),p.value(),rare.id());

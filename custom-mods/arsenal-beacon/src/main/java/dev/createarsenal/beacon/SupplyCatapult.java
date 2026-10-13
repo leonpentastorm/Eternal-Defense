@@ -325,11 +325,17 @@ final class SupplyCatapult {
         return "tactical.seller.bought";
     }
 
-    /** The owner's order lines (0.0.34): one plays to the buyer at random on every purchase, never the same twice in a row. */
+    /**
+     * The owner's order lines (0.0.34): one plays to the buyer at random on a purchase, never the same twice in a row. Since 0.0.41 only when
+     * the buyer's radio is free ({@link SupportChatter#claim}): buying again while a line plays adds no second voice.
+     */
     static final int ORDER_LINES=4;
+    /** How long each order line plays, in ticks rounded up (RadioAndWhistleTest checks them against the files). */
+    static final int[] ORDER_TICKS={66,42,85,79};
     private static final java.util.Map<java.util.UUID,Integer> LAST_ORDER=new java.util.HashMap<>();
     static void radio(ServerPlayer p){
         int line=SupportChatter.pick(java.util.stream.IntStream.rangeClosed(1,ORDER_LINES).toArray(),LAST_ORDER.getOrDefault(p.getUUID(),0),p.getRandom().nextInt());
+        if(!SupportChatter.claim(p,ORDER_TICKS[line-1]))return;
         LAST_ORDER.put(p.getUUID(),line);
         p.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(net.minecraft.core.Holder.direct(ArsenalSounds.orderChatter(line)),SoundSource.VOICE,p.getX(),p.getY(),p.getZ(),1f,1f,p.getRandom().nextLong()));
     }

@@ -592,7 +592,7 @@ public final class ArsenalBeacon {
         }
         if(!(event.getEntity() instanceof ServerPlayer p)||p.level().dimension()!=Level.OVERWORLD)return;
         CampaignData d=CampaignData.get(p.server.overworld());if(!d.phase.equals("raid")||!near(p,d))return;
-        d.deaths++;int penalty=Rules.deathPenalty(d.deaths,3,d.maximumHealth());if(penalty>0){d.health-=penalty;announce(p.server.overworld(),"Three defender deaths: beacon loses 10% health.");}d.setDirty();
+        d.deaths++;int penalty=Rules.deathPenalty(d.deaths,Rules.DEATHS_PER_PENALTY,d.maximumHealth());if(penalty>0){d.health-=penalty;announce(p.server.overworld(),"Three defender deaths: beacon loses 10% health.");}d.setDirty();
     }
     @SubscribeEvent public void explosion(ExplosionEvent.Detonate event) {
         if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;

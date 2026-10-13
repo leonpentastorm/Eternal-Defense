@@ -19,7 +19,7 @@ final class OwnerList0028Test {
         assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK),"the current default is not replaced");
         assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0021.replace("= 6","= 5")),"an edited file is kept");
         assertEquals(ExchangeShop.PACK_0021.replace("arsenal_beacon:warlord_seal = 4\n",""),ExchangeShop.PACK_0021,"the 0.0.21 default has no seal");
-        assertEquals(ExchangeShop.PACK.replace("arsenal_beacon:warlord_seal = 4\n",""),ExchangeShop.PACK_0021,"the new default is the old one plus the seal");
+        assertEquals(ExchangeShop.PACK_0028.replace("arsenal_beacon:warlord_seal = 4\n",""),ExchangeShop.PACK_0021,"the 0.0.28 default is the old one plus the seal");
     }
     @Test void restorationMatrixPricesAreHalvedAndTheRecipeMakesEight() throws Exception{
         assertEquals(4,Economy.matrices("restoration_matrix",8));assertEquals(1,Economy.matrices("arsenal_beacon:restoration_matrix",2));assertEquals(1,Economy.matrices("restoration_matrix",1),"rounded up");

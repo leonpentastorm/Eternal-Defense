@@ -1,5 +1,25 @@
 # Change log
 
+## 0.0.41 — One edition, the test pack, the owner's list (2026-10-13, branch `feature/logistics-hub`)
+
+On `feature/logistics-hub` after 0.0.40. Packets changed (the beacon status carries `livesLeft` and `hubs`; the edition flag is gone): **network protocol 41**. Rules: GDD 0.0.41; tests: `docs/ROUND-0041-TESTING.md`.
+
+* **The standalone edition is discontinued** (owner: "focus all on the pack version"). One jar per mod, no `-standalone.jar`; the standalone prices, Ardent rules, recipes, guide lines and tests are gone; `GuideText` has no edition markers; key hints for mods the pack may lack (emotes, shaders, backpacks, quests, map) drop out of a card when their key is missing.
+* **Required mods** in the beacon's `mods.toml` (Forge names any that is missing): TaCZ, TaCZ Attributes 1.4, Create 6, KubeJS and KubeJS Create, LesRaisins Tactical Equipments 0.4.3+, and JEI on the client. Checked on a production dedicated server with the owner's pack: our KubeJS scripts load with 0 errors.
+* **Fix: the Logistics Hub crashed the real game when placed** (0.0.40, `NoSuchMethodError` on `setChanged` of the Hub's Create part): the release jar's name mapping did not see Create's classes; it does now (`reobf` libraries), checked with `javap` and on the production server.
+* **The test pack** (`tools/release/make-testpack.py`): the owner's exported Create Arsenal profile with this build's three jars and the repository's KubeJS scripts; Tactical Movement 1.0.0, a client-only mod in the pack's overrides that stopped a dedicated server from starting, moves to `client-overrides`. `tools/release/install-mrpack.py` installs a pack into a server or client folder, every download checked against its SHA-1 and SHA-512.
+* **MRE Station:** the owner's new model: the press rod runs up into the hopper, so the press no longer floats when it comes down; a guide collar at the bay ceiling stays put.
+* **Ammo and attachment tables:** holding a gun whose parts all wait in later Ages, the empty list says "There are 3 more attachments for this weapon in later Ages. Upgrade your table (Upgrade tab) to unlock them." (one: "There is 1 more ..."); "Hold a gun and press [key]" only shows with no gun in hand. The pop-up that used to say this stopped opening in the Mess Hall v5 UI work; its leftover code is removed.
+* **Radio, one line at a time:** flare calls (all three kinds) and Specialty Seller orders share a player's radio; while a line plays, another call or order is carried out but adds no voice.
+* **Reinforced Beacon Plating:** compacting 2 iron, 2 golden and 2 copper sheets gives 1 plating, no heat (was 4 hardened alloy and a brass sheet, heated, for 4).
+* **Exchange:** a blaze rod costs 6 Ardent Energy (was 3). An untouched exchange file gets the new default; an edited one is kept.
+* **Mess Hall and the Hubs:** the hall counts the food in the Home Zone's Logistics Hubs when it decides what can be cooked, so with the food only in a Hub you open the hall, pick effects, press Gather ingredients and cook (before, the button said the pack lacked food and stayed off). Take back still puts the table's food in your pack. Texts say "pack and Hubs".
+* **Raid skull:** during a raid the beacon's health line (HUD and Overview) shows a skull and the defender deaths left before the next one costs the beacon a tenth of its health: 3, 2, 1 (red), then 3 again.
+* **Logistics Hub Zone:** in the Home Zone of a base with a working Hub, players get a "Logistics Hub Zone" effect ("You are in the Logistics Hub zone."); the beacon's Overview says "This base has N active Logistics Hubs" or "This base does not have any active Logistics Hub".
+* **Side quest: the mod's blocks are worth base score.** Each of the mod's 20 installations that can stand in your zone (Exchange Shop, Support Platform and Cannon, the four weapon tables, Mess Hall, Cook Pot, Bowl and Milk Dispensers, Drink Station, Brew Pot, Cup Dispenser, MRE Station, Logistics Center Hub, Command Table, Satellite Beacon, Supply Receiving Gate, Tactical Enchanting Table) adds 25 points; all 20 add 500, exactly one more reward tier (the owner chose "exactly +1 level" when asked how 1000 points should map to tiers, since a tier is 500 points). The Overview's score grid has five columns now, with Installations ("100 (4/20)") and Total.
+* **Field Guide Reference:** the base zone and weapon station pages repeated one line 8 times (since 0.0.9); each line is there once now, and a test keeps it so.
+* **Satellite crash report:** the owner's crash log shows a `StackOverflowError` inside Player Animator 1.0.2-rc1 while it renders a Corpse mod body, not in this mod; the ~1,900 `ClassCastException`s in Create's goggle overlay carry no stack trace (the JVM drops them after many repeats). See the testing record for what was checked.
+
 ## 0.0.40 — The Logistics Center Hub (2026-10-13, branch `feature/logistics-hub`)
 
 On `feature/logistics-hub`, made from `feature/animation-pass` at 0.0.39 (which holds the Drink Station, Mess Hall and MRE work). No packet changed: **network protocol 40**. Rules: GDD 0.0.40 (Part K, section 5.11); tests: `docs/ROUND-0040-TESTING.md`.

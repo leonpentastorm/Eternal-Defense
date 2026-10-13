@@ -39,6 +39,8 @@ final class MessHallMenu extends AbstractContainerMenu {
     record CatalogueFood(String id,String group,int[] effects){}
     private boolean catalogueSent,seenMode;private int noticeSeq,noticeKind;private String noticeKey="";private List<String> noticeArgs=List.of();
     private long fitSignature=Long.MIN_VALUE;private int[] fit=new int[MealRules.Effect.values().length];private boolean gatherable,covered;
+    /** 0.0.41: the foods the Home Zone's Hubs hold, by food key, read once a second while the screen is open (Gather takes from them). */
+    private Map<String,Integer> hubFoods=Map.of();private int hubFoodsAt=Integer.MIN_VALUE;
     MessHallMenu(int id,Inventory inv,Container ingredients,BlockPos pos,int mk,MessHall.HallEntity hall){
         super(ArsenalBeacon.MESS_HALL_MENU.get(),id);this.ingredients=ingredients;this.pos=pos;this.mk=mk;this.hall=hall;this.player=inv.player;this.stew=this.seenMode=hall!=null&&hall.stewMode&&mk>=2;
         int open=MealRules.tier(mk).slots();
@@ -119,7 +121,10 @@ final class MessHallMenu extends AbstractContainerMenu {
         }
         hall.setOrder(next);return true;
     }
-    /** Fetches the foods for the order from the table and the pack in one move; nothing is consumed, only moved onto the table. */
+    /**
+     * Fetches the foods for the order from the table, the pack and (0.0.40) the Home Zone's Hubs in one move; nothing is consumed, only moved
+     * onto the table. Take back puts the table's foods in the pack (never back in a Hub).
+     */
     private boolean gather(ServerPlayer sp){
         if(!explicit()){notice(WARN,"gather_choose");return false;}
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();var inv=sp.getInventory();
@@ -189,12 +194,24 @@ final class MessHallMenu extends AbstractContainerMenu {
         for(var stack:inv.items)h=h*1000003L+stack.getItem().hashCode()*17L+stack.getCount();
         return h*31L+inv.items.get(0).getCount()+ingredients.getItem(7).getCount();
     }
+    /**
+     * 0.0.41 (owner): what the Hubs can give, counted like the pack, so effects fed only by the Hubs can be chosen and Gather lights up
+     * (before, the button said the pack lacked foods and stayed off, although Gather itself drew on the Hubs). Read at most once a second.
+     */
+    private Map<String,Integer> hubFoods(ServerPlayer sp){
+        if(hubFoodsAt!=Integer.MIN_VALUE&&sp.tickCount-hubFoodsAt<20&&sp.tickCount>=hubFoodsAt)return hubFoods;
+        hubFoodsAt=sp.tickCount;var out=new HashMap<String,Integer>();
+        if(Supply.at(sp,pos).hubs()){var level=sp.serverLevel();
+            for(var h:HubData.get(level).working(level,pos))for(var e:h.storage.kinds().entrySet()){var food=IngredientTraits.foodOf(e.getKey().stack(1));if(food!=null)out.merge(food.key(),e.getValue(),Integer::sum);}}
+        return hubFoods=out;
+    }
     /** 4 chosen but nothing in the pack feeds it, 3 chosen, 2 can be added now, 1 exists but not alongside the order, 0 nothing in the pack feeds it. */
     private void refreshFit(ServerPlayer sp){
-        long sig=signature(sp.getInventory());if(sig==fitSignature)return;fitSignature=sig;
+        var hub=hubFoods(sp);long sig=signature(sp.getInventory())*31L+hub.hashCode();if(sig==fitSignature)return;fitSignature=sig;
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();
         for(int i=0;i<6;i++){var food=IngredientTraits.foodOf(ingredients.getItem(i));if(food!=null){stock.merge(food.key(),ingredients.getItem(i).getCount(),Integer::sum);onTable.add(food.key());}}
         for(var stack:sp.getInventory().items){var food=IngredientTraits.foodOf(stack);if(food!=null)stock.merge(food.key(),stack.getCount(),Integer::sum);}
+        hub.forEach((key,count)->stock.merge(key,count,Integer::sum));
         int baseHas=ingredients.getItem(7).is(Items.BREAD)?ingredients.getItem(7).getCount():0;
         if(!stew&&baseHas<MealRules.SANDWICH_BREAD)stock.merge("minecraft:bread",-(MealRules.SANDWICH_BREAD-baseHas),Integer::sum);
         int tier=hall.mk();

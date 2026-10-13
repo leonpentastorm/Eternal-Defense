@@ -43,7 +43,7 @@ final class LangKeysTest {
         var needed=new ArrayList<String>();
         for(String tab:List.of("overview","upgrades","raid","settings"))needed.add("tab."+tab);
         for(String branch:List.of("core","logistics","defense","restoration","reconnaissance","vertical"))for(String part:List.of("name","next","done"))needed.add("upgrade."+branch+"."+part);
-        for(String key:List.of("structure","palette","details","lighting","furnishings","layout","factory","platforms"))needed.add("score."+key);
+        for(String key:List.of("structure","palette","details","lighting","furnishings","layout","factory","platforms","installations","installations.value","total"))needed.add("score."+key);
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key);
         for(String key:List.of("outline","beam","hurtbox"))needed.add("settings."+key+".note");
         for(String phase:List.of("unplaced","preparation","raid","disabled","restore","snapshot","decommissioning"))needed.add("phase."+phase);
@@ -63,6 +63,7 @@ final class LangKeysTest {
         for(String t:RaidTypes.SPECIAL){needed.add("raidtype."+t);needed.add("raidtype.short."+t);needed.add("raidtype.tip."+t);}
         for(int age=0;age<=5;age++)needed.add("age."+age);
         for(String kind:List.of("gun","ammo","attachment","armor")){needed.add("platform.title."+kind);needed.add("platform.subtitle."+kind);needed.add("platform.station."+kind);needed.add("platform.browsing."+kind);}
+        for(String kind:List.of("ammo","attachment"))for(String n:List.of("",".one"))needed.add("platform.later_gun."+kind+n); // 0.0.41 the empty-list hint
         for(String type:WeaponBrowser.TYPES)needed.add("type.gun."+type);
         try{
             var m=Pattern.compile("TYPES=List\\.of\\(([^)]*)\\)").matcher(Files.readString(Path.of("src/main/java/dev/createarsenal/beacon/ArmorPlatform.java")));

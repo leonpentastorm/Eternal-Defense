@@ -1,0 +1,338 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): the owner's 0.0.41 list on a real client, run with Create (setup-qa.sh with QA_CREATE=1). The
+ * Logistics Hub Zone effect (shown in a base with a working Hub, gone outside and with no working Hub), the beacon Overview's Hub line,
+ * the Mess Hall cooking from the Hub alone through its own screen (the real Gather button, then Make sandwich, then Take back), the raid
+ * skull (three real deaths near the beacon during a raid), the radio playing one line at a time (flare calls and Specialty Seller
+ * orders, counted where the client plays them), an ammo and an attachment table with every part in a later Age (the screen fed with
+ * that state), the MRE Station's new press, Create's goggles looking at the satellite and the other animated blocks, and the side
+ * quest: the mod's installations in the base score (the whole set one tier).
+ * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaRound41 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    /** A step runs, then the next one waits {@code delay} ticks. */
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    /** Waits {@code ticks}, then runs the check. */
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    /** Every sound of the mod the client actually starts. */
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
+    }
+    static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
+    /**
+     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
+     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
+     * connection's own, in the integrated server's local channel the packets arrive as objects).
+     */
+    static boolean hooked;
+    static void hookSounds(){
+        if(hooked||mc().getConnection()==null)return;hooked=true;
+        mc().getConnection().getConnection().channel().pipeline().addBefore("packet_handler","qa_sounds",new io.netty.channel.ChannelInboundHandlerAdapter(){
+            @Override public void channelRead(io.netty.channel.ChannelHandlerContext ctx,Object msg)throws Exception{
+                ResourceLocation id=null;
+                if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
+                else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
+                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                super.channelRead(ctx,msg);
+            }
+        });
+        log("QA_NOTE sound packets are counted at the client's connection");
+    }
+
+    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+
+    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static net.minecraft.client.gui.components.AbstractWidget button(String label){
+        if(mc().screen==null)return null;for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget b&&b.getMessage().getString().equals(label))return b;return null;
+    }
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
+
+    // ---- the places --------------------------------------------------------------------------------------------------------------------
+    /** A: the Hub's anchor; B: the beacon (core 3, radius 24); OUT: outside the zone; HALL, SAT, MRE: inside. */
+    static BlockPos A,B,OUT,HALL,SAT,MRE;
+    static void places(){
+        A=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy+1,Math.floorDiv(sz,16)*16);
+        B=A.offset(-20,-1,0);OUT=A.offset(60,0,0);HALL=B.offset(-6,0,10);SAT=B.offset(6,0,10);MRE=B.offset(0,0,10);
+    }
+    static HubData.Hub hub(){return sl().getBlockEntity(A) instanceof LogisticsHub.HubEntity be?HubData.get(sl()).hub(be.hubId):null;}
+    static int inHub(Item item){var h=hub();return h==null?-1:h.storage.count(item);}
+    static int hubTotal(){var h=hub();int n=0;if(h!=null)for(var c:h.storage.kinds().values())n+=c;return n;}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static int foodInPack(){int n=0;for(var s:sp().getInventory().items)if(IngredientTraits.foodOf(s)!=null)n+=s.getCount();return n;}
+    static void pack(ItemStack... stacks){var inv=sp().getInventory();inv.clearContent();for(var s:stacks)inv.add(s.copy());}
+    static void fill(ItemStack... stacks){var h=hub();h.storage.drain();for(var s:stacks){var rest=h.storage.insert(s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}}
+    static ItemStack st(Item item,int n){return new ItemStack(item,n);}
+    static boolean effect(){return mc().player!=null&&mc().player.hasEffect(MealEffects.HUB.get());}
+    static boolean serverEffect(){return srvGet(()->sp().hasEffect(MealEffects.HUB.get()));}
+    static void sync(){srv(()->BeaconNetwork.syncNearby(sl(),CampaignData.get(sl())));}
+    static int clientState(String key){try{var f=BeaconClient.class.getDeclaredField("state");f.setAccessible(true);return ((CompoundTag)f.get(null)).getInt(key);}catch(Exception x){return -99;}}
+    static Object field(Object o,String name){try{var f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(Exception x){return null;}}
+    static MessHall.HallEntity hall(){return (MessHall.HallEntity)sl().getBlockEntity(HALL);}
+    static int onTable(){int n=0;for(int i=0;i<8;i++)if(i!=6)n+=hall().ingredients.getItem(i).getCount();return n;}
+    static volatile String note="";
+    static long ccStart;
+    static long classCasts(){try{return java.nio.file.Files.lines(java.nio.file.Path.of("logs/latest.log")).filter(l->l.contains("ClassCastException")).count();}catch(Exception x){return -1;}}
+
+    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r41",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r41",settings,new WorldOptions(41L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;hookSounds();sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        // ---- the base: a beacon 2000 blocks out, survival, a still world ---------------------------------------------------------------
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
+            sp().teleportTo(sl(),A.getX()+.5,sy,A.getZ()-6.5,0,10);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"go to the base site");
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon; survival");
+
+        // ---- no Hub yet: no effect, the Overview says so ----------------------------------------------------------------------------------
+        step(50,()->{},"stand in the Home Zone with no Hub for two and a half seconds");
+        step(1,()->check("no Hub: no Logistics Hub Zone effect",!serverEffect()&&!effect(),""),"no Hub, no effect");
+        step(5,()->{sync();},"sync the beacon's state");
+        step(10,()->{check("no Hub: the beacon reports 0 Hubs",clientState("hubs")==0,""+clientState("hubs"));var s=new BeaconClient.ControlScreen();s.tab=0;mc().setScreen(s);recordFrame=true;},"open the beacon's Overview");
+        step(5,()->{check("the Overview says the base has no active Hub",drawnHas("This base does not have any active Logistics Hub"),drawn());shot("r41_01_overview_no_hub");},"Overview, no Hub");
+        step(5,()->closeAll(),"close");
+
+        // ---- place a Hub with its item (a real right-click) --------------------------------------------------------------------------------
+        step(5,()->{hold(new ItemStack(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()));tp(A.getX()+.5,sy,A.getZ()-4.5,0,30);},"hold the Hub item in front of its spot");
+        until("the spot is loaded",100,()->loaded(A),()->{});
+        step(5,()->click(A.below(2),Direction.UP),"place the Hub");
+        step(30,()->check("the Hub stands and works",srvGet(()->hub()!=null&&HubData.get(sl()).working(sl(),B).size()==1),""),"placed");
+
+        // ---- the effect: within a second or two in the zone, the server and the client agree ---------------------------------------------
+        step(45,()->{},"wait in the zone");
+        step(1,()->{check("a base with a working Hub: the Logistics Hub Zone effect is on (server)",serverEffect(),"");check("and the client shows it",effect(),"");
+            var i=mc().player.getEffect(MealEffects.HUB.get());check("it never runs out while you stay (endless or the long steady timer)",i!=null&&(i.isInfiniteDuration()||i.getDuration()>20*60*60),i==null?"none":""+i.getDuration());},"the effect is on");
+        step(5,()->mc().setScreen(new InventoryScreen(mc().player)),"open the inventory (the effect list shows its name and text)");
+        step(10,()->shot("r41_02_hub_zone_effect"),"the effect in the inventory");
+        step(5,()->closeAll(),"close");
+        step(5,()->tp(OUT.getX()+.5,sy,OUT.getZ()+.5,0,10),"walk out of the Home Zone");
+        until("out there, the chunk is loaded",100,()->loaded(OUT),()->{});
+        step(45,()->{},"wait outside");
+        step(1,()->check("outside the Home Zone the effect is gone",!serverEffect()&&!effect(),""),"gone outside");
+        step(1,()->tp(B.getX()+3.5,sy,B.getZ()+.5,0,10),"walk back in");
+        after(45,()->check("back in the zone it is on again",serverEffect()&&effect(),""),"back on");
+        step(5,()->srv(()->{sp().getInventory().clearContent();LogisticsHub.relocate(sp(),sl(),A);}),"the Recovery Shovel picks the Hub up (its blocks go, its items wait)");
+        after(45,()->check("with no working Hub the effect goes, even inside the zone",!serverEffect()&&!effect()&&srvGet(()->BaseZone.problem(sl(),sp().blockPosition())==null),""),"no working Hub");
+        step(5,()->{srv(()->{var inv=sp().getInventory();int at=-1;for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(ArsenalBeacon.LOGISTICS_HUB_ITEM.get()))at=i;
+            if(at>0){inv.setItem(0,inv.items.get(at));inv.setItem(at,ItemStack.EMPTY);}inv.selected=0;});mc().player.getInventory().selected=0;tp(A.getX()+.5,sy,A.getZ()-4.5,0,30);},"hold the picked-up Hub in front of its spot");
+        step(10,()->click(A.below(2),Direction.UP),"place it again");
+        step(30,()->check("one Hub stands again, the same record",srvGet(()->hub()!=null&&HubData.get(sl()).working(sl(),B).size()==1&&HubData.get(sl()).all().size()==1),srvGet(()->HubData.get(sl()).all().size()+" records")),"placed again");
+        step(1,()->tp(B.getX()+3.5,sy,B.getZ()+.5,0,10),"back next to the beacon");
+        after(45,()->check("and the effect comes back",serverEffect()&&effect(),""),"effect again");
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();inv.add(new ItemStack(Items.MILK_BUCKET));inv.selected=0;}),"milk in hand");
+        step(5,()->srv(()->{var r=MilkDispenser.cleanse(sp());note=r.effects().toString();}),"drink the mod's milk (a cleanse)");
+        after(45,()->check("milk does not list the zone effect as cleared, and it is back a moment later",!note.contains("Logistics Hub Zone")&&serverEffect(),note),"milk");
+
+        // ---- the Overview's Hub line ----------------------------------------------------------------------------------------------------
+        step(5,()->sync(),"sync");
+        step(10,()->{check("the beacon reports 1 Hub",clientState("hubs")==1,""+clientState("hubs"));var s=new BeaconClient.ControlScreen();s.tab=0;mc().setScreen(s);recordFrame=true;},"open the Overview");
+        step(5,()->{check("the Overview says: This base has 1 active Logistics Hub",drawnHas("This base has 1 active Logistics Hub"),drawn());shot("r41_03_overview_one_hub");},"Overview, one Hub");
+        step(5,()->closeAll(),"close");
+
+        // ---- the Mess Hall cooks from the Hub alone, through its own screen ----------------------------------------------------------------------
+        Item[] foods={Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.COOKED_BEEF,Items.BREAD,Items.WHEAT,Items.CARROT,Items.POTATO,Items.COOKED_COD,Items.COOKED_SALMON,Items.APPLE,Items.BROWN_MUSHROOM,Items.RED_MUSHROOM};
+        Supplier<ItemStack[]> foodStacks=()->{var out=new ItemStack[foods.length];for(int i=0;i<foods.length;i++)out[i]=st(foods[i],foods[i]==Items.BREAD?32:20);return out;};
+        step(5,()->{srv(()->{sl().setBlock(HALL,ArsenalBeacon.MESS_HALL_I.get().defaultBlockState(),3);pack();fill();});tp(HALL.getX()+.5,sy,HALL.getZ()-2.5,0,25);hold(ItemStack.EMPTY);},"a Mess Hall Mk I; an empty pack; an empty Hub");
+        step(10,()->click(HALL,Direction.NORTH),"open it (a real right-click)");
+        step(15,()->{check("the Mess Hall screen is open",mc().screen instanceof MessHallScreen,String.valueOf(mc().screen));
+            mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,MessHallMenu.RECIPE+MealRules.Effect.VITALITY.ordinal());},"choose Vitality (the client's own button packet)");
+        step(20,()->{var b=(Ui.UiButton)field(mc().screen,"primary");check("no food anywhere: the main button is off",b!=null&&!b.active,b==null?"none":b.getMessage().getString());shot("r41_04_hall_no_food");},"no food anywhere");
+        step(5,()->srv(()->fill(foodStacks.get())),"the food goes into the Hub only (the pack stays empty)");
+        until("within about a second the hall sees the Hub's food",80,()->{var b=(Ui.UiButton)field(mc().screen,"primary");return b!=null&&b.active;},()->{});
+        step(5,()->recordFrame=true,"record a frame");
+        step(5,()->{var b=(Ui.UiButton)field(mc().screen,"primary");
+            check("food only in the Hub: the main button turns on and says Gather ingredients",b!=null&&b.active&&drawnHas("Gather ingredients"),(b==null?"none":"active="+b.active)+" "+drawn());shot("r41_05_hall_gather_from_hub");},"Gather is on");
+        step(3,()->{note=srvGet(()->hubTotal()+" "+foodInPack());press((Ui.UiButton)field(mc().screen,"primary"));},"press Gather ingredients (a real click on the button)");
+        step(20,()->{String r=srvGet(()->onTable()+" "+hubTotal()+" "+foodInPack()+" "+hall().ingredients.getItem(7).getCount());var n=r.split(" ");int before=Integer.parseInt(note.split(" ")[0]);
+            check("Gather laid the food out from the Hub: on the table, out of the Hub, nothing through the pack",Integer.parseInt(n[0])>0&&Integer.parseInt(n[1])==before-Integer.parseInt(n[0])&&n[2].equals("0")&&Integer.parseInt(n[3])>=MealRules.SANDWICH_BREAD,"table hub pack bread: "+r+" (hub before "+before+")");
+            shot("r41_06_hall_gathered");},"gathered");
+        step(3,()->recordFrame=true,"record a frame");
+        step(3,()->{var b=(Ui.UiButton)field(mc().screen,"primary");check("the main button now makes the sandwich",b!=null&&b.active&&drawnHas("Make sandwich"),(b==null?"none":"active="+b.active)+" "+drawn());press(b);},"press Make sandwich");
+        step(20,()->check("a sandwich is made from the Hub's food",srvGet(()->hall().ingredients.getItem(6).is(ArsenalBeacon.SANDWICH.get())),srvGet(()->hall().ingredients.getItem(6).toString())),"made");
+        step(5,()->srv(()->{var h=hall();h.ingredients.setItem(0,st(Items.CARROT,5));h.ingredients.setItem(7,st(Items.BREAD,2));}),"some food left on the table");
+        step(5,()->{note=srvGet(()->hubTotal()+"");var b=button("Take back");if(b!=null)press(b);else log("QA_NOTE no Take back button");},"press Take back");
+        step(15,()->check("Take back puts the table's food in the pack, not back in the Hub",srvGet(()->inPack(Items.CARROT)>=5&&inPack(Items.BREAD)>=2&&(hubTotal()+"").equals(note)),srvGet(()->inPack(Items.CARROT)+" "+inPack(Items.BREAD)+" hub "+hubTotal()+" was "+note)),"take back");
+        step(5,()->closeAll(),"close");
+
+        // ---- the raid skull: three real deaths near the beacon -------------------------------------------------------------------------------
+        step(5,()->{srv(()->{var d=CampaignData.get(sl());d.phase="raid";d.raidType="normal";d.hardRaid=false;d.raidTier=0;d.introRaid=false;d.introCompleted=true;d.wave=1;d.raidsStarted=7;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.deaths=0;d.health=d.maximumHealth();d.setDirty();});
+            tp(B.getX()+3.5,sy,B.getZ()+.5,90,10);sync();},"a raid (no spawns), next to the beacon");
+        step(20,()->{check("raid: the skull counts 3 deaths left",clientState("livesLeft")==3,""+clientState("livesLeft"));shot("r41_07_raid_skull_3");},"skull 3");
+        for(int death=1;death<=3;death++){
+            int n=death;
+            step(5,()->{note=srvGet(()->""+CampaignData.get(sl()).health);srv(()->sp().kill());},"defender death "+n);
+            step(15,()->{if(mc().player!=null)mc().player.respawn();},"respawn");
+            step(30,()->{tp(B.getX()+3.5,sy,B.getZ()+.5,90,10);sync();},"back to the beacon");
+            step(15,()->{int deaths=srvGet(()->CampaignData.get(sl()).deaths),health=srvGet(()->CampaignData.get(sl()).health),max=srvGet(()->CampaignData.get(sl()).maximumHealth());
+                int expected=new int[]{0,2,1,3}[n];boolean hurt=health<Integer.parseInt(note);
+                check("after death "+n+": the skull shows "+expected+(n==3?" again, and the beacon lost a tenth of its health":", the beacon is not hurt"),clientState("livesLeft")==expected&&deaths==n&&(n==3?Integer.parseInt(note)-health==max/10:!hurt),"lives="+clientState("livesLeft")+" deaths="+deaths+" health "+note+" -> "+health);
+                shot("r41_08_raid_skull_after_death_"+n);},"after death "+n);
+        }
+        step(5,()->{var s=new BeaconClient.ControlScreen();s.tab=0;mc().setScreen(s);},"the Overview during the raid");
+        step(10,()->shot("r41_09_overview_raid_skull"),"Overview with the skull");
+        step(5,()->{closeAll();srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.deaths=0;d.health=d.maximumHealth();d.setDirty();});sync();},"end the raid");
+
+        // ---- the radio: one line at a time --------------------------------------------------------------------------------------------------
+        step(140,()->SOUNDS.clear(),"wait until no line can still be playing (the sounds the client receives are counted from here)");
+        step(2,()->srv(()->{SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.FIRE,sp());SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.FIRE,sp());SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.SUPPLY,sp());}),"three flare calls answered at once");
+        after(20,()->check("three calls at once: one radio line plays",sounds("flare.")==1,String.valueOf(SOUNDS)),"one line");
+        step(2,()->srv(()->SupplyCatapult.radio(sp())),"a Specialty Seller order while that line still plays");
+        after(20,()->check("an order while a flare line plays adds no voice",sounds("seller.order_chatter")==0,String.valueOf(SOUNDS)),"no order line");
+        step(110,()->{},"wait for the line to end (at most 4.75 s)");
+        step(2,()->srv(()->{SupplyCatapult.radio(sp());SupplyCatapult.radio(sp());}),"two orders at once after it ended");
+        after(20,()->check("after the line ended, the next order is heard, once",sounds("seller.order_chatter")==1&&sounds("flare.")==1,String.valueOf(SOUNDS)),"one order line");
+        step(110,()->{},"wait again");
+        step(2,()->srv(()->SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.RETURN,sp())),"a return flare call");
+        after(20,()->check("and a flare line plays again",sounds("flare.recall_chatter")==1,String.valueOf(SOUNDS)),"line again");
+
+        // ---- an ammo and an attachment table with every part in a later Age (the screen fed with that state) --------------------------------------
+        for(String kind:List.of("attachment","ammo")){
+            for(int locked:new int[]{3,1}){
+                step(5,()->{var n=new CompoundTag();n.putString("kind",kind);n.putInt("age",1);for(String k:List.of("gun","ammo","attachment","armor"))n.putInt(k+"Age",k.equals(kind)?1:0);
+                    n.putInt("locked",locked);n.putString("notice","Upgrade your "+kind+" table");n.put("recipes",new ListTag());n.putInt("total",0);n.putInt("page",0);n.putInt("pageSize",6);n.put("upgrades",new ListTag());n.put("typeCounts",new CompoundTag());
+                    PlatformScreen.receive(new WeaponPlatform.State(n,true,""));recordFrame=true;},"a "+kind+" table, a gun in hand, "+locked+" part(s) in later Ages");
+                step(5,()->{String want=kind.equals("ammo")?(locked==1?"There is 1 more ammo type for this weapon in a later Age":"There are 3 more ammo types for this weapon in later Ages"):(locked==1?"There is 1 more attachment for this weapon in a later Age":"There are 3 more attachments for this weapon in later Ages");
+                    check(kind+" table, "+locked+" locked: the list says how many wait in later Ages, not Hold a gun",drawnHas(want.substring(0,30))&&!drawnHas("Hold a gun"),drawn());shot("r41_10_"+kind+"_later_"+locked);},"the hint");
+                step(5,()->closeAll(),"close");
+            }
+        }
+        step(5,()->{var n=new CompoundTag();n.putString("kind","attachment");n.putInt("age",1);n.putInt("locked",0);n.putString("notice","Equip a gun");n.put("recipes",new ListTag());n.put("upgrades",new ListTag());n.put("typeCounts",new CompoundTag());
+            PlatformScreen.receive(new WeaponPlatform.State(n,true,""));recordFrame=true;},"no gun in hand");
+        step(5,()->{check("no gun in hand: the old line, Hold a gun",drawnHas("Hold a gun"),drawn());shot("r41_11_attachment_no_gun");},"hold a gun");
+        step(5,()->closeAll(),"close");
+
+        // ---- the MRE Station's press, and Create's goggles on every animated block ---------------------------------------------------------
+        step(5,()->srv(()->{sl().setBlock(MRE,ArsenalBeacon.MRE_STATION.get().defaultBlockState(),3);
+            var goggles=BuiltInRegistries.ITEM.get(new ResourceLocation("create","goggles"));sp().setItemSlot(EquipmentSlot.HEAD,new ItemStack(goggles));note=String.valueOf(goggles);}),"an MRE Station; Create's goggles on");
+        step(5,()->{look(MRE.offset(0,0,-3),MRE.getX()+.5,MRE.getY()+.9,MRE.getZ()+.5);ccStart=classCasts();},"look at the MRE Station");
+        step(60,()->shot("r41_12_mre_press"),"the press (the rod now reaches into the hopper)");
+        step(5,()->{hold(new ItemStack(ArsenalBeacon.SATELLITE_BEACON_ITEM.get()));tp(SAT.getX()+.5,sy,SAT.getZ()-3.5,0,30);},"hold a Satellite Beacon");
+        step(5,()->click(SAT.below(),Direction.UP),"place it");
+        step(20,()->{check("the satellite stands",srvGet(()->sl().getBlockState(SAT).is(ArsenalBeacon.SATELLITE_BEACON.get())),srvGet(()->sl().getBlockState(SAT).toString()));
+            hold(ItemStack.EMPTY);look(SAT.offset(0,0,-3),SAT.getX()+.5,SAT.getY()+1,SAT.getZ()+.5);},"look at the satellite with the goggles on");
+        step(1200,()->shot("r41_13_satellite_goggles"),"a minute of the satellite turning under the goggles");
+        step(5,()->{look(A.offset(0,-1,-5),A.getX()+.5,A.getY(),A.getZ()+.5);},"look at the Hub");
+        step(200,()->{},"ten seconds");
+        step(5,()->look(HALL.offset(0,0,-3),HALL.getX()+.5,HALL.getY()+.5,HALL.getZ()+.5),"look at the Mess Hall");
+        step(200,()->{long cc=classCasts()-ccStart;check("goggles on the MRE Station, the satellite (a minute), the Hub and the Mess Hall: no ClassCastException in the log, the game runs",cc==0&&mc().player!=null,"new ClassCastException lines: "+cc+", goggles="+note);},"goggles");
+
+        // ---- side quest (owner): the mod's installations add base score, the whole set one tier -------------------------------------------------
+        step(5,()->{String r=srvGet(()->{
+                var blocks=new HashMap<Long,net.minecraft.world.level.block.state.BlockState>();int x=0;
+                for(String id:BaseScoring.INSTALLATIONS){String reg=id.equals("mess_hall")||id.equals("drink_mixer")?id+"_mk1":id;
+                    var block=BuiltInRegistries.BLOCK.get(new ResourceLocation(ArsenalBeacon.ID,reg));if(block==net.minecraft.world.level.block.Blocks.AIR)return "missing block "+reg;
+                    blocks.put(new BlockPos(100000+x++*4,0,100000).asLong(),block.defaultBlockState());}
+                var d=CampaignData.get(sl());int all=BaseScoring.analyze(d,blocks,Set.of()).installations();
+                // a second Mess Hall (Mk III) and the blocks that are not in the set change nothing
+                for(String extra:List.of("mess_hall_mk3","fob_beacon","supply_catapult","supply_delivery_gate","logistics_hub_part"))blocks.put(new BlockPos(100000+x++*4,0,100000).asLong(),BuiltInRegistries.BLOCK.get(new ResourceLocation(ArsenalBeacon.ID,extra)).defaultBlockState());
+                int extras=BaseScoring.analyze(d,blocks,Set.of()).installations();
+                blocks.entrySet().removeIf(e->e.getValue().is(ArsenalBeacon.COMMAND_TABLE.get()));int missingOne=BaseScoring.analyze(d,blocks,Set.of()).installations();
+                return all+" "+extras+" "+missingOne;});
+            check("the scorer, with the game's own blocks: all 20 installations 500 points; a second Mess Hall and FOB-only blocks add nothing; 19 give 475",r.equals("500 500 475"),r);},"the installations, counted by the scorer");
+        step(5,()->srv(()->BaseSurvey.invalidate(sl())),"survey the base again (the Hub, the Mess Hall, the MRE Station and the satellite stand in it)");
+        step(60,()->{},"the survey starts");
+        until("the survey is done",2400,()->srvGet(()->{var s=BaseSurvey.get(sl());return !s.scanning&&s.score!=null;}),()->{});
+        step(5,()->sync(),"sync");
+        step(10,()->{int points=srvGet(()->BaseSurvey.get(sl()).score.installations());
+            check("the live survey: 4 installations in the zone, 100 points, in the total",points==100,points+" points, total "+srvGet(()->BaseSurvey.get(sl()).score.total()));
+            var s=new BeaconClient.ControlScreen();s.tab=0;mc().setScreen(s);recordFrame=true;},"open the Overview");
+        step(5,()->{check("the Overview's base score shows Installations 100 (4/20) and the Total",drawnHas("Installations")&&drawnHas("100 (4/20)")&&drawnHas("Total"),drawn());shot("r41_14_overview_installations");},"Overview, installations");
+        step(5,()->closeAll(),"close");
+    }
+}

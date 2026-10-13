@@ -14,9 +14,24 @@ import java.util.*;
 /** Material-neutral construction credit plus bounded architectural and functional bonuses. */
 public final class BaseScoring {
     private static final Set<String> TERRAIN=Set.of("stone","dirt","grass_block","deepslate","netherrack","sand","gravel","end_stone","water","lava","air","bedrock","tuff","granite","diorite","andesite","cobblestone","moss_block","snow","ice","packed_ice","blue_ice","mud","clay");
-    public record Score(int structure,int palette,int details,int lighting,int furnishings,int layout,int factory,int platforms){
-        public int total(){return structure+palette+details+lighting+furnishings+layout+factory+platforms;}
-        CompoundTag tag(){var n=new CompoundTag();n.putInt("structure",structure);n.putInt("palette",palette);n.putInt("details",details);n.putInt("lighting",lighting);n.putInt("furnishings",furnishings);n.putInt("layout",layout);n.putInt("factory",factory);n.putInt("platforms",platforms);n.putInt("total",total());return n;}
+    /**
+     * 0.0.41 (owner): the mod's installations that can stand in the Home Zone, by block id (a Mess Hall or Drink Station of any Mk counts as
+     * itself; parts, fillers and gate halves are not installations; the FOB Beacon, Supply Catapult and Supply Delivery Gate stand at FOBs
+     * and the Defense Beacon is always there, so they are not in the set). Each one present adds its share of
+     * {@link Rules#INSTALLATION_SET_SCORE}: the whole set is one building tier.
+     */
+    static final List<String> INSTALLATIONS=List.of("exchange_shop","support_platform","support_cannon","gun_platform","ammo_platform","attachment_platform",
+        "armor_platform","mess_hall","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer","drink_pot","cup_dispenser","mre_maker","logistics_hub",
+        "command_table","satellite_beacon","supply_receiving_gate","tactical_enchanting_table");
+    /** The installation a block of the mod is, or null: its id without the namespace and a Mk suffix. */
+    static String installation(String id){
+        if(!id.startsWith(ArsenalBeacon.ID+":"))return null;
+        String path=id.substring(ArsenalBeacon.ID.length()+1).replaceFirst("_mk[1-4]$","");
+        return INSTALLATIONS.contains(path)?path:null;
+    }
+    public record Score(int structure,int palette,int details,int lighting,int furnishings,int layout,int factory,int platforms,int installations){
+        public int total(){return structure+palette+details+lighting+furnishings+layout+factory+platforms+installations;}
+        CompoundTag tag(){var n=new CompoundTag();n.putInt("structure",structure);n.putInt("palette",palette);n.putInt("details",details);n.putInt("lighting",lighting);n.putInt("furnishings",furnishings);n.putInt("layout",layout);n.putInt("factory",factory);n.putInt("platforms",platforms);n.putInt("installations",installations);n.putInt("installationCount",Math.round(installations*(float)INSTALLATIONS.size()/Rules.INSTALLATION_SET_SCORE));n.putInt("total",total());return n;}
     }
     static final class Ledger extends SavedData {
         final Set<Long> placed=new HashSet<>();
@@ -44,15 +59,17 @@ public final class BaseScoring {
      * once per block and kept: a base survey looks at tens of thousands of blocks and would otherwise build each id string and walk each block
      * class again for every one of them. {@code createEntity} still needs the state's block entity check (see {@link #factory}).
      */
-    record Kind(String id,boolean part,boolean beacon,boolean terrain,boolean furniture,boolean machine,boolean createEntity,boolean detail){}
+    record Kind(String id,boolean part,boolean beacon,boolean terrain,boolean furniture,boolean machine,boolean createEntity,boolean detail,String installation){}
     private static final Map<Block,Kind> KINDS=new java.util.concurrent.ConcurrentHashMap<>();
     static Kind kind(BlockState s){
         var block=s.getBlock();var known=KINDS.get(block);if(known!=null)return known;
         String id=BuiltInRegistries.BLOCK.getKey(block).toString();boolean station=block instanceof WeaponPlatform.Station,machine=false;
         if(!station&&!id.contains("turret"))for(Class<?> c=block.getClass();c!=null;c=c.getSuperclass())if(c.getSimpleName().contains("Kinetic")||c.getSimpleName().contains("Cannon")){machine=true;break;}
-        var kind=new Kind(id,block==ArsenalBeacon.STRUCTURE_PART.get(),block==ArsenalBeacon.BEACON.get(),terrain(id),furniture(id),!station&&(id.contains("turret")||machine),!station&&id.startsWith("create:"),detail(id,s));
+        var kind=new Kind(id,block==ArsenalBeacon.STRUCTURE_PART.get(),block==ArsenalBeacon.BEACON.get(),terrain(id),furniture(id),!station&&(id.contains("turret")||machine),!station&&id.startsWith("create:"),detail(id,s),installation(id));
         KINDS.put(block,kind);return kind;
     }
+    /** How many of {@link #INSTALLATIONS} stand among these blocks (each counted once). */
+    static int installations(Map<Long,BlockState> blocks){var found=new HashSet<String>();for(var s:blocks.values()){var k=kind(s);if(k.installation()!=null)found.add(k.installation());}return found.size();}
     /** Same answer as {@link #factory(BlockState,String)}, from the cached kind. */
     static boolean factory(BlockState s,Kind k){return k.machine()||k.createEntity()&&s.hasBlockEntity();}
 
@@ -80,9 +97,10 @@ public final class BaseScoring {
     }
 
     public static Score analyze(CampaignData d,Map<Long,BlockState> blocks,Set<Long> placed){
-        Set<Long> designed=new HashSet<>();Map<String,Integer> furnishing=new HashMap<>(),machines=new HashMap<>();Set<String> palette=new HashSet<>();var anchors=new Anchors();int lights=0,details=0;int[] ages=new int[4];
+        Set<Long> designed=new HashSet<>();Map<String,Integer> furnishing=new HashMap<>(),machines=new HashMap<>();Set<String> palette=new HashSet<>(),installed=new HashSet<>();var anchors=new Anchors();int lights=0,details=0;int[] ages=new int[4];
         for(var e:blocks.entrySet()){
             var s=e.getValue();var k=kind(s);String id=k.id();if(k.part())continue;if(s.isAir()||!s.getFluidState().isEmpty()||k.beacon())continue;
+            if(k.installation()!=null)installed.add(k.installation());   // 0.0.41: counted besides whatever else the block counts for
             if(s.getBlock() instanceof WeaponPlatform.Station station){int kind=station.kind.equals("gun")?0:station.kind.equals("ammo")?1:station.kind.equals("attachment")?2:3;ages[kind]=Math.max(ages[kind],s.getValue(WeaponPlatform.AGE));continue;}
             if(factory(s,k)){machines.merge(id,1,Integer::sum);continue;}
             if(placed.contains(e.getKey())||!k.terrain())designed.add(e.getKey());
@@ -111,6 +129,6 @@ public final class BaseScoring {
         }
         for(long p:designed){var s=blocks.get(p);if(s==null)continue;var k=kind(s);if(k.part())continue;palette.add(k.id());if(k.detail())details++;}
         int core=d.core>=3?4:Math.max(0,d.core);
-        return new Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum());
+        return new Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum(),Rules.installationScore(installed.size(),INSTALLATIONS.size()));
     }
 }

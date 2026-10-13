@@ -162,7 +162,7 @@ public final class OptimizePathGameTests {
         }
         for(long p:designed){var s=blocks.get(p);if(s==null)continue;String id=net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();if(s.is(ArsenalBeacon.STRUCTURE_PART.get()))continue;palette.add(id);if(BaseScoring.detail(id,s))details++;}
         int core=d.core>=3?4:Math.max(0,d.core);legacyFloors=floors;
-        return new BaseScoring.Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum());
+        return new BaseScoring.Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum(),Rules.installationScore(BaseScoring.installations(blocks),BaseScoring.INSTALLATIONS.size()));   // 0.0.41: the installations, as the scorer counts them
     }
     /** BeaconCombat's TaCZ listener as it was before 0.0.15: subscribed to the base event class, so every posted event reached it. */
     public static final class LegacyImpact {

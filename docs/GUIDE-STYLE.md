@@ -26,18 +26,19 @@ Every feature gets a card, in this order:
 
 Every page has an item icon in the Field Guide's side menu (`BeaconClient.GuideScreen.icon`). Pick the item that stands for the page's subject, ideally one of the mod's own. A page added to `GuideText.IDS` without a `case` there fails `LangKeysTest.everyGuidePageHasItsOwnMenuIcon`. Keep page titles short: the menu rail shows them only as a tooltip, but the list cuts them at about 17 characters.
 
-## Keys and editions
+## Keys
 
 * A page `x` has `guide.x.title`, `guide.x.body` and optionally `guide.x.detail`. The page list is `GuideText.IDS`.
-* Text that differs by edition: put `[pack] ` or `[standalone] ` at the start of the line. The other edition never sees it, and the card stays in one piece. The older suffix keys (`key.pack`, `key.standalone`) still work and are appended after the base text, which suits whole sections such as the co-op notes.
+* There is one edition since 0.0.41 (the pack): no `[pack] ` / `[standalone] ` line markers and no `.pack` / `.standalone` key suffixes. `GuideTextTest` fails if one comes back.
+* Key hints for mods the pack may not have (emotes, shaders, backpacks, quests, the map) are dropped from a card when that mod's key binding is missing (`ControlHints.withoutMissing`).
 * In language files a percent sign is written `%%`. Key tokens such as `{interact}` and `{reload}` are replaced with the player's own bindings; never write a key name into the text.
 
 ## What the tests enforce
 
-* `LangKeysTest.everyGuideCardFollowsTheSameFormat`: a card that starts with `What it is` has `You get`, `How it works` and `How to unlock`, in that order, in both editions.
+* `LangKeysTest.everyGuideCardFollowsTheSameFormat`: a card that starts with `What it is` has `You get`, `How it works` and `How to unlock`, in that order.
 * `LangKeysTest.everyRegisteredFeatureHasAGuideCard`: every block and item registered in `ArsenalBeacon` has a card (or is listed as an ingredient). Add a block or an item and this test fails until the guide explains it.
-* `LangKeysTest.guideSentencesStayShortAndPlain`, the edition-leak checks, and `SupportTest.theFieldGuideQuotesTheRealNumbers` (numbers in the guide must equal the code).
-* `GuideTextTest`: the `[pack]` / `[standalone]` line rules.
+* `LangKeysTest.guideSentencesStayShortAndPlain` and `SupportTest.theFieldGuideQuotesTheRealNumbers` (numbers in the guide must equal the code).
+* `GuideTextTest`: a card is its key's text; no edition markers or suffixes; key hints for absent mods are left out.
 
 ## Other places that teach
 

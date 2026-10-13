@@ -134,13 +134,26 @@ public final class BeaconClient {
         g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
         g.fill(x,y,x+3,y+height,dead?Ui.RED:Ui.CYAN);g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
         Ui.text(g,font,title,x+9,y+6,dead?Ui.RED:Ui.CYAN,width-14);
-        Ui.text(g,font,hp,x+9,y+18,Ui.INK,width-14);
+        int livesWidth=raid?lives(g,font,x+width-8,y+17):0;
+        Ui.text(g,font,hp,x+9,y+18,Ui.INK,width-14-livesWidth);
         Ui.bar(g,x+9,y+30,width-18,5,fraction,dead||fraction<=.25f?Ui.RED:Ui.CYAN);
         Ui.text(g,font,line,x+9,y+39,Ui.MUTED,width-14);
         if(raid&&on("hardRaid"))Ui.text(g,font,Ui.t("hud.boss"),x+9,y+50,Ui.BRASS,width-14);
         int ml=missionLines(width),fl=fobLines(width);
         if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-(ml+fl)*11-1,width-14,Ui.BRASS,ml);
         if(fl>0)Ui.wrap(g,font,fobLine(),x+9,y+height-fl*11-1,width-14,fobColor(),fl);
+    }
+    /** 0.0.41 (owner): the raid skull, drawn right-aligned at {@code right}. */
+    static final ResourceLocation SKULL=new ResourceLocation(ArsenalBeacon.ID,"textures/gui/skull.png");
+    /**
+     * The skull and the number of defender deaths left before the next one costs the beacon a tenth of its health (3, 2, 1; red at 1).
+     * Returns the width it took, its gap included.
+     */
+    static int lives(GuiGraphics g,net.minecraft.client.gui.Font font,int right,int y){
+        int left=n("livesLeft");String text=Integer.toString(left);int w=font.width(text);
+        g.drawString(font,text,right-w,y+1,left<=1?Ui.RED:Ui.INK,false);
+        g.blit(SKULL,right-w-11,y,0,0,9,9,9,9);
+        return w+15;
     }
     static Component phase(String phase){
         return Ui.t("phase."+switch(phase){case "preparation","raid","disabled","restore","snapshot","decommissioning"->phase;default->"unplaced";});
@@ -406,7 +419,9 @@ public final class BeaconClient {
             Ui.card(g,x,y,w,statusH,dead?Ui.RED:Ui.CYAN);
             int mk=Ui.chip(g,font,Ui.t("overview.mk",n("mk")),x+10,y+4,Ui.BRASS,72);
             Ui.text(g,font,phase(state.getString("phase")),x+16+mk,y+6,dead?Ui.RED:Ui.INK,Math.max(20,w-mk-130));
-            Ui.right(g,font,Ui.t("overview.hp",n("health"),n("maximum")),x+w-8,y+6,dead?Ui.RED:Ui.CYAN);
+            Component hpLine=Ui.t("overview.hp",n("health"),n("maximum"));
+            Ui.right(g,font,hpLine,x+w-8,y+6,dead?Ui.RED:Ui.CYAN);
+            if(active)lives(g,font,x+w-14-font.width(hpLine),y+5);
             float hp=Math.max(0,Math.min(1,n("health")/(float)Math.max(1,n("maximum"))));
             Ui.bar(g,x+10,y+19,w-20,6,hp,dead||hp<=.25f?Ui.RED:Ui.CYAN);
             Component due=active?Ui.t("overview.wave",n("wave"),n("waves"),n("attackers"),n("defenders")):Ui.t("overview.next",String.format(java.util.Locale.ROOT,"%.1f",state.getLong("untilRaid")/24000.0));
@@ -435,16 +450,21 @@ public final class BeaconClient {
                 Component status=on("surveyBusy")?Ui.t("overview.survey",n("surveyPercent")):on("surveyIncomplete")?Ui.t("overview.partial"):Ui.t("overview.live");
                 Ui.text(g,font,Ui.t("overview.breakdown"),x+2,y+2,Ui.MUTED,w/3);
                 Ui.right(g,font,status,x+w-2,y+2,Ui.MUTED);
-                String[] keys={"structure","palette","details","lighting","furnishings","layout","factory","platforms"};
-                int cell=w/4;
+                // 0.0.41: a fifth column for the mod's installations (points and how many of the set stand) and the total
+                String[] keys={"structure","palette","details","lighting","installations","furnishings","layout","factory","platforms","total"};
+                int cell=w/5,of=BaseScoring.INSTALLATIONS.size();
                 for(int i=0;i<keys.length;i++){
-                    int cx=x+(i%4)*cell,cy=y+15+(i/4)*24;
-                    g.fill(cx,cy,cx+cell-3,cy+22,Ui.DEEP);g.fill(cx,cy,cx+2,cy+22,Ui.CYAN_DIM);
+                    int cx=x+(i%5)*cell,cy=y+15+(i/5)*24;boolean total=keys[i].equals("total");
+                    g.fill(cx,cy,cx+cell-3,cy+22,Ui.DEEP);g.fill(cx,cy,cx+2,cy+22,total?Ui.CYAN:Ui.CYAN_DIM);
                     Ui.text(g,font,Ui.t("score."+keys[i]),cx+7,cy+3,Ui.MUTED,cell-14);
-                    Ui.text(g,font,Component.literal(Integer.toString(parts.getInt(keys[i]))),cx+7,cy+13,Ui.INK,cell-14);
+                    String value=keys[i].equals("installations")?Ui.t("score.installations.value",parts.getInt(keys[i]),parts.getInt("installationCount"),of).getString():Integer.toString(parts.getInt(keys[i]));
+                    Ui.text(g,font,Component.literal(value),cx+7,cy+13,total?Ui.CYAN:Ui.INK,cell-14);
                 }
                 y+=15+48+3;
             }
+            // 0.0.41 (owner): how many Logistics Hubs work for this base
+            Component hubs=n("hubs")==0?Ui.t("overview.hubs.none"):n("hubs")==1?Ui.t("overview.hubs.one",1):Ui.t("overview.hubs",n("hubs"));
+            if(bottom-y>=10){Ui.text(g,font,hubs,x+2,y+1,n("hubs")>0?Ui.CYAN:Ui.MUTED,w-4);y+=12;}
             if(bottom-y>=10)Ui.text(g,font,on("expansionBlocked")?Ui.t("overview.blocked"):Ui.t("overview.cover"),x+2,y+1,on("expansionBlocked")?Ui.ORANGE:Ui.MUTED,w-4);
             claim.active=on("installed")&&on("near")&&(n("rewards")>0||on("rewardChest"));
             repair.active=ready()&&n("health")<n("maximum");

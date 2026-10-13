@@ -1,0 +1,38 @@
+QA_CHECK PASS no Hub: no Logistics Hub Zone effect 
+QA_CHECK PASS no Hub: the beacon reports 0 Hubs 0
+QA_CHECK PASS the Overview says the base has no active Hub [Mk-4, Preparing, HP 2000 / 2000, Next raid in 10.0 active days, Next: Raid #1 - normal raid, Next payout: Tier 0 / 10, Last paid: Tier 0, Score 0 / 500 | Need 500 for Tier 1, Building 0/5 + Logistics 0/5 + Break 0 | Cap 10 = Tier 0, Base score, Live base preview; the raid snapshot fixes the payout, Build, 0, Palette, 0, Details, 0, Lighting, 0, Furnishings, 0, Layout, 0, Factory, 0, Platforms, 0, This base does not have any active Logistics Hub, Cover your beacon from hostile mobs]
+QA_CHECK PASS the Hub stands and works 
+QA_CHECK PASS a base with a working Hub: the Logistics Hub Zone effect is on (server) 
+QA_CHECK PASS and the client shows it 
+QA_CHECK PASS it never runs out while you stay (endless or the long steady timer) -1
+QA_CHECK PASS outside the Home Zone the effect is gone 
+QA_CHECK PASS back in the zone it is on again 
+QA_CHECK PASS with no working Hub the effect goes, even inside the zone 
+QA_CHECK PASS one Hub stands again, the same record 1 records
+QA_CHECK PASS and the effect comes back 
+QA_CHECK PASS milk does not list the zone effect as cleared, and it is back a moment later []
+QA_CHECK PASS the beacon reports 1 Hub 1
+QA_CHECK PASS the Overview says: This base has 1 active Logistics Hub [Mk-4, Preparing, HP 2000 / 2000, Next raid in 10.0 active days, Next: Raid #1 - normal raid, Next payout: Tier 0 / 10, Last paid: Tier 0, Score 71 / 500 | Need 429 for Tier 1, Building 0/5 + Logistics 0/5 + Break 0 | Cap 10 = Tier 0, Base score, Live base preview; the raid snapshot fixes the payout, Build, 27, Palette, 40, Details, 0, Lighting, 4, Furnishings, 0, Layout, 0, Factory, 0, Platforms, 0, This base has 1 active Logistics Hub, Cover your beacon from hostile mobs]
+QA_CHECK PASS the Mess Hall screen is open dev.createarsenal.beacon.MessHallScreen@195b847a
+QA_CHECK PASS no food anywhere: the main button is off 
+QA_CHECK PASS food only in the Hub: the main button turns on and says Gather ingredients active=true [Press Gather, Everyday effects, Click to choose, Legendary, 2 food groups each, ?, Base, Out, 2 bread in Base, 2 of each of, 2?3 fillings., Your order 1/2, needs food, Vitality, Open effect slot, 15 min, 3 slots, ?2, Sandwich, Stew, Gather ingredients, Upgrade to Mk 2]
+QA_CHECK PASS Gather laid the food out from the Hub: on the table, out of the Hub, nothing through the pack table hub pack bread: 6 246 0 2 (hub before 252)
+QA_CHECK PASS the main button now makes the sandwich active=true [Gathered 2 kinds of food, Everyday effects, Click to choose, Legendary, 2 food groups each, ?, Base, Out, 2 bread in Base, 2 of each of, 2?3 fillings., Your order 1/2, +4, Vitality, Open effect slot, 15 min, 3 slots, ?2, Sandwich, Stew, Make sandwich, Upgrade to Mk 2]
+QA_CHECK PASS a sandwich is made from the Hub's food 1 prepared_sandwich
+QA_CHECK PASS Take back puts the table's food in the pack, not back in the Hub 5 2 hub 246 was 246
+QA_CHECK PASS raid: the skull counts 3 deaths left 3
+QA_CHECK PASS after death 1: the skull shows 2, the beacon is not hurt lives=2 deaths=1 health 2000 -> 2000
+QA_CHECK PASS after death 2: the skull shows 1, the beacon is not hurt lives=1 deaths=2 health 2000 -> 2000
+QA_CHECK PASS after death 3: the skull shows 3 again, and the beacon lost a tenth of its health lives=3 deaths=3 health 2000 -> 1800
+QA_CHECK PASS three calls at once: one radio line plays [flare.chatter_1]
+QA_CHECK PASS an order while a flare line plays adds no voice [flare.chatter_1]
+QA_CHECK PASS after the line ended, the next order is heard, once [flare.chatter_1, seller.order_chatter_1]
+QA_CHECK PASS and a flare line plays again [flare.chatter_1, seller.order_chatter_1, flare.recall_chatter_1]
+QA_CHECK PASS attachment table, 3 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, Age 1 | Frontier, ARMOR & GEAR, No nearby table, Browsing attachments, 0 matches, Upgrade your attachment table, Materials (from your inventory), 3 items need a later Age or milestone, There are 3 more attachments for this weapon in later Ages. Upgrade, your table (Upgrade tab) to unlock them.]
+QA_CHECK PASS attachment table, 1 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, Age 1 | Frontier, ARMOR & GEAR, No nearby table, Browsing attachments, 0 matches, Upgrade your attachment table, Materials (from your inventory), 1 items need a later Age or milestone, There is 1 more attachment for this weapon in a later Age. Upgrade, your table (Upgrade tab) to unlock it.]
+QA_CHECK PASS ammo table, 3 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, Age 1 | Frontier, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing ammo | Coins: 0, 0 matches, Upgrade your ammo table, Materials (from your inventory), 3 items need a later Age or milestone, There are 3 more ammo types for this weapon in later Ages. Upgrade, your table (Upgrade tab) to unlock them.]
+QA_CHECK PASS ammo table, 1 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, Age 1 | Frontier, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing ammo | Coins: 0, 0 matches, Upgrade your ammo table, Materials (from your inventory), 1 items need a later Age or milestone, There is 1 more ammo type for this weapon in a later Age. Upgrade, your table (Upgrade tab) to unlock it.]
+QA_CHECK PASS no gun in hand: the old line, Hold a gun [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing attachments, 0 matches, Equip a gun, Materials (from your inventory), 0 items need a later Age or milestone, Hold a gun and press [H] at this table. It lists what fits that gun.]
+QA_CHECK PASS the satellite stands Block{arsenal_beacon:satellite_beacon}[facing=north,mk=1]
+QA_CHECK PASS goggles on the MRE Station, the satellite (a minute), the Hub and the Mess Hall: no ClassCastException in the log, the game runs new ClassCastException lines: 0, goggles=goggles
+QA_DONE pass=37 fail=0

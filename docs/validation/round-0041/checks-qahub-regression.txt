@@ -1,0 +1,100 @@
+QA_CHECK PASS the base: Hub A's anchor sits on a chunk corner, inside the Home Zone A=2000, -59, -16 B=1980, -60, -16
+QA_CHECK PASS placing outside the Home Zone is refused and says so Place it inside the zone of your Defense Beacon.
+QA_CHECK PASS a block in the way: refused, nothing placed, the item kept Not enough free space here for this piece.
+QA_CHECK PASS all 27 blocks stand, each pointing at the same Hub id 27
+QA_CHECK PASS the item was used up (survival) 
+QA_CHECK PASS Hub A straddles four chunks 4
+QA_CHECK PASS its record is in the world's saved data, placed, empty 
+QA_CHECK PASS Hub B stands with its own id 
+QA_CHECK PASS every face of all 27 blocks (and no face) hands out the one Hub inventory 189/189
+QA_CHECK PASS 270 slots fill with normal stacks and the rest is handed back; unstackables take a slot each; 16-stacks stay 16; same kind first true true true true true
+QA_CHECK PASS 4000 random inserts, pulls, per-slot moves and in-place changes: the count cache always equals a full scan 0 true
+QA_CHECK PASS per-slot calls copy and scan nothing: getStackInSlot, a simulated insert and a count each take well under a microsecond ns per call: get 25.7, simulated insert 63.3, count 30.8
+QA_CHECK PASS the Hub's screen opens from a part block dev.createarsenal.beacon.HubScreen@3035b9e6
+QA_CHECK PASS page 1 of 5 shows the Hub's first 54 slots 10 diamond 64 emerald
+QA_CHECK PASS the slots in use are counted 4
+QA_CHECK PASS the Hub screen, page 1 at 640x360: 4 texts, none over another or under a button 0 
+QA_CHECK PASS its title, page and slots-used texts [Logistics Center Hub, 1/5, Inventory, 4 / 270 slots used]
+QA_CHECK PASS the previous-page button is off on page 1 
+QA_CHECK PASS Next page: page 2 shows slots 54 to 107 (gold in slot 60) 1 33 gold_ingot
+QA_CHECK PASS page 5 shows the last slot (apples in slot 269), and Next is off there 4 5 apple
+QA_CHECK PASS the Hub screen, page 5 at 640x360: 4 texts, none over another or under a button 0 
+QA_CHECK PASS the server stays on page 5 
+QA_CHECK PASS back on page 1 
+QA_CHECK PASS shift-click from the Hub: into the pack, the slot empty, the counts right 
+QA_CHECK PASS shift-click from the pack: into the Hub (the first free slot), the pack's stack gone 64 iron_ingot
+QA_CHECK PASS clicks inside the page move stacks and keep the counts right (64 emeralds over slots 10 and 11) 32 emerald 32 emerald
+QA_CHECK PASS full: the screen reads 270 / 270 270
+QA_CHECK PASS the Hub screen, full at 640x360: 4 texts, none over another or under a button 0 
+QA_CHECK PASS a vanilla hopper on top moves its items into the Hub 10 cobble, 5 redstone
+QA_CHECK PASS a powered dropper puts one diamond in per pulse, none on the ground 2 diamonds
+QA_CHECK PASS a hopper under the Hub pulls from it: everything that left the Hub is in the hopper and the chest (17 in all, nothing lost or copied) moved 17, left 0
+QA_CHECK PASS automation sends no Hub line 
+QA_CHECK PASS the pack pays it all; the Hub keeps everything; no Hub line Fabricated Cook Pot. Place it inside your beacon zone. / []
+QA_CHECK PASS the Hub pays it all Fabricated Cook Pot. Place it inside your beacon zone.
+QA_CHECK PASS one line, naming what the Hub paid Dev just pulled 14 Iron Ingot, 1 Oak Sign from the Hub
+QA_CHECK PASS the pack first (6 iron, the sign), the Hub only the missing 8 iron Fabricated Cook Pot. Place it inside your beacon zone.
+QA_CHECK PASS the line names only the Hub's part Dev just pulled 8 Iron Ingot from the Hub
+QA_CHECK PASS a failed request takes nothing from the pack or the Hub, and sends no line Missing materials or inventory space. Nothing consumed.
+QA_CHECK PASS two buys within 2 seconds: one line with the running total Dev just pulled 28 Iron Ingot, 2 Oak Sign from the Hub
+QA_CHECK PASS a buy after the 2 seconds starts a new line Dev just pulled 28 Iron Ingot, 2 Oak Sign from the Hub | Dev just pulled 14 Iron Ingot, 1 Oak Sign from the Hub
+QA_CHECK PASS one line: three kinds named in the recipe's order, then 'and N more' Dev just pulled 16 Iron Ingot, 16 Copper Ingot, 8 Redstone Dust and 3 more from the Hub / wanted Dev just pulled 16 Iron Ingot, 16 Copper Ingot, 8 Redstone Dust and 3 more from the Hub
+QA_CHECK PASS the FOB Beacon was made Fabricated FOB Beacon. Plant it in a village with at least 3 villagers, outside your base.
+QA_CHECK PASS the nearer Hub is emptied first, the farther pays the rest; one line for both 0 / 60 [Dev just pulled 14 Iron Ingot, 1 Oak Sign from the Hub]
+QA_CHECK PASS bought: the Hub paid the Ardent Energy arsenal_beacon:universal_ammo_coin for 3
+QA_CHECK PASS the line says the energy was spent from the Hub Dev just spent 3 Ardent Energy from the Hub
+QA_CHECK PASS sold: the item came from the Hub, the energy went to the pack arsenal_beacon:warlord_seal
+QA_CHECK PASS the line names the item Dev just pulled 1 Warlord Seal from the Hub
+QA_CHECK PASS repaired (+250 HP), paid by the Hub 
+QA_CHECK PASS the line Dev just pulled 8 Reinforced Beacon Plating from the Hub
+QA_CHECK PASS upgraded, paid by the Hub, one line Dev just pulled 8 Reinforced Beacon Plating from the Hub
+QA_CHECK PASS Gather, pack and Hub both full: the table is filled from the pack alone table 6, pack 246, Hub 252
+QA_CHECK PASS Gather from the Hub alone: what is on the table left the Hub table 6, pack 0, Hub 246
+QA_CHECK PASS and the line says so Dev just pulled 2 Cooked Chicken, 4 Bread from the Hub
+QA_CHECK PASS both: the pack's bread first, the Hub the rest table 6, pack bread 0, Hub 247, bread on the table 2
+QA_CHECK PASS upgraded to Mk II, paid by the Hub true
+QA_CHECK PASS one line Dev just pulled 8 Reinforced Beacon Plating from the Hub
+QA_CHECK PASS Gather fetched one Swiftness potion from the Hub true (swiftness index 6, notice gathered)
+QA_CHECK PASS the line Dev just pulled 1 Potion of Swiftness from the Hub
+QA_CHECK PASS unlocked with the Hub's seal; one line enchant.result.unlocked [Dev just pulled 1 Warlord Seal from the Hub]
+QA_CHECK PASS upgraded, paid by the Hub, one line Dev just pulled 6 Reinforced Beacon Plating from the Hub
+QA_CHECK PASS the platform shows the energy it can reach (the pack and the Hub) 6
+QA_CHECK PASS bought with the Hub's energy 3
+QA_CHECK PASS the line Dev just spent 3 Ardent Energy from the Hub
+QA_CHECK PASS the player in the Home Zone reads the same line Dev just pulled 14 Iron Ingot, 1 Oak Sign from the Hub
+QA_CHECK PASS the player outside the zone does not 
+QA_CHECK PASS its line reaches this player Fabricated Cook Pot. Place it inside your beacon zone. [QaBuddy just pulled 14 Iron Ingot, 1 Oak Sign from the Hub]
+QA_CHECK PASS the server log has the line 
+QA_CHECK PASS right-click: it does nothing outside the Home Zone and says so This Hub is outside the Home Zone. It does nothing here.
+QA_CHECK PASS its parts stand (27 blocks) 
+QA_CHECK PASS hoppers get nothing from it: the hopper keeps its cobblestone 
+QA_CHECK PASS stations never draw from it 
+QA_CHECK PASS right-click: no beacon, no Hub, and it says so No Defense Beacon is standing. The Hub does nothing until one is.
+QA_CHECK PASS no handler while there is no beacon 
+QA_CHECK PASS stations draw nothing from it 
+QA_CHECK PASS its items wait in it 
+QA_CHECK PASS the beacon back: the handler and the supply come back 
+QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@34538dde
+QA_CHECK PASS the Supply Catapult row is there; its Buy is off (the pack is short: the Hub does not count at a FOB) false
+QA_CHECK PASS refused, nothing taken from the pack or the Hub 16 dark_oak_log, 8 iron_ingot, 16 string, 2 logistics_module, 
+QA_CHECK PASS now its Buy is on true
+QA_CHECK PASS the catapult is built from the pack: the item in the pack, the materials gone 
+QA_CHECK PASS the screen says so [ACTIVE, Villagers here: 0, Beds 0 | Workstations 0, Supply Catapult: OFFLINE until, research level 5, ACTIVE. Villagers here cannot be, hurt. The shop is open, and meals, last here as they do at home., TRIBUTE, Monster hunter guild | research, 0, Emerald, 1 every 3 trips, Redstone Dust, Off: its share goes to the slot?, Wheat, Off: its share goes to the slot?, Rotten Flesh, Off: its share goes to the slot?, No route yet: place both Supply, Gates and ride from home to here, once., FOB SHOP, Support Flare, 3, Return Flare, 2, Fire Support Flare, 6, Supply Delivery Gate, 16, 8, 8, 2, 1, Supply Catapult, 16, 8, 16, 2, You carry 0 Ardent Energy., Flares need your Support Platform at, home., Every flare also needs your Support, Cannon., Supply Catapult built: place it in a FOB's village.]
+QA_CHECK PASS refused: a FOB spends from the pack alone 
+QA_CHECK PASS the Contact Specialty Seller button sits inside the FOB card, 4 px above its lower edge (it touched it before) button 103..121, card 76..125
+QA_CHECK PASS mining a Hub that holds items: no progress, 'Empty the Hub first' in the action bar Empty the Hub first
+QA_CHECK PASS the client knows it is full (the anchor's synced flag): no cracks 
+QA_CHECK PASS a forced break by a survival player is refused too 
+QA_CHECK PASS blast-proof: all 27 blocks stand, nothing lost 
+QA_CHECK PASS the shovel picks the Hub up: gone from the world, its 3 stacks wait in the saved data, the item remembers it, nothing dropped true true 3 true
+QA_CHECK PASS placed again with the same id and its 3 stacks 
+QA_CHECK PASS creative break: the whole Hub goes, its contents drop (94 emeralds, the shield), the record is forgotten 94 1 0 true
+QA_CHECK PASS an empty Hub breaks whole and drops its item once 1 0
+QA_CHECK PASS with all four of its chunks unloaded, the Hub's inventory is intact in the saved data 
+QA_CHECK PASS the part's chunk is loaded, the anchor's is not 
+QA_CHECK PASS its part hands out the one inventory: 8 gold in, a stack of 64 out, the rest untouched 0 64 8 12736 true
+QA_CHECK PASS after the reload, with the Hub's chunks not loaded, its inventory is exactly as saved 
+QA_CHECK PASS its screen opens and reads 202 slots in use 202
+QA_CHECK PASS the named sword kept its name 
+QA_CHECK PASS still the same Hub: the anchor's id is the record's 
+QA_DONE pass=99 fail=0
