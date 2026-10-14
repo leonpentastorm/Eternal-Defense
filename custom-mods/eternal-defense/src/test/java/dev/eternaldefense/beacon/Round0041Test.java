@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.41 list (besides the end of the standalone edition): MRE rod, table hint, plating, blaze rods, the Hub zone, the raid skull, the Mess Hall and the Hubs. */
+/** The list (besides the end of the standalone edition) */
 final class Round0041Test {
     static String source(String name) throws Exception{return Round0035Test.source(name);}
     static String lang() throws Exception{return Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));}
@@ -18,7 +18,7 @@ final class Round0041Test {
         return null;
     }
 
-    // ---- the MRE Station's press rod --------------------------------------------------------------------------------------------------
+    // The MRE Station's press rod
     @Test void thePressRodRunsUpIntoTheHopperSoThePressNeverFloats() throws Exception{
         var owner=json(EnchantTest.ASSETS+"models/block/mre_maker.json");
         var rod=element(owner,"Press_rod");assertNotNull(rod);
@@ -29,11 +29,11 @@ final class Round0041Test {
         assertNull(element(press,"Rod_collar"));
         var still=json(EnchantTest.ASSETS+"models/block/mre_maker_static.json");
         assertNotNull(element(still,"Rod_collar"),"the collar stays put");assertNull(element(still,"Press_rod"));
-        // the press travels 2.6 px: the rod's top stays above the collar (19.5..20), so it never leaves the ceiling
+        // The press travels 2.6 px: the rod's top stays above the collar (19.5..20), so it never leaves the ceiling
         assertTrue(26-AnimationRules.PRESS_TRAVEL>20);
     }
 
-    // ---- the ammo and attachment tables ---------------------------------------------------------------------------------------------
+    // The ammo and attachment tables
     @Test void anEmptyComponentTableSaysHowManyPartsWaitInLaterAges() throws Exception{
         String screen=source("PlatformScreen.java"),lang=lang();
         assertTrue(screen.contains("private Component emptyHint()"),"the hint is back");
@@ -45,14 +45,14 @@ final class Round0041Test {
         assertTrue(source("WeaponPlatform.java").contains("n.putInt(\"locked\","),"the server still counts them");
     }
 
-    // ---- the radio --------------------------------------------------------------------------------------------------------------------
+    // The radio
     @Test void spammingFlaresOrOrdersPlaysOneLineAtATime(){
         assertTrue(SupportChatter.free(0,0));
         assertFalse(SupportChatter.free(10,80),"a line is playing");
         assertTrue(SupportChatter.free(80,80),"it ended");
     }
 
-    // ---- recipes and prices ------------------------------------------------------------------------------------------------------------
+    // Recipes and prices
     @Test void platingIsThreeKindsOfSheetCompactedWithoutHeat() throws Exception{
         String recipes=Files.readString(Path.of("../../pack-integration/kubejs/server_scripts/15_beacon_recipes.js"));
         String line=recipes.lines().filter(l->l.contains("'kubejs:beacon/plating'")).findFirst().orElseThrow();
@@ -65,7 +65,7 @@ final class Round0041Test {
         assertEquals(1,rod.count());assertEquals(6,rod.value());
     }
 
-    // ---- the Logistics Hub zone ---------------------------------------------------------------------------------------------------------
+    // The Logistics Hub zone
     @Test void aBaseWithAWorkingHubShowsTheHubZoneAndTheBeaconCountsHubs() throws Exception{
         String effects=source("MealEffects.java"),meals=source("PlayerMeals.java"),zone=source("HubZone.java"),lang=lang();
         assertTrue(effects.contains("HUB=EFFECTS.register(\"logistics_hub_zone\",()->new HubZoneEffect());"));
@@ -81,13 +81,13 @@ final class Round0041Test {
         assertTrue(lang.contains("\"gui.eternal_defense.overview.hubs.none\": \"This base does not have any active Logistics Hub\""));
     }
 
-    // ---- the raid skull ----------------------------------------------------------------------------------------------------------------
+    // The raid skull
     @Test void theSkullCountsTheDeathsLeftBeforeTheBeaconIsHurt() throws Exception{
         assertEquals(3,Rules.DEATHS_PER_PENALTY);
         int[] expected={3,2,1,3,2,1,3};
         for(int deaths=0;deaths<expected.length;deaths++){
             assertEquals(expected[deaths],Rules.livesLeft(deaths),deaths+" deaths");
-            // the next death costs health exactly when one life is left
+            // The next death costs health exactly when one life is left
             assertEquals(Rules.livesLeft(deaths)==1,Rules.deathPenalty(deaths+1,Rules.DEATHS_PER_PENALTY,1000)>0,"death "+(deaths+1));
         }
         assertTrue(source("EternalDefense.java").contains("Rules.deathPenalty(d.deaths,Rules.DEATHS_PER_PENALTY,d.maximumHealth())"),"one rule for both");
@@ -100,7 +100,7 @@ final class Round0041Test {
         assertTrue(lang().contains("The skull on its health bar counts the deaths it can still take."));
     }
 
-    // ---- the Mess Hall and the Hubs -------------------------------------------------------------------------------------------------------
+    // The Mess Hall and the Hubs
     @Test void theMessHallCountsTheHubsFoodSoGatherWorksFromTheHubAlone() throws Exception{
         String menu=source("MessHallMenu.java");
         assertTrue(menu.contains("private Map<String,Integer> hubFoods(ServerPlayer sp)"));
@@ -112,7 +112,7 @@ final class Round0041Test {
         assertTrue(lang().contains("lays out the right food from your pack and your Logistics Hubs"));
     }
 
-    // ---- side quest: the mod's installations add base score ---------------------------------------------------------------------------
+    // Side quest: the mod's installations add base score
     @Test void theWholeSetOfInstallationsIsWorthExactlyOneTier() throws Exception{
         int of=BaseScoring.INSTALLATIONS.size();
         assertEquals(20,of,"the twenty that can stand in the Home Zone");
@@ -121,14 +121,14 @@ final class Round0041Test {
         assertEquals(0,Rules.installationScore(0,of));
         for(int n=0;n<=of;n++)assertEquals(25*n,Rules.installationScore(n,of),n+" installations");
         assertEquals(Rules.installationScore(of,of),Rules.installationScore(of+5,of),"never more than the set");
-        // one id per installation; the Mk variants count as their station; parts, halves, the beacon and FOB-only blocks do not count
+        // One id per installation; the Mk variants count as their station
         assertEquals("mess_hall",BaseScoring.installation("eternal_defense:mess_hall_mk3"));
         assertEquals("drink_mixer",BaseScoring.installation("eternal_defense:drink_mixer_mk1"));
         assertEquals("logistics_hub",BaseScoring.installation("eternal_defense:logistics_hub"));
         for(String no:List.of("logistics_hub_part","structure_part","gate_part","supply_receiving_gate_left","defense_beacon","fob_beacon","supply_catapult","supply_delivery_gate"))
             assertNull(BaseScoring.installation("eternal_defense:"+no),no);
         assertNull(BaseScoring.installation("create:mess_hall"),"only this mod's blocks");
-        // every installation is a block the mod registers, and every registered block is either one or listed as not one
+        // Every installation is a block the mod registers, and every registered block is either one or listed as not one
         String registry=source("EternalDefense.java");
         for(String id:BaseScoring.INSTALLATIONS)assertTrue(registry.contains("\""+id)||registry.contains("platform(\""+id.replace("_platform","")+"\")"),id);
         var ignored=Set.of("structure_part","gate_part","logistics_hub_part","supply_delivery_gate_left","supply_receiving_gate_left","defense_beacon","fob_beacon","supply_catapult","supply_delivery_gate");

@@ -11,12 +11,12 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/** Server-owned field timer and meal modifiers. Offline time never consumes a meal; death clears it. */
+/** Server-owned field timer and meal modifiers. */
 final class PlayerMeals extends SavedData {
     static final String NAME="eternal_defense_meals_v1";
     static final class State {
         final MealData meal;int remaining;boolean home;boolean applied;
-        /** Which zone made {@link #home} true (0.0.23: the Home Zone or an ACTIVE FOB's zone; shown as its own effect). */
+        /** Which zone made home true. */
         MealZone.Kind zone=MealZone.Kind.NONE;
         State(MealData meal,int remaining){this.meal=meal;this.remaining=remaining;}
     }
@@ -47,7 +47,7 @@ final class PlayerMeals extends SavedData {
     }
     static void removeModifiers(ServerPlayer p){for(var e:MealRules.Effect.values())for(var attribute:attributes(e)){var a=p.getAttribute(attribute);if(a!=null)a.removeModifier(modifier(e));}p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));}
     static void applyModifiers(ServerPlayer p,State s){
-        // Remove our UUIDs only; brewing and other mods keep ownership of their bonuses.
+        // Remove the UUIDs only; brewing and other mods keep ownership of their bonuses.
         for(var e:MealRules.Effect.values())for(var attribute:attributes(e)){var a=p.getAttribute(attribute);if(a!=null)a.removeModifier(modifier(e));}
         for(var b:s.meal.bonuses())for(var attribute:attributes(b.effect())){var a=p.getAttribute(attribute);if(a!=null)a.addTransientModifier(new AttributeModifier(modifier(b.effect()),"Prepared meal",(s.home?b.home():b.field())*(b.effect().reduction()?-1:1),operation(b.effect())));}
         p.setHealth(Math.min(p.getHealth(),p.getMaxHealth()));s.applied=true;
@@ -60,7 +60,7 @@ final class PlayerMeals extends SavedData {
         var s=get(p.serverLevel()).players.get(p.getUUID());if(s==null||s.remaining<=0)return 0;
         for(var b:s.meal.bonuses())if(b.effect()==effect)return s.home?b.home():b.field();return 0;
     }
-    /** Keeps the vanilla effects in step with the meal: finite and counting down in the field, endless while at home, plus the Home Zone effect. */
+    /** Keeps the vanilla effects in step with the meal: finite and counting down in the field */
     static void syncEffects(ServerPlayer p,State s){
         for(var e:MealRules.Effect.values()){
             var effect=MealEffects.of(e);var current=p.getEffect(effect);MealData.Bonus bonus=null;
@@ -68,20 +68,20 @@ final class PlayerMeals extends SavedData {
             if(bonus==null){if(current!=null)EndlessEffects.run(()->p.removeEffect(effect));continue;}
             boolean ok=current!=null&&current.getAmplifier()==bonus.amplifier()&&(s.home?EndlessEffects.settled(p,current):!current.isInfiniteDuration()&&Math.abs(current.getDuration()-s.remaining)<=40);
             if(!ok){
-                // 0.0.37: the long timer that stands in for endless (see EndlessEffects) is topped up in place, never taken off first
+                // The long timer that stands in for endless (see EndlessEffects) is topped up in place, never taken off first
                 boolean extend=s.home&&current!=null&&current.getAmplifier()==bonus.amplifier()&&!current.isInfiniteDuration()&&EndlessEffects.steady(p,effect);
                 if(!extend)EndlessEffects.run(()->p.removeEffect(effect));
                 var shown=new MobEffectInstance(effect,s.home?EndlessEffects.home(p,effect):s.remaining,bonus.amplifier(),false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);
             }
         }
-        // the Home Zone effect at home, the FOB Zone effect (0.0.23) in an ACTIVE FOB's zone: same bonus, its own name and icon
+        // The Home Zone effect at home, the FOB Zone effect in an ACTIVE FOB's zone: same bonus, its own name and icon
         zoneEffect(p,MealEffects.HOME.get(),s!=null&&s.home&&s.zone!=MealZone.Kind.FOB);
         zoneEffect(p,MealEffects.FOB.get(),s!=null&&s.home&&s.zone==MealZone.Kind.FOB);
     }
     static void zoneEffect(ServerPlayer p,net.minecraft.world.effect.MobEffect effect,boolean wanted){
         var current=p.getEffect(effect);
         if(wanted&&(current==null||!EndlessEffects.settled(p,current))){
-            if(current!=null&&current.isInfiniteDuration())EndlessEffects.run(()->p.removeEffect(effect));   // endless turned into the long timer
+            if(current!=null&&current.isInfiniteDuration())EndlessEffects.run(()->p.removeEffect(effect));   // Endless turned into the long timer
             var shown=new MobEffectInstance(effect,EndlessEffects.home(p,effect),0,false,true,true);shown.setCurativeItems(List.of());p.addEffect(shown);
         }
         else if(!wanted&&current!=null)EndlessEffects.run(()->p.removeEffect(effect));
@@ -100,22 +100,18 @@ final class PlayerMeals extends SavedData {
         if(p.tickCount%MealRules.RECOVERY_PERIOD==0&&p.getHealth()<p.getMaxHealth()){double heal=bonus(p,MealRules.Effect.RECOVERY);if(heal>0)p.heal((float)heal);}
         hardy(p);
     }
-    /** The exhaustion each player had at the end of the last tick (after Hardy's refund): what was added since is this tick's hunger. */
+    /** The exhaustion each player had at the end of the last tick (after Hardy's refund) */
     private static final Map<UUID,Float> EXHAUSTION=new HashMap<>();
-    /**
-     * 0.0.35 (owner) Hardy: slower hunger. Each tick the exhaustion gained since the last one is compared and the effect's share of it is given
-     * back. When the hunger bar ticked down in between (exhaustion past 4 is turned into lost saturation or food), only what is left can be
-     * refunded that tick.
-     */
+    /** Hardy: slower hunger. */
     static void hardy(ServerPlayer p){
         var food=p.getFoodData();float now=food.getExhaustionLevel();Float last=EXHAUSTION.get(p.getUUID());
         double share=bonus(p,MealRules.Effect.HARDY);
         if(last!=null&&share>0){float gained=now>=last?now-last:now+4f-last;float refund=Math.min(now,(float)hardyRefund(gained,share));if(refund>0){now-=refund;food.setExhaustion(now);}}
         EXHAUSTION.put(p.getUUID(),now);
     }
-    /** Pure: the share of {@code gained} exhaustion Hardy gives back. */
+    /** Pure: the share of gained exhaustion Hardy gives back. */
     static double hardyRefund(double gained,double share){return Math.max(0,gained)*Math.max(0,Math.min(MealRules.Effect.HARDY.cap(),share));}
-    /** 0.0.35 (owner) Projectile Ward: arrows and crossbow bolts, tridents and fireballs; never TaCZ gun bullets. */
+    /** Projectile Ward: arrows and crossbow bolts, tridents and fireballs; never TaCZ gun bullets. */
     static boolean wardedProjectile(net.minecraft.world.damagesource.DamageSource source){
         if(source.typeHolder().unwrapKey().map(k->k.location().getNamespace().equals("tacz")).orElse(false))return false;
         if(source.getDirectEntity()!=null&&net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(source.getDirectEntity().getType())!=null
@@ -130,7 +126,7 @@ final class PlayerMeals extends SavedData {
         @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST) public void death(LivingDeathEvent e){if(e.getEntity() instanceof ServerPlayer p)clear(p);}
         @SubscribeEvent public void respawn(PlayerEvent.PlayerRespawnEvent e){if(e.getEntity() instanceof ServerPlayer p)refresh(p);}
         @SubscribeEvent public void dimension(PlayerEvent.PlayerChangedDimensionEvent e){if(e.getEntity() instanceof ServerPlayer p)refresh(p);}
-        /** 0.0.35 (owner): Blast Ward takes a share off explosion damage (no fire); Projectile Ward off arrows, bolts, fireballs and tridents. */
+        /** Blast Ward takes a share off explosion damage (no fire) */
         @SubscribeEvent public void hurt(net.minecraftforge.event.entity.living.LivingHurtEvent e){
             if(!(e.getEntity() instanceof ServerPlayer p))return;
             var source=e.getSource();

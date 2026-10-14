@@ -12,7 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import java.util.*;
 
-/** Apply the backend's current rate, including 1, to reload clips only. No numbered tracks or weapon lists. */
+/** Apply the backend's current rate, including 1, to reload clips only. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class MealReloadClient {
     private MealReloadClient(){}

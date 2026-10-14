@@ -2,23 +2,19 @@ package dev.eternaldefense.beacon;
 
 import java.util.*;
 
-/**
- * The kitchen's recipe logic without Minecraft types: what a table of foods makes for an order, and which foods to fetch
- * so that it makes exactly that order. {@link IngredientTraits#compose} and the Gather button both run this code, so a plan can
- * never promise a meal the preparation step would then refuse.
- */
+/** The kitchen's recipe logic without Minecraft types */
 final class MealPlanner {
     private MealPlanner(){}
     static final int BUDGET=12000;
-    /** One kind of food: its registry id, its canonical group, the ordinary effects it feeds (never gun effects) and how many fit one slot. */
+    /** One kind of food: its registry id, its canonical group */
     record Food(String key,String group,Map<MealRules.Effect,Integer> weights,boolean staple,int stackLimit){
         Food {weights=Map.copyOf(weights);}
         boolean feeds(MealRules.Effect e){return weights.containsKey(e);}
     }
-    /** {@code unmet}: chosen effects the table cannot make yet; the meal exists only when nothing is wrong, {@code bonuses} is what the table already makes. */
+    /** Unmet: chosen effects the table cannot make yet; the meal exists only when nothing is wrong */
     record Eval(MealData meal,int occupied,boolean staple,String problem,EnumSet<MealRules.Effect> unmet,List<MealData.Bonus> bonuses){}
 
-    /** {@code selected == null}: ordinary effects ranked by score. Otherwise exactly the chosen effects; legendary ones reserve both their groups. */
+    /** Selected == null: ordinary effects ranked by score. */
     static Eval evaluate(Collection<Food> table,boolean stew,int mk,Set<MealRules.Effect> selected){
         var foods=new LinkedHashMap<String,Map<MealRules.Effect,Integer>>();var groups=new HashMap<String,Set<String>>();boolean staple=false;
         for(var food:table){
@@ -51,14 +47,10 @@ final class MealPlanner {
         return new Eval(problem.isEmpty()?new MealData(stew,made,tier.ticks()):null,occupied,staple,problem,unmet,made);
     }
 
-    /** {@code units} lines up with {@code keys}: what to put in each slot. {@code covered}: the pool can pay the whole batch. */
+    /** Units lines up with keys: what to put in each slot. */
     record Plan(List<String> keys,int[] units,int doubled,boolean covered,Eval eval){}
 
-    /**
-     * Foods that make exactly {@code order}. {@code stock} is every unit of food the cook can reach (table and pack), {@code onTable} the kinds already
-     * in the slots. {@code optimize == false} stops at the first valid table, which is what cheap yes/no checks need.
-     * Null when the order cannot be made from this stock, or at all (shared groups, too many food types for the tier).
-     */
+    /** Foods that make exactly order. */
     static Plan plan(Set<MealRules.Effect> order,boolean stew,int mk,Map<String,Food> catalogue,Map<String,Integer> stock,Set<String> onTable,boolean optimize){
         if(order.isEmpty()||order.size()>(stew?3:2))return null;
         var legendary=new ArrayList<MealRules.Mix>();var ordinary=new ArrayList<MealRules.Effect>();var reserved=new HashSet<String>();
@@ -115,7 +107,7 @@ final class MealPlanner {
         int sum(Collection<String> keys){int total=0;for(var key:keys)total+=usable(catalogue,stock,key);return total;}
         void leaf(LinkedHashSet<String> chosen){
             leaves++;var set=new LinkedHashSet<>(chosen);
-            // The table needs two kinds, and a stew needs enough units: add the best remaining fillers. Extra foods never break an explicit order.
+            // The table needs two kinds, and a stew needs enough units: add the best remaining fillers.
             var fillers=catalogue.keySet().stream().filter(k->!set.contains(k)&&usable(catalogue,stock,k)>0).sorted(rank.thenComparing(Comparator.naturalOrder())).toList();
             for(var key:fillers){if(set.size()>=cap||set.size()>=2&&(!stew||sum(set)>=required))break;set.add(key);}
             var eval=evaluate(set.stream().map(catalogue::get).toList(),stew,mk,order);
@@ -125,11 +117,11 @@ final class MealPlanner {
             if(stew){
                 var counts=new int[keys.size()];var types=new int[keys.size()];for(int i=0;i<counts.length;i++){counts[i]=usable(catalogue,stock,keys.get(i));types[i]=i;}
                 var spent=MealRules.plan(counts,types,required);units=spent==null?counts:spent;
-            }else for(int i=0;i<units.length;i++)units[i]=Math.min(MealRules.SANDWICH_FILLING,usable(catalogue,stock,keys.get(i)));   // 0.0.35: two of each filling
+            }else for(int i=0;i<units.length;i++)units[i]=Math.min(MealRules.SANDWICH_FILLING,usable(catalogue,stock,keys.get(i)));   // Two of each filling
             var plan=new Plan(keys,units,doubled,covered,eval);
             if(best==null||better(plan,best))best=plan;
         }
-        /** Covered batches first, then more doubled effects, then fewer kinds, then foods already on the table, then deeper stock. */
+        /** Covered batches first, then more doubled effects, then fewer kinds, then foods already on the table */
         boolean better(Plan a,Plan b){
             if(a.covered!=b.covered)return a.covered;
             if(a.doubled!=b.doubled)return a.doubled>b.doubled;

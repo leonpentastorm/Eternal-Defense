@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.30 list, the parts that need no world: the FOB outline switch, the preview's lines, the bigger enchanting screen, the Workshop. */
+/** The list, the parts that need no world: the FOB outline switch, the preview's lines */
 final class Round0030Test {
     static String lang() throws Exception{return Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));}
 
@@ -18,14 +18,14 @@ final class Round0030Test {
         assertTrue(f.showZone,"a new FOB shows its outline");
         f.showZone=false;
         assertFalse(FobData.load(d.save(new CompoundTag())).byId(f.id).showZone,"turned off, it stays off after a save");
-        // a FOB saved before 0.0.30 has no such key: it shows its outline
+        // A FOB saved has no such key: it shows its outline
         var old=d.save(new CompoundTag());((CompoundTag)old.getList("fobs",10).get(0)).remove("showZone");
         assertTrue(FobData.load(old).byId(f.id).showZone);
         assertEquals(7,Fobs.OUTLINE,"its own menu button, after the repair");
     }
     @Test void everyRefusalTheItemCanGiveHasAPreviewLine() throws Exception{
         String lang=lang();
-        // the reasons FobRules.plantProblem gives (and the Overworld check before it); "villagers" has a line with the counts
+        // The reasons FobRules.plantProblem gives (and the Overworld check before it)
         for(String problem:List.of("overworld","no_beacon","max","no_raids","not_village","taken"))
             assertTrue(lang.contains("\"gui.eternal_defense.fob.preview.refused."+problem+"\""),"no preview line for "+problem);
         for(String key:List.of("look","good","villagers"))assertTrue(lang.contains("\"gui.eternal_defense.fob.preview."+key+"\""));
@@ -33,7 +33,7 @@ final class Round0030Test {
         assertEquals("villagers",FobRules.plantProblem(true,0,true,true,false,FobRules.MIN_VILLAGERS-1));
         assertNull(FobRules.plantProblem(true,0,true,true,false,FobRules.MIN_VILLAGERS));
     }
-    /** The owner saw the empty slot's line run into "ACTIVE FOBs": every band of the left column now ends before the next begins. */
+    /** The empty slot's line stays clear of "ACTIVE FOBs". */
     @Test void theEnchantingScreenHasRoomForEveryLine(){
         int gearTextTop=TacticalEnchanting.EnchantMenu.GEAR_Y-4,gearTextBottom=gearTextTop+EnchantClient.EnchantScreen.GEAR_TEXT_LINES*10;
         assertTrue(gearTextBottom<EnchantClient.EnchantScreen.FOBS_RULE_Y,"the gear's three lines end above the FOB rule");

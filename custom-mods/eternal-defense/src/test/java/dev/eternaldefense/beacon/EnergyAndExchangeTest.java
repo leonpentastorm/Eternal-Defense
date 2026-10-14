@@ -38,7 +38,7 @@ final class EnergyAndExchangeTest {
             var buy=TextTable.parse(parts.get("buy"),id->true,64,9999);var sell=TextTable.parse(parts.get("sell"),id->true,64,9999);
             assertTrue(buy.problems().isEmpty()&&sell.problems().isEmpty(),buy.problems()+" "+sell.problems());
             assertFalse(buy.rows().isEmpty());assertFalse(sell.rows().isEmpty());
-            // no loop pays: for an item that is both sold and bought, one unit costs more than it earns
+            // No loop pays: for an item that is both sold and bought, one unit costs more than it earns
             for(var b:buy.rows())for(var sl:sell.rows())if(b.id().equals(sl.id()))assertTrue(b.value()/(double)b.count()>sl.value()/(double)sl.count(),"buying "+b.id()+" must cost more than selling it");
         }
         assertTrue(ExchangeShop.sections(List.of("junk","[Sell]","a = 1","[buy]","b = 2")).get("sell").contains("a = 1"));

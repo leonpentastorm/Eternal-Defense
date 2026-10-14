@@ -19,7 +19,7 @@ public final class ReleaseSevenGameTests {
         try{
             registry.createMilestones.addAll(List.of("mechanical_press","mechanical_mixer","deployer","precision_mechanism","steam_engine"));
             var gun=WeaponPlatform.specialEntries(p,"",7).stream().filter(e->e.gate().id().contains("torque")).findFirst().orElseThrow();
-            // Inspect author-native ingredients too: this proves KubeJS replaced the real recipe, not just our UI.
+            // Inspect author-native ingredients too: this proves KubeJS replaced the real recipe, not just the UI.
             boolean nativeLogs=false;
             for(Object input:(List<?>)gun.recipe().getClass().getMethod("getInputs").invoke(gun.recipe())){
                 var ingredient=(net.minecraft.world.item.crafting.Ingredient)input.getClass().getMethod("getIngredient").invoke(input);

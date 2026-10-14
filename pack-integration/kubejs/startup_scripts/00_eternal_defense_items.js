@@ -1,4 +1,4 @@
-// Eternal Defense owns these items. Restart after changing registrations.
+// Eternal Defense owns these items.
 StartupEvents.registry('item', event => {
   event.create("pressed_receiver").displayName("Pressed Receiver").texture('eternal_defense:item/industrial_atlas').parentModel("eternal_defense:item/pressed_receiver");
   event.create("brass_receiver").displayName("Brass Receiver").texture('eternal_defense:item/industrial_atlas').parentModel("eternal_defense:item/brass_receiver");

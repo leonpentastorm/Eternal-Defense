@@ -14,11 +14,11 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import java.util.*;
 
-/** One anchor plus owned cells. A hall is 2 wide x 1 deep x 2 tall (anchor, the cell to its right, and both above); pots and dispensers are 1 x 1 x 2. */
+/** One anchor plus owned cells. */
 abstract class KitchenBlock extends Block implements EntityBlock {
     final boolean hall;
     KitchenBlock(boolean hall){this(hall,0);}
-    /** {@code light}: the block light the kitchen block gives off (the Cook Pot's lamp over its chalkboard). */
+    /** Light: the block light the kitchen block gives off (the Cook Pot's lamp over its chalkboard). */
     KitchenBlock(boolean hall,int light){super(Properties.of().strength(3,6).noOcclusion().sound(SoundType.METAL).lightLevel(s->light));this.hall=hall;registerDefaultState(stateDefinition.any().setValue(DefenseStructures.FACING,Direction.NORTH));}
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(DefenseStructures.FACING);}
     @Override public BlockState getStateForPlacement(BlockPlaceContext c){return defaultBlockState().setValue(DefenseStructures.FACING,c.getHorizontalDirection().getOpposite());}
@@ -45,7 +45,7 @@ abstract class KitchenBlock extends Block implements EntityBlock {
         @Override public String getDescriptionId(){return getBlock()==EternalDefense.MESS_HALL_I.get()?"item.eternal_defense.mess_hall":getBlock()==EternalDefense.DRINK_STATION_I.get()?"item.eternal_defense.drink_station":super.getDescriptionId();}
         @Override public InteractionResult place(BlockPlaceContext c){
             var s=getBlock().getStateForPlacement(c);var level=c.getLevel();var root=c.getClickedPos();
-            // 0.0.42: anything in the way is refused on both sides (the preview is red); a refusal from the server sends the hand slot back
+            // Anything in the way is refused on both sides (the preview is red)
             if(PlacementGuard.blocked(c,s)){if(s!=null&&!level.isClientSide)BaseZone.say(c.getPlayer(),"no_room");return PlacementGuard.refuse(c);}
             if(!level.isClientSide){var all=new ArrayList<>(((KitchenBlock)getBlock()).cells(root,s));all.add(root);
                 for(var p:all){var problem=BaseZone.problem(level,p);if(problem!=null){BaseZone.say(c.getPlayer(),"zone."+problem);return PlacementGuard.refuse(c);}if(level instanceof ServerLevel server&&ReturnZone.inside(server,p)){BaseZone.say(c.getPlayer(),"keep_clear");return PlacementGuard.refuse(c);}}

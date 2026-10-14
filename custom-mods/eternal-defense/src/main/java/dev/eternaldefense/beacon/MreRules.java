@@ -2,50 +2,37 @@ package dev.eternaldefense.beacon;
 
 import java.util.List;
 
-/**
- * 0.0.38 (owner): the numbers of the MRE, with no Minecraft classes so they can be tested alone. An MRE is the foods packed into it, no
- * gain and no loss: its nutrition is the exact sum of the foods' nutrition, its saturation the exact sum of what each food adds to
- * saturation when eaten alone (vanilla's own formula, {@link #saturation}), stored as the plain sum and never above 20. Eaten, it goes
- * through vanilla's {@code FoodData.eat} with the modifier that gives back exactly that saturation ({@link #modifier}).
- */
+/** The numbers of the MRE, with no Minecraft classes so they can be tested alone. */
 final class MreRules {
     private MreRules(){}
-    /** The most nutrition one MRE holds (a full hunger bar), the most saturation it stores, its food slots, its stack and how fast it is eaten. */
+    /** The most nutrition one MRE holds (a full hunger bar), the most saturation it stores, its food slots */
     static final int MAX_NUTRITION=20,FOOD_SLOTS=6,STACK=64,EAT_TICKS=16;
     static final float MAX_SATURATION=20f;
 
     /** One food as vanilla sees it: its nutrition and its saturation modifier. */
     record Food(int nutrition,float modifier){
-        /** A food the MRE can hold: no negative nutrition, a real modifier (a modded food with neither would make the sums meaningless). */
+        /** A food the MRE can hold: no negative nutrition, a real modifier */
         boolean valid(){return nutrition>=0&&Float.isFinite(modifier)&&modifier>=0;}
         float saturation(){return MreRules.saturation(nutrition,modifier);}
     }
     /** What an MRE holds. */
     record Totals(int nutrition,float saturation){
-        /** An MRE that can be eaten: something to restore, within the limits (a stack with other numbers was not made by a station). */
+        /** An MRE that can be eaten: something to restore, within the limits */
         boolean valid(){return nutrition>=1&&nutrition<=MAX_NUTRITION&&Float.isFinite(saturation)&&saturation>=0&&saturation<=MAX_SATURATION;}
     }
 
-    /** What eating one food adds to saturation before vanilla's cap: {@code FoodData.eat}'s {@code nutrition * modifier * 2.0F}, in float as vanilla does it. */
+    /** What eating one food adds to saturation before vanilla's cap */
     static float saturation(int nutrition,float modifier){return (float)nutrition*modifier*2.0F;}
     static int nutrition(List<Food> foods){int n=0;for(var f:foods)n+=f.nutrition();return n;}
-    /**
-     * The MRE's totals: nutrition summed, saturation summed exactly (each food's float value added up in double, which holds the sum of a
-     * few floats exactly, so the order of the slots never changes the result) and stored as the nearest float, at most 20.
-     */
+    /** The MRE's totals: nutrition summed, saturation summed exactly */
     static Totals sum(List<Food> foods){
         int n=0;double s=0;
         for(var f:foods){n+=f.nutrition();s+=f.saturation();}
         return new Totals(n,(float)Math.min(s,MAX_SATURATION));
     }
-    /** May a food of {@code adding} nutrition join foods that already give {@code current}? Never past 20. */
+    /** May a food of adding nutrition join foods that already give current? */
     static boolean fits(int current,int adding){return adding>=0&&current+adding<=MAX_NUTRITION;}
-    /**
-     * The saturation modifier to hand vanilla's {@code FoodData.eat(nutrition, modifier)} so it adds {@code saturation}: saturation /
-     * (2 x nutrition), then the float within two steps of it whose product in vanilla's float formula lands nearest without passing it:
-     * exactly, when a float can; some totals sit a float step away from every product, and then the step below is taken, so an MRE never
-     * gives more than it holds.
-     */
+    /** The saturation modifier to hand vanilla's FoodData.eat(nutrition, modifier) so it adds saturation */
     static float modifier(int nutrition,float saturation){
         if(nutrition<=0)return 0f;
         float m=saturation/(2f*nutrition),best=m;float bestMiss=Float.MAX_VALUE;

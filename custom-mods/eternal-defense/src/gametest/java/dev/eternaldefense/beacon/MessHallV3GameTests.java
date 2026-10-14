@@ -10,7 +10,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.*;
 import java.util.*;
 
-/** Real-server checks of Mess Hall v3: every vanilla food has a trait, the pair bonus, the vanilla effects that show a meal, and the three new damage and healing hooks. */
+/** Real-server checks of Mess Hall v3: every vanilla food has a trait, the pair bonus */
 @net.minecraftforge.gametest.GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class MessHallV3GameTests {

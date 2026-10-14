@@ -7,13 +7,7 @@ import net.minecraftforge.registries.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-/**
- * The vanilla potion effects that show a prepared meal in the normal effect display (inventory list and top-right icons).
- * They carry no gameplay of their own: the server-owned meal state in {@link PlayerMeals} applies the bonuses and keeps these
- * effects in step. The amplifier encodes strength and the stew pair bonus ({@link MealData.Bonus#amplifier()}).
- * While the player is at home the meal effects last forever (the field timer is frozen) and a Home Zone effect is shown as well; in the zone
- * of an ACTIVE Forward Operating Base (0.0.23) the same holds, shown as the FOB Zone effect instead.
- */
+/** The vanilla potion effects that show a prepared meal in the normal effect display */
 final class MealEffects {
     private MealEffects(){}
     private static final DeferredRegister<MobEffect> EFFECTS=DeferredRegister.create(ForgeRegistries.MOB_EFFECTS,EternalDefense.ID);
@@ -33,7 +27,7 @@ final class MealEffects {
     static MobEffect of(MealRules.Effect e){return MEAL.get(e).get();}
     static MealRules.Effect effectOf(MobEffect effect){for(var e:MealRules.Effect.values())if(MEAL.get(e).get()==effect)return e;return null;}
     static boolean isMeal(MobEffect effect){return effectOf(effect)!=null;}
-    /** One of the zone markers (Home, FOB, Logistics Hub): shown while the player stands there, nothing for milk to clear. */
+    /** One of the zone markers (Home, FOB, Logistics Hub) */
     static boolean zone(MobEffect effect){return effect==HOME.get()||effect==FOB.get()||effect==HUB.get();}
 
     /** Display only: nothing ticks, nothing is applied by vanilla. */
@@ -55,7 +49,7 @@ final class MealEffects {
         FobZoneEffect(){super(0x9cc26a);}
         @Override public void initializeClient(Consumer<IClientMobEffectExtensions> consumer){consumer.accept(new MealEffectClient(()->null,true));}
     }
-    /** The Logistics Hub Zone (0.0.41): the Home Zone of a base with a working Logistics Center Hub ({@link HubZone}). No meal bonus of its own. */
+    /** The Logistics Hub Zone: the Home Zone of a base with a working Logistics Center Hub (HubZone). */
     static final class HubZoneEffect extends Shown {
         HubZoneEffect(){super(0x58c4e0);}
         @Override public void initializeClient(Consumer<IClientMobEffectExtensions> consumer){consumer.accept(new MealEffectClient(()->null,true));}

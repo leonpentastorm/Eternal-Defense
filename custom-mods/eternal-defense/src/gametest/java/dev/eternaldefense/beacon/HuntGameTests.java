@@ -25,13 +25,7 @@ import net.minecraftforge.gametest.GameTestHolder;
 import java.util.*;
 import java.util.stream.Stream;
 
-/**
- * Tactical Operations on a real server level (0.0.20; opt-in: start the game with {@code -Deternaldefense.huntTests=true}, then {@code /hunt-test},
- * or let tools/qa QaHunt start them). THROWAWAY WORLDS ONLY: the tests take over the world's campaign (a beacon on a stone platform at
- * {@link #BEACON}) and its Tactical Operations data, and they move the first online player around, because a warband only comes when a real
- * player approaches. Two stone platforms are built high above any terrain (y {@value #FLOOR} to {@value #TOP}) and kept loaded: one for the
- * base (beacon, Command Table, Satellite Beacon) and one for the objective, {@value #OBJECTIVE_DISTANCE} blocks east.
- */
+/** Tactical Operations on a real server level. */
 @GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class HuntGameTests {
@@ -40,12 +34,8 @@ public final class HuntGameTests {
     static final BlockPos TABLE=BEACON.offset(3,0,0),SATELLITE=BEACON.offset(6,0,0);
     private static boolean built;
 
-    // ---- the ground ------------------------------------------------------------------------------------------------------------------------
-    /**
-     * Builds (once) both platforms and keeps their chunks loaded. The layers in whole sections below the top one are written straight into the
-     * chunk (fast); the top section's layers are placed like any block, so the light and the height maps above the platform are right (the
-     * satellite's sky check and the screenshots need them).
-     */
+    // The ground
+    /** Builds (once) both platforms and keeps their chunks loaded. */
     static void ground(ServerLevel l){
         if(built)return;
         platform(l,BEACON,2);platform(l,OBJECTIVE,3);built=true;
@@ -54,8 +44,7 @@ public final class HuntGameTests {
         var stone=Blocks.STONE.defaultBlockState();
         for(int cx=(center.getX()>>4)-chunks;cx<=(center.getX()>>4)+chunks;cx++)for(int cz=(center.getZ()>>4)-chunks;cz<=(center.getZ()>>4)+chunks;cz++){
             l.setChunkForced(cx,cz,true);LevelChunk chunk=l.getChunk(cx,cz);
-            // whole sections below the top one are written directly; the top one's blocks are placed (the first placement into an empty section
-            // tells the light engine about it, so the light over the platform is right)
+            // Whole sections below the top one are written directly
             int placedFrom=Math.max(FLOOR,TOP&~15);
             for(int y=FLOOR;y<placedFrom;y++){var section=chunk.getSection(chunk.getSectionIndex(y));for(int x=0;x<16;x++)for(int z=0;z<16;z++)section.setBlockState(x,y&15,z,stone,false);}
             chunk.setUnsaved(true);
@@ -69,9 +58,9 @@ public final class HuntGameTests {
         built=false;
     }
 
-    // ---- the base ------------------------------------------------------------------------------------------------------------------------
+    // The base
     record Fixture(ServerLevel l,CampaignData d,HuntData h){}
-    /** The campaign at the test beacon (preparation, reward tier 3, no raid due for days), a linked Mk I satellite and an empty board. */
+    /** The campaign at the test beacon (preparation, reward tier 3, no raid due for days) */
     static Fixture fixture(GameTestHelper helper){
         var l=helper.getLevel();ground(l);
         var d=CampaignData.get(l);
@@ -84,7 +73,7 @@ public final class HuntGameTests {
         if(!l.getBlockState(TABLE).is(EternalDefense.COMMAND_TABLE.get()))l.setBlock(TABLE,EternalDefense.COMMAND_TABLE.get().defaultBlockState().setValue(TacticalBlocks.FACING,Direction.NORTH),3);
         if(!l.getBlockState(SATELLITE).is(EternalDefense.SATELLITE_BEACON.get()))l.setBlock(SATELLITE,EternalDefense.SATELLITE_BEACON.get().defaultBlockState(),3);
         h.table=TABLE;h.satellite=SATELLITE;
-        // the board is the test's own: filled (so the uplink adds nothing), today's offer already given (no dawn offer during a test)
+        // The board is the test's own: filled (so the uplink adds nothing)
         h.board.filledTo(TacticalRules.offers(1));h.board.lastDay=TacticalRules.day(l.getDayTime());h.scanReady=0;h.setDirty();
         return new Fixture(l,d,h);
     }
@@ -113,7 +102,7 @@ public final class HuntGameTests {
         for(int i=0;i<p.getInventory().items.size();i++){var s=p.getInventory().items.get(i);if(s.is(Items.FILLED_MAP)||s.is(EternalDefense.RETURN_FLARE.get()))p.getInventory().items.set(i,ItemStack.EMPTY);}
     }
 
-    // ---- the warband ---------------------------------------------------------------------------------------------------------------------
+    // The warband
     @GameTest(template="empty3x3x3",batch="hunt_01",timeoutTicks=1800)
     public static void aWarbandSpawnsOnApproachAndItsLastDeathPaysOnce(GameTestHelper helper){
         var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);
@@ -164,7 +153,7 @@ public final class HuntGameTests {
         helper.assertTrue(carried(p,EternalDefense.RETURN_FLARE.get())==1,"and one Return Flare");
         var map=p.getInventory().items.stream().filter(s->s.is(Items.FILLED_MAP)).findFirst().orElseThrow();
         helper.assertTrue(map.getHoverName().getString().equals(o.codename),"the map is named after the operation");
-        // a player who lost the map gets it back at login, but no second flare
+        // A player who lost the map gets it back at login, but no second flare
         dropMissionItems(p);p.getInventory().add(new ItemStack(EternalDefense.RETURN_FLARE.get()));Hunts.login(p);
         helper.assertTrue(Hunts.carriesMap(p,o.id)&&carried(p,EternalDefense.RETURN_FLARE.get())==1,"login hands the map back, not another flare");
         goTo(p,l,OBJECTIVE.above());
@@ -188,7 +177,7 @@ public final class HuntGameTests {
         var o=offer(f,TacticalRules.Kind.PATROL);h.board.accept(o.id,null);h.board.engage(3);h.board.scatter();h.board.engage(3);
         helper.assertTrue(h.board.mission.serial==2,"the second warband");
         Mob stale=tagged(l,o.id,1,BEACON.offset(-5,0,5)),current=tagged(l,o.id,2,BEACON.offset(-5,0,-5)),orphan=tagged(l,987654,2,BEACON.offset(5,0,-5));
-        // what a chunk does when it loads its saved entities
+        // What a chunk does when it loads its saved entities
         l.addLegacyChunkEntities(Stream.of(stale,current,orphan));
         helper.startSequence().thenIdle(2).thenExecute(()->{
             helper.assertTrue(stale.isRemoved()&&l.getEntity(stale.getUUID())==null,"a mob of a scattered warband is discarded");
@@ -206,7 +195,7 @@ public final class HuntGameTests {
         var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);goTo(p,l,BEACON.above());
         var o=offer(f,TacticalRules.Kind.PATROL);
         helper.assertTrue(Hunts.blocked(l,d,h)==null,"linked, no raid due: missions can be accepted");
-        var far=BEACON.offset(-7,0,-7);   // inside the zone, more than 8 blocks from the table
+        var far=BEACON.offset(-7,0,-7);   // Inside the zone, more than 8 blocks from the table
         l.setBlock(SATELLITE,Blocks.AIR.defaultBlockState(),3);l.setBlock(far,EternalDefense.SATELLITE_BEACON.get().defaultBlockState(),3);h.satellite=far;
         helper.assertTrue("too_far".equals(Hunts.uplinkProblem(l,d,h)),"satellite too far: "+Hunts.uplinkProblem(l,d,h));
         helper.assertTrue(Hunts.accept(p,l,d,h,index(f,o)).equals("tactical.result.no_uplink")&&h.board.mission==null,"NO UPLINK refuses");
@@ -229,7 +218,7 @@ public final class HuntGameTests {
                 helper.assertTrue(Hunts.accept(p,l,d,h,index(f,o)).equals("tactical.result.accepted"),"accepted once all is clear");
                 var second=offer(f,TacticalRules.Kind.PATROL);
                 helper.assertTrue(Hunts.accept(p,l,d,h,index(f,second)).equals("tactical.result.busy"),"one mission at a time");
-                // a running mission is never cancelled by a raid
+                // A running mission is never cancelled by a raid
                 d.phase="raid";boolean kept=h.board.running();d.phase="preparation";
                 helper.assertTrue(kept,"a raid does not end the running mission");
                 Hunts.abandon(p,l,d,h);dropMissionItems(p);
@@ -246,7 +235,7 @@ public final class HuntGameTests {
         var inside=BEACON.offset(-4,0,-4);
         helper.assertTrue(place(l,table,inside)==InteractionResult.FAIL&&l.getBlockState(inside).isAir(),"a second Command Table is refused");
         helper.assertTrue(place(l,satellite,inside)==InteractionResult.FAIL&&l.getBlockState(inside).isAir(),"a second Satellite Beacon is refused");
-        // with the base's table gone, a new one goes in, with its 2 x 2 x 2 frame
+        // With the base's table gone, a new one goes in, with its 2 x 2 x 2 frame
         l.setBlock(TABLE,Blocks.AIR.defaultBlockState(),3);
         helper.assertTrue(h.table==null,"the data forgets a removed table");
         helper.assertTrue(place(l,table,inside).consumesAction()&&l.getBlockState(inside).is(EternalDefense.COMMAND_TABLE.get()),"a Command Table goes inside the zone");
@@ -273,7 +262,7 @@ public final class HuntGameTests {
             helper.assertFalse(hunter.isOnFire(),"a hunt zombie does not burn in daylight");
             helper.assertTrue(BeaconCombat.isAttached(control),"an ordinary hostile near the beacon gets the beacon goals");
             helper.assertFalse(BeaconCombat.isAttached(hunter),"a hunt mob never does");
-            // a sure drop path (boss + raider credit), with and without the hunt tag
+            // A sure drop path (boss + raider credit), with and without the hunt tag
             for(var mob:List.of(hunter,control)){mob.getPersistentData().putBoolean("eternalRaider",true);mob.getPersistentData().putBoolean("eternalBoss",true);}
             var hunterDrops=new ArrayList<ItemEntity>();var controlDrops=new ArrayList<ItemEntity>();
             new ArdentEnergy().drops(new net.minecraftforge.event.entity.living.LivingDropsEvent(hunter,l.damageSources().generic(),hunterDrops,0,true));
@@ -302,9 +291,9 @@ public final class HuntGameTests {
     @GameTest(template="empty3x3x3",batch="hunt_08",timeoutTicks=900)
     public static void theScanReadsOnlyLoadedChunksAndKeepsOneJobAtATime(GameTestHelper helper){
         var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);goTo(p,l,BEACON.above());
-        h.satelliteMk=3;   // the Region image reaches 1024 blocks: its outer rows lie in chunks nobody has loaded
+        h.satelliteMk=3;   // The Region image reaches 1024 blocks: its outer rows lie in chunks nobody has loaded
         int version=h.scanVersion,loaded=l.getChunkSource().getLoadedChunksCount();
-        // chunks under the image that are not loaded now must still not be loaded after the scan (the image's outer ring, 700 to 1000 blocks out)
+        // Chunks under the image that are not loaded now must still not be loaded after the scan
         var far=new ArrayList<net.minecraft.world.level.ChunkPos>();
         for(int a=0;a<360;a+=15)for(int r:new int[]{700,1000}){var c=new net.minecraft.world.level.ChunkPos(BlockPos.containing(BEACON.getX()+Math.cos(Math.toRadians(a))*r,0,BEACON.getZ()+Math.sin(Math.toRadians(a))*r));if(l.getChunkSource().getChunkNow(c.x,c.z)==null)far.add(c);}
         helper.assertTrue(far.size()>10,"enough unloaded chunks under the image to watch: "+far.size());
@@ -338,11 +327,11 @@ public final class HuntGameTests {
         helper.succeed();
     }
 
-    // ---- 0.0.21: arrival on one block, no ground, armed raiders, raids ignore cover ---------------------------------------------------------
-    /** Water pools on the objective platform (radius 17, so nothing within the 16-block anchor search but what is left dry). */
+    // Arrival on one block, no ground, armed raiders, raids ignore cover
+    /** Water pools on the objective platform */
     static final BlockPos POOL_ONE=OBJECTIVE.offset(30,0,30),POOL_NONE=OBJECTIVE.offset(30,0,-30);
     static final int POOL=17;
-    /** Turns the platform's top layer around {@code center} to water (a stone block left in the middle with {@code pillar}), or back to stone. */
+    /** Turns the platform's top layer around center to water (a stone block left in the middle with pillar) */
     static void pool(ServerLevel l,BlockPos center,boolean water,boolean pillar){
         var fill=water?Blocks.WATER.defaultBlockState():Blocks.STONE.defaultBlockState();
         for(int dx=-POOL;dx<=POOL;dx++)for(int dz=-POOL;dz<=POOL;dz++){
@@ -361,7 +350,7 @@ public final class HuntGameTests {
         pool(l,POOL_ONE,true,true);
         var o=offerAt(f,TacticalRules.Kind.PATROL,POOL_ONE);
         helper.assertTrue(h.board.accept(o.id,null)==null,"the offer is accepted");
-        goTo(p,l,POOL_ONE.offset(-24,0,0));   // on the platform, beside the pool
+        goTo(p,l,POOL_ONE.offset(-24,0,0));   // On the platform, beside the pool
         helper.startSequence()
             .thenWaitUntil(()->{var m=h.board.mission;helper.assertTrue(m!=null&&m.engaged()&&m.pending()==0,"the warband is out");})
             .thenExecute(()->{
@@ -446,12 +435,12 @@ public final class HuntGameTests {
         }).thenSucceed();
     }
 
-    // ---- 0.0.22: a hunt pays at the beacon's "Next payout" tier ---------------------------------------------------------------------------------
+    // A hunt pays at the beacon's "Next payout" tier
     @GameTest(template="empty3x3x3",batch="hunt_14",timeoutTicks=200)
     public static void aHuntPaysAtTheBeaconsNextPayoutTier(GameTestHelper helper){
         var f=fixture(helper);var l=f.l();var d=f.d();var h=f.h();var p=player(helper);goTo(p,l,BEACON.above());
         int logistics=d.logistics,limit=d.raidLimit;
-        // the owner's case: only the first raid won (last paid tier 0), but Logistics upgrades put the next payout at tier 5
+        // The case: only the first raid won (last paid tier 0), but Logistics upgrades put the next payout at tier 5
         d.rewardTier=0;d.logistics=5;d.raidLimit=10;d.introRaid=false;
         int shown=BeaconNetwork.state(p,d).getInt("prospectiveTier");
         helper.assertTrue(shown>=5,"the beacon shows Next payout: Tier "+shown);
@@ -469,10 +458,10 @@ public final class HuntGameTests {
         helper.succeed();
     }
 
-    // ---- the runner ----------------------------------------------------------------------------------------------------------------------
+    // The runner
     public static final class Runner {
         private static Collection<GameTestInfo> infos=List.of();private static MultipleTestTracker tracker;private static ServerLevel level;
-        /** Result of the last finished run (for the QA harness). */
+        /** Result of the last finished run. */
         public static volatile int lastPass=-1,lastFail=-1;
         @SubscribeEvent public void register(net.minecraftforge.event.RegisterCommandsEvent e){
             ensureRegistered();
@@ -497,7 +486,7 @@ public final class HuntGameTests {
             lastPass=pass;lastFail=fail;tracker=null;
         }
         public static boolean running(){return tracker!=null;}
-        /** Lets the platforms' chunks go (the QA harness calls it when it has taken its pictures). */
+        /** Lets the platforms' chunks go. */
         public static void release(){if(level!=null)HuntGameTests.release(level);}
     }
 }

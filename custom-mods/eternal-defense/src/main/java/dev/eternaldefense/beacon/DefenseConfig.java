@@ -2,7 +2,7 @@ package dev.eternaldefense.beacon;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-/** Server-side tuning in config/eternal-defense-common.toml. Exchange offers and support costs are separate text files. */
+/** Server-side tuning in config/eternal-defense-common.toml. */
 final class DefenseConfig {
     private DefenseConfig(){}
     static final ForgeConfigSpec SPEC;

@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 
-/** Bounded read-only survey. Never force chunks or reuse its contents as a repair snapshot. */
+/** Bounded read-only survey. */
 final class BaseSurvey {
     private static final Map<ServerLevel,BaseSurvey> SURVEYS=new WeakHashMap<>();
     final Map<Long,BlockState> blocks=new HashMap<>();BlockPos origin;int radius,below,height,cursor;long next,serial;boolean scanning,incomplete;BaseScoring.Score score;

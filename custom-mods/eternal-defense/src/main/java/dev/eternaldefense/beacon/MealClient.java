@@ -6,7 +6,7 @@ import net.minecraftforge.client.event.*;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** Client hooks of the kitchen: the hall screen, pot renderer and stew model. Prepared meals show as ordinary potion effects. */
+/** Client hooks of the kitchen: the hall screen, pot renderer and stew model. */
 public final class MealClient {
     private MealClient(){}
     static void preview(MessHallMenu.Preview p){

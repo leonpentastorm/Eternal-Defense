@@ -34,22 +34,14 @@ import java.io.File;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * QA ONLY (never part of a release): the owner's 0.0.42 list on a real client, run with TaCZ Magazines 0.2.5-Beta, Corpse 1.0.23 and
- * Player Animator 1.0.2-rc1 from the owner's pack (setup-qa.sh with QA_MODS). Placement: a FOB Beacon in a hole one block high (red
- * preview, refused on the client, the item stays), a FOB Beacon and an Exchange outside their places (the client guesses, the server
- * refuses, the hand comes back at once), red previews for the Exchange, the Mess Hall, the cannon, the Hub and a weapon table with a
- * block in the way; the return zone with sand and gravel dropped into it; the ammo table's magazines for a held AK-47; and a corpse
- * holding a gun, watched with the stand-in fix off (the fade chain grows) and on (it stays short).
- * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
- */
+/** 2.5-Beta, Corpse 1.0.23 and Player Animator 1.0.2-rc1 from the pack (setup-qa.sh with QA_MODS). */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound42 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
-    /** A step runs, then the next one waits {@code delay} ticks. */
+    /** A step runs, then the next one waits delay ticks. */
     static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
-    /** Waits {@code ticks}, then runs the check. */
+    /** Waits ticks, then runs the check. */
     static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
     static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
     static Minecraft mc(){return Minecraft.getInstance();}
@@ -73,11 +65,7 @@ public final class QaRound42 {
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
-    /**
-     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
-     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
-     * connection's own, in the integrated server's local channel the packets arrive as objects).
-     */
+    /** The container has no audio device, so the client's sound engine never starts and plays nothing */
     static boolean hooked;
     static void hookSounds(){
         if(hooked||mc().getConnection()==null)return;hooked=true;
@@ -93,14 +81,14 @@ public final class QaRound42 {
         log("QA_NOTE sound packets are counted at the client's connection");
     }
 
-    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    // One frame's texts (Ui records them)
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
     static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
     static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
 
-    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    // The client's own actions
     static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
     static void look(BlockPos from,double tx,double ty,double tz){
         double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
@@ -118,8 +106,8 @@ public final class QaRound42 {
     static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
     static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
 
-    // ---- the places --------------------------------------------------------------------------------------------------------------------
-    /** B: the beacon (core 3, radius 24); FOB: a FOB spot far outside it; IN: spots inside the Home Zone; PLAT: the Support Platform; AMMO: an ammo table. */
+    // The places
+    /** B: the beacon (core 3, radius 24); FOB: a FOB spot far outside it; IN: spots inside the Home Zone */
     static BlockPos B,FOBH,FOBO,EXO,EXH,EXF,HALL,CAN,HUB,TAB,PLAT,AMMO;
     static void places(){
         B=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy,Math.floorDiv(sz,16)*16);
@@ -135,10 +123,10 @@ public final class QaRound42 {
     static int clientHand(){return mc().player.getMainHandItem().getCount();}
     static int serverHand(){return srvGet(()->sp().getMainHandItem().getCount());}
     static boolean blockAt(BlockPos p,net.minecraft.world.level.block.Block b){return srvGet(()->sl().getBlockState(p).is(b))||mc().level.getBlockState(p).is(b);}
-    /** Stands three blocks south of {@code at} and looks at the top of the block under it (where a piece used now would go). */
+    /** Stands three blocks south of at and looks at the top of the block under it (where a piece used now would go). */
     static void aimAt(BlockPos at){look(at.offset(0,0,-3),at.getX()+.5,at.getY()+.02,at.getZ()+.5);}
     static PlacementPreviewClient.Ghost ghost(){return PlacementPreviewClient.ghost();}
-    /** The placement checks: red preview, the click refused on the client, nothing placed, the item kept on both sides. */
+    /** The placement checks: red preview, the click refused on the client, nothing placed */
     static void refusedHere(String what,BlockPos at,java.util.function.Supplier<ItemStack> item,net.minecraft.world.level.block.Block block,Runnable obstruct,String shotName){
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(at.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);obstruct.run();});hold(item.get());},what+": clear the spot, then put something in the way");
         until(what+": the spot is loaded",100,()->loaded(at),()->{});
@@ -149,8 +137,8 @@ public final class QaRound42 {
             check(what+": refused, the item never left the hand (client and server)",!placed&&c==Integer.parseInt(note.split(" ")[0])&&note.split(" ")[1].equals(note.split(" ")[0])&&s==c,"placed="+placed+" hand before/after click "+note+" client now "+c+" server "+s);},what+": refused");
     }
 
-    // ---- the corpse: the stand-in's Player Animator layers -------------------------------------------------------------------------------------
-    /** The most fade modifiers seen in one layer of a body drawn as a player but not in the world (Corpse's copy), since the last reset. */
+    // The corpse: the stand-in's Player Animator layers
+    /** The most fade modifiers seen in one layer of a body drawn as a player but not in the world (Corpse's copy) */
     static volatile int standInMost=-1,standInFrames,standInNow=-1;static volatile String standInWho="";
     @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.LOWEST) public static void drawnPlayer(net.minecraftforge.client.event.RenderPlayerEvent.Post e){
         var p=e.getEntity();if(p.level()==null||p.level().getEntity(p.getId())==p)return;
@@ -163,7 +151,7 @@ public final class QaRound42 {
         }catch(Exception x){standInWho="error "+x;}
     }
 
-    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    // The driver
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
         if(!created){
@@ -187,7 +175,7 @@ public final class QaRound42 {
     }
 
     static void script(){
-        // ---- the base: a beacon 2000 blocks out, survival, a still world ---------------------------------------------------------------
+        // The base: a beacon 2000 blocks out, survival, a still world
         step(60,()->{srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
             sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
@@ -200,7 +188,7 @@ public final class QaRound42 {
             sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon; survival");
         step(5,()->sync(),"sync");
 
-        // ---- the FOB Beacon in a hole one block high: red, refused on the client, the item stays ------------------------------------------------
+        // The FOB Beacon in a hole one block high: red, refused on the client, the item stays
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(FOBH.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
             sl().setBlock(FOBH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);});hold(st(EternalDefense.FOB_BEACON_ITEM.get(),2));tp(FOBH.getX()+.5,sy,FOBH.getZ()-2.5,0,30);},"a hole one block high (stone on top); two FOB Beacons in hand");
         until("the hole is loaded",200,()->loaded(FOBH),()->{});
@@ -212,7 +200,7 @@ public final class QaRound42 {
         step(10,()->{boolean placed=blockAt(FOBH,EternalDefense.FOB_BEACON.get());int c=clientHand(),s=serverHand();
             check("FOB Beacon in a hole: refused, it never left the hand (client and server)",!placed&&note.equals("2 2")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"refused in the hole");
 
-        // ---- a FOB Beacon where only the server can say no (no village): the client guesses, the server refuses, the hand comes back ----------------
+        // A FOB Beacon where only the server can say no (no village)
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(FOBO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});tp(FOBO.getX()+.5,sy,FOBO.getZ()-2.5,0,30);},"open ground, no village");
         until("the open ground is loaded",200,()->loaded(FOBO),()->{});
         step(20,()->aimAt(FOBO),"aim at it");
@@ -222,7 +210,7 @@ public final class QaRound42 {
         step(10,()->{boolean placed=blockAt(FOBO,EternalDefense.FOB_BEACON.get());int c=clientHand(),s=serverHand();
             check("no village: the client had taken the item (its guess), the server refused and sent the hand back: 2 on both sides, no FOB",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"the hand comes back");
 
-        // ---- the Exchange outside the Home Zone (a rule only the server knows): the same ----------------------------------------------------------
+        // The Exchange outside the Home Zone (a rule only the server knows): the same
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges in hand, outside the Home Zone");
         until("the spot is loaded",200,()->loaded(EXO),()->{});
         step(20,()->aimAt(EXO),"aim at it");
@@ -230,21 +218,21 @@ public final class QaRound42 {
         step(10,()->{boolean placed=blockAt(EXO,EternalDefense.EXCHANGE_SHOP.get());int c=clientHand(),s=serverHand();
             check("Exchange outside the zone: the client guessed, the server refused and sent the hand back",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after "+note+", now client "+c+" server "+s);},"the hand comes back");
 
-        // ---- red previews in the Home Zone, each refused with the item kept ------------------------------------------------------------------------
+        // Red previews in the Home Zone, each refused with the item kept
         step(5,()->tp(B.getX()+.5,sy,B.getZ()-6.5,0,10),"back in the base");
         refusedHere("Exchange in a hole one block high",EXH,()->st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2),EternalDefense.EXCHANGE_SHOP.get(),()->sl().setBlock(EXH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_03_exchange_hole_red");
         refusedHere("Mess Hall with a block on its second column",HALL,()->st(EternalDefense.MESS_HALL_I.get().asItem(),2),EternalDefense.MESS_HALL_I.get(),()->{sl().setBlock(HALL.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(HALL.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_04_mess_hall_red");
         refusedHere("Support Cannon with a block in its 3 x 3 x 2",CAN,()->st(EternalDefense.SUPPORT_CANNON_ITEM.get(),2),EternalDefense.SUPPORT_CANNON.get(),()->sl().setBlock(CAN.offset(1,1,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_05_cannon_red");
         refusedHere("Logistics Hub with a block in its 3 x 3 x 3",HUB,()->st(EternalDefense.LOGISTICS_HUB_ITEM.get(),1),EternalDefense.LOGISTICS_HUB.get(),()->sl().setBlock(HUB.offset(1,2,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_06_hub_red");
         refusedHere("Weapon table with a block on its second cell",TAB,()->st(EternalDefense.GUN_PLATFORM.get().asItem(),2),EternalDefense.GUN_PLATFORM.get(),()->{sl().setBlock(TAB.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(TAB.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_07_weapon_table_red");
-        // and a free spot: cyan, placed, one item spent
+        // And a free spot: cyan, placed, one item spent
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXF.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges, a free spot");
         step(10,()->aimAt(EXF),"aim at it");
         step(10,()->{var g=ghost();check("free spot: the preview is not red",g!=null&&!g.blocked(),g==null?"no ghost":"blocked="+g.blocked());shot("r42_08_exchange_free");},"cyan");
         step(5,()->click(EXF.below(),Direction.UP),"use it");
         step(15,()->check("free spot: placed, one Exchange spent on both sides",blockAt(EXF,EternalDefense.EXCHANGE_SHOP.get())&&clientHand()==1&&serverHand()==1,"client "+clientHand()+" server "+serverHand()),"placed");
 
-        // ---- the return zone: sand and gravel dropped into it are broken out; outside it they stay ---------------------------------------------------
+        // The return zone: sand and gravel dropped into it are broken out; outside it they stay
         step(5,()->{srv(()->{for(int x=-3;x<=3;x++)for(int y=0;y<=6;y++)for(int z=-4;z<=2;z++)sl().setBlock(PLAT.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));},"a Support Platform in hand");
         step(10,()->aimAt(PLAT),"aim at its spot (facing it from the north)");
         step(5,()->click(PLAT.below(),Direction.UP),"place it");
@@ -272,7 +260,7 @@ public final class QaRound42 {
         step(10,()->{var pos=BlockPos.of(Long.parseLong(note.split(" ")[0]));var f=Direction.byName(note.split(" ")[1]);var cell=SupportCalls.returnZone(pos,f).get(0);
             check("placing into the zone is still refused, and the stone comes back to the hand at once",!blockAt(cell,net.minecraft.world.level.block.Blocks.STONE)&&clientHand()==64&&serverHand()==64,"client "+clientHand()+" server "+serverHand());},"refused, hand kept");
 
-        // ---- the ammo table's magazines for a held AK-47 (TaCZ Magazines 0.2.5-Beta) ----------------------------------------------------------------
+        // The ammo table's magazines for a held AK-47 (TaCZ Magazines 0.2.5-Beta)
         for(int age:new int[]{1,3,5}){
             step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(AMMO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
                 var s=EternalDefense.AMMO_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,age).setValue(DefenseStructures.FACING,Direction.NORTH).setValue(DefenseStructures.WIDE,true).setValue(DefenseStructures.TALL,true);
@@ -300,7 +288,7 @@ public final class QaRound42 {
             step(5,()->closeAll(),"close");
         }
 
-        // ---- a corpse holding a gun (Corpse 1.0.23 + Player Animator + TaCZ): the stand-in's fades, fix off then on ------------------------------------
+        // A corpse holding a gun (Corpse 1.0.23 + Player Animator + TaCZ): the stand-in's fades, fix off then on
         step(5,()->srv(()->{sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(false,server());sp().getInventory().clearContent();MessHallV4GameTests.gun(sp(),"tacz:ak47");sp().teleportTo(sl(),B.getX()-20.5,sy,B.getZ()+20.5,0,10);}),"an AK-47 in hand, away from the beacon; no keep-inventory");
         step(20,()->srv(()->sp().kill()),"die (Corpse lays out the body with the gun)");
         step(5,()->{var corpse=srvGet(()->{for(var e:sl().getAllEntities())if(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString().equals("corpse:corpse"))return e.blockPosition();return null;});
@@ -314,7 +302,7 @@ public final class QaRound42 {
         step(1,()->{check("fix off: the corpse is drawn as a player not in the world, and TaCZ's fades pile up on it (one more each frame)",standInFrames>50&&standInMost>=standInFrames/2,"frames "+standInFrames+", most fades in one layer "+standInMost+" ("+standInWho+")");shot("r42_13_corpse_fix_off");},"the chain grows");
         step(5,()->{net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(StandInAnimations.class);},"the fix on");
         after(60,()->{check("fix on: the long chain built up with the fix off is gone within three seconds",standInNow>=0&&standInNow<=30,"fades in the latest frame "+standInNow+" (the most before: "+standInMost+")");standInMost=-1;standInFrames=0;},"three seconds for the old fades to run out");
-        after(600,()->{int bound=standInFrames*6/300+6;   // a fade lasts 8 ticks (0.4 s): about 0.4 s worth of frames' fades are alive at once (0.6 s allowed)
+        after(600,()->{int bound=standInFrames*6/300+6;   // A fade lasts 8 ticks (0.4 s): about 0.4 s worth of frames' fades are alive at once (0.6 s allowed)
             check("fix on: the fades end and drop off, the chain stays short",standInFrames>50&&standInMost>=0&&standInMost<=bound,"frames "+standInFrames+" in 30 s, most fades in one layer "+standInMost+" (bound "+bound+")");shot("r42_14_corpse_fix_on");},"the chain stays short");
         step(5,()->{Animations.setEnabled(false);standInMost=-1;standInFrames=0;},"idle animations off (the owner's switch)");
         after(200,()->{int bound=standInFrames*6/100+6;check("idle animations off: the same (the fix does not depend on them)",standInFrames>50&&standInMost<=bound,"frames "+standInFrames+" in 10 s, most "+standInMost+" (bound "+bound+")");},"switch off");

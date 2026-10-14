@@ -10,8 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.32 list, the parts that need no world: dragon's breath at S, village research, the monster hunter guild, the icons, the
- *  Command Table's names switch. The 30-minute balance is in {@link RouteTest}. */
+/** The list, the parts that need no world: dragon's breath at S, village research, the monster hunter guild */
 final class Round0032Test {
     static Loot find(List<Loot> list,String id){return list.stream().filter(l->l.id().equals(id)).findFirst().orElseThrow(()->new AssertionError(id));}
 
@@ -38,7 +37,7 @@ final class Round0032Test {
         var pearl=find(RouteRules.MONSTER_LOOT,"minecraft:ender_pearl");var tear=find(RouteRules.POTION_LOOT,"minecraft:ghast_tear");var sugar=find(RouteRules.POTION_LOOT,"minecraft:sugar");
         assertTrue(RouteRules.unlocked(sugar,0));assertFalse(RouteRules.unlocked(pearl,1));assertTrue(RouteRules.unlocked(pearl,2));
         assertFalse(RouteRules.unlocked(tear,3));assertTrue(RouteRules.unlocked(tear,4));
-        // a locked choice falls back to the first item, and the farm, the mine and emeralds have nothing locked
+        // A locked choice falls back to the first item, and the farm, the mine and emeralds have nothing locked
         int tearAt=RouteRules.POTION_LOOT.indexOf(tear);
         assertEquals(0,RouteRules.effectiveChoice(Slot.SPECIALTY,Specialty.POTIONS,tearAt,3));assertEquals(tearAt,RouteRules.effectiveChoice(Slot.SPECIALTY,Specialty.POTIONS,tearAt,4));
         for(var slot:List.of(Slot.EMERALD,Slot.MINE,Slot.FARM))for(var l:RouteRules.options(slot,Specialty.POTIONS))assertTrue(RouteRules.unlocked(l,0),l.id());
@@ -53,10 +52,10 @@ final class Round0032Test {
         assertTrue(fobs.contains("InventoryPayment.plan"),"research takes the items like every other payment");
         assertTrue(SosTest.source("Routes.java").contains("\"gate.result.locked\""),"the server refuses a locked choice");
     }
-    /** 0.0.32: a round medallion with a villager at the job for every loot slot, every specialty and research; the first flat icons kept. */
+    /** A round medallion with a villager at the job for every loot slot, every specialty and research */
     @Test void everySlotAndSpecialtyHasItsIcon() throws Exception{
         var names=new java.util.ArrayList<String>(List.of("slot_emerald","slot_mine","slot_farm","slot_specialty","research","lock"));
-        for(var spec:Specialty.values())names.addAll(spec.icons());   // 0.0.34: fishing and animal husbandry share one specialty, both icons
+        for(var spec:Specialty.values())names.addAll(spec.icons());   // Fishing and animal husbandry share one specialty, both icons
         for(String name:names){
             Path icon=Path.of(EnchantTest.ASSETS+"textures/gui/tribute/"+name+".png"),flat=Path.of(EnchantTest.ASSETS+"textures/gui/tribute/flat/"+name+".png");
             var img=javax.imageio.ImageIO.read(icon.toFile());
@@ -73,10 +72,10 @@ final class Round0032Test {
         String lang=Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));
         for(String key:List.of("tactical.fob.names","tactical.fob.names.tip","fob.tab.research","fob.research.title","gate.specialty.monsters","gate.result.locked","gate.pick.locked"))
             assertTrue(lang.contains("\"gui.eternal_defense."+key+"\""),"no line for "+key);
-        // Fobs.announce puts "[FOB] " in front of every line: the real client read "[FOB] [FOB] North Gate reached research level 1."
+        // Fobs.announce puts "[FOB] " in front of every line
         assertFalse(lang.contains("research.levelup\": \"[FOB]")||lang.contains("research.levelup.a\": \"[FOB]")||lang.contains("research.levelup.s\": \"[FOB]"),"one prefix only");
     }
-    /** The SOS raid started before a teleported player's village had its villagers ("Keep at least 0 of its 0 villagers alive"). */
+    /** The SOS raid started before a teleported player's village had its villagers */
     @Test void anSosAnswerWaitsForTheVillage(){
         assertEquals(3,SosRules.ARRIVE_SECONDS);
         String sos=SosTest.source("FobSos.java");

@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's list of 0.0.20: gate spawns, the speed burst, the cannon menu's card, the Cryo Shell's reach. */
+/** The list of: gate spawns, the speed burst, the cannon menu's card, the Cryo Shell's reach. */
 final class RaidFixesTest {
     @Test void reinforcementsComeThroughGatesOnlyAfterNaturalGroundFailedForAWhile(){
         assertFalse(RaidSpawns.gateDue(Long.MIN_VALUE,5000),"natural ground was found: no gates");
@@ -61,7 +61,7 @@ final class RaidFixesTest {
         var s=CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.STARSHELL));
         assertEquals(30,s.lasts(),1e-9);assertEquals(32,s.width(),1e-9);
         assertEquals(5,CannonUpgrades.facts(CannonUpgrades.Config.of(none,CannonUpgrades.FireType.NARUKAMI)).rounds(),"one volley fewer");
-        // upgrades show up in the numbers
+        // Upgrades show up in the numbers
         var up=none.clone();up[CannonUpgrades.Upgrade.DAMAGE.ordinal()]=2;up[CannonUpgrades.Upgrade.AOE.ordinal()]=1;up[CannonUpgrades.Upgrade.VOLLEY.ordinal()]=1;
         var e2=CannonUpgrades.facts(CannonUpgrades.Config.of(up,CannonUpgrades.FireType.EXPLOSION));
         assertEquals(37.5,e2.damage(),1e-9);assertEquals(11,e2.width(),1e-9);assertEquals(8,e2.rounds());

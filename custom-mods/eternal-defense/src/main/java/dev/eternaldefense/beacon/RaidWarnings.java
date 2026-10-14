@@ -4,10 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.ChatFormatting;
 
-/**
- * Chat warnings for players who are away from the base: one day before a scheduled raid, then every six
- * in-game hours (24, 18, 12, 6), and once more when the countdown is over and the raid waits for night.
- */
+/** Chat warnings for players who are away from the base */
 final class RaidWarnings {
     private RaidWarnings(){}
     static final int STEP=6000,FIRST=24000;
@@ -19,7 +16,7 @@ final class RaidWarnings {
         return (int)((remaining+STEP-1)/STEP);
     }
     static void reset(){last=Integer.MAX_VALUE;}
-    /** True when moving from {@code previous} to {@code now} should speak. Only ever moves downwards. */
+    /** True when moving from previous to now should speak. */
     static boolean shouldWarn(int previous,int now){return now!=Integer.MAX_VALUE&&now<previous;}
     static void tick(ServerLevel l,CampaignData d){
         if(!d.introCompleted||d.respiteTicks>0)return;

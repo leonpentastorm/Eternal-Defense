@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.36 fire support rework: Napalm Carpet sets mobs Ablaze, Spotter Arrows mark them, the Curse of Debilitation lasts until death. */
+/** The fire support rework: Napalm Carpet sets mobs Ablaze, Spotter Arrows mark them */
 final class Round0036Test {
     static String source(String name) throws Exception{return Round0035Test.source(name);}
     static String lang() throws Exception{return Round0035Test.lang();}
     static String body(String src,String from,String to){int a=src.indexOf(from);assertTrue(a>=0,from);int b=src.indexOf(to,a+from.length());assertTrue(b>a,to);return src.substring(a,b);}
 
-    // ---- the types keep their places -------------------------------------------------------------------------------------------------
+    // The types keep their places
     @Test void theThreeTypesKeepTheirIdsAndPlaces(){
         assertEquals(1,CannonUpgrades.FireType.ARROW.ordinal());assertEquals("arrow",CannonUpgrades.FireType.ARROW.id);assertEquals("fire_arrow",CannonUpgrades.FireType.ARROW.callId());
         assertEquals(5,CannonUpgrades.FireType.CURSE.ordinal());assertEquals("curse",CannonUpgrades.FireType.CURSE.id);
@@ -18,7 +18,7 @@ final class Round0036Test {
         assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"Spotter Arrows fire the Arrow Cluster's six volleys");
     }
 
-    // ---- Napalm Carpet: Ablaze -------------------------------------------------------------------------------------------------------
+    // Napalm Carpet: Ablaze
     @Test void ablazeBurnsFourASecondScaledByDamageAndHalfForABoss(){
         assertEquals(4f,FireMarks.ablazeFor(CannonUpgrades.damage(0)),1e-6);assertEquals(6f,FireMarks.ablazeFor(CannonUpgrades.damage(2)),1e-6,"+25% a Damage level");
         assertEquals(4f,FireMarks.ablaze(4f,false),1e-6);assertEquals(2f,FireMarks.ablaze(4f,true),1e-6,"a raid boss takes half");
@@ -47,7 +47,7 @@ final class Round0036Test {
         assertTrue(source("EternalDefense.java").contains("MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());"));
     }
 
-    // ---- Spotter Arrows: Marked ------------------------------------------------------------------------------------------------------
+    // Spotter Arrows: Marked
     @Test void spotterArrowsHitForFourAndAMarkAddsThirtyPercent(){
         assertEquals(4f,CannonUpgrades.spotterHit(1f),1e-6);assertEquals(5f,CannonUpgrades.spotterHit(CannonUpgrades.damage(1)),1e-6);
         assertEquals(13f,FireMarks.marked(10f,false),1e-5,"+30 percent");assertEquals(11.5f,FireMarks.marked(10f,true),1e-5,"a raid boss +15 percent");
@@ -70,7 +70,7 @@ final class Round0036Test {
         assertTrue(body(marks,"static void mark(","\n    }").contains("MobEffectInstance.INFINITE_DURATION"),"Glowing for good");
     }
 
-    // ---- Curse of Debilitation ---------------------------------------------------------------------------------------------------------
+    // Curse of Debilitation
     @Test void theCurseLastsUntilDeathWithoutGlowingAndTheDamageUpgradeLeavesItAlone() throws Exception{
         assertEquals(List.of(new CannonUpgrades.Curse("minecraft:wither",1),new CannonUpgrades.Curse("minecraft:poison",1),new CannonUpgrades.Curse("minecraft:weakness",1),
             new CannonUpgrades.Curse("minecraft:slowness",2),new CannonUpgrades.Curse("minecraft:blindness",0)),CannonUpgrades.CURSES,"Wither II, Poison II, Weakness II, Slowness III, Blindness");
@@ -79,7 +79,7 @@ final class Round0036Test {
         assertFalse(curse.contains("GLOWING")||curse.contains("cfg.damage()"),"no Glowing, no Damage scaling");
     }
 
-    // ---- what the player reads ---------------------------------------------------------------------------------------------------------
+    // What the player reads
     @Test void theMenuTheGuideAndTheCallSayWhatTheTypesDoNow() throws Exception{
         var lang=lang();var json=com.google.gson.JsonParser.parseString(lang).getAsJsonObject();
         java.util.function.Function<String,String> t=k->json.get("gui.eternal_defense."+k).getAsString();

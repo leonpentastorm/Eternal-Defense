@@ -1,12 +1,10 @@
 // TaCZ JS integrates gunpack recipes with the standard recipe manager.
-// New gunpacks inherit conservative gates. Override classifications in the JSON catalogue.
 ServerEvents.recipes(event => {
   var ages = JsonIO.read('kubejs/config/eternal_defense_weapon_ages.json') || {};
   var componentAges = JsonIO.read('kubejs/config/eternal_defense_component_ages.json') || {};
   let modified = 0;
   const historical = Java.loadClass('dev.eternaldefense.beacon.HistoricalGuns');
-  // Cartridge cases and propellant per ammo batch (0.0.22: twice the propellant, 20 percent more cases, rounded up; 0.0.26: weak special rounds
-  // such as flares keep one case and one propellant), shared with the Ammo Platform, which sets the same amounts itself.
+  // Cartridge cases and propellant per ammo batch, shared with the Ammo Platform
   const ammoInputs = Java.loadClass('dev.eternaldefense.beacon.AmmoInputs');
   event.forEachRecipe({type:'tacz:gun_smith_table_crafting'}, recipe => {
     var json = JSON.parse(recipe.json.toString());
@@ -34,7 +32,6 @@ ServerEvents.recipes(event => {
       json.materials.push({item:{item:'create:iron_sheet'},count:2});
     } else return;
     // Historical author recipes sometimes contain modern factory ingredients.
-    // Normalize the native JEI recipe too, so its materials match the platform.
     if (age <= 2) json.materials = json.materials.map(m => {
       if (/nether|blaze|ender|brass|precision_mechanism|hardened|exotic/.test(JSON.stringify(m.item)))
         return {item:{item:'create:iron_sheet'},count:Math.max(1,Number(m.count || 1))};

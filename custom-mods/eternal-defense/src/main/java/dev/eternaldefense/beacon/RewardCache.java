@@ -19,7 +19,7 @@ final class RewardCache {
     static void deposit(CampaignData d,Container chest){
         for(var it=d.rewards.iterator();it.hasNext();){
             CompoundTag entry=it.next();ItemStack remaining=ItemStack.of(entry);
-            // Merge before filling empty slots. Work on copies; container stacks never alias reward NBT.
+            // Merge before filling empty slots.
             for(int pass=0;pass<2&&!remaining.isEmpty();pass++)for(int slot=0;slot<chest.getContainerSize()&&!remaining.isEmpty();slot++){
                 ItemStack old=chest.getItem(slot);if(pass==0?old.isEmpty()||!ItemStack.isSameItemSameTags(old,remaining):!old.isEmpty())continue;
                 int room=Math.min(chest.getMaxStackSize(),remaining.getMaxStackSize())-old.getCount();if(room<=0)continue;
@@ -37,7 +37,7 @@ final class RewardCache {
         p.openMenu(new SimpleMenuProvider((id,inv,pl)->new ChestMenu(MenuType.GENERIC_9x6,id,inv,new BoxView(d,pl),6),Component.translatable("gui.eternal_defense.rewards.box")));
         return d.rewards.isEmpty()?"Beacon reward chest opened. All rewards deposited.":"Beacon chest full: "+d.rewards.size()+" stacks remain queued. Empty it, then collect again.";
     }
-    /** The beacon's box as one menu sees it: it is only valid while the player stands near the beacon, and every change marks the campaign dirty. */
+    /** The beacon's box as one menu sees it: it is only valid while the player stands near the beacon */
     static final class BoxView implements Container {
         private final CampaignData d;private final Player player;
         BoxView(CampaignData d,Player player){this.d=d;this.player=player;}

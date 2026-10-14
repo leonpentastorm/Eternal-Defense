@@ -16,11 +16,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client and runs the stuck-raider GameTests (RaiderGateGameTests) on its
- * integrated server, with the diagnostics log switched on. Copied into a throwaway tree by tools/qa/setup-qa.sh.
- * Results: QA_CHECK lines (one per test, from the STUCK_TEST_* lines of the runner) and QA_SUMMARY.
- */
+/** Copied into a throwaway tree by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaStuck {
     static int tick;static boolean created,started,done;
@@ -50,7 +46,7 @@ public final class QaStuck {
         }
         if(done&&scene>0)scene(mc);
     }
-    /** After the tests: a red gate and a husk standing beside it, photographed by day and by night (what a player sees). */
+    /** After the tests: a red gate and a husk standing beside */
     static int scene,sceneTick;
     static void scene(Minecraft mc){
         var server=mc.getSingleplayerServer();sceneTick++;

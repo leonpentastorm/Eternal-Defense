@@ -14,12 +14,7 @@ import java.util.*;
 /** Material-neutral construction credit plus bounded architectural and functional bonuses. */
 public final class BaseScoring {
     private static final Set<String> TERRAIN=Set.of("stone","dirt","grass_block","deepslate","netherrack","sand","gravel","end_stone","water","lava","air","bedrock","tuff","granite","diorite","andesite","cobblestone","moss_block","snow","ice","packed_ice","blue_ice","mud","clay");
-    /**
-     * 0.0.41 (owner): the mod's installations that can stand in the Home Zone, by block id (a Mess Hall or Drink Station of any Mk counts as
-     * itself; parts, fillers and gate halves are not installations; the FOB Beacon, Supply Catapult and Supply Delivery Gate stand at FOBs
-     * and the Defense Beacon is always there, so they are not in the set). Each one present adds its share of
-     * {@link Rules#INSTALLATION_SET_SCORE}: the whole set is one building tier.
-     */
+    /** The mod's installations that can stand in the Home Zone */
     static final List<String> INSTALLATIONS=List.of("exchange_shop","support_platform","support_cannon","gun_platform","ammo_platform","attachment_platform",
         "armor_platform","mess_hall","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer","drink_pot","cup_dispenser","mre_maker","logistics_hub",
         "command_table","satellite_beacon","supply_receiving_gate","tactical_enchanting_table");
@@ -54,11 +49,7 @@ public final class BaseScoring {
         for(Class<?> c=s.getBlock().getClass();c!=null;c=c.getSuperclass())if(c.getSimpleName().contains("Kinetic")||c.getSimpleName().contains("Cannon"))return true;
         return id.startsWith("create:")&&s.hasBlockEntity();
     }
-    /**
-     * What a block counts as for the score. Every answer depends on the block alone (its id and class), never on its state, so it is worked out
-     * once per block and kept: a base survey looks at tens of thousands of blocks and would otherwise build each id string and walk each block
-     * class again for every one of them. {@code createEntity} still needs the state's block entity check (see {@link #factory}).
-     */
+    /** What a block counts as for the score. */
     record Kind(String id,boolean part,boolean beacon,boolean terrain,boolean furniture,boolean machine,boolean createEntity,boolean detail,String installation){}
     private static final Map<Block,Kind> KINDS=new java.util.concurrent.ConcurrentHashMap<>();
     static Kind kind(BlockState s){
@@ -68,15 +59,12 @@ public final class BaseScoring {
         var kind=new Kind(id,block==EternalDefense.STRUCTURE_PART.get(),block==EternalDefense.BEACON.get(),terrain(id),furniture(id),!station&&(id.contains("turret")||machine),!station&&id.startsWith("create:"),detail(id,s),installation(id));
         KINDS.put(block,kind);return kind;
     }
-    /** How many of {@link #INSTALLATIONS} stand among these blocks (each counted once). */
+    /** How many of INSTALLATIONS stand among these blocks (each counted once). */
     static int installations(Map<Long,BlockState> blocks){var found=new HashSet<String>();for(var s:blocks.values()){var k=kind(s);if(k.installation()!=null)found.add(k.installation());}return found.size();}
-    /** Same answer as {@link #factory(BlockState,String)}, from the cached kind. */
+    /** Same answer as factory(BlockState,String), from the cached kind. */
     static boolean factory(BlockState s,Kind k){return k.machine()||k.createEntity()&&s.hasBlockEntity();}
 
-    /**
-     * Light and furniture positions, bucketed in cells of {@link #REACH} blocks: "is any of them within 12 blocks (squared distance 144)" then
-     * looks at the 27 cells around a block instead of at every one of them. The answer is the same as a check against the whole list.
-     */
+    /** Light and furniture positions, bucketed in cells of REACH blocks */
     static final class Anchors {
         static final int REACH=12,REACH_SQUARED=REACH*REACH;
         private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<it.unimi.dsi.fastutil.longs.LongArrayList> cells=new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
@@ -85,7 +73,7 @@ public final class BaseScoring {
         void add(long pos){int x=BlockPos.getX(pos),y=BlockPos.getY(pos),z=BlockPos.getZ(pos);cells.computeIfAbsent(cell(x,y,z),k->new it.unimi.dsi.fastutil.longs.LongArrayList()).add(pos);size++;}
         boolean isEmpty(){return size==0;}
         int size(){return size;}
-        /** True when an anchor lies within {@link #REACH} blocks of {@code p} (squared distance at most 144, measured between block corners like {@code BlockPos.distSqr}). */
+        /** True when an anchor lies within REACH blocks of p */
         boolean near(BlockPos p){
             int px=p.getX(),py=p.getY(),pz=p.getZ(),cx=Math.floorDiv(px,REACH),cy=Math.floorDiv(py,REACH),cz=Math.floorDiv(pz,REACH);
             for(int dx=-1;dx<=1;dx++)for(int dy=-1;dy<=1;dy++)for(int dz=-1;dz<=1;dz++){
@@ -100,19 +88,18 @@ public final class BaseScoring {
         Set<Long> designed=new HashSet<>();Map<String,Integer> furnishing=new HashMap<>(),machines=new HashMap<>();Set<String> palette=new HashSet<>(),installed=new HashSet<>();var anchors=new Anchors();int lights=0,details=0;int[] ages=new int[4];
         for(var e:blocks.entrySet()){
             var s=e.getValue();var k=kind(s);String id=k.id();if(k.part())continue;if(s.isAir()||!s.getFluidState().isEmpty()||k.beacon())continue;
-            if(k.installation()!=null)installed.add(k.installation());   // 0.0.41: counted besides whatever else the block counts for
+            if(k.installation()!=null)installed.add(k.installation());   // Counted besides whatever else the block counts for
             if(s.getBlock() instanceof WeaponPlatform.Station station){int kind=station.kind.equals("gun")?0:station.kind.equals("ammo")?1:station.kind.equals("attachment")?2:3;ages[kind]=Math.max(ages[kind],s.getValue(WeaponPlatform.AGE));continue;}
             if(factory(s,k)){machines.merge(id,1,Integer::sum);continue;}
             if(placed.contains(e.getKey())||!k.terrain())designed.add(e.getKey());
             if(k.furniture()){furnishing.merge(id,1,Integer::sum);anchors.add(e.getKey());}
             if(s.getLightEmission()>0&&!(s.getBlock() instanceof BaseFireBlock)){lights++;anchors.add(e.getKey());}
         }
-        // A usable covered floor has two blocks of headroom, a roof, three nearby walls,
-        // and light/furniture nearby. Raw stone and dirt receive the same room credit.
+        // A usable covered floor has two blocks of headroom, a roof, three nearby walls, and light/furniture nearby.
         int floors=0;Set<Integer> levels=new HashSet<>();
         int deep=d.beacon.getY()-15;
         if(!anchors.isEmpty())for(var e:blocks.entrySet()){
-            // the cheap tests first, on the packed position: most blocks have a block above them and stop here without a single allocation
+            // The cheap tests first, on the packed position: most blocks have a block above them and stop here without
             long key=e.getKey();int bx=BlockPos.getX(key),by=BlockPos.getY(key),bz=BlockPos.getZ(key);
             if(!d.inside(bx,by+2,bz)||kind(e.getValue()).terrain()&&by<deep)continue;
             if(!e.getValue().isSolid()||blocks.containsKey(BlockPos.asLong(bx,by+1,bz))||blocks.containsKey(BlockPos.asLong(bx,by+2,bz)))continue;

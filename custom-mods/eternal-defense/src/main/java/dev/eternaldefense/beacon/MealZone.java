@@ -2,11 +2,7 @@ package dev.eternaldefense.beacon;
 
 import net.minecraft.server.level.ServerPlayer;
 
-/**
- * Where a player's meal counts as eaten at home (0.0.23): inside the Home Zone ({@link BaseZone#problem} finds nothing wrong there, the rule the
- * meal timer always used) or inside the zone of an ACTIVE Forward Operating Base. {@link BaseZone#problem} itself is not changed: it is the
- * build rule of the beacon zone and must never take FOB zones in.
- */
+/** Where a player's meal counts as eaten at home: inside the Home Zone */
 final class MealZone {
     private MealZone(){}
     enum Kind{NONE,HOME,FOB;boolean home(){return this!=NONE;}}

@@ -5,7 +5,7 @@ import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundSource;
 
-/** Client only: the Support Cannon's turning sound, looped at the turret for as long as it moves and faded out when it stops. */
+/** Client only: the Support Cannon's turning sound, looped at the turret for as long as it moves and faded out */
 final class CannonSoundsClient {
     private CannonSoundsClient(){}
     /** Volume of the turning loop (heard about 32 blocks away) and how fast it fades when the turret stops (ticks). */

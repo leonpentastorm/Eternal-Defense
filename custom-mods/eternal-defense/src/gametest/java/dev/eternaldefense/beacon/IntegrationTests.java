@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Rotation;
 import java.util.*;
 
-/** Enabled only on the disposable integration server. Shared campaign fixtures run sequentially. */
+/** Enabled only on the disposable integration server. */
 final class IntegrationTests {
     private static MultipleTestTracker tracker;
     private static final Deque<TestFunction> waiting=new ArrayDeque<>();

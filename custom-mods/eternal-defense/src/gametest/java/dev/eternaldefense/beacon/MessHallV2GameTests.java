@@ -35,7 +35,7 @@ public final class MessHallV2GameTests {
     @GameTest(template="empty3x3x3",timeoutTicks=100)
     public static void v2TierBatchCostsContainersAndComposition(GameTestHelper h){
         MealData composition=null;
-        for(int mk=4;mk<=4;mk++){var f=fixture(h,mk,mk);try{ // 0.0.11: six food slots exist only at Mk IV, and stew needs Mk II
+        for(int mk=4;mk<=4;mk++){var f=fixture(h,mk,mk);try{ // Six food slots exist only at Mk IV, and stew needs Mk II
             batchFood(f,16);var preview=IngredientTraits.compose(f.hall.ingredients,true);h.assertTrue(preview.meal()!=null,"Bundled vanilla foods compose a meal");if(composition==null)composition=preview.meal();else h.assertTrue(composition.equals(preview.meal()),"Tier and quantity never increase composition strength");
             h.assertTrue(preview.meal().bonuses().stream().map(MealData.Bonus::effect).toList().equals(List.of(MealRules.Effect.MIGHT,MealRules.Effect.RECOVERY,MealRules.Effect.SWIM)),"Ordinary defaults preserve all three food bonuses: "+preview.meal().bonuses());
             var menu=new MessHallMenu(mk,f.player.getInventory(),f.hall.ingredients,f.root,mk,f.hall);menu.clickMenuButton(f.player,1);var batch=IngredientTraits.batch(f.hall.ingredients,preview,true,mk);
@@ -117,7 +117,7 @@ public final class MessHallV2GameTests {
                 var loaded=PlayerMeals.load(PlayerMeals.get(f.level).save(new net.minecraft.nbt.CompoundTag())).players.get(f.player.getUUID());h.assertTrue(loaded.meal.equals(s.meal)&&loaded.remaining==s.remaining,"All new IDs persist");PlayerMeals.clear(f.player);h.assertTrue(MealGunCompat.bonus(f.player,effect.id)==0,"Clearing removes each hook's bonus");}
         }finally{clean(f);}h.succeed();
     }
-    @GameTest(template="empty3x3x3",timeoutTicks=4000) // the reload is measured in wall-clock time; an un-throttled test server runs far more than 20 ticks a second
+    @GameTest(template="empty3x3x3",timeoutTicks=4000) // The reload is measured in wall-clock time; an un-throttled test server runs far more than 20 ticks a second
     public static void v2ActualReloadTimingAndAmmunition(GameTestHelper h)throws Exception{
         var f=fixture(h,1,9);var api=Class.forName("com.tacz.guns.api.entity.IGunOperator");var operator=api.getMethod("fromLivingEntity",LivingEntity.class).invoke(null,f.player);var data=api.getMethod("getDataHolder").invoke(operator);
         var reloadClass=Class.forName("com.tacz.guns.entity.shooter.LivingEntityReload");var reload=reloadClass.getConstructors()[0].newInstance(f.player,data,null,null);var tick=reloadClass.getMethod("tickReloadState");var stamp=data.getClass().getField("reloadTimestamp");var state=data.getClass().getField("reloadStateType");var current=data.getClass().getField("currentGunItem");

@@ -45,12 +45,7 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The Supply Catapult (0.0.33, owner): the owner's field-built onager, 3 x 3 cells like the Support Cannon, placed only in a FOB's village (one
- * per FOB). It works once that FOB's research is at its top level: at the Command Table the FOB's specialty seller sells every item of its
- * specialty for Ardent Energy; the catapult turns toward the Defense Beacon, throws the box, and the box parachutes down beside the beacon (the
- * Supply Flare's parcel). The rules without a world are in {@link CatapultRules}.
- */
+/** The Supply Catapult: the field-built onager, 3 x 3 cells like the Support Cannon */
 final class SupplyCatapult {
     private SupplyCatapult(){}
 
@@ -58,7 +53,7 @@ final class SupplyCatapult {
         CatapultBlock(){super(Properties.of().strength(3,6).noOcclusion().dynamicShape().sound(SoundType.WOOD));}
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return DefenseStructures.cell(s,0,0,0);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState s){return new CatapultEntity(pos,s);}
-        /** A plain Block ignores block events: hand them to the block entity (the server only sends an event to the clients when this accepts it). */
+        /** A plain Block ignores block events: hand them to the block entity */
         @Override public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}
         @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){
             super.onPlace(s,l,pos,old,moving);
@@ -89,7 +84,7 @@ final class SupplyCatapult {
     static final class CatapultItem extends BlockItem {
         CatapultItem(Block block){super(block,new Item.Properties());}
         @Override public InteractionResult place(BlockPlaceContext c){
-            // 0.0.42: its 3 x 3 x 2 body with anything in the way is refused on both sides (the preview is red); the server's refusals send the hand slot back
+            // Its 3 x 3 x 2 body with anything in the way is refused on both sides (the preview is red)
             if(c.getLevel().isClientSide&&PlacementGuard.blocked(c,getBlock().getStateForPlacement(c)))return InteractionResult.FAIL;
             if(c.getLevel() instanceof ServerLevel l){
                 String problem=placeProblem(l,c.getClickedPos());
@@ -101,7 +96,7 @@ final class SupplyCatapult {
             lines.add(Component.translatable("tooltip.eternal_defense.catapult").withStyle(ChatFormatting.GRAY));
         }
     }
-    /** Why a catapult cannot stand at {@code pos}: a key under {@code catapult.refused.}, or null. */
+    /** Why a catapult cannot stand at pos: a key under catapult.refused., or null. */
     static String placeProblem(ServerLevel l,BlockPos pos){
         if(l.dimension()!=Level.OVERWORLD)return "overworld";
         var f=Fobs.zoneAt(l,pos);if(f==null)return "not_fob";
@@ -126,15 +121,11 @@ final class SupplyCatapult {
         else say(p,"catapult.status.ready",f.name,f.shipments.size(),CatapultRules.MAX_QUEUE);
     }
 
-    /**
-     * The catapult block's entity: only what the clients draw. Since 0.0.34 the turning and throwing run with the FOB ({@link #tick}); on the
-     * server this copies the FOB's heading and loaded box and sends them on, every client turns the frame with the same motor, and the throw
-     * reaches the clients as block event 1.
-     */
+    /** The catapult block's entity: only what the clients draw. */
     static final class CatapultEntity extends BlockEntity {
-        /** Degrees, unwrapped, as the support cannon's turret: {@code target} is synced, the motor turns {@code yaw} to it on every side. */
+        /** Degrees, unwrapped, as the support cannon's turret: target is synced, the motor turns yaw to it on every side. */
         float target,yaw,prevYaw,speed;
-        /** Ticks into the current throw (-1: none); the box shows in the cup while {@code loaded} (synced). */
+        /** Ticks into the current throw (-1: none); the box shows in the cup while loaded (synced). */
         int throwAge=-1;boolean loaded;
         /** Throws seen here since the chunk loaded (not saved), for tests. */
         int throwsSeen;
@@ -165,13 +156,13 @@ final class SupplyCatapult {
     /** The first shipment not yet thrown. */
     static CompoundTag waiting(FobData.Fob f){for(var ship:f.shipments)if(ship.getString("stage").equals("wait"))return ship;return null;}
 
-    // ---- every tick (overworld): the catapults turn and throw, the boxes come home ----------------------------------------------------------------
+    // Every tick (overworld): the catapults turn and throw, the boxes come home
     static void tick(ServerLevel l,int clock){
         if(l.getServer().getPlayerList().getPlayerCount()==0)return;
         var d=FobData.get(l);var base=CampaignData.get(l.getServer().overworld());long now=l.getGameTime();
         for(var f:d.fobs.values()){
             if(f.catapult!=null&&present(l,f))swing(l,d,f,base);
-            else for(var ship:f.shipments)if(!ship.getString("stage").equals("flying")){thrown(l,f,ship);d.setDirty();}   // taken down: what was bought still comes
+            else for(var ship:f.shipments)if(!ship.getString("stage").equals("flying")){thrown(l,f,ship);d.setDirty();}   // Taken down: what was bought still comes
             for(var ship:List.copyOf(f.shipments))if(ship.getString("stage").equals("flying")&&fly(l,f,ship,now)){f.shipments.remove(ship);d.setDirty();}
         }
         View.send(l,d,clock);
@@ -182,7 +173,7 @@ final class SupplyCatapult {
         float goal=base.installed()?CatapultRules.yawTo(pos.getX()+.5,pos.getZ()+.5,base.beacon.getX()+.5,base.beacon.getZ()+.5):f.motion.rest;
         var event=f.motion.step(ship!=null,goal);
         boolean seen=l.isPositionEntityTicking(pos);
-        // a throw cut short (the game was closed mid-throw): the box is on its way all the same
+        // A throw cut short (the game was closed mid-throw): the box is on its way all the same
         if(!f.motion.throwing())for(var s:f.shipments)if(s.getString("stage").equals("throwing")){thrown(l,f,s);d.setDirty();}
         switch(event){
             case LOADED->{if(seen)l.playSound(null,pos,SoundEvents.CROSSBOW_LOADING_START,SoundSource.BLOCKS,1.5f,.6f);}
@@ -205,10 +196,7 @@ final class SupplyCatapult {
             default->{}
         }
     }
-    /**
-     * A shipment leaves the catapult. 0.0.34 (owner): it comes home as a Supply Flare's parcel: a 12-second countdown in the buyer's chat,
-     * the parcel appearing high over a spot beside the Defense Beacon and coming down by parachute as the count ends.
-     */
+    /** A shipment leaves the catapult. */
     static void thrown(ServerLevel l,FobData.Fob f,CompoundTag ship){
         long now=l.getGameTime();
         ship.putString("stage","flying");ship.putLong("thrown",now);ship.putLong("due",now+CatapultRules.FLIGHT_TICKS);ship.putLong("spawnAt",-1);
@@ -216,7 +204,7 @@ final class SupplyCatapult {
         var buyer=buyer(l,ship);
         if(buyer!=null)buyer.sendSystemMessage(Component.translatable("gui.eternal_defense.catapult.thrown",f.name,CatapultRules.FLIGHT_TICKS/20).withStyle(ChatFormatting.GOLD));
     }
-    /** Picks where the parcel comes down and when it must appear to land on time; waits while the base's land is not loaded. */
+    /** Picks where the parcel comes down and when it must appear to land on time */
     private static void plan(ServerLevel l,CompoundTag ship){
         var home=l.getServer().overworld();var base=CampaignData.get(home);
         if(ship.getLong("spawnAt")>=0||!base.installed()||!home.hasChunkAt(base.beacon))return;
@@ -227,7 +215,7 @@ final class SupplyCatapult {
         ship.putLong("spawnAt",CatapultRules.spawnAt(ship.getLong("due"),clear,outside));
     }
     private static ServerPlayer buyer(ServerLevel l,CompoundTag ship){return ship.hasUUID("buyer")?l.getServer().getPlayerList().getPlayer(ship.getUUID("buyer")):null;}
-    /** One tick of a box on its way: the countdown, the parcel appearing, the landing. True when it is home. */
+    /** One tick of a box on its way: the countdown, the parcel appearing, the landing. */
     private static boolean fly(ServerLevel l,FobData.Fob f,CompoundTag ship,long now){
         long due=ship.getLong("due");var buyer=buyer(l,ship);
         if(buyer!=null&&now<due&&(due-now)%20==0)buyer.sendSystemMessage(Component.translatable("gui.eternal_defense.support.countdown",(due-now)/20).withStyle(ChatFormatting.YELLOW));
@@ -238,7 +226,7 @@ final class SupplyCatapult {
             boolean outside=ship.getBoolean("outside");int clear=ship.getInt("clear");
             SupportCalls.deliver(home,null,Vec3.atBottomCenterOf(BlockPos.of(ship.getLong("spot"))),ship.getList("items",Tag.TAG_COMPOUND),outside,clear);
             ship.putBoolean("spawned",true);
-            // late (the base's land was not loaded): the box still lands after its whole fall
+            // Late (the base's land was not loaded): the box still lands after its whole fall
             if(now>spawnAt)ship.putLong("due",now+(outside?(long)Math.ceil(clear/SupportRules.PARCEL_FALL_SPEED):0));
             FobData.get(l).setDirty();
         }
@@ -247,7 +235,7 @@ final class SupplyCatapult {
         log("{}: a box of {} {} landed at the beacon",f.name,ship.getInt("count"),ship.getString("item"));
         return true;
     }
-    /** A free cell two to five blocks from the beacon, the one with the most open sky (a parcel needs room to come down). */
+    /** A free cell two to five blocks from the beacon, the one with the most open sky */
     static BlockPos landing(ServerLevel home,BlockPos beacon){
         BlockPos best=null;int bestClear=-1;
         for(int r=2;r<=5;r++)for(var dir:net.minecraft.core.Direction.Plane.HORIZONTAL)for(int dy:new int[]{0,1,-1,2,-2}){
@@ -259,10 +247,7 @@ final class SupplyCatapult {
         return best;
     }
 
-    /**
-     * S2C, every tick while somebody has a Command Table open (0.0.34, owner): each catapult's heading, throw and boxes, so the seller's view
-     * draws it live however far away it stands.
-     */
+    /** S2C, every tick while somebody has a Command Table open */
     record View(List<Entry> entries){
         record Entry(long fob,float yaw,int throwAge,boolean loaded,int waiting,int flying,int landsIn){}
         static void send(ServerLevel l,FobData d,int clock){
@@ -291,20 +276,20 @@ final class SupplyCatapult {
         }
     }
 
-    // ---- the specialty seller (the Command Table's FOBs tab) -------------------------------------------------------------------------------------
-    /** Button ids from here go to the seller: {@code SELL + ((fob index x 256 + item) x 2 + lots kind)}; they travel as VarInts. */
+    // The specialty seller (the Command Table's FOBs tab)
+    /** Button ids from here go to the seller: SELL + ((fob index x 256 + item) x 2 + lots kind) */
     static final int SELL=1<<20;
     static int sellButton(int fob,int item,int lotsKind){return SELL+((fob*256+item)*2+lotsKind);}
     /** {fob index, item, lots kind} of a seller button. */
     static int[] decode(int id){int code=id-SELL;return new int[]{code/2/256,(code/2)%256,code%2};}
     /** The FOBs in the order the table lists them by index. */
     static List<FobData.Fob> list(FobData d){return new ArrayList<>(d.fobs.values());}
-    /** Why this FOB's seller is closed (a key suffix under {@code tactical.seller.closed.}), or null. */
+    /** Why this FOB's seller is closed (a key suffix under tactical.seller.closed.), or null. */
     static String closed(ServerLevel l,FobData.Fob f){
         var base=CampaignData.get(l.getServer().overworld());
         return CatapultRules.closed(FobRules.working(f.state),f.level(),present(l,f),base.installed());
     }
-    /** A purchase: Ardent Energy paid, the shipment queued at the FOB's catapult. Returns the table's message key. */
+    /** A purchase: Ardent Energy paid, the shipment queued at the FOB's catapult. */
     static String buy(ServerPlayer p,ServerLevel l,int id){
         int[] sell=decode(id);int index=sell[0],item=sell[1],kind=sell[2];
         var d=FobData.get(l);var fobs=list(d);
@@ -327,10 +312,7 @@ final class SupplyCatapult {
         return "tactical.seller.bought";
     }
 
-    /**
-     * The owner's order lines (0.0.34): one plays to the buyer at random on a purchase, never the same twice in a row. Since 0.0.41 only when
-     * the buyer's radio is free ({@link SupportChatter#claim}): buying again while a line plays adds no second voice.
-     */
+    /** The order lines: one plays to the buyer at random on a purchase, never the same twice in a row. */
     static final int ORDER_LINES=4;
     /** How long each order line plays, in ticks rounded up (RadioAndWhistleTest checks them against the files). */
     static final int[] ORDER_TICKS={66,42,85,79};

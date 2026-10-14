@@ -25,19 +25,15 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Client side of the supply rail (0.0.24): the FOB's name on both nameplates of each gate (front and back, scaled to fit, like a vanilla sign),
- * and the gate screen: what to do (a picture strip), the light and why, a checklist with the fix next to every cross, the stockpile and the
- * next deliveries. The server decides everything ({@link Routes}); this only shows it and sends menu buttons.
- */
+/** Client side of the supply rail: the FOB's name on both nameplates of each gate */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class GateClient {
     private GateClient(){}
     @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(EternalDefense.GATE_MENU.get(),GateScreen::new));}
     @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(EternalDefense.GATE_ENTITY.get(),GateRenderer::new);}
 
-    // ---- the nameplates --------------------------------------------------------------------------------------------------------------------------
-    /** From the owner's right half (facing north, in the anchor's frame): the front plate at z 2.6, the back at z 13.4; text area x 11.5..30.5, y 27.25..30.25 (pixels). */
+    // The nameplates
+    /** From the right half (facing north, in the anchor's frame): the front plate at z 2.6, the back at z */
     static final float PLATE_FRONT=2.6f/16,PLATE_BACK=13.4f/16,TEXT_X=21f/16,TEXT_Y=28.75f/16,TEXT_WIDTH=19f/16,TEXT_HEIGHT=3f/16,SCALE=.016f;
     static final int INK=0xff2a2a2a,UNLINKED_INK=0xff8a1c1c;
     static final class GateRenderer implements BlockEntityRenderer<RailGates.GateEntity> {
@@ -68,7 +64,7 @@ public final class GateClient {
         @Override public boolean shouldRenderOffScreen(RailGates.GateEntity be){return true;}
     }
 
-    // ---- the gate screen ------------------------------------------------------------------------------------------------------------------------
+    // The gate screen
     static void state(CompoundTag data){if(net.minecraft.client.Minecraft.getInstance().screen instanceof GateScreen s)s.update(data);}
     static int color(String signal){return switch(signal){case "green"->FobClient.OLIVE;case "amber"->Ui.ORANGE;default->Ui.RED;};}
     /** "6 h 12 min", "3 min 12 s", "40 s". */
@@ -89,14 +85,13 @@ public final class GateClient {
     }
     static ItemStack icon(String id){return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(id)));}
     static Component slotTitle(String slot,String specialty){return slot.equals("specialty")?Ui.t("gate.slot.specialty",Ui.t("gate.specialty."+specialty)):Ui.t("gate.slot."+slot);}
-    // ---- 0.0.32: the tribute icons (our own pixel art, tools/fob/make_tribute_icons.py) and the tier badges --------------------------------------
+    // The tribute icons (the mod's own pixel art, tools/fob/make_tribute_icons.py) and the tier badges
     static net.minecraft.resources.ResourceLocation tributeTexture(String name){return new net.minecraft.resources.ResourceLocation(EternalDefense.ID,"textures/gui/tribute/"+name+".png");}
-    /** A tribute icon (textures/gui/tribute, 32 x 32: a round medallion with a villager at the job, tools/fob/make_tribute_medallions.py) drawn
-     *  at 16 x 16 GUI pixels, so it shows every pixel from GUI scale 2 up. */
+    /** A tribute icon */
     static void tributeIcon(GuiGraphics g,String name,int x,int y){g.blit(tributeTexture(name),x,y,16,16,0,0,32,32,32,32);}
-    /** The icon of a loot slot: its own for emeralds, the mine and the farm; the village's specialty for the specialty slot. */
+    /** The icon of a loot slot: its own for emeralds, the mine and the farm */
     static String slotIcon(String slot,String specialty){return slot.equals("specialty")?RouteRules.Specialty.orFirst(specialty).icons().get(0):"slot_"+slot;}
-    /** A specialty's icons side by side (0.0.34: fishing and animal husbandry, one specialty, shows both); returns the width drawn. */
+    /** A specialty's icons side by side; returns the width drawn. */
     static int specialtyIcons(GuiGraphics g,String specialty,int x,int y){var icons=RouteRules.Specialty.orFirst(specialty).icons();for(int i=0;i<icons.size();i++)tributeIcon(g,icons.get(i),x+i*17,y);return specialtyIconsWidth(specialty);}
     static int specialtyIconsWidth(String specialty){return RouteRules.Specialty.orFirst(specialty).icons().size()*17-1;}
     static int tierColor(int tier){return switch(tier){case 1->0xff9aa5b1;case 2->0xff5fbf5a;case 3->0xff4aa3ff;case 4->0xffb06bff;case 5->0xffffb02e;default->Ui.MUTED;};}
@@ -107,18 +102,12 @@ public final class GateClient {
     }
     static int slotColor(int index){return switch(index){case 0->0xff4fd18b;case 1->0xffb0b8c0;case 2->FobClient.OLIVE;default->Ui.BRASS;};}
 
-    /**
-     * 0.0.31 (owner): the gate screen takes the whole window. A Receiving Gate shows its tribute storage (take only) and the inventory on the
-     * left; the right side has the light and why, the countdown to the next delivery, and two tabs: Tribute (the four loot slots, each with
-     * its switch, its item, how many trips one item takes and a Choose button) and Route (the checklist). Choose opens a grid of the slot's
-     * items. On a narrow window (1920 x 1080 at GUI scale 4, 1280 x 720 at GUI scale 3) the storage has a tab of its own and the slot cards
-     * use two lines. The server sends the state again every second, so the countdown and the rates are always current.
-     */
+    /** The gate screen takes the whole window. */
     static final class GateScreen extends AbstractContainerScreen<RailGates.GateMenu> {
         /** The storage column's width (its left margin, 9 slots, a gap) and the least room the tabs need beside it. */
         static final int STORE_COL=RailGates.GateMenu.STORE_X+162+14,SPLIT_MIN=290,TAB_W=80;
         private CompoundTag data;private boolean relink;private long receivedAt;private String layout="";
-        /** The open tab (0 tribute, 1 route, 2 storage on a narrow window) and the slot whose items are being chosen (-1 none), kept while the screen is open. */
+        /** The open tab (0 tribute, 1 route, 2 storage on a narrow window) and the slot whose items are being chosen */
         int tab,picking=-1,pickScroll;
         private int rx,rw,bodyY,cardsY,cardH;private boolean split,changeBelow;
         final List<Ui.UiButton> pickButtons=new ArrayList<>();
@@ -141,7 +130,7 @@ public final class GateClient {
         /** The countdown, counted on from the last state (ticks of play pass while the player is here). */
         long nextIn(){long n=data.getLong("nextIn");return n<0?-1:Math.max(0,n-(net.minecraft.Util.getMillis()-receivedAt)/50);}
         private int countH(){return imageHeight>=300?36:22;}
-        /** A slot card's own height (the cards are {@code cardH} apart) and whether it has room for three lines. */
+        /** A slot card's own height (the cards are cardH apart) and whether it has room for three lines. */
         private int cardInner(){return cardH-3;}
         private boolean tall(){return cardInner()>=33;}
         boolean split(){return split;}
@@ -149,10 +138,10 @@ public final class GateClient {
         CompoundTag data(){return data;}
 
         @Override protected void init(){
-            // the whole window, with a small margin (the storage column needs 240 px of height)
+            // The whole window, with a small margin (the storage column needs 240 px of height)
             imageWidth=Math.max(300,width-16);imageHeight=Math.max(RailGates.GateMenu.STORE_BOTTOM,height-16);
             super.init();clearWidgets();pickButtons.clear();
-            // a wide window shows the storage beside the tabs; a narrow one gives it a tab of its own
+            // A wide window shows the storage beside the tabs; a narrow one gives it a tab of its own
             split=menu.storage&&imageWidth-STORE_COL-12>=SPLIT_MIN;
             if(tab==2&&(!menu.storage||split))tab=0;
             menu.slotsShown=menu.storage&&(split||tab==2&&linked()&&!choosing());
@@ -169,11 +158,11 @@ public final class GateClient {
                 return;
             }
             if(!linked())return;
-            // the countdown card's height shrinks on a small window; the four cards share what is left
+            // The countdown card's height shrinks on a small window; the four cards share what is left
             int tabsY=bodyY+24+countH()+6;cardsY=tabsY+22;
             cardH=Math.max(26,Math.min(46,(topPos+imageHeight-14-cardsY-13)/4));
             var labels=new ArrayList<String>(List.of("gate.tab.tribute","gate.tab.route"));if(menu.storage&&!split)labels.add("gate.tab.storage");
-            // the tabs share the row when it is narrow (the Storage tab beside the storage on a 426 px window)
+            // The tabs share the row when it is narrow (the Storage tab beside the storage on a 426 px window)
             int tabW=Math.min(TAB_W,(rw-2*(labels.size()-1))/labels.size());
             for(int i=0;i<labels.size();i++){int index=i;
                 var t=addRenderableWidget(new Ui.UiButton(rx+i*(tabW+2),tabsY,tabW,18,Ui.t(labels.get(i)),Ui.Look.TAB,b->{tab=index;picking=-1;rebuildWidgets();}));t.selected=tab==i;}
@@ -197,7 +186,7 @@ public final class GateClient {
                 }
             }
         }
-        /** The grid of a slot's items: one button each (its icon), scrolled by the wheel when it is longer than the space. */
+        /** The grid of a slot's items: one button each (its icon) */
         private void picker(){
             var slot=RouteRules.Slot.values()[picking];var options=RouteRules.options(slot,specialty());
             int cell=22,cols=Math.max(1,(rw-12)/cell),top=cardsY+13,rows=Math.max(1,(topPos+imageHeight-44-top)/cell);
@@ -206,7 +195,7 @@ public final class GateClient {
             for(int i=pickScroll*cols;i<options.size()&&i<(pickScroll+rows)*cols;i++){
                 int index=i,col=(i-pickScroll*cols)%cols,row=(i-pickScroll*cols)/cols;var loot=options.get(i);var stack=icon(loot.id());
                 var b=new Ui.UiButton(rx+6+col*cell,top+row*cell,cell-2,cell-2,Component.empty(),Ui.Look.NORMAL,x->{click(Routes.chooseButton(slot,index));picking=-1;rebuildWidgets();});
-                // 0.0.32: an A or S item stays locked until the FOB's research opens it: dimmed, a padlock, no click
+                // An A or S item stays locked until the FOB's research opens it: dimmed, a padlock, no click
                 boolean open=RouteRules.unlocked(loot,level());int tier=loot.tier();
                 b.selected=i==chosen;b.active=open;
                 b.painter((g,self,hover)->{g.renderItem(stack,self.getX()+2,self.getY()+2);
@@ -281,7 +270,7 @@ public final class GateClient {
             }
             Component every=period>0?Ui.t("gate.next.every",time(period),number(data.getDouble("tripsPerHour"))):Ui.t("gate.next.unopened");
             if(h<30){
-                // a small window: two lines across the card, the countdown on top
+                // A small window: two lines across the card, the countdown on top
                 Ui.text(g,font,Ui.t("gate.next.short",when),rx+8,y+2,next>=0?Ui.INK:Ui.MUTED,rw-16);
                 if(period>0&&font.width(every)>rw-16)every=Ui.t("gate.next.every.short",time(period),number(data.getDouble("tripsPerHour")));
                 Ui.text(g,font,every,rx+8,y+12,Ui.MUTED,rw-16);
@@ -291,7 +280,7 @@ public final class GateClient {
             long ago=data.getLong("lastAgo");
             if(ago>=0&&h>=30){String key="gate.last."+(data.getString("lastKind").equals("ride")?"ride":"passive");
                 Component last=Ui.t(key,data.getInt("lastItems"),time(ago));
-                if(font.width(last)>half-8)last=Ui.t(key+".short",data.getInt("lastItems"),time(ago));   // 0.0.32: big deliveries make it longer
+                if(font.width(last)>half-8)last=Ui.t(key+".short",data.getInt("lastItems"),time(ago));   // Big deliveries make it longer
                 Ui.text(g,font,last,rx+half,y+h-11,Ui.MUTED,half-8);}
         }
         private Component reason(){
@@ -305,7 +294,7 @@ public final class GateClient {
             if(data.getBoolean("warn"))return Ui.t("gate.reason.warn");
             return Ui.t("gate.reason.running");
         }
-        /** The four loot slots: the facts line, then one card each (three lines when there is room: its name, its item, its rate). */
+        /** The four loot slots: the facts line, then one card each */
         private void drawSlots(GuiGraphics g){
             Ui.text(g,font,Ui.t("gate.facts",data.getInt("villagers"),data.getInt("distance"),Math.round(data.getDouble("bonus")*100)),rx,cardsY+2,Ui.MUTED,rw);
             var slots=slots();double perHour=data.getDouble("tripsPerHour");int h=cardInner();
@@ -322,7 +311,7 @@ public final class GateClient {
                     Ui.text(g,font,item,tx,y+14,on?Ui.INK:Ui.MUTED,tw);
                     Ui.text(g,font,rate,tx,y+24,on?Ui.CYAN:Ui.MUTED,tw);
                 }else{
-                    // two lines: the slot's name and its item, then the rate
+                    // Two lines: the slot's name and its item, then the rate
                     int top=y+(h-18)/2,nameW=Math.min(font.width(name),tw*2/3);
                     Ui.text(g,font,name,tx,top,on?slotColor(i):Ui.MUTED,nameW);
                     if(tw-nameW-6>12)Ui.text(g,font,item,tx+nameW+6,top,on?Ui.INK:Ui.MUTED,tw-nameW-6);
@@ -356,7 +345,7 @@ public final class GateClient {
         }
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix){return line(g,x,y,w,ok,what,fix,2);}
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix,int fixLines){
-            int bottom=topPos+imageHeight-(changeBelow?34:16);if(y+9>bottom)return y;   // no room left (a very small window): the rest is cut, never drawn over
+            int bottom=topPos+imageHeight-(changeBelow?34:16);if(y+9>bottom)return y;   // No room left (a very small window): the rest is cut, never drawn over
             fixLines=Math.max(0,Math.min(fixLines,(bottom-y-10)/11));
             if(ok)Ui.check(g,x,y+1,FobClient.OLIVE);else Ui.cross(g,x,y+1,Ui.RED);
             Ui.text(g,font,what,x+9,y,ok?Ui.INK:Ui.ORANGE,w-9);
@@ -369,7 +358,7 @@ public final class GateClient {
             if(picking>=0&&tab==0){
                 var slot=RouteRules.Slot.values()[picking];var options=RouteRules.options(slot,specialty());
                 var row=slots().size()>picking?slots().get(picking):new CompoundTag();
-                // the slot's share of a trip as it is now, in tribute value: what any item of the list would bring
+                // The slot's share of a trip as it is now, in tribute value: what any item of the list would bring
                 RouteRules.Loot current=options.get(0);for(var o:options)if(o.id().equals(row.getString("item")))current=o;
                 double budget=row.getBoolean("on")?row.getDouble("perTrip")*current.value():0;
                 int cell=22,cols=Math.max(1,(rw-12)/cell);

@@ -7,9 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 0.0.18: the owner's hand-tuned sounds, the slower cannon, the cover rule of Quantum tunneling, the beacon upgrade changes and the reworked fire supports. */
+/** The hand-tuned sounds, the slower cannon, the cover rule of Quantum tunneling */
 final class HandTunedRoundTest {
-    // ---- sounds ------------------------------------------------------------------------------------------------------------
+    // Sounds
     @Test void theOwnersSoundsAreShippedAndMonoWhereTheyArePlacedInTheWorld() throws Exception{
         var sounds=json("/assets/eternal_defense/sounds.json");var lang=json("/assets/eternal_defense/lang/en_us.json");
         var files=Map.of("cannon.fire","cannon_fire","cannon.turning","cannon_turning","cannon.turning_done","cannon_turning_done",
@@ -21,7 +21,7 @@ final class HandTunedRoundTest {
             int channels=ogg("/assets/eternal_defense/sounds/sfx/"+e.getValue()+".ogg").channels();
             assertEquals(e.getKey().equals("beacon.attacked")?2:1,channels,e.getValue()+": a sound placed in the world must be mono");
         }
-        // the 0.0.19 whistles gave way to the incoming sound again in 0.0.20
+        // The whistles gave way to the incoming sound again
         for(String gone:List.of("cannon.traverse","cannon.clank","cannon.lock","shell.explosion","bunker.impact","bunker.dig","fire.cluster","fire.gravity_implode",
             "shell.whistle","bomb.whistle"))
             assertFalse(sounds.has(gone),gone+" was replaced");
@@ -30,26 +30,26 @@ final class HandTunedRoundTest {
         double done=ogg("/assets/eternal_defense/sounds/sfx/cannon_turning_done.ogg").seconds();
         assertEquals(Math.ceil(done*20),SupportCannon.DONE_TICKS,"the gun fires the tick the lock sound ends ("+done+" s)");
         assertEquals(SupportCannon.DONE_TICKS,SupportCannon.SETTLE_TICKS);
-        // the incoming sound sets the pace (its impact 5.15 s in): back in 0.0.20 after the 0.0.19 whistle
+        // The incoming sound sets the pace (its impact 5.15 s in): back after the whistle
         assertEquals(103,SupportRules.BLAST_FLIGHT_TICKS);
         double incoming=ogg("/assets/eternal_defense/sounds/sfx/ordnance_incoming.ogg").seconds();
-        // the scream cuts off 0.2 s before the file ends (a short fade follows the impact)
+        // The scream cuts off 0.2 s before the file ends (a short fade follows the impact)
         assertEquals(incoming-.2,SupportRules.BLAST_FLIGHT_TICKS/20.0,.1,"the round lands as the incoming sound hits ("+incoming+" s)");
-        // any pitch but 1 stretches the sound and moves its impact off the landing (the Bunker Buster's bomb had .92 at first: 0.45 s late)
+        // Any pitch but 1 stretches the sound and moves its impact off the landing
         var play=java.util.regex.Pattern.compile("DefenseSounds\\.INCOMING\\.get\\(\\),SoundSource\\.BLOCKS,INCOMING_VOLUME,([^,]+),")
             .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/OrdnanceClient.java")));
         assertTrue(play.find(),"the incoming sound is played");assertEquals("1f",play.group(1),"the incoming sound plays at pitch 1");
     }
     @Test void theAttackAlarmSoundsWhenTheWarningShowsAndRepeats() throws Exception{
         assertTrue(BeaconAlerts.alarm(true,-1),"when the warning appears");
-        // 0.0.21: one double beep (0.6 s), a 0.5 s pause, again: "beep beep - pause - beep beep"
+        // One double beep (0.6 s), a 0.5 s pause, again: "beep beep - pause - beep beep"
         assertEquals(22,BeaconAlerts.ALARM_PERIOD_TICKS,"0.6 s clip + 0.5 s pause");
         assertFalse(BeaconAlerts.alarm(true,BeaconAlerts.ALARM_PERIOD_TICKS-1),"not while the clip and the pause run");assertTrue(BeaconAlerts.alarm(true,BeaconAlerts.ALARM_PERIOD_TICKS));
         assertFalse(BeaconAlerts.alarm(false,-1));assertFalse(BeaconAlerts.alarm(false,99));
         assertEquals(BeaconAlerts.ALARM_CLIP_SECONDS,ogg("/assets/eternal_defense/sounds/sfx/beacon_attacked.ogg").seconds(),.01,"the clip is cut to 0.6 s");
     }
 
-    // ---- the cannon ------------------------------------------------------------------------------------------------------
+    // The cannon
     @Test void theTurretTurnsHalfAgainAsLongAndItsTopLevelIsTheOldBase(){
         assertEquals(1f,CannonUpgrades.turnSpeed(3),1e-6,"the fastest is what used to be the slowest");
         for(float deg:new float[]{90,180}){
@@ -66,7 +66,7 @@ final class HandTunedRoundTest {
         assertTrue(SupportRules.underground(3));assertTrue(SupportRules.underground(40));
     }
 
-    // ---- the beacon ------------------------------------------------------------------------------------------------------
+    // The beacon
     @Test void defenseIsPaidInPlatingAndTheVerticalZoneInAllFourParts(){
         assertEquals("reinforced_plating",Economy.beaconPart("defense"));assertEquals("reinforced_plating",Economy.beaconPart("core"));
         assertEquals("resonance_coil",Economy.beaconPart("reconnaissance"));
@@ -80,7 +80,7 @@ final class HandTunedRoundTest {
         assertEquals(List.of(new Economy.Part("reinforced_plating",8)),Economy.beaconCost("defense",0));
     }
 
-    // ---- the fire supports -----------------------------------------------------------------------------------------------
+    // The fire supports
     @Test void theLingeringTypesAreOneRoundAndVolleyMakesThemLast(){
         assertEquals(6,CannonUpgrades.volleys(CannonUpgrades.FireType.ARROW,0),"Spotter Arrows (the Arrow Cluster until 0.0.36): six volleys");
         assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,0));assertEquals(240,CannonUpgrades.lingerTicks(CannonUpgrades.FireType.CLUSTER,3),"volley does nothing for the cluster");
@@ -93,7 +93,7 @@ final class HandTunedRoundTest {
         var levels=new int[CannonUpgrades.Upgrade.values().length];levels[CannonUpgrades.Upgrade.VOLLEY.ordinal()]=2;
         assertEquals(360,CannonUpgrades.Config.of(levels,CannonUpgrades.FireType.NAPALM).lingerTicks(),"the config carries the volley level");
     }
-    /** 0.0.28 (owner): a mob that stays the whole strike takes six barrage shells (it was 80 percent of six); the Bunker Buster five, at every Damage level. */
+    /** A mob that stays the whole strike takes six barrage shells (it was 80 percent of six) */
     @Test void theClusterDealsSixShellsAndTheBunkerBusterFive(){
         int pulses=CannonUpgrades.CLUSTER_TICKS/CannonUpgrades.CLUSTER_PULSE_TICKS;
         for(int level=0;level<=3;level++){float m=CannonUpgrades.damage(level),shell=SupportRules.FIRE_DAMAGE*m;
@@ -120,18 +120,18 @@ final class HandTunedRoundTest {
         double r=8;
         for(double d=0;d<r;d+=.25){
             double v=CannonUpgrades.shockSpeed(d,r);assertTrue(v>=.5&&v<=1.6,"speed "+v+" at "+d);
-            // ground friction keeps about 55 percent of a mob's speed each tick: the push is repeated every tick for SHOCK_PUSH_TICKS
+            // Ground friction keeps about 55 percent of a mob's speed each tick
             double x=d;for(int t=0;t<CannonUpgrades.SHOCK_PUSH_TICKS&&x<r;t++)x+=CannonUpgrades.shockSpeed(x,r);
             assertTrue(x>=r,"a mob "+d+" blocks out ends up past the edge: "+x);
         }
     }
-    // 0.0.36: the tipped arrows are gone (Spotter Arrows hit and mark; their arrows are only for show): see Round0036Test
+    // The tipped arrows are gone (Spotter Arrows hit and mark; their arrows are only for show): see Round0036Test
 
     private static com.google.gson.JsonObject json(String path) throws Exception{
         try(var in=HandTunedRoundTest.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in,path),StandardCharsets.UTF_8)).getAsJsonObject();}
     }
     record Ogg(int channels,double seconds){}
-    /** Channels and length of an Ogg Vorbis file, read from its identification header and its last page's granule position. */
+    /** Channels and length of an Ogg Vorbis file, read from its identification header and its last page's granule */
     static Ogg ogg(String path) throws Exception{
         byte[] b;try(var in=HandTunedRoundTest.class.getResourceAsStream(path)){b=Objects.requireNonNull(in,path).readAllBytes();}
         int packet=27+(b[26]&0xff),channels=b[packet+11]&0xff,rate=0;for(int k=3;k>=0;k--)rate=rate<<8|(b[packet+12+k]&0xff);

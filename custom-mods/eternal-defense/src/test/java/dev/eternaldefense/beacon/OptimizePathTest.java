@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The pure parts of the Optimize Path (0.0.15): each faster check must give exactly the answer of the code it replaced. */
+/** The pure parts of the Optimize Path: each faster check must give exactly the answer of the code it replaced. */
 final class OptimizePathTest {
-    /** The light/furniture grid of the base score answers "anything within 12 blocks?" exactly like a check against the whole list. */
+    /** The light/furniture grid of the base score answers "anything within 12 blocks?" exactly like a check against */
     @Test void theAnchorGridFindsExactlyTheAnchorsTheListFound(){
         var r=new Random(15);
         for(int round=0;round<40;round++){
@@ -22,7 +22,7 @@ final class OptimizePathTest {
             }
         }
     }
-    /** Exactly 12 blocks away along an axis is near, 13 is not; a corner-to-corner distance is measured like BlockPos.distSqr, across cell borders and zero. */
+    /** Exactly 12 blocks away along an axis is near */
     @Test void theAnchorGridEdgesMatchDistSqr(){
         var grid=new BaseScoring.Anchors();var a=new BlockPos(-1,0,-1);grid.add(a.asLong());
         assertTrue(grid.near(new BlockPos(11,0,-1)));assertFalse(grid.near(new BlockPos(12,0,-1)));

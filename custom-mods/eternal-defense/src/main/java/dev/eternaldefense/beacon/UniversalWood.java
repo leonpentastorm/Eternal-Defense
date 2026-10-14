@@ -28,7 +28,7 @@ public final class UniversalWood {
     private static void rewrite(JsonElement element){
         if(element.isJsonArray()){for(var entry:element.getAsJsonArray())rewrite(entry);return;}
         if(!element.isJsonObject())return;var obj=element.getAsJsonObject();
-        // An ingredient is an item/tag object. Nested TaCZ counted materials retain their wrapper.
+        // An ingredient is an item/tag object.
         if(obj.has("item")&&obj.get("item").isJsonPrimitive()&&!obj.has("nbt")){
             String tag=FORMS.get(obj.get("item").getAsString());
             if(tag!=null){obj.remove("item");obj.addProperty("tag",tag);}
@@ -42,11 +42,7 @@ public final class UniversalWood {
         if(form==null)return ingredient;
         Ingredient expanded=Ingredient.of(TagKey.create(Registries.ITEM,new ResourceLocation(form)));return expanded.isEmpty()?ingredient:expanded;
     }
-    /**
-     * The name a cost row shows for a wood ingredient ("Wood (any log)"), or "" when it is not one. 0.0.28 (owner): a gun that needs dark oak logs
-     * showed "Dark Oak Log" although any log pays. The expanded tag held logs the catalogue does not list (a modded log, a nether stem), and every
-     * item had to be listed; now an item counts when the catalogue lists it or it is in the form's own tag, and a tag ingredient is read directly.
-     */
+    /** The name a cost row shows for a wood ingredient ("Wood (any log)"), or "" when it is not one. */
     static String label(Ingredient ingredient){
         String form=tagForm(ingredient);
         if(form==null){
@@ -57,7 +53,7 @@ public final class UniversalWood {
         }
         return name(form);
     }
-    /** The wood form of an ingredient that is a single tag (as the pack's script and {@link #normalize} write it), or null. */
+    /** The wood form of an ingredient that is a single tag (as the pack's script and normalize write it), or null. */
     private static String tagForm(Ingredient ingredient){
         try{
             var json=ingredient.toJson();
@@ -65,7 +61,7 @@ public final class UniversalWood {
         }catch(RuntimeException ignored){}
         return null;
     }
-    /** Pure: what a wood form is called on a cost row: logs are "Wood (any log)", planks "Planks (any wood)", the rest "Any wood stairs" and so on. */
+    /** Pure: what a wood form is called on a cost row: logs are "Wood (any log)", planks "Planks (any wood)" */
     static String name(String form){
         String path=form.substring(form.indexOf(':')+1);
         return switch(path){case "logs"->"Wood (any log)";case "planks"->"Planks (any wood)";default->"Any "+path.replace("wooden_","wood ").replace('_',' ');};

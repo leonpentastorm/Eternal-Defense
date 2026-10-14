@@ -35,7 +35,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import java.util.*;
 
-/** The Support Platform: supply grid, shop and Mk upgrades. One per player, inside the beacon zone, with its front kept clear. */
+/** The Support Platform: supply grid, shop and Mk upgrades. */
 final class SupportPlatform {
     private SupportPlatform(){}
     static final IntegerProperty MK=IntegerProperty.create("mk",1,4);
@@ -50,7 +50,7 @@ final class SupportPlatform {
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){
             Direction d=c.getHorizontalDirection().getOpposite();var level=c.getLevel();BlockPos pos=c.getClickedPos();
             var player=c.getPlayer();
-            // the return zone: two blocks in front, two tall, must be free of anything solid
+            // The return zone: two blocks in front, two tall, must be free of anything solid
             for(BlockPos cell:SupportCalls.returnZone(pos,d)){
                 var st=level.getBlockState(cell);
                 if(!st.canBeReplaced()&&!st.getCollisionShape(level,cell).isEmpty()){
@@ -129,22 +129,22 @@ final class SupportPlatform {
             for(var t:n.getList("Grid",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;int slot=c.getInt("Slot");if(slot>=0&&slot<36)grid.items[slot]=ItemStack.of(c);}
             if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
-        /** The owner's name travels to clients so the plate on the back of the cabinet can show it. */
+        /** The name travels to clients so the plate on the back of the cabinet can show it. */
         @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putString("OwnerName",ownerName==null?"":ownerName);return n;}
         @Override public void handleUpdateTag(CompoundTag n){ownerName=n.getString("OwnerName");}
         @Override public void onDataPacket(net.minecraft.network.Connection net,net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
         @Override public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket(){return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);}
-        /** The owner's sign stands above the two blocks of the platform. */
+        /** The sign stands above the two blocks of the platform. */
         @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).expandTowards(0,3,0);}
         @Override public Component getDisplayName(){return Component.translatable("block.eternal_defense.support_platform");}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player p){return new PlatformMenu(id,inv,grid,getBlockPos(),getBlockState().getValue(MK));}
     }
 
-    /** Grid + player inventory. Costs and purchase feedback travel as synced data slots, so no extra packets are needed. */
+    /** Grid + player inventory. */
     static final class PlatformMenu extends AbstractContainerMenu {
         final GridContainer grid;final BlockPos pos;final int mk;
         final DataSlot result=DataSlot.standalone(),serial=DataSlot.standalone();
-        /** 0.0.40: the Ardent Energy and plating the platform can reach (the pack, then the Home Zone's Hubs), worked out on the server. */
+        /** The Ardent Energy and plating the platform can reach (the pack, then the Home Zone's Hubs) */
         final DataSlot energy=DataSlot.standalone(),plating=DataSlot.standalone();final Player player;
         /** Client only: slots are hidden while the Shop or Upgrade tab is showing. */
         boolean slotsVisible=true;

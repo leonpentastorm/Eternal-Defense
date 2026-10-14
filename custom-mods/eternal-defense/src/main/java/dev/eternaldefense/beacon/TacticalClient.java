@@ -24,22 +24,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Client side of Tactical Operations (0.0.20): the shared mission for the status card, the satellite images, and the Command Table screen
- * (a radar of the region with an X per offer, and the offer cards). The server decides everything; this only shows it and sends menu buttons.
- */
+/** Client side of Tactical Operations: the shared mission for the status card, the satellite images */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class TacticalClient {
     private TacticalClient(){}
     @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(EternalDefense.TABLE_MENU.get(),TableScreen::new));}
 
-    // ---- the mission line ----------------------------------------------------------------------------------------------------------------
+    // The mission line
     static Hunts.MissionSync mission=new Hunts.MissionSync(false,"","",0,0,0,0,false,0);
     static void mission(Hunts.MissionSync m){mission=m;}
     static boolean missionActive(){return mission.active();}
     /** An offer's class as a rarity on the table: Patrol blue, Garrison purple, Warlord gold (the chosen X is red). */
     static int kindColor(String kind){return switch(kind){case "garrison"->Ui.EPIC_PURPLE;case "warlord"->Ui.LEGEND_GOLD;default->Ui.RARE_BLUE;};}
-    /** The mission's map or the Recovery Shovel in either hand: the Tactical Operations line shows only then (0.0.21). */
+    /** The mission's map or the Recovery Shovel in either hand: the Tactical Operations line shows only then. */
     static boolean holdingMissionItem(){
         var p=Minecraft.getInstance().player;if(p==null)return false;
         for(var s:List.of(p.getMainHandItem(),p.getOffhandItem()))
@@ -56,7 +53,7 @@ public final class TacticalClient {
             :Ui.t("hud.mission.waiting",mission.codename(),kind,distance,compass);
     }
 
-    // ---- the satellite images ------------------------------------------------------------------------------------------------------------
+    // The satellite images
     private static final ChunkedPayload.Assembler ASSEMBLER=new ChunkedPayload.Assembler();
     static final int SIZE=TacticalRules.SCAN_SIZE,PIXELS=SIZE*SIZE;
     /** The images as received (version -1: none yet), their Region scale, centre and scan time. */
@@ -88,7 +85,7 @@ public final class TacticalClient {
         var mc=Minecraft.getInstance();var manager=mc.getTextureManager();
         if(previous[view]!=null){manager.release(PREVIOUS[view]);previous[view]=null;}
         if(textures[view]!=null){
-            // keep the old picture under the wipe
+            // Keep the old picture under the wipe
             var old=new DynamicTexture(SIZE,SIZE,false);old.getPixels().copyFrom(textures[view].getPixels());old.upload();
             previous[view]=old;manager.register(PREVIOUS[view],old);
         }
@@ -113,13 +110,13 @@ public final class TacticalClient {
         return 0xff000000|(b<<16)|(g<<8)|r;
     }
 
-    // ---- the table screen ----------------------------------------------------------------------------------------------------------------
-    /** The open table's fresh state (after a button or a change on the board), see {@link Hunts.TableState}. */
+    // The table screen
+    /** The open table's fresh state (after a button or a change on the board), see Hunts.TableState. */
     static void state(CompoundTag data){
         var screen=Minecraft.getInstance().screen;
-        if(data.contains("fobId")){if(screen instanceof FobClient.FobScreen fob)fob.update(data);return;}   // the same packet refreshes the FOB screen (0.0.23)
-        if(data.contains("gate")){GateClient.state(data);return;}   // and a gate screen (0.0.24)
-        if(data.contains("enchant")){EnchantClient.state(data);return;}   // and the enchanting table (0.0.27)
+        if(data.contains("fobId")){if(screen instanceof FobClient.FobScreen fob)fob.update(data);return;}   // The same packet refreshes the FOB screen
+        if(data.contains("gate")){GateClient.state(data);return;}   // And a gate screen
+        if(data.contains("enchant")){EnchantClient.state(data);return;}   // And the enchanting table
         if(screen instanceof TableScreen table)table.update(data);
     }
     /** Kept while the table is reopened: which view and which offer. */
@@ -155,12 +152,11 @@ public final class TacticalClient {
             size=Math.max(96,Math.min(imageHeight-28-24-30,imageWidth-24-150));
             radarX=leftPos+12;radarY=topPos+28+24;sideX=radarX+size+10;sideW=leftPos+imageWidth-12-sideX;
             addRenderableWidget(new Ui.UiButton(leftPos+imageWidth-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
-            // toolbar: Base / Region, then SCAN MAP and the satellite upgrade
-            // three tabs (0.0.31: FOBs, the FOB management view), each as wide as its label
+            // Toolbar: Base / Region, then SCAN MAP and the satellite upgrade three tabs, each as wide as its label
             int tx=radarX;String[] tabs={"tactical.view.base","tactical.view.region","tactical.view.fobs"};
             for(int i=0;i<tabs.length;i++){int page=i,tw=font.width(Ui.t(tabs[i]))+14;var b=addRenderableWidget(new Ui.UiButton(tx,topPos+31,tw,18,Ui.t(tabs[i]),Ui.Look.TAB,x->{view=page;rebuildWidgets();}));b.selected=view==i;tx+=tw+2;}
             if(view==2){fobView();return;}
-            // 0.0.32 (owner): under the map, right: the FOBs' names on or off
+            // Under the map, right: the FOBs' names on or off
             Component names=Ui.t("tactical.fob.names");int nw=font.width(names)+30+font.width(Ui.t("off"))+26;
             namesButton=addRenderableWidget(new Ui.UiButton(radarX+size-nw,radarY+size+3,nw,14,names,Ui.Look.TOGGLE,b->{fobNames=!fobNames;((Ui.UiButton)b).on=fobNames;}));
             namesButton.on=fobNames;namesButton.visible=!fobs().isEmpty();
@@ -169,7 +165,7 @@ public final class TacticalClient {
             upgradeButton=addRenderableWidget(new Ui.UiButton(sideX,topPos+31,sideW,18,Ui.t("tactical.upgrade",mk()+1),Ui.Look.NORMAL,b->click(TacticalBlocks.button(TacticalBlocks.UPGRADE,0))));
             upgradeButton.visible=data.contains("upgradeItem");upgradeButton.active=data.getBoolean("uplink")&&(data.getBoolean("creative")||data.getInt("upgradeHave")>=data.getInt("upgradeAmount"));
             upgradeButton.warning=upgradeButton.visible&&!upgradeButton.active&&data.getBoolean("uplink");
-            // the offer list
+            // The offer list
             var all=offers();int rowY=radarY;
             for(var o:all){
                 long id=o.getLong("id");
@@ -188,8 +184,8 @@ public final class TacticalClient {
             abandonButton.visible=reprintButton.visible=active;
             if(abandonArmed>net.minecraft.Util.getMillis()){abandonButton.setMessage(Ui.t("tactical.abandon.confirm"));}
         }
-        // ---- FOB management (0.0.31) -----------------------------------------------------------------------------------------------------------
-        /** 0.0.32 (owner): the map's switch for the FOBs' names and distances (their flags, zones and arrows stay), kept while the game runs. */
+        // FOB management
+        /** The map's switch for the FOBs' names and distances (their flags, zones and arrows stay) */
         static boolean fobNames=true;
         private Ui.UiButton namesButton;
         /** The FOBs, the one calling for help first. */
@@ -201,8 +197,8 @@ public final class TacticalClient {
         /** How many rows fit; a small window scrolls the rest with the mouse wheel. */
         private int fobRows(){return Math.max(1,fobRoom()/fobRowH());}
         private List<CompoundTag> shownFobs(){var all=fobs();fobScroll=Math.max(0,Math.min(fobScroll,all.size()-fobRows()));return all.subList(fobScroll,Math.min(all.size(),fobScroll+fobRows()));}
-        /** The FOB list: the SOS row gets Reprint SOS map, every row Contact Specialty Seller (0.0.33), under the state chip. */
-        // 0.0.40 (owner): the row's buttons sit 4 px above the card's lower edge (the card is h - 3 tall; they touched it at y + h - 22)
+        /** The FOB list: the SOS row gets Reprint SOS map, every row Contact Specialty Seller, under the state chip. */
+        // The row's buttons sit 4 px above the card's lower edge (the card is h - 3 tall; they touched it at y + h - 22)
         private void fobView(){
             if(seller()!=null){sellerView();return;}
             int y=radarY+14,h=fobRowH();
@@ -222,7 +218,7 @@ public final class TacticalClient {
                 y+=h;
             }
         }
-        // ---- the specialty seller (0.0.33, owner) ------------------------------------------------------------------------------------------------
+        // The specialty seller
         /** The FOB whose seller is open (-1: the list), the item picked, the grid's scroll: kept while the game runs. */
         static long sellerFob=-1;static int sellerItem,sellerScroll;
         private final List<Ui.UiButton> sellButtons=new ArrayList<>();
@@ -232,11 +228,11 @@ public final class TacticalClient {
             int need=Math.max(font.width(where(f)),f.getBoolean("sos")?font.width(Ui.t("tactical.fob.sos",FobClient.sosTime(f.getLong("sosLeft")),FobClient.sosTime(Math.max(1,data.getLong("sosTotal"))))):font.width(route(f)));
             int shortW=font.width(Ui.t("tactical.seller.open.short"))+16+RADIO_W;
             if(fobW()-16-full-4-other>=need)return full;
-            // an SOS row is crowded by Reprint SOS map: the seller steps aside there on a small window until the SOS is over
+            // An SOS row is crowded by Reprint SOS map: the seller steps aside there on a small window until the SOS is over
             return fobW()-16-shortW-4-other>=need||!f.getBoolean("sos")?shortW:0;
         }
         private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16+RADIO_W<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}
-        /** 0.0.34 (owner): the handheld radio on Contact Specialty Seller, and its static as the line opens (the owner's recording). */
+        /** The handheld radio on Contact Specialty Seller, and its static as the line opens. */
         static final net.minecraft.resources.ResourceLocation RADIO=new net.minecraft.resources.ResourceLocation(EternalDefense.ID,"textures/gui/radio.png");
         static final int RADIO_W=16;
         private static void contact(){Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(DefenseSounds.SELLER_STATIC.get(),1f,1f));}
@@ -248,7 +244,7 @@ public final class TacticalClient {
         private int sellTop(){return radarY+28;}
         private int sellBottom(){return topPos+imageHeight-56;}
         private int sellCols(){return Math.max(1,(fobW()-viewW()-8)/22);}
-        /** 0.0.34 (owner): the live catapult at the right of the seller, the grid at its left. */
+        /** The live catapult at the right of the seller, the grid at its left. */
         private int viewW(){return Math.max(90,Math.min(150,fobW()*2/5));}
         private int viewX(){return fobX()+fobW()-viewW();}
         private int sellRows(){return Math.max(1,(sellBottom()-sellTop())/22);}
@@ -282,13 +278,13 @@ public final class TacticalClient {
             Component balance=data.getBoolean("creative")?Ui.t("fob.shop.creative.short"):Ui.t("tactical.seller.ardent",data.getInt("ardent"));
             Ui.text(g,font,Ui.t("tactical.seller.title",f.getString("name")),x,y,Ui.BRASS,w-font.width(balance)-8);Ui.right(g,font,balance,x+w,y,Ui.INK);
             int iw=GateClient.specialtyIcons(g,spec.id(),x,y+11)+3;
-            // the specialty's name, the lot's price, the boxes waiting: what fits (a small window drops the boxes, then the name)
+            // The specialty's name, the lot's price, the boxes waiting
             Component sub=null;Object[] args={Ui.t("gate.specialty."+spec.id()),data.getInt("lotPrice"),f.getInt("queue"),data.getInt("maxQueue")};
             for(String k:new String[]{"tactical.seller.sub","tactical.seller.sub.short","tactical.seller.sub.price"}){sub=Ui.t(k,args);if(font.width(sub)<=w-iw)break;}
             Ui.text(g,font,sub,x+iw,y+15,Ui.MUTED,w-iw);
             int cols=sellCols(),total=(options.size()+cols-1)/cols;
             if(total>sellRows()){Component more=Ui.t("tactical.seller.scroll");Ui.text(g,font,more,x,sellBottom()+1,Ui.MUTED,viewX()-x-8);}
-            // the catapult itself, live, and what it is doing
+            // The catapult itself, live, and what it is doing
             int vx=viewX(),vy=sellTop(),vw=viewW(),vh=sellBottom()-sellTop()+10;
             Ui.inset(g,vx,vy,vw,vh);
             CatapultView.draw(g,f.getLong("id"),vx+1,vy+1,vw-2,vh-14);
@@ -317,12 +313,12 @@ public final class TacticalClient {
                 boolean sos=f.getBoolean("sos");String state=f.getString("state");
                 Ui.card(g,x,y,w,h-3,sos?Ui.RED:FobClient.stateColor(state));
                 int chip=Ui.chip(g,font,Ui.t("fob.state."+state),x+w-8-Math.min(90,font.width(Ui.t("fob.state."+state))+12),y+4,FobClient.stateColor(state),90);
-                // 0.0.32: the specialty's icon and the research level (five pips) left of the state
+                // The specialty's icon and the research level (five pips) left of the state
                 int sx=x+w-8-chip-4-GateClient.specialtyIconsWidth(f.getString("specialty"));GateClient.specialtyIcons(g,f.getString("specialty"),sx,y+2);
                 Ui.pips(g,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-4,y+7,f.getInt("level"),RouteRules.MAX_LEVEL,FobClient.OLIVE);
                 Ui.text(g,font,Component.literal(f.getString("name")),x+8,y+5,Ui.BRASS,sx-Ui.pipsWidth(RouteRules.MAX_LEVEL)-12-x-8);
                 Component where=Ui.t("tactical.fob.where",f.getInt("distance"),TacticalRules.compass(f.getDouble("bearing")),f.getInt("villagers"));
-                int sw=sellButtonWidth(f),buttons=(sw>0?sw+4:0)+(sos?116:0);   // the row's buttons sit at its bottom right
+                int sw=sellButtonWidth(f),buttons=(sw>0?sw+4:0)+(sos?116:0);   // The row's buttons sit at its bottom right
                 Ui.text(g,font,where,x+8,y+16,Ui.INK,w-16-buttons);
                 Component route=f.getBoolean("route")?Ui.t("tactical.fob.route",Ui.t("gate.signal."+f.getString("signal"))):Ui.t("tactical.fob.no_route");
                 if(!sos)Ui.text(g,font,route,x+8,y+27,f.getBoolean("route")?GateClient.color(f.getString("signal")):Ui.MUTED,w-16-buttons);
@@ -334,7 +330,7 @@ public final class TacticalClient {
                 y+=h;
             }
         }
-        /** FOBs on the map (0.0.31): each zone's columns, a flag on the FOB, its name; beyond the map's edge an arrow at the edge points to it. */
+        /** FOBs on the map: each zone's columns, a flag on the FOB, its name */
         private void drawFobs(GuiGraphics g,int x0,int y0,int x1,int y1){
             double perPixel=viewScale()*(double)SIZE/size;
             for(var f:fobs()){
@@ -348,19 +344,19 @@ public final class TacticalClient {
                 float[] at=toScreen(f.getInt("x")+.5,f.getInt("z")+.5);Component name=Component.literal(f.getString("name"));
                 if(inside(at,x0+2,y0+2,x1-2,y1-2)){
                     int fx=(int)at[0],fy=(int)at[1];flag(g,fx,fy,color);
-                    if(!fobNames)continue;   // 0.0.32: names switched off, the flag stays
+                    if(!fobNames)continue;   // Names switched off, the flag stays
                     int lw=font.width(name),lx=Mth.clamp(fx+5,x0+2,x1-lw-2),ly=Mth.clamp(fy-10,y0+2,y1-10);
                     g.fill(lx-1,ly-1,lx+lw+1,ly+9,0xb0000000);Ui.text(g,font,name,lx,ly,color);
                 }else{
-                    // the arrow at the edge, pointing at the FOB, its name beside it on the map's side
+                    // The arrow at the edge, pointing at the FOB, its name beside it on the map's side
                     double cx=(x0+x1)/2.0,cy=(y0+y1)/2.0,dx=at[0]-cx,dy=at[1]-cy,len=Math.max(1e-6,Math.hypot(dx,dy));
                     double hw=(x1-x0)/2.0-8,hh=(y1-y0)/2.0-8,k=Math.min(Math.abs(dx)<1e-6?1e9:hw/Math.abs(dx),Math.abs(dy)<1e-6?1e9:hh/Math.abs(dy));
                     float ex=(float)(cx+dx*k),ey=(float)(cy+dy*k);
                     arrow(g,ex,ey,(float)Math.atan2(dy,dx),color);
-                    if(!fobNames)continue;   // 0.0.32: names switched off, the arrow stays
+                    if(!fobNames)continue;   // Names switched off, the arrow stays
                     Component label=Ui.t("tactical.fob.arrow",name,f.getInt("distance"));int lw=font.width(label);
                     int lx=(int)Mth.clamp(ex-lw/2f-(float)(dx/len)*(lw/2f+6),x0+2,x1-lw-2),ly=(int)Mth.clamp(ey-4-(float)(dy/len)*12,y0+2,y1-11);
-                    // a long name reaching the middle steps above the beacon's mark
+                    // A long name reaching the middle steps above the beacon's mark
                     if(lx<cx+7&&lx+lw>cx-7&&ly<cy+8&&ly+9>cy-9)ly=(int)Mth.clamp(cy-21,y0+2,y1-11);
                     g.fill(lx-1,ly-1,lx+lw+1,ly+9,0xb0000000);Ui.text(g,font,label,lx,ly,color);
                 }
@@ -371,7 +367,7 @@ public final class TacticalClient {
             g.fill(x-1,y-8,x+2,y+2,0xff000000);g.fill(x,y-7,x+1,y+1,0xffedf5f8);
             g.fill(x+1,y-8,x+7,y-3,0xff000000);g.fill(x+1,y-7,x+6,y-4,color);
         }
-        /** A filled triangle pointing along {@code angle} (radians, screen coordinates). */
+        /** A filled triangle pointing along angle (radians, screen coordinates). */
         private static void arrow(GuiGraphics g,float x,float y,float angle,int color){
             g.pose().pushPose();g.pose().translate(x,y,0);g.pose().mulPose(com.mojang.math.Axis.ZP.rotation(angle));
             for(int i=0;i<=6;i++){int half=(6-i)/2+1;g.fill(i-4,-half-1,i-3,half+1,0xff000000);}
@@ -401,7 +397,7 @@ public final class TacticalClient {
         }
         private int scanPercent(){return (int)Math.round(((scanRegion?SIZE:0)+scanRow)*100.0/(2*SIZE));}
 
-        // ---- drawing ----------------------------------------------------------------------------------------------------------------------
+        // Drawing
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             Ui.panel(g,leftPos,topPos,imageWidth,imageHeight);
             Ui.header(g,font,leftPos,topPos,imageWidth,Ui.t("tactical.title"),subtitle());
@@ -450,26 +446,26 @@ public final class TacticalClient {
                 }else g.blit(TEXTURE[view],x0,y0,size,size,0,0,SIZE,SIZE,SIZE,SIZE);
             }else{
                 for(int i=1;i<8;i++){int gx=x0+size*i/8,gy=y0+size*i/8;g.fill(gx,y0,gx+1,y1,0xff16252c);g.fill(x0,gy,x1,gy+1,0xff16252c);}
-                // 0.0.31: under the map, so a FOB's flag or arrow never lands on it (left of the names switch)
+                // Under the map, so a FOB's flag or arrow never lands on it (left of the names switch)
                 Ui.text(g,font,Ui.t("tactical.no_scan"),x0,y1+4,Ui.MUTED,size-(namesButton!=null&&namesButton.visible?namesButton.getWidth()+6:0));
             }
-            // the sweep line of a running scan, on the view it is filling
+            // The sweep line of a running scan, on the view it is filling
             if(scanning&&(scanRegion?1:0)==view){int sy=y0+scanRow*size/SIZE;g.fill(x0,sy,x1,sy+1,0xff5ae2df);g.fill(x0,Math.max(y0,sy-6),x1,sy,0x225ae2df);}
             g.enableScissor(x0,y0,x1,y1);
             double perPixel=viewScale()*(double)SIZE/size;
-            // range rings (Region) or the 64-block rings (Base), then the beacon zone
+            // Range rings (Region) or the 64-block rings (Base), then the beacon zone
             int ringStep=view==0?64:range()/4;
             for(int r=ringStep;r<=(view==0?128:range());r+=ringStep)ring(g,x0+size/2f,y0+size/2f,(float)(r/perPixel),0x553d5c6d);
             ring(g,x0+size/2f,y0+size/2f,(float)(data.getInt("zone")/perPixel),0xaa5ae2df);
             if(view==1)ring(g,x0+size/2f,y0+size/2f,(float)(TacticalRules.minDistance(data.getInt("zone"))/perPixel),0x44c9a24b);
             Ui.beaconGlyph(g,x0+size/2-4,y0+size/2-6);
-            // this player
+            // This player
             var p=minecraft.player;if(p!=null){float[] at=toScreen(p.getX(),p.getZ());if(inside(at,x0,y0,x1,y1)){int px=(int)at[0],py=(int)at[1];g.fill(px-1,py-1,px+2,py+2,0xff000000);g.fill(px,py,px+1,py+1,0xffffffff);}}
-            // an X per offer (an arrow at the edge when it lies outside the view)
+            // An X per offer (an arrow at the edge when it lies outside the view)
             long pulse=net.minecraft.Util.getMillis()/300%2;
             for(var o:offers()){
                 float[] at=toScreen(o.getInt("x")+.5,o.getInt("z")+.5);boolean active=o.getBoolean("active"),chosen=o.getLong("id")==selected;
-                // the selected offer's X is red; the others show their class (blue, purple, gold)
+                // The selected offer's X is red; the others show their class (blue, purple, gold)
                 int color=chosen?Ui.RED:kindColor(o.getString("kind"));
                 float cx=Mth.clamp(at[0],x0+4,x1-5),cy=Mth.clamp(at[1],y0+4,y1-5);boolean edge=cx!=at[0]||cy!=at[1];
                 if(edge){g.fill((int)cx-2,(int)cy-2,(int)cx+3,(int)cy+3,0xff000000);g.fill((int)cx-1,(int)cy-1,(int)cx+2,(int)cy+2,color);continue;}
@@ -478,8 +474,7 @@ public final class TacticalClient {
             }
             drawFobs(g,x0,y0,x1,y1);
             g.disableScissor();
-            // scale label
-            // the scale on a dark strip, readable over snow and sand
+            // Scale label the scale on a dark strip, readable over snow and sand
             Component scale=Ui.t(view==0?"tactical.view.base.scale":"tactical.view.region.scale",view==0?128:range());
             g.fill(x0,y1-13,x0+Math.min(size,font.width(scale)+8),y1,0xcc0a1218);Ui.text(g,font,scale,x0+4,y1-11,Ui.INK,size-8);
         }
@@ -509,7 +504,7 @@ public final class TacticalClient {
             int y=listEnd+4,bottom=topPos+imageHeight-34;
             drawStatus(g,x,y,w);y+=16;
             if(!data.getBoolean("uplink")){
-                // why there is no uplink, and how to get one: this replaces the card until the link is back
+                // Why there is no uplink, and how to get one: this replaces the card until the link is back
                 String problem=data.getString("uplinkProblem");
                 if(!problem.isEmpty())y=Ui.wrap(g,font,Ui.t("tactical.uplink."+problem),x,y,w,Ui.ORANGE,3)+4;
                 Ui.wrap(g,font,Ui.t("tactical.no_uplink.help"),x,y,w,Ui.MUTED,Math.max(1,(bottom-y)/10));return;
@@ -552,7 +547,7 @@ public final class TacticalClient {
             }
             var fob=hoveredFob(mx,my);
             if(fob!=null){g.renderComponentTooltip(font,List.of(Component.literal(fob.getString("name")),Ui.t("fob.state."+fob.getString("state")),Ui.t("tactical.fob.where",fob.getInt("distance"),TacticalRules.compass(fob.getDouble("bearing")),fob.getInt("villagers"))),mx,my);return;}
-            // hover: an X on the radar, the upgrade price, a blocked Accept
+            // Hover: an X on the radar, the upgrade price, a blocked Accept
             var hovered=hoveredOffer(mx,my);
             if(hovered!=null)g.renderComponentTooltip(font,List.of(Component.literal(hovered.getString("codename")),Ui.t("tactical.row",Ui.t("tactical.class."+hovered.getString("kind")),hovered.getInt("distance"),TacticalRules.compass(hovered.getDouble("bearing")))),mx,my);
             else if(upgradeButton.visible&&upgradeButton.isHovered()){

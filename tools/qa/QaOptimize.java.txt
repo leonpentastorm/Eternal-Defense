@@ -16,11 +16,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client and runs the Optimize Path GameTests (OptimizePathGameTests) on its
- * integrated server: the faster code next to a copy of the code it replaced, same answers required, both timed (OPT_BENCH lines).
- * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: OPT_TEST_* lines, OPT_BENCH lines and QA_SUMMARY.
- */
+/** Copied into a throwaway tree by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaOptimize {
     static int tick;static boolean created,started,done;

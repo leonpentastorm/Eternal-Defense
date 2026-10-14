@@ -22,14 +22,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Supplier;
 
-/**
- * The Command Table's satellite scan (0.0.20): two 256 x 256 images centred exactly on the beacon, Base (one block a pixel) and Region (the
- * satellite's range). A scan runs on the server a couple of rows a tick ({@link TacticalRules#ROWS_PER_TICK}); a column is read only from a
- * chunk that is loaded right now ({@code getChunkNow}), the rest keeps its last scan or shows the generator's biome (see {@link ScanSampler}).
- * One scan at a time for the whole server, then a cooldown. The finished images go to the players who have the table open, once, through
- * {@link ChunkedPayload} (a world of grass and water packs to a few kilobytes); while a scan runs they get a small progress message for the
- * sweep line. The images are saved in {@link HuntData}.
- */
+/** The Command Table's satellite scan: two 256 x 256 images centred exactly on the beacon */
 final class TacticalScan {
     private TacticalScan(){}
 
@@ -51,7 +44,7 @@ final class TacticalScan {
         if(job!=null)return "tactical.result.scan_busy";
         if(l.getGameTime()<h.scanReady)return "tactical.result.scan_cooldown";
         int range=TacticalRules.range(mk);
-        // a beacon moved elsewhere, or a satellite of another range, starts the images over (old pixels would sit in the wrong place)
+        // A beacon moved elsewhere, or a satellite of another range
         if(h.scanCenter==null||!h.scanCenter.equals(d.beacon)){Arrays.fill(h.base.fresh,ScanSampler.BIOME);Arrays.fill(h.region.fresh,ScanSampler.BIOME);h.scanCenter=d.beacon.immutable();}
         if(h.scannedRange!=range){Arrays.fill(h.region.fresh,ScanSampler.BIOME);h.scannedRange=range;}
         job=new Job(d.beacon.getX(),d.beacon.getZ(),TacticalRules.regionScale(mk));h.setDirty();
@@ -97,7 +90,7 @@ final class TacticalScan {
         for(var part:ChunkedPayload.split(encode(h)))BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new ScanImage(part));
         SENT.put(connection,h.scanVersion);
     }
-    /** The raw image transfer: version, Region scale, centre, scan time, then Base colours and freshness, Region colours and freshness. */
+    /** The raw image transfer: version, Region scale, centre, scan time, then Base colours and freshness */
     static byte[] encode(HuntData h){
         var bytes=new ByteArrayOutputStream(16+4*TacticalRules.SCAN_SIZE*TacticalRules.SCAN_SIZE);
         try(var out=new DataOutputStream(bytes)){
@@ -109,8 +102,8 @@ final class TacticalScan {
     }
     static final int HEADER=24;
 
-    // ---- the world under the images ---------------------------------------------------------------------------------------------------------
-    /** Reads a column only from a loaded chunk (vanilla's map colours: the first block with a map colour, water depth over the floor). */
+    // The world under the images
+    /** Reads a column only from a loaded chunk */
     record WorldTerrain(ServerLevel l) implements ScanSampler.Terrain {
         @Override public long column(int x,int z){
             var chunk=l.getChunkSource().getChunkNow(x>>4,z>>4);if(chunk==null)return -1;
@@ -125,7 +118,7 @@ final class TacticalScan {
             }
             return ScanSampler.column(top,depth,state.getMapColor(chunk,pos).id);
         }
-        /** The generator's biome where nothing is loaded (vanilla's biome lookup without loading a chunk), as a plain map colour. */
+        /** The generator's biome where nothing is loaded (vanilla's biome lookup without loading a chunk) */
         @Override public int biome(int x,int z){return biomeColor(l.getNoiseBiome(QuartPos.fromBlock(x),QuartPos.fromBlock(l.getSeaLevel()),QuartPos.fromBlock(z)));}
     }
     static int biomeColor(Holder<Biome> b){
@@ -143,14 +136,14 @@ final class TacticalScan {
         return ScanSampler.pack(MapColor.GRASS.id,ScanSampler.NORMAL);
     }
 
-    // ---- packets ----------------------------------------------------------------------------------------------------------------------------
-    /** S2C (id 18): one part of the saved images, sent when a player opens the table with an older version, and to viewers when a scan ends. */
+    // Packets
+    /** S2C (id 18): one part of the saved images, sent when a player opens the table with an older version */
     record ScanImage(ChunkedPayload.Part part){
         static void encode(ScanImage m,FriendlyByteBuf b){var p=m.part;ChunkedPayload.validate(p);b.writeUUID(p.transfer());b.writeVarInt(p.rawBytes());b.writeVarInt(p.packedBytes());b.writeVarInt(p.index());b.writeByteArray(p.bytes());}
         static ScanImage decode(FriendlyByteBuf b){var p=new ChunkedPayload.Part(b.readUUID(),b.readVarInt(),b.readVarInt(),b.readVarInt(),b.readByteArray(ChunkedPayload.CHUNK_BYTES));ChunkedPayload.validate(p);return new ScanImage(p);}
         static void handle(ScanImage m,Supplier<NetworkEvent.Context> ctx){ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->TacticalClient.image(m.part)));ctx.get().setPacketHandled(true);}
     }
-    /** S2C (id 19): the scan's progress for the sweep line on the table (a few bytes, twice a second to viewers only). */
+    /** S2C (id 19): the scan's progress for the sweep line on the table */
     record ScanProgress(int version,boolean running,boolean region,int row){
         static void encode(ScanProgress m,FriendlyByteBuf b){b.writeVarInt(m.version);b.writeBoolean(m.running);b.writeBoolean(m.region);b.writeVarInt(m.row);}
         static ScanProgress decode(FriendlyByteBuf b){return new ScanProgress(b.readVarInt(),b.readBoolean(),b.readBoolean(),Math.max(0,Math.min(TacticalRules.SCAN_SIZE,b.readVarInt())));}

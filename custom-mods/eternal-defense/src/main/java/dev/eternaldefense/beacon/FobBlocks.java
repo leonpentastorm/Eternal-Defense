@@ -36,19 +36,15 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import java.util.List;
 
-/**
- * The FOB Beacon (0.0.23), the owner's FOB station model ({@code models/block/fob_station.json}): one block wide and deep, two tall, the upper
- * cell an invisible structure part as for the Exchange Shop. Planted in a vanilla village outside the beacon zone; it cannot be mined, blown up
- * or pushed, and only the Recovery Shovel takes it back ({@link Fobs#requestRemoval}). Everything it does is in {@link Fobs}.
- */
+/** The FOB Beacon, the FOB station model (models/block/fob_station.json) */
 final class FobBlocks {
     private FobBlocks(){}
     static final DirectionProperty FACING=HorizontalDirectionalBlock.FACING;
-    /** From the owner's model: y 0 to 32 px (two blocks), x and z inside one block (the flag's tip reaches 0.2 px past it). See FobTest. */
+    /** From the model: y 0 to 32 px (two blocks), x and z inside one block (the flag's tip reaches 0.2 px past it). */
     static final int TALL=2,WIDE=1,DEEP=1;
 
     static final class FobBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
-        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        /** Its moving parts are drawn through a data-less block entity (AnimatedParts). */
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         FobBlock(){super(Properties.of().strength(-1f,3600000f).noOcclusion().lightLevel(s->7).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
@@ -79,12 +75,11 @@ final class FobBlocks {
         }
     }
 
-    /** Refuses, with the reason, every spot the FOB rules do not allow ({@link Fobs#plantProblem}) and a spot without room for both cells. */
+    /** Refuses, with the reason, every spot the FOB rules do not allow */
     static final class FobItem extends BlockItem {
         FobItem(Block block){super(block,new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));}
         @Override public InteractionResult place(BlockPlaceContext c){
-            // 0.0.42 (owner): in a hole one block high, or where the server already said no, the FOB is refused on the player's own screen too
-            // (the preview is red or orange), and any refusal from the server sends the hand slot back: the beacon never vanishes from the hand
+            // In a hole one block high, or where the server already said
             var state=getBlock().getStateForPlacement(c);
             if(PlacementGuard.blocked(c,state)){if(c.getPlayer() instanceof ServerPlayer p)Fobs.say(p,"fob.refused.no_room");return PlacementGuard.refuse(c);}
             if(c.getLevel() instanceof ServerLevel server){
@@ -101,10 +96,7 @@ final class FobBlocks {
         }
     }
 
-    /**
-     * The FOB screen's menu: no slots. The FOB's state travels in the opening buffer and is sent again in place ({@link Hunts.TableState});
-     * the shop and the raid call are vanilla menu buttons, each checked again on the server ({@link Fobs#button}).
-     */
+    /** The FOB screen's menu: no slots. */
     static final class FobMenu extends AbstractContainerMenu {
         final BlockPos pos;final CompoundTag data;String message="";
         FobMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){super(EternalDefense.FOB_MENU.get(),id);this.pos=pos;this.data=data;}

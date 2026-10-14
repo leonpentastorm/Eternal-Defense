@@ -24,18 +24,14 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 
-/**
- * Tactical Operations on the server (0.0.20): the uplink, the board (filling it, dawn replacements, Garrison structure lookups), the table's
- * buttons, paying a cleared mission, the map and Return Flare handed to every player, and the mission sync. The warband in the world is
- * {@link HuntWarband}, the satellite scan {@link TacticalScan}. Overworld only.
- */
+/** Tactical Operations on the server: the uplink, the board */
 final class Hunts {
     private Hunts(){}
 
-    // ---- the uplink ----------------------------------------------------------------------------------------------------------------------
-    /** The link between the base's table and satellite right now: null when there is none, else the satellite's Mk. Never loads a chunk. */
+    // The uplink
+    /** The link between the base's table and satellite right now: null when there is none, else the satellite's Mk. */
     static Integer uplink(ServerLevel l,CampaignData d,HuntData h){return uplinkProblem(l,d,h)==null?TacticalRules.mk(h.satelliteMk):null;}
-    /** Why there is no uplink (a language key suffix: no_beacon, no_table, no_satellite, zone, too_far, no_sky), or null when there is one. */
+    /** Why there is no uplink (a language key suffix: no_beacon, no_table, no_satellite, zone, too_far, no_sky) */
     static String uplinkProblem(ServerLevel l,CampaignData d,HuntData h){
         if(l.dimension()!=Level.OVERWORLD||!d.installed())return "no_beacon";
         if(h.table==null||!l.hasChunkAt(h.table)||!l.getBlockState(h.table).is(EternalDefense.COMMAND_TABLE.get()))return "no_table";
@@ -43,7 +39,7 @@ final class Hunts {
         boolean zone=d.inside(h.satellite)&&BaseZone.problem(l,h.satellite)==null&&BaseZone.problem(l,h.table)==null;
         if(!zone)return "zone";
         if(!TacticalRules.uplink(h.table.distSqr(h.satellite),true,true))return "too_far";
-        // the dish (the block above the satellite's anchor) must see the sky
+        // The dish (the block above the satellite's anchor) must see the sky
         boolean sky=l.hasChunkAt(h.satellite.above(2))&&l.canSeeSky(h.satellite.above(2));
         return sky?null:"no_sky";
     }
@@ -54,31 +50,28 @@ final class Hunts {
         if(s.is(EternalDefense.SATELLITE_BEACON.get())&&s.getValue(TacticalBlocks.MK)!=TacticalRules.mk(h.satelliteMk))l.setBlock(h.satellite,s.setValue(TacticalBlocks.MK,TacticalRules.mk(h.satelliteMk)),3);
     }
 
-    // ---- the board -----------------------------------------------------------------------------------------------------------------------
-    /** Fills the board the first time there is an uplink, and the new slots after an upgrade (see {@link HuntBoard#toFill}). */
+    // The board
+    /** Fills the board the first time there is an uplink, and the new slots after an upgrade (see HuntBoard.toFill). */
     static void fillIfLinked(ServerLevel l){
         var d=CampaignData.get(l.getServer().overworld());var h=HuntData.get(l);var mk=uplink(l,d,h);
         if(mk==null)return;
         int capacity=TacticalRules.offers(mk),wanted=h.board.toFill(capacity);
         if(wanted==0&&h.board.filled)return;
-        // a second Garrison lookup in one server tick waits for the next pass (the server tick fills again within a second)
+        // A second Garrison lookup in one server tick waits for the next pass
         for(int i=0;i<wanted;i++){var added=addOffer(l,d,h,mk,true);if(added==Added.LATER)return;if(added==Added.NO)break;}
-        if(!h.board.filled)h.board.lastDay=TacticalRules.day(l.getDayTime());   // the first fill counts as this day's offers
+        if(!h.board.filled)h.board.lastDay=TacticalRules.day(l.getDayTime());   // The first fill counts as this day's offers
         h.board.filledTo(capacity);h.setDirty();
     }
     enum Added{YES,NO,LATER}
-    /** The game time of the last Garrison lookup: at most one per server tick when the board fills (each costs up to a few tens of ms). */
+    /** The game time of the last Garrison lookup: at most one per server tick when the board fills */
     private static long lookupAt=Long.MIN_VALUE;
-    /**
-     * One new offer: a random class the satellite can find; a Garrison needs a structure in range, else it becomes a Patrol. With
-     * {@code mayWait}, a Garrison rolled in a tick that already ran a lookup is not made now ({@link Added#LATER}); the next pass rolls again.
-     */
+    /** One new offer: a random class the satellite can find */
     static Added addOffer(ServerLevel l,CampaignData d,HuntData h,int mk,boolean mayWait){
-        // a well-mixed seed: java.util.Random's first draws from closely related seeds come out alike (a whole board of one class)
+        // A well-mixed seed: java.util.Random's first draws from closely related seeds come out alike
         var random=new Random(TacticalRules.mix(l.getSeed(),h.board.nextId,l.getGameTime()));
         var kinds=TacticalRules.classes(mk);var kind=kinds.get(random.nextInt(kinds.size()));
         int range=TacticalRules.range(mk);var taken=h.board.bearings();
-        // inside the border and on land: never out on an ocean or a river (0.0.21)
+        // Inside the border and on land: never out on an ocean or a river
         TacticalRules.Inside inside=(x,z)->l.getWorldBorder().isWithinBounds(x,z)&&dryLand(l,x,z);
         TacticalRules.Spot spot=null;
         if(kind==TacticalRules.Kind.GARRISON){
@@ -94,10 +87,7 @@ final class Hunts {
     }
     /** Blocks around an objective checked for water (the objective itself and four points this far out). */
     static final int DRY_MARGIN=12;
-    /**
-     * An objective on land: the generator's biome at the spot and {@link #DRY_MARGIN} blocks around it is no ocean and no river (read
-     * without loading a chunk). A lake inside a land biome cannot be seen this way; arriving finds ground or opens a return gate.
-     */
+    /** An objective on land: the generator's biome at the spot and DRY_MARGIN blocks around it is no ocean */
     static boolean dryLand(ServerLevel l,int x,int z){
         for(int[] o:new int[][]{{0,0},{DRY_MARGIN,0},{-DRY_MARGIN,0},{0,DRY_MARGIN},{0,-DRY_MARGIN}}){
             var b=l.getNoiseBiome(net.minecraft.core.QuartPos.fromBlock(x+o[0]),net.minecraft.core.QuartPos.fromBlock(l.getSeaLevel()),net.minecraft.core.QuartPos.fromBlock(z+o[1]));
@@ -105,18 +95,12 @@ final class Hunts {
         }
         return true;
     }
-    /** Vanilla surface structures a Garrison may hold (modded structures are ignored). Their loot is never touched. */
+    /** Vanilla surface structures a Garrison may hold (modded structures are ignored). */
     static final Set<ResourceLocation> GARRISON_STRUCTURES=Set.of(new ResourceLocation("pillager_outpost"),new ResourceLocation("desert_pyramid"),new ResourceLocation("jungle_pyramid"),
         new ResourceLocation("swamp_hut"),new ResourceLocation("igloo"),new ResourceLocation("mansion"));
     /** At most this many structure checks per Garrison offer. */
     static final int GARRISON_CHECKS=4;
-    /**
-     * A Garrison objective: the location of a whitelisted vanilla structure within the satellite's range, looked up once when the offer is made.
-     * Candidates come from each structure set's spread (pure arithmetic); only those in the distance window, apart from the other offers,
-     * inside the border and in a biome the structure can stand in (the generator's biome, read without loading) are checked, at most
-     * {@link #GARRISON_CHECKS}, with vanilla's structure check, which reads a chunk's saved structure
-     * data or simulates the generator: it never loads or generates a chunk. The time it took is logged (a warning above 50 ms).
-     */
+    /** A Garrison objective: the location of a whitelisted vanilla structure within the satellite's range */
     static TacticalRules.Spot garrison(ServerLevel l,int bx,int bz,int zoneRadius,int range,List<Double> taken,Random random){
         long started=System.nanoTime();
         record Candidate(ChunkPos chunk,Holder<Structure> structure,TacticalRules.Spot spot){}
@@ -127,7 +111,7 @@ final class Hunts {
                 if(!(set.placement() instanceof RandomSpreadStructurePlacement spread))continue;
                 var wanted=set.structures().stream().map(e->e.structure()).filter(s->s.unwrapKey().map(k->GARRISON_STRUCTURES.contains(k.location())).orElse(false)).toList();
                 if(wanted.isEmpty())continue;
-                // one candidate per spread region (spacing x spacing chunks); vanilla takes a chunk inside the region and works out the region itself
+                // One candidate per spread region (spacing x spacing chunks)
                 int spacing=spread.spacing(),cell=spacing*16;
                 for(int rx=Math.floorDiv(bx-range,cell);rx<=Math.floorDiv(bx+range,cell);rx++)for(int rz=Math.floorDiv(bz-range,cell);rz<=Math.floorDiv(bz+range,cell);rz++){
                     var chunk=spread.getPotentialStructureChunk(seed,rx*spacing,rz*spacing);
@@ -135,7 +119,7 @@ final class Hunts {
                     var at=spread.getLocatePos(chunk);
                     var spot=TacticalRules.garrison(bx,bz,zoneRadius,range,at.getX(),at.getZ(),taken,(x,z)->l.getWorldBorder().isWithinBounds(x,z));
                     if(spot==null)continue;
-                    // only structures whose biomes include the generator's biome there (a cheap lookup that loads nothing): the checks are spent where one can stand
+                    // Only structures whose biomes include the generator's biome there (a cheap lookup that loads nothing)
                     var biome=l.getNoiseBiome(net.minecraft.core.QuartPos.fromBlock(chunk.getMiddleBlockX()),net.minecraft.core.QuartPos.fromBlock(l.getSeaLevel()),net.minecraft.core.QuartPos.fromBlock(chunk.getMiddleBlockZ()));
                     for(var s:wanted)if(s.value().biomes().contains(biome))candidates.add(new Candidate(chunk,s,spot));
                 }
@@ -145,8 +129,7 @@ final class Hunts {
             for(var c:candidates){
                 if(checks>=GARRISON_CHECKS)break;
                 checks++;
-                // START_PRESENT: the chunk's saved data has the structure; CHUNK_LOAD_NEEDED: the chunk was never generated and vanilla's
-                // simulation of the generator says the structure starts there (vanilla's /locate would load the chunk to be sure; we do not)
+                // START_PRESENT: the chunk's saved data has the structure
                 var found=l.structureManager().checkStructurePresence(c.chunk(),c.structure().value(),false);
                 if(found==StructureCheckResult.START_PRESENT||found==StructureCheckResult.CHUNK_LOAD_NEEDED){log(started,checks,true);return c.spot();}
             }
@@ -160,7 +143,7 @@ final class Hunts {
         else log.info("[hunts] Garrison structure lookup took {} ms ({} checks, {})",ms,checks,found?"found":"none, Patrol instead");
     }
 
-    // ---- the server tick -----------------------------------------------------------------------------------------------------------------
+    // The server tick
     static void tick(ServerLevel l,CampaignData d,long clock){
         var h=HuntData.get(l);
         if(clock%100==0)burnStale(l,h);
@@ -171,11 +154,11 @@ final class Hunts {
             var mk=uplink(l,d,h);
             if(mk!=null){
                 if(!h.board.filled||h.board.toFill(TacticalRules.offers(mk))>0)fillIfLinked(l);
-                // completed offers come back one a dawn
+                // Completed offers come back one a dawn
                 int n=h.board.dawn(TacticalRules.day(l.getDayTime()),TacticalRules.offers(mk));
                 for(int i=0;i<n;i++)if(addOffer(l,d,h,mk,false)==Added.YES)h.setDirty();
                 if(n>0)refresh(l);
-                // offers made before 0.0.21 may lie on water: once a minute, one that is not running is swapped for a new one on land
+                // Offers made may lie on water: once a minute, one that is not running is swapped for a new one on land
                 if(clock%1200==0){
                     var wet=h.board.offers.stream().filter(o->!(h.board.running()&&h.board.mission.offer.id==o.id)&&!dryLand(l,o.x,o.z)).findFirst().orElse(null);
                     if(wet!=null){h.board.offers.remove(wet);addOffer(l,d,h,mk,false);h.setDirty();refresh(l);com.mojang.logging.LogUtils.getLogger().info("[hunts] {} lay on water; replaced",wet.codename);}
@@ -189,11 +172,11 @@ final class Hunts {
         return TacticalRules.acceptBlocked(uplink(l,d,h)!=null,d.active(),TacticalRules.untilRaid(d.rewardTier,d.preparationTicks,d.respiteTicks),h.board.running());
     }
 
-    // ---- the table -----------------------------------------------------------------------------------------------------------------------
+    // The table
     static void open(ServerPlayer p,BlockPos pos){open(p,pos,"");}
     static void open(ServerPlayer p,BlockPos pos,String message){
         var l=p.serverLevel();var h=HuntData.get(l);
-        if(!pos.equals(h.table)){h.table=pos.immutable();h.setDirty();}   // a table placed before the data knew it (or after a reset)
+        if(!pos.equals(h.table)){h.table=pos.immutable();h.setDirty();}   // A table placed before the data knew it (or after a reset)
         fillIfLinked(l);
         TacticalScan.sendImage(p,h);
         var state=state(p,pos,message);
@@ -224,10 +207,7 @@ final class Hunts {
         fobs(l,d,p,n);
         return n;
     }
-    /**
-     * 0.0.31 (owner): the FOB management tab and the FOBs on the map. Every FOB with its name, state, place, distance and bearing from the
-     * beacon, its route light, its last known zone (16-block columns) and, for the one calling, the SOS time left out of the 7 days.
-     */
+    /** The FOB management tab and the FOBs on the map. */
     static void fobs(ServerLevel l,CampaignData d,ServerPlayer p,CompoundTag n){
         var fd=FobData.get(l);var list=new ListTag();var b=d.beacon;int index=0;
         for(var f:SupplyCatapult.list(fd)){
@@ -236,8 +216,8 @@ final class Hunts {
             c.putInt("distance",(int)Math.round(Math.hypot(f.pos.getX()-b.getX(),f.pos.getZ()-b.getZ())));
             c.putDouble("bearing",TacticalRules.bearing(b.getX(),b.getZ(),f.pos.getX(),f.pos.getZ()));
             c.putLongArray("zone",f.zoneColumns);c.putString("signal",Routes.signal(l,fd,f.hasRoute()?f:null).id());c.putBoolean("route",f.hasRoute());
-            c.putString("specialty",f.specialty.id());c.putInt("level",f.level());   // 0.0.32: its specialty and research
-            // 0.0.33: its place in the seller's button ids, its Supply Catapult, whether its seller is open (empty) or why not, the boxes waiting
+            c.putString("specialty",f.specialty.id());c.putInt("level",f.level());   // Its specialty and research
+            // Its place in the seller's button ids, its Supply Catapult, whether its seller is open (empty) or why
             c.putInt("index",index++);c.putBoolean("catapult",SupplyCatapult.present(l,f));c.putString("seller",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),""));c.putInt("queue",f.shipments.size());
             if(fd.sosFob==f.id){c.putBoolean("sos",true);c.putLong("sosLeft",fd.sosLeft);}
             list.add(c);
@@ -257,7 +237,7 @@ final class Hunts {
     static void button(ServerPlayer p,BlockPos pos,int id){
         if(!(p.containerMenu instanceof TacticalBlocks.TableMenu menu)||!menu.pos.equals(pos)||!menu.stillValid(p))return;
         int action=id/16,arg=id%16;var l=p.serverLevel();var d=CampaignData.get(l.getServer().overworld());var h=HuntData.get(l);
-        String message=id>=SupplyCatapult.SELL?SupplyCatapult.buy(p,l,id):switch(action){   // 0.0.33: the specialty seller's buttons
+        String message=id>=SupplyCatapult.SELL?SupplyCatapult.buy(p,l,id):switch(action){   // The specialty seller's buttons
             case TacticalBlocks.ACCEPT->accept(p,l,d,h,arg);
             case TacticalBlocks.ABANDON->abandon(p,l,d,h);
             case TacticalBlocks.UPGRADE->upgrade(p,l,d,h);
@@ -266,7 +246,7 @@ final class Hunts {
             case TacticalBlocks.REPRINT_SOS->reprintSos(p,l);
             default->"";
         };
-        // the open screen is refreshed in place (closing and reopening it would throw the cursor back to the middle of the window)
+        // The open screen is refreshed in place
         refresh(l,p,message);
     }
     /** Fresh table state to one viewer with a message, and to every other viewer without one. */
@@ -309,11 +289,8 @@ final class Hunts {
         give(p,missionMap(l,d,h));return "tactical.result.reprinted";
     }
 
-    // ---- the mission's map and flare -------------------------------------------------------------------------------------------------------
-    /**
-     * A vanilla filled map centred exactly on (x, z): {@code MapItem.create} would snap the centre to the map grid. The map data is built
-     * through vanilla's own loader with the centre we want (everything else as a fresh tracking map) and stored under a new map id.
-     */
+    // The mission's map and flare
+    /** A vanilla filled map centred exactly on (x, z): MapItem.create would snap the centre to the map grid. */
     static ItemStack centredMap(ServerLevel l,int x,int z,int scale){
         var tag=new CompoundTag();tag.putString("dimension",l.dimension().location().toString());
         tag.putInt("xCenter",x);tag.putInt("zCenter",z);tag.putByte("scale",(byte)scale);
@@ -322,7 +299,7 @@ final class Hunts {
         var stack=new ItemStack(net.minecraft.world.item.Items.FILLED_MAP);stack.getOrCreateTag().putInt("map",id);
         return stack;
     }
-    /** The mission's map: a vanilla filled map with a red X on the objective and the codename as its name (made once, copied after). */
+    /** The mission's map: a vanilla filled map with a red X on the objective and the codename as its name */
     static ItemStack missionMap(ServerLevel l,CampaignData d,HuntData h){
         var o=h.board.mission.offer;
         if(h.missionMap==null||h.missionMap.getCompound("tag").getLong("eternalMission")!=o.id){
@@ -336,7 +313,7 @@ final class Hunts {
         }
         return ItemStack.of(h.missionMap);
     }
-    /** Hands a player the mission's map (if they carry none for it) and one Return Flare (once per player per mission). */
+    /** Hands a player the mission's map (if they carry none for it) and one Return Flare */
     static void handout(ServerPlayer p,HuntData h,boolean announce){
         var m=h.board.mission;if(m==null||!h.board.running())return;
         var l=p.server.overworld();var d=CampaignData.get(l);
@@ -347,10 +324,7 @@ final class Hunts {
         for(var s:p.getInventory().items)if(s.is(net.minecraft.world.item.Items.FILLED_MAP)&&s.hasTag()&&s.getTag().getLong("eternalMission")==missionId)return true;
         return p.getOffhandItem().hasTag()&&p.getOffhandItem().getTag().getLong("eternalMission")==missionId;
     }
-    /**
-     * A way home for a player at an objective with nothing to stand on (0.0.21): an open return portal two blocks ahead of them, for five
-     * minutes, only for them; it leads to the front of their Support Platform, or beside the beacon without one. No cannon is needed.
-     */
+    /** A way home for a player at an objective with nothing to stand */
     static boolean returnGate(ServerLevel l,CampaignData d,ServerPlayer p,String codename){
         var home=p.server.overworld();
         var to=SupportCalls.returnSpotFor(p);
@@ -365,26 +339,19 @@ final class Hunts {
         p.sendSystemMessage(prefix.append(Component.translatable("gui.eternal_defense.tactical.no_ground",codename).withStyle(ChatFormatting.AQUA)));
         return true;
     }
-    /** A free spot two to four blocks from the beacon (where a return gate leads a player who has no Support Platform). */
+    /** A free spot two to four blocks from the beacon */
     static net.minecraft.world.phys.Vec3 besideBeacon(ServerLevel home,BlockPos beacon){
         for(int r=2;r<=4;r++)for(var dir:net.minecraft.core.Direction.Plane.HORIZONTAL)for(int dy:new int[]{0,1,-1}){
             var cell=beacon.relative(dir,r).above(dy);if(home.hasChunkAt(cell)&&SupportCalls.standable(home,cell))return net.minecraft.world.phys.Vec3.atBottomCenterOf(cell);}
         return null;
     }
     /** The mission id an OP map belongs to (0: not a mission map). */
-    /**
-     * The reward tier a hunt pays and fights at: the beacon's "Next payout" tier ({@link BeaconNetwork#prospectiveTier}). Until 0.0.22 it was
-     * the tier of the last raid won ({@code CampaignData.rewardTier}), so a campaign that had won only its first raid paid tier 0 whatever
-     * its base and level (the owner's report: every operation paid 0 Ardent Energy and 1 coin).
-     */
+    /** The reward tier a hunt pays and fights at: the beacon's "Next payout" tier (BeaconNetwork.prospectiveTier). */
     static int tier(ServerLevel l,CampaignData d){return Math.max(0,Math.min(10,BeaconNetwork.prospectiveTier(l.getServer(),d)));}
     static long mapMission(ItemStack s){return s.is(net.minecraft.world.item.Items.FILLED_MAP)&&s.hasTag()?s.getTag().getLong("eternalMission"):0;}
-    /**
-     * Pure: an OP map is good while its operation is running or still on the board (abandoned offers can be taken again); any other is
-     * stale and burns (0.0.21).
-     */
+    /** Pure: an OP map is good while its operation is running or still on the board */
     static boolean mapStale(HuntBoard b,long id){return id!=0&&!(b.running()&&b.mission.offer.id==id)&&b.offer(id)==null;}
-    /** Burns the OP maps a player carries (main inventory and off hand) that {@code burn} picks: flames, a hiss and one line. Returns how many. */
+    /** Burns the OP maps a player carries (main inventory and off hand) that burn picks: flames, a hiss and one line. */
     static int burnMaps(ServerPlayer p,java.util.function.LongPredicate burn){
         int burned=0;String name="";
         for(var list:List.of(p.getInventory().items,p.getInventory().offhand))
@@ -397,28 +364,28 @@ final class Hunts {
         p.sendSystemMessage(Component.literal("[Tactical] ").withStyle(ChatFormatting.DARK_AQUA).append(Component.translatable("gui.eternal_defense.tactical.map_burned",name).withStyle(ChatFormatting.GRAY)));
         return burned;
     }
-    /** Every online player's maps of operations that are over burn (on login and every few seconds; maps lying in chests burn when picked up). */
+    /** Every online player's maps of operations that are over burn */
     static void burnStale(ServerLevel l,HuntData h){for(var p:l.getServer().getPlayerList().getPlayers())burnMaps(p,id->mapStale(h.board,id));}
     static void give(ServerPlayer p,ItemStack stack){if(!p.getInventory().add(stack)&&!stack.isEmpty())p.drop(stack,false);}
 
-    // ---- the end of a mission ----------------------------------------------------------------------------------------------------------------
+    // The end of a mission
     /** The warband is dead: CLEARED first (once), then the pay goes into the beacon's reward chest. */
     static void complete(ServerLevel l,CampaignData d,HuntData h){
-        var m=h.board.mission;if(m==null||!h.board.clear())return;   // clear() is true only once: no double payout
+        var m=h.board.mission;if(m==null||!h.board.clear())return;   // Clear is true only once: no double payout
         var pay=Economy.hunt(m.offer.kind,tier(l,d));
         var stacks=new ArrayList<ItemStack>();
         if(pay.ardent()>0)stacks.add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),pay.ardent()));
         if(pay.coins()>0)stacks.add(new ItemStack(EternalDefense.AMMO_COIN.get(),pay.coins()));
-        if(m.offer.kind==TacticalRules.Kind.WARLORD)stacks.add(new ItemStack(EternalDefense.WARLORD_SEAL.get()));   // 0.0.27: it unlocks a treasure enchant
+        if(m.offer.kind==TacticalRules.Kind.WARLORD)stacks.add(new ItemStack(EternalDefense.WARLORD_SEAL.get()));   // It unlocks a treasure enchant
         if(d.installed())RaidRewards.queue(d,stacks);
-        HuntWarband.discard(l,m.offer.id);   // a mob spawned again after being lost, still around: the mission is over
+        HuntWarband.discard(l,m.offer.id);   // A mob spawned again after being lost, still around: the mission is over
         h.missionMap=null;h.board.settle();h.setDirty();sync(l,h,null);
-        for(var player:l.getServer().getPlayerList().getPlayers())burnMaps(player,id->id==m.offer.id);   // the operation is over: its maps burn
+        for(var player:l.getServer().getPlayerList().getPlayers())burnMaps(player,id->id==m.offer.id);   // The operation is over: its maps burn
         announce(l,Component.translatable("gui.eternal_defense.tactical.cleared",m.offer.codename,pay.ardent(),pay.coins()));
         for(var player:l.getServer().getPlayerList().getPlayers())music(player,DefenseSounds.MISSION_CLEARED.get());
         com.mojang.logging.LogUtils.getLogger().info("[hunts] {} cleared: {} Ardent Energy and {} coins queued for the reward chest",m.offer.codename,pay.ardent(),pay.coins());
     }
-    /** The beacon was taken down: the mission ends and its warband leaves. The board stays for the next beacon. */
+    /** The beacon was taken down: the mission ends and its warband leaves. */
     static void cancel(ServerLevel l){
         var h=HuntData.get(l);var ended=h.board.abandon();
         if(ended!=null){HuntWarband.discard(l,ended.offer.id);h.missionMap=null;h.setDirty();sync(l,h,null);}
@@ -431,8 +398,8 @@ final class Hunts {
         sync(l,h,null);announce(l,Component.translatable("gui.eternal_defense.tactical.unreachable",ended.offer.codename));
     }
 
-    // ---- operator commands --------------------------------------------------------------------------------------------------------------------
-    /** {@code /eternaldefense hunt status|reset|complete} (operators): see the board, start it over, or finish the running mission (it pays). */
+    // Operator commands
+    /** /eternaldefense hunt status|reset|complete (operators) */
     static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> command(){
         return net.minecraft.commands.Commands.literal("hunt").requires(s->s.hasPermission(2))
             .then(net.minecraft.commands.Commands.literal("status").executes(c->{var l=c.getSource().getServer().overworld();c.getSource().sendSuccess(()->Component.literal(status(l)),false);return 1;}))
@@ -460,11 +427,11 @@ final class Hunts {
         HuntWarband.forget();sync(l,h,null);
     }
 
-    // ---- telling players ---------------------------------------------------------------------------------------------------------------------
+    // Telling players
     static void announce(ServerLevel l,Component text){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Tactical] ").withStyle(ChatFormatting.DARK_AQUA).append(text.copy().withStyle(ChatFormatting.AQUA)),false);}
     static void sound(ServerPlayer p,net.minecraft.sounds.SoundEvent s){p.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(net.minecraft.core.Holder.direct(s),net.minecraft.sounds.SoundSource.BLOCKS,p.getX(),p.getY(),p.getZ(),1f,1f,p.getRandom().nextLong()));}
     static void music(ServerPlayer p,net.minecraft.sounds.SoundEvent s){p.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(net.minecraft.core.Holder.direct(s),net.minecraft.sounds.SoundSource.MUSIC,p.getX(),p.getY(),p.getZ(),1f,1f,p.getRandom().nextLong()));}
-    /** The mission line of every status card: to one player, or to all ({@code to} null). */
+    /** The mission line of every status card: to one player, or to all (to null). */
     static void sync(ServerLevel l,HuntData h,ServerPlayer to){
         var m=h.board.mission;
         var msg=m==null||m.state==HuntBoard.State.CLEARED?new MissionSync(false,"","",0,0,0,0,false,0):new MissionSync(true,m.offer.codename,m.offer.kind.id,m.offer.x,m.offer.z,m.total,m.remaining,m.engaged(),m.offer.id);
@@ -473,10 +440,7 @@ final class Hunts {
     /** Players who log in mid-mission get the map and flare if missing, and the mission line. */
     static void login(ServerPlayer p){var h=HuntData.get(p.server.overworld());burnMaps(p,id->mapStale(h.board,id));handout(p,h,false);sync(p.server.overworld(),h,p);}
 
-    /**
-     * S2C (id 20): a fresh state for an open Command Table: after one of its buttons, and when the board changes under it (another player
-     * accepts, a mission ends, a scan finishes). The table's first state comes in the menu's opening buffer.
-     */
+    /** S2C (id 20): a fresh state for an open Command Table */
     record TableState(CompoundTag data){
         static void encode(TableState m,net.minecraft.network.FriendlyByteBuf b){b.writeNbt(m.data);}
         static TableState decode(net.minecraft.network.FriendlyByteBuf b){var n=b.readNbt();return new TableState(n==null?new CompoundTag():n);}
@@ -484,7 +448,7 @@ final class Hunts {
     }
 
     /** S2C: the shared mission for the status card (sent on accept, abandon, spawn, every kill, clear and login). */
-    /** The running mission for the status cards; {@code id} (0.0.21) tells the client which map is this mission's (the line shows only with it or the shovel in hand). */
+    /** The running mission for the status cards; id tells the client which map is this mission's */
     record MissionSync(boolean active,String codename,String kind,int x,int z,int total,int remaining,boolean engaged,long id){
         static void encode(MissionSync m,net.minecraft.network.FriendlyByteBuf b){b.writeBoolean(m.active);b.writeUtf(m.codename,64);b.writeUtf(m.kind,16);b.writeVarInt(m.x);b.writeVarInt(m.z);b.writeVarInt(m.total);b.writeVarInt(m.remaining);b.writeBoolean(m.engaged);b.writeVarLong(m.id);}
         static MissionSync decode(net.minecraft.network.FriendlyByteBuf b){return new MissionSync(b.readBoolean(),b.readUtf(64),b.readUtf(16),b.readVarInt(),b.readVarInt(),b.readVarInt(),b.readVarInt(),b.readBoolean(),b.readVarLong());}

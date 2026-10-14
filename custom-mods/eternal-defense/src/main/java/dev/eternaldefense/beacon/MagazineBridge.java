@@ -20,11 +20,7 @@ final class MagazineBridge {
     static int extension(ItemStack stack)throws ReflectiveOperationException{return ((Number)families().getMethod("getExtLevelForFamily",String.class).invoke(null,family(stack))).intValue();}
     /** The cartridge this magazine holds (its family's ammo), or null. */
     static net.minecraft.resources.ResourceLocation ammo(ItemStack stack)throws ReflectiveOperationException{return (net.minecraft.resources.ResourceLocation)families().getMethod("getAmmoTypeForFamily",String.class).invoke(null,family(stack));}
-    /**
-     * The Age of a magazine: its family's earliest gun, or (0.0.42, owner) the Age of the rounds it holds when those come earlier, so a
-     * table that sells a gun's rounds sells its standard magazine too (cartridges are shared by many guns and families, one per round
-     * count, are not: the HK45's .45 ACP rounds were Age 2, its 10-round magazine Age 3). Extended magazines stay one Age per level above.
-     */
+    /** The Age of a magazine: its family's earliest gun, or the Age of the rounds it holds when those come earlier */
     static WeaponPlatform.Gate gate(ItemStack stack)throws ReflectiveOperationException{return gate(stack,Map.of());}
     /** As above, with the Age at which the table lists each kind of round (by ammo id). */
     static WeaponPlatform.Gate gate(ItemStack stack,Map<String,Integer> rounds)throws ReflectiveOperationException{

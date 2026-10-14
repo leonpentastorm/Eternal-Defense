@@ -29,11 +29,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client and drives the 0.0.35 drinks corner the way a player does (the
- * Drink Station's brewing stand, storage, mixing menu, sweetener, Brew Pots, Latte, Cup Dispenser, the active drink) and the three new meal
- * effects, checking server state, the screen's texts at three window sizes and taking screenshots. Copied in by tools/qa/setup-qa.sh.
- */
+/** Copied in by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaDrinks {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -68,14 +64,14 @@ public final class QaDrinks {
     static BlockPos GUARD(){return at(-6,0,3);}
     static BlockPos HALL(){return at(-10,0,0);}
 
-    // ---- one frame's texts and the window sizes (as QaFob) -------------------------------------------------------------------------
+    // One frame's texts and the window sizes (as QaFob)
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
     static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
     static boolean hit(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return aw>0&&bw>0&&ax<bx+bw&&bx<ax+aw&&ay<by+bh&&by<ay+ah;}
     static boolean inside(int ax,int ay,int aw,int ah,int bx,int by,int bw,int bh){return ax>=bx&&ay>=by&&ax+aw<=bx+bw&&ay+ah<=by+bh;}
-    /** No text over another, no text across a button's edge (a label painted inside its own button is fine), everything in the panel; cut texts fail when strict. */
+    /** No text over another, no text across a button's edge (a label painted inside its own button is fine) */
     static void layout(String name,boolean strict){
         var s=mc().screen;var boxes=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();var cut=new ArrayList<String>();
         String size=(s==null?0:s.width)+"x"+(s==null?0:s.height);
@@ -88,10 +84,10 @@ public final class QaDrinks {
         if(s instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> cs){int px=cs.getGuiLeft(),py=cs.getGuiTop(),pw=cs.getXSize(),ph=cs.getYSize();
             for(var a:boxes)if(a.x()<px||a.y()<py||a.x()+a.w()>px+pw||a.y()+a.h()>py+ph)bad.add("outside the panel: '"+a.text()+"'");
             for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible&&(w.getX()<px||w.getY()<py||w.getX()+w.getWidth()>px+pw||w.getY()+w.getHeight()>py+ph))bad.add("the button '"+w.getMessage().getString()+"' outside the panel");
-            // the widgets do not overlap one another either
+            // The widgets do not overlap one another either
             var ws=new ArrayList<net.minecraft.client.gui.components.AbstractWidget>();for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible)ws.add(w);
             for(int i=0;i<ws.size();i++)for(int j=i+1;j<ws.size();j++){var a=ws.get(i);var b=ws.get(j);if(hit(a.getX(),a.getY(),a.getWidth(),a.getHeight(),b.getX(),b.getY(),b.getWidth(),b.getHeight()))bad.add("button over button");}
-            // and no visible slot sits under a button
+            // And no visible slot sits under a button
             for(var slot:cs.getMenu().slots)if(slot.isActive())for(var w:ws)if(hit(px+slot.x,py+slot.y,16,16,w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("a slot under the button '"+w.getMessage().getString()+"'");
         }
         if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.label&&!b.getMessage().getString().isEmpty()){int room=b.look==Ui.Look.ROW?b.getWidth()-16:b.getWidth()-10;if(mc().font.width(b.getMessage())>room)cut.add("button '"+b.getMessage().getString()+"'");}
@@ -118,7 +114,7 @@ public final class QaDrinks {
             var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
     }
 
-    // ---- the drinks corner ----------------------------------------------------------------------------------------------------------
+    // The drinks corner
     static DrinkStationScreen ds(){return mc().screen instanceof DrinkStationScreen s?s:null;}
     static net.minecraft.nbt.CompoundTag view(){var s=ds();return s==null?new net.minecraft.nbt.CompoundTag():s.getMenu().view;}
     /** Server thread only. */
@@ -167,11 +163,11 @@ public final class QaDrinks {
     }
 
     static void script(){
-        // ---- the corner: a planted beacon (the Home Zone), a Mk I station, three Brew Pots, a Cup Dispenser ---------------------------------
+        // The corner: a planted beacon (the Home Zone), a Mk I station, three Brew Pots, a Cup Dispenser
         step(5,()->srv(()->{
             sp().teleportTo(sl(),sx+.5,sy,sz+4.5,180,10);
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);
-            // facing south: their fronts look at the player standing south of them
+            // Facing south: their fronts look at the player standing south of them
             sl().setBlock(S(),EternalDefense.DRINK_STATION_I.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
             for(int i=0;i<3;i++)sl().setBlock(pot(i),EternalDefense.BREW_POT.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
             sl().setBlock(CUPS(),EternalDefense.CUP_DISPENSER.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
@@ -180,13 +176,13 @@ public final class QaDrinks {
         step(10,()->check("the station is 2 wide and 2 tall: its three other cells are parts",srvGet(()->sl().getBlockState(S().west()).is(EternalDefense.STRUCTURE_PART.get())&&sl().getBlockState(S().above()).is(EternalDefense.STRUCTURE_PART.get())&&sl().getBlockState(S().west().above()).is(EternalDefense.STRUCTURE_PART.get())),""),"footprint");
         step(5,()->shot("d00_corner"),"the corner in the world");
 
-        // ---- Mk I: a brewing stand with storage ------------------------------------------------------------------------------------------
+        // Mk I: a brewing stand with storage
         step(5,QaDrinks::openStation,"open the station");
         until("the station screen",60,()->ds()!=null,()->{});
         step(10,()->recordFrame=true,"record");
         step(3,()->{check("Mk I: the mixing menu is locked",drawnHas("Mixing opens at Mk II"),"");check("Mk I: no tabs, no tiles",!ds().potTab.visible&&ds().tiles.stream().noneMatch(t->t.visible),"");
             check("the storage is shown, empty",drawnHas("Potion storage")&&drawnHas("0 bottles"),"");shot("d01_mk1");},"Mk I");
-        // brew: water, nether wart, then sugar; the speed potions move to the storage, the awkward ones stay for the next step
+        // Brew: water, nether wart, then sugar; the speed potions move to the storage
         step(5,()->srv(()->{var s=st();for(int i=0;i<3;i++)s.brew.setItem(i,potion(Potions.WATER));s.brew.setItem(3,new ItemStack(Items.NETHER_WART));s.brew.setItem(4,new ItemStack(Items.BLAZE_POWDER,2));}),"water, nether wart, blaze powder");
         until("brewing started",100,()->srvGet(()->st().brewTime>0),()->srv(()->st().brewTime=1));
         until("the brew done",100,()->srvGet(()->st().brewTime==0&&PotionUtils.getPotion(st().brew.getItem(0))!=Potions.WATER),()->{});
@@ -199,7 +195,7 @@ public final class QaDrinks {
         step(5,()->recordFrame=true,"record");
         step(3,()->{check("the screen shows the stored bottles",drawnHas("3 bottles"),"");shot("d02_brewed");},"brewed");
 
-        // ---- the storage: shift-click in, click a cell for one, shift for all, any potion kind is stored ---------------------------------
+        // The storage: shift-click in, click a cell for one, shift for all, any potion kind is stored
         step(5,()->slotClick(invSlot(11),ClickType.QUICK_MOVE),"shift-click a Strength potion");
         step(5,()->slotClick(invSlot(9),ClickType.QUICK_MOVE),"shift-click a Speed II potion");
         step(5,()->slotClick(invSlot(16),ClickType.QUICK_MOVE),"shift-click a splash poison");
@@ -220,7 +216,7 @@ public final class QaDrinks {
         step(6,()->shot("d03_storage_tooltip"),"tooltip");
         step(3,()->hover(0,0),"pointer away");
 
-        // ---- the break guard: over 256 bottles it refuses to be broken by hand -------------------------------------------------------------
+        // The break guard: over 256 bottles it refuses to be broken by hand
         step(5,()->{close();srv(()->sl().setBlock(GUARD(),EternalDefense.DRINK_STATION_I.get().defaultBlockState(),3));},"a second station");
         step(10,()->srv(()->{var g=(DrinkStation.StationEntity)sl().getBlockEntity(GUARD());g.insert(potion(Potions.WATER),300);}),"300 water bottles in it");
         step(5,()->srv(()->sp().gameMode.destroyBlock(GUARD().above())),"break its upper cell by hand");
@@ -232,7 +228,7 @@ public final class QaDrinks {
             check("and drops every bottle (256)",dropped==256,""+dropped);
             srv(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(GUARD()).inflate(4)).forEach(net.minecraft.world.entity.Entity::discard));},"broken");
 
-        // ---- upgrade to Mk II: the mixing menu ----------------------------------------------------------------------------------------
+        // Upgrade to Mk II: the mixing menu
         step(5,QaDrinks::openStation,"open the station again");
         until("the station screen",60,()->ds()!=null&&ds().upgrade.visible,()->{});
         step(5,()->click(ds().upgrade),"Upgrade to Mk II");
@@ -244,7 +240,7 @@ public final class QaDrinks {
         step(5,()->recordFrame=true,"record");
         step(3,()->{check("the hint says what to do",drawnHas("Choose effects or put potions in"),"");shot("d04_mk2");},"Mk II");
 
-        // ---- choose, Gather, sweeten, Brew ------------------------------------------------------------------------------------------
+        // Choose, Gather, sweeten, Brew
         step(5,()->click(tile("minecraft:speed")),"click Speed");
         step(8,()->check("Speed is in the order",view().getIntArray("Order").length==1,""),"chosen");
         step(5,()->click(ds().primary),"Gather potions");
@@ -277,7 +273,7 @@ public final class QaDrinks {
         step(3,()->recordFrame=true,"record");
         step(3,()->{check("the toast is on screen",drawnHas("Brewed: Speed, pot 1, 20 min."),"");shot("d07_brewed");},"toast");
 
-        // ---- brewing over a full pot asks first -----------------------------------------------------------------------------------------
+        // Brewing over a full pot asks first
         step(5,()->{click(ds().steps);},"+20");step(3,()->click(ds().steps),"+0");
         step(5,()->click(ds().primary),"Gather again");
         step(10,()->check("ready, but the pot is full",view().getString("Problem").equals("pot_full"),view().getString("Problem")),"full");
@@ -287,7 +283,7 @@ public final class QaDrinks {
         step(5,()->click(ds().replaceYes),"Replace drink");
         step(10,()->check("the pot now holds the new Speed I drink, 10 minutes",srvGet(()->{var p=potAt(0);return p.drink!=null&&p.drink.parts().get(0).amplifier()==0&&p.drink.duration()==12000;})&&notice().equals("replaced"),notice()),"replaced");
 
-        // ---- what the mixing slots refuse, and say why --------------------------------------------------------------------------------------
+        // What the mixing slots refuse, and say why
         String[][] refusals={{"16","refuse.thrown"},{"15","refuse.regeneration"},{"18","refuse.instant"},{"19","refuse.harmful"}};
         step(3,()->srv(()->{var inv=sp().getInventory();inv.setItem(16,splash(Potions.POISON));inv.setItem(18,potion(Potions.HEALING));}),"a splash poison and Healing again");
         for(var r:refusals){
@@ -298,7 +294,7 @@ public final class QaDrinks {
             step(3,()->{if(r[1].equals("refuse.regeneration")){check("Regeneration only goes in the sweetener (on screen)",drawnHas("Regeneration only goes in the sweetener"),"");shot("d09_refused");}slotClick(invSlot(Integer.parseInt(r[0])),ClickType.PICKUP);},"put it back");
         }
 
-        // ---- the Latte ---------------------------------------------------------------------------------------------------------------
+        // The Latte
         step(5,()->click(ds().latteTab),"the Latte tab");
         step(8,()->{check("Latte mode: the cup slot is open",view().getBoolean("Latte")&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_CUP).isActive(),"");
             check("no sweetener for the Latte: its slot, bar and button are gone, the output in their place",!ds().getMenu().slots.get(DrinkStationMenu.SLOT_SWEET).isActive()&&!ds().steps.visible&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_OUT).isActive(),"");
@@ -313,7 +309,7 @@ public final class QaDrinks {
         step(3,()->{hover(0,0);slotClick(DrinkStationMenu.SLOT_OUT,ClickType.QUICK_MOVE);},"take it");
         step(8,()->check("Lattes stack to 16",srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.LATTE.get()))return s.getMaxStackSize()==16;return false;}),""),"taken");
 
-        // ---- the size checks: the station at three window sizes, both tabs ----------------------------------------------------------------
+        // The size checks: the station at three window sizes, both tabs
         atSizes("the Drink Station, Latte tab","d11_latte_tab",true);
         step(5,()->click(ds().potTab),"the Brew Pot tab");
         atSizes("the Drink Station, Brew Pot tab","d12_pot_tab",true);
@@ -325,7 +321,7 @@ public final class QaDrinks {
             for(var n:notices){var text=DrinkStationScreen.notice(mc().font,n[0],Arrays.asList(n).subList(1,n.length),DrinkStationScreen.RW-10);if(mc().font.width(text)>DrinkStationScreen.RW-10)too.add(text.getString()+" ("+mc().font.width(text)+")");}
             check("every notice fits the one-line strip ("+notices.length+" notices, three-effect drinks shortened)",too.isEmpty(),String.join(" | ",too));},"notices fit");
 
-        // ---- drinking: from the pot with a Paper Cup, at home ------------------------------------------------------------------------------
+        // Drinking: from the pot with a Paper Cup, at home
         step(5,()->{close();srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(EternalDefense.PAPER_CUP.get(),3)));},"a Paper Cup in hand");
         step(5,()->useBlock(pot(0)),"right-click the Brew Pot");
         step(10,()->{check("the drink is the active drink, its pot empty",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&!s.drink.latte()&&potAt(0).drink==null;}),"");
@@ -335,41 +331,41 @@ public final class QaDrinks {
         step(5,()->{mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"the inventory");
         step(10,()->shot("d13_effects_home"),"effects at home");
         step(3,()->mc().setScreen(null),"close");
-        // the field: the timer runs and the effect counts down with it
+        // The field: the timer runs and the effect counts down with it
         step(5,()->srv(()->sp().teleportTo(sl(),sx+400.5,sy,sz+.5,0,0)),"walk into the field (400 blocks away)");
         step(60,()->{},"a few seconds in the field");
         step(1,()->{int rem=srvGet(()->PlayerDrinks.of(sp()).remaining);var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));
             check("in the field the timer runs",rem<12000&&rem>11000,""+rem);check("and the effect counts down with it",fx!=null&&!fx.isInfiniteDuration()&&Math.abs(fx.getDuration()-rem)<=PlayerDrinks.TOLERANCE,fx+" vs "+rem);},"field");
-        // a stronger vanilla Speed wins while it lasts; the drink keeps counting and comes back
+        // A stronger vanilla Speed wins while it lasts; the drink keeps counting and comes back
         step(3,()->srv(()->sp().addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,100,1))),"drink a vanilla Speed II (5 s)");
         step(20,()->{var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));check("the stronger vanilla Speed II is left alone",fx!=null&&fx.getAmplifier()==1&&fx.getDuration()<=100,String.valueOf(fx));},"stronger");
         step(110,()->{},"it runs out");
         step(1,()->{int rem=srvGet(()->PlayerDrinks.of(sp()).remaining);var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));
             check("the drink's Speed I comes back with the drink's time",fx!=null&&fx.getAmplifier()==0&&Math.abs(fx.getDuration()-rem)<=PlayerDrinks.TOLERANCE,fx+" vs "+rem);},"back");
-        // the vanilla milk bucket does not clear it
+        // The vanilla milk bucket does not clear it
         step(3,()->srv(()->new ItemStack(Items.MILK_BUCKET).finishUsingItem(sl(),sp())),"drink a milk bucket");
         step(20,()->{check("the milk bucket does not end the drink",srvGet(()->PlayerDrinks.of(sp())!=null&&sp().hasEffect(MobEffects.MOVEMENT_SPEED)),"");},"bucket");
-        // back home: endless again
+        // Back home: endless again
         step(3,()->srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+4.5,180,10)),"back home");
         step(30,()->{int a=srvGet(()->PlayerDrinks.of(sp()).remaining);var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));check("at home it is endless again",fx!=null&&fx.isInfiniteDuration(),String.valueOf(fx));},"home");
         step(40,()->{},"two seconds at home");
         step(1,()->{check("at home the timer stops",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&s.home;}),"");},"stopped");
-        // a weaker vanilla potion underneath the drink comes back with its own time when the drink is replaced
+        // A weaker vanilla potion underneath the drink comes back with its own time when the drink is replaced
         step(3,()->srv(()->{PlayerDrinks.clear(sp());sp().removeEffect(MobEffects.MOVEMENT_SPEED);sp().addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,6000,0));
             PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new net.minecraft.resources.ResourceLocation("speed"),1)),12000,false));}),"a vanilla Speed I (5 min), then a Speed II drink");
         step(10,()->{var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));check("the drink's Speed II is on top",fx!=null&&fx.getAmplifier()==1&&fx.isInfiniteDuration(),String.valueOf(fx));},"on top");
         step(3,()->srv(()->PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new net.minecraft.resources.ResourceLocation("night_vision"),0)),12000,false))),"a new drink replaces it");
         step(10,()->{var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));check("the vanilla Speed I is back with its own time, not removed, not extended",fx!=null&&fx.getAmplifier()==0&&!fx.isInfiniteDuration()&&fx.getDuration()<6000&&fx.getDuration()>5900,String.valueOf(fx));
             check("the new drink is on",srvGet(()->sp().hasEffect(MobEffects.NIGHT_VISION)&&sp().getEffect(MobEffects.NIGHT_VISION).isInfiniteDuration()),"");},"replaced");
-        // a Latte is drunk at any time and leaves nothing
+        // A Latte is drunk at any time and leaves nothing
         step(3,()->srv(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.LATTE.get())){s.finishUsingItem(sl(),sp());break;}}),"drink the Latte");
         step(10,()->{check("the Latte is the active drink now (it replaced the old one)",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&s.drink.latte()&&!sp().hasEffect(MobEffects.NIGHT_VISION);}),"");
             check("it left nothing behind (creative keeps the stack)",true,"");},"latte drunk");
-        // milk from the dispenser's bottle ends it
+        // Milk from the dispenser's bottle ends it
         step(3,()->srv(()->new ItemStack(EternalDefense.MILK_BOTTLE.get()).finishUsingItem(sl(),sp())),"drink a Milk Bottle");
         step(10,()->check("the Milk Bottle ends the drink",srvGet(()->PlayerDrinks.of(sp())==null&&!sp().hasEffect(MobEffects.MOVEMENT_SPEED)),""),"milk");
 
-        // ---- the Cup Dispenser ------------------------------------------------------------------------------------------------------
+        // The Cup Dispenser
         step(3,()->srv(()->{((CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS())).stock.setItem(0,new ItemStack(EternalDefense.PAPER_CUP.get(),10));sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);}),"ten cups in the dispenser");
         step(3,()->useBlock(CUPS()),"right-click it");
         step(10,()->{check("it hands out a cup",srvGet(()->((CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS())).stock.getItem(0).getCount()==9),"");check("and says how many are left",barHas("Took a Paper Cup")&&barHas("9 left"),String.join(" / ",BAR));},"cup");
@@ -378,7 +374,7 @@ public final class QaDrinks {
         step(10,()->shot("d14_cup_dispenser"),"cups");
         step(3,QaDrinks::close,"close");
 
-        // ---- Mk III and IV: two and three effects, more pots, the duplicate rule, the tap icons -----------------------------------------
+        // Mk III and IV: two and three effects, more pots, the duplicate rule, the tap icons
         step(5,QaDrinks::openStation,"open the station");
         until("the station screen",60,()->ds()!=null,()->{});
         step(5,()->srv(()->sp().setGameMode(GameType.SURVIVAL)),"survival, to pay for real");
@@ -406,7 +402,7 @@ public final class QaDrinks {
         step(5,()->{for(var b:ds().pots)if(b.visible&&b!=ds().pots.get(0)){click(b);break;}},"pick pot 2");
         step(5,()->click(ds().primary),"Brew");
         step(10,()->check("a three-effect drink in pot 2",srvGet(()->st().pots().get(1).drink!=null&&st().pots().get(1).drink.parts().size()==3),""),"brewed 3");
-        // fill pot 1 too, so two taps show icons
+        // Fill pot 1 too, so two taps show icons
         step(3,()->srv(()->{var inv=sp().getInventory();inv.setItem(25,potion(Potions.NIGHT_VISION));}),"one more potion");
         step(3,()->click(ds().clear),"Clear");
         step(3,()->click(tile("minecraft:night_vision")),"Night Vision");
@@ -420,7 +416,7 @@ public final class QaDrinks {
         step(3,()->srv(()->sp().teleportTo(sl(),sx+5.5,sy,sz+3.2,180,15)),"look at the pots");
         step(30,()->shot("d17_pots"),"the pots' boards and liquid");
 
-        // ---- the three replaced meal effects -----------------------------------------------------------------------------------------
+        // The three replaced meal effects
         step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+4.5,180,10);PlayerMeals.eat(sp(),new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.HARDY,1),new MealData.Bonus(MealRules.Effect.BLAST_WARD,1),new MealData.Bonus(MealRules.Effect.PROJECTILE_WARD,1)),MealRules.FIELD_TICKS));}),"eat Hardy, Blast Ward and Projectile Ward");
         step(10,()->{
             check("the three show as their own effects",mc().player.hasEffect(MealEffects.of(MealRules.Effect.HARDY))&&mc().player.hasEffect(MealEffects.of(MealRules.Effect.BLAST_WARD))&&mc().player.hasEffect(MealEffects.of(MealRules.Effect.PROJECTILE_WARD)),"");
@@ -441,7 +437,7 @@ public final class QaDrinks {
         step(8,()->shot("d19_hall_hardy"),"Hardy's recipe tooltip");
         step(3,()->{hover(0,0);close();},"close");
 
-        // ---- the Field Guide page and Workshop Fabrication ------------------------------------------------------------------------------
+        // The Field Guide page and Workshop Fabrication
         step(5,()->{var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
         step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("drinks");g.scroll=0;}},"the drinks page");
         step(30,()->{check("the Field Guide has the drinks page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("drinks"),"");shot("d20_guide_drinks");},"guide");
@@ -449,7 +445,7 @@ public final class QaDrinks {
         step(40,()->{shot("d21_workshop");},"workshop");
         step(3,()->mc().setScreen(null),"close");
 
-        // ---- death clears the drink ---------------------------------------------------------------------------------------------------
+        // Death clears the drink
         step(3,()->srv(()->PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new net.minecraft.resources.ResourceLocation("speed"),0)),12000,false))),"a drink");
         step(5,()->srv(()->sp().kill()),"die");
         step(20,()->{check("death clears the drink",srvGet(()->PlayerDrinks.of(sp())==null),"");},"dead");

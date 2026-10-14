@@ -33,21 +33,18 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import java.util.UUID;
 
-/**
- * The Support Cannon: a 3 x 3 x 2 gun emplacement. Its turret is heavy, so it spins up and brakes slowly; it turns toward the
- * flare a player threw (never toward the player) and fires there. The turret and barrel are drawn by a renderer.
- */
+/** The Support Cannon: a 3 x 3 x 2 gun emplacement. */
 final class SupportCannon {
     private SupportCannon(){}
     static final int RECOIL_TICKS=16;
     /** Turret kinematics in degrees per tick: slow acceleration and braking give the barrel its weight. */
     static final float ACCEL=0.12f,MAX_SPEED=2.2f;
-    /** Barrel geometry shared by the renderer and the muzzle effects: hinge height in blocks, elevation, and reach from hinge to muzzle. */
+    /** Barrel geometry shared by the renderer and the muzzle effects */
     static final double SCALE=1.0,TURN_Y=10/16.0,PITCH_DEGREES=50;
-    /** The turret and barrel are drawn {@link #SCALE} times the modelled size around the turntable: hinge height and hinge-to-muzzle reach in blocks. */
+    /** The turret and barrel are drawn SCALE times the modelled size around the turntable */
     static final double PIVOT_Y=TURN_Y+(1.7-TURN_Y)*SCALE,REACH=2.5*SCALE;
 
-    /** One tick of the turret motor. {@code state} is {yaw, speed}; pure so the server and every client agree and tests can run it. */
+    /** One tick of the turret motor. */
     static void spin(float[] state,float target){spin(state,target,1f);}
     static void spin(float[] state,float target,float power){
         float accel=ACCEL*power,max=MAX_SPEED*power;
@@ -55,28 +52,25 @@ final class SupportCannon {
         if(dist<0.05f&&Math.abs(v)<accel*1.5f){state[0]=target;state[1]=0;return;}
         boolean toward=v==0||v*dir>0;
         float stop=v*v/(2*accel);
-        if(toward&&stop<dist)v+=dir*accel;          // room left: speed up
-        else if(toward)v-=Math.signum(v)*accel;     // must brake now
-        else v+=dir*accel*2;                        // moving away from the target: turn round
+        if(toward&&stop<dist)v+=dir*accel;          // Room left: speed up
+        else if(toward)v-=Math.signum(v)*accel;     // Must brake now
+        else v+=dir*accel*2;                        // Moving away from the target: turn round
         v=Math.max(-max,Math.min(max,v));
         float next=state[0]+v;
-        if(Math.signum(target-next)!=dir&&dir!=0){next=target;v=0;}   // arrived
+        if(Math.signum(target-next)!=dir&&dir!=0){next=target;v=0;}   // Arrived
         state[0]=next;state[1]=v;
     }
-    /** Ticks the turret needs to turn through {@code degrees} from rest (for tests and timing). */
+    /** Ticks the turret needs to turn through degrees from rest (for tests and timing). */
     static int turnTicks(float degrees){return turnTicks(degrees,1f);}
     static int turnTicks(float degrees,float power){var s=new float[]{0,0};int n=0;while(n<2000&&(Math.abs(degrees-s[0])>0.01f||s[1]!=0)){spin(s,degrees,power);n++;}return n;}
-    /**
-     * Ticks the turret sits still on target before it fires: as long as the "turning done" lock sound (cannon_turning_done.ogg, 0.87 s), so the
-     * shot comes the moment that sound ends. While it turns, the turning sound loops (client, {@link CannonSoundsClient}).
-     */
+    /** Ticks the turret sits still on target before it fires */
     static final int DONE_TICKS=18,SETTLE_TICKS=DONE_TICKS;
 
     static final class CannonBlock extends Block implements EntityBlock {
         CannonBlock(){super(Properties.of().strength(4,8).noOcclusion().dynamicShape().sound(SoundType.METAL));}
         @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return DefenseStructures.cell(s,0,0,0);}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState s){return new CannonEntity(pos,s);}
-        /** A plain Block ignores block events: hand them to the block entity (the server only sends an event to the clients when this accepts it). */
+        /** A plain Block ignores block events: hand them to the block entity */
         @Override public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}
         @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){
             super.onPlace(s,l,pos,old,moving);
@@ -121,41 +115,41 @@ final class SupportCannon {
 
     static final class CannonEntity extends BlockEntity {
         UUID owner;String ownerName="";
-        /** Degrees, unwrapped. {@code target} is authoritative (saved and synced); {@code yaw} and {@code speed} are the motor state. */
+        /** Degrees, unwrapped. */
         float target,yaw,prevYaw,speed;int recoil;
         /** Traverse upgrade level (saved and synced: every client runs the same motor) and server-side ticks spent aimed. */
         int traverse,settled;
         /** Shots fired since the chunk loaded (not saved); handy for tests and debugging. */
         int shots;
-        /** Client only: how many times the turning loop started (tests read it) and the highest turret speed it has shown. */
+        /** Client only: how many times the turning loop started */
         int grinds;float peakSpeed;
         /** Server: a call is waiting for this turret to lock on; the lock sound plays once it is still on target. */
         boolean calling;
         private final float[] motor=new float[2];
         CannonEntity(BlockPos pos,BlockState s){super(EternalDefense.CANNON_ENTITY.get(),pos,s);}
-        /** Server: face {@code point}; the turret takes the short way round and needs time to get there. */
+        /** Server: face point; the turret takes the short way round and needs time to get there. */
         void aimAt(ServerLevel level,Vec3 point){
             double radians=Math.atan2(-(point.x-(worldPosition.getX()+.5)),-(point.z-(worldPosition.getZ()+.5)));
             float next=(float)Math.toDegrees(radians);
             float diff=next-yaw;diff=((diff%360)+540)%360-180;
             float goal=yaw+diff;
-            settled=0;calling=true;   // every call locks on again (and plays the lock sound), even when the turret already faces the flare
+            settled=0;calling=true;   // Every call locks on again (and plays the lock sound), even when the turret already faces the flare
             if(Math.abs(goal-target)>0.01f){target=goal;setChanged();level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         }
         /** True while the turret is still turning (client and server run the same motor). */
         boolean turning(){return Math.abs(speed)>0.01f||Math.abs(target-yaw)>0.6f;}
         /** True once the barrel points at the target and has stopped moving. */
         boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
-        /** True once the turret has been still on target for {@link #SETTLE_TICKS}: only then does the gun fire. */
+        /** True once the turret has been still on target for SETTLE_TICKS: only then does the gun fire. */
         boolean armed(){return settled>=SETTLE_TICKS&&ready();}
         void setTraverse(int lv){traverse=lv;setChanged();if(level instanceof ServerLevel s)s.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
-        /** Server: fire now (the caller waits for {@link #ready()}). */
+        /** Server: fire now (the caller waits for ready). */
         void fire(ServerLevel level){
             shots++;
             double rad=Math.toRadians(yaw),pitch=Math.toRadians(PITCH_DEGREES);
             double reach=REACH,flat=Math.cos(pitch)*reach;
             double x=worldPosition.getX()+.5-Math.sin(rad)*flat,y=worldPosition.getY()+PIVOT_Y+Math.sin(pitch)*reach,z=worldPosition.getZ()+.5-Math.cos(rad)*flat;
-            Blasts.muzzle(level,x,y,z);   // flash, fire and smoke at the muzzle, and a roar heard across the base
+            Blasts.muzzle(level,x,y,z);   // Flash, fire and smoke at the muzzle, and a roar heard across the base
             level.blockEvent(worldPosition,getBlockState().getBlock(),1,0);
         }
         void tick(Level level){
@@ -164,11 +158,11 @@ final class SupportCannon {
             if(level.isClientSide){
                 if(recoil>0)recoil--;
                 peakSpeed=Math.max(peakSpeed,Math.abs(speed));
-                // the turning sound loops for as long as the turret moves
+                // The turning sound loops for as long as the turret moves
                 net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->CannonSoundsClient.tick(this));
             }else{
                 settled=ready()?settled+1:0;
-                // the turret is still on target: the lock sound plays, and the gun fires the moment it ends (DONE_TICKS later)
+                // The turret is still on target: the lock sound plays, and the gun fires the moment it ends (DONE_TICKS later)
                 if(settled==1&&calling&&level instanceof ServerLevel server){calling=false;server.playSound(null,worldPosition,DefenseSounds.CANNON_TURNING_DONE.get(),SoundSource.BLOCKS,3f,1f);}
             }
         }
@@ -182,9 +176,9 @@ final class SupportCannon {
             if(n.hasUUID("Owner")){owner=n.getUUID("Owner");ownerName=n.getString("OwnerName");}
         }
         @Override public CompoundTag getUpdateTag(){var n=new CompoundTag();n.putFloat("Target",target);n.putInt("Traverse",traverse);n.putString("OwnerName",ownerName);return n;}
-        /** Only the very first sync snaps the turret to its heading (a cannon coming into view); after that the motor turns it there. */
+        /** Only the very first sync snaps the turret to its heading (a cannon coming into view) */
         @Override public void handleUpdateTag(CompoundTag n){target=n.getFloat("Target");traverse=n.getInt("Traverse");ownerName=n.getString("OwnerName");if(!synced){synced=true;yaw=prevYaw=target;}}
-        /** Block updates arrive as data packets; Forge would hand them to {@link #load}, which restarts the turret at its target, so they go through the same path as the first sync. */
+        /** Block updates arrive as data packets; Forge would hand them to load, which restarts the turret at its target */
         @Override public void onDataPacket(net.minecraft.network.Connection net,ClientboundBlockEntityDataPacket pkt){var tag=pkt.getTag();if(tag!=null)handleUpdateTag(tag);}
         private boolean synced;
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}

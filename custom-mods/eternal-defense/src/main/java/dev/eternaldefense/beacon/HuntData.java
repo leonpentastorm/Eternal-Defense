@@ -7,37 +7,33 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.zip.*;
 
-/**
- * Where the truth of Tactical Operations lives (0.0.20): the board, the shared mission, the Command Table and Satellite Beacon of the base,
- * and the table's scan images. Server only; item NBT is never trusted (a map or flare only points here). The Home raid state stays in
- * {@link CampaignData}, which this only reads.
- */
+/** Where the truth of Tactical Operations lives: the board, the shared mission */
 final class HuntData extends net.minecraft.world.level.saveddata.SavedData {
     static final String NAME="eternal_defense_hunts_v1";
     final HuntBoard board=new HuntBoard();
     /** The base's one table (its anchor) and one satellite, or null. */
     BlockPos table,satellite;
-    /** The satellite's Mk (1 to 3), kept here and not on the item: a satellite moved with the shovel, or bought again, comes back at it. */
+    /** The satellite's Mk (1 to 3), kept here and not on the item */
     int satelliteMk=1;
-    /** The mission's map, made once at accept time and copied for every player (vanilla filled map with a red X), and its map id. */
+    /** The mission's map, made once at accept time and copied for every player (vanilla filled map with a red X) */
     CompoundTag missionMap;
-    /** The two scan images (Base and Region), see {@link ScanSampler}. */
+    /** The two scan images (Base and Region), see ScanSampler. */
     final Image base=new Image(),region=new Image();
-    /** Game time the last scan finished (-1: never), the time it may start again, and a version that changes with every finished scan. */
+    /** Game time the last scan finished (-1: never), the time it may start again */
     long scannedAt=-1,scanReady;int scanVersion;
     /** Satellite Mk and range the Region image was made with (its scale). */
     int scannedRange=TacticalRules.RANGE[0];
     /** The beacon the images are centred on: a beacon moved elsewhere starts them over. */
     BlockPos scanCenter;
 
-    /** One 256 x 256 image: packed vanilla map colour and freshness ({@link ScanSampler#LIVE}, STALE, BIOME) per pixel. */
+    /** One 256 x 256 image: packed vanilla map colour and freshness (ScanSampler.LIVE, STALE, BIOME) per pixel. */
     static final class Image {
         final byte[] colors=new byte[TacticalRules.SCAN_SIZE*TacticalRules.SCAN_SIZE],fresh=new byte[TacticalRules.SCAN_SIZE*TacticalRules.SCAN_SIZE];
     }
 
     static HuntData get(ServerLevel any){return any.getServer().overworld().getDataStorage().computeIfAbsent(HuntData::load,HuntData::new,NAME);}
 
-    // ---- save / load ----------------------------------------------------------------------------------------------------------------------
+    // Save / load
     static HuntData load(CompoundTag n){
         var d=new HuntData();var b=d.board;
         if(n.contains("table"))d.table=BlockPos.of(n.getLong("table"));
@@ -54,8 +50,7 @@ final class HuntData extends net.minecraft.world.level.saveddata.SavedData {
             if(offer!=null){
                 var m=new HuntBoard.Mission(offer,b.flared(offer.id));m.state=HuntBoard.State.values()[Math.max(0,Math.min(3,c.getInt("state")))];
                 m.serial=c.getLong("serial");m.total=c.getInt("total");m.remaining=c.getInt("remaining");m.spawned=c.getInt("spawned");m.awayTicks=c.getInt("away");
-                // an ENGAGED mission stays engaged across a restart: its mobs are saved with their chunks (persistent), and a warband cut short
-                // mid-spawn finishes spawning ("spawned" is saved) when a player comes near again
+                // An ENGAGED mission stays engaged across a restart: its mobs are saved with their chunks (persistent)
                 if(m.state!=HuntBoard.State.CLEARED)b.mission=m;
             }
         }

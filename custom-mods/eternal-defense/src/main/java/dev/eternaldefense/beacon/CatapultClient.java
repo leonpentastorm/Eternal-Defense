@@ -18,16 +18,13 @@ import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * The Supply Catapult drawn (0.0.33): the owner's static deck is the block's own model; the frame turns about the block's centre, the arm
- * pitches about the owner's pivot (8, 11, 6) inside the turned frame, and the box rides in the cup until it is thrown (the owner's README).
- */
+/** The Supply Catapult drawn: the static deck is the block's own model */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class CatapultClient {
     private CatapultClient(){}
     static final ResourceLocation FRAME=new ResourceLocation(EternalDefense.ID,"block/supply_catapult_frame"),ARM=new ResourceLocation(EternalDefense.ID,"block/supply_catapult_arm"),
         PAYLOAD=new ResourceLocation(EternalDefense.ID,"block/supply_catapult_payload");
-    /** The arm's pivot (model pixels) and the box's middle at rest (model pixels; from the owner's payload model). */
+    /** The arm's pivot (model pixels) and the box's middle at rest. */
     static final float PIVOT_X=8,PIVOT_Y=11,PIVOT_Z=6,BOX_X=8,BOX_Y=15.55f,BOX_Z=24;
 
     @SubscribeEvent public static void models(ModelEvent.RegisterAdditional e){e.register(FRAME);e.register(ARM);e.register(PAYLOAD);}
@@ -51,7 +48,7 @@ public final class CatapultClient {
         @Override public boolean shouldRenderOffScreen(SupplyCatapult.CatapultEntity be){return false;}
     }
 
-    /** The thrown box: the owner's payload crate, tumbling slowly. */
+    /** The thrown box: the payload crate, tumbling slowly. */
     static final class ThrownRenderer extends EntityRenderer<SupplyCatapult.ThrownSupply> {
         ThrownRenderer(EntityRendererProvider.Context ctx){super(ctx);}
         @Override public void render(SupplyCatapult.ThrownSupply e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){

@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The raid music player (0.0.17): which song each wave plays, and that every song is really there with the length the player shows. */
+/** The raid music player: which song each wave plays, and that every song is really there with the length */
 final class MusicPlayerTest {
     @Test void eachKindOfRaidHasItsPool(){
         assertEquals("normal",RaidPlaylist.cue(true,"raid",false,1,3,"normal"));
@@ -40,7 +40,7 @@ final class MusicPlayerTest {
             else openers.add(played.get(0));
         }
         assertEquals(8,openers.size(),"any ordinary song can open a raid");
-        // a raid longer than the songs (none is, today) starts a new shuffle, never with the song just played
+        // A raid longer than the songs (none is, today) starts a new shuffle, never with the song just played
         for(long seed=0;seed<300;seed++){int last=-1;for(int i=0;i<40;i++){int k=RaidPlaylist.order(seed,i,8);assertNotEquals(last,k,"seed "+seed+" index "+i);last=k;}}
         assertEquals(0,RaidPlaylist.order(42,3,1));assertEquals(0,RaidPlaylist.order(42,3,0));
         assertNull(RaidPlaylist.song("",7,1));assertNull(RaidPlaylist.song("normal",7,0));
@@ -76,7 +76,7 @@ final class MusicPlayerTest {
     private static com.google.gson.JsonObject json(String path) throws Exception{
         try(var in=MusicPlayerTest.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in,path),StandardCharsets.UTF_8)).getAsJsonObject();}
     }
-    /** Length of an Ogg Vorbis file: the last page's granule position (samples) over the sample rate of the identification header. */
+    /** Length of an Ogg Vorbis file: the last page's granule position */
     static double oggSeconds(String path) throws Exception{
         byte[] b;try(var in=MusicPlayerTest.class.getResourceAsStream(path)){b=Objects.requireNonNull(in,path).readAllBytes();}
         int rate=le(b,27+(b[26]&0xff)+12,4);

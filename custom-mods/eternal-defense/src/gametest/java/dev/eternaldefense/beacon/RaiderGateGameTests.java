@@ -14,24 +14,18 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import java.util.*;
 
-/**
- * Raider gates on a real server level (opt-in: start the game with {@code -Deternaldefense.stuckTests=true}; {@link Runner} starts them).
- * The tests build one big flat stone platform (13 x 13 chunks, force-loaded) around a fake beacon, so that a gate has real staging ground
- * for its destination, and then drive {@link RaidRescue} and the real {@code EternalDefense.raid} loop with raiders that cannot move. Nothing
- * here touches the real campaign: each test uses its own {@link CampaignData} instance. A raider that "never makes progress" is a husk with no
- * AI and no gravity, or one sealed in a stone cell.
- */
+/** Raider gates on a real server level */
 @GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class RaiderGateGameTests {
-    /** The fake beacon stands on the platform, whose top layer is y=100. Chunk (750,0) is its centre. */
+    /** The fake beacon stands on the platform, whose top layer is y=100. */
     static final BlockPos BEACON=new BlockPos(12008,101,8);
     private static final int CHUNKS=6,FLOOR=88,TOP=100;
     private static boolean built;
 
     private static int chunkX(){return BEACON.getX()>>4;}
     private static int chunkZ(){return BEACON.getZ()>>4;}
-    /** Builds (once) a stone platform y 88..100 over 13 x 13 chunks and keeps them loaded; the sections are written directly (fast, no lighting). */
+    /** Builds (once) a stone platform y 88..100 over 13 x 13 chunks and keeps them loaded */
     static void ground(ServerLevel l){
         if(built)return;
         var stone=Blocks.STONE.defaultBlockState();
@@ -56,14 +50,14 @@ public final class RaiderGateGameTests {
         var d=new CampaignData();d.beacon=BEACON;d.phase="raid";d.health=1000;d.raidType="normal";d.raidTier=0;d.wave=1;
         return new Fixture(l,d);
     }
-    /** A raid husk that stays where it is (no AI, no gravity), or one with the normal AI when {@code frozen} is false. */
+    /** A raid husk that stays where it is (no AI, no gravity), or one with the normal AI when frozen is false. */
     static Mob raider(Fixture f,EntityType<? extends Mob> type,BlockPos at,boolean frozen){
         Mob mob=type.create(f.level());mob.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);mob.setPersistenceRequired();
         mob.getPersistentData().putBoolean("eternalRaider",true);
         if(frozen){mob.setNoAi(true);mob.setNoGravity(true);}
         f.level().addFreshEntity(mob);f.campaign().raiders.add(mob.getUUID());return mob;
     }
-    /** One second of the raid loop for one raider, as the real loop calls it (and the clean-up it runs afterwards). True when it was withdrawn. */
+    /** One second of the raid loop for one raider, as the real loop calls it (and the clean-up it runs afterwards). */
     static boolean second(Fixture f,Mob mob){
         var it=f.campaign().raiders.iterator();boolean withdrawn=false;
         while(it.hasNext())if(it.next().equals(mob.getUUID())){withdrawn=RaidRescue.tick(f.level(),f.campaign(),mob,it);break;}
@@ -73,7 +67,7 @@ public final class RaiderGateGameTests {
     static void fill(ServerLevel l,BlockPos from,BlockPos to,net.minecraft.world.level.block.state.BlockState state){for(var p:BlockPos.betweenClosed(from,to))l.setBlock(p,state,2|16);}
     static int chebyshev(BlockPos a,BlockPos b){return Math.max(Math.abs(a.getX()-b.getX()),Math.abs(a.getZ()-b.getZ()));}
 
-    // ---- the gate: trigger, channel, teleport --------------------------------------------------------------------------------------------
+    // The gate: trigger, channel, teleport
     private static final int SEC=20;
     @GameTest(template="empty3x3x3",batch="gate_01",timeoutTicks=1500)
     public static void aRaiderSealedInAStoneCellOpensAGateChannelsAndComesOutAtTheRing(GameTestHelper h){
@@ -109,11 +103,11 @@ public final class RaiderGateGameTests {
         var channelStart=new Vec3[]{null};long t0=l.getGameTime();long[] channelAt={-1};double[] drift={0};
         h.onEachTick(()->{
             long t=l.getGameTime()-t0;
-            if(channelAt[0]>=0)mob.getNavigation().moveTo(mob.getX()+15,mob.getY(),mob.getZ()+15,1.2); // the AI keeps trying to walk off
+            if(channelAt[0]>=0)mob.getNavigation().moveTo(mob.getX()+15,mob.getY(),mob.getZ()+15,1.2); // The AI keeps trying to walk off
             if(t>0&&t%SEC==0){second(f,mob);if(channelAt[0]<0&&RaiderGates.channeling(mob.getUUID())){channelAt[0]=t;channelStart[0]=mob.position();}}
             if(channelAt[0]>=0)drift[0]=Math.max(drift[0],Math.hypot(mob.getX()-channelStart[0].x,mob.getZ()-channelStart[0].z));
         });
-        // a lava pool 4 to 8 blocks ahead on its line to the beacon (the raider is 30 blocks north of it): the look-ahead opens the gate within a second, not after 25
+        // A lava pool 4 to 8 blocks ahead on its line to the beacon (the raider is 30 blocks north of it)
         fill(l,new BlockPos(BEACON.getX()-4,TOP,BEACON.getZ()-26),new BlockPos(BEACON.getX()+4,TOP,BEACON.getZ()-22),Blocks.LAVA.defaultBlockState());
         h.runAfterDelay(SEC*7,()->{
             try{
@@ -126,7 +120,7 @@ public final class RaiderGateGameTests {
             h.succeed();
         });
     }
-    /** Terrain set across a raider's straight line to the beacon, {@code from} to {@code to} blocks ahead of it, {@code half} blocks to each side. */
+    /** Terrain set across a raider's straight line to the beacon, from to to blocks ahead */
     private static List<BlockPos> across(ServerLevel l,BlockPos raider,int from,int to,int half,net.minecraft.world.level.block.state.BlockState state,int depth){
         double dx=BEACON.getX()-raider.getX(),dz=BEACON.getZ()-raider.getZ(),len=Math.sqrt(dx*dx+dz*dz);dx/=len;dz/=len;
         var done=new LinkedHashSet<BlockPos>();
@@ -141,7 +135,7 @@ public final class RaiderGateGameTests {
     @GameTest(template="empty3x3x3",batch="gate_03",timeoutTicks=400)
     public static void lavaMagmaAChasmAndAWideLakeTriggerTheProbeButAShortPondDoesNot(GameTestHelper h){
         var f=fixture(h);var l=f.level();RaidSpawns.forgetCorridors();
-        // five raiders on five different lines to the beacon, each with its own terrain across the line, 4 to 12 blocks ahead of it
+        // Five raiders on five different lines to the beacon, each with its own terrain across the line
         record Case(String name,BlockPos raider,int from,int to,net.minecraft.world.level.block.state.BlockState state,int depth,String expect){}
         var cases=List.of(
             new Case("lava",BEACON.east(40).above(0),4,8,Blocks.LAVA.defaultBlockState(),1,"probe:lava"),
@@ -173,12 +167,12 @@ public final class RaiderGateGameTests {
         var mob=raider(f,EntityType.HUSK,BEACON.west(36),true);mob.setHealth(mob.getMaxHealth());long t0=l.getGameTime();long[] channelAt={-1},outAt={-1};var from=mob.blockPosition();
         h.onEachTick(()->{
             long t=l.getGameTime()-t0;if(t<=0||t%SEC!=0)return;
-            if(channelAt[0]>=0&&outAt[0]<0&&mob.blockPosition().equals(from)&&t>channelAt[0]+SEC)mob.hurt(l.damageSources().generic(),1f); // hurt every second while it channels
+            if(channelAt[0]>=0&&outAt[0]<0&&mob.blockPosition().equals(from)&&t>channelAt[0]+SEC)mob.hurt(l.damageSources().generic(),1f); // Hurt every second while it channels
             second(f,mob);
             if(channelAt[0]<0&&RaiderGates.channeling(mob.getUUID()))channelAt[0]=t;
             if(channelAt[0]>=0&&outAt[0]<0&&!mob.blockPosition().equals(from))outAt[0]=t;
         });
-        // a lava pool ahead so that the channel starts at once
+        // A lava pool ahead so that the channel starts at once
         fill(l,new BlockPos(BEACON.getX()-30,TOP,BEACON.getZ()-4),new BlockPos(BEACON.getX()-26,TOP,BEACON.getZ()+4),Blocks.LAVA.defaultBlockState());
         h.succeedWhen(()->{
             h.assertTrue(outAt[0]>=0,"the hurt raider has not come out yet");
@@ -229,17 +223,17 @@ public final class RaiderGateGameTests {
         });
     }
 
-    // ---- escalation ------------------------------------------------------------------------------------------------------------------
+    // Escalation
     @GameTest(template="empty3x3x3",batch="gate_07",timeoutTicks=3600)
     public static void afterThreeGatesTheRaiderIsWithdrawnAndTheWaveCompletesWellBeforeTheTimeout(GameTestHelper h)throws Exception{
         var f=fixture(h);var l=f.level();RaidRescue.reset(l);var d=f.campaign();
-        d.wave=1;d.spawnRemaining=0;d.hardRaid=false; // the first wave of several: finishing it needs no Create reward items
+        d.wave=1;d.spawnRemaining=0;d.hardRaid=false; // The first wave of several: finishing it needs no Create reward items
         var mob=raider(f,EntityType.HUSK,BEACON.south(40),true);
         var raid=EternalDefense.class.getDeclaredMethod("raid",ServerLevel.class,CampaignData.class);raid.setAccessible(true);
         var clock=EternalDefense.class.getDeclaredField("clock");clock.setAccessible(true);
         int[] seen={0};long start=l.getGameTime();
         h.onEachTick(()->{
-            if(d.wave!=1)return; // the wave is over: stop before the next one spawns real raiders
+            if(d.wave!=1)return; // The wave is over: stop before the next one spawns real raiders
             try{int previous=clock.getInt(null);clock.setInt(null,20);try{raid.invoke(null,l,d);}finally{clock.setInt(null,previous);}}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}
             seen[0]=Math.max(seen[0],mob.getPersistentData().getInt(RaidMarch.GATES));
         });
@@ -284,7 +278,7 @@ public final class RaiderGateGameTests {
         });
     }
 
-    // ---- corridors ---------------------------------------------------------------------------------------------------------------------
+    // Corridors
     private static void water(ServerLevel l,int distanceFrom,int distanceTo,java.util.function.IntPredicate wedge,boolean on){
         var state=on?Blocks.WATER.defaultBlockState():Blocks.STONE.defaultBlockState();
         for(int dx=-distanceTo;dx<=distanceTo;dx++)for(int dz=-distanceTo;dz<=distanceTo;dz++){
@@ -306,7 +300,7 @@ public final class RaiderGateGameTests {
     @GameTest(template="empty3x3x3",batch="gate_11",timeoutTicks=200)
     public static void whenEverySectorHasAWaterCrossingTheOneWithTheFewestViolationsIsUsed(GameTestHelper h){
         var f=fixture(h);var l=f.level();var d=f.campaign();RaidSpawns.forgetCorridors();int best=7;
-        water(l,36,48,w->true,true);water(l,41,48,w->w==best,false); // sector 7 only keeps the nearer half of the water
+        water(l,36,48,w->true,true);water(l,41,48,w->w==best,false); // Sector 7 only keeps the nearer half of the water
         try{
             for(int w=0;w<RaidSpawns.WEDGES;w++)h.assertTrue(!RaidSpawns.corridor(l,d,w).score(88).clean(),"no sector is clean: "+w);
             for(int i=0;i<40;i++){var p=RaidSpawns.find(l,d);h.assertTrue(p!=null,"spawning still works when every sector is imperfect");h.assertTrue(RaidSpawns.wedgeOf(BEACON,p)==best,"spawn "+i+" at "+p+" is not in the sector with the fewest violations");}
@@ -314,17 +308,17 @@ public final class RaiderGateGameTests {
         h.succeed();
     }
 
-    // ---- opt-in runner --------------------------------------------------------------------------------------------------------------
-    /** {@code -Deternaldefense.stuckTests=true}: adds the {@code /stuck-raider-test} command; {@link #start} runs everything and logs STUCK_TEST lines. */
+    // Opt-in runner
+    /** Deternaldefense.stuckTests=true: adds the /stuck-raider-test command */
     public static final class Runner {
         private static Collection<GameTestInfo> infos=List.of();private static MultipleTestTracker tracker;private static ServerLevel level;
-        /** Result of the last finished run (for the QA harness). */
+        /** Result of the last finished run. */
         public static volatile int lastPass=-1,lastFail=-1;
         @SubscribeEvent public void register(net.minecraftforge.event.RegisterCommandsEvent e){
             ensureRegistered();
             e.getDispatcher().register(net.minecraft.commands.Commands.literal("stuck-raider-test").requires(s->s.hasPermission(2)).executes(c->{start(c.getSource().getLevel());return 1;}));
         }
-        /** The tests are registered by Forge when a development run has game tests enabled; register them otherwise, but never twice. */
+        /** The tests are registered by Forge when a development run has game tests enabled */
         public static void ensureRegistered(){
             if(GameTestRegistry.getAllTestFunctions().stream().noneMatch(t->t.getBatchName().startsWith("gate_")))GameTestRegistry.register(RaiderGateGameTests.class);
         }
@@ -336,7 +330,7 @@ public final class RaiderGateGameTests {
         }
         @SubscribeEvent public void tick(net.minecraftforge.event.TickEvent.ServerTickEvent e){
             if(e.phase!=net.minecraftforge.event.TickEvent.Phase.END||tracker==null)return;
-            if(!net.minecraftforge.gametest.ForgeGameTestHooks.isGametestEnabled())GameTestTicker.SINGLETON.tick(); // a development run already ticks the tests itself (MinecraftServer.tickChildren)
+            if(!net.minecraftforge.gametest.ForgeGameTestHooks.isGametestEnabled())GameTestTicker.SINGLETON.tick(); // A development run already ticks the tests itself (MinecraftServer.tickChildren)
             if(!tracker.isDone())return;
             var log=com.mojang.logging.LogUtils.getLogger();int pass=0,fail=0;
             for(var info:infos){if(info.hasFailed()){fail++;log.error("STUCK_TEST_FAIL {}: {}",info.getTestName(),info.getError()==null?"?":info.getError().getMessage());}else{pass++;log.info("STUCK_TEST_PASS {}",info.getTestName());}}

@@ -34,23 +34,14 @@ import java.io.File;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * QA ONLY (never part of a release): the owner's 0.0.41 list on a real client, run with Create (setup-qa.sh with QA_CREATE=1). The
- * Logistics Hub Zone effect (shown in a base with a working Hub, gone outside and with no working Hub), the beacon Overview's Hub line,
- * the Mess Hall cooking from the Hub alone through its own screen (the real Gather button, then Make sandwich, then Take back), the raid
- * skull (three real deaths near the beacon during a raid), the radio playing one line at a time (flare calls and Specialty Seller
- * orders, counted where the client plays them), an ammo and an attachment table with every part in a later Age (the screen fed with
- * that state), the MRE Station's new press, Create's goggles looking at the satellite and the other animated blocks, and the side
- * quest: the mod's installations in the base score (the whole set one tier).
- * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_DONE.
- */
+/** Sh with QA_CREATE=1). */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound41 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
-    /** A step runs, then the next one waits {@code delay} ticks. */
+    /** A step runs, then the next one waits delay ticks. */
     static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
-    /** Waits {@code ticks}, then runs the check. */
+    /** Waits ticks, then runs the check. */
     static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
     static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
     static Minecraft mc(){return Minecraft.getInstance();}
@@ -74,11 +65,7 @@ public final class QaRound41 {
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
-    /**
-     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
-     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
-     * connection's own, in the integrated server's local channel the packets arrive as objects).
-     */
+    /** The container has no audio device, so the client's sound engine never starts and plays nothing */
     static boolean hooked;
     static void hookSounds(){
         if(hooked||mc().getConnection()==null)return;hooked=true;
@@ -94,14 +81,14 @@ public final class QaRound41 {
         log("QA_NOTE sound packets are counted at the client's connection");
     }
 
-    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    // One frame's texts (Ui records them)
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
     static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
     static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
 
-    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    // The client's own actions
     static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
     static void look(BlockPos from,double tx,double ty,double tz){
         double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
@@ -119,7 +106,7 @@ public final class QaRound41 {
     static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
     static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
 
-    // ---- the places --------------------------------------------------------------------------------------------------------------------
+    // The places
     /** A: the Hub's anchor; B: the beacon (core 3, radius 24); OUT: outside the zone; HALL, SAT, MRE: inside. */
     static BlockPos A,B,OUT,HALL,SAT,MRE;
     static void places(){
@@ -145,7 +132,7 @@ public final class QaRound41 {
     static long ccStart;
     static long classCasts(){try{return java.nio.file.Files.lines(java.nio.file.Path.of("logs/latest.log")).filter(l->l.contains("ClassCastException")).count();}catch(Exception x){return -1;}}
 
-    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    // The driver
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
         if(!created){
@@ -169,7 +156,7 @@ public final class QaRound41 {
     }
 
     static void script(){
-        // ---- the base: a beacon 2000 blocks out, survival, a still world ---------------------------------------------------------------
+        // The base: a beacon 2000 blocks out, survival, a still world
         step(60,()->{srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
             sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
@@ -180,7 +167,7 @@ public final class QaRound41 {
             sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
             sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon; survival");
 
-        // ---- no Hub yet: no effect, the Overview says so ----------------------------------------------------------------------------------
+        // No Hub yet: no effect, the Overview says so
         step(50,()->{},"stand in the Home Zone with no Hub for two and a half seconds");
         step(1,()->check("no Hub: no Logistics Hub Zone effect",!serverEffect()&&!effect(),""),"no Hub, no effect");
         step(5,()->{sync();},"sync the beacon's state");
@@ -188,13 +175,13 @@ public final class QaRound41 {
         step(5,()->{check("the Overview says the base has no active Hub",drawnHas("This base does not have any active Logistics Hub"),drawn());shot("r41_01_overview_no_hub");},"Overview, no Hub");
         step(5,()->closeAll(),"close");
 
-        // ---- place a Hub with its item (a real right-click) --------------------------------------------------------------------------------
+        // Place a Hub with its item (a real right-click)
         step(5,()->{hold(new ItemStack(EternalDefense.LOGISTICS_HUB_ITEM.get()));tp(A.getX()+.5,sy,A.getZ()-4.5,0,30);},"hold the Hub item in front of its spot");
         until("the spot is loaded",100,()->loaded(A),()->{});
         step(5,()->click(A.below(2),Direction.UP),"place the Hub");
         step(30,()->check("the Hub stands and works",srvGet(()->hub()!=null&&HubData.get(sl()).working(sl(),B).size()==1),""),"placed");
 
-        // ---- the effect: within a second or two in the zone, the server and the client agree ---------------------------------------------
+        // The effect: within a second or two in the zone, the server and the client agree
         step(45,()->{},"wait in the zone");
         step(1,()->{check("a base with a working Hub: the Logistics Hub Zone effect is on (server)",serverEffect(),"");check("and the client shows it",effect(),"");
             var i=mc().player.getEffect(MealEffects.HUB.get());check("it never runs out while you stay (endless or the long steady timer)",i!=null&&(i.isInfiniteDuration()||i.getDuration()>20*60*60),i==null?"none":""+i.getDuration());},"the effect is on");
@@ -219,13 +206,13 @@ public final class QaRound41 {
         step(5,()->srv(()->{var r=MilkDispenser.cleanse(sp());note=r.effects().toString();}),"drink the mod's milk (a cleanse)");
         after(45,()->check("milk does not list the zone effect as cleared, and it is back a moment later",!note.contains("Logistics Hub Zone")&&serverEffect(),note),"milk");
 
-        // ---- the Overview's Hub line ----------------------------------------------------------------------------------------------------
+        // The Overview's Hub line
         step(5,()->sync(),"sync");
         step(10,()->{check("the beacon reports 1 Hub",clientState("hubs")==1,""+clientState("hubs"));var s=new BeaconClient.ControlScreen();s.tab=0;mc().setScreen(s);recordFrame=true;},"open the Overview");
         step(5,()->{check("the Overview says: This base has 1 active Logistics Hub",drawnHas("This base has 1 active Logistics Hub"),drawn());shot("r41_03_overview_one_hub");},"Overview, one Hub");
         step(5,()->closeAll(),"close");
 
-        // ---- the Mess Hall cooks from the Hub alone, through its own screen ----------------------------------------------------------------------
+        // The Mess Hall cooks from the Hub alone, through its own screen
         Item[] foods={Items.COOKED_CHICKEN,Items.COOKED_MUTTON,Items.COOKED_BEEF,Items.BREAD,Items.WHEAT,Items.CARROT,Items.POTATO,Items.COOKED_COD,Items.COOKED_SALMON,Items.APPLE,Items.BROWN_MUSHROOM,Items.RED_MUSHROOM};
         Supplier<ItemStack[]> foodStacks=()->{var out=new ItemStack[foods.length];for(int i=0;i<foods.length;i++)out[i]=st(foods[i],foods[i]==Items.BREAD?32:20);return out;};
         step(5,()->{srv(()->{sl().setBlock(HALL,EternalDefense.MESS_HALL_I.get().defaultBlockState(),3);pack();fill();});tp(HALL.getX()+.5,sy,HALL.getZ()-2.5,0,25);hold(ItemStack.EMPTY);},"a Mess Hall Mk I; an empty pack; an empty Hub");
@@ -250,7 +237,7 @@ public final class QaRound41 {
         step(15,()->check("Take back puts the table's food in the pack, not back in the Hub",srvGet(()->inPack(Items.CARROT)>=5&&inPack(Items.BREAD)>=2&&(hubTotal()+"").equals(note)),srvGet(()->inPack(Items.CARROT)+" "+inPack(Items.BREAD)+" hub "+hubTotal()+" was "+note)),"take back");
         step(5,()->closeAll(),"close");
 
-        // ---- the raid skull: three real deaths near the beacon -------------------------------------------------------------------------------
+        // The raid skull: three real deaths near the beacon
         step(5,()->{srv(()->{var d=CampaignData.get(sl());d.phase="raid";d.raidType="normal";d.hardRaid=false;d.raidTier=0;d.introRaid=false;d.introCompleted=true;d.wave=1;d.raidsStarted=7;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.deaths=0;d.health=d.maximumHealth();d.setDirty();});
             tp(B.getX()+3.5,sy,B.getZ()+.5,90,10);sync();},"a raid (no spawns), next to the beacon");
         step(20,()->{check("raid: the skull counts 3 deaths left",clientState("livesLeft")==3,""+clientState("livesLeft"));shot("r41_07_raid_skull_3");},"skull 3");
@@ -268,7 +255,7 @@ public final class QaRound41 {
         step(10,()->shot("r41_09_overview_raid_skull"),"Overview with the skull");
         step(5,()->{closeAll();srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.deaths=0;d.health=d.maximumHealth();d.setDirty();});sync();},"end the raid");
 
-        // ---- the radio: one line at a time --------------------------------------------------------------------------------------------------
+        // The radio: one line at a time
         step(140,()->SOUNDS.clear(),"wait until no line can still be playing (the sounds the client receives are counted from here)");
         step(2,()->srv(()->{SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.FIRE,sp());SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.FIRE,sp());SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.SUPPLY,sp());}),"three flare calls answered at once");
         after(20,()->check("three calls at once: one radio line plays",sounds("flare.")==1,String.valueOf(SOUNDS)),"one line");
@@ -281,7 +268,7 @@ public final class QaRound41 {
         step(2,()->srv(()->SupportChatter.say(sl(),sp().position(),SupportCalls.Kind.RETURN,sp())),"a return flare call");
         after(20,()->check("and a flare line plays again",sounds("flare.recall_chatter")==1,String.valueOf(SOUNDS)),"line again");
 
-        // ---- an ammo and an attachment table with every part in a later Age (the screen fed with that state) --------------------------------------
+        // An ammo and an attachment table with every part in a later Age (the screen fed with that state)
         for(String kind:List.of("attachment","ammo")){
             for(int locked:new int[]{3,1}){
                 step(5,()->{var n=new CompoundTag();n.putString("kind",kind);n.putInt("age",1);for(String k:List.of("gun","ammo","attachment","armor"))n.putInt(k+"Age",k.equals(kind)?1:0);
@@ -297,7 +284,7 @@ public final class QaRound41 {
         step(5,()->{check("no gun in hand: the old line, Hold a gun",drawnHas("Hold a gun"),drawn());shot("r41_11_attachment_no_gun");},"hold a gun");
         step(5,()->closeAll(),"close");
 
-        // ---- the MRE Station's press, and Create's goggles on every animated block ---------------------------------------------------------
+        // The MRE Station's press, and Create's goggles on every animated block
         step(5,()->srv(()->{sl().setBlock(MRE,EternalDefense.MRE_STATION.get().defaultBlockState(),3);
             var goggles=BuiltInRegistries.ITEM.get(new ResourceLocation("create","goggles"));sp().setItemSlot(EquipmentSlot.HEAD,new ItemStack(goggles));note=String.valueOf(goggles);}),"an MRE Station; Create's goggles on");
         step(5,()->{look(MRE.offset(0,0,-3),MRE.getX()+.5,MRE.getY()+.9,MRE.getZ()+.5);ccStart=classCasts();},"look at the MRE Station");
@@ -312,14 +299,14 @@ public final class QaRound41 {
         step(5,()->look(HALL.offset(0,0,-3),HALL.getX()+.5,HALL.getY()+.5,HALL.getZ()+.5),"look at the Mess Hall");
         step(200,()->{long cc=classCasts()-ccStart;check("goggles on the MRE Station, the satellite (a minute), the Hub and the Mess Hall: no ClassCastException in the log, the game runs",cc==0&&mc().player!=null,"new ClassCastException lines: "+cc+", goggles="+note);},"goggles");
 
-        // ---- side quest (owner): the mod's installations add base score, the whole set one tier -------------------------------------------------
+        // Side quest: the mod's installations add base score, the whole set one tier
         step(5,()->{String r=srvGet(()->{
                 var blocks=new HashMap<Long,net.minecraft.world.level.block.state.BlockState>();int x=0;
                 for(String id:BaseScoring.INSTALLATIONS){String reg=id.equals("mess_hall")||id.equals("drink_mixer")?id+"_mk1":id;
                     var block=BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,reg));if(block==net.minecraft.world.level.block.Blocks.AIR)return "missing block "+reg;
                     blocks.put(new BlockPos(100000+x++*4,0,100000).asLong(),block.defaultBlockState());}
                 var d=CampaignData.get(sl());int all=BaseScoring.analyze(d,blocks,Set.of()).installations();
-                // a second Mess Hall (Mk III) and the blocks that are not in the set change nothing
+                // A second Mess Hall (Mk III) and the blocks that are not in the set change nothing
                 for(String extra:List.of("mess_hall_mk3","fob_beacon","supply_catapult","supply_delivery_gate","logistics_hub_part"))blocks.put(new BlockPos(100000+x++*4,0,100000).asLong(),BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,extra)).defaultBlockState());
                 int extras=BaseScoring.analyze(d,blocks,Set.of()).installations();
                 blocks.entrySet().removeIf(e->e.getValue().is(EternalDefense.COMMAND_TABLE.get()));int missingOne=BaseScoring.analyze(d,blocks,Set.of()).installations();

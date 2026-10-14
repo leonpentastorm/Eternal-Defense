@@ -10,11 +10,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * What a fire support looks and sounds like when it lands (server side; vanilla particle and sound packets only). The big ones are sent to
- * players far beyond the usual 32 blocks, so a barrage on the far side of the base is still seen and heard. Explosions use the game's own
- * explosion sound (0.0.18) except the Bunker Buster, the cluster bomblets and the shockwave, which have the owner's sounds.
- */
+/** What a fire support looks and sounds like when it lands */
 final class Blasts {
     private Blasts(){}
     /** Players this close see the flash, fireballs and smoke column of a big blast (the vanilla limit is 32 blocks). */
@@ -24,7 +20,7 @@ final class Blasts {
     static final float FLARE_POP_VOLUME=2f;
     static final float CANNON_VOLUME=8f,FLARE_VOLUME=6f,SHELL_VOLUME=6f,BUNKER_VOLUME=12f,FIRE_VOLUME=5f,BOMBLET_VOLUME=2.5f;
 
-    /** Sends a particle burst to every player within {@code range}, past the vanilla distance limit. */
+    /** Sends a particle burst to every player within range, past the vanilla distance limit. */
     static void far(ServerLevel l,ParticleOptions particle,double x,double y,double z,int count,double dx,double dy,double dz,double speed,double range){
         for(var p:l.players())if(p.distanceToSqr(x,y,z)<=range*range)l.sendParticles(p,particle,true,x,y,z,count,dx,dy,dz,speed);
     }
@@ -44,7 +40,7 @@ final class Blasts {
         far(l,new BlockParticleOption(ParticleTypes.BLOCK,ground),c.x,c.y+.4,c.z,count,spread,.3,spread,.45,64);
     }
 
-    /** A shell of the Explosion Barrage lands: flash, fireballs, a ring of dust, earth thrown up, a column of smoke, and the game's explosion. */
+    /** A shell of the Explosion Barrage lands: flash, fireballs, a ring of dust, earth thrown up, a column of smoke */
     static void shell(ServerLevel l,Vec3 c,double r){
         far(l,ParticleTypes.FLASH,c.x,c.y+1,c.z,1,0,0,0,0,FAR);
         far(l,ParticleTypes.EXPLOSION_EMITTER,c.x,c.y+.6,c.z,3,r*.25,.4,r*.25,0,FAR);
@@ -83,7 +79,7 @@ final class Blasts {
         far(l,ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,at.x,at.y+1,at.z,16,r*.2,.3,r*.2,.03,FAR);
         explode(l,at,6f,.6f);
     }
-    /** One cluster bomblet goes off: a small blast and its own crack, quieter than a shell so a dozen at once still sound like a cluster. */
+    /** One cluster bomblet goes off: a small blast and its own crack */
     static void bomblet(ServerLevel l,double x,double y,double z){
         far(l,ParticleTypes.EXPLOSION,x,y+.4,z,1,0,0,0,0,96);
         l.sendParticles(ParticleTypes.FLAME,x,y+.3,z,8,.4,.2,.4,.06);l.sendParticles(ParticleTypes.SMOKE,x,y+.5,z,6,.3,.3,.3,.03);
@@ -98,10 +94,7 @@ final class Blasts {
         far(l,ParticleTypes.EXPLOSION,x,y,z,1,0,0,0,0,FAR);
         sound(l,new Vec3(x,y,z),DefenseSounds.CANNON_FIRE.get(),CANNON_VOLUME,vary(l,1f));
     }
-    /**
-     * A flare lands: a bright burst, sparks and a rising plume of signal smoke, with the game's firework pop. (The 0.0.16 siren is gone in
-     * 0.0.19: the thrower's radio answers instead, {@link SupportChatter}.)
-     */
+    /** A flare lands: a bright burst, sparks and a rising plume of signal smoke, with the game's firework pop. */
     static void flareLanded(ServerLevel l,Vec3 at,float pitch){
         far(l,ParticleTypes.FLASH,at.x,at.y+.3,at.z,1,0,0,0,0,96);
         far(l,ParticleTypes.FIREWORK,at.x,at.y+.3,at.z,30,.2,.3,.2,.18,96);

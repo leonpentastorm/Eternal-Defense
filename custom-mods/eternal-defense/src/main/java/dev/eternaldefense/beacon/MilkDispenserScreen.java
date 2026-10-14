@@ -8,7 +8,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** The milk tank as a graduated gauge, the refill slots with a hint of what goes in, and the two ways to use the block. */
+/** The milk tank as a graduated gauge, the refill slots with a hint of what goes */
 final class MilkDispenserScreen extends AbstractContainerScreen<MilkDispenser.DispenserMenu> {
     static final int WIDTH=176,HEIGHT=225,MILK=0xfff2eee0;
     MilkDispenserScreen(MilkDispenser.DispenserMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=WIDTH;imageHeight=HEIGHT;}

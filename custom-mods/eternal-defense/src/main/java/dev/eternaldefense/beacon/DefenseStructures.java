@@ -31,11 +31,11 @@ final class DefenseStructures {
     static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(EternalDefense.BEACON.get());}
     /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
     static boolean big(BlockState state){return state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())||state.is(EternalDefense.BEACON.get())&&state.getValue(MK)==4;}
-    /** The Support Platform, the Exchange Shop, the Satellite Beacon and the FOB Beacon (0.0.23) are two blocks tall: the upper cell is a structure part. */
+    /** The Support Platform, the Exchange Shop, the Satellite Beacon and the FOB Beacon are two blocks tall */
     static boolean tallSupport(BlockState state){return state.is(EternalDefense.SUPPORT_PLATFORM.get())||state.is(EternalDefense.EXCHANGE_SHOP.get())||state.is(EternalDefense.SATELLITE_BEACON.get())||state.is(EternalDefense.FOB_BEACON.get());}
-    /** The Command Table (0.0.20): 2 wide (clockwise of its facing) x 2 tall x 2 deep (behind), its anchor the front right block. */
+    /** The Command Table: 2 wide (clockwise of its facing) x 2 tall x 2 deep (behind) */
     static boolean table(BlockState state){return state.is(EternalDefense.COMMAND_TABLE.get());}
-    /** The Tactical Enchanting Table (0.0.27): 2 wide (clockwise of its facing) x 2 tall x 1 deep, like the weapon benches. */
+    /** The Tactical Enchanting Table: 2 wide (clockwise of its facing) x 2 tall x 1 deep, like the weapon benches. */
     static boolean enchanting(BlockState state){return state.is(EternalDefense.ENCHANTING_TABLE.get());}
     /** Blocks that are broken as one piece and rebuild a damaged footprint. */
     static boolean selfHealing(BlockState s){return s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(EternalDefense.SUPPORT_CANNON.get())||s.is(EternalDefense.SUPPLY_CATAPULT.get())||tallSupport(s)||table(s)||enchanting(s);}
@@ -77,7 +77,6 @@ final class DefenseStructures {
     static VoxelShape full(BlockState state){
         if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.full(state);
         // Collision is a simple installation envelope, independent of decorative mesh detail.
-        // Exact unions of dozens of fractional cuboids create enormous voxel grids on every raycast.
         if(state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get()))return Shapes.create(-1,0,-1,2,2,2);
         if(tallSupport(state))return Shapes.create(0,0,0,1,2,1);
         if(table(state))return shapes.computeIfAbsent("table:"+state.getValue(FACING),k->{
@@ -95,7 +94,7 @@ final class DefenseStructures {
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}
         @Override public RenderShape getRenderShape(BlockState state){return RenderShape.INVISIBLE;}
         @Override public PushReaction getPistonPushReaction(BlockState state){return PushReaction.BLOCK;}
-        /** The upper cell of a FOB Beacon cannot be mined (breaking it would take the beacon with it) or broken by withers. */
+        /** The upper cell of a FOB Beacon cannot be mined (breaking it would take the beacon with it) or broken */
         @Override public float getDestroyProgress(BlockState state,Player p,BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(EternalDefense.FOB_BEACON.get())?0:super.getDestroyProgress(state,p,level,pos);}
         @Override public boolean canEntityDestroy(BlockState state,BlockGetter level,BlockPos pos,net.minecraft.world.entity.Entity e){return !level.getBlockState(anchor(level,pos)).is(EternalDefense.FOB_BEACON.get())&&super.canEntityDestroy(state,level,pos,e);}
         @Override public VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){var root=anchor(level,pos);var owner=level.getBlockState(root);if(!owns(owner))return Shapes.empty();return cell(owner,state.getValue(X)-1,state.getValue(Y),state.getValue(Z)-1);}

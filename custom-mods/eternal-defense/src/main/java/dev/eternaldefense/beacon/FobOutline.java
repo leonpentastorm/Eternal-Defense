@@ -19,22 +19,16 @@ import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * Where a FOB counts (0.0.30): the owner could not tell which part of a spread-out village a FOB Beacon would take, nor where its zone (the
- * meal bonus, the shop) begins. The server sends each player in the Overworld the zones of the FOBs near them (each FOB can hide its own
- * outline on its screen), and, while they hold a FOB Beacon, the zone the spot they look at would get, with its villagers, beds and
- * workstations and whether the FOB may be planted there. {@code FobOutlineClient} draws the outlines, a see-through FOB where it would stand
- * and a line under the crosshair. Nothing here changes a rule: the preview asks {@link Fobs#plantProblem} like the item does.
- */
+/** Where a FOB counts: the part of a village a FOB Beacon would take, shown before planting. */
 final class FobOutline {
     private FobOutline(){}
-    /** Ticks between looks (while holding a FOB Beacon) and between zone updates otherwise; FOBs this far away (blocks) are sent. */
+    /** Ticks between looks (while holding a FOB Beacon) and between zone updates otherwise */
     static final int PREVIEW_TICKS=10,ZONES_TICKS=40,NEAR=160;
-    /** A sent state is sent again at least this often (ticks), in case a packet was dropped on the client's side of a dimension change. */
+    /** A sent state is sent again at least this often (ticks) */
     static final int RESEND_TICKS=200;
     private record Sent(int hash,long at){}
     private static final Map<UUID,Sent> SENT=new HashMap<>();
-    /** The preview's zone, kept a few seconds per village section looked at (a player sweeping the ground asks for the same ones). */
+    /** The preview's zone, kept a few seconds per village section looked */
     private record Looked(Set<Long> sections,long at){}
     private static final Map<Long,Looked> LOOKED=new HashMap<>();
     static void clear(){SENT.clear();LOOKED.clear();}
@@ -57,7 +51,7 @@ final class FobOutline {
             BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Sync(data));
         }
     }
-    /** What one player sees: the FOB zones near them and, while they hold a FOB Beacon, the preview for the spot they look at. */
+    /** What one player sees: the FOB zones near them and, while they hold a FOB Beacon */
     static CompoundTag state(ServerPlayer p,boolean holding){
         var out=new CompoundTag();var zones=new ListTag();out.put("zones",zones);
         if(p.level().dimension()!=Level.OVERWORLD)return out;
@@ -66,13 +60,13 @@ final class FobOutline {
             if(!f.showZone&&!holding)continue;
             if(Math.abs(f.pos.getX()-p.getX())>NEAR||Math.abs(f.pos.getZ()-p.getZ())>NEAR)continue;
             var sections=FobZone.of(l,f);if(sections.isEmpty())continue;
-            var z=new CompoundTag();z.putLong("id",f.id);z.putString("name",f.name);z.putString("state",f.state.id());z.putInt("ground",f.pos.getY());   // 0.0.33 (owner): the FOB Beacon's ground level, marked on the walls
+            var z=new CompoundTag();z.putLong("id",f.id);z.putString("name",f.name);z.putString("state",f.state.id());z.putInt("ground",f.pos.getY());   // The FOB Beacon's ground level, marked on the walls
             z.putLongArray("sections",sorted(sections));zones.add(z);
         }
         if(holding){var at=target(p);if(at!=null)out.put("preview",preview(l,at));}
         return out;
     }
-    /** Where a FOB Beacon used now would stand (as the item works it out), or null when the player looks at no block within reach. */
+    /** Where a FOB Beacon used now would stand (as the item works it out) */
     static BlockPos target(ServerPlayer p){
         var hit=p.pick(p.getBlockReach(),1f,false);
         if(hit.getType()!=HitResult.Type.BLOCK||!(hit instanceof BlockHitResult block))return null;

@@ -13,14 +13,10 @@ import net.minecraft.world.item.*;
 import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
 
-/**
- * 0.0.35 (owner): the Drink Station on one screen. Left: the vanilla brewing stand and the 54-slot potion storage under it. Right: the
- * mixing menu (Mk II and up), the Mess Hall's flow: tabs Brew Pot and Latte, effect tiles, Gather, Take back, Brew; toast notices, a
- * preview line and ghost slots; then the inventory and the sweetener tank. The server owns all state; this screen reads its view.
- */
+/** The Drink Station on one screen. */
 final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu> {
     static final ResourceLocation STAND=new ResourceLocation("textures/gui/container/brewing_stand.png");
-    /** Accent of each station tier: plank, olive, copper, canteen green (the owner's four models). */
+    /** Accent of each station tier: plank, olive, copper, canteen green. */
     static final int[] TIER={0xffc9a24b,0xff9cb35a,0xffd9824a,0xff6ee07a};
     static final int W=DrinkStationMenu.WIDTH,H=DrinkStationMenu.HEIGHT,RX=DrinkStationMenu.RX,RW=DrinkStationMenu.RW,SYRUP=0xffd2557a;
     static final int[] BUBBLES={29,24,20,16,11,6,0};
@@ -39,7 +35,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
     static MobEffect effect(ResourceLocation id){return ForgeRegistries.MOB_EFFECTS.getValue(id);}
     static void effectIcon(GuiGraphics g,MobEffect e,int x,int y,int size){if(e==null)return;var sprite=Minecraft.getInstance().getMobEffectTextures().get(e);g.blit(x,y,0,size,size,sprite);}
 
-    /** One effect to choose: its vanilla icon; chosen ones are framed cyan with a check, ones with no potion in reach are dimmed. */
+    /** One effect to choose: its vanilla icon; chosen ones are framed cyan with a check */
     final class Tile extends Button {
         final int index;
         Tile(int x,int y,int index){super(x,y,DrinkStationMenu.TILE,DrinkStationMenu.TILE,Component.empty(),b->action(DrinkStationMenu.EFFECT+index),DEFAULT_NARRATION);this.index=index;}
@@ -59,7 +55,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         super.init();pots.clear();tiles.clear();
         potTab=addRenderableWidget(new Ui.UiButton(leftPos+RX,topPos+DrinkStationMenu.TAB_Y,72,15,Component.empty(),Ui.Look.TAB,b->action(DrinkStationMenu.MODE_POT)).painter((g,self,h)->tab(g,self,new ItemStack(EternalDefense.BREW_POT_ITEM.get()),"drinks.tab.pot")).noLabel());
         latteTab=addRenderableWidget(new Ui.UiButton(leftPos+RX+76,topPos+DrinkStationMenu.TAB_Y,72,15,Component.empty(),Ui.Look.TAB,b->action(DrinkStationMenu.MODE_LATTE)).painter((g,self,h)->tab(g,self,new ItemStack(EternalDefense.PAPER_CUP.get()),"drinks.tab.latte")).noLabel());
-        // the Brew Pots, as the Mess Hall's stew pots: the pot, its number, its drink's colour and a bar (one serving: full or empty)
+        // The Brew Pots, as the Mess Hall's stew pots: the pot, its number, its drink's colour and a bar
         for(int i=0;i<3;i++){final int index=i;pots.add(addRenderableWidget(new Ui.UiButton(leftPos+RX+i*DrinkStationMenu.POT_PITCH,topPos+DrinkStationMenu.POTS_Y,DrinkStationMenu.POT_W,18,Component.empty(),Ui.Look.ROW,b->action(DrinkStationMenu.POT+index)).painter((g,self,h)->potChip(g,self,index)).noLabel()));}
         int by=topPos+DrinkStationMenu.BUTTON_Y;
         primary=addRenderableWidget(new Ui.UiButton(leftPos+RX,by,100,16,Component.empty(),Ui.Look.PRIMARY,b->{int mode=ctaMode();if(mode==GATHER)action(DrinkStationMenu.GATHER);else if(mode==BREW){if(replacing())confirming=true;else action(DrinkStationMenu.BREW);}}).painter(this::primaryFace).noLabel());
@@ -85,14 +81,14 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
     private int builtFor=-1;
     @Override protected void containerTick(){super.containerTick();if(builtFor!=menu.catalogue.size())buildTiles();}
 
-    // ---- buttons --------------------------------------------------------------------------------------------------------------
+    // Buttons
     private boolean replacing(){return !latte()&&view().getString("Problem").equals("pot_full");}
     private int ctaMode(){String p=view().getString("Problem");if(explicit()&&GATHERABLE.contains(p))return view().getBoolean("Gatherable")?GATHER:MISSING;return BREW;}
     private void tab(GuiGraphics g,Ui.UiButton b,ItemStack icon,String key){
         g.pose().pushPose();g.pose().translate(b.getX()+3,b.getY(),0);g.pose().scale(.8f,.8f,1);g.renderItem(icon,0,0);g.pose().popPose();
         Ui.text(g,font,Ui.t(key),b.getX()+19,b.getY()+4,b.selected?Ui.INK:Ui.MUTED,b.getWidth()-22);
     }
-    /** A Brew Pot chip, drawn as the Mess Hall's stew pot chip: the pot, its number, its drink's colour and how full it is. */
+    /** A Brew Pot chip, drawn as the Mess Hall's stew pot chip */
     private void potChip(GuiGraphics g,Ui.UiButton b,int index){
         var list=view().getList("Pots",Tag.TAG_COMPOUND);if(index>=list.size())return;var drink=DrinkData.load(list.getCompound(index).getCompound("Drink"));
         g.pose().pushPose();g.pose().translate(b.getX()+2,b.getY()+1,0);g.pose().scale(.75f,.75f,1f);g.renderItem(new ItemStack(EternalDefense.BREW_POT_ITEM.get()),0,0);g.pose().popPose();
@@ -115,7 +111,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         g.pose().pushPose();g.pose().translate(right-font.width(count)-9,b.getY()+3,0);g.pose().scale(.5f,.5f,1f);g.renderItem(item,0,0);g.pose().popPose();
     }
 
-    // ---- background -----------------------------------------------------------------------------------------------------------
+    // Background
     @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
         var v=view();int accent=accent();
         Ui.panel(g,leftPos,topPos,W,H);Ui.header(g,font,leftPos,topPos,W,title,null);
@@ -197,7 +193,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         var list=view().getList("NoticeArgs",Tag.TAG_STRING);var raw=new ArrayList<String>();for(int i=0;i<list.size();i++)raw.add(list.getString(i));
         return notice(font,key,raw,RW-10);
     }
-    /** A notice in one line of {@code width}: effect lists name every effect, or the first and "+N" when that would not fit. */
+    /** A notice in one line of width: effect lists name every effect, or the first and "+N" when that would not fit. */
     static Component notice(net.minecraft.client.gui.Font font,String key,List<String> raw,int width){
         var full=Ui.t("drinks.notice."+key,raw.stream().map(r->arg(r,false)).toArray());
         return font.width(full)<=width?full:Ui.t("drinks.notice."+key,raw.stream().map(r->arg(r,true)).toArray());
@@ -207,7 +203,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         var names=Arrays.stream(raw.substring(3).split(",")).map(id->{var e=effect(ResourceLocation.tryParse(id));return e==null?id:e.getDisplayName().getString();}).toList();
         return compact&&names.size()>1?names.get(0)+" +"+(names.size()-1):String.join(", ",names);
     }
-    /** The mixing slots: the Latte's cup and output around them, or the Brew Pot; slots past this tier show a padlock. */
+    /** The mixing slots: the Latte's cup and output around them, or the Brew Pot */
     private void table(GuiGraphics g,CompoundTag v,boolean isLatte){
         int y=topPos+DrinkStationMenu.SLOT_Y-1,accent=accent();var order=v.getIntArray("Order");int limit=v.getInt("Limit");
         if(isLatte){
@@ -230,13 +226,13 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         g.fill(x,y+1,x+6,y+7,0xff000000|drink.color());
         Ui.text(g,font,Ui.t("drinks.preview",String.join(" + ",parts),DrinkRules.minutes(drink.duration())),x+10,y,Ui.INK,RW-10);
     }
-    /** Under the tiles: the Brew Pots (Brew Pot tab), or how a Latte is made (Latte tab), as the Mess Hall shows its pots or the sandwich hint. */
+    /** Under the tiles: the Brew Pots (Brew Pot tab), or how a Latte is made (Latte tab) */
     private void potRow(GuiGraphics g,CompoundTag v,boolean isLatte){
         int x=leftPos+RX,y=topPos+DrinkStationMenu.POTS_Y;
         if(isLatte){Ui.text(g,font,Ui.t("drinks.latte_hint"),x,y+5,Ui.MUTED,RW);return;}
         if(v.getList("Pots",Tag.TAG_COMPOUND).isEmpty())Ui.text(g,font,Ui.t("drinks.no_pots"),x,y+5,Ui.ORANGE,RW);
     }
-    /** The sweetener, in the mixing row (Brew Pot tab): its slot, a bar with a mark every 1,000 mB and the mB in it; the +0/+10/+20 button beside. */
+    /** The sweetener, in the mixing row (Brew Pot tab): its slot, a bar with a mark every 1,000 mB and the mB */
     private void sweetener(GuiGraphics g,CompoundTag v){
         int mb=v.getInt("Tank"),sx=leftPos+DrinkStationMenu.SWEET_X-1,y=topPos+DrinkStationMenu.SLOT_Y-1;
         Ui.slot(g,sx,y,SYRUP);if(menu.mix.getItem(5).isEmpty())Ui.ghost(g,DrinkData.sample(net.minecraft.world.effect.MobEffects.REGENERATION,0),sx+1,y+1);
@@ -247,7 +243,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
     }
     @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
 
-    // ---- input ----------------------------------------------------------------------------------------------------------------
+    // Input
     @Override public boolean mouseClicked(double mx,double my,int button){
         if(confirming)return replaceYes.mouseClicked(mx,my,button)||replaceNo.mouseClicked(mx,my,button)||true;
         int index=storeIndexAt(mx,my);
@@ -258,7 +254,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
     @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){return confirming||super.mouseDragged(mx,my,button,dx,dy);}
     @Override public boolean keyPressed(int key,int scan,int mods){if(confirming){if(key==256)confirming=false;return true;}return super.keyPressed(key,scan,mods);}
 
-    // ---- tooltips -------------------------------------------------------------------------------------------------------------
+    // Tooltips
     private void tip(GuiGraphics g,String key,int mx,int my,Object... args){g.renderTooltip(font,font.split(Ui.t(key,args),200),mx,my);}
     private void tooltips(GuiGraphics g,int mx,int my){
         if(hoveredSlot!=null&&hoveredSlot.hasItem())return;
@@ -315,7 +311,7 @@ final class DrinkStationScreen extends AbstractContainerScreen<DrinkStationMenu>
         if(confirming){super.render(g,-1,-1,partial);confirmation(g,mx,my);return;}
         super.render(g,mx,my,partial);renderTooltip(g,mx,my);tooltips(g,mx,my);
     }
-    /** The question before a pot that still holds a drink is brewed over. Only its two buttons answer; Escape keeps the drink. */
+    /** The question before a pot that still holds a drink is brewed over. */
     private void confirmation(GuiGraphics g,int mx,int my){
         g.pose().pushPose();g.pose().translate(0,0,400);g.fill(0,0,width,height,0xb0050a0e);
         int w=260,h=96,x=leftPos+W/2-w/2,y=topPos+H/2-h/2+4;

@@ -32,7 +32,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.function.Supplier;
 
-/** Buy items with Ardent Energy and sell items for it. Offers live in config/eternal-defense-exchange.txt ([sell] and [buy] sections) and reload each time the shop opens. */
+/** Buy items with Ardent Energy and sell items for it. */
 final class ExchangeShop {
     private ExchangeShop(){}
     static final String FILE="eternal-defense-exchange.txt";
@@ -47,12 +47,7 @@ final class ExchangeShop {
         # Buying always costs more than selling, so trading in circles never pays. Lines starting with # are ignored.
         # Changes apply the next time a player opens the shop. Delete this file to get the defaults back.
         """;
-    /**
-     * The default: sell the surplus of a factory, buy parts at a premium when farming instead; since 0.0.21 also rare vanilla materials (gold,
-     * blaze rods, ender pearls, diamonds) and iron, plus iron in bulk. 0.0.41 (owner): a blaze rod costs 6 (was 3).
-     * 0.0.43 (owner): iron costs twice as much and comes as ore (16 Iron Ore for 2, was 16 ingots for 1: smelt it, or crush it with Create
-     * for more), the bulk lot is 8 iron blocks for 8 (was 16 for 8), and 16 andesite alloy cost 1 (was 2).
-     */
+    /** The default: sell the surplus of a factory, buy parts at a premium when farming instead */
     static final String PACK="""
         [sell]
         eternal_defense:warlord_seal = 4
@@ -98,7 +93,7 @@ final class ExchangeShop {
         }
         return map;
     }
-    /** Reads the file, creating it from the template if missing. Problems are logged, never fatal. */
+    /** Reads the file, creating it from the template if missing. */
     static Offers offers(){
         Path file=FMLPaths.CONFIGDIR.get().resolve(FILE);
         try{
@@ -140,7 +135,7 @@ final class ExchangeShop {
     static void send(ServerPlayer p,BlockPos pos,String message){
         var w=Supply.at(p,pos);var data=new CompoundTag();data.putInt("energy",ArdentEnergy.balance(w));data.putBoolean("creative",p.isCreative());
         var all=offers();data.put("buy",rows(all.buy(),false));data.put("sell",rows(all.sell(),true));
-        var have=new ListTag();   // how many of each item to sell the player is carrying
+        var have=new ListTag();   // How many of each item to sell the player is carrying
         for(var offer:all.sell()){var c=new CompoundTag();c.putInt("have",Economy.have(w,BuiltInRegistries.ITEM.get(new ResourceLocation(offer.id()))));have.add(c);}
         data.put("have",have);
         BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(()->p),new Open(pos,data,message));

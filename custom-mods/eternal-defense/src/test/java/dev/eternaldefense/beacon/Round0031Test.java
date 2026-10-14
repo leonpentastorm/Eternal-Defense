@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.31 list, the parts that need no world: the gate's storage, its buttons, the Command Table's FOB tab, the menu button packet. */
+/** The list, the parts that need no world: the gate's storage, its buttons, the Command Table's FOB tab */
 final class Round0031Test {
     static String lang() throws Exception{return Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));}
 
@@ -34,7 +34,7 @@ final class Round0031Test {
         assertTrue(Routes.LINK+FobRules.MAX_FOBS<=Routes.TOGGLE&&Routes.TOGGLE+RouteRules.Slot.values().length<=Routes.CHOOSE);
         assertTrue(Routes.chooseButton(RouteRules.Slot.SPECIALTY,RouteRules.TRADER_LOOT.size()-1)>Byte.MAX_VALUE,"these ids would not survive the vanilla button packet");
     }
-    /** The vanilla button packet carries a byte: ids above 127 broke on a dedicated server (the enchanting table's buy buttons since 0.0.27). */
+    /** The vanilla button packet carries a byte: ids above 127 broke on a dedicated server. */
     @Test void menuButtonsGoByTheModsOwnPacket(){
         String net=SosTest.source("BeaconNetwork.java");
         assertTrue(net.contains("b.writeVarInt(p.container);b.writeVarInt(p.id);"),"the id as a VarInt");

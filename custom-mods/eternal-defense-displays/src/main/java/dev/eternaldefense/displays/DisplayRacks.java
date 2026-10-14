@@ -110,7 +110,7 @@ public final class DisplayRacks {
     }
     static final class RackItem extends BlockItem {
         RackItem(Block b){super(b,new Item.Properties());}
-        /** Short interaction cues from the language file; the second block describes only what is special about this family. */
+        /** Short interaction cues from the language file; the second block describes only what is special about */
         @Override public void appendHoverText(ItemStack s,Level l,List<Component> lines,TooltipFlag flag){
             super.appendHoverText(s,l,lines,flag);
             lines.add(Component.translatable("tooltip.eternal_defense_displays.insert").withStyle(net.minecraft.ChatFormatting.GRAY));

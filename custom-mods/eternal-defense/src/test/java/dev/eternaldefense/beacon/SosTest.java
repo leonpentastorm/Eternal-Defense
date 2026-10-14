@@ -10,11 +10,11 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static dev.eternaldefense.beacon.SosRules.*;
 
-/** Calls for help, DOWN and repairs (0.0.25, FOB slice 3) without a world: the SOS clock, the answer, the state machine, the prices, the data. */
+/** Calls for help, DOWN and repairs without a world: the SOS clock, the answer, the state machine, the prices */
 final class SosTest {
     static final String SRC="src/main/java/dev/eternaldefense/beacon/";
 
-    // ---- the SOS clock ----------------------------------------------------------------------------------------------------------------------------
+    // The SOS clock
     @Test void theSosComesTenToTwelveHoursOfPlayApart(){
         assertEquals(720_000L,SOS_MIN,"10 hours of play (72,000 ticks an hour)");assertEquals(864_000L,SOS_MAX,"12 hours of play");
         assertEquals(SOS_MIN,delay(0),"the earliest");
@@ -32,7 +32,7 @@ final class SosTest {
         assertFalse(counts(3,false,true,false),"a Home raid runs: paused");
         assertFalse(counts(3,false,false,true),"the Home raid's warning day: paused");
         assertEquals(24_000,TacticalRules.WARNING_TICKS,"the same warning day that locks Tactical Operations");
-        // it counts ticks of play: FobData.onlineTicks grows only while a player is online (Routes.second runs only then)
+        // It counts ticks of play: FobData.onlineTicks grows only while a player is online
         assertTrue(source("Routes.java").contains("d.onlineTicks+=20")&&source("Fobs.java").contains("getPlayerCount()==0)return"),"only time with a player online counts");
         assertTrue(source("FobSos.java").contains("d.sosClock=Math.max(0,d.sosClock-20)"),"the SOS clock counts down by the second, in ticks");
     }
@@ -44,7 +44,7 @@ final class SosTest {
         assertEquals(4,pick(5,1.0),"never out of range");assertEquals(0,pick(5,-1),"never out of range");
     }
 
-    // ---- the answer -------------------------------------------------------------------------------------------------------------------------------
+    // The answer
     @Test void theAnswerHasSevenDaysAndTheHomeRaidComesFirst(){
         assertEquals(168_000L,RESPONSE_TICKS,"7 days of play");
         assertTrue(responseCounts(false,false),"it runs down");
@@ -58,15 +58,15 @@ final class SosTest {
         assertTrue(source("FobSos.java").contains("p.removeEffect(MobEffects.BAD_OMEN);"),"a Bad Omen the player carries is replaced, never stacked");
     }
     @Test void theStateMachinePlantedActiveDown(){
-        // slice 1: the activation raid
+        // The activation raid
         assertEquals(FobRules.State.ACTIVE,FobRules.after(FobRules.State.PLANTED,FobRules.Outcome.WON));
         assertEquals(FobRules.State.DOWN,FobRules.after(FobRules.State.PLANTED,FobRules.Outcome.LOST));
-        // slice 3: the SOS
+        // The SOS
         assertEquals(FobRules.State.ACTIVE,after(FobRules.State.ACTIVE,End.WON),"an SOS won: it stays ACTIVE");
         assertEquals(FobRules.State.DOWN,after(FobRules.State.ACTIVE,End.LOST),"lost: DOWN");
         assertEquals(FobRules.State.DOWN,after(FobRules.State.ACTIVE,End.EXPIRED),"nobody came: DOWN");
         assertEquals(FobRules.State.ACTIVE,after(FobRules.State.ACTIVE,End.REMOVED),"called off: as it was");
-        // the repair
+        // The repair
         assertEquals(FobRules.State.ACTIVE,repaired(FobRules.State.DOWN,true),"a FOB that ever won is ACTIVE again");
         assertEquals(FobRules.State.PLANTED,repaired(FobRules.State.DOWN,false),"one that never won is PLANTED: its raid again, no shortcut");
         assertEquals(FobRules.State.ACTIVE,repaired(FobRules.State.ACTIVE,true),"bringing villagers back changes no state");
@@ -82,7 +82,7 @@ final class SosTest {
         assertTrue(source("Routes.java").contains("if(active&&f.commissioned&&f.clock>0)"),"the inspection clock only runs while ACTIVE");
     }
 
-    // ---- the repair ----------------------------------------------------------------------------------------------------------------------------
+    // The repair
     @Test void theRepairIsTheBasePlusEachVillager(){
         int[] table={1,2,3,4,5};
         assertEquals(1,villagerCost(table,1),"Novice");assertEquals(5,villagerCost(table,5),"Master");
@@ -91,7 +91,7 @@ final class SosTest {
         assertEquals(6,repairCost(true,6,new int[0]),"DOWN with nobody lost: the base");
         assertEquals(1+3+5,repairCost(false,6,new int[]{1,3,5}),"ACTIVE: only the villagers");
         for(int n=0;n<=20;n++){int[] each=new int[n];Arrays.fill(each,2);assertEquals(6+2*n,repairCost(true,6,each),"the total is the sum");}
-        // the numbers live in Economy (0.0.41: the pack's; the discontinued standalone edition asked 6 and 1 to 5)
+        // The numbers live in Economy
         assertEquals(3,Economy.FOB_REPAIR_BASE,"base 3");assertArrayEquals(new int[]{1,1,2,2,3},Economy.FOB_REPAIR_VILLAGER,"per villager by level");
         assertEquals(64,MAX_RECORDS,"more lost villagers than any village holds are not kept");
     }
@@ -113,7 +113,7 @@ final class SosTest {
         assertEquals(123_456,back.sosClock);assertEquals(g.id,back.sosFob);assertEquals(99_000,back.sosLeft);assertEquals(4,back.sosSerial);
         var f2=back.byId(f.id);assertEquals(FobRules.State.DOWN,f2.state);assertEquals(1,f2.deadVillagers.size());
         assertEquals("Hilda",f2.deadVillagers.getCompound(0).getString("name"));assertEquals(3,f2.deadVillagers.getCompound(0).getInt("level"));
-        // a broken or old save: no SOS fields at all, or an SOS pointing at a FOB that is gone
+        // A broken or old save: no SOS fields at all, or an SOS pointing at a FOB that is gone
         var old=new CompoundTag();var empty=FobData.load(old);assertEquals(0,empty.sosFob);assertEquals(0,empty.sosClock);
         var gone=d.save(new CompoundTag());gone.putLong("sosFob",999);assertEquals(0,FobData.load(gone).sosFob,"an SOS of a FOB that is gone is dropped on load");
     }

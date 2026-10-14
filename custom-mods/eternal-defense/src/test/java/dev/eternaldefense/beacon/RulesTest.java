@@ -47,7 +47,7 @@ class RulesTest {
         assertEquals(3,Rules.branchMaximum("reconnaissance"));assertEquals(0,Rules.revealTicks(9),"levels past the top stay at the top");
     }
     @Test void raidsComeEveryTenDaysAtFirstAndEveryThreeAtTheTop() {
-        // 0.0.21: 10 active days at the lowest tier, one less per tier, never below 3 (was 7 down to 2)
+        // 10 active days at the lowest tier, one less per tier, never below 3 (was 7 down to 2)
         assertEquals(10, Rules.intervalDays(Rules.rewardTier(0,0)));
         assertEquals(10, Rules.intervalDays(Rules.rewardTier(0,499)));
         assertEquals(9, Rules.intervalDays(Rules.rewardTier(1,0)));

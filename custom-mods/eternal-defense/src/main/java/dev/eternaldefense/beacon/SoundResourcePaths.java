@@ -12,10 +12,7 @@ public final class SoundResourcePaths {
         String name=path.replace('\\','/');
         return (name.startsWith("tacz_sounds/")||name.contains("/tacz_sounds/"))&&!plain(name);
     }
-    /**
-     * Pure: is {@code name} a non-empty run of a-z, 0-9, '/', '.', '_' and '-' (what vanilla allows in a resource path)? The same test as the
-     * pattern {@code [a-z0-9/._-]+}, without compiling a regular expression for each of the thousands of paths a resource reload checks.
-     */
+    /** Pure: is name a non-empty run of a-z, 0-9, '/', '.', '_' and '-' (what vanilla allows in a resource path)? */
     static boolean plain(String name){
         if(name.isEmpty())return false;
         for(int i=0;i<name.length();i++){char c=name.charAt(i);if(!(c>='a'&&c<='z'||c>='0'&&c<='9'||c=='/'||c=='.'||c=='_'||c=='-'))return false;}

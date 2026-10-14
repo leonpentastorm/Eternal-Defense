@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.38 MRE Station: the MRE holds exactly what its foods give, up to 20 nutrition, with no effects; Marines Fuel seals it. */
+/** The MRE Station: the MRE holds exactly what its foods give, up to 20 nutrition, with no effects */
 final class Round0038Test {
     static final String RES=Round0035Test.RES;
     static String source(String name) throws Exception{return Round0035Test.source(name);}
@@ -33,21 +33,21 @@ final class Round0038Test {
         }
         return packs;
     }
-    /** Vanilla's FoodData.eat(int, float), copied: the food bar takes the nutrition (to 20), saturation the product, capped at the food bar. */
+    /** Vanilla's FoodData.eat(int, float), copied: the food bar takes the nutrition (to 20), saturation the product */
     static float[] eat(float[] bar,int nutrition,float modifier){
         int food=Math.min(nutrition+(int)bar[0],20);float sat=Math.min(bar[1]+(float)nutrition*modifier*2.0F,(float)food);return new float[]{food,sat};
     }
 
-    // ---- no gain, no loss -------------------------------------------------------------------------------------------------------------
+    // No gain, no loss
     @Test void theMreHoldsTheExactSumOfWhatEachFoodGivesAlone(){
         for(var pack:packs()){
             var t=MreRules.sum(pack);
-            int n=0;double s=0;for(var food:pack){n+=food.nutrition();s+=(float)food.nutrition()*food.modifier()*2.0F;}   // each food's value by vanilla's own formula, in float
+            int n=0;double s=0;for(var food:pack){n+=food.nutrition();s+=(float)food.nutrition()*food.modifier()*2.0F;}   // Each food's value by vanilla's own formula, in float
             assertEquals(n,t.nutrition(),"nutrition is the plain sum");
             assertEquals((float)Math.min(s,20),t.saturation(),0f,"saturation is the plain sum (the nearest float), at most 20: "+pack);
             assertTrue(Math.abs(t.saturation()-Math.min(s,20))<=Math.ulp(t.saturation()),"no gain and no loss beyond storing it as a float");
         }
-        // the owner's cases by hand: 2 bread 10 / 12; a golden carrot and a cooked beef 14 / 27.2; 4 cooked beef 32 / 51.2 would pass 20 nutrition
+        // The cases by hand: 2 bread 10 / 12; a golden carrot and a cooked beef 14 /
         assertEquals(new MreRules.Totals(10,(float)((double)(5*.6f*2)+(double)(5*.6f*2))),MreRules.sum(List.of(VANILLA.get("bread"),VANILLA.get("bread"))));
         assertEquals(12f,MreRules.sum(List.of(VANILLA.get("bread"),VANILLA.get("bread"))).saturation(),1e-5f);
         assertEquals(14,MreRules.sum(List.of(VANILLA.get("golden_carrot"),VANILLA.get("cooked_beef"))).nutrition());
@@ -67,14 +67,13 @@ final class Round0038Test {
             assertTrue(Math.abs(back-t.saturation())<=Math.ulp(t.saturation()),"vanilla's nutrition x modifier x 2 gives back the stored saturation, to the float step: "+t+" -> "+back);
             assertTrue(back<=t.saturation(),"never more than it holds: "+t);
             if(back==t.saturation())exact++;else stepOff++;
-            // from an empty bar: the food bar gets the exact nutrition, saturation the stored amount up to the food bar (vanilla's cap)
+            // From an empty bar: the food bar gets the exact nutrition
             var bar=eat(new float[]{0,0},t.nutrition(),m);
             assertEquals(t.nutrition(),(int)bar[0]);assertEquals(Math.min(back,t.nutrition()),bar[1],0f);
-            // with room (the bar at 20 - nutrition, no saturation) every bit of the stored saturation lands
+            // With room (the bar at 20 - nutrition, no saturation) every bit of the stored saturation lands
             var roomy=eat(new float[]{20-t.nutrition(),0},t.nutrition(),m);
             assertEquals(20,(int)roomy[0]);assertEquals(back,roomy[1],0f);
-            // the foods one by one from the same bar: the same food, and the same saturation unless vanilla's cap (the food bar) cut in
-            // between two of them; then the MRE gives what eating them in the best order would, never less
+            // The foods one by one from the same bar: the same food
             float[] b={20-t.nutrition(),0};boolean cut=false;
             for(var food:pack){float before=b[1];b=eat(b,food.nutrition(),food.modifier());cut|=b[1]<before+food.saturation()-1e-4f;}
             assertEquals((int)roomy[0],(int)b[0],"the food bar: "+pack);
@@ -86,7 +85,7 @@ final class Round0038Test {
         assertTrue(exact>stepOff*4,"nearly always exact");
     }
 
-    // ---- the 20 cap ------------------------------------------------------------------------------------------------------------------
+    // The 20 cap
     @Test void anMreHoldsAtMostTwentyNutritionAndTwentySaturation(){
         assertEquals(20,MreRules.MAX_NUTRITION);assertEquals(20f,MreRules.MAX_SATURATION);assertEquals(6,MreRules.FOOD_SLOTS);
         assertTrue(MreRules.fits(14,6),"14 + 6 = 20 fits");assertFalse(MreRules.fits(15,6),"15 + 6 = 21 does not");assertTrue(MreRules.fits(0,20));assertFalse(MreRules.fits(0,21));assertFalse(MreRules.fits(3,-1));
@@ -110,7 +109,7 @@ final class Round0038Test {
         assertTrue(source("MreStationScreen.java").contains("Ui.t(\"mre.over_tip\""),"the screen says why a food does not fit");
     }
 
-    // ---- stacking -------------------------------------------------------------------------------------------------------------------
+    // Stacking
     @Test void mresWithTheSameTotalsStackToSixtyFour() throws Exception{
         assertEquals(64,MreRules.STACK);
         var mre=source("Mre.java");
@@ -124,7 +123,7 @@ final class Round0038Test {
         assertTrue(check.contains("!ItemStack.isSameItemSameTags(out,Mre.create(totals))")&&check.contains("\"output_full\""),"the output stacks by vanilla's own same-item-same-tag rule");
     }
 
-    // ---- food only, nothing else ------------------------------------------------------------------------------------------------------
+    // Food only, nothing else
     @Test void everyEffectAndAlwaysEdibleAreStripped() throws Exception{
         var mre=source("Mre.java");
         var props=body(mre,"public FoodProperties getFoodProperties(ItemStack stack,LivingEntity entity){","\n    }");
@@ -148,7 +147,7 @@ final class Round0038Test {
         assertTrue(body(station,"boolean takeBack(ServerPlayer p){","\n        }").contains("for(int i=0;i<SLOTS;i++)"),"Take back empties every slot");
     }
 
-    // ---- block, items, workshop, recipe, art --------------------------------------------------------------------------------------------
+    // Block, items, workshop, recipe, art
     @Test void theStationSitsEighthInTheKitchenGroup() throws Exception{
         var items=WorkshopFabrication.ITEMS;int kitchen=items.indexOf("mess_hall_mk1"),support=items.indexOf("support_platform");
         assertEquals(kitchen+7,items.indexOf("mre_maker"),"the 8th of the Kitchen group");assertEquals(items.indexOf("cup_dispenser")+1,items.indexOf("mre_maker"));assertEquals(support,items.indexOf("mre_maker")+1,"its last");
@@ -181,12 +180,12 @@ final class Round0038Test {
     }
     @Test void theArmorPlatformNeverSellsTheMre() throws Exception{
         var allowed=body(source("ArmorPlatform.java"),"static boolean allowed(Item item){","\n    }");
-        // only the listed gear mods' items are sold, and this mod is not one of them (the MRE's id contains "mre", which the gear words match)
+        // Only the listed gear mods' items are sold, and this mod is not one of them
         assertTrue(allowed.contains("{\n        if(!MODS.contains(BuiltInRegistries.ITEM.getKey(item).getNamespace())"),"the first check: a listed gear mod");
         assertFalse(ArmorPlatform.MODS.contains(EternalDefense.ID));
     }
 
-    // ---- what the player reads ---------------------------------------------------------------------------------------------------------
+    // What the player reads
     @Test void theGuideAndTheScreenSayWhatTheCodeDoes() throws Exception{
         var json=com.google.gson.JsonParser.parseString(Round0035Test.lang()).getAsJsonObject();
         java.util.function.Function<String,String> t=k->json.get(k).getAsString();

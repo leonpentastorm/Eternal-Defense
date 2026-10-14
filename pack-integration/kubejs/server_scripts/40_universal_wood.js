@@ -1,5 +1,4 @@
 // Expand wood inputs across every recipe serializer, including TaCZ gunpack materials.
-// Rewrite ingredients only: never result stacks, NBT, or the quantity of a material.
 ServerEvents.recipes(event => {
   const Woods = Java.loadClass('dev.eternaldefense.beacon.UniversalWood');
   let changed = 0;

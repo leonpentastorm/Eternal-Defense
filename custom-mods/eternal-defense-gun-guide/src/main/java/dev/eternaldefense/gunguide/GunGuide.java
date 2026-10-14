@@ -5,7 +5,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 
-/** Standalone, client-optional mod. Common entry point references no client classes. */
+/** Standalone, client-optional mod. */
 @Mod(GunGuide.ID)
 public final class GunGuide {
     public static final String ID="eternal_defense_gun_guide";

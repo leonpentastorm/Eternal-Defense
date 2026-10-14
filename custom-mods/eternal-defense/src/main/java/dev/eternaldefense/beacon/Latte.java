@@ -11,15 +11,12 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import java.util.List;
 
-/**
- * 0.0.35 (owner): the Latte, the portable drink (the sandwich of the Drink Station): a Paper Cup and up to two potions, 10 minutes, no
- * sweetener. It stacks to 16, can be drunk at any time and leaves nothing behind. Drinking it makes it the active drink.
- */
+/** The Latte, the portable drink (the sandwich of the Drink Station) */
 final class Latte extends Item {
     Latte(){super(new Item.Properties().stacksTo(DrinkRules.LATTE_STACK));}
     static ItemStack create(DrinkData drink){var stack=new ItemStack(EternalDefense.LATTE.get());stack.getOrCreateTag().put("Drink",drink.save());return stack;}
     static DrinkData drink(ItemStack stack){return stack.hasTag()&&stack.getTag().contains("Drink")?DrinkData.load(stack.getTag().getCompound("Drink")):null;}
-    /** The band colour of the cup (tint 0 of the owner's model). */
+    /** The band colour of the cup. */
     static int color(ItemStack stack){var d=drink(stack);return d==null?0xffffffff:0xff000000|d.color();}
     @Override public Component getName(ItemStack stack){var d=drink(stack);return d==null?super.getName(stack):d.name();}
     @Override public UseAnim getUseAnimation(ItemStack stack){return UseAnim.DRINK;}

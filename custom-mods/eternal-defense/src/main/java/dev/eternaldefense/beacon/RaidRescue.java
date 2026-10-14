@@ -7,17 +7,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import java.util.*;
 
-/**
- * What the raid does about a raider that cannot get to the beacon. Once a second, for every ground raider, it asks two questions: is the way
- * ahead blocked by lava, a chasm or a wide lake ({@link RaidSpawns#lookAhead}), and has the raider made no real progress for
- * {@link RaidMarch#STUCK_SECONDS} while not busy ({@link RaidMarch#stuck})? Either one opens a {@link RaiderGate}: the raider channels beside it
- * and comes out at the edge of the staging ring ({@link RaiderGates}). It can do that {@link RaidMarch#MAX_GATES} times; the next time it is
- * withdrawn so that one unreachable mob cannot time the raid out. A raid boss goes through a gate every time and is never withdrawn (that would
- * fail the raid with "Boss was not defeated"). Raiders keep marching straight: nothing here changes how they move.
- * <p>Not covered, on purpose: flyers and gliders, paratroopers while their parachute is on, and Special Forces soldiers.
- * <p>Diagnostics: start the game with {@code -Deternaldefense.stuckLog=true} and every trigger, channel, interruption, teleport and withdrawal is logged
- * with the terrain around the raider (see {@link #line}).
- */
+/** What the raid does about a raider that cannot get to the beacon. */
 final class RaidRescue {
     private RaidRescue(){}
     static boolean logging(){return Boolean.getBoolean("eternaldefense.stuckLog");}
@@ -29,12 +19,12 @@ final class RaidRescue {
             &&!data.getBoolean("eternalSpecialForces")&&!SpecialForcesRaids.soldier(mob);
     }
 
-    /** Called once a second for each raider. Returns true when the raider was withdrawn (it was removed through {@code it}). */
+    /** Called once a second for each raider. */
     static boolean tick(ServerLevel l,CampaignData d,Mob mob,Iterator<UUID> it){
         if(!eligible(mob))return false;
         long now=l.getGameTime();UUID id=mob.getUUID();
         var place=RaiderGates.channel(id);
-        if(place!=null){RaiderGates.advance(l,d,mob,place,now);return false;} // at a gate: its own clock, exempt from the progress timer
+        if(place!=null){RaiderGates.advance(l,d,mob,place,now);return false;} // At a gate: its own clock, exempt from the progress timer
         double distance=distanceToBeacon(d,mob);
         var objective=BeaconCombat.objective(l);boolean aim=objective!=null&&objective.isAlive();
         boolean sees=aim&&mob.hasLineOfSight(objective);double toTarget=aim?Math.sqrt(mob.distanceToSqr(objective)):Double.MAX_VALUE;
@@ -66,11 +56,11 @@ final class RaidRescue {
     static double distanceToBeacon(CampaignData d,Mob mob){return Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+1,d.beacon.getZ()+.5));}
     /** Positions of every player that could see a raider appear (spectators do not count). */
     static List<Vec3> players(ServerLevel l){var out=new ArrayList<Vec3>();for(var p:l.players())if(!p.isSpectator())out.add(p.position());return out;}
-    /** Does the raider's box fit at {@code to} without touching a block (a boss is bigger than a spawn point)? */
+    /** Does the raider's box fit at to without touching a block (a boss is bigger than a spawn point)? */
     static boolean fits(ServerLevel l,Mob mob,BlockPos to){
         var move=new Vec3(to.getX()+.5-mob.getX(),to.getY()-mob.getY(),to.getZ()+.5-mob.getZ());return l.noCollision(mob,mob.getBoundingBox().move(move));
     }
-    /** A place for the raider to come out: see {@link RaidSpawns#findRescue}; null when there is none (or the raider would not fit). */
+    /** A place for the raider to come out: see RaidSpawns.findRescue */
     static BlockPos findDestination(ServerLevel l,CampaignData d,Mob mob){
         var found=RaidSpawns.findRescue(l,d,RaidSpawns.wedgeOf(d.beacon,mob.blockPosition()),players(l));
         return found!=null&&fits(l,mob,found)?found:null;
@@ -80,7 +70,7 @@ final class RaidRescue {
         var t=RaidMarch.track(mob.getUUID());if(t==null)t=RaidMarch.start(distanceToBeacon(d,mob),now);RaidMarch.track(mob.getUUID(),RaidMarch.dry(t,now));
     }
 
-    /** Puts a raider on its new spot without any leftover movement, path or fall. Nothing is placed anywhere. */
+    /** Puts a raider on its new spot without any leftover movement, path or fall. */
     static void relocate(Mob mob,BlockPos to){
         mob.stopRiding();mob.getNavigation().stop();
         mob.moveTo(to.getX()+.5,to.getY(),to.getZ()+.5,mob.getYRot(),mob.getXRot());
@@ -90,7 +80,7 @@ final class RaidRescue {
 
     private static boolean withdraw(ServerLevel l,CampaignData d,Mob mob,Iterator<UUID> it,RaidMarch.Track track,int gates,String reason){
         diagnose("WITHDRAW",l,d,mob,track,gates,"-",reason,null);
-        it.remove();mob.discard();d.setDirty();RaidMarch.withdrew(); // discard: no death, no drops, no Ardent Energy
+        it.remove();mob.discard();d.setDirty();RaidMarch.withdrew(); // Discard: no death, no drops, no Ardent Energy
         return true;
     }
 
@@ -99,21 +89,18 @@ final class RaidRescue {
         int n=RaidMarch.takeWithdrawn();
         if(n>0)EternalDefense.announce(l,RaidMarch.withdrawnMessage(n)+".");
     }
-    /** The server stops: forget every tracker, corridor and channel (gates are never saved, so they are gone with the world). */
+    /** The server stops: forget every tracker, corridor and channel */
     static void reset(){RaidMarch.forget();RaidSpawns.forgetCorridors();RaiderGates.reset();}
     /** A raid starts or ends, or the campaign is packed up: forget everything and take the gates out of the world. */
     static void reset(ServerLevel l){RaidMarch.forget();RaidSpawns.forgetCorridors();RaiderGates.reset(l);}
 
-    // ---- diagnostics --------------------------------------------------------------------------------------------------------------
-    /** Pure: one log line, {@code [stuck] event=... key=value ...}. */
+    // Diagnostics
+    /** Pure: one log line, [stuck] event=... */
     static String line(String event,LinkedHashMap<String,String> fields){
         var out=new StringBuilder("[stuck] event=").append(event);fields.forEach((k,v)->out.append(' ').append(k).append('=').append(v));return out.toString();
     }
     private static String block(ServerLevel l,BlockPos p){return BuiltInRegistries.BLOCK.getKey(l.getBlockState(p).getBlock()).toString();}
-    /**
-     * Logs one event of a stuck raider (only with {@code -Deternaldefense.stuckLog=true}). {@code track} may be null; {@code reason} is "timer" or "probe:lava|drop|fluid"
-     * for a trigger, the cause for an interruption or cancellation.
-     */
+    /** Logs one event of a stuck raider (only with -Deternaldefense.stuckLog=true). */
     static void diagnose(String event,ServerLevel l,CampaignData d,Mob mob,RaidMarch.Track track,int gates,String destination,String reason,UUID gate){
         if(!logging())return;
         var feet=mob.blockPosition();var toward=new Vec3(d.beacon.getX()+.5-mob.getX(),0,d.beacon.getZ()+.5-mob.getZ());toward=toward.lengthSqr()<1e-6?Vec3.ZERO:toward.normalize();

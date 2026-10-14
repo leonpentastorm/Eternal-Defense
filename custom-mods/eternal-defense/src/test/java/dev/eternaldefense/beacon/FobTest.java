@@ -14,7 +14,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Forward Operating Bases, slice 1 (0.0.23): the rules, names, saved data, meal zone, Ardent rule, model footprint and texts, without a world. */
+/** Forward Operating Bases: the rules, names, saved data, meal zone, Ardent rule, model footprint and texts */
 final class FobTest {
     static final String SRC="src/main/java/dev/eternaldefense/beacon/",ASSETS="src/main/resources/assets/eternal_defense/";
     static String source(String name) throws Exception{return Files.readString(Path.of(SRC+name));}
@@ -28,7 +28,7 @@ final class FobTest {
     private static String gui(String key){return LANG.get("gui.eternal_defense."+key);}
     private static String guide(String part){return GuideText.raw("fob",part,key->LANG.get("gui.eternal_defense."+key));}
 
-    // ---- planting ------------------------------------------------------------------------------------------------------------------------------
+    // Planting
     @Test void theOwnersLimitsAreTheConstants(){
         assertEquals(5,FobRules.MAX_FOBS);assertEquals(3,FobRules.MIN_VILLAGERS);assertEquals(32,FobRules.NAME_MAX);
         assertEquals(1,FobRules.VILLAGE_SECTIONS,"vanilla's isVillage: within one section of a bed, workstation or bell");
@@ -46,14 +46,14 @@ final class FobTest {
         assertNull(FobRules.plantProblem(true,4,true,true,false,40));
     }
 
-    // ---- the raid ------------------------------------------------------------------------------------------------------------------------------
+    // The raid
     @Test void theRaidIsLostBelowHalfOfTheVillagersAtItsStart(){
         assertFalse(FobRules.raidFailed(7,4),"7 at the start: 4 alive holds");
         assertTrue(FobRules.raidFailed(7,3),"7 at the start: 3 alive loses");
         assertFalse(FobRules.raidFailed(6,3),"exactly half holds");assertTrue(FobRules.raidFailed(6,2));
         assertFalse(FobRules.raidFailed(3,2));assertTrue(FobRules.raidFailed(3,1));
         assertTrue(FobRules.raidFailed(1,0));assertFalse(FobRules.raidFailed(0,0),"no villagers counted at the start: never lost by this rule");
-        // what the raid announcement asks to keep, (start + 1) / 2, is always the smallest number that holds
+        // What the raid announcement asks to keep, (start + 1) / 2, is always the smallest number that holds
         for(int start=1;start<=40;start++){int keep=(start+1)/2;assertFalse(FobRules.raidFailed(start,keep));assertTrue(FobRules.raidFailed(start,keep-1));}
     }
     @Test void aRaidsStatusMapsToAStateChange(){
@@ -78,7 +78,7 @@ final class FobTest {
         assertFalse(Fobs.protect(false,false,false),"a villager of a deleted FOB is mortal again");
     }
 
-    // ---- names ---------------------------------------------------------------------------------------------------------------------------------
+    // Names
     @Test void namesAreGeneratedUniqueAndRenamable(){
         assertEquals(FobRules.codename(7),FobRules.codename(7),"the same id gives the same name");
         assertTrue(FobRules.codename(7).startsWith("FOB "));
@@ -96,14 +96,14 @@ final class FobTest {
         assertEquals("North Gate",FobRules.clean("  North    Gate "));
     }
 
-    // ---- saved data ----------------------------------------------------------------------------------------------------------------------------
+    // Saved data
     @Test void fobsSaveAndLoadAndOneBrokenRecordIsSkipped(){
         var d=new FobData();var a=d.add(new BlockPos(10,64,-20),123L,500L);var b=d.add(new BlockPos(-300,70,40),456L,900L);
         a.state=FobRules.State.ACTIVE;a.activated=true;b.raidId=17;b.raidVillagers=7;b.name="North Gate";
         b.stockpile.putInt("slice2",1);var dead=new CompoundTag();dead.putString("name","Bob");b.deadVillagers.add(dead);
         assertNotEquals(a.name.toLowerCase(Locale.ROOT),b.name.toLowerCase(Locale.ROOT));
         var tag=d.save(new CompoundTag());
-        // a broken entry and a second record with the same name (any case) are fixed on load
+        // A broken entry and a second record with the same name (any case) are fixed on load
         var list=tag.getList("fobs",10);var broken=new CompoundTag();broken.putString("name","no id");list.add(broken);
         var twin=list.getCompound(1).copy();twin.putLong("id",9);twin.putString("name","NORTH GATE");twin.putLong("pos",new BlockPos(5,5,5).asLong());list.add(twin);
         var back=FobData.load(tag);
@@ -117,7 +117,7 @@ final class FobTest {
         assertEquals(1,back.count(FobRules.State.ACTIVE));assertEquals(2,back.count(FobRules.State.PLANTED));
     }
 
-    // ---- meals and Ardent Energy ---------------------------------------------------------------------------------------------------------------
+    // Meals and Ardent Energy
     @Test void anActiveFobZoneCountsAsHomeForMeals(){
         assertEquals(MealZone.Kind.HOME,MealZone.of(true,true),"the Home Zone wins where they overlap");
         assertEquals(MealZone.Kind.HOME,MealZone.of(true,false));
@@ -132,7 +132,7 @@ final class FobTest {
         assertFalse(ArdentEnergy.vanillaRaider(false,2,false));
     }
 
-    // ---- the code keeps the brief's traps --------------------------------------------------------------------------------------------------------
+    // The code keeps the brief's traps
     @Test void theTrapsOfTheBriefAreRespected() throws Exception{
         String fobs=source("Fobs.java")+source("FobZone.java")+source("FobData.java")+source("FobBlocks.java")+source("MealZone.java");
         assertFalse(fobs.contains("putBoolean(\"eternalRaider\""),"vanilla raiders are never tagged as the beacon's");
@@ -145,24 +145,19 @@ final class FobTest {
         assertTrue(source("PlayerMeals.java").contains("MealZone.at(p)")&&!source("PlayerMeals.java").contains("BaseZone.problem"),"meals use MealZone");
         assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition)");
     }
-    /**
-     * Forge names the class it generates for a {@code @SubscribeEvent} method after the SIMPLE name of its class, the method and the event's
-     * simple name, in the class's package: two handlers that share all three load one class for both and crash at the first event (found
-     * by the 0.0.23 real-client run: {@code Fobs.Events.attack} against {@code RaidAdaptation.Events.attack}, both on LivingAttackEvent).
-     */
+    /** Forge names the class it generates for a @SubscribeEvent method after the SIMPLE name of its class */
     @Test void noTwoEventHandlersShareTheBusGeneratedName() throws Exception{
         var cls=java.util.regex.Pattern.compile("\\bclass\\s+(\\w+)");
         var handler=java.util.regex.Pattern.compile("@(?:[\\w.]+\\.)?SubscribeEvent(?:\\([^)]*\\))?\\s*public\\s+(?:static\\s+)?void\\s+(\\w+)\\(\\s*([\\w.]+)\\s+\\w+\\)");
         var seen=new HashMap<String,String>();var duplicates=new ArrayList<String>();int handlers=0;
         try(var files=Files.walk(Path.of(SRC))){
             for(var file:files.filter(f->f.toString().endsWith(".java")).toList()){
-                // the opt-in test runners (one -D switch each, never registered together) share Runner.tick and Runner.register; the FOB
-                // runner's methods have their own names, and every handler the game registers is checked
+                // The opt-in test runners (one -D switch each, never registered together) share Runner.tick
                 String name=file.getFileName().toString();boolean harness=(name.endsWith("GameTests.java")||name.endsWith("Tests.java"))&&!name.equals("FobGameTests.java");
                 if(harness)continue;
                 String text=Files.readString(file);var m=handler.matcher(text);
                 while(m.find()){
-                    // the class a handler sits in: the nearest class declared before it whose body is still open there
+                    // The class a handler sits in: the nearest class declared before it whose body is still open there
                     String owner=null;var c=cls.matcher(text);
                     while(c.find()&&c.start()<m.start()){int open=text.indexOf('{',c.end());if(open>=0&&open<m.start()&&depth(text,open,m.start())>0)owner=c.group(1);}
                     String event=m.group(2);event=event.substring(event.lastIndexOf('.')+1);
@@ -175,9 +170,9 @@ final class FobTest {
         assertTrue(seen.containsKey("FobEvents_attack_LivingAttackEvent")&&seen.containsKey("Events_attack_LivingAttackEvent"),"both attack handlers were found: "+seen.keySet());
         assertTrue(duplicates.isEmpty(),"handlers that would share one generated class: "+duplicates);
     }
-    /** Brace depth of the block opened at {@code open}, measured at {@code at} (positive: still open). */
+    /** Brace depth of the block opened at open, measured at at (positive: still open). */
     private static int depth(String text,int open,int at){int d=0;for(int i=open;i<at;i++){char ch=text.charAt(i);if(ch=='{')d++;else if(ch=='}')d--;}return d;}
-    /** The footprint comes from the owner's model: y 0..32 is two blocks, x and z stay inside one (the flag tip reaches 16.2). */
+    /** The footprint comes from the model: y 0..32 is two blocks */
     @Test void theFootprintComesFromTheOwnersModel() throws Exception{
         var json=JsonParser.parseString(Files.readString(Path.of(ASSETS+"models/block/fob_station.json"))).getAsJsonObject();
         double x0=99,x1=-99,y0=99,y1=-99,z0=99,z1=-99;
@@ -192,7 +187,7 @@ final class FobTest {
         assertTrue(blockstate.contains("eternal_defense:block/fob_station"));
         assertTrue(Files.readString(Path.of(ASSETS+"models/item/fob_beacon.json")).contains("eternal_defense:block/fob_station"));
     }
-    /** The owner's files are installed byte for byte: the model and the texture equal the copies in docs/art. */
+    /** The files are installed byte for byte: the model and the texture equal the copies in docs/art. */
     @Test void theOwnersArtIsUnchanged() throws Exception{
         Path art=Path.of("../../docs/art/Eternal-Defense-FOB-Mixer-Enchanting");
         assertEquals(sha(art.resolve("textures/block/fob_station.png")),sha(Path.of(ASSETS+"textures/block/fob_station.png")));
@@ -200,7 +195,7 @@ final class FobTest {
     }
     private static String sha(Path p) throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));}
 
-    // ---- what the player reads -----------------------------------------------------------------------------------------------------------------
+    // What the player reads
     @Test void everyMessageTheFobCodeSendsExists(){
         var keys=new ArrayList<String>(List.of("fob.refused.overworld","fob.refused.no_room","fob.unregistered","fob.removed_plain","fob.planted","fob.raid_started","fob.won","fob.lost",
             "fob.lost_villagers","fob.raid_over","fob.renamed","fob.removed","fob.rename.blank","fob.result.closed","fob.result.no_energy","fob.result.raid_called",

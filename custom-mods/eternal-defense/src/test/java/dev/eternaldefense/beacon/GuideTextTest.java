@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 0.0.41: one edition only; a card's text is its key's text, nothing is filtered or appended. */
+/** One edition only; a card's text is its key's text, nothing is filtered or appended. */
 class GuideTextTest {
     @Test void aCardIsItsKeysTextAndAMissingKeyIsEmpty(){
         var lang=Map.of("guide.a.body","# Card\n- One: 1\n- Two: 2");

@@ -52,7 +52,7 @@ public final class MessHallV5GameTests {
             var single=legendary(inputs(a.get(0),b.get(0)),true,1).meal();
             h.assertTrue(single!=null&&single.bonuses().size()==1&&single.bonuses().get(0).effect()==mix.effect()&&!single.bonuses().get(0).pair(),"Pair replaces both normal groups: "+mix);
             var c=inputs(a.get(0),a.get(1),b.get(0),b.get(1));
-            // 0.0.11 tiers: four foods need six food slots, which only a Mk IV hall has; below that the table refuses them
+            // Tiers: four foods need six food slots, which only a Mk IV hall has; below that the table refuses them
             var meal=legendary(c,true,4).meal();h.assertTrue(meal.bonuses().size()==1&&meal.bonuses().get(0).pair(),"Four-food doubling at Mk IV: "+mix);
             h.assertTrue(legendary(c,true,3).meal()==null,"Three food slots cannot hold four foods: "+mix);
             h.assertTrue(!legendary(inputs(a.get(0),a.get(1),b.get(0)),true,4).meal().bonuses().get(0).pair(),"Three distinct foods cannot double legendary "+mix);

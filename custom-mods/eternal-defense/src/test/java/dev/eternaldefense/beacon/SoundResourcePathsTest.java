@@ -15,7 +15,7 @@ final class SoundResourcePathsTest {
         assertFalse(SoundResourcePaths.malformedCachedPath("ww/recipes/bayonet_no4.json"));
         assertTrue(SoundResourcePaths.malformedSoundPath("lrl\\tacz_sounds\\p320_doctor\\Reload.ogg"));
     }
-    /** 0.0.15 replaced the regular expression with a plain character check: it must answer exactly like the pattern did. */
+    /** Replaced the regular expression with a plain character check: it must answer exactly like the pattern did. */
     @Test void thePlainCheckAnswersExactlyLikeTheOldPattern(){
         var pattern=java.util.regex.Pattern.compile("[a-z0-9/._-]+");
         assertFalse(SoundResourcePaths.plain(""));assertFalse(pattern.matcher("").matches());

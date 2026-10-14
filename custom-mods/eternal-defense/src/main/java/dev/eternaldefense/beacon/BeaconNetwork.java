@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 final class BeaconNetwork {
-    /** Protocol 41 (0.0.41): one edition only (the standalone edition is discontinued); the status and platform states no longer carry "standalone". Protocol 40 (0.0.35): the Drink Station screen's view (id 24) is new. Protocol 34 (0.0.27): the table-state packet (id 20) also refreshes the Tactical Enchanting Table (its state carries "enchant"); its menu is new. Protocol 33 (0.0.25): the FOB screen's state and the status card carry the SOS and the repair (button 6 on the FOB menu). Protocol 32 (0.0.24): the table-state packet (id 20) also opens and refreshes the supply gate screen (its state carries "gate"). Protocol 31 (0.0.23): the State packet opens the FOB removal confirmation ("fob_remove"), and id 20 also refreshes the FOB screen. */
+    /** Protocol 41: one edition only (the standalone edition is discontinued) */
     static final String PROTOCOL="41";
     static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(EternalDefense.ID,"control"),()->PROTOCOL,PROTOCOL::equals,PROTOCOL::equals);
     record State(CompoundTag data,String screen,String token,String message){
@@ -25,7 +25,7 @@ final class BeaconNetwork {
         static Action decode(FriendlyByteBuf b){return new Action(b.readUtf(64),b.readUtf(64));}
         static void handle(Action p,Supplier<NetworkEvent.Context> ctx){var c=ctx.get();c.enqueueWork(()->{if(c.getSender()!=null)BeaconActions.handle(c.getSender(),p);});c.setPacketHandled(true);}
     }
-    /** Centre-screen popups. Text is built on the client from language keys, so servers send only ids and numbers. */
+    /** Centre-screen popups. */
     record Announce(String kind,int a,int b,String who,String what){
         static void encode(Announce p,FriendlyByteBuf buf){buf.writeUtf(p.kind,24);buf.writeVarInt(p.a);buf.writeVarInt(p.b);buf.writeUtf(p.who,64);buf.writeUtf(p.what,48);}
         static Announce decode(FriendlyByteBuf buf){return new Announce(buf.readUtf(24),buf.readVarInt(),buf.readVarInt(),buf.readUtf(64),buf.readUtf(48));}
@@ -37,11 +37,7 @@ final class BeaconNetwork {
         static Placement decode(FriendlyByteBuf b){return new Placement(b.readBlockHitResult(),b.readEnum(net.minecraft.world.InteractionHand.class));}
         static void handle(Placement p,Supplier<NetworkEvent.Context> ctx){var c=ctx.get();c.enqueueWork(()->{if(c.getSender()!=null)BeaconActions.requestPlacement(c.getSender(),new net.minecraft.world.item.context.UseOnContext(c.getSender(),p.hand,p.hit));});c.setPacketHandled(true);}
     }
-    /**
-     * 0.0.31: a menu button, its id as a full number. Vanilla's own button packet sends the id as one signed byte, so ids above 127 (the
-     * enchanting table's levels, the tribute choices) arrived wrong on a dedicated server; single player never encodes packets, so it never
-     * showed. Every screen of this mod sends its buttons through here; the server answers as vanilla does.
-     */
+    /** A menu button, its id as a full number. */
     record MenuButton(int container,int id){
         static void encode(MenuButton p,FriendlyByteBuf b){b.writeVarInt(p.container);b.writeVarInt(p.id);}
         static MenuButton decode(FriendlyByteBuf b){return new MenuButton(b.readVarInt(),b.readVarInt());}
@@ -52,7 +48,7 @@ final class BeaconNetwork {
             if(menu.clickMenuButton(player,p.id))menu.broadcastChanges();
         });c.setPacketHandled(true);}
     }
-    /** Sends a menu button of the open screen (see {@link MenuButton}). */
+    /** Sends a menu button of the open screen (see MenuButton). */
     static void menuButton(int container,int id){CHANNEL.sendToServer(new MenuButton(container,id));}
     static void init(){
         GunPackSync.init();
@@ -68,17 +64,15 @@ final class BeaconNetwork {
         CHANNEL.registerMessage(13,SupportHud.Sync.class,SupportHud.Sync::encode,SupportHud.Sync::decode,SupportHud.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(14,RaidTypes.Marks.class,RaidTypes.Marks::encode,RaidTypes.Marks::decode,RaidTypes.Marks::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(16,MessHallMenu.Preview.class,MessHallMenu.Preview::encode,MessHallMenu.Preview::decode,MessHallMenu.Preview::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        // Tactical Operations (0.0.20, protocol 29): no new client-to-server packet (the table's buttons are vanilla menu buttons)
+        // Tactical Operations: no new client-to-server packet (the table's buttons are vanilla menu buttons)
         CHANNEL.registerMessage(17,Hunts.MissionSync.class,Hunts.MissionSync::encode,Hunts.MissionSync::decode,Hunts.MissionSync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(18,TacticalScan.ScanImage.class,TacticalScan.ScanImage::encode,TacticalScan.ScanImage::decode,TacticalScan.ScanImage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(19,TacticalScan.ScanProgress.class,TacticalScan.ScanProgress::encode,TacticalScan.ScanProgress::decode,TacticalScan.ScanProgress::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        // Forward Operating Bases (0.0.23, protocol 31): no new packet; id 20 refreshes the open FOB screen too (its state carries "fobId");
-        // the supply rail (0.0.24, protocol 32): id 20 also refreshes the open gate screen (its state carries "gate"); SOS and repair (0.0.25, protocol 33): no new packet
-        // 0.0.30, protocol 35: the FOB zone outlines and the planting preview
+        // Forward Operating Bases: no new packet; id 20 refreshes the open FOB screen too (its state carries "fobId")
         CHANNEL.registerMessage(21,FobOutline.Sync.class,FobOutline.Sync::encode,FobOutline.Sync::decode,FobOutline.Sync::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        // 0.0.31, protocol 36: menu buttons as full numbers
-        CHANNEL.registerMessage(23,SupplyCatapult.View.class,SupplyCatapult.View::encode,SupplyCatapult.View::decode,SupplyCatapult.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));   // 0.0.34
-        CHANNEL.registerMessage(24,DrinkStationMenu.View.class,DrinkStationMenu.View::encode,DrinkStationMenu.View::decode,DrinkStationMenu.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));   // 0.0.35, protocol 40
+        // Protocol 36: menu buttons as full numbers
+        CHANNEL.registerMessage(23,SupplyCatapult.View.class,SupplyCatapult.View::encode,SupplyCatapult.View::decode,SupplyCatapult.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(24,DrinkStationMenu.View.class,DrinkStationMenu.View::encode,DrinkStationMenu.View::decode,DrinkStationMenu.View::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));   // Protocol 40
         CHANNEL.registerMessage(22,MenuButton.class,MenuButton::encode,MenuButton::decode,MenuButton::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(20,Hunts.TableState.class,Hunts.TableState::encode,Hunts.TableState::decode,Hunts.TableState::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(6,Announce.class,Announce::encode,Announce::decode,Announce::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -96,16 +90,16 @@ final class BeaconNetwork {
         n.putLong("untilRaid",Math.max(0,Rules.intervalDays(d.rewardTier)*24000L-d.preparationTicks)+d.respiteTicks);n.putLong("respiteTicks",d.respiteTicks);n.putInt("respitePurchases",d.respitePurchases);n.putInt("nextRaidBonus",d.nextRaidBonus);n.putBoolean("introCompleted",d.introCompleted);n.put("respiteCosts",WeaponPlatform.costTags(Supply.at(p,d.beacon),RaidRespite.costs(d)));n.putInt("interval",Rules.intervalDays(d.rewardTier));
         n.putInt("raidLimit",d.raidLimit);n.putBoolean("raidRequested",d.raidRequested);n.putBoolean("rewardChest",!d.rewardBox.isEmpty());n.putInt("core",d.core);n.putInt("logistics",d.logistics);n.putInt("defense",d.defense);n.putInt("restoration",d.restoration);n.putInt("reconnaissance",d.reconnaissance);
         n.putInt("mk",DefenseStructures.actualMark(p.server.overworld(),d.beacon));n.putBoolean("hurtbox",d.showHurtbox);n.putBoolean("expansionBlocked",d.installed()&&DefenseStructures.actualMark(p.server.overworld(),d.beacon)!=DefenseStructures.mark(d.core));n.putBoolean("beam",d.showBeam);n.putBoolean("underAttack",d.underAttack(p.server.overworld().getGameTime()));n.putBoolean("outline",d.showBoundary);n.putBoolean("near",EternalDefense.near(p,d));n.putBoolean("installed",d.installed());n.putBoolean("active",d.active());
-        n.putInt("livesLeft",Rules.livesLeft(d.deaths));n.putInt("hubs",HubZone.active(p.serverLevel()));   // 0.0.41: the raid skull, the Hub count
+        n.putInt("livesLeft",Rules.livesLeft(d.deaths));n.putInt("hubs",HubZone.active(p.serverLevel()));   // The raid skull, the Hub count
         n.putInt("rewards",d.rewards.size());n.putString("raidType",d.raidType);n.putString("nextRaidType",d.nextRaidType);
         n.putBoolean("controller",p.getMainHandItem().is(EternalDefense.CONTROLLER.get())||p.getOffhandItem().is(EternalDefense.CONTROLLER.get()));
         n.putBoolean("canRemove",p.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+.5,d.beacon.getZ()+.5)<=64);
         for(String part:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix","ardent_energy")) {
-            // 0.0.40: what the upgrade and repair buttons can reach: the pack, then the Home Zone's Hubs
+            // What the upgrade and repair buttons can reach: the pack, then the Home Zone's Hubs
             var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,part));
             n.putInt("stock_"+part,Supply.count(Supply.at(p,d.beacon),item));
         }
-        Fobs.status(p,n);   // 0.0.23: the FOB line of the status card
+        Fobs.status(p,n);   // The FOB line of the status card
         n.put("fabrications",WorkshopFabrication.state(p));return n;
     }
     static void open(ServerPlayer p,String screen,String token){sendState(p,screen,token,"");}
@@ -114,12 +108,9 @@ final class BeaconNetwork {
         var n=state(p,CampaignData.get(p.server.overworld()));if(screen.equals("rewards"))n.put("rewardTiers",RaidRewards.previews(p.server.overworld()));
         CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new State(n,screen,token,message));
     }
-    /** The base score now: the raid's snapshot while a raid runs, else the live survey (the last snapshot until the first survey). */
+    /** The base score now: the raid's snapshot while a raid runs */
     static int liveScore(net.minecraft.server.MinecraftServer server,CampaignData d){var score=BaseSurvey.get(server.overworld()).score;return d.active()||score==null?d.score:score.total();}
-    /**
-     * The tier the beacon shows as "Next payout": the running raid's tier, else the live preview (Logistics, the live score, the raid
-     * level cap and a bought break's bonus), 0 before the introduction raid is won. Hunts pay and fight at this tier too (0.0.22).
-     */
+    /** The tier the beacon shows as "Next payout": the running raid's tier, else the live preview */
     static int prospectiveTier(net.minecraft.server.MinecraftServer server,CampaignData d){
         return d.phase.equals("raid")||d.phase.equals("restore")?d.raidTier:d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,liveScore(server,d)));
     }

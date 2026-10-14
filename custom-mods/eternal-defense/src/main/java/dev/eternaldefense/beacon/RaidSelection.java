@@ -2,7 +2,7 @@ package dev.eternaldefense.beacon;
 
 import net.minecraft.server.level.ServerPlayer;
 
-/** Difficulty and payout share one cap. Building and purchased upgrades are never erased. */
+/** Difficulty and payout share one cap. */
 final class RaidSelection {
     static int tier(CampaignData d,int base){return Rules.selectedTier(d.raidLimit,base,d.nextRaidBonus);}
     static String select(ServerPlayer p,String value){
@@ -18,7 +18,7 @@ final class RaidSelection {
         if(!d.installed()||!EternalDefense.near(p,d)||!d.phase.equals("preparation")||d.health<=0)return "Start a raid near an enabled beacon between raids.";
         if(!d.introCompleted)return "Finish the introductory raid first.";
         if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty())return "Wait for pending base restoration before starting another raid.";
-        // raids only come at night (0.0.21): by day the raid is booked for nightfall
+        // Raids only come at night: by day the raid is booked for nightfall
         if(!Rules.raidHour(l.getDayTime())){d.raidRequested=true;d.setDirty();
             return "Raids only come at night. Your raid starts at nightfall (in about "+Math.max(1,(Rules.untilRaidHour(l.getDayTime())+1199)/1200)+" min) if someone is near the beacon.";}
         EternalDefense.begin(l,d);return "Raid requested at your selected level. Purchased break time ends when the snapshot finishes. Defend the beacon!";

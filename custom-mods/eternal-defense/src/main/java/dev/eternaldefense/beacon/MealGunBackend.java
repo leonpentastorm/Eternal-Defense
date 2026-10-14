@@ -6,7 +6,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.item.ItemStack;
 
-/** The required TaCZ Attributes 1.4 API. Attribute neutral values are 1; our modifier amount is only the bonus. */
+/** The required TaCZ Attributes 1.4 API. */
 public final class MealGunBackend {
     private MealGunBackend(){}
     static Attribute damage(){return CustomAttributes.GUN_DAMAGE.get();}
@@ -17,8 +17,7 @@ public final class MealGunBackend {
         if(type!=null){var attribute=type.getReloadSpeedAttribute().get();if(shooter.getAttributes().hasAttribute(attribute))rate*=shooter.getAttributeValue(attribute);}
         return Double.isFinite(rate)&&rate>0?rate:1;
     }
-    // Backend 1.4 adds this private field during transformation. It is absent from the compile-time target,
-    // so neither a foreign @Shadow nor an annotation-processed @Accessor can safely declare it.
+    // Backend 1.4 adds this private field during transformation.
     private static final class TimestampField {
         static final java.lang.reflect.Field VALUE=find();
         private static java.lang.reflect.Field find(){
@@ -36,7 +35,7 @@ public final class MealGunBackend {
     public static void backendTimestamp(Object reload,long timestamp){
         try{TimestampField.VALUE.setLong(reload,timestamp);}catch(IllegalAccessException ex){throw new IllegalStateException("Cannot update backend reload timestamp",ex);}
     }
-    /** Rebase only when rate changes. Ordinary advancement remains entirely in the backend's one scaling path. */
+    /** Rebase only when rate changes. */
     public static final class ReloadTransition {
         private ItemStack weapon;private double previousRate;private boolean active;
         public void reset(){weapon=null;previousRate=1;active=false;}

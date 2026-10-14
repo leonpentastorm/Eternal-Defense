@@ -10,27 +10,14 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/**
- * 0.0.35 (owner): the active drink, a slot of its own beside the meal. One drink at a time (a new one replaces the old); its field timer
- * runs only outside the Home Zone and ACTIVE FOB zones ({@link MealZone}, the meal's test), where it stops and the effects show as endless.
- * There is no doubling at home. Logging out pauses it, death clears it, the Milk Dispenser and the Milk Bottle clear it; the vanilla milk
- * bucket does not (the tracker puts the effects back).
- * <p>
- * The effects are real vanilla effects, and the tracker never removes or extends an effect it did not apply. It recognises its own by the
- * level and the time it expects (endless at home, its remaining field time outside). An equal or stronger effect of the same kind that is
- * not its own is left alone while the drink keeps counting down; the drink re-applies when that one is gone. A weaker one is covered the way
- * vanilla covers it (kept underneath and back when the drink's ends).
- */
+/** The active drink, a slot of its own beside the meal. */
 final class PlayerDrinks extends SavedData {
     static final String NAME="eternal_defense_drinks_v1";
     /** How far (ticks) an effect's time may drift from the drink's and still be the drink's own. */
     static final int TOLERANCE=40;
     static final class State {
         final DrinkData drink;int remaining;boolean home;
-        /**
-         * Vanilla effects the drink's own covers: a weaker (or equal) potion that vanilla's stacking would drop under the drink's longer
-         * effect. They keep counting down here and are given back with their own level and time whenever the drink's effect comes off.
-         */
+        /** Vanilla effects the drink's own covers: a weaker (or equal) potion that vanilla's stacking would drop under */
         final List<Covered> covered=new ArrayList<>();
         State(DrinkData drink,int remaining){this.drink=drink;this.remaining=remaining;}
         void cover(net.minecraft.resources.ResourceLocation effect,Layer l){
@@ -55,15 +42,12 @@ final class PlayerDrinks extends SavedData {
     @Override public CompoundTag save(CompoundTag n){var list=new ListTag();players.forEach((id,s)->{var c=new CompoundTag();c.putUUID("Player",id);c.put("Drink",s.drink.save());c.putInt("Remaining",s.remaining);c.putBoolean("Home",s.home);var cov=new ListTag();s.covered.forEach(k->cov.add(k.save()));c.put("Covered",cov);list.add(c);});n.put("Players",list);return n;}
     static State of(ServerPlayer p){return get(p.serverLevel()).players.get(p.getUUID());}
 
-    /**
-     * Pure: is an effect of this level and time the drink's own? Endless (at home, or just come out of it), or within {@link #TOLERANCE} of
-     * the drink's remaining field time (in the field, or just come home: it is made endless then).
-     */
+    /** Pure: is an effect of this level and time the drink's own? */
     static boolean ours(int amplifier,boolean infinite,int duration,int wantedAmplifier,boolean home,int remaining){
         if(amplifier!=wantedAmplifier)return false;
         return infinite||EndlessEffects.steadyTime(duration)||Math.abs(duration-remaining)<=TOLERANCE;
     }
-    /** Pure: may the drink put its effect on now? Only over nothing or over a weaker effect; an equal or stronger one is left to run out. */
+    /** Pure: may the drink put its effect on now? */
     static boolean mayApply(boolean present,int amplifier,int wantedAmplifier){return !present||amplifier<wantedAmplifier;}
     private static boolean ours(MobEffectInstance current,DrinkData.Part part,State s){return ours(current.getAmplifier(),current.isInfiniteDuration(),current.getDuration(),part.amplifier(),s.home,s.remaining);}
 
@@ -84,10 +68,10 @@ final class PlayerDrinks extends SavedData {
         boolean home=MealZone.at(p).home();
         if(home!=s.home){s.home=home;d.setDirty();sync(p,s);}
         if(!home){s.remaining--;if(p.tickCount%20==0)d.setDirty();}
-        // what the drink covers ticks down as it would have on the player
+        // What the drink covers ticks down as it would have on the player
         s.covered.removeIf(c->c.duration!=MobEffectInstance.INFINITE_DURATION&&--c.duration<=0);
         if(s.remaining<=0){
-            // the timed effects run out with the drink; only an endless copy of its own (left underneath a stronger potion) is taken off
+            // The timed effects run out with the drink; only an endless copy
             d.players.remove(p.getUUID());d.setDirty();
             for(var part:s.drink.parts()){var e=part.mobEffect();if(e!=null)strip(p,e,part.amplifier(),false,s);}
             return;
@@ -100,25 +84,24 @@ final class PlayerDrinks extends SavedData {
             var e=part.mobEffect();if(e==null)continue;var current=p.getEffect(e);
             if(current!=null&&ours(current,part,s)){
                 if(s.home&&!EndlessEffects.settled(p,current)){
-                    // endless at home (or, when another mod keeps taking endless effects away, the long timer): a longer time of the same
-                    // level is extended in place; only an endless one turned into the long timer has to come off first
+                    // Endless at home (or, when another mod keeps taking endless effects away, the long timer)
                     if(current.isInfiniteDuration())strip(p,e,part.amplifier(),true,s);
                     apply(p,e,part.amplifier(),EndlessEffects.home(p,e));
                 }
                 else if(!s.home&&(current.isInfiniteDuration()||EndlessEffects.steadyTime(current.getDuration()))){strip(p,e,part.amplifier(),true,s);apply(p,e,part.amplifier(),s.remaining);}
                 continue;
             }
-            // in the field an endless copy of the drink's own may wait underneath a stronger potion: it would come back endless, so it goes
+            // In the field an endless copy of the drink's own may wait underneath a stronger potion
             if(current!=null&&!s.home)strip(p,e,part.amplifier(),false,null);
             current=p.getEffect(e);
             if(mayApply(current!=null,current==null?0:current.getAmplifier(),part.amplifier())){
-                // a weaker potion goes underneath: remember it, in case vanilla's stacking drops it under the drink's longer effect
+                // A weaker potion goes underneath: remember it, in case vanilla's stacking drops it under the drink's longer
                 if(current!=null)for(var l:layers(current))s.cover(part.effect(),l);
                 apply(p,e,part.amplifier(),s.home?EndlessEffects.home(p,e):s.remaining);
             }
         }
     }
-    /** True while the tracker itself adds an effect (its own, or a layer it gives back), so the Added event does not take it for a potion. */
+    /** True while the tracker itself adds an effect (its own, or a layer it gives back) */
     private static boolean applying;
     static void apply(ServerPlayer p,MobEffect effect,int amplifier,int duration){
         var shown=new MobEffectInstance(effect,duration,amplifier,false,true,true);shown.setCurativeItems(new ArrayList<>());
@@ -126,7 +109,7 @@ final class PlayerDrinks extends SavedData {
     }
     /** One layer of a vanilla effect: the one shown, or one of those stacked underneath it (its "hidden" effects). */
     record Layer(int duration,int amplifier,boolean ambient,boolean particles,boolean icon){boolean infinite(){return duration==MobEffectInstance.INFINITE_DURATION;}}
-    /** Pure: which layers stay when the drink's own are taken off: the top one if it is the drink's, and any endless copy at its level. */
+    /** Pure: which layers stay when the drink's own are taken off */
     static List<Layer> kept(List<Layer> layers,int amplifier,boolean topIsOurs){
         var out=new ArrayList<Layer>();
         for(int i=0;i<layers.size();i++){var l=layers.get(i);if(i==0&&topIsOurs||l.amplifier()==amplifier&&l.infinite())continue;out.add(l);}
@@ -139,10 +122,7 @@ final class PlayerDrinks extends SavedData {
             if(!tag.contains("HiddenEffect",Tag.TAG_COMPOUND))return out;tag=tag.getCompound("HiddenEffect");
         }
     }
-    /**
-     * Takes the drink's own layers off one effect and keeps every other layer with its own level and remaining time (a weaker potion that
-     * vanilla stacked underneath, or a stronger one on top). Nothing changes when no layer is the drink's.
-     */
+    /** Takes the drink's own layers off one effect and keeps every other layer with its own level and remaining time */
     static void strip(ServerPlayer p,MobEffect effect,int amplifier,boolean topIsOurs,State s){
         var current=p.getEffect(effect);var id=DrinkData.id(effect);
         boolean owed=s!=null&&s.covered.stream().anyMatch(c->c.effect.equals(id));
@@ -152,14 +132,11 @@ final class PlayerDrinks extends SavedData {
         applying=true;EndlessEffects.own++;
         try{
             if(current!=null&&kept.size()!=layers.size()){p.removeEffect(effect);for(var l:kept)if(l.duration()!=0)p.addEffect(new MobEffectInstance(effect,l.duration(),l.amplifier(),l.ambient(),l.particles(),l.icon()));}
-            // and the potions it covered come back with their own level and remaining time
+            // And the potions it covered come back with their own level and remaining time
             if(s!=null)for(var c:s.covered)if(c.effect.equals(id)&&c.duration!=0&&!(c.amplifier==amplifier&&c.duration==MobEffectInstance.INFINITE_DURATION))p.addEffect(new MobEffectInstance(effect,c.duration,c.amplifier,c.ambient,c.particles,c.icon));
         }finally{applying=false;EndlessEffects.own--;}
     }
-    /**
-     * A potion drunk over the drink's own effect: vanilla drops a weaker or equal one that the drink's longer effect outlasts (always, while
-     * the drink is endless at home). The tracker remembers it and gives it back when the drink's effect comes off.
-     */
+    /** A potion drunk over the drink's own effect: vanilla drops a weaker or equal one that the drink's longer */
     static void added(ServerPlayer p,MobEffectInstance old,MobEffectInstance added){
         if(applying||old==null||added==null)return;var s=of(p);if(s==null)return;
         for(var part:s.drink.parts())if(part.mobEffect()==added.getEffect()&&ours(old,part,s)&&added.getAmplifier()<=old.getAmplifier()){

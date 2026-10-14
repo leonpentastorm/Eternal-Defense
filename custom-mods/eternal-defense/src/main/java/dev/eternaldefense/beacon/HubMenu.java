@@ -12,11 +12,7 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * 0.0.40: the Logistics Center Hub's menu, a vanilla-style chest screen: 9 columns, 54 slots a page, 5 pages. Turning pages uses the vanilla
- * menu-button packet (buttons 0 and 1), so no packet of the mod's own is needed; the page and the slots in use travel as data slots.
- * Each player turns their own pages. Shift-clicking from the pack fills the whole Hub (same kind first, then empty slots), not just the page.
- */
+/** The Logistics Center Hub's menu, a vanilla-style chest screen: 9 columns, 54 slots a page, 5 pages. */
 final class HubMenu extends AbstractContainerMenu {
     static final int PREV=0,NEXT=1,ROWS=6,INV_Y=139;
     final BlockPos anchor;final HubData.Hub hub;final Container page;
@@ -71,7 +67,7 @@ final class HubMenu extends AbstractContainerMenu {
         var stack=slot.getItem();var copy=stack.copy();int hubSlots=HubStorage.PAGE;
         if(index<hubSlots){if(!moveItemStackTo(stack,hubSlots,slots.size(),true))return ItemStack.EMPTY;slot.setChanged();}
         else if(hub!=null){
-            // into the whole Hub, not only this page: onto the same kind first, then the first empty slots
+            // Into the whole Hub, not only this page: onto the same kind first, then the first empty slots
             var rest=hub.storage.insert(stack,false);if(rest.getCount()==stack.getCount())return ItemStack.EMPTY;
             slot.set(rest);
         }else return ItemStack.EMPTY;

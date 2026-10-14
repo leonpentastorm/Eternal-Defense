@@ -10,10 +10,7 @@ import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
 
-/**
- * 0.0.35 (owner): one drink, saved on a Brew Pot, a Latte and a player's active drink. Real vanilla effects (or any mod's), each with the
- * amplifier of the potion it was mixed from; the potion's own duration is ignored, the drink's {@code duration} is its field time.
- */
+/** One drink, saved on a Brew Pot, a Latte and a player's active drink. */
 record DrinkData(List<Part> parts,int duration,boolean latte){
     record Part(ResourceLocation effect,int amplifier){
         MobEffect mobEffect(){return ForgeRegistries.MOB_EFFECTS.getValue(effect);}
@@ -47,13 +44,13 @@ record DrinkData(List<Part> parts,int duration,boolean latte){
         return out.isEmpty()?null:new DrinkData(out,Math.max(20,Math.min(max,n.getInt("Duration"))),n.getBoolean("Latte"));
     }
 
-    // ---- which potions mix ------------------------------------------------------------------------------------------
+    // Which potions mix
     /** Drinkable: a plain potion bottle, not a splash or lingering one (any mod's potion that is not thrown counts). */
     static boolean drinkable(ItemStack stack){return stack.getItem() instanceof net.minecraft.world.item.PotionItem&&!(stack.getItem() instanceof net.minecraft.world.item.ThrowablePotionItem);}
     static boolean isPotion(ItemStack stack){return stack.getItem() instanceof net.minecraft.world.item.PotionItem;}
     /** The effects a potion gives (its own and custom ones). */
     static List<MobEffectInstance> effects(ItemStack stack){return isPotion(stack)?PotionUtils.getMobEffects(stack):List.of();}
-    /** Why this potion cannot be mixed (see {@link DrinkRules#refusal}), "" when it can; {@code others} are the effects already in the other slots. */
+    /** Why this potion cannot be mixed (see DrinkRules.refusal), "" when it can */
     static String refusal(ItemStack stack,Collection<MobEffect> others){
         if(!isPotion(stack))return "thrown";
         var fx=effects(stack);var one=fx.size()==1?fx.get(0).getEffect():null;
@@ -62,13 +59,13 @@ record DrinkData(List<Part> parts,int duration,boolean latte){
     static boolean mixable(ItemStack stack){return refusal(stack,List.of()).isEmpty();}
     /** The one effect of a mixable potion, or null. */
     static MobEffectInstance effectOf(ItemStack stack){var fx=effects(stack);return fx.size()==1?fx.get(0):null;}
-    /** A drinkable potion whose only effect is Regeneration: the sweetener. Its mB, or 0. */
+    /** A drinkable potion whose only effect is Regeneration: the sweetener. */
     static int sweetener(ItemStack stack){
         if(!drinkable(stack))return 0;var fx=effects(stack);
         return fx.size()==1&&fx.get(0).getEffect()==MobEffects.REGENERATION?DrinkRules.sweetener(fx.get(0).getAmplifier()):0;
     }
     static ResourceLocation id(MobEffect effect){return ForgeRegistries.MOB_EFFECTS.getKey(effect);}
-    /** A vanilla potion bottle that gives this effect at this level, for ghost slots and tiles; empty when none exists. */
+    /** A vanilla potion bottle that gives this effect at this level, for ghost slots and tiles */
     static ItemStack sample(MobEffect effect,int amplifier){
         ItemStack best=ItemStack.EMPTY;
         for(var potion:ForgeRegistries.POTIONS){
@@ -79,10 +76,7 @@ record DrinkData(List<Part> parts,int duration,boolean latte){
         return best;
     }
     private static List<MobEffect> catalogue;
-    /**
-     * The effects a drink can carry, for the tiles: every beneficial effect with a duration that some registered drinkable potion gives on its
-     * own, Regeneration aside (it is the sweetener). Vanilla first, then other mods, each in name order.
-     */
+    /** The effects a drink can carry, for the tiles: every beneficial effect with a duration that some registered */
     static List<MobEffect> catalogue(){
         if(catalogue!=null)return catalogue;
         var set=new LinkedHashSet<MobEffect>();

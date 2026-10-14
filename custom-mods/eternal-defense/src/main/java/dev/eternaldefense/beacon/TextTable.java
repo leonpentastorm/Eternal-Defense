@@ -4,15 +4,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.*;
 
-/**
- * Tiny line format shared by the exchange offers and the support cost overrides:
- * <pre>
- * # comment
- * minecraft:diamond = 40          one diamond (or one unit)
- * minecraft:arrow x16 = 20        sixteen arrows
- * </pre>
- * Pure Java so it can be unit tested without Minecraft.
- */
+/** Tiny line format shared by the exchange offers and the support cost overrides */
 final class TextTable {
     private TextTable(){}
     record Row(String id,int count,int value){}

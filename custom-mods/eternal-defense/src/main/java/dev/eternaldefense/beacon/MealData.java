@@ -6,7 +6,7 @@ import java.util.*;
 
 /** The same bounded composition is saved on sandwiches, pots and active player meals. */
 record MealData(boolean stew,List<Bonus> bonuses,int duration) {
-    /** {@code pair}: a stew whose two foods of one family fed this effect (value doubles). */
+    /** Pair: a stew whose two foods of one family fed this effect (value doubles). */
     record Bonus(MealRules.Effect effect,int strength,boolean pair){
         Bonus(MealRules.Effect effect,int strength){this(effect,strength,false);}
         double field(){return Math.min(effect.cap(),effect.amount*(1+.25*(strength-1))*(pair?MealRules.PAIR_MULTIPLIER:1));}

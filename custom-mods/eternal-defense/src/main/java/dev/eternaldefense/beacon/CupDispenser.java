@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-/** 0.0.35 (owner): the Cup Dispenser, the Bowl Dispenser for Paper Cups: right-click takes a cup, crouch with empty hands opens its 64-cup stock. */
+/** The Cup Dispenser, the Bowl Dispenser for Paper Cups */
 final class CupDispenser {
     private CupDispenser(){}
     static boolean cup(ItemStack stack){return stack.is(EternalDefense.PAPER_CUP.get());}
@@ -49,7 +49,7 @@ final class CupDispenser {
             @Override public void setChanged(){super.setChanged();DispenserEntity.this.setChanged();}
         };
         DispenserEntity(BlockPos pos,BlockState state){super(EternalDefense.CUP_DISPENSER_ENTITY.get(),pos,state);}
-        /** Hands out one cup and says so: action bar line (low stock in gold), a pop of sound and a cup flying out of the front. */
+        /** Hands out one cup and says so: action bar line (low stock in gold) */
         void take(ServerPlayer player,BlockState state,net.minecraft.server.level.ServerLevel level,BlockPos pos){
             if(!cup(stock.getItem(0))){
                 player.displayClientMessage(Component.translatable("gui.eternal_defense.cups.empty").withStyle(net.minecraft.ChatFormatting.RED),true);
@@ -89,7 +89,7 @@ final class CupDispenser {
             if(stack.isEmpty())slot.set(ItemStack.EMPTY);else slot.setChanged();slot.onTake(p,stack);return copy;
         }
     }
-    /** The Paper Cup: crafted from paper, used on a Brew Pot to drink (it is kept) and as the Latte's base (it is used up). */
+    /** The Paper Cup: crafted from paper, used on a Brew Pot to drink (it is kept) and as the Latte's base */
     static final class PaperCup extends Item {
         PaperCup(){super(new Item.Properties());}
         @Override public void appendHoverText(ItemStack stack,Level level,java.util.List<Component> lines,TooltipFlag flag){lines.add(Component.translatable("gui.eternal_defense.drinks.cup_tip").withStyle(net.minecraft.ChatFormatting.GRAY));}

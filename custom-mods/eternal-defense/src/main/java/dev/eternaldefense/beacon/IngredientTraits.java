@@ -11,7 +11,7 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/** Datapacks add food traits under data/<namespace>/meal_ingredients/*.json. No recipe explosion. */
+/** Datapacks add food traits under data/ /meal_ingredients/*.json. */
 final class IngredientTraits extends SimpleJsonResourceReloadListener {
     record Trait(Ingredient ingredient,boolean staple,Map<MealRules.Effect,Integer> effects,String family){}
     static List<Trait> traits=List.of();
@@ -29,14 +29,14 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
     static boolean accepts(ItemStack stack){return traits.stream().anyMatch(t->t.ingredient.test(stack));}
     /** Every effect any trait of this stack feeds (for the slot icons of the screen). */
     static EnumSet<MealRules.Effect> effectsOf(ItemStack stack){var out=EnumSet.noneOf(MealRules.Effect.class);if(!stack.isEmpty())for(var t:traits)if(t.ingredient.test(stack))out.addAll(t.effects.keySet());return out;}
-    /** {@code unmet}: chosen effects the table cannot make yet (the problem is then "missing"). */
+    /** Unmet: chosen effects the table cannot make yet (the problem is then "missing"). */
     record Preview(MealData meal,int occupied,boolean staple,String problem,EnumSet<MealRules.Effect> unmet,List<MealData.Bonus> bonuses){
         Preview(MealData meal,int occupied,boolean staple,String problem){this(meal,occupied,staple,problem,EnumSet.noneOf(MealRules.Effect.class),List.of());}
     }
     static Preview compose(Container ingredients,boolean stew){return compose(ingredients,stew,1);}
     static String groupOf(ItemStack stack){return traits.stream().filter(t->t.ingredient.test(stack)).map(Trait::family).findFirst().orElse("");}
     static String key(ItemStack stack){return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();}
-    /** The planner's view of one stack: group of the first matching trait, effect weights merged by maximum, gun effects never score. Null without a trait. */
+    /** The planner's view of one stack: group of the first matching trait, effect weights merged by maximum */
     static MealPlanner.Food foodOf(ItemStack stack){
         if(stack.isEmpty())return null;
         var matches=traits.stream().filter(t->t.ingredient.test(stack)).toList();if(matches.isEmpty())return null;
@@ -44,7 +44,7 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
         for(var trait:matches){staple|=trait.staple;trait.effects.forEach((e,w)->{if(!e.gun())weights.merge(e,w,Math::max);});}
         return new MealPlanner.Food(key(stack),matches.get(0).family,weights,staple,stack.getMaxStackSize());
     }
-    /** Ordinary by default. Legendary recipes reserve their groups only after explicit selection. */
+    /** Ordinary by default. */
     static Preview compose(Container ingredients,boolean stew,int mk){return compose(ingredients,stew,mk,null);}
     static Preview compose(Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
         var table=new ArrayList<MealPlanner.Food>();var kinds=new HashSet<String>();boolean staple=false;
@@ -57,7 +57,7 @@ final class IngredientTraits extends SimpleJsonResourceReloadListener {
         var eval=MealPlanner.evaluate(table,stew,mk,selected);
         return new Preview(eval.meal(),eval.occupied(),eval.staple(),eval.problem(),eval.unmet(),eval.bonuses());
     }
-    /** Every food any trait accepts, built once per datapack reload by testing the item registry. The kitchen sends it to the client for its recipe tooltips. */
+    /** Every food any trait accepts, built once per datapack reload by testing the item registry. */
     record Catalogue(Map<String,MealPlanner.Food> foods,Map<String,net.minecraft.world.item.Item> items){}
     private static List<Trait> catalogued;private static Catalogue catalogue=new Catalogue(Map.of(),Map.of());
     static synchronized Catalogue catalogue(){

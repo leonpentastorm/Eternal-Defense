@@ -45,23 +45,16 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 
-/**
- * The Tactical Enchanting Table (0.0.27, FOB slice 4), the owner's enchanting bench model ({@code models/block/enchanting_platform.json}): 2 wide,
- * 2 tall, 1 deep like the weapon benches; its anchor is the front right block seen from the front, the second column clockwise of its facing,
- * the three other cells invisible structure parts. One per base, in the beacon zone, moved with the Recovery Shovel.
- * <p>A player puts a piece of gear in its slot; the table lists every vanilla enchant (never a curse; the four treasure enchants only once a
- * Warlord Seal unlocks them) that applies, each level with its Ardent Energy price, and applies the one bought directly: no experience, no
- * lapis, no book, no anvil. Higher levels need ACTIVE FOBs ({@link EnchantRules#fobsFor}). Vanilla enchanting, librarians and anvils are untouched.
- */
+/** The Tactical Enchanting Table, the enchanting bench model (models/block/enchanting_platform.json) */
 final class TacticalEnchanting {
     private TacticalEnchanting(){}
     static final DirectionProperty FACING=HorizontalDirectionalBlock.FACING;
-    /** Menu buttons: the table's next Mk; unlocking treasure enchant i (one Warlord Seal); buying enchant c (catalogue index) at level l. */
+    /** Menu buttons: the table's next Mk; unlocking treasure enchant i (one Warlord Seal) */
     static final int UPGRADE=1,UNLOCK=10,BUY=1000;
     static int buyButton(int index,int level){return BUY+index*8+Math.max(1,Math.min(7,level));}
 
-    // ---- the team's record ---------------------------------------------------------------------------------------------------------------------
-    /** One table per base, its Mk (0 to 3: the discount) and the Warlord Seals spent on each treasure enchant; shared by every player. */
+    // The team's record
+    /** One table per base, its Mk (0 to 3: the discount) and the Warlord Seals spent on each treasure enchant */
     static final class EnchantData extends net.minecraft.world.level.saveddata.SavedData {
         static final String NAME="eternal_defense_enchanting_v1";
         BlockPos table;int mk;final Map<String,Integer> seals=new TreeMap<>();
@@ -79,9 +72,9 @@ final class TacticalEnchanting {
         int seals(String id){return seals.getOrDefault(id,0);}
     }
 
-    // ---- the block --------------------------------------------------------------------------------------------------------------------------------
+    // The block
     static final class TableBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
-        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        /** Its moving parts are drawn through a data-less block entity (AnimatedParts). */
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         TableBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->7).sound(SoundType.WOOD));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
@@ -111,17 +104,17 @@ final class TacticalEnchanting {
             return d.table!=null&&server.hasChunkAt(d.table)&&server.getBlockState(d.table).is(EternalDefense.ENCHANTING_TABLE.get())?"only_one_enchanting":null;
         }
     }
-    /** The Warlord Seal: paid by a cleared Warlord hunt, spent at the table to unlock a treasure enchant for the whole team. */
+    /** The Warlord Seal: paid by a cleared Warlord hunt, spent at the table to unlock a treasure enchant */
     static final class SealItem extends Item {
         SealItem(){super(new Properties().stacksTo(16).rarity(Rarity.EPIC));}
         @Override public boolean isFoil(ItemStack stack){return true;}
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){lines.add(Component.translatable("tooltip.eternal_defense.warlord_seal").withStyle(ChatFormatting.GRAY));}
     }
 
-    // ---- the menu: one gear slot and the player's inventory ---------------------------------------------------------------------------------------
+    // The menu: one gear slot and the player's inventory
     static final class EnchantMenu extends AbstractContainerMenu {
         /** Slot positions inside the screen (the screen is a fixed 384 x 236). */
-        static final int GEAR_X=18,GEAR_Y=50,INV_X=14,INV_Y=176;   // 0.0.30: the screen is 440 x 260
+        static final int GEAR_X=18,GEAR_Y=50,INV_X=14,INV_Y=176;   // The screen is 440 x 260
         final BlockPos pos;CompoundTag data;final SimpleContainer gear=new SimpleContainer(1);
         EnchantMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){
             super(EternalDefense.ENCHANT_MENU.get(),id);this.pos=pos;this.data=data;
@@ -134,7 +127,7 @@ final class TacticalEnchanting {
         }
         static EnchantMenu client(int id,Inventory inv,FriendlyByteBuf buf){var pos=buf.readBlockPos();var n=buf.readNbt();return new EnchantMenu(id,inv,pos,n==null?new CompoundTag():n);}
         @Override public boolean clickMenuButton(Player p,int id){if(p instanceof ServerPlayer sp)button(sp,this,id);return true;}
-        @Override public void removed(Player p){super.removed(p);if(p instanceof ServerPlayer)clearContainer(p,gear);}   // the gear goes back to its owner
+        @Override public void removed(Player p){super.removed(p);if(p instanceof ServerPlayer)clearContainer(p,gear);}   // The gear goes back to its owner
         @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).is(EternalDefense.ENCHANTING_TABLE.get())&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
         @Override public ItemStack quickMoveStack(Player p,int index){
             if(index<0||index>=slots.size())return ItemStack.EMPTY;var slot=slots.get(index);if(!slot.hasItem())return ItemStack.EMPTY;
@@ -145,9 +138,9 @@ final class TacticalEnchanting {
         }
     }
 
-    // ---- what the table offers --------------------------------------------------------------------------------------------------------------------
+    // What the table offers
     private static List<Enchantment> catalogue;
-    /** Every enchant the table can sell, the same list on the client and the server: vanilla's, never a curse, treasure ones only the four of {@link EnchantRules#TREASURE}; by id. */
+    /** Every enchant the table can sell, the same list on the client and the server */
     static List<Enchantment> catalogue(){
         if(catalogue==null){
             var list=new ArrayList<Enchantment>();
@@ -164,16 +157,16 @@ final class TacticalEnchanting {
     }
     static String id(Enchantment e){return String.valueOf(BuiltInRegistries.ENCHANTMENT.getKey(e));}
     static boolean treasure(Enchantment e){return EnchantRules.TREASURE.contains(id(e));}
-    /** Can this go in the table's slot: a piece of gear that at least one of the table's enchants applies to (never a book). */
+    /** Can this go in the table's slot: a piece of gear that at least one of the table's enchants applies */
     static boolean enchantable(ItemStack stack){
         if(stack.isEmpty()||stack.is(Items.BOOK)||stack.is(Items.ENCHANTED_BOOK)||stack.getCount()!=1)return false;
         for(var e:catalogue())if(e.canEnchant(stack))return true;
         return false;
     }
     static EnchantRules.Rarity rarity(Enchantment e){return EnchantRules.Rarity.values()[Math.min(3,e.getRarity().ordinal())];}
-    /** The price of level {@code level} of {@code e} at a table of Mk {@code mk}. */
+    /** The price of level level of e at a table of Mk mk. */
     static int price(Enchantment e,int level,int mk){return EnchantRules.discounted(EnchantRules.price(rarity(e),level,treasure(e)),mk);}
-    /** Why level {@code level} of {@code e} cannot be bought for {@code gear} now (a key under {@code enchant.locked.}), or null. Shared by the screen and the server. */
+    /** Why level level of e cannot be bought for gear now (a key under enchant.locked.), or null. */
     static String problem(ItemStack gear,Enchantment e,int level,int activeFobs,int seals){
         boolean compatible=true;var have=EnchantmentHelper.getEnchantments(gear);
         for(var other:have.keySet())if(other!=e&&!e.isCompatibleWith(other)){compatible=false;break;}
@@ -182,19 +175,19 @@ final class TacticalEnchanting {
     }
     static int activeFobs(ServerLevel l){return FobData.get(l).count(FobRules.State.ACTIVE);}
 
-    // ---- the screen ------------------------------------------------------------------------------------------------------------------------------
+    // The screen
     static void open(ServerPlayer p,BlockPos pos){
         var root=DefenseStructures.anchor(p.level(),pos);
         NetworkHooks.openScreen(p,new SimpleMenuProvider((id,inv,who)->new EnchantMenu(id,inv,root,new CompoundTag()),Component.translatable("block.eternal_defense.tactical_enchanting_table")),
             buf->{buf.writeBlockPos(root);buf.writeNbt(state(p,""));});
     }
     static void refresh(ServerPlayer p,String message){refresh(p,message,null);}
-    /** {@code detail}, when given, is the finished line the screen shows instead of the bare message key (a refusal that names the enchant). */
+    /** Detail, when given, is the finished line the screen shows instead of the bare message key */
     static void refresh(ServerPlayer p,String message,Component detail){
         var n=state(p,message);if(detail!=null)n.putString("detail",Component.Serializer.toJson(detail));
         BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(n));
     }
-    /** What the screen needs besides the slot: the ACTIVE FOBs, the table's Mk and next price, the unlocks, the seals and energy carried. */
+    /** What the screen needs besides the slot: the ACTIVE FOBs, the table's Mk and next price, the unlocks */
     static CompoundTag state(ServerPlayer p,String message){
         var l=p.serverLevel();var d=EnchantData.get(l);var n=new CompoundTag();
         n.putBoolean("enchant",true);n.putInt("fobs",activeFobs(l));n.putInt("mk",d.mk);var w=Supply.here(p);n.putInt("energy",ArdentEnergy.balance(w));n.putBoolean("creative",p.isCreative());
@@ -204,7 +197,7 @@ final class TacticalEnchanting {
         n.putString("message",message);return n;
     }
 
-    // ---- the buttons, checked again here ------------------------------------------------------------------------------------------------------------
+    // The buttons, checked again here
     static void button(ServerPlayer p,EnchantMenu menu,int id){
         if(!menu.stillValid(p)||BaseZone.problem(p.level(),menu.pos)!=null)return;
         String result;Component detail=null;
@@ -212,7 +205,7 @@ final class TacticalEnchanting {
         else if(id>=UNLOCK&&id<UNLOCK+EnchantRules.TREASURE.size())result=unlock(p,EnchantRules.TREASURE.get(id-UNLOCK));
         else if(id>=BUY){
             int index=(id-BUY)/8,level=(id-BUY)%8;result=buy(p,menu,index,level);
-            // a locked level says which and why, with the same words as its tooltip on the screen
+            // A locked level says which and why, with the same words as its tooltip on the screen
             if(result.startsWith("enchant.locked.")){var e=catalogue().get(index);
                 detail=Component.translatable("gui.eternal_defense."+result,Component.translatable(e.getDescriptionId()).append(" "+EnchantRules.roman(level)),EnchantRules.fobsFor(level,e.getMaxLevel()),activeFobs(p.serverLevel()));}
         }
@@ -242,13 +235,13 @@ final class TacticalEnchanting {
         Fobs.announce(p.serverLevel(),Component.translatable("gui.eternal_defense.enchant.upgraded",p.getDisplayName(),EnchantRules.roman(d.mk),EnchantRules.DISCOUNT[d.mk]));
         return "enchant.result.upgraded";
     }
-    /** One Warlord Seal from the player's inventory unlocks treasure enchant {@code id} (or its next level) for the whole team. */
+    /** One Warlord Seal from the player's inventory unlocks treasure enchant id */
     static String unlock(ServerPlayer p,String id){
         var l=p.serverLevel();var d=EnchantData.get(l);
         var e=BuiltInRegistries.ENCHANTMENT.get(new net.minecraft.resources.ResourceLocation(id));if(e==null)return "enchant.result.gone";
         if(EnchantRules.sealsForNext(id,d.seals(id),e.getMaxLevel())==0)return "enchant.result.unlocked_all";
         if(!p.isCreative()){
-            // 0.0.40: the seal comes from the pack, or else from a Hub in the Home Zone
+            // The seal comes from the pack, or else from a Hub in the Home Zone
             if(!EternalDefense.consume(Supply.here(p),EternalDefense.WARLORD_SEAL.get(),1))return "enchant.result.no_seal";
         }
         d.seals.merge(id,1,Integer::sum);d.setDirty();

@@ -6,7 +6,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.projectile.Projectile;
 import java.lang.reflect.*;
 
-/** Shared bash and projectile adapters. Firepower and reload speed belong exclusively to TaCZ Attributes. */
+/** Shared bash and projectile adapters. */
 public final class MealGunCompat {
     private MealGunCompat(){}
     private static Field explosive;

@@ -15,19 +15,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import java.util.*;
 
-/**
- * The Optimize Path (project 0.0.15) on a real server (opt-in: {@code -Deternaldefense.optimizeTests=true}; {@link Runner} starts them). Each faster
- * path is run next to a verbatim copy of the code it replaced, on the same input, and must give the same answer; the times of both are logged
- * as OPT_BENCH lines. Nothing here touches a real campaign except {@link #aGunHitOnTheBeaconStillCounts}, which needs a world with no beacon
- * and puts it back the way it found it.
- */
+/** The Optimize Path on a real server (opt-in: -Deternaldefense.optimizeTests=true; Runner starts them). */
 @GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class OptimizePathGameTests {
     private static final org.slf4j.Logger LOG=com.mojang.logging.LogUtils.getLogger();
 
-    // ---- base score -------------------------------------------------------------------------------------------------------------------
-    /** The faster scoring gives exactly the old score on many different bases: every zone size, every height, a beacon at negative coordinates. */
+    // Base score
+    /** The faster scoring gives exactly the old score on many different bases */
     @GameTest(template="empty3x3x3",batch="optimize_1",timeoutTicks=200)
     public static void theBaseScoreIsExactlyTheSame(GameTestHelper h){
         int compared=0;
@@ -39,7 +34,7 @@ public final class OptimizePathGameTests {
                 h.assertTrue(before.equals(after),"seed "+seed+" core "+core+": old "+before+" new "+after);compared++;
             }
         }
-        // a base big enough to reach the floor cap (72 floors at core 0): the break at the cap must stop on the same floor
+        // A base big enough to reach the floor cap (72 floors at core 0)
         var d=campaign(0,4,new BlockPos(5,64,5));var placed=new HashSet<Long>();var blocks=base(d,99,3,20,placed);hall(d,blocks,placed);
         var before=legacyAnalyze(d,blocks,placed);int floors=legacyFloors;var after=BaseScoring.analyze(d,blocks,placed);
         h.assertTrue(before.equals(after),"floor cap: old "+before+" new "+after);
@@ -47,7 +42,7 @@ public final class OptimizePathGameTests {
         LOG.info("OPT_CHECK base score identical on {} bases (6 seeds x 4 zone sizes x 3 placed sets, plus a floor-cap base)",compared+1);
         h.succeed();
     }
-    /** Time of both versions on the biggest zone (Mk-4 core, full height): what a survey costs every 20 seconds between raids and once at raid start. */
+    /** Time of both versions on the biggest zone (Mk-4 core, full height) */
     @GameTest(template="empty3x3x3",batch="optimize_2",timeoutTicks=400)
     public static void theBaseScoreIsFaster(GameTestHelper h){
         var d=campaign(3,4,new BlockPos(-300,64,800));var placed=new HashSet<Long>();var blocks=base(d,7,30,300,placed);
@@ -64,8 +59,8 @@ public final class OptimizePathGameTests {
         h.succeed();
     }
 
-    // ---- TaCZ block impacts -------------------------------------------------------------------------------------------------------------
-    /** A TaCZ bullet from a hostile mob that hits the beacon block still reaches the beacon through the typed listener (and damages it). */
+    // TaCZ block impacts
+    /** A TaCZ bullet from a hostile mob that hits the beacon block still reaches the beacon through the typed */
     @GameTest(template="empty3x3x3",batch="optimize_3",timeoutTicks=100)
     public static void aGunHitOnTheBeaconStillCounts(GameTestHelper h){
         var l=h.getLevel();var d=CampaignData.get(l);
@@ -90,10 +85,7 @@ public final class OptimizePathGameTests {
         h.assertTrue(BeaconCombat.objective(l)==null,"the borrowed campaign is put back (no objective left)");
         h.succeed();
     }
-    /**
-     * How often the old catch-all listener was called: every event the game posts on the Forge bus during 200 ticks of this world is counted, by
-     * thread, and the cost of one call of the old listener is measured on a private bus. Informational (the numbers depend on the world).
-     */
+    /** How often the old catch-all listener was called: every event the game posts on the Forge bus during 200 ticks */
     @GameTest(template="empty3x3x3",batch="optimize_4",timeoutTicks=400)
     public static void eventBusTraffic(GameTestHelper h){
         var server=new java.util.concurrent.atomic.AtomicLong();var other=new java.util.concurrent.atomic.AtomicLong();
@@ -118,7 +110,7 @@ public final class OptimizePathGameTests {
             h.succeed();
         });
     }
-    /** Without the optional Special Forces mod no soldier can exist: the once-a-second sweep over every Overworld entity is skipped. */
+    /** Without the optional Special Forces mod no soldier can exist */
     @GameTest(template="empty3x3x3",batch="optimize_5",timeoutTicks=100)
     public static void theSpecialForcesSweepIsSkippedWithoutTheMod(GameTestHelper h){
         boolean present=net.minecraftforge.fml.ModList.get().isLoaded("taczsf");
@@ -132,10 +124,10 @@ public final class OptimizePathGameTests {
     }
     private static int count(ServerLevel l){int n=0;for(var e:l.getAllEntities())n++;return n;}
 
-    // ---- verbatim copies of the replaced code -------------------------------------------------------------------------------------------
-    /** Floors counted by the last {@link #legacyAnalyze} (test bookkeeping only). */
+    // Verbatim copies of the replaced code
+    /** Floors counted by the last legacyAnalyze (test bookkeeping only). */
     static int legacyFloors;
-    /** BaseScoring.analyze as it was before 0.0.15, unchanged (apart from noting the floor count for the test). */
+    /** BaseScoring.analyze as it was unchanged (apart from noting the floor count for the test). */
     static BaseScoring.Score legacyAnalyze(CampaignData d,Map<Long,BlockState> blocks,Set<Long> placed){
         Set<Long> designed=new HashSet<>();Map<String,Integer> furnishing=new HashMap<>(),machines=new HashMap<>();Set<String> palette=new HashSet<>();List<BlockPos> anchors=new ArrayList<>();int lights=0,details=0;int[] ages=new int[4];
         for(var e:blocks.entrySet()){
@@ -162,9 +154,9 @@ public final class OptimizePathGameTests {
         }
         for(long p:designed){var s=blocks.get(p);if(s==null)continue;String id=net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();if(s.is(EternalDefense.STRUCTURE_PART.get()))continue;palette.add(id);if(BaseScoring.detail(id,s))details++;}
         int core=d.core>=3?4:Math.max(0,d.core);legacyFloors=floors;
-        return new BaseScoring.Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum(),Rules.installationScore(BaseScoring.installations(blocks),BaseScoring.INSTALLATIONS.size()));   // 0.0.41: the installations, as the scorer counts them
+        return new BaseScoring.Score(Math.min(400,designed.size()),Math.min(8,palette.size())*20,Math.min(120+core*30,details*2),Math.min(80+core*10,lights*4),Math.min(180+core*30,furnishing.values().stream().mapToInt(n->Math.min(6,n)*6).sum()),Math.min(180+core*355,floors*2+Math.min(3,levels.size())*24),Math.min(500,machines.values().stream().mapToInt(n->Math.min(4,n)*20).sum()),Arrays.stream(ages).map(Rules::platformScore).sum(),Rules.installationScore(BaseScoring.installations(blocks),BaseScoring.INSTALLATIONS.size()));   // The installations, as the scorer counts them
     }
-    /** BeaconCombat's TaCZ listener as it was before 0.0.15: subscribed to the base event class, so every posted event reached it. */
+    /** BeaconCombat's TaCZ listener as it was: subscribed to the base event class, so every posted event reached it. */
     public static final class LegacyImpact {
         @SubscribeEvent public void gunBlockImpact(Event event){
             if(!event.getClass().getName().equals("com.tacz.guns.api.event.server.AmmoHitBlockEvent"))return;
@@ -172,14 +164,10 @@ public final class OptimizePathGameTests {
         }
     }
 
-    // ---- a synthetic base -------------------------------------------------------------------------------------------------------------
+    // A synthetic base
     static CampaignData campaign(int core,int vertical,BlockPos beacon){var d=new CampaignData();d.core=core;d.vertical=vertical;d.beacon=beacon;d.phase="preparation";return d;}
     private static BlockState pick(Random r,Block... blocks){return blocks[r.nextInt(blocks.length)].defaultBlockState();}
-    /**
-     * Everything a survey of a lived-in base would see: layered ground (with ores and pockets of water), houses of one to three storeys with
-     * floors, walls, windows, doors, roofs, lamps and furniture, lamp posts, fences, a lit and an unlit furnace, fire, weapon stations,
-     * structure parts and the beacon. Fills {@code placed} with what a player would have placed (and a few ground blocks).
-     */
+    /** Everything a survey of a lived-in base would see: layered ground (with ores and pockets of water) */
     static Map<Long,BlockState> base(CampaignData d,long seed,int houses,int lamps,Set<Long> placed){
         var r=new Random(seed);var map=new HashMap<Long,BlockState>();var b=d.beacon;int rad=d.radius(),below=d.below(),above=d.above();
         for(int y=-below;y<0;y++)for(int x=-rad;x<=rad;x++)for(int z=-rad;z<=rad;z++){
@@ -211,10 +199,10 @@ public final class OptimizePathGameTests {
         put(map,placed,b,4,0,4,EternalDefense.GUN_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,1+r.nextInt(5)));put(map,placed,b,6,0,4,EternalDefense.AMMO_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,1+r.nextInt(5)));
         put(map,placed,b,4,1,4,EternalDefense.STRUCTURE_PART.get().defaultBlockState());
         map.put(b.asLong(),EternalDefense.BEACON.get().defaultBlockState());
-        for(int i=0;i<rad;i++)placed.add(b.offset(-rad+r.nextInt(2*rad+1),-1,-rad+r.nextInt(2*rad+1)).asLong()); // a few player-placed ground blocks
+        for(int i=0;i<rad;i++)placed.add(b.offset(-rad+r.nextInt(2*rad+1),-1,-rad+r.nextInt(2*rad+1)).asLong()); // A few player-placed ground blocks
         return map;
     }
-    /** A two-storey hall over the whole zone (walls on its edge, lanterns inside): well over 72 usable floors, so the floor cap is reached. */
+    /** A two-storey hall over the whole zone (walls on its edge, lanterns inside) */
     static void hall(CampaignData d,Map<Long,BlockState> map,Set<Long> placed){
         var b=d.beacon;int e=d.radius()-1;
         for(int storey=0;storey<2;storey++){int fy=storey*5;
@@ -229,17 +217,17 @@ public final class OptimizePathGameTests {
     }
     private static void put(Map<Long,BlockState> map,Set<Long> placed,BlockPos b,int x,int y,int z,BlockState s){long p=b.offset(x,y,z).asLong();map.put(p,s);placed.add(p);}
 
-    // ---- opt-in runner --------------------------------------------------------------------------------------------------------------
-    /** {@code -Deternaldefense.optimizeTests=true}: adds the {@code /optimize-path-test} command; {@link #start} runs everything and logs OPT_TEST lines. */
+    // Opt-in runner
+    /** Deternaldefense.optimizeTests=true: adds the /optimize-path-test command */
     public static final class Runner {
         private static Collection<GameTestInfo> infos=List.of();private static MultipleTestTracker tracker;
-        /** Result of the last finished run (for the QA harness). */
+        /** Result of the last finished run. */
         public static volatile int lastPass=-1,lastFail=-1;
         @SubscribeEvent public void register(net.minecraftforge.event.RegisterCommandsEvent e){
             ensureRegistered();
             e.getDispatcher().register(net.minecraft.commands.Commands.literal("optimize-path-test").requires(s->s.hasPermission(2)).executes(c->{start(c.getSource().getLevel());return 1;}));
         }
-        /** The tests are registered by Forge when a development run has game tests enabled; register them otherwise, but never twice. */
+        /** The tests are registered by Forge when a development run has game tests enabled */
         public static void ensureRegistered(){
             if(GameTestRegistry.getAllTestFunctions().stream().noneMatch(t->t.getBatchName().startsWith("optimize_")))GameTestRegistry.register(OptimizePathGameTests.class);
         }
@@ -251,7 +239,7 @@ public final class OptimizePathGameTests {
         }
         @SubscribeEvent public void tick(net.minecraftforge.event.TickEvent.ServerTickEvent e){
             if(e.phase!=net.minecraftforge.event.TickEvent.Phase.END||tracker==null)return;
-            if(!net.minecraftforge.gametest.ForgeGameTestHooks.isGametestEnabled())GameTestTicker.SINGLETON.tick(); // a development run already ticks the tests itself
+            if(!net.minecraftforge.gametest.ForgeGameTestHooks.isGametestEnabled())GameTestTicker.SINGLETON.tick(); // A development run already ticks the tests itself
             if(!tracker.isDone())return;
             int pass=0,fail=0;
             for(var info:infos){if(info.hasFailed()){fail++;LOG.error("OPT_TEST_FAIL {}: {}",info.getTestName(),info.getError()==null?"?":info.getError().getMessage());}else{pass++;LOG.info("OPT_TEST_PASS {}",info.getTestName());}}

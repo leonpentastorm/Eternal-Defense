@@ -3,22 +3,12 @@ package dev.eternaldefense.beacon;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Which raid song plays when (pure; the client plays it in {@link RaidMusic}). Every wave starts a song and loops it until the next wave
- * starts, which changes to another song, and since 0.0.19 no song plays twice in one raid: the ordinary waves go through the eight
- * ordinary songs in a shuffled order (as many songs as the longest raid has waves), a special raid (Air Raid, Paratroopers, Siege, They
- * Are Thousands) opens with its own song and goes on with the ordinary ones, and the boss wave (the last wave) of a hard raid plays the
- * boss song. The order is random but fixed per raid (it is worked out from the beacon and the raid number), so every player of the base
- * hears the same song, and a reconnect does not reshuffle it.
- */
+/** Which raid song plays when (pure; the client plays it in RaidMusic). */
 final class RaidPlaylist {
     private RaidPlaylist(){}
-    /** A song: resource name under {@code sounds/music/} (also its {@code music.<id>} event and lang key), pool, length in seconds (rounded). */
+    /** A song: resource name under sounds/music/ */
     record Song(String id,String pool,int seconds){}
-    /**
-     * The owner's songs (made with Suno, converted by {@code tools/audio/import_songs.py}): eight ordinary songs, the boss song and the
-     * special-raid song. (The three themes made for 0.0.16 were taken out in 0.0.19.)
-     */
+    /** The songs (made with Suno, converted by tools/audio/import_songs.py) */
     static final List<Song> SONGS=List.of(
         new Song("barren_gap","normal",120),new Song("line_holder","normal",134),new Song("phase_one_assault","normal",125),new Song("silent_trigger","normal",120),
         new Song("acid_redeemer","normal",119),new Song("assault_loop","normal",120),new Song("breach_core","normal",120),new Song("rolling_wave","normal",119),
@@ -27,7 +17,7 @@ final class RaidPlaylist {
 
     static List<Song> pool(String pool){return SONGS.stream().filter(s->s.pool().equals(pool)).toList();}
 
-    /** Pure: the kind of raid music for this moment of a raid; "" when no raid song should play (no fresh beacon state, or no raid running). */
+    /** Pure: the kind of raid music for this moment of a raid */
     static String cue(boolean fresh,String phase,boolean hardRaid,int wave,int waves,String raidType){
         if(!fresh||!"raid".equals(phase)||wave<1)return "";
         if(hardRaid&&wave>=waves)return "boss";
@@ -35,17 +25,14 @@ final class RaidPlaylist {
     }
     /** Pure: the same number for every player of one raid of one base. */
     static long seed(long beacon,int raidNumber){return beacon*0x9E3779B97F4A7C15L+raidNumber*0xC2B2AE3D27D4EB4FL;}
-    /** Pure: the song of wave {@code wave} (from 1) of a raid of kind {@code cue} (see {@link #cue}); null for no song. */
+    /** Pure: the song of wave wave (from 1) of a raid of kind cue (see cue); null for no song. */
     static Song song(String cue,long seed,int wave){
         if(cue.isEmpty()||wave<1)return null;
         if(cue.equals("boss")||cue.equals("special")&&wave==1){var own=pool(cue);if(!own.isEmpty())return own.get(0);}
         var songs=pool("normal");if(songs.isEmpty())return null;
         return songs.get(order(seed,wave-1-(cue.equals("special")?1:0),songs.size()));
     }
-    /**
-     * Pure: which of {@code size} songs the {@code index}-th ordinary wave (from 0) plays: the songs in an order shuffled by {@code seed}, each
-     * once; a raid longer than that would start a new shuffle, never with the song just played.
-     */
+    /** Pure: which of size songs the index-th ordinary wave (from 0) plays */
     static int order(long seed,int index,int size){
         if(size<=1)return 0;
         var random=new Random(seed);int[] deck=null;int last=-1;

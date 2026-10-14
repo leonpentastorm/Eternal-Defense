@@ -7,9 +7,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
 
-/** Inventory text of the meal effects: what the bonus is worth right now, and the field time (or "frozen" at home). */
+/** Inventory text of the meal effects: what the bonus is worth right now */
 final class MealEffectClient implements IClientMobEffectExtensions {
-    /** The effect is a supplier: Forge asks for this extension from inside the MobEffect constructor, before the subclass fields exist. */
+    /** The effect is a supplier: Forge asks for this extension from inside the MobEffect constructor */
     private final java.util.function.Supplier<MealRules.Effect> source;private final boolean home;
     MealEffectClient(java.util.function.Supplier<MealRules.Effect> source,boolean home){this.source=source;this.home=home;}
     private static final String[] ROMAN={"I","II","III"};

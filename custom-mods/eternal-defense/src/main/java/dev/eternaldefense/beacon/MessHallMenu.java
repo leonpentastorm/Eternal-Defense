@@ -18,15 +18,11 @@ import net.minecraftforge.network.*;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * Standard container slots and button packets; the client sends an intent, never a meal or serving count.
- * Buttons: 0/1 sandwich or stew, 2 prepare, 3 upgrade, 4 clear the order, 5 gather the order from the pack, 6 take the table back,
- * 7 cook and replace the stew still in the chosen pot (the screen asks first), 40+ toggle a recipe (one per effect, signed bytes), 100+ choose a pot.
- */
+/** Standard container slots and button packets; the client sends an intent, never a meal or serving count. */
 final class MessHallMenu extends AbstractContainerMenu {
-    /** Two columns: the table and its buttons on the left, the effects to choose on the right. Needs a GUI at least 376 wide (every 16:9 window does). */
+    /** Two columns: the table and its buttons on the left, the effects to choose on the right. */
     static final int WIDTH=376,HEIGHT=238,MIX_X=9,MIX_Y=48,INV_Y=159,HOT_Y=217;
-    /** The base bread and the sandwich output sit just after the open food slots, so a hall with three slots does not leave a gap. */
+    /** The base bread and the sandwich output sit just after the open food slots */
     static int baseX(int mk){return MIX_X+MealRules.tier(mk).slots()*18+10;}
     static int outX(int mk){return baseX(mk)+24;}
     static final int MODE_SANDWICH=0,MODE_STEW=1,PREPARE=2,UPGRADE=3,CLEAR=4,GATHER=5,TAKE_BACK=6,REPLACE=7,RECIPE=40,POT=100;
@@ -39,7 +35,7 @@ final class MessHallMenu extends AbstractContainerMenu {
     record CatalogueFood(String id,String group,int[] effects){}
     private boolean catalogueSent,seenMode;private int noticeSeq,noticeKind;private String noticeKey="";private List<String> noticeArgs=List.of();
     private long fitSignature=Long.MIN_VALUE;private int[] fit=new int[MealRules.Effect.values().length];private boolean gatherable,covered;
-    /** 0.0.41: the foods the Home Zone's Hubs hold, by food key, read once a second while the screen is open (Gather takes from them). */
+    /** The foods the Home Zone's Hubs hold, by food key, read once a second while the screen is open */
     private Map<String,Integer> hubFoods=Map.of();private int hubFoodsAt=Integer.MIN_VALUE;
     MessHallMenu(int id,Inventory inv,Container ingredients,BlockPos pos,int mk,MessHall.HallEntity hall){
         super(EternalDefense.MESS_HALL_MENU.get(),id);this.ingredients=ingredients;this.pos=pos;this.mk=mk;this.hall=hall;this.player=inv.player;this.stew=this.seenMode=hall!=null&&hall.stewMode&&mk>=2;
@@ -79,14 +75,14 @@ final class MessHallMenu extends AbstractContainerMenu {
         return output.isEmpty()||ItemStack.isSameItemSameTags(output,made)&&output.getCount()<made.getMaxStackSize()?"":"output";
     }
 
-    // ---- notices: one line the screen shows for a few seconds ---------------------------------------
+    // Notices: one line the screen shows for a few seconds
     private void notice(int kind,String key,Object... args){noticeKind=kind;noticeKey=key;noticeArgs=Arrays.stream(args).map(String::valueOf).toList();noticeSeq++;}
-    /** Effect names travel as ids ("fx:firepower,mobility") and are translated by the client, which owns the language files. */
+    /** Effect names travel as ids ("fx:firepower,mobility") and are translated by the client */
     private static String fx(Collection<MealRules.Effect> effects){return "fx:"+String.join(",",effects.stream().map(e->e.id).toList());}
     private void sound(net.minecraft.sounds.SoundEvent event,float pitch){if(player instanceof ServerPlayer sp)sp.playNotifySound(event,SoundSource.BLOCKS,.7f,pitch);}
 
     boolean prepare(){return prepare(false);}
-    /** {@code replace}: the cook confirmed that the stew still in the chosen pot is thrown away; without it a pot with stew is refused ("pot_full"). */
+    /** Replace: the cook confirmed that the stew still in the chosen pot is thrown away */
     boolean prepare(boolean replace){
         if(!stillValid(player))return false;var preview=composition();var problem=problem(preview);
         if(!problem.isEmpty()&&!(replace&&problem.equals("pot_full")))return false;
@@ -108,7 +104,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         broadcastChanges();return true;
     }
 
-    // ---- the standing order ---------------------------------------------------------------------------
+    // The standing order
     private Map<String,Integer> plenty(){var map=new HashMap<String,Integer>();IngredientTraits.catalogue().foods().keySet().forEach(k->map.put(k,64));return map;}
     /** Can this order be cooked at all (any amount of food), at the hall's tier? */
     private boolean possible(Set<MealRules.Effect> order,int tier){return MealPlanner.plan(order,stew,tier,IngredientTraits.catalogue().foods(),plenty(),Set.of(),false)!=null;}
@@ -121,19 +117,16 @@ final class MessHallMenu extends AbstractContainerMenu {
         }
         hall.setOrder(next);return true;
     }
-    /**
-     * Fetches the foods for the order from the table, the pack and (0.0.40) the Home Zone's Hubs in one move; nothing is consumed, only moved
-     * onto the table. Take back puts the table's foods in the pack (never back in a Hub).
-     */
+    /** Fetches the foods for the order from the table, the pack and the Home Zone's Hubs in one move */
     private boolean gather(ServerPlayer sp){
         if(!explicit()){notice(WARN,"gather_choose");return false;}
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();var inv=sp.getInventory();
         for(int i=0;i<6;i++){var food=IngredientTraits.foodOf(ingredients.getItem(i));if(food!=null){stock.merge(food.key(),ingredients.getItem(i).getCount(),Integer::sum);onTable.add(food.key());}}
         for(var stack:inv.items){var food=IngredientTraits.foodOf(stack);if(food!=null)stock.merge(food.key(),stack.getCount(),Integer::sum);}
-        // 0.0.40: after the table and the pack, the Home Zone's Logistics Center Hubs (nearest first)
+        // After the table and the pack, the Home Zone's Logistics Center Hubs (nearest first)
         var w=Supply.at(sp,pos);var borrowed=Supply.borrow(w,s->IngredientTraits.foodOf(s)!=null);
         for(var b:borrowed){var food=IngredientTraits.foodOf(b.stack);if(food!=null)stock.merge(food.key(),b.stack.getCount(),Integer::sum);}
-        // 0.0.35: the base takes two bread; what is already in it counts
+        // The base takes two bread; what is already in it counts
         int baseHas=ingredients.getItem(7).is(Items.BREAD)?ingredients.getItem(7).getCount():0,baseNeed=stew?0:Math.max(0,MealRules.SANDWICH_BREAD-baseHas);boolean needBase=baseNeed>0;
         if(needBase){int bread=stock.getOrDefault("minecraft:bread",0);if(bread<baseNeed){notice(WARN,"gather_bread",MealRules.SANDWICH_BREAD);return false;}stock.put("minecraft:bread",bread-baseNeed);}
         var plan=MealPlanner.plan(hall.order,stew,hall.mk(),foods,stock,onTable,true);
@@ -151,7 +144,7 @@ final class MessHallMenu extends AbstractContainerMenu {
         if(plan.covered())notice(DONE,"gathered",plan.keys().size());else notice(WARN,"gather_short",plan.keys().size(),Math.max(0,(stew?hall.tier().ingredients():plan.keys().size()*MealRules.SANDWICH_FILLING)-Arrays.stream(plan.units()).sum()));
         sound(SoundEvents.BUNDLE_INSERT,1f);return true;
     }
-    /** Moves up to {@code need} units of one food out of {@code sources} into a single new stack. */
+    /** Moves up to need units of one food out of sources into a single new stack. */
     private static ItemStack take(List<ItemStack> sources,String key,int need){
         var placed=ItemStack.EMPTY;
         for(var source:sources){
@@ -186,18 +179,15 @@ final class MessHallMenu extends AbstractContainerMenu {
         broadcastChanges();return true;
     }
 
-    // ---- what the screen is told ----------------------------------------------------------------------
-    /** Cheap fingerprint of everything that decides which recipes the pack can cook: table, pack, order, mode and tier. */
+    // What the screen is told
+    /** Cheap fingerprint of everything that decides which recipes the pack can cook */
     private long signature(Inventory inv){
         long h=hall.mk()*31L+(stew?7:3)+hall.order.hashCode()*131L;
         for(int i=0;i<6;i++)h=h*1000003L+ingredients.getItem(i).getItem().hashCode()*17L+ingredients.getItem(i).getCount();
         for(var stack:inv.items)h=h*1000003L+stack.getItem().hashCode()*17L+stack.getCount();
         return h*31L+inv.items.get(0).getCount()+ingredients.getItem(7).getCount();
     }
-    /**
-     * 0.0.41 (owner): what the Hubs can give, counted like the pack, so effects fed only by the Hubs can be chosen and Gather lights up
-     * (before, the button said the pack lacked foods and stayed off, although Gather itself drew on the Hubs). Read at most once a second.
-     */
+    /** What the Hubs can give, counted like the pack, so effects fed only by the Hubs can be chosen and Gather */
     private Map<String,Integer> hubFoods(ServerPlayer sp){
         if(hubFoodsAt!=Integer.MIN_VALUE&&sp.tickCount-hubFoodsAt<20&&sp.tickCount>=hubFoodsAt)return hubFoods;
         hubFoodsAt=sp.tickCount;var out=new HashMap<String,Integer>();
@@ -205,7 +195,7 @@ final class MessHallMenu extends AbstractContainerMenu {
             for(var h:HubData.get(level).working(level,pos))for(var e:h.storage.kinds().entrySet()){var food=IngredientTraits.foodOf(e.getKey().stack(1));if(food!=null)out.merge(food.key(),e.getValue(),Integer::sum);}}
         return hubFoods=out;
     }
-    /** 4 chosen but nothing in the pack feeds it, 3 chosen, 2 can be added now, 1 exists but not alongside the order, 0 nothing in the pack feeds it. */
+    /** 4 chosen but nothing in the pack feeds it, 3 chosen, 2 can be added now */
     private void refreshFit(ServerPlayer sp){
         var hub=hubFoods(sp);long sig=signature(sp.getInventory())*31L+hub.hashCode();if(sig==fitSignature)return;fitSignature=sig;
         var foods=IngredientTraits.catalogue().foods();var stock=new HashMap<String,Integer>();var onTable=new HashSet<String>();
@@ -231,7 +221,7 @@ final class MessHallMenu extends AbstractContainerMenu {
     }
     @Override public void broadcastChanges(){
         super.broadcastChanges();if(!(player instanceof ServerPlayer sp)||hall==null)return;
-        if(hall.stewMode!=seenMode){stew=seenMode=hall.stewMode;} // another cook switched the hall's mode
+        if(hall.stewMode!=seenMode){stew=seenMode=hall.stewMode;} // Another cook switched the hall's mode
         if(sp.tickCount%100==0)hall.discover();var pots=pots();offered=pots.stream().map(CookPot.PotEntity::getBlockPos).toList();
         if(selected==null||!offered.contains(selected))selected=pots.stream().filter(CookPot.PotEntity::empty).map(CookPot.PotEntity::getBlockPos).findFirst().orElse(null);
         refreshFit(sp);

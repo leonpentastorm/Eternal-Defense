@@ -13,19 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 import java.util.*;
 
-/**
- * Raider Gates. A ground raider that cannot get to the beacon (it walked up to lava, a chasm or a wide lake, or made no progress for 25
- * seconds, see {@link RaidRescue}) does not vanish silently: it stops, channels for {@link RaidMarch#CHANNEL_SECONDS} seconds beside a red
- * {@link RaiderGate} and then appears at the edge of the staging ring, where it marches again. While it channels it cannot move (the
- * {@link ChannelGoal}), it shows a ring of red particles, and it can be shot: every second it was hurt in delays the end by
- * {@link RaidMarch#DAMAGE_DELAY_SECONDS} seconds, to at most {@link RaidMarch#MAX_DELAY_SECONDS}; killing it cancels the channel. Three seconds
- * before it appears a second red gate opens at the destination (with particles and a portal sound), so players near the spot see where it
- * will come out; that exit closes {@link RaidMarch#EXIT_LINGER_SECONDS} seconds after the raider has stepped out of it (at once if the channel is
- * cancelled).
- * <p>One gate serves an obstacle: a raider that gets stuck within {@link RaidMarch#GATE_JOIN_RADIUS} blocks of a gate uses it; a gate has room for
- * {@link RaidMarch#GATE_CAPACITY} channelers, the others wait their turn. A gate goes away when nobody is assigned to it any more. Nothing is
- * saved: after a reload the raiders fall back to the progress timer. All state lives here and is cleared when a raid starts or ends.
- */
+/** Raider Gates. */
 final class RaiderGates {
     private RaiderGates(){}
     enum Phase{WAITING,CHANNELING}
@@ -41,16 +29,16 @@ final class RaiderGates {
     /** Exit gates and the tick each one closes (Long.MAX_VALUE while its raider is still channeling). */
     private static final Map<UUID,Long> EXITS=new HashMap<>();
 
-    // ---- pure decisions --------------------------------------------------------------------------------------------------------------
+    // Pure decisions
     /** Pure: the tick the channel ends, given when it started and how long damage has delayed it. */
     static long completeAt(long startedAt,int delayTicks){return startedAt+RaidMarch.CHANNEL_SECONDS*RaidMarch.TICKS_PER_SECOND+delayTicks;}
-    /** Pure: the total delay after one more hurt second: {@link RaidMarch#DAMAGE_DELAY_SECONDS} longer, never more than {@link RaidMarch#MAX_DELAY_SECONDS}. */
+    /** Pure: the total delay after one more hurt second: RaidMarch.DAMAGE_DELAY_SECONDS longer */
     static int delayedBy(int delayTicks){return Math.min(RaidMarch.MAX_DELAY_SECONDS*(int)RaidMarch.TICKS_PER_SECOND,delayTicks+RaidMarch.DAMAGE_DELAY_SECONDS*(int)RaidMarch.TICKS_PER_SECOND);}
     /** Pure: it lost health since the last look. */
     static boolean hurt(float before,float now){return now<before-.001f;}
     /** Pure: the destination starts to show itself. */
     static boolean telegraphDue(long now,long completeAt){return now>=completeAt-RaidMarch.TELEGRAPH_SECONDS*RaidMarch.TICKS_PER_SECOND;}
-    /** Pure: the nearest gate within {@code radius} of {@code at} (index into {@code gates}), or -1 when a new gate is needed. */
+    /** Pure: the nearest gate within radius of at (index into gates), or -1 when a new gate is needed. */
     static int nearestGate(List<Vec3> gates,Vec3 at,double radius){
         int best=-1;double bestDistance=radius*radius;
         for(int i=0;i<gates.size();i++){double dist=gates.get(i).distanceToSqr(at);if(dist<=bestDistance){best=i;bestDistance=dist;}}
@@ -58,25 +46,25 @@ final class RaiderGates {
     }
     /** Pure: a gate with this many channelers can take another one. */
     static boolean hasRoom(int channeling){return channeling<RaidMarch.GATE_CAPACITY;}
-    /** Pure: where a gate stands for a raider at {@code raider} that is marching towards {@code beacon}: 1.6 blocks to its side, at its feet. */
+    /** Pure: where a gate stands for a raider at raider that is marching towards beacon */
     static Vec3 gateSpot(Vec3 raider,Vec3 beacon){
         double dx=beacon.x-raider.x,dz=beacon.z-raider.z,len=Math.sqrt(dx*dx+dz*dz);if(len<1e-6){dx=1;dz=0;len=1;}
         return new Vec3(raider.x-dz/len*1.6,raider.y,raider.z+dx/len*1.6);
     }
 
-    // ---- state ---------------------------------------------------------------------------------------------------------------------------
+    // State
     static Channel channel(UUID raider){return CHANNELS.get(raider);}
     static boolean channeling(UUID raider){var c=CHANNELS.get(raider);return c!=null&&c.phase==Phase.CHANNELING;}
     static int channelingAt(UUID gate){int n=0;for(var c:CHANNELS.values())if(c.gate.equals(gate)&&c.phase==Phase.CHANNELING)n++;return n;}
     static int assigned(){return CHANNELS.size();}
-    /** A raid starts or ends, the server stops: forget every channel. Use {@link #reset(ServerLevel)} to take the gates out of a world too. */
+    /** A raid starts or ends, the server stops: forget every channel. */
     static void reset(){CHANNELS.clear();KNOWN.clear();EXITS.clear();}
     static void reset(ServerLevel l){for(var gate:gates(l))gate.discard();CHANNELS.clear();KNOWN.clear();EXITS.clear();}
     static int exits(){return EXITS.size();}
     static List<? extends RaiderGate> gates(ServerLevel l){return KNOWN.isEmpty()?List.of():l.getEntities(EntityTypeTest.forClass(RaiderGate.class),g->true);}
 
-    // ---- the life of a channel -----------------------------------------------------------------------------------------------------------
-    /** A stuck raider gets a place at the nearest gate within reach, or at a new one beside it. It channels at once when the gate has room, else it waits. */
+    // The life of a channel
+    /** A stuck raider gets a place at the nearest gate within reach, or at a new one beside it. */
     static void open(ServerLevel l,CampaignData d,Mob mob,BlockPos destination,String reason,long now){
         var raiderAt=mob.position();var found=new ArrayList<RaiderGate>();for(var g:gates(l))if(g.isAlive()&&!g.exit)found.add(g);
         int index=nearestGate(found.stream().map(RaiderGate::position).toList(),raiderAt,RaidMarch.GATE_JOIN_RADIUS);
@@ -132,12 +120,12 @@ final class RaiderGates {
         var dest=ch.destination;
         if(!destinationOk(l,d,dest)||!RaidRescue.fits(l,mob,dest)){dest=RaidRescue.findDestination(l,d,mob);}
         if(dest==null){cancel(l,d,mob,ch,"no place");RaidRescue.noPlace(l,d,mob,now);return;}
-        // the exit stands where the raider comes out (it moves with a destination that had to change), and closes a moment later
+        // The exit stands where the raider comes out (it moves with a destination that had to change)
         if(!dest.equals(ch.destination)||ch.exit==null||!(l.getEntity(ch.exit) instanceof RaiderGate)){closeExit(l,ch.exit);ch.exit=openExit(l,dest);}
         if(ch.exit!=null)EXITS.put(ch.exit,now+RaidMarch.EXIT_LINGER_SECONDS*RaidMarch.TICKS_PER_SECOND);
         var from=mob.position();
         l.sendParticles(ParticleTypes.PORTAL,from.x,from.y+1,from.z,50,.4,.8,.4,.8);l.playSound(null,from.x,from.y,from.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,.7f);
-        RaidRescue.diagnose("TELEPORT",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest.getX()+","+dest.getY()+","+dest.getZ(),ch.reason,ch.gate); // logged where the raider stood
+        RaidRescue.diagnose("TELEPORT",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest.getX()+","+dest.getY()+","+dest.getZ(),ch.reason,ch.gate); // Logged where the raider stood
         CHANNELS.remove(mob.getUUID());
         RaidRescue.relocate(mob,dest);
         var to=mob.position();l.sendParticles(ParticleTypes.REVERSE_PORTAL,to.x,to.y+1,to.z,50,.4,.8,.4,.1);l.playSound(null,to.x,to.y,to.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,1.1f);
@@ -147,22 +135,14 @@ final class RaiderGates {
         CHANNELS.remove(mob.getUUID());closeExit(l,ch.exit);
         RaidRescue.diagnose("CANCEL",l,d,mob,null,mob.getPersistentData().getInt(RaidMarch.GATES),dest(ch.destination),why,ch.gate);
     }
-    // ---- spawn gates (0.0.20) -------------------------------------------------------------------------------------------------------------
+    // Spawn gates
     /** A spawn gate stays open this long after the last enemy came out of it. */
     static final int SPAWN_GATE_LINGER_TICKS=100;
     /** Enemies that appear anywhere but where they would spawn naturally share an open gate within this many blocks. */
     static final double SPAWN_GATE_SHARE=3;
-    /**
-     * A spawn gate stands this many blocks behind the spot its enemy appears at (away from where the enemy is heading), so the enemy is seen
-     * stepping out of it instead of hiding it: on the spot, an enemy covers most of the sprite.
-     */
+    /** A spawn gate stands this many blocks behind the spot its enemy appears */
     static final double SPAWN_GATE_BEHIND=1.2;
-    /**
-     * Every enemy this mod puts somewhere other than a natural spawn (a raid reinforcement that found no open ground far out, a hunt
-     * warband at its objective) comes out of a red gate: the gate opens just behind the spot (seen from {@code toward}, where the enemy is
-     * heading and the players are), drawn bigger than a channel gate, or an open one close by stays open longer, and the enemy steps out with
-     * the teleport particles and sound. The gate closes by itself {@link #SPAWN_GATE_LINGER_TICKS} after the last one.
-     */
+    /** Every enemy this mod puts somewhere other than a natural spawn */
     static RaiderGate spawnGate(ServerLevel l,BlockPos at,Vec3 toward){
         long close=l.getGameTime()+SPAWN_GATE_LINGER_TICKS;var c=Vec3.atBottomCenterOf(at);var stand=behind(c,toward,SPAWN_GATE_BEHIND);
         RaiderGate gate=null;
@@ -176,7 +156,7 @@ final class RaiderGates {
         l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+1,c.z,40,.4,.8,.4,.1);l.playSound(null,c.x,c.y,c.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,1.1f);
         return gate;
     }
-    /** {@code spot} moved {@code by} blocks level away from {@code from}; unmoved when {@code from} is missing or right above or below it. */
+    /** Spot moved by blocks level away from from; unmoved when from is missing or right above or below it. */
     static Vec3 behind(Vec3 spot,Vec3 from,double by){
         if(from==null)return spot;
         double dx=spot.x-from.x,dz=spot.z-from.z,len=Math.sqrt(dx*dx+dz*dz);
@@ -200,10 +180,7 @@ final class RaiderGates {
         for(int i=0;i<12;i++){double a=i*Math.PI/6;l.sendParticles(red,mob.getX()+Math.cos(a)*r,y,mob.getZ()+Math.sin(a)*r,1,0,0,0,0);}
     }
 
-    /**
-     * Once a cycle after the raiders have been looked at: drop the places of raiders that died, were withdrawn or are gone ("death cancels it"),
-     * and take away every gate nobody is assigned to.
-     */
+    /** Once a cycle after the raiders have been looked */
     static void cleanup(ServerLevel l,CampaignData d){
         if(CHANNELS.isEmpty()&&KNOWN.isEmpty())return;
         long now=l.getGameTime();
@@ -211,7 +188,7 @@ final class RaiderGates {
             var e=it.next();var entity=l.getEntity(e.getKey());
             if(d.raiders.contains(e.getKey())&&entity instanceof Mob mob&&mob.isAlive())continue;
             if(e.getValue().phase==Phase.CHANNELING&&entity instanceof Mob m)RaidRescue.diagnose("CANCEL",l,d,m,null,m.getPersistentData().getInt(RaidMarch.GATES),dest(e.getValue().destination),"raider died or left the raid",e.getValue().gate);
-            if(e.getValue().exit!=null&&EXITS.getOrDefault(e.getValue().exit,0L)==Long.MAX_VALUE)EXITS.put(e.getValue().exit,now);   // its raider is gone: the exit closes
+            if(e.getValue().exit!=null&&EXITS.getOrDefault(e.getValue().exit,0L)==Long.MAX_VALUE)EXITS.put(e.getValue().exit,now);   // Its raider is gone: the exit closes
             it.remove();
         }
         for(var gate:gates(l)){
@@ -223,10 +200,7 @@ final class RaiderGates {
         KNOWN.removeIf(id->l.getEntity(id)==null);
     }
 
-    /**
-     * The raider cannot move while it channels: the goal outranks everything else (priority -1) and takes MOVE, LOOK and JUMP. It does not switch the AI
-     * off ({@code setNoAi} belongs to the defeated Special Forces soldiers); the mob keeps its targets and still defends itself.
-     */
+    /** The raider cannot move while it channels: the goal outranks everything else (priority -1) and takes MOVE */
     static final class ChannelGoal extends Goal {
         private final Mob mob;
         ChannelGoal(Mob mob){this.mob=mob;setFlags(EnumSet.of(Flag.MOVE,Flag.LOOK,Flag.JUMP));}
@@ -239,7 +213,7 @@ final class RaiderGates {
             hold();var ch=CHANNELS.get(mob.getUUID());
             if(ch!=null)mob.getLookControl().setLookAt(ch.gatePos.x,ch.gatePos.y+1,ch.gatePos.z);
         }
-        /** Cancels the path and any move a goal asked for before the channel started (the move control keeps walking to its last wanted spot). */
+        /** Cancels the path and any move a goal asked for before the channel started */
         private void hold(){
             mob.getNavigation().stop();mob.getMoveControl().setWantedPosition(mob.getX(),mob.getY(),mob.getZ(),0);
             mob.setZza(0);mob.setXxa(0);mob.setYya(0);mob.setJumping(false);

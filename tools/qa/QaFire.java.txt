@@ -36,12 +36,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client and calls the three reworked fire supports of 0.0.36 (Napalm
- * Carpet's Ablaze, Spotter Arrows, the Curse of Debilitation) on real mobs, measures every hit before and after the mod's handlers (a real
- * TaCZ bullet among them), checks water, rain, a wooden wall, death, and that a raid never learns any of it as a trap. Copied in by
- * tools/qa/setup-qa.sh.
- */
+/** Copied in by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaFire {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -73,7 +68,7 @@ public final class QaFire {
     static BlockPos RAIN(){return at(56,0,24);}
     static BlockPos RAID(){return at(0,0,-24);}
 
-    // ---- every hit, before and after the mod's handlers; every knockback; every extinguish hiss ---------------------------------------
+    // Every hit, before and after the mod's handlers; every knockback; every extinguish hiss
     record Hurt(int id,String type,float pre,float post,boolean byArrow,long time){}
     static final List<Hurt> HURTS=Collections.synchronizedList(new ArrayList<>());
     static final Map<Object,Float> PRE=new java.util.concurrent.ConcurrentHashMap<>();
@@ -96,8 +91,8 @@ public final class QaFire {
     static String show(List<Hurt> list){var b=new StringBuilder();for(var h:list)b.append(h.type()).append(' ').append(h.pre()).append("->").append(h.post()).append("; ");return b.toString();}
     static long now(){return srvGet(()->sl().getGameTime());}
 
-    // ---- mobs, flares, the camera ----------------------------------------------------------------------------------------------------
-    /** Server thread only. A still mob (no AI) with plenty of health, so it lives through what it is measured with. */
+    // Mobs, flares, the camera
+    /** Server thread only. */
     static <T extends Mob> T mob(EntityType<T> type,BlockPos at,double dx,double dz,float health,boolean ai){
         var m=type.create(sl());m.moveTo(at.getX()+.5+dx,at.getY(),at.getZ()+.5+dz,0,0);m.setNoAi(!ai);m.setPersistenceRequired();
         m.getAttribute(Attributes.MAX_HEALTH).setBaseValue(health);m.setHealth(health);sl().addFreshEntity(m);return m;
@@ -121,7 +116,7 @@ public final class QaFire {
     static void glassCell(BlockPos c,boolean roof){srv(()->{for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++)for(int dy=0;dy<=2;dy++){
         boolean wall=dx!=0||dz!=0;if(wall&&dy<2||roof&&dy==2)sl().setBlock(c.offset(dx,dy,dz),Blocks.GLASS.defaultBlockState(),3);}});}
 
-    // ---- a real TaCZ bullet ------------------------------------------------------------------------------------------------------------
+    // A real TaCZ bullet
     static void gun(){srv(()->{
         var id=new ResourceLocation("tacz:ak47");var stack=new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:modern_kinetic_gun")));
         var gun=com.tacz.guns.api.item.IGun.getIGunOrNull(stack);gun.setGunId(stack,id);gun.setCurrentAmmoCount(stack,30);gun.setBulletInBarrel(stack,true);
@@ -161,7 +156,7 @@ public final class QaFire {
     static long t0;static int shots;
 
     static void script(){
-        // ---- a night that stays, clear weather, a beacon far away (its raid state is used at the end) ------------------------------------
+        // A night that stays, clear weather, a beacon far away (its raid state is used at the end)
         step(5,()->srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
             for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(at(0,0,0)).inflate(160)))e.discard();sp().getInventory().clearContent();
@@ -170,7 +165,7 @@ public final class QaFire {
         }),"night, clear sky, no natural mobs, empty hands, a beacon 56 blocks away");
         step(2,()->mc().options.hideGui=true,"no HUD in the world shots");
 
-        // ==== 1. Napalm Carpet: Ablaze ======================================================================================================
+        // ==== 1.
         step(5,()->srv(()->{
             husk=mob(EntityType.HUSK,NAPALM(),-2,1,1024,false);ablazeTwo=mob(EntityType.HUSK,NAPALM(),2,1,1024,false);
             dry=mob(EntityType.HUSK,NAPALM(),-1,-2,1024,false);rainy=mob(EntityType.HUSK,NAPALM(),1,-2,1024,false);walled=mob(EntityType.HUSK,NAPALM(),0,2,1024,false);
@@ -203,7 +198,7 @@ public final class QaFire {
         step(2,()->seen[0]=hurts(husk,"minecraft:on_fire").size(),"count the burns");
         until("a burn just landed",60,()->hurts(husk,"minecraft:on_fire").size()>seen[0],()->srv(()->husk.hurt(sl().damageSources().mobAttack(blaze),6f)));
         step(3,()->{var hit=hurts(husk,"minecraft:mob_attack");check("a hit right after a burn is not cut short by it (6 stays 6)",!hit.isEmpty()&&hit.get(hit.size()-1).pre()==6f,show(hit));},"a hit after a burn");
-        // ---- water puts out the flames, not the burn; out of the water it is lit again ----------------------------------------------------
+        // Water puts out the flames, not the burn; out of the water it is lit again
         step(5,()->srv(()->{
             for(int dx=-2;dx<=2;dx++)for(int dz=-2;dz<=2;dz++)for(int dy=-1;dy<=2;dy++){var p=POOL().offset(dx,dy,dz);boolean rim=Math.abs(dx)==2||Math.abs(dz)==2||dy==-1;
                 sl().setBlock(p,rim?Blocks.GLASS.defaultBlockState():dy<=1?Blocks.WATER.defaultBlockState():Blocks.AIR.defaultBlockState(),3);}
@@ -219,7 +214,7 @@ public final class QaFire {
         step(5,()->srv(()->husk.teleportTo(POOL().getX()+4.5,POOL().getY(),POOL().getZ()+.5)),"out of the water");
         until("out of the water it burns again",60,()->srvGet(()->husk.isOnFire()),()->{});
         step(2,()->check("out of the water it is lit again",srvGet(()->husk.isOnFire()&&!husk.isInWater()),""),"lit again");
-        // ---- rain: a husk that moves (rain only puts out a mob that moves) -----------------------------------------------------------------
+        // Rain: a husk that moves (rain only puts out a mob that moves)
         step(5,()->{glassCell(RAIN(),false);srv(()->{rainy.teleportTo(RAIN().getX()+.5,RAIN().getY(),RAIN().getZ()+.5);rainy.setNoAi(false);sl().setWeatherParameters(0,6000,true,false);});},"rain; a husk that moves, in a glass cell open to the sky");
         until("it rains on the husk",400,()->srvGet(()->rainy.isInWaterRainOrBubble()&&!rainy.isInWater()),()->{});
         step(20,()->{t0=now();HISSES.clear();look(RAIN().offset(0,0,-6),2,RAIN().getX()+.5,RAIN().getY()+1,RAIN().getZ()+.5);},"in the rain");
@@ -233,7 +228,7 @@ public final class QaFire {
         until("dry again",400,()->srvGet(()->!rainy.isInWaterRainOrBubble()),()->{});
         until("out of the rain it burns again",80,()->srvGet(()->rainy.isOnFire()),()->{});
         step(2,()->check("after the rain it is lit again",srvGet(()->rainy.isOnFire()),""),"after rain");
-        // ---- a burning raider against the wooden base sets nothing alight -----------------------------------------------------------------
+        // A burning raider against the wooden base sets nothing alight
         step(5,()->srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DOFIRETICK).set(true,server());
             for(int dx=-3;dx<=3;dx++)for(int dy=0;dy<=3;dy++){sl().setBlock(WALL().offset(dx,dy,1),Blocks.OAK_PLANKS.defaultBlockState(),3);sl().setBlock(WALL().offset(dx,dy,2),Blocks.OAK_LOG.defaultBlockState(),3);}
@@ -250,11 +245,11 @@ public final class QaFire {
             check("a burning husk against the wooden wall lit no block in 15 seconds (fire tick on)",fires==0&&planks==28,"fires "+fires+", planks "+planks+"/28");
             check("it burned the whole time",srvGet(()->walled.isOnFire())&&hurtsSince(walled,"minecraft:on_fire",t0).size()>=13,hurtsSince(walled,"minecraft:on_fire",t0).size()+" burns");
             shot("f05_ablaze_by_the_wall");},"wall");
-        // ---- death clears it ------------------------------------------------------------------------------------------------------------
+        // Death clears it
         step(5,()->srv(()->dry.kill()),"kill an Ablaze husk");
         step(5,()->check("death clears Ablaze",srvGet(()->!dry.isAlive()&&!dry.getPersistentData().contains(FireMarks.ABLAZE)),""),"death");
 
-        // ==== 2. Spotter Arrows ============================================================================================================
+        // ==== 2.
         step(5,()->srv(()->{
             SPOTTED.clear();var r=new Random(5);
             for(int i=0;i<12;i++)SPOTTED.add(mob(EntityType.HUSK,ARROWS(),r.nextDouble()*6-3,r.nextDouble()*6-3,300,false));
@@ -290,7 +285,7 @@ public final class QaFire {
             check("six volleys hit each mob six times",hurts(SPOTTED.get(0),"minecraft:arrow").size()==6,""+hurts(SPOTTED.get(0),"minecraft:arrow").size());
             check("marks do not stack: every later hit is 5.2",hurts(SPOTTED.get(0),"minecraft:arrow").stream().skip(1).allMatch(h->Math.abs(h.post()-5.2f)<1e-3),show(hurts(SPOTTED.get(0),"minecraft:arrow")));},"after the volleys");
 
-        // ---- Marked: every kind of damage, a real TaCZ bullet among them; what ignores invulnerability is left alone ---------------------
+        // Marked: every kind of damage, a real TaCZ bullet among them; what ignores invulnerability is left alone
         step(5,()->srv(()->{
             vind=mob(EntityType.VINDICATOR,PROBES(),0,0,500,false);probe=mob(EntityType.HUSK,PROBES(),3,0,500,false);bypass=mob(EntityType.HUSK,PROBES(),-3,0,500,false);
             control=mob(EntityType.VINDICATOR,PROBES(),0,4,500,false);taczMarked=mob(EntityType.VINDICATOR,PROBES(),-2,8,500,false);taczPlain=mob(EntityType.VINDICATOR,PROBES(),2,8,500,false);
@@ -324,7 +319,7 @@ public final class QaFire {
             check("an unmarked mob takes the bullet as it is",!plain.isEmpty()&&ratio(plain,1.0),show(plain));
             srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY));},"TaCZ");
 
-        // ==== 3. Curse of Debilitation =====================================================================================================
+        // ==== 3.
         step(5,()->srv(()->{CURSED.clear();for(int i=0;i<3;i++)CURSED.add(mob(EntityType.VINDICATOR,CURSE(),i*2-2,0,400,false));CURSED.add(mob(EntityType.HUSK,CURSE(),0,2,400,false));}),"three vindicators and a husk");
         step(5,()->look(CURSE().offset(0,0,-9),2,CURSE().getX()+.5,CURSE().getY()+1,CURSE().getZ()+.5),"watch");
         step(5,()->flare(CannonUpgrades.FireType.CURSE,CURSE(),3),"a Curse of Debilitation flare, Damage level 3");
@@ -339,7 +334,7 @@ public final class QaFire {
         step(200,()->{},"ten seconds later");
         step(2,()->check("the curses are still there, still endless",CURSED.stream().limit(3).allMatch(m->endless(m,MobEffects.WITHER,1)&&endless(m,MobEffects.WEAKNESS,1)),""),"still cursed");
 
-        // ==== 4. A raid never learns any of it as a trap =====================================================================================
+        // ==== 4.
         Mob[] raid=new Mob[5];
         step(5,()->srv(()->{
             raid[0]=mob(EntityType.HUSK,RAID(),-12,0,200,false);
@@ -360,14 +355,14 @@ public final class QaFire {
         step(5,()->{var learned=srvGet(()->CampaignData.get(sl()).trapFirstWave.keySet().toString());check("control: plain fire is learned as a fire trap (the check can see it)",learned.contains("FIRE"),learned);},"control");
         step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();RaidAdaptation.begin(d);d.setDirty();}),"the raid ends");
 
-        // ==== 5. What the player reads ====================================================================================================
+        // ==== 5.
         step(2,()->mc().options.hideGui=false,"the HUD back for the screens");
         step(5,()->{var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
         step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("support");g.scroll=0;}},"the support page");
         step(20,()->{check("the Field Guide has the support page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("support"),"");shot("f08_guide_support");},"guide");
         step(5,()->{if(mc().screen instanceof BeaconClient.GuideScreen g)g.scroll=Integer.MAX_VALUE/4;},"scroll to the fire support types");
         step(20,()->shot("f09_guide_types"),"guide types");
-        // ---- the cannon menu's card for each of the three (the screen opened with the data a cannon would send) ----------------------------
+        // The cannon menu's card for each of the three (the screen opened with the data a cannon would send)
         for(Object[] c:new Object[][]{{1,"f10_menu_spotter",new String[]{"Spotter Arrows","glows"},"Arrow Cluster"},{5,"f11_menu_curse",new String[]{"Curse of Debilitation","dies"},"Glowing"},{8,"f12_menu_napalm",new String[]{"Napalm Carpet","Ablaze"},"tipped"}}){
             step(5,()->{var tag=new net.minecraft.nbt.CompoundTag();tag.putInt("fire",(int)c[0]);tag.putIntArray("up",new int[CannonUpgrades.Upgrade.values().length]);tag.putString("owner","QA");tag.putBoolean("creative",true);
                 mc().setScreen(new CannonScreen(BlockPos.ZERO,tag));},"the cannon menu, type "+c[0]);

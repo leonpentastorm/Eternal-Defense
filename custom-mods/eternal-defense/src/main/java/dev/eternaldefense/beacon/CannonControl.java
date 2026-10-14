@@ -16,7 +16,7 @@ final class CannonControl {
     private CannonControl(){}
     static final int SELECT=0,UPGRADE=1;
 
-    /** The cannon the player is allowed to operate at {@code pos}, or null (the reason is sent to the player). */
+    /** The cannon the player is allowed to operate at pos, or null (the reason is sent to the player). */
     private static SupportCannon.CannonEntity operable(ServerPlayer p,BlockPos pos){
         var level=p.serverLevel();
         if(!level.hasChunkAt(pos)||!level.getBlockState(pos).is(EternalDefense.SUPPORT_CANNON.get()))return null;

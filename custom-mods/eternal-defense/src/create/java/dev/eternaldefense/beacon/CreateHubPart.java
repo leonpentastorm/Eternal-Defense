@@ -16,17 +16,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * 0.0.40, pack edition with Create loaded: a Logistics Center Hub part Create's belts (and anything else that hands items over the way a
- * belt does) can deliver to directly. Create only passes belt items on to blocks with its own belt-input behaviour, which plain inventories,
- * Create's Item Vault among them, do not have. The anchor is the hidden middle block, so only the 26 parts ever touch a belt.
- * Everything else is the plain part's: the same item handler on every face, the same saved data under the same block entity id.
- */
+/** Pack edition with Create loaded: a Logistics Center Hub part Create's belts */
 final class CreateHubPart extends SmartBlockEntity implements LogisticsHub.Cell {
     private UUID hubId;
     CreateHubPart(BlockPos pos,BlockState state){super(EternalDefense.LOGISTICS_HUB_PART_ENTITY.get(),pos,state);}
 
-    /** Belt items go straight into the Hub's storage (onto the same kind first, then empty slots), whole or in part; none while it does not work. */
+    /** Belt items go straight into the Hub's storage (onto the same kind first, then empty slots), whole or in part */
     @Override public void addBehaviours(List<BlockEntityBehaviour> behaviours){
         behaviours.add(new DirectBeltInputBehaviour(this).setInsertionHandler((item,side,simulate)->{
             if(!(level instanceof ServerLevel server)||hubId==null)return item.stack;

@@ -8,7 +8,7 @@ import mezz.jei.api.runtime.IClickableIngredient;
 import net.minecraft.resources.ResourceLocation;
 import java.util.Optional;
 
-/** JEI's own configured recipe/uses keys operate on our hovered ingredient icons. */
+/** JEI's own configured recipe/uses keys operate on the hovered ingredient icons. */
 @JeiPlugin
 public final class DefenseJei implements IModPlugin {
     static mezz.jei.api.runtime.IJeiRuntime runtime;

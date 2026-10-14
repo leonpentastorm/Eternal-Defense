@@ -9,17 +9,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 
-/**
- * 0.0.40 (this source set is compiled against Create): Create's mechanical arm
- * only works with blocks that have a registered interaction point type, and has none for plain inventories. This one lets an arm put items
- * into, and take them out of, any of the Logistics Center Hub's 27 blocks, through the same item handler hoppers and funnels use. It also
- * swaps in the Hub part Create's belts can deliver to ({@link CreateHubPart}). Registered from {@link EternalDefense} by name, only when
- * Create is loaded.
- */
+/** Create's mechanical arm only works with blocks that have a registered interaction point type */
 public final class CreateArmCompat {
     private CreateArmCompat(){}
     public static void register(IEventBus modBus){
-        LogisticsHub.partFactory=CreateHubPart::new;   // belts deliver to the Hub's parts directly
+        LogisticsHub.partFactory=CreateHubPart::new;   // Belts deliver to the Hub's parts directly
         var types=DeferredRegister.create(CreateRegistries.ARM_INTERACTION_POINT_TYPE,EternalDefense.ID);
         types.register("logistics_hub",HubType::new);
         types.register(modBus);

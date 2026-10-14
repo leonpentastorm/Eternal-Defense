@@ -27,14 +27,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
-/** The delivered supply parcel: a chest that parachutes in (or appears at the caller's feet). Right-click opens it like any chest. */
+/** The delivered supply parcel: a chest that parachutes in (or appears at the caller's feet). */
 final class SupportCrate {
     private SupportCrate(){}
     static final class ParcelEntity extends Entity {
         private static final EntityDataAccessor<Boolean> FALLING=SynchedEntityData.defineId(ParcelEntity.class,EntityDataSerializers.BOOLEAN);
         private static final MenuType<?>[] ROWS={MenuType.GENERIC_9x1,MenuType.GENERIC_9x2,MenuType.GENERIC_9x3,MenuType.GENERIC_9x4};
         private int age,rows=1;
-        /** The chest contents. When the last item is taken and the window closes, the empty parcel folds away. */
+        /** The chest contents. */
         final SimpleContainer box=new SimpleContainer(36){
             @Override public boolean stillValid(Player p){return ParcelEntity.this.isAlive()&&p.distanceToSqr(ParcelEntity.this)<=64;}
             @Override public void startOpen(Player p){level().playSound(null,getX(),getY(),getZ(),SoundEvents.BARREL_OPEN,SoundSource.NEUTRAL,1f,1.1f);}
@@ -51,7 +51,7 @@ final class SupportCrate {
             rows=Math.max(1,Math.min(4,(i+8)/9));
         }
         void setFalling(boolean falling){entityData.set(FALLING,falling);}
-        /** While it falls the canopy (about 5 blocks wide and 5 tall) is part of what is drawn, so it must not be culled with the small crate. */
+        /** While it falls the canopy (about 5 blocks wide and 5 tall) is part of what is drawn */
         @Override public net.minecraft.world.phys.AABB getBoundingBoxForCulling(){return falling()?getBoundingBox().inflate(3,0,3).expandTowards(0,5.5,0):super.getBoundingBoxForCulling();}
         boolean falling(){return entityData.get(FALLING);}
         @Override protected void defineSynchedData(){entityData.define(FALLING,false);}

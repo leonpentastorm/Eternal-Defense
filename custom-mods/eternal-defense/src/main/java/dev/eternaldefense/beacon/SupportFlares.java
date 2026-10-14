@@ -41,10 +41,7 @@ import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The three flares. All of them are thrown and cost nothing to throw (the price is paid when buying them):
- * a Support Flare sends the platform's whole supply grid, a Return Flare opens a portal home, a Fire Support Flare shells its own spot.
- */
+/** The three flares. */
 final class SupportFlares {
     private SupportFlares(){}
 
@@ -53,13 +50,10 @@ final class SupportFlares {
     static AABB blastBox(Vec3 c,double r){return new AABB(c.x-r,c.y-0.5,c.z-r,c.x+r,c.y+r,c.z+r);}
     /** A Bunker Buster digs down as well as up: its box is a cube around the flare, and every block in it goes. */
     static AABB bunkerBox(Vec3 c,double r){return new AABB(c.x-r,c.y-r,c.z-r,c.x+r,c.y+r,c.z+r);}
-    /** Napalm and frost lie on the ground: a flat box, {@link CannonUpgrades#GROUND_HEIGHT} blocks high. */
+    /** Napalm and frost lie on the ground: a flat box, CannonUpgrades.GROUND_HEIGHT blocks high. */
     static AABB groundBox(Vec3 c,double r){return new AABB(c.x-r,c.y-0.5,c.z-r,c.x+r,c.y+CannonUpgrades.GROUND_HEIGHT,c.z+r);}
     static AABB boxFor(CannonUpgrades.FireType type,Vec3 c,double r){return type==CannonUpgrades.FireType.BUNKER||type==CannonUpgrades.FireType.STARSHELL?bunkerBox(c,r):type.flat()?groundBox(c,r):blastBox(c,r);}
-    /**
-     * Solid blocks in the column above {@code at}, counted up to {@link SupportRules#COVER_BLOCKS} (leaves and other blocks that do not stop
-     * movement do not count): a shell comes down an open pit or through a thin roof, not through rock.
-     */
+    /** Solid blocks in the column above at, counted up to SupportRules.COVER_BLOCKS */
     static int cover(ServerLevel level,BlockPos at){
         int top=level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,at.getX(),at.getZ()),n=0;
         var pos=new BlockPos.MutableBlockPos();
@@ -69,7 +63,7 @@ final class SupportFlares {
         }
         return n;
     }
-    /** A Spotter Arrows arrow vanishes this long after it lands: it is only for show (0.0.36). */
+    /** A Spotter Arrows arrow vanishes this long after it lands: it is only for show. */
     static final int SHOW_ARROW_TICKS=40;
 
     static final class FlareItem extends Item {
@@ -81,7 +75,7 @@ final class SupportFlares {
             if(!(player instanceof ServerPlayer sp))return InteractionResultHolder.fail(stack);
             String problem=SupportCalls.problem(sp,kind);
             if(problem!=null){SupportCalls.refuse(sp,problem);return InteractionResultHolder.fail(stack);}
-            // The call is always the THROWER's own: their upgrades and their chosen fire support, even for a flare somebody else gave them.
+            // The call is always the THROWER's own: their upgrades and their chosen fire support
             var base=SupportData.get(sp.serverLevel()).of(sp.getUUID());
             var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],base!=null?base.type():CannonUpgrades.FireType.EXPLOSION);
             ListTag cargo=kind==SupportCalls.Kind.SUPPLY?SupportCalls.takeGrid(sp):new ListTag();
@@ -105,13 +99,13 @@ final class SupportFlares {
         }
     }
 
-    /** Players are never hurt by a flare (its shells, bombs and bolts) except by a Bunker Buster, which is the one support that can hurt them. */
+    /** Players are never hurt by a flare (its shells, bombs and bolts) except by a Bunker Buster */
     public static final class Safety {
         @net.minecraftforge.eventbus.api.SubscribeEvent public void protect(net.minecraftforge.event.entity.living.LivingAttackEvent e){
             if(e.getEntity() instanceof Player&&e.getSource().getDirectEntity() instanceof FlareEntity f&&f.type()!=CannonUpgrades.FireType.BUNKER)e.setCanceled(true);
         }
     }
-    /** Blocks a Bunker Buster leaves alone: the beacon and the base's own blocks, and anything super hard (obsidian, crying obsidian, bedrock, reinforced deepslate, anchors, ancient debris...). */
+    /** Blocks a Bunker Buster leaves alone: the beacon and the base's own blocks, and anything super hard */
     static boolean bunkerSpares(BlockState state){
         return DefenseStructures.owns(state)||state.is(EternalDefense.STRUCTURE_PART.get())||state.is(EternalDefense.BEACON.get())
             ||state.is(net.minecraft.world.level.block.Blocks.OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.BEDROCK)
@@ -119,10 +113,10 @@ final class SupportFlares {
     }
     /** Explosion resistance from which a block counts as super hard (obsidian is 1200). */
     static final float HARD_RESISTANCE=1200f;
-    /** Layers of the crater dug per tick: the whole cube is gone in about this many ticks, so the ground seems to be eaten from the top down. */
+    /** Layers of the crater dug per tick: the whole cube is gone in about this many ticks */
     static final int CARVE_TICKS=12;
 
-    /** A thrown flare. It lands, then runs its call: the cannon turns onto it and fires, then a parcel countdown, a portal, or the owner's chosen fire support. */
+    /** A thrown flare. */
     static final class FlareEntity extends ThrowableItemProjectile {
         static final EntityDataAccessor<Integer> KIND=SynchedEntityData.defineId(FlareEntity.class,EntityDataSerializers.INT);
         static final EntityDataAccessor<Integer> TYPE=SynchedEntityData.defineId(FlareEntity.class,EntityDataSerializers.INT);
@@ -135,14 +129,11 @@ final class SupportFlares {
         private ListTag cargo=new ListTag();
         private CannonUpgrades.Config cfg=CannonUpgrades.Config.of(new int[CannonUpgrades.Upgrade.values().length],CannonUpgrades.FireType.EXPLOSION);
         private int airTicks,landedTicks,startAt=-1,total,spawnAt,clear,life,arm,auraLeft=-1;
-        /** Tick this flare took the cannon, tick the cannon shot for it, tick a Return portal opened, tick a supply flare's cannon fired. */
+        /** Tick this flare took the cannon, tick the cannon shot for it, tick a Return portal opened */
         private int turnStart=-1,gunAt=-1,openAt=-1,fireTick=-1;
         private boolean outside,spawned,planned,held,queued;private int cooldown;
         private int carveY=Integer.MIN_VALUE,carveFloor,carveX0,carveX1,carveZ0,carveZ1;
-        /**
-         * A lingering type's effect (cluster bomblets, burning ground, frost, gravity well, the burning star): the flare ticks it ran from and to,
-         * and a shockwave's push window. The fire, snow and light blocks it put in the world are listed so they can be taken away again (saved).
-         */
+        /** A lingering type's effect (cluster bomblets, burning ground, frost, gravity well, the burning star) */
         private int effectFrom=-1,effectUntil=-1,pushUntil=-1;
         private final java.util.LinkedHashSet<Long> placed=new java.util.LinkedHashSet<>();
         /** Transient: the vortex or star seen in the sky exists (after a reload it is put back). */
@@ -162,7 +153,7 @@ final class SupportFlares {
         boolean open(){return entityData.get(OPEN);}
         /** The red box of this flare's area: the same box hurts, digs and is drawn. */
         AABB box(){return boxFor(type(),position(),radius());}
-        /** Opens a portal back to {@code to} that lasts {@code ticks}; owner only. */
+        /** Opens a portal back to to that lasts ticks; owner only. */
         static FlareEntity backPortal(ServerLevel level,Player owner,Vec3 at,Vec3 to,String toDim,CannonUpgrades.Config cfg,int ticks){
             var f=new FlareEntity(EternalDefense.FLARE.get(),level);
             f.setOwner(owner);f.configure(SupportCalls.Kind.RETURN,new ListTag(),cfg);f.life=ticks;f.dest=to;f.destDim=toDim;f.arm=60;f.openAt=0;
@@ -176,11 +167,11 @@ final class SupportFlares {
         @Override protected void onHitBlock(BlockHitResult hit){
             if(landed())return;
             if(hit.getDirection()==Direction.UP){
-                // it comes to rest exactly where it touched the ground: everything the call does is measured from this point
+                // It comes to rest exactly where it touched the ground: everything the call does is measured from this point
                 Vec3 at=hit.getLocation();setPos(at.x,at.y,at.z);setDeltaMovement(Vec3.ZERO);setNoGravity(true);entityData.set(LANDED,true);
                 if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY->1.1f;case RETURN->1f;case FIRE->.9f;});
             }else{
-                Vec3 m=getDeltaMovement();setDeltaMovement(-m.x*.2,Math.min(m.y,0)*.5,-m.z*.2);   // slides down walls and bounces off ceilings
+                Vec3 m=getDeltaMovement();setDeltaMovement(-m.x*.2,Math.min(m.y,0)*.5,-m.z*.2);   // Slides down walls and bounces off ceilings
             }
         }
         @Override public AABB getBoundingBoxForCulling(){return landed()&&kind()==SupportCalls.Kind.FIRE?box().inflate(1):super.getBoundingBoxForCulling();}
@@ -195,11 +186,8 @@ final class SupportFlares {
         private ServerPlayer owner(ServerLevel server){return getOwner()==null?null:server.getServer().getPlayerList().getPlayer(getOwner().getUUID());}
         private SupportData.Base base(ServerLevel server){return getOwner()==null?null:SupportData.get(server).of(getOwner().getUUID());}
 
-        // ---- the cannon's part of every call ---------------------------------------------------------------------------
-        /**
-         * Takes the owner's cannon (a call waits while another one has it), turns it onto this flare and waits for it to settle:
-         * true once it is ready to shoot. Calls that cannot show the turret (another dimension, nobody near the base) wait the same time.
-         */
+        // The cannon's part of every call
+        /** Takes the cannon (a call waits while another one has it) */
         private boolean gunReady(ServerLevel server,ServerPlayer owner,SupportCannon.CannonEntity live,int t){
             if(gunAt>=0)return true;
             var home=server.getServer().overworld();var base=base(server);long now=home.getGameTime();
@@ -244,7 +232,7 @@ final class SupportFlares {
                 if(cfg.type()==CannonUpgrades.FireType.BUNKER&&BaseZone.touches(server,box())){bunkerHome(server,owner);return;}
                 if(!cfg.tunnel()&&server.dimensionType().hasSkyLight()&&SupportRules.underground(cover(server,blockPosition()))){underground(server,owner);return;}
             }
-            if(t==0&&dest==null)SupportChatter.say(server,position(),kind,owner);   // the call is taken: the radio answers
+            if(t==0&&dest==null)SupportChatter.say(server,position(),kind,owner);   // The call is taken: the radio answers
             if(t%2==0)server.sendParticles(kind==SupportCalls.Kind.FIRE?ParticleTypes.FLAME:kind==SupportCalls.Kind.SUPPLY?ParticleTypes.END_ROD:ParticleTypes.WITCH,getX(),getY()+.25,getZ(),2,.06,.15,.06,.02);
             if(t%6==0)server.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,getX(),getY()+.3,getZ(),0,0,.07,0,1);
             if(kind==SupportCalls.Kind.FIRE&&cfg.slow()&&t%10==0)slowField(server);
@@ -256,7 +244,7 @@ final class SupportFlares {
             }
         }
 
-        /** Without Quantum Tunneling the cannon cannot reach a flare that landed under cover (three solid blocks or more above it): the flare is handed back. */
+        /** Without Quantum Tunneling the cannon cannot reach a flare that landed under cover */
         private void underground(ServerLevel server,ServerPlayer owner){
             if(getOwner()!=null){
                 if(owner!=null)SupportCalls.refuse(owner,"underground");
@@ -279,14 +267,14 @@ final class SupportFlares {
             if(landedTicks%20==0){double r=radius();for(int i=0;i<16;i++){double a=i*Math.PI/8;server.sendParticles(ParticleTypes.SNOWFLAKE,getX()+Math.cos(a)*r,getY()+.2,getZ()+Math.sin(a)*r,1,0,0,0,0);}}
         }
 
-        // ---- supply: the cannon turns and fires, then the countdown runs, the parcel arrives, an optional healing aura ----
+        // Supply: the cannon turns and fires, then the countdown runs, the parcel arrives, an optional healing aura
         private void supply(ServerLevel server,ServerPlayer owner,SupportCannon.CannonEntity live,int t){
             if(!planned){
                 planned=true;clear=SupportCalls.clearAbove(server,blockPosition());
                 outside=server.canSeeSky(blockPosition())&&clear>=SupportRules.PARCEL_MIN_DROP;
             }
             if(fireTick<0){
-                // the delivery time only starts once the cannon has turned onto the flare and fired: the turning is on top of it
+                // The delivery time only starts once the cannon has turned onto the flare and fired: the turning is on top of it
                 if(!gunReady(server,owner,live,t))return;
                 fireTick=t;shot(server,owner,live,true);releaseGun(server);
                 total=fireTick+SupportRules.supplyTicks(outside);spawnAt=fireTick+(outside?SupportRules.parcelSpawnTick(clear):SupportRules.supplyTicks(false));
@@ -301,7 +289,7 @@ final class SupportFlares {
             if(cfg.aura())aura(server,t);
             if(t>=total){
                 if(!cfg.aura()){discard();return;}
-                // the aura outlives the delivery: it ends 30 seconds after somebody empties the parcel
+                // The aura outlives the delivery: it ends 30 seconds after somebody empties the parcel
                 boolean gone=parcelId==null||server.getEntity(parcelId)==null||t>=total+12000;
                 if(gone&&auraLeft<0)auraLeft=CannonUpgrades.AURA_AFTER_PICKUP_TICKS;
                 if(auraLeft>=0&&--auraLeft<0)discard();
@@ -313,10 +301,10 @@ final class SupportFlares {
             if(t%10==0){double r=CannonUpgrades.AURA_RADIUS;for(int i=0;i<18;i++){double a=i*Math.PI/9+t*.03;server.sendParticles(ParticleTypes.HAPPY_VILLAGER,getX()+Math.cos(a)*r,getY()+.3,getZ()+Math.sin(a)*r,1,0,.1,0,0);}server.sendParticles(ParticleTypes.HEART,getX(),getY()+1,getZ(),1,.4,.3,.4,0);}
         }
 
-        // ---- fire support: the owner's chosen shells, all measured from exactly this spot -------------------------
+        // Fire support: the chosen shells, all measured from exactly this spot
         private void fire(ServerLevel server,ServerPlayer owner,SupportCannon.CannonEntity live,int t){
             if(startAt<0){
-                // the gun fires the moment the lock sound ends (the cannon is armed then)
+                // The gun fires the moment the lock sound ends (the cannon is armed then)
                 if(!gunReady(server,owner,live,t))return;
                 startAt=t;
             }
@@ -327,10 +315,7 @@ final class SupportFlares {
             linger(server,t);
             if(carveY==Integer.MIN_VALUE&&land>interval*(n-1)+20&&effectUntil<0&&pushUntil<0)discard();
         }
-        /**
-         * The cannon has fired: the round is seen falling from high over the flare and lands exactly when it resolves. Nothing flies from the
-         * cannon to the target. Lightning needs no round; a starshell, a cluster shell and a Spotter Arrows volley burst in the air above the flare.
-         */
+        /** The cannon has fired: the round is seen falling from high over the flare and lands exactly when it resolves. */
         private void launch(ServerLevel server,int flight){
             var type=type();Vec3 c=position();double r=radius(),h=Ordnance.DROP_HEIGHT;
             switch(type){
@@ -353,12 +338,12 @@ final class SupportFlares {
                 case ARROW->{
                     level.sendParticles(ParticleTypes.FIREWORK,c.x,c.y+r*2,c.z,30,r*.5,.4,r*.5,.05);
                     level.playSound(null,c.x,c.y+r,c.z,SoundEvents.FIREWORK_ROCKET_BLAST,SoundSource.BLOCKS,3f,.8f);
-                    // Spotter Arrows (0.0.36): every hostile mob in the box takes one small arrow hit (no knockback) and is marked until it dies
+                    // Spotter Arrows: every hostile mob in the box takes one small arrow hit
                     var source=new net.minecraft.world.damagesource.DamageSource(level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE).getHolderOrThrow(net.minecraft.world.damagesource.DamageTypes.ARROW),this,getOwner());
                     float hit=CannonUpgrades.spotterHit(cfg.damage());
                     var spotted=enemies(level,box);
                     for(LivingEntity e:spotted){FireMarks.spot(e,source,hit);if(e.isAlive())FireMarks.mark(e,this);}
-                    // the arrows that fall are only for show: three over each of the first ten mobs, the rest at random; they hit nothing
+                    // The arrows that fall are only for show: three over each of the first ten mobs, the rest at random
                     record Spot(double x,double z){}
                     var spots=new ArrayList<Spot>();int count=0;
                     for(LivingEntity e:spotted){if(count++>=10)break;for(int k=0;k<3;k++)spots.add(new Spot(e.getX()+(random.nextDouble()-.5)*.5,e.getZ()+(random.nextDouble()-.5)*.5));}
@@ -385,7 +370,7 @@ final class SupportFlares {
                 case BUNKER->{
                     Blasts.bunker(level,c,r);
                     for(LivingEntity e:enemies(level,box))e.hurt(level.damageSources().explosion(this,getOwner()),dmg*CannonUpgrades.BUNKER_HITS);
-                    // the one support that hurts players: half their health, armor or not
+                    // The one support that hurts players: half their health, armor or not
                     for(Player p:level.getEntitiesOfClass(Player.class,box,Player::isAlive))p.hurt(level.damageSources().indirectMagic(this,getOwner()),p.getMaxHealth()*SupportRules.BUNKER_PLAYER_SHARE);
                     beginCarve(level);
                 }
@@ -398,12 +383,12 @@ final class SupportFlares {
                 case CURSE->{
                     level.sendParticles(ParticleTypes.SOUL,c.x,c.y+.6,c.z,50,r*.4,.6,r*.4,.04);level.sendParticles(ParticleTypes.SQUID_INK,c.x,c.y+.6,c.z,40,r*.4,.6,r*.4,.05);
                     level.sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.5,c.z,1,0,0,0,0);level.playSound(null,c.x,c.y,c.z,SoundEvents.WITHER_SPAWN,SoundSource.BLOCKS,.9f,1.6f);
-                    // 0.0.36: every mob one shell touches keeps its curses until it dies (the Damage upgrade does not change them); no Glowing
+                    // Every mob one shell touches keeps its curses until it dies (the Damage upgrade does not change them)
                     for(LivingEntity e:enemies(level,box))for(var curse:CannonUpgrades.CURSES)
                         e.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.get(new net.minecraft.resources.ResourceLocation(curse.effect())),MobEffectInstance.INFINITE_DURATION,curse.amplifier()),this);
                 }
                 case CLUSTER->{
-                    // the shell bursts over the flare; from now on bomblets rain on the whole box (see clusterTick)
+                    // The shell bursts over the flare; from now on bomblets rain on the whole box (see clusterTick)
                     var burst=c.add(0,CannonUpgrades.CLUSTER_BURST_HEIGHT,0);
                     Blasts.far(level,ParticleTypes.FLASH,burst.x,burst.y,burst.z,1,0,0,0,0,Blasts.FAR);level.sendParticles(ParticleTypes.EXPLOSION,burst.x,burst.y,burst.z,3,.6,.4,.6,0);
                     Blasts.explode(level,burst,Blasts.FIRE_VOLUME,1.2f);
@@ -435,7 +420,7 @@ final class SupportFlares {
                     pushUntil=t+CannonUpgrades.SHOCK_PUSH_TICKS;
                 }
                 case STARSHELL->{
-                    // the star bursts high over the flare and sinks slowly while it burns, lighting the whole cube
+                    // The star bursts high over the flare and sinks slowly while it burns, lighting the whole cube
                     var burst=c.add(0,CannonUpgrades.STAR_BURST_HEIGHT,0);
                     Blasts.far(level,ParticleTypes.FLASH,burst.x,burst.y,burst.z,2,.3,.3,.3,0,Blasts.FAR);Blasts.far(level,ParticleTypes.FIREWORK,burst.x,burst.y,burst.z,70,.5,.5,.5,.25,Blasts.FAR);
                     level.playSound(null,burst.x,burst.y,burst.z,DefenseSounds.STARSHELL.get(),SoundSource.BLOCKS,Blasts.FLARE_VOLUME,1f);
@@ -443,7 +428,7 @@ final class SupportFlares {
                 }
             }
         }
-        // ---- what keeps going after the round has landed (0.0.18): bomblets, burning ground, frost, the well, the star, the shockwave's push ----
+        // What keeps going after the round has landed: bomblets, burning ground, frost, the well, the star
         private void startEffect(int t){effectFrom=t;effectUntil=t+cfg.lingerTicks();visual=false;}
         private void linger(ServerLevel l,int t){
             if(effectUntil>=0){
@@ -463,7 +448,7 @@ final class SupportFlares {
             }
             if(pushUntil>=0){if(t>=pushUntil)pushUntil=-1;else shockPush(l);}
         }
-        /** The gravity well's vortex and the burning star are entities that are never saved: they are put up when the effect starts and again after a reload. */
+        /** The gravity well's vortex and the burning star are entities that are never saved */
         private void showEffect(ServerLevel l,int t){
             visual=true;int left=effectUntil-t;Vec3 c=position();
             if(type()==CannonUpgrades.FireType.GRAVITY)Ordnance.well(l,c,type(),left,radius());
@@ -472,13 +457,13 @@ final class SupportFlares {
         private void endEffect(ServerLevel l){
             effectUntil=-1;
             if(type()==CannonUpgrades.FireType.GRAVITY){
-                // the well closes: a puff of portal dust and a muffled thump, no damage (the crowd is what it was for)
+                // The well closes: a puff of portal dust and a muffled thump, no damage (the crowd is what it was for)
                 var c=position();l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+.5,c.z,80,radius()*.3,.4,radius()*.3,.3);
                 Blasts.explode(l,c,2f,1.4f);
             }
             clearPlaced(l);
         }
-        /** Cluster Strike: a bomblet goes off somewhere in the box every few ticks (each with its own crack), and every pulse hurts every hostile mob inside. */
+        /** Cluster Strike: a bomblet goes off somewhere in the box every few ticks (each with its own crack) */
         private void clusterTick(ServerLevel l,int age){
             Vec3 c=position();double r=radius();
             if(age%3==0)Blasts.bomblet(l,c.x+(random.nextDouble()*2-1)*r*.9,c.y,c.z+(random.nextDouble()*2-1)*r*.9);
@@ -488,14 +473,14 @@ final class SupportFlares {
                 for(LivingEntity e:enemies(l,box()))e.hurt(l.damageSources().explosion(this,getOwner()),hurt);
             }
         }
-        /** Napalm Carpet: the ground keeps burning; once a second every hostile mob in the box is hurt and set alight (and Ablaze), and burnt-out fire is lit again. */
+        /** Napalm Carpet: the ground keeps burning; once a second every hostile mob in the box is hurt and set alight */
         private void napalmTick(ServerLevel l,int age){
             Vec3 c=position();double r=radius();
             if(age%4==0){l.sendParticles(ParticleTypes.FLAME,c.x,c.y+.2,c.z,14,r*.5,.1,r*.5,.02);l.sendParticles(ParticleTypes.SMOKE,c.x,c.y+.6,c.z,6,r*.4,.3,r*.4,.02);}
             if(age%20==0){
-                // 0.0.36: a mob that can burn and stands in the burning carpet is set Ablaze until it dies (see FireMarks)
+                // A mob that can burn and stands in the burning carpet is set Ablaze until it dies (see FireMarks)
                 for(LivingEntity e:enemies(l,box())){RaidAdaptation.weaponDamage(e,l.damageSources().inFire(),CannonUpgrades.napalm(cfg.damage()));RaidAdaptation.weaponFire(e,CannonUpgrades.NAPALM_BURN_SECONDS*20);e.setSecondsOnFire(CannonUpgrades.NAPALM_BURN_SECONDS);if(e.isAlive())FireMarks.ignite(e,FireMarks.ablazeFor(cfg.damage()));}
-                if(age>0)placeGround(l,Blocks.FIRE.defaultBlockState(),true);   // burnt-out fire is lit again
+                if(age>0)placeGround(l,Blocks.FIRE.defaultBlockState(),true);   // Burnt-out fire is lit again
             }
         }
         /** Cryo Shell: no damage; hostile mobs in the frost are slowed almost to a stop for as long as they stay in it. */
@@ -509,7 +494,7 @@ final class SupportFlares {
                 l.sendParticles(ParticleTypes.SNOWFLAKE,e.getX(),e.getY()+e.getBbHeight()*.6,e.getZ(),4,.3,.4,.3,0);
             }
         }
-        /** Gravity Well: every hostile mob in the box is dragged toward the flare (less with knockback resistance, much less a raid boss); no damage. */
+        /** Gravity Well: every hostile mob in the box is dragged toward the flare */
         private void gravityTick(ServerLevel l,int t){
             Vec3 c=position();double r=radius();
             for(LivingEntity e:enemies(l,box())){
@@ -521,7 +506,7 @@ final class SupportFlares {
                 l.sendParticles(ParticleTypes.PORTAL,c.x,c.y+.6,c.z,12,r*.4,.3,r*.4,.8);
             }
         }
-        /** Shockwave: every hostile mob still inside the box is shoved outward, whatever it is, until it is past the edge; no damage. */
+        /** Shockwave: every hostile mob still inside the box is shoved outward, whatever */
         private void shockPush(ServerLevel l){
             Vec3 c=position();double r=radius();
             for(LivingEntity e:enemies(l,box())){
@@ -532,15 +517,15 @@ final class SupportFlares {
                 e.setDeltaMovement(dx/d*v,e.onGround()?.3:m.y,dz/d*v);e.hurtMarked=true;
             }
         }
-        /** While the star burns: hostile mobs in its cube glow, players in it work faster. Its light comes from hidden light blocks (placeLights). */
+        /** While the star burns: hostile mobs in its cube glow, players in it work faster. */
         private void starPulse(ServerLevel l){
             var area=box();
             for(LivingEntity e:enemies(l,area))e.addEffect(new MobEffectInstance(MobEffects.GLOWING,CannonUpgrades.STAR_GLOW_TICKS,0,true,false));
             for(Player p:l.getEntitiesOfClass(Player.class,area,Player::isAlive))p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,CannonUpgrades.STAR_SPEED_TICKS,1,true,false,true));
         }
 
-        // ---- blocks a lingering effect puts in the world (and takes away again) -----------------------------------------------------
-        /** The free spot on the ground in column x, z near height {@code cy}: the air block on the highest sturdy block within 3 blocks up or down; MIN_VALUE if none. */
+        // Blocks a lingering effect puts in the world (and takes away again)
+        /** The free spot on the ground in column x, z near height cy */
         private static int groundY(ServerLevel l,BlockPos.MutableBlockPos pos,int x,int z,int cy){
             for(int y=cy+3;y>=cy-3;y--){
                 pos.set(x,y,z);if(!l.getBlockState(pos).isAir())continue;
@@ -549,10 +534,7 @@ final class SupportFlares {
             }
             return Integer.MIN_VALUE;
         }
-        /**
-         * Covers the free ground of the box with {@code state} (fire or a snow layer) where it can stay, and lists every block it puts down.
-         * Fire is never lit in or near the beacon zone ({@link CannonUpgrades#FIRE_ZONE_MARGIN}).
-         */
+        /** Covers the free ground of the box with state (fire or a snow layer) where it can stay */
         private void placeGround(ServerLevel l,BlockState state,boolean fire){
             var box=box();var zone=fire?BaseZone.box(l):null;var pos=new BlockPos.MutableBlockPos();int cy=blockPosition().getY();
             for(int x=Mth.floor(box.minX);x<Mth.ceil(box.maxX);x++)for(int z=Mth.floor(box.minZ);z<Mth.ceil(box.maxZ);z++){
@@ -565,7 +547,7 @@ final class SupportFlares {
                 l.setBlock(pos,put,Block.UPDATE_ALL);placed.add(pos.asLong());
             }
         }
-        /** Hidden light blocks (light level 15) every few blocks over the star's cube, two blocks above the ground, so the whole area is lit. */
+        /** Hidden light blocks (light level 15) every few blocks over the star's cube, two blocks above the ground */
         private void placeLights(ServerLevel l){
             var box=box();var pos=new BlockPos.MutableBlockPos();int cy=blockPosition().getY(),step=CannonUpgrades.STAR_LIGHT_SPACING;
             var light=Blocks.LIGHT.defaultBlockState().setValue(net.minecraft.world.level.block.LightBlock.LEVEL,15);
@@ -590,7 +572,7 @@ final class SupportFlares {
             bolt.moveTo(x,y,z);bolt.setVisualOnly(true);if(getOwner() instanceof ServerPlayer sp)bolt.setCause(sp);level.addFreshEntity(bolt);
         }
 
-        // ---- bunker buster: every block inside the red box goes, layer by layer from the top -----------------------------
+        // Bunker buster: every block inside the red box goes, layer by layer from the top
         private void beginCarve(ServerLevel level){
             var b=box();
             carveX0=Mth.floor(b.minX);carveX1=Mth.ceil(b.maxX)-1;carveZ0=Mth.floor(b.minZ);carveZ1=Mth.ceil(b.maxZ)-1;
@@ -612,7 +594,7 @@ final class SupportFlares {
                 if(dug>0&&carveY%3==0)Blasts.dig(level,new Vec3(getX(),carveY+.5,getZ()),radius());
             }
             if(carveY<carveFloor){
-                // let sand, water and torches around the hole notice it
+                // Let sand, water and torches around the hole notice it
                 int top=Math.min(level.getMaxBuildHeight()-1,Mth.ceil(box().maxY)-1);
                 for(int x=carveX0;x<=carveX1;x++)for(int z=carveZ0;z<=carveZ1;z++){touch(level,pos,x,carveFloor,z);touch(level,pos,x,top,z);}
                 for(int y=carveFloor;y<=top;y++){
@@ -625,10 +607,10 @@ final class SupportFlares {
         }
         private static void touch(ServerLevel level,BlockPos.MutableBlockPos pos,int x,int y,int z){pos.set(x,y,z);if(level.hasChunkAt(pos))level.updateNeighborsAt(pos,Blocks.AIR);}
 
-        // ---- return: a portal that only its owner can step through ---------------------------------------------
+        // Return: a portal that only its owner can step through
         private void portal(ServerLevel server,ServerPlayer owner,SupportCannon.CannonEntity live,int t){
             if(openAt<0){
-                // the portal only opens once the cannon has turned onto the flare and fired its shell
+                // The portal only opens once the cannon has turned onto the flare and fired its shell
                 if(!gunReady(server,owner,live,t))return;
                 shot(server,owner,live,true);releaseGun(server);
                 openAt=t;entityData.set(OPEN,true);
@@ -640,7 +622,7 @@ final class SupportFlares {
             if(arm>0){arm--;return;}
             if(cooldown>0){cooldown--;return;}
             if(owner!=null&&owner.level()==server&&Math.abs(owner.getX()-getX())<.7&&Math.abs(owner.getZ()-getZ())<.7&&owner.getY()>getY()-1&&owner.getY()<getY()+2){
-                if(dest!=null){                                  // the way back to where the flare was thrown
+                if(dest!=null){                                  // The way back to where the flare was thrown
                     var target=server.getServer().getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,new net.minecraft.resources.ResourceLocation(destDim)));
                     if(target!=null){SupportCalls.travel(owner,target,dest,owner.getYRot());discard();}
                     return;

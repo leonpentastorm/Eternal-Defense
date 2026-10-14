@@ -12,16 +12,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.*;
 import java.util.*;
 
-/**
- * The kitchen on one screen, in two columns. Left: the table and every button that does something (mode, Gather, Cook, Take back, Clear, Upgrade).
- * Right: the effects to choose, the order they make and what this hall can do. The server owns all state (order, table, pots); this screen only
- * reads the preview it sends and presses buttons.
- */
+/** The kitchen on one screen, in two columns. */
 final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     /** Accent of each hall tier: wood, copper, stone, canteen green. */
     static final int[] TIER={0xffc9a24b,0xffd9824a,0xff9fb3bc,0xff6ee07a};
     static final int WIDTH=MessHallMenu.WIDTH,HEIGHT=MessHallMenu.HEIGHT;
-    /** Left column: x 8 to 176. Right column: x 192 to 368. */
+    /** Left column: x 8 to 176. */
     static final int LX=8,LW=168,RX=192,RW=176,DIVIDER=184;
     static final int TAB_Y=29,FX_Y=66,LINK_Y=75,ZONE_Y=82,PRIMARY_Y=103,SECOND_Y=127,UPGRADE_Y=142;
     static final int STRIP_Y=29,STRIP_H=18,EVERYDAY_HEAD=51,EVERYDAY_Y=61,LEGEND_HEAD=107,LEGEND_Y=117,ORDER_HEAD=163,CARD_Y=174,CARD_PITCH=14,CHIP_Y=221,COLS=8,PITCH=22;
@@ -42,10 +38,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     private CompoundTag view(){return menu.view;}
     private boolean explicit(){return view().getBoolean("Explicit");}
 
-    /**
-     * One effect to choose. A neutral cell holds the 18 px icon; unchosen icons are dimmed so a full palette stays calm and the effects you picked
-     * are the brightest thing on the screen: cyan frame and a check. An alert marks a pick the pack cannot feed or one that clashes with the order.
-     */
+    /** One effect to choose. */
     final class Cell extends Button {
         final MealRules.Effect effect;
         Cell(int x,int y,MealRules.Effect effect){super(x,y,20,20,Ui.t("meal.effect."+effect.id),b->action(MessHallMenu.RECIPE+effect.ordinal()),DEFAULT_NARRATION);this.effect=effect;}
@@ -64,7 +57,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         }
         private void ring(GuiGraphics g,int x,int y,int size,int color){g.fill(x,y,x+size,y+1,color);g.fill(x,y+size-1,x+size,y+size,color);g.fill(x,y,x+1,y+size,color);g.fill(x+size-1,y,x+size,y+size,color);}
     }
-    /** 4 chosen but the pack has no food for it, 3 chosen, 2 can be added, 1 exists but not alongside the order, 0 nothing in the pack feeds it. */
+    /** 4 chosen but the pack has no food for it, 3 chosen, 2 can be added, 1 exists but not alongside the order */
     private int fit(MealRules.Effect e){var fit=view().getIntArray("Fit");return e.ordinal()<fit.length?fit[e.ordinal()]:0;}
     /** Picked by the automatic ranking rather than chosen. */
     private boolean auto(MealRules.Effect e){if(explicit())return false;for(var t:view().getList("Made",Tag.TAG_COMPOUND))if(((CompoundTag)t).getInt("Effect")==e.ordinal())return true;return false;}
@@ -87,7 +80,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         var tierLabel=Ui.t("kitchen.tier",menu.mk);badgeLeft=leftPos+WIDTH-font.width(tierLabel)-Ui.pipsWidth(4)-31;
     }
 
-    // ---- buttons ------------------------------------------------------------------------------------------
+    // Buttons
     /** Stew is ready to cook, but the chosen pot still has stew: cooking throws it away, so the screen asks first. */
     private boolean replacing(){var v=view();return v.getBoolean("StewMode")&&v.getString("Problem").equals("pot_full");}
     /** The chosen pot's row of the view: its servings and meal, or null. */
@@ -142,7 +135,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         Ui.bar(g,b.getX()+3,b.getY()+13,b.getWidth()-6,3,meal==null?0:servings/(float)capacity,meal==null?Ui.TRACK:MealEffects.color(meal.bonuses().get(0).effect()));
     }
 
-    // ---- background ---------------------------------------------------------------------------------------
+    // Background
     private void effectIcon(GuiGraphics g,MealRules.Effect e,int x,int y,int size){g.blit(MealEffects.icon(e),x,y,size,size,0,0,18,18,18,18);}
     @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
         long t=net.minecraft.Util.getMillis();int accent=tierColor();var view=view();boolean isStew=view.getBoolean("StewMode");
@@ -155,7 +148,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         sandwich.selected=!isStew;stew.selected=isStew;clear.visible=explicit();
         g.fill(leftPos+DIVIDER,topPos+TAB_Y,leftPos+DIVIDER+1,topPos+HEIGHT-6,Ui.EDGE);
         strip(g);
-        // the effects to choose
+        // The effects to choose
         Ui.text(g,font,Ui.t("kitchen.recipes_everyday"),leftPos+RX,topPos+EVERYDAY_HEAD,Ui.MUTED,100);
         Ui.right(g,font,Ui.t("kitchen.recipes_hint"),leftPos+RX+RW,topPos+EVERYDAY_HEAD,Ui.DISABLED);
         Ui.text(g,font,Ui.t("kitchen.recipes_legendary"),leftPos+RX,topPos+LEGEND_HEAD,Ui.BRASS,70);
@@ -251,7 +244,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         var mix=MealRules.MIXES.stream().filter(m->m.effect()==effect).findFirst().orElseThrow();
         return Ui.t("kitchen.card_pair",Ui.t("kitchen.group_short."+mix.first()),Ui.t("kitchen.group_short."+mix.second()));
     }
-    // ---- what this hall can do: meal length, food slots, doubling -----------------------------------------
+    // What this hall can do: meal length, food slots, doubling
     private static final int CHIP_W=56,CHIP_GAP=4;
     private int chipX(int index){return leftPos+RX+index*(CHIP_W+CHIP_GAP);}
     private void chips(GuiGraphics g){
@@ -286,14 +279,14 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     }
     @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
 
-    // ---- tooltips -----------------------------------------------------------------------------------------
+    // Tooltips
     private ItemStack stackOf(String id){return stacks.computeIfAbsent(id,k->new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(k))));}
     private Set<String> carried(){var set=new HashSet<String>();for(var slot:menu.slots){var s=slot.getItem();if(!s.isEmpty())set.add(BuiltInRegistries.ITEM.getKey(s.getItem()).toString());}return set;}
     private Ui.Block iconRow(Component label,int color,List<MessHallMenu.CatalogueFood> foods,Set<String> carried){
         var sorted=new ArrayList<>(foods);sorted.sort(Comparator.<MessHallMenu.CatalogueFood>comparingInt(f->carried.contains(f.id())?0:1).thenComparing(MessHallMenu.CatalogueFood::id));
         var icons=sorted.stream().limit(11).map(f->stackOf(f.id())).toList();return Ui.Block.icons(label,color,icons,Math.max(0,sorted.size()-icons.size()));
     }
-    /** The full recipe: values, what feeds it (foods you carry first), the double rule and whether your pack and order can take it. */
+    /** The full recipe: values, what feeds it (foods you carry first) */
     private void recipeTip(GuiGraphics g,MealRules.Effect effect,int mx,int my){
         var bonus=new MealData.Bonus(effect,1,false);var blocks=new ArrayList<Ui.Block>();int fit=fit(effect);var carried=carried();var tier=tier();
         blocks.add(Ui.Block.line(Ui.t("meal.preview_field",bonus.description(false)),Ui.INK));blocks.add(Ui.Block.line(Ui.t("meal.preview_home",bonus.description(true)),Ui.BRASS));
@@ -392,7 +385,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
     @Override public void render(GuiGraphics g,int mx,int my,float partial){
         var view=view();
         primary.active=view.contains("Problem")&&(ctaMode()==GATHER||ctaMode()==COOK&&(view.getString("Problem").isEmpty()||replacing()));
-        if(confirming&&!replacing())confirming=false; // somebody emptied the pot, or the mode changed
+        if(confirming&&!replacing())confirming=false; // Somebody emptied the pot, or the mode changed
         replaceYes.visible=replaceNo.visible=confirming;
         renderBackground(g);
         if(confirming){super.render(g,-1,-1,partial);confirmation(g,mx,my);return;}
@@ -406,9 +399,9 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
         }
     }
 
-    /** The question before a pot with stew is cooked over: dims the kitchen and asks. Only its two buttons answer; Escape means keep the stew. */
+    /** The question before a pot with stew is cooked over: dims the kitchen and asks. */
     private void confirmation(GuiGraphics g,int mx,int my){
-        g.pose().pushPose();g.pose().translate(0,0,400); // above the item icons of the slots and the carried item
+        g.pose().pushPose();g.pose().translate(0,0,400); // Above the item icons of the slots and the carried item
         g.fill(0,0,width,height,0xb0050a0e);
         int w=260,h=96,x=leftPos+WIDTH/2-w/2,y=topPos+HEIGHT/2-h/2+4;
         Ui.panel(g,x,y,w,h);g.fill(x,y,x+w,y+2,Ui.ORANGE);

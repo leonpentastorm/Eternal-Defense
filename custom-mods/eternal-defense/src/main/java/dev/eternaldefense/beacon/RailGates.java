@@ -55,17 +55,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * The Supply Delivery Gate and the Supply Receiving Gate, the owner's 4-wide models (0.0.30; the 3 x 3 arch of 0.0.24 is gone): 4 wide, 2 tall
- * and 1 deep across two side-by-side rail lanes, so a supply line can run out on one rail and back on the other through the same gate (one
- * rail through either lane also works). Seen from the front: the ANCHOR is the right column (bottom cell, the owner's {@code <gate>_right}
- * half, solid), the next two cells are the lanes (not part of the gate: the player's rails), the fourth cell is the left {@link Column}
- * ({@code <gate>_left}, solid). The four cells above them are invisible {@link Part}s, the beam: over the lanes only the beam itself collides,
- * so a seated rider passes under it. Collision and outline are the owner's models, cut per cell (read from the model JSON). Both gates cannot
- * be mined or blown up; the Recovery Shovel moves them and keeps their FOB. The traffic light is the {@code signal} state of the anchor and the
- * column, drawn by overlay models over the owner's lamps (the owner's files are not changed). The FOB's name on the two plates is drawn by
- * {@code GateClient.GateRenderer}.
- */
+/** The Supply Delivery Gate and the Supply Receiving Gate, the 4-wide models */
 final class RailGates {
     private RailGates(){}
     enum Kind{DELIVERY("supply_delivery_gate"),RECEIVING("supply_receiving_gate");
@@ -73,16 +63,16 @@ final class RailGates {
         RouteRules.Gate gate(){return this==DELIVERY?RouteRules.Gate.DELIVERY:RouteRules.Gate.RECEIVING;}
         Block column(){return (this==DELIVERY?EternalDefense.DELIVERY_GATE_LEFT:EternalDefense.RECEIVING_GATE_LEFT).get();}
     }
-    /** The traffic light as a block state (red, amber, green), set from {@link RouteRules#signal}. */
+    /** The traffic light as a block state (red, amber, green), set from RouteRules.signal. */
     enum Lamp implements StringRepresentable{RED,AMBER,GREEN;
         @Override public String getSerializedName(){return name().toLowerCase(Locale.ROOT);}
         static Lamp of(RouteRules.Signal s){return values()[s.ordinal()];}
     }
     static final DirectionProperty FACING=HorizontalDirectionalBlock.FACING;
     static final EnumProperty<Lamp> SIGNAL=EnumProperty.create("signal",Lamp.class);
-    /** A beam part's place along the gate: 0 (over the anchor) to 3 (over the column), towards the facing's clockwise side. */
+    /** A beam part's place along the gate: 0 (over the anchor) to 3 (over the column) */
     static final IntegerProperty SIDE=IntegerProperty.create("side",0,3);
-    /** From the owner's models: 4 cells wide, 2 tall, 1 deep; the two middle cells of the bottom row are the lanes. */
+    /** From the models: 4 cells wide, 2 tall, 1 deep; the two middle cells of the bottom row are the lanes. */
     static final int WIDE=4,TALL=2,DEEP=1,LANES=2;
     /** The frame without Minecraft types (for the tests): cells are (side, height) from the anchor (0, 0). */
     static final class Frame{private Frame(){}
@@ -94,10 +84,7 @@ final class RailGates {
         static final int[][] LANES={{1,0},{2,0}};
         /** Over a lane only the beam collides (pixels in the cell, facing north): a seated rider's head stays clear. */
         static final double[] BEAM={0,9.5,3,16,16,13};
-        /**
-         * Which lane the clicked rail takes, in the order to try: a second straight rail on the clockwise side makes it lane 1, one on the other
-         * side lane 2; a lone rail takes the lane that leaves the free one on the side the player clicked ({@code clickSide} >= 0: clockwise).
-         */
+        /** Which lane the clicked rail takes, in the order to try */
         static int[] laneOrder(boolean railClockwise,boolean railCounter,double clickSide){
             if(railClockwise!=railCounter)return railClockwise?new int[]{1,2}:new int[]{2,1};
             return clickSide>=0?new int[]{1,2}:new int[]{2,1};
@@ -107,16 +94,16 @@ final class RailGates {
     static List<BlockPos> parts(BlockPos anchor,Direction facing){var out=new ArrayList<BlockPos>();for(int[] f:Frame.PARTS)out.add(cell(anchor,facing,f[0],f[1]));return out;}
     static BlockPos column(BlockPos anchor,Direction facing){return cell(anchor,facing,Frame.COLUMN[0],Frame.COLUMN[1]);}
     static List<BlockPos> lanes(BlockPos anchor,Direction facing){var out=new ArrayList<BlockPos>();for(int[] f:Frame.LANES)out.add(cell(anchor,facing,f[0],f[1]));return out;}
-    /** The lane cell with the lower x and z: with {@link #LANES} it spans the opening, for {@link RouteRules#crossing}. */
+    /** The lane cell with the lower x and z: with LANES it spans the opening, for RouteRules.crossing. */
     static BlockPos laneCorner(BlockPos anchor,Direction facing){
         var a=cell(anchor,facing,1,0);var b=cell(anchor,facing,2,0);
         return new BlockPos(Math.min(a.getX(),b.getX()),a.getY(),Math.min(a.getZ(),b.getZ()));
     }
 
-    // ---- collision from the owner's models ----------------------------------------------------------------------------------------------------
+    // Collision from the models
     private static final Map<Kind,List<double[]>> BOXES=new EnumMap<>(Kind.class);
     private static final Map<String,VoxelShape> SHAPES=new java.util.concurrent.ConcurrentHashMap<>();
-    /** The element boxes of one half-model (pixels, facing north), read from the jar's own resource; {@code dx} moves them along x. */
+    /** The element boxes of one half-model (pixels, facing north), read from the jar's own resource */
     static List<double[]> boxes(String model,double dx){
         var out=new ArrayList<double[]>();
         try(var in=RailGates.class.getResourceAsStream("/assets/eternal_defense/models/block/"+model+".json")){
@@ -129,11 +116,11 @@ final class RailGates {
         }catch(Exception ex){com.mojang.logging.LogUtils.getLogger().warn("[gates] could not read the {} model for collision: {}",model,ex.toString());}
         return out;
     }
-    /** The whole gate in the anchor's frame (x 0..64): the right half as drawn by the anchor, the left half (drawn by the column, 3 cells on) moved by 48. */
+    /** The whole gate in the anchor's frame (x 0..64): the right half as drawn by the anchor */
     static synchronized List<double[]> boxes(Kind kind){
         return BOXES.computeIfAbsent(kind,k->{var out=new ArrayList<double[]>(boxes(k.id+"_right",0));out.addAll(boxes(k.id+"_left",48));return out;});
     }
-    /** The outline of one gate cell: the models' boxes clipped to that cell, turned with the facing (as the blockstate turns the model). */
+    /** The outline of one gate cell: the models' boxes clipped to that cell */
     static VoxelShape shape(Kind kind,Direction facing,int side,int height){
         return SHAPES.computeIfAbsent(kind+":"+facing+":"+side+":"+height,key->{
             VoxelShape shape=Shapes.empty();
@@ -144,7 +131,7 @@ final class RailGates {
                 shape=Shapes.joinUnoptimized(shape,box(x0-cx0,y0-cy0,z0,x1-cx0,y1-cy0,z1,facing),BooleanOp.OR);
             }
             shape=shape.optimize();
-            return shape.isEmpty()?Block.box(0,0,0,16,1,16):shape;   // never an unclickable cell
+            return shape.isEmpty()?Block.box(0,0,0,16,1,16):shape;   // Never an unclickable cell
         });
     }
     /** What a cell stops: over a lane only the beam, everywhere else the outline. */
@@ -156,15 +143,15 @@ final class RailGates {
         double[] p=turn(x0,z0,facing),q=turn(x1,z1,facing);
         return Shapes.box(Math.min(p[0],q[0])/16,y0/16,Math.min(p[1],q[1])/16,Math.max(p[0],q[0])/16,y1/16,Math.max(p[1],q[1])/16);
     }
-    /** A point of a cell (pixels) turned about the cell's middle the way the blockstate turns the model (north 0, east 90, south 180, west 270). */
+    /** A point of a cell (pixels) turned about the cell's middle the way the blockstate turns the model */
     static double[] turn(double x,double z,Direction facing){
         return switch(facing){case EAST->new double[]{16-z,x};case SOUTH->new double[]{16-x,16-z};case WEST->new double[]{z,16-x};default->new double[]{x,z};};
     }
 
-    // ---- placement: across one or two straight rails -----------------------------------------------------------------------------------------
-    /** Where a gate goes when it is used on a rail: its anchor, its facing, and the lane (1 or 2) of the clicked rail. */
+    // Placement: across one or two straight rails
+    /** Where a gate goes when it is used on a rail: its anchor, its facing */
     record Spot(BlockPos anchor,Direction facing,int lane){}
-    /** The facing for a gate across this rail: along the rail, towards the player if the rail runs that way. Null when it is no straight rail. */
+    /** The facing for a gate across this rail: along the rail, towards the player if the rail runs that way. */
     static Direction facingOver(BlockState rail,Direction look){
         if(!(rail.getBlock() instanceof BaseRailBlock block))return null;
         RailShape shape=rail.getValue(block.getShapeProperty());
@@ -177,10 +164,7 @@ final class RailGates {
         var shape=s.getValue(block.getShapeProperty());
         return axis==Direction.Axis.Z?shape==RailShape.NORTH_SOUTH:shape==RailShape.EAST_WEST;
     }
-    /**
-     * The gate across the rail at {@code rail}, its front towards the player: the clicked rail and the cell beside it are the two lanes
-     * ({@link Frame#laneOrder}); the first way with room wins. Null when it is no straight rail.
-     */
+    /** The gate across the rail at rail, its front towards the player */
     static Spot spot(Level level,BlockPos rail,Direction look,double clickSide){
         var facing=facingOver(level.getBlockState(rail),look);if(facing==null)return null;
         var cw=facing.getClockWise();
@@ -189,7 +173,7 @@ final class RailGates {
         for(int lane:order){var s=new Spot(rail.relative(cw,-lane),facing,lane);if(first==null)first=s;if(available(level,s.anchor(),facing))return s;}
         return first;
     }
-    /** Where a gate used with this click would stand (its item, and the client's placement preview, 0.0.33). Null: no straight rail. */
+    /** Where a gate used with this click would stand. */
     static Spot placingSpot(net.minecraft.world.item.context.BlockPlaceContext c){
         var level=c.getLevel();var face=c.getClickedFace();var at=c.getClickLocation();
         var hit=BlockPos.containing(at.x-face.getStepX()*1e-3,at.y-face.getStepY()*1e-3,at.z-face.getStepZ()*1e-3);
@@ -204,7 +188,7 @@ final class RailGates {
         for(var p:new BlockPos[]{hit,clicked,clicked.below()})if(level.getBlockState(p).getBlock() instanceof BaseRailBlock)return p;
         return hit;
     }
-    /** Room for the anchor, the column and the beam (replaceable, no block entity, nobody standing there). The lanes are the player's. */
+    /** Room for the anchor, the column and the beam (replaceable, no block entity, nobody standing there). */
     static boolean available(Level level,BlockPos anchor,Direction facing){
         var all=new ArrayList<BlockPos>(parts(anchor,facing));all.add(anchor);all.add(column(anchor,facing));
         for(var p:all){
@@ -235,7 +219,7 @@ final class RailGates {
         var back=s.getValue(FACING).getCounterClockWise();
         return s.getBlock() instanceof Column?pos.relative(back,Frame.COLUMN[0]):pos.relative(back,s.getValue(SIDE)).below();
     }
-    /** The gate anchor at or behind {@code pos} (a part, the column or the anchor itself), or null. */
+    /** The gate anchor at or behind pos (a part, the column or the anchor itself), or null. */
     static BlockPos anchor(BlockGetter level,BlockPos pos){
         var s=level.getBlockState(pos);
         if(s.getBlock() instanceof GateBlock)return pos;
@@ -249,7 +233,7 @@ final class RailGates {
         if(c.getBlock() instanceof Column&&anchor.equals(anchorOf(at,c))&&c.getValue(SIGNAL)!=lamp)level.setBlock(at,c.setValue(SIGNAL,lamp),2|16);
     }
 
-    // ---- the anchor: the right column ----------------------------------------------------------------------------------------------------------
+    // The anchor: the right column
     static final class GateBlock extends Block implements EntityBlock {
         final Kind kind;
         GateBlock(Kind kind){
@@ -283,7 +267,7 @@ final class RailGates {
         }
     }
 
-    // ---- the left column: draws the left half and its lamps, clicks go to the anchor -----------------------------------------------------------
+    // The left column: draws the left half and its lamps, clicks go to the anchor
     static final class Column extends Block {
         final Kind kind;
         Column(Kind kind){
@@ -303,7 +287,7 @@ final class RailGates {
         @Override public ItemStack getCloneItemStack(BlockGetter l,BlockPos pos,BlockState s){return new ItemStack(kind==Kind.DELIVERY?EternalDefense.DELIVERY_GATE_ITEM.get():EternalDefense.RECEIVING_GATE_ITEM.get());}
     }
 
-    // ---- the beam: four invisible parts --------------------------------------------------------------------------------------------------------
+    // The beam: four invisible parts
     static final class Part extends Block {
         Part(){super(Properties.of().strength(-1f,3600000f).noOcclusion().dynamicShape().sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(SIDE,0));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,SIDE);}
@@ -345,29 +329,29 @@ final class RailGates {
         }
     }
 
-    // ---- the anchor's block entity: which FOB, and its name for the plates ------------------------------------------------------------------------
+    // The anchor's block entity: which FOB, and its name for the plates
     static final class GateEntity extends BlockEntity {
         long fobId;String name="";
         GateEntity(BlockPos pos,BlockState s){super(EternalDefense.GATE_ENTITY.get(),pos,s);}
         @Override public void load(CompoundTag t){super.load(t);fobId=t.getLong("Fob");name=t.getString("Name");}
         @Override protected void saveAdditional(CompoundTag t){super.saveAdditional(t);t.putLong("Fob",fobId);}
-        /** The name travels to the client in the update tag: no packet of its own. An empty name shows UNLINKED. */
+        /** The name travels to the client in the update tag: no packet of its own. */
         @Override public CompoundTag getUpdateTag(){var t=new CompoundTag();t.putLong("Fob",fobId);t.putString("Name",level instanceof ServerLevel l?Routes.nameFor(l,fobId):name);return t;}
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
         void link(long id){fobId=id;setChanged();if(level!=null)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         @Override public AABB getRenderBoundingBox(){return new AABB(worldPosition).inflate(2);}
     }
 
-    // ---- the items ---------------------------------------------------------------------------------------------------------------------------------
-    /** A gate is used on a straight rail and stands across it and the cell beside it. The Delivery Gate goes in a FOB's village; the Receiving Gate in your base's zone. */
+    // The items
+    /** A gate is used on a straight rail and stands across it and the cell beside it. */
     static class GateItem extends BlockItem {
         final Kind kind;
-        /** The spot worked out by {@link #place} for {@link #getPlacementState}, on the same thread. */
+        /** The spot worked out by place for getPlacementState, on the same thread. */
         private static final ThreadLocal<Spot> PLACING=new ThreadLocal<>();
         GateItem(Block block,Kind kind){super(block,new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));this.kind=kind;}
         @Override public InteractionResult place(BlockPlaceContext c){
             var level=c.getLevel();var spot=placingSpot(c);
-            // the client does not guess: the anchor stands beside the clicked cell, where the server's refusal would not correct a ghost block
+            // The client does not guess: the anchor stands beside the clicked cell
             if(!(level instanceof ServerLevel server))return spot!=null&&available(level,spot.anchor(),spot.facing())?InteractionResult.SUCCESS:InteractionResult.FAIL;
             var player=c.getPlayer() instanceof ServerPlayer p?p:null;
             String problem=Routes.placeProblem(server,spot,kind,c.getItemInHand());
@@ -392,19 +376,13 @@ final class RailGates {
         }
     }
 
-    // ---- the gate screen's menu: the Receiving Gate holds its FOB's tribute storage (0.0.31) -------------------------------------------------------
-    /**
-     * A Receiving Gate's menu has the linked FOB's storage (54 slots, take only: nothing can be put in) and the player's inventory; a Delivery
-     * Gate's has no slot. The storage is the FOB's own container ({@code FobData.Fob.depot}), shared by everyone who has it open.
-     */
+    // The gate screen's menu: the Receiving Gate holds its FOB's tribute storage
+    /** A Receiving Gate's menu has the linked FOB's storage */
     static final class GateMenu extends AbstractContainerMenu {
-        /**
-         * Where the slots sit in the screen (its top left corner): the storage 9 x 6, the inventory under it, the hotbar under that. The column
-         * is 240 high with its margins, so it fits a 1280 x 720 window at GUI scale 3.
-         */
+        /** Where the slots sit in the screen (its top left corner) */
         static final int STORE_X=12,STORE_Y=40,INV_Y=STORE_Y+6*18+12,HOTBAR_Y=INV_Y+58,STORE_BOTTOM=HOTBAR_Y+18+4;
         final BlockPos pos;final CompoundTag data;final boolean storage;String message="";
-        /** The client's screen hides the slots (not drawn, not clickable) while a narrow window shows another tab (always true on the server). */
+        /** The client's screen hides the slots (not drawn, not clickable) while a narrow window shows another tab */
         boolean slotsShown=true;
         GateMenu(int id,Inventory inv,BlockPos pos,CompoundTag data,boolean storage,net.minecraft.world.Container depot){
             super(EternalDefense.GATE_MENU.get(),id);this.pos=pos;this.data=data;this.storage=storage;

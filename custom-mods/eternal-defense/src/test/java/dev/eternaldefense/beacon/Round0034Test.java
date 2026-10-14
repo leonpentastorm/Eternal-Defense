@@ -10,11 +10,11 @@ import java.nio.file.Path;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.34 list: the live catapult, the supply-drop landing, the merged specialty, the catapult's status, the radio, the specialty cap. */
+/** The list: the live catapult, the supply-drop landing, the merged specialty, the catapult's status, the radio */
 final class Round0034Test {
     static String lang() throws Exception{return Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));}
 
-    // ---- the catapult turns and throws with its FOB, seen or not ------------------------------------------------------------------------------------
+    // The catapult turns and throws with its FOB, seen or not
     @Test void theCatapultTurnsThrowsAndTurnsBack(){
         var m=new CatapultRules.Motion(0);float goal=90;
         assertEquals(CatapultRules.Event.LOADED,m.step(true,goal),"a box loaded");
@@ -23,10 +23,10 @@ final class Round0034Test {
         assertTrue(thrownAt>0,"it threw");assertEquals(thrownAt+CatapultRules.RELEASE_TICK,releasedAt,"the box leaves as the arm passes -45 degrees");
         assertEquals(goal,m.yaw,1,"it faces the beacon when it throws");
         assertTrue(m.throwing());
-        // nothing left: the arm winds down, then the frame turns back to its rest heading
+        // Nothing left: the arm winds down, then the frame turns back to its rest heading
         for(int i=0;i<2000;i++)assertNotEquals(CatapultRules.Event.THROW,m.step(false,goal));
         assertFalse(m.throwing()||m.loaded);assertEquals(0,m.yaw,.6,"back at rest");
-        // the turn takes time: from rest a quarter turn and the settle are well over half a second
+        // The turn takes time: from rest a quarter turn and the settle are well over half a second
         assertTrue(thrownAt>CatapultRules.SETTLE_TICKS+10,"turned before it threw: "+thrownAt);
     }
     @Test void itRestsFacingAwayFromWhoPlacedIt(){
@@ -45,7 +45,7 @@ final class Round0034Test {
         assertFalse(source.contains("UNSEEN_THROW_TICKS"),"no separate unseen throw any more");
     }
 
-    // ---- the box comes home as a supply drop ---------------------------------------------------------------------------------------------------------
+    // The box comes home as a supply drop
     @Test void theBoxLandsLikeASupplyDrop(){
         assertEquals(SupportRules.supplyTicks(true),CatapultRules.FLIGHT_TICKS);assertEquals(12*20,CatapultRules.FLIGHT_TICKS,"the Supply Flare's 12 seconds");
         assertEquals(1000-(int)Math.ceil(40/SupportRules.PARCEL_FALL_SPEED),CatapultRules.spawnAt(1000,40,true),"it appears 40 blocks up and parachutes down on time");
@@ -55,7 +55,7 @@ final class Round0034Test {
         assertTrue(source.contains("SupportCalls.deliver(home,null"),"the Supply Flare's parcel");
     }
 
-    // ---- the live view in the seller -------------------------------------------------------------------------------------------------------------------
+    // The live view in the seller
     @Test void theSellerShowsTheCatapultLive() throws Exception{
         String net=SosTest.source("BeaconNetwork.java");
         assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41");
@@ -67,7 +67,7 @@ final class Round0034Test {
         for(String k:List.of("none","ready","turning","throwing","flying"))assertTrue(lang.contains("\"gui.eternal_defense.tactical.seller.view."+k+"\""),k);
     }
 
-    // ---- the radio --------------------------------------------------------------------------------------------------------------------------------------
+    // The radio
     @Test void theRadioCracklesAndAnswers() throws Exception{
         var icon=javax.imageio.ImageIO.read(Path.of(EnchantTest.ASSETS+"textures/gui/radio.png").toFile());
         assertEquals(16,icon.getWidth());assertEquals(16,icon.getHeight());
@@ -81,7 +81,7 @@ final class Round0034Test {
         String lang=lang();assertTrue(lang.contains("\"subtitles.eternal_defense.seller.radio_static\"")&&lang.contains("\"subtitles.eternal_defense.seller.order_chatter\""));
     }
 
-    /** The owner's war horn: a FOB planted, a FOB's raid starting (the activation raid, an SOS raid), once for planting and its raid together. */
+    /** The war horn: a FOB planted, a FOB's raid starting (the activation raid, an SOS raid) */
     @Test void theWarHornSounds() throws Exception{
         assertTrue(Files.exists(Path.of(EnchantTest.ASSETS+"sounds/sfx/war_horn.ogg")));
         assertTrue(Files.readString(Path.of(EnchantTest.ASSETS+"sounds.json")).contains("\"fob.war_horn\""));
@@ -93,7 +93,7 @@ final class Round0034Test {
         assertEquals(240,Fobs.HORN_TICKS,"not twice while one sounds");
     }
 
-    // ---- fishing and animal husbandry are one specialty ----------------------------------------------------------------------------------------------
+    // Fishing and animal husbandry are one specialty
     @Test void fishingAndHusbandryAreOne() throws Exception{
         assertEquals(List.of(Specialty.FISHING_HUSBANDRY,Specialty.POTIONS,Specialty.TRADER,Specialty.MONSTERS),List.of(Specialty.values()));
         var all=Specialty.FISHING_HUSBANDRY.options();
@@ -110,7 +110,7 @@ final class Round0034Test {
         assertEquals(Specialty.MONSTERS,FobData.load(d.save(new CompoundTag())).byId(f.id).specialty);
     }
 
-    // ---- the specialty makes at most 4 S-tier items an hour ------------------------------------------------------------------------------------------
+    // The specialty makes at most 4 S-tier items an hour
     static double specialtyPerHour(boolean[] on,double distance,int villagers,int level){
         var y=new RouteRules.Yield(on,distance,villagers,0,level);
         return RouteRules.budget(Slot.SPECIALTY,y)/RouteRules.tripHours(distance,0);
@@ -118,22 +118,22 @@ final class Round0034Test {
     @Test void aSpecialtyMakesAtMostFourSItemsAnHour(){
         double s=RouteRules.TIER_VALUE[5];boolean[] alone={false,false,false,true},all={true,true,true,true};
         assertEquals(4,RouteRules.SPECIALTY_MAX_PER_HOUR/s,1e-9);
-        // the owner's playtest: research 5, every other slot off. Before 0.0.34 the slowest FOB made 9 an hour, a bigger one 12 and more
+        // Research 5, every other slot off.
         assertEquals(4,specialtyPerHour(alone,128,3,5)/s,1e-9,"the slowest FOB");
         assertEquals(4,specialtyPerHour(alone,400,8,5)/s,1e-9,"a middling FOB");
         assertEquals(4,specialtyPerHour(alone,5000,20,5)/s,1e-9,"the biggest FOB");
-        // the 30-minute floor holds: the slowest FOB, every slot on, research 4
+        // The 30-minute floor holds: the slowest FOB, every slot on, research 4
         assertEquals(2,specialtyPerHour(all,128,3,4)/s,1e-9);
-        // a fast rail delivers more often than the hours a trip carries: still 4 an hour, counted between real deliveries
+        // A fast rail delivers more often than the hours a trip carries
         long fast=RouteRules.refPeriod(5000)/3;var quick=new RouteRules.Yield(alone,5000,20,fast,5);
         assertEquals(4,RouteRules.budget(Slot.SPECIALTY,quick)/(fast/(double)RouteRules.HOUR)/s,1e-9,"a fast rail");
         assertEquals(4,RouteRules.budget(Slot.SPECIALTY,quick)*RouteRules.tripsPerHour(fast)/s,1e-6,"as the gate screen counts it");
-        // the other slots are untouched
+        // The other slots are untouched
         var y=new RouteRules.Yield(new boolean[]{false,false,true,false},5000,20,0,5);
         assertTrue(RouteRules.budget(Slot.FARM,y)/RouteRules.tripHours(5000,0)>RouteRules.SPECIALTY_MAX_PER_HOUR,"the farm alone is not capped");
     }
 
-    // ---- the FOB screen ---------------------------------------------------------------------------------------------------------------------------------
+    // The FOB screen
     @Test void theFobScreenSaysTheCatapultsStateAndWhatLevelFiveOpens() throws Exception{
         assertTrue(SosTest.source("Fobs.java").contains("n.putString(\"catapult\",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),\"online\"));"));
         String lang=lang();

@@ -26,9 +26,6 @@ versionRange="[1.0.0,)"
 ordering="NONE"
 side="BOTH"
 
-# 0.0.41: the pack edition is the only edition. Everything below marked mandatory=true must be installed on clients and the server:
-# TaCZ, TaCZ Attributes, Create, KubeJS (which brings Rhino and Architectury API), KubeJS Create, LesRaisins Tactical Equipments and,
-# on clients, JEI. The test pack (dist/*.mrpack) pins them.
 [[dependencies.eternal_defense]]
 modId="tacz"
 mandatory=true
@@ -57,8 +54,6 @@ versionRange="[1.4]"
 ordering="AFTER"
 side="BOTH"
 
-# 0.0.41: JEI is required on clients (a dedicated server does not need it): the Field Guide and the upgrade tooltips send players to JEI
-# for every Create recipe of the mod's parts.
 [[dependencies.eternal_defense]]
 modId="jei"
 mandatory=true
@@ -66,10 +61,6 @@ versionRange="[15,)"
 ordering="AFTER"
 side="CLIENT"
 
-# 0.0.41: also required. KubeJS Create runs the pack scripts' Create recipes (every factory part: plating, logistics modules, resonance
-# coils, restoration matrices, receivers); LesRaisins Tactical Equipments supplies the medkits and grenades every won raid pays
-# (RaidRewards fails without them). The owner's pack (Eternal Defense 0.22.1) has both. (TaCZ JS is not needed: TaCZ's own KubeJS plugin
-# lets the gun script work, as a dedicated server without TaCZ JS showed.)
 [[dependencies.eternal_defense]]
 modId="kubejs_create"
 mandatory=true

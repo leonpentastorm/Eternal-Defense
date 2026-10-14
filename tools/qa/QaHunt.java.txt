@@ -27,18 +27,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): boots a NORMAL world on the real client (real terrain and structures, so the Garrison lookup and the
- * satellite scan meet the real thing), runs the hunt GameTests (HuntGameTests) and then walks through 0.0.20 like a player: the Command
- * Table and Satellite Beacon, the board, a scan, the table screen (Region, Base, a card, Accept), the mission card on the HUD, the mission
- * map, a Warlord warband out of its gates, the pay; then the cannon menu's new card, a real Starshell call (the effects a player gets, the
- * incoming sound) and a raid on ground with no natural spawn spot (gate spawns, the speed burst, the chat line once).
- * 0.0.21 on top: the mission line only with the map or the shovel in hand, the arrival on one block (anchor, red marks, server tick time),
- * the map burning once the mission is cleared, the Starshell's Haste lasting after the player leaves the light, a due raid waiting for the
- * night and Start raid booking it by day, armed raid skeletons and pillagers, an ordinary monster drawn from 40 blocks out during the raid,
- * and the alarm's rhythm (a start every 22 client ticks). 0.0.22: a supply and a return flare answer with the owner's own radio lines.
- * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_CHAT, QA_DONE.
- */
+/** On top: the mission line only with the map or the shovel in hand, the arrival on one block */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaHunt {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -64,16 +53,13 @@ public final class QaHunt {
     static HuntData h(){return HuntData.get(sl());}
     static CampaignData d(){return CampaignData.get(sl());}
     static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});}
-    /** Moves the running mission's map into hotbar slot {@code slot} (slot 0 is the hand). */
+    /** Moves the running mission's map into hotbar slot slot (slot 0 is the hand). */
     static void mapToSlot(int slot){srv(()->{var inv=sp().getInventory();var m=h().board.mission;long id=m==null?0:m.offer.id;
         for(int i=0;i<inv.items.size();i++)if(id!=0&&Hunts.mapMission(inv.items.get(i))==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(slot));inv.items.set(slot,map);break;}inv.selected=0;});
         mc().player.getInventory().selected=0;}
-    /**
-     * Server tick time while {@link #timing} is on (ServerTickEvent START to END: the whole tick, every level), per stage of the arrival:
-     * {@link #label} when the script sets one, else read from the mission (before contact, spawning, after spawning).
-     */
+    /** Server tick time while timing is on */
     static long tickStart;static volatile boolean timing;static volatile String label;
-    static final Map<String,long[]> STAGES=new java.util.concurrent.ConcurrentHashMap<>();   // stage -> ticks, slowest ns, total ns
+    static final Map<String,long[]> STAGES=new java.util.concurrent.ConcurrentHashMap<>();   // Stage -> ticks, slowest ns, total ns
     @SubscribeEvent public static void serverTick(TickEvent.ServerTickEvent e){
         if(e.phase==TickEvent.Phase.START){tickStart=System.nanoTime();return;}
         if(!timing)return;long ns=System.nanoTime()-tickStart;
@@ -84,7 +70,7 @@ public final class QaHunt {
     static long slowestMs(String stage){var v=STAGES.get(stage);return v==null?-1:v[1]/1_000_000;}
     static double meanMs(String stage){var v=STAGES.get(stage);return v==null||v[0]==0?-1:v[2]/(double)v[0]/1_000_000;}
 
-    // ---- what the client hears and reads -----------------------------------------------------------------------------------------------
+    // What the client hears and reads
     static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>()),CHAT=Collections.synchronizedList(new ArrayList<>());
     /** Client ticks at which the alarm started. */
     static final List<Integer> ALARMS=Collections.synchronizedList(new ArrayList<>());
@@ -136,29 +122,29 @@ public final class QaHunt {
     static long[] offerIds(){return srvGet(()->h().board.offers.stream().mapToLong(o->o.id).toArray());}
 
     static void script(){
-        // ---- the blocks ------------------------------------------------------------------------------------------------------------------
+        // The blocks
         step(5,()->{mc().options.hideGui=true;srv(()->{d().core=3;d().setDirty();});look(B.offset(-2,0,7),TABLE.getX()+1,TABLE.getY()+.8,TABLE.getZ()+.5);},"look at the table and satellite");
         step(120,()->{},"let the client draw the base");
         step(40,()->shot("h1_table_and_satellite"),"shot");
         step(2,()->look(SAT.offset(3,1,4),SAT.getX()+.5,SAT.getY()+1,SAT.getZ()+.5),"close to the satellite");
         step(30,()->shot("h2_satellite"),"shot");
-        // ---- a real board at Mk III (Garrison lookups in a normal world) ---------------------------------------------------------------
+        // A real board at Mk III (Garrison lookups in a normal world)
         step(5,()->srv(()->{var h=h();Hunts.reset(sl());h.satelliteMk=3;h.table=TABLE;h.satellite=SAT;Hunts.fillIfLinked(sl());}),"fill the board at Mk III");
-        // at most one Garrison lookup per server tick: a second Garrison waits for the next fill pass (once a second)
+        // At most one Garrison lookup per server tick: a second Garrison waits for the next fill pass (once a second)
         until("the board is full",400,()->srvGet(()->h().board.offers.size()>=4),()->{});
         step(10,()->{srv(()->{for(var o:h().board.offers)log("QA_NOTE offer {} {} {} at {} {}, {} m {}",o.id,o.codename,o.kind.id,o.x,o.z,o.distance,TacticalRules.compass(o.bearing));});
             var n=srvGet(()->h().board.offers.size());check("a Mk III board has 4 offers",n==4,"offers="+n);
             var minSep=srvGet(()->{double m=360;var b=h().board.bearings();for(int i=0;i<b.size();i++)for(int j=i+1;j<b.size();j++)m=Math.min(m,TacticalRules.angle(b.get(i),b.get(j)));return m;});
             check("offers lie at least 40 degrees apart",minSep>=40,"closest="+minSep);
             var dist=srvGet(()->h().board.offers.stream().allMatch(o->o.distance>=TacticalRules.minDistance(d().radius())&&o.distance<=1024));check("offers lie between the zone + 150 and 1024 blocks",dist,"");},"board checks");
-        // ---- a scan, then the table screen -----------------------------------------------------------------------------------------------
+        // A scan, then the table screen
         step(5,()->{look(TABLE.offset(-1,0,3),TABLE.getX()+.5,TABLE.getY()+.5,TABLE.getZ()+.5);srv(()->{h().scanReady=0;log("QA_NOTE scan start: {}",TacticalScan.start(sp(),sl(),d(),h()));});},"start a scan");
         until("the scan ends",900,()->!srvGet(TacticalScan::running),()->{});
         step(5,()->{mc().options.hideGui=false;TacticalClient.view=1;TacticalClient.selected=-1;srv(()->Hunts.open(sp(),TABLE));},"open the table");
         step(40,()->{check("the Command Table screen opens",table()!=null,String.valueOf(mc().screen));check("the client has the scan image",TacticalClient.version>=0,"version="+TacticalClient.version);shot("h3_table_region");},"region shot");
         step(2,()->{TacticalClient.view=0;var s=table();if(s!=null)s.resize(mc(),s.width,s.height);},"base view");
         step(20,()->shot("h4_table_base"),"base shot");
-        // the SCAN MAP button with the table open: the sweep and the done pings are heard by the players at the table
+        // The SCAN MAP button with the table open: the sweep and the done pings are heard by the players at the table
         step(5,()->{SOUNDS.clear();srv(()->{h().scanReady=0;Hunts.refresh(sl());});},"scan cooldown over");
         step(10,()->press(Ui.t("tactical.scan").getString()),"press SCAN MAP");
         until("the button's scan ends",900,()->!srvGet(TacticalScan::running)&&SOUNDS.contains("tactical.scan_done"),()->{});
@@ -171,13 +157,13 @@ public final class QaHunt {
             check("the screen refreshed in place (no reopen)",table()!=null,"");shot("h6_table_accepted");},"accepted shot");
         step(2,()->press("Abandon"),"Abandon once (arms the confirm)");
         step(10,()->{check("Abandon asks to confirm first",srvGet(()->h().board.running()),"");shot("h7_table_abandon_confirm");},"confirm shot");
-        // ---- the HUD -----------------------------------------------------------------------------------------------------------------------
+        // The HUD
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());mapToSlot(1);srv(()->sp().getInventory().setItem(0,ItemStack.EMPTY));tp(B.getX()-120.5,B.getY()+40,B.getZ()+.5,-90,10);},"fly 120 blocks west, empty hand");
         step(40,()->{check("the client knows the mission",TacticalClient.missionActive(),"");
             check("with an empty hand the mission line is hidden (0.0.21)",!TacticalClient.holdingMissionItem(),"hand="+mc().player.getMainHandItem().getItem());shot("h8a_hud_empty_hand");},"empty-hand shot");
         step(20,()->mapToSlot(0),"take the mission map in hand");
         step(5,()->{check("with the mission map in hand it shows",TacticalClient.holdingMissionItem(),"hand="+mc().player.getMainHandItem().getItem());shot("h8_hud_mission_away");},"away shot");
-        // the beacon state is synced once a second: give it two before the shot (a step's wait comes after its action)
+        // The beacon state is synced once a second: give it two before the shot (a step's wait comes after its action)
         step(45,()->{mapToSlot(1);hold(new ItemStack(EternalDefense.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
         step(5,()->{shot("h9_hud_status_card");check("the beacon card shows next to the mission line (near, holding the shovel)",BeaconClientState.near(),"");check("the shovel shows the mission line too",TacticalClient.holdingMissionItem(),"");
             log("QA_NOTE beacon card server: player={} beacon={} radius={} near={} sent={}",srvGet(()->sp().blockPosition().toShortString()),srvGet(()->d().beacon.toShortString()),srvGet(()->d().radius()),srvGet(()->EternalDefense.near(sp(),d())),srvGet(()->BeaconNetwork.state(sp(),d()).getBoolean("near")));
@@ -191,7 +177,7 @@ public final class QaHunt {
                 boolean both=Math.abs(B.getX()-data.centerX)<=half&&Math.abs(B.getZ()-data.centerZ)<=half&&Math.abs(o.x-data.centerX)<=half&&Math.abs(o.z-data.centerZ)<=half;
                 return (x?"red X at the objective":"no red X")+", scale "+data.scale+", "+(both?"beacon and objective on the sheet":"not both on the sheet");});
             check("the map has the red X at the objective and the beacon on the same sheet",map.startsWith("red X at the objective")&&map.endsWith("beacon and objective on the sheet"),map);},"map shot");
-        // ---- a Warlord at the objective platform -----------------------------------------------------------------------------------------
+        // A Warlord at the objective platform
         step(5,()->srv(()->{var h=h();Hunts.abandon(sp(),sl(),d(),h);long id=h.board.nextId++;
             var o=new HuntBoard.Offer(id,TacticalRules.Kind.WARLORD,TacticalRules.codename(id*7919),OBJ.getX(),OBJ.getZ(),HuntGameTests.OBJECTIVE_DISTANCE,90);h.board.offers.add(o);
             log("QA_NOTE warlord accept: {}",Hunts.accept(sp(),sl(),d(),h,h.board.offers.indexOf(o)));}),"accept a Warlord at the objective platform");
@@ -208,8 +194,7 @@ public final class QaHunt {
         step(40,()->{},"40 more ticks of the arrival");
         step(0,()->{timing=false;
             STAGES.forEach((k,v)->log("QA_NOTE arrival stage '{}': {} ticks, slowest {} ms, mean {} ms",k,v[0],v[1]/1_000_000,v[0]==0?0:v[2]/v[0]/1_000_000));
-            // this machine's idle server tick is far from a gaming PC's (the software-rendered client shares the CPU), so the arrival is
-            // judged against the idle ticks of the same run: what the warband adds, not an absolute bar
+            // This machine's idle server tick is far from a gaming PC's (the software-rendered client shares the CPU)
             long spawning=slowestMs("spawning the warband"),after=slowestMs("after the warband is out"),idle=slowestMs("idle, 90 blocks out");
             double idleMean=meanMs("idle, 90 blocks out"),spawnMean=meanMs("spawning the warband"),afterMean=meanMs("after the warband is out");
             String detail=String.format(Locale.ROOT,"idle mean %.1f ms (slowest %d), spawning mean %.1f ms (slowest %d), after mean %.1f ms (slowest %d)",idleMean,idle,spawnMean,spawning,afterMean,after);
@@ -237,7 +222,7 @@ public final class QaHunt {
             log("QA_NOTE warlord pay: {} Ardent Energy and {} coins at hunt tier {} (beacon Next payout tier {}, last paid tier {})",gotArdent,gotCoins,chest[2],shown,paid);
             check("the Warlord pays at the beacon's Next payout tier (0.0.22)",chest[2]==shown&&gotArdent==expected.ardent()&&gotCoins==expected.coins(),"paid "+gotArdent+"+"+gotCoins+", expected "+expected+" at tier "+shown);check("its map burned (0.0.21)",!srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");check("chat tells everyone",CHAT.stream().anyMatch(c->c.contains("cleared!")),"");
             check("the mission-cleared jingle plays",SOUNDS.contains("music.mission_cleared"),"");shot("h13_cleared_chat");},"cleared shot");
-        // ---- the cannon menu's card and a real Starshell ---------------------------------------------------------------------------------
+        // The cannon menu's card and a real Starshell
         step(5,()->{mc().options.hideGui=true;hold(new ItemStack(EternalDefense.SUPPORT_PLATFORM_ITEM.get()));tp(B.getX()-8.5,B.getY(),B.getZ()-3.5,180,60);},"hold a platform");
         step(10,()->srv(()->sp().gameMode.useItemOn(sp(),sl(),sp().getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(B.offset(-8,-1,-8)).add(0,.5,0),Direction.UP,B.offset(-8,-1,-8),false))),"place the platform");
         step(5,()->{hold(new ItemStack(EternalDefense.SUPPORT_CANNON_ITEM.get()));tp(B.getX()-14.5,B.getY(),B.getZ()+10.5,180,60);},"hold a cannon");
@@ -247,7 +232,7 @@ public final class QaHunt {
         step(10,()->{mc().options.hideGui=false;srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.open(sp(),cannon.getBlockPos(),"");});},"open the cannon menu");
         step(30,()->{check("the cannon menu opens",mc().screen instanceof CannonScreen,String.valueOf(mc().screen));shot("h14_cannon_card_starshell");},"card shot");
         step(2,()->srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.BUNKER.ordinal());}),"choose the Bunker Buster (long text)");
-        // the mouse goes onto the card (as a player's would, to scroll it), so no row of the lists is hovered
+        // The mouse goes onto the card (as a player's would, to scroll it), so no row of the lists is hovered
         step(5,()->{if(mc().screen instanceof CannonScreen s){double k=mc().getWindow().getGuiScale();org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc().getWindow().getWindow(),(s.cardX+20)*k,(s.cardY+20)*k);}},"mouse on the card");
         step(20,()->{if(mc().screen instanceof CannonScreen s){check("the long card can scroll",s.cardMax>0,"max="+s.cardMax);shot("h15_cannon_card_bunker_top");s.mouseScrolled(s.cardX+10,s.cardY+10,-3);s.mouseScrolled(s.cardX+10,s.cardY+10,-3);
             check("scrolling moves the card",s.cardScroll>0,"scroll="+s.cardScroll);}},"scroll the card");
@@ -259,7 +244,7 @@ public final class QaHunt {
         until("the flare lands",300,()->srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(SupportFlares.FlareEntity::landed)),()->{});
         step(5,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).get(0);log("QA_NOTE starshell flare at {}",f.blockPosition());
             check("the flare calls a Starshell",f.type()==CannonUpgrades.FireType.STARSHELL,String.valueOf(f.type()));
-            // stand in the star's reach, but look away from where the round will land: the incoming sound must still play
+            // Stand in the star's reach, but look away from where the round will land: the incoming sound must still play
             sp().teleportTo(sl(),f.getX()+4,f.getY(),f.getZ()+4,45,0);}),"stand by the flare, looking away");
         until("the star burns",400,()->srvGet(()->sp().hasEffect(MobEffects.DIG_SPEED)||sp().hasEffect(MobEffects.REGENERATION)),()->{});
         step(2,()->check("the incoming sound played while the player looked away",SOUNDS.contains("ordnance.incoming"),String.valueOf(SOUNDS)),"incoming sound");
@@ -278,12 +263,12 @@ public final class QaHunt {
         step(5,()->{var left=srvGet(()->sp().hasEffect(MobEffects.DIG_SPEED)?sp().getEffect(MobEffects.DIG_SPEED).getDuration():-1);
             var inLight=srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(f->f.distanceTo(sp())<=CannonUpgrades.STAR_RADIUS+8));
             check("10 s after leaving the light the Haste is still on (0.0.21)",left>0&&!inLight,"ticks left="+left+" inLight="+inLight);},"haste after leaving");
-        // ---- 0.0.22: the supply and the return flare answer with the owner's own radio lines ---------------------------------------------------
+        // The supply and the return flare answer with the own radio lines
         for(var flare:List.of(new Object[]{"supply",EternalDefense.SUPPLY_FLARE,"flare.supply_chatter_"},new Object[]{"return",EternalDefense.RETURN_FLARE,"flare.recall_chatter_"})){
             String what=(String)flare[0],prefix=(String)flare[2];@SuppressWarnings("unchecked") var item=(net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item>)flare[1];
             step(5,()->{SOUNDS.clear();srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
                 var inv=sp().getInventory();inv.setItem(0,new ItemStack(item.get()));inv.selected=0;
-                // a supply call with an empty grid is refused (and a refused call has no answer): put something in the platform's grid
+                // A supply call with an empty grid is refused (and a refused call has no answer)
                 var grid=SupportCalls.platform(sl(),sp().getUUID());if(grid!=null&&what.equals("supply")){grid.grid.items[0]=new ItemStack(Items.BREAD,4);grid.setChanged();}});
                 mc().player.getInventory().selected=0;},"take a "+what+" flare");
             step(10,()->srv(()->sp().getMainHandItem().getItem().use(sl(),sp(),InteractionHand.MAIN_HAND)),"throw the "+what+" flare");
@@ -294,8 +279,7 @@ public final class QaHunt {
             step(100,()->{},"let the line finish (the recording matches each line on its own)");
         }
         step(5,()->srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();}),"clear the flares");
-        // ---- a raid where no natural spawn ground exists: gates, the speed burst, the chat line once -----------------------------------------
-        // the objective platform's west edge lies on the outer spawn ring: take it away, so only the base platform (inside the ring) is left
+        // A raid where no natural spawn ground exists: gates, the speed burst
         step(5,()->srv(()->{var air=net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
             for(int cx=(OBJ.getX()>>4)-3;cx<=(OBJ.getX()>>4)+3;cx++)for(int cz=(OBJ.getZ()>>4)-3;cz<=(OBJ.getZ()>>4)+3;cz++){
                 var chunk=sl().getChunk(cx,cz);
@@ -328,7 +312,7 @@ public final class QaHunt {
             var me=srvGet(()->sp().position());var zombie=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)).stream().map(z->z.position()).findFirst().orElse(null));
             check("/eternaldefense test-gate opens a gate with a zombie in front of it",!gates.isEmpty()&&zombie!=null&&gates.get(0).distanceTo(me)>zombie.distanceTo(me),"gates="+gates+" zombie="+zombie);
             srv(()->{for(var z:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)))z.discard();});mc().options.hideGui=false;},"test gate shot");
-        // ---- 0.0.21: a due raid waits for the night; Start raid by day books it; the raid itself ------------------------------------------
+        // A due raid waits for the night; Start raid by day books it; the raid itself
         step(5,()->{cmd("time set 6000");CHAT.clear();srv(()->{var d=d();d.phase="preparation";d.introCompleted=true;d.respiteTicks=0;d.damage.clear();d.destroyedTurrets.clear();d.raidRequested=false;
             d.preparationTicks=Rules.intervalDays(d.rewardTier)*24000L;d.setDirty();sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+3.5,180,10);});},"a raid is due, at noon");
         step(100,()->{},"five seconds of daylight");
@@ -345,7 +329,7 @@ public final class QaHunt {
         until("the booked raid starts at nightfall",200,()->srvGet(()->!d().phase.equals("preparation")),()->{});
         step(5,()->check("the raid began and the booking is spent",srvGet(()->!d().raidRequested),"phase="+srvGet(()->d().phase)),"booking spent");
         until("the raid phase",1600,()->srvGet(()->d().phase.equals("raid")),()->{});
-        // armed raiders at a real raid: one skeleton and one pillager made the way a wave makes them, 30 blocks west of the beacon
+        // Armed raiders at a real raid: one skeleton and one pillager made the way a wave makes them
         final java.util.UUID[] armed=new java.util.UUID[2];final double[] startDist={0,0};
         step(5,()->srv(()->{var d=d();var a=EternalDefense.raider(sl(),d,net.minecraft.world.entity.EntityType.SKELETON,"grunt","normal",B.offset(-30,0,2));
             var b=EternalDefense.raider(sl(),d,net.minecraft.world.entity.EntityType.PILLAGER,"specialist","normal",B.offset(-30,0,-2));
@@ -363,7 +347,7 @@ public final class QaHunt {
             check("the raid skeleton walks at the beacon (no gate spam)",left>=0&&left<startDist[0]-4,"from "+Math.round(startDist[0])+" to "+Math.round(left));
             long gates=srvGet(()->{var e=sl().getEntity(armed[0]);return e==null?0L:RaiderGates.gates(sl()).stream().filter(g->g.distanceToSqr(e)<100).count();});
             check("and opened no gate near it",gates==0,"gates="+gates);},"skeleton walked");
-        // an ordinary zombie (no raider) 40 blocks beyond the zone's edge comes for the beacon during the raid
+        // An ordinary zombie (no raider) 40 blocks beyond the zone's edge comes for the beacon during the raid
         final java.util.UUID[] plain={null};final double[] plainStart={0};
         step(5,()->srv(()->{int r=d().radius();for(int z=-(r+44);z<=-30;z++)for(int x=-2;x<=2;x++)sl().setBlock(B.offset(x,-1,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),2);}),"a stone bridge out to 68 blocks south (the platform ends at 40)");
         step(5,()->srv(()->{var z=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());int r=d().radius();z.moveTo(B.getX()+.5,B.getY(),B.getZ()-(r+40)+.5,0,0);sl().addFreshEntity(z);plain[0]=z.getUUID();
@@ -373,7 +357,7 @@ public final class QaHunt {
             var raider=srvGet(()->d().raiders.contains(plain[0]));
             check("during a raid an ordinary monster 40 blocks past the zone comes for the beacon (0.0.21)",left>=0&&left<plainStart[0]-6&&!raider,"from "+Math.round(plainStart[0])+" to "+Math.round(left)+" raider="+raider);
             srv(()->{int r=d().radius();for(int z=-(r+44);z<-40;z++)for(int x=-2;x<=2;x++)sl().setBlock(B.offset(x,-1,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);});},"plain zombie came");
-        // the alarm: hits kept fresh for about 4.5 s; the alarm starts every 22 client ticks
+        // The alarm: hits kept fresh for about 4.5 s; the alarm starts every 22 client ticks
         step(5,()->{ALARMS.clear();srv(()->{var d=d();d.lastAttackTick=sl().getGameTime();BeaconNetwork.syncNearby(sl(),d);});},"the beacon is hit");
         for(int i=0;i<4;i++)step(20,()->srv(()->{var d=d();d.lastAttackTick=sl().getGameTime();BeaconNetwork.syncNearby(sl(),d);}),"hit again");
         step(5,()->{List<Integer> at;synchronized(ALARMS){at=new ArrayList<>(ALARMS);}var gaps=new ArrayList<Integer>();for(int i=1;i<at.size();i++)gaps.add(at.get(i)-at.get(i-1));
@@ -383,14 +367,14 @@ public final class QaHunt {
         step(5,()->shot("h23_raid_alarm"),"alarm shot");
         step(5,()->{mc().options.hideGui=true;cmd("time set 6000");srv(()->{for(var id:new ArrayList<>(d().raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d().raiders.clear();
             if(plain[0]!=null&&sl().getEntity(plain[0])!=null)sl().getEntity(plain[0]).discard();d().phase="preparation";d().setDirty();});},"end the night raid");
-        // ---- Garrison lookups over land (the test beacon's own region may have no structure): never a chunk loaded, and the answer is true ----
+        // Garrison lookups over land (the test beacon's own region may have no structure)
         step(5,()->{int[][] centres={{0,0},{3000,0},{-3000,0},{0,3000},{0,-3000},{6000,6000},{-6000,6000},{6000,-6000},{-6000,-6000},{9000,0}};int found=0;long loads=0,slowest=0;
             for(var c:centres){var r=srvGet(()->{int before=sl().getChunkSource().getLoadedChunksCount();long t=System.nanoTime();var spot=Hunts.garrison(sl(),c[0],c[1],18,1024,new ArrayList<>(),new Random(c[0]*31L+c[1]));
                 long ms=(System.nanoTime()-t)/1_000_000;int after=sl().getChunkSource().getLoadedChunksCount();return new long[]{spot==null?Long.MIN_VALUE:spot.x(),spot==null?0:spot.z(),ms,after-before};});
                 slowest=Math.max(slowest,r[2]);loads+=Math.max(0,r[3]);
                 if(r[0]==Long.MIN_VALUE){log("QA_NOTE garrison around {} {}: none ({} ms)",c[0],c[1],r[2]);continue;}
                 found++;int cx=(int)r[0]>>4,cz=(int)r[1]>>4;
-                // the truth: generate that chunk to its structure starts (only now, after the lookup) and read what really starts there
+                // The truth: generate that chunk to its structure starts
                 var starts=srvGet(()->sl().getChunk(cx,cz,net.minecraft.world.level.chunk.ChunkStatus.STRUCTURE_STARTS,true).getAllStarts().keySet().stream().map(st->String.valueOf(sl().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE).getKey(st))).toList());
                 boolean real=starts.stream().anyMatch(n->Hunts.GARRISON_STRUCTURES.stream().anyMatch(g->g.toString().equals(n)));
                 log("QA_NOTE garrison around {} {}: {} {} ({} ms, chunk {} {} starts {})",c[0],c[1],r[0],r[1],r[2],cx,cz,starts);

@@ -11,10 +11,7 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Cooperates with the pinned backend's timestamp scale/restore pair. The backend field is resolved after transformation.
- * The correction runs at the native gun call, after all HEAD callbacks, independent of their injection ordering.
- */
+/** Cooperates with the pinned backend's timestamp scale/restore pair. */
 @Mixin(value=LivingEntityReload.class,priority=900,remap=false)
 public abstract class MealReloadContinuityMixin {
     @Shadow @Final private LivingEntity shooter;
@@ -49,7 +46,7 @@ public abstract class MealReloadContinuityMixin {
     @Redirect(method="tickReloadState",at=@At(value="INVOKE",target="Lcom/tacz/guns/api/item/gun/AbstractGunItem;tickReload(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lcom/tacz/guns/api/entity/ReloadState;"))
     private ReloadState eternal$retainNativeStageChanges(AbstractGunItem gun,ShooterDataHolder holder,ItemStack stack,LivingEntity user){
         long before=holder.reloadTimestamp;var result=gun.tickReload(holder,stack,user);
-        // Native single-round scripts adjustReloadTime between shells. Preserve that delta across the backend's restoration.
+        // Native single-round scripts adjustReloadTime between shells.
         long backend=MealGunBackend.backendTimestamp(this);
         if(backend>=0&&holder.reloadTimestamp>=0&&holder.reloadTimestamp!=before)
             MealGunBackend.backendTimestamp(this,backend+Math.round((holder.reloadTimestamp-before)/eternal$rate));

@@ -16,10 +16,7 @@ final class WeaponBrowser {
         int cellWidth(){return (listWidth-12-(columns-1)*4)/columns;}
     }
     static Layout layout(int screenWidth,int screenHeight,boolean weapons){return layout(screenWidth,screenHeight,weapons,false);}
-    /**
-     * Below 300 px of panel height (the default 854 x 480 window at GUI scale 2) the filter rows are merged so
-     * the list keeps room: Age and gear type share a row, and the "browsing" line is dropped.
-     */
+    /** Below 300 px of panel height (the default 854 x 480 window at GUI scale 2) the filter rows are merged */
     static Layout layout(int screenWidth,int screenHeight,boolean weapons,boolean armor){
         int width=Math.min(1120,screenWidth-16),height=Math.min(680,screenHeight-16),listWidth=(width-34)*3/5;
         boolean compact=height<300;

@@ -34,21 +34,14 @@ import java.io.File;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * QA ONLY (never part of a release): the owner's 0.0.43 list on a real client with Create running (setup-qa.sh with QA_CREATE=1). The
- * Exchange: an untouched 0.0.42 offers file moves to the new default when the shop opens; Iron Ore 16 for 2, 8 iron blocks for 8, 16 andesite
- * alloy for 1, each bought with Ardent Energy in survival. The FOB's mine: a FOB in a test village with both gates linked, the mine's picker
- * on the Receiving Gate's screen (18 items: clay, the vanilla and Create stones), clay and asurine chosen with the screen's own buttons and
- * delivered by the route into the gate's storage.
- * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
- */
+/** Sh with QA_CREATE=1). */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound43 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
-    /** A step runs, then the next one waits {@code delay} ticks. */
+    /** A step runs, then the next one waits delay ticks. */
     static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
-    /** Waits {@code ticks}, then runs the check. */
+    /** Waits ticks, then runs the check. */
     static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
     static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
     static Minecraft mc(){return Minecraft.getInstance();}
@@ -72,11 +65,7 @@ public final class QaRound43 {
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
-    /**
-     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
-     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
-     * connection's own, in the integrated server's local channel the packets arrive as objects).
-     */
+    /** The container has no audio device, so the client's sound engine never starts and plays nothing */
     static boolean hooked;
     static void hookSounds(){
         if(hooked||mc().getConnection()==null)return;hooked=true;
@@ -92,14 +81,14 @@ public final class QaRound43 {
         log("QA_NOTE sound packets are counted at the client's connection");
     }
 
-    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    // One frame's texts (Ui records them)
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
     static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
     static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
 
-    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    // The client's own actions
     static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
     static void look(BlockPos from,double tx,double ty,double tz){
         double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
@@ -117,8 +106,8 @@ public final class QaRound43 {
     static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
     static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
 
-    // ---- the places --------------------------------------------------------------------------------------------------------------------
-    /** B: the beacon; EX: the Exchange in its zone; V: a test village 300 blocks east; PLANT: the FOB Beacon; RECV and DELIV: the gates. */
+    // The places
+    /** B: the beacon; EX: the Exchange in its zone; V: a test village 300 blocks east; PLANT: the FOB Beacon */
     static BlockPos B,EX,V,PLANT,RECV,DELIV;
     static void places(){
         B=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy,Math.floorDiv(sz,16)*16);EX=B.offset(-6,0,-6);
@@ -164,7 +153,7 @@ public final class QaRound43 {
     static volatile String note="";
     static final java.nio.file.Path OFFERS=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get().resolve(ExchangeShop.FILE);
 
-    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    // The driver
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
         if(!created){
@@ -188,7 +177,7 @@ public final class QaRound43 {
     }
 
     static void script(){
-        // ---- the base: a beacon 2000 blocks out, survival, 20 Ardent Energy ---------------------------------------------------------------------
+        // The base: a beacon 2000 blocks out, survival, 20 Ardent Energy
         step(60,()->{srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
             sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
@@ -203,7 +192,7 @@ public final class QaRound43 {
         step(5,()->sync(),"sync");
         step(5,()->check("Create runs in this client (andesite alloy and the Create stones exist)",BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:andesite_alloy"))&&BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:asurine")),""),"Create");
 
-        // ---- the Exchange: an untouched 0.0.42 file moves on; the new prices; three buys --------------------------------------------------------------
+        // The Exchange: an untouched file moves on; the new prices; three buys
         step(5,()->{try{java.nio.file.Files.deleteIfExists(OFFERS);}catch(Exception x){log("QA_NOTE {}",x);}
             srv(()->sl().setBlock(EX,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"no offers file yet; an Exchange in the zone");
         step(20,()->look(EX.south(3),EX.getX()+.5,EX.getY()+.8,EX.getZ()+.5),"face it");
@@ -235,7 +224,7 @@ public final class QaRound43 {
         step(5,()->{check("20 Ardent Energy in, 11 spent, 9 left",count(EternalDefense.ARDENT_ENERGY.get())==9&&spent[0]==11,"left "+count(EternalDefense.ARDENT_ENERGY.get()));shot("r43_02_exchange_bought");},"after the buys");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
 
-        // ---- a FOB in a test village, both gates linked ---------------------------------------------------------------------------------------------
+        // A FOB in a test village, both gates linked
         step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().teleportTo(sl(),V.getX()+.5,sy,V.getZ()+8.5,180,10);});},"to the village site (creative: the activation raid is called)");
         until("the village site is loaded",200,()->loaded(V)&&loaded(RECV)&&loaded(DELIV),()->{});
         step(5,()->srv(()->{var l=sl();
@@ -255,7 +244,7 @@ public final class QaRound43 {
             for(var kind:RailGates.Kind.values()){var at=kind==RailGates.Kind.DELIVERY?DELIV:RECV;var block=(kind==RailGates.Kind.DELIVERY?EternalDefense.DELIVERY_GATE:EternalDefense.RECEIVING_GATE).get();
                 l.setBlock(at,block.defaultBlockState().setValue(RailGates.FACING,Direction.EAST),3);Routes.link(l,d,f,kind,at,(RailGates.GateEntity)l.getBlockEntity(at));}
             f.commissioned=true;f.baseline=60;f.clock=RouteRules.CLOCK;f.nextPassive=0;
-            f.slotOn[0]=false;f.slotOn[2]=false;f.slotOn[3]=false;   // the mine alone: the whole trip is its (more items to count)
+            f.slotOn[0]=false;f.slotOn[2]=false;f.slotOn[3]=false;   // The mine alone: the whole trip is its (more items to count)
             d.setDirty();}),"both gates linked, the route open; emeralds, the farm and the specialty switched off");
         step(10,()->{var f=fob();check("the FOB is ACTIVE with its route",f!=null&&f.state==FobRules.State.ACTIVE&&f.hasRoute()&&f.commissioned,f==null?"":f.state+" "+f.hasRoute());
             tp(RECV.getX()-3.5,sy,RECV.getZ()+.5,-90,10);},"stand at the Receiving Gate");
@@ -264,7 +253,7 @@ public final class QaRound43 {
         step(10,()->click(RECV,Direction.WEST),"open its screen (a real click)");
         until("the gate screen opens",100,()->gate()!=null,()->check("the Receiving Gate's screen opens",gate()!=null,String.valueOf(mc().screen)));
 
-        // ---- the mine's picker ----------------------------------------------------------------------------------------------------------------------
+        // The mine's picker
         step(10,()->{var s=gate();Ui.UiButton choose=null;int k=0;if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.getMessage().getString().equals("Choose")&&k++==0)choose=b;
             if(choose!=null)hover(choose.getX()+choose.getWidth()/2.0,choose.getY()+choose.getHeight()/2.0);
             check("the mine's Choose tip names clay and the stones",Ui.t("gate.slot.choose.tip.mine").getString().contains("clay, or a stone for building: calcite, dripstone, red sandstone, blackstone or one of Create's stones"),Ui.t("gate.slot.choose.tip.mine").getString());},"point at the mine's Choose button");

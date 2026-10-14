@@ -19,7 +19,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import java.util.*;
 
-/** 0.0.35 (owner): the client side of the drinks: the station screen's view, the station's tap icons, the Brew Pot's liquid and board, the Latte's band. */
+/** The client side of the drinks: the station screen's view, the station's tap icons */
 public final class DrinkClient {
     private DrinkClient(){}
     static void view(DrinkStationMenu.View p){
@@ -31,10 +31,7 @@ public final class DrinkClient {
         }
     }
 
-    /**
-     * The icon of each linked pot's drink on the station's taps: the owner's blank 3 x 3 px slots (model frame facing north), slot 0 the
-     * viewer's left. Pots are taken in the station's own order, so tap N shows pot N.
-     */
+    /** The icon of each linked pot's drink on the station's taps */
     static final class StationRenderer implements BlockEntityRenderer<DrinkStation.StationEntity> {
         /** Per tier: the slots' centres (x, y in model pixels) and the face's z. */
         static final float[][][] SLOTS={{},{{25.75f,17.125f}},{{12.25f,19.375f},{6.25f,19.375f}},{{22f,18.625f},{16f,18.625f},{10f,18.625f}}};
@@ -51,7 +48,7 @@ public final class DrinkClient {
                 var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(sprite.atlasLocation()));
                 float cx=slots[i][0]/16f,cy=slots[i][1]/16f,z=FACE_Z[mk-1]/16f-.002f,h=1.5f/16f;
                 var m=pose.last().pose();var n=pose.last().normal();int full=LightTexture.FULL_BRIGHT;
-                // the face looks north (-z): from there +x is the viewer's left
+                // The face looks north (-z): from there +x is the viewer's left
                 vc.vertex(m,cx+h,cy-h,z).color(255,255,255,255).uv(sprite.getU0(),sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(full).normal(n,0,0,-1).endVertex();
                 vc.vertex(m,cx-h,cy-h,z).color(255,255,255,255).uv(sprite.getU1(),sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(full).normal(n,0,0,-1).endVertex();
                 vc.vertex(m,cx-h,cy+h,z).color(255,255,255,255).uv(sprite.getU1(),sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(full).normal(n,0,0,-1).endVertex();
@@ -61,12 +58,12 @@ public final class DrinkClient {
         }
         @Override public boolean shouldRenderOffScreen(DrinkStation.StationEntity station){return true;}
     }
-    /** The Brew Pot: the owner's liquid surface in the drink's colour when filled, and the live chalkboard (the Cook Pot's board area). */
+    /** The Brew Pot: the liquid surface in the drink's colour when filled */
     static final class PotRenderer implements BlockEntityRenderer<BrewPot.PotEntity> {
         static final ResourceLocation LIQUID=new ResourceLocation(EternalDefense.ID,"block/drink_pot_liquid");
         PotRenderer(BlockEntityRendererProvider.Context context){}
         @Override public void render(BrewPot.PotEntity pot,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
-            Animations.draw(pot,partial,pose,buffer,light);   // 0.0.39: the flames and the stirring paddle
+            Animations.draw(pot,partial,pose,buffer,light);   // The flames and the stirring paddle
             pose.pushPose();pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-DefenseStructures.angle(pot.getBlockState().getValue(DefenseStructures.FACING))));pose.translate(-.5,0,-.5);
             if(!pot.empty()){int c=pot.drink.color();SupportClient.drawTinted(pose,buffer,RenderType.translucent(),LIQUID,light,overlay,(c>>16&255)/255f,(c>>8&255)/255f,(c&255)/255f);}
             var lines=new ArrayList<Component>();

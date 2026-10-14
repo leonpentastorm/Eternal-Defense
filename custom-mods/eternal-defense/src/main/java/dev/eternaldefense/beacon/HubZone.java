@@ -4,12 +4,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
-/**
- * 0.0.41 (owner): where the Logistics Center Hubs reach. A player standing in the Home Zone of a base that has at least one working Hub
- * gets the Logistics Hub Zone effect (display only, like the Home Zone effect), so they can see that tables, kitchens and the beacon may
- * draw on the Hubs here; the beacon's Overview says how many Hubs work. A Hub works while it stands in the Home Zone of a standing beacon
- * ({@link HubData.Hub#working}); there is one beacon per world, so every working Hub belongs to it.
- */
+/** Where the Logistics Center Hubs reach. */
 final class HubZone {
     private HubZone(){}
     /** How often the effect is checked, in ticks. */

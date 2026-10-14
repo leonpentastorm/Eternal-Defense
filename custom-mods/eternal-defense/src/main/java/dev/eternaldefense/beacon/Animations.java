@@ -24,18 +24,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import java.util.*;
 
-/**
- * 0.0.39 (owner): the idle animations. {@code tools/art/split_animated.py} cut the moving parts out of the owner's block models (the
- * blockstates draw what stays still); this draws each part over it, moved by {@link AnimationRules}: the FOB flag waves, the satellite
- * dish tracks, the beacon rings index round, flames flicker, the press seals and so on. At rest (no motion, or with "Idle animations"
- * off in the beacon's Settings) the parts sit exactly where the owner put them. Faces are shaded the way the world shades blocks
- * (top full, sides darker), so a part at rest looks the same as the rest of the model.
- */
+/** The idle animations. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class Animations {
     private Animations(){}
 
-    /** Every part the generator writes, by source model (kept in step with {@code split_animated.py}; a unit test compares them). */
+    /** Every part the generator writes, by source model */
     static final Map<String,List<String>> PARTS=new LinkedHashMap<>();
     static{
         PARTS.put("fob_station",List.of("flag_0","flag_1","flag_2","flag_3","whip","emitter_ring"));
@@ -83,11 +77,8 @@ public final class Animations {
     static boolean enabled(){return DefenseClientConfig.get(DefenseClientConfig.IDLE_ANIMATIONS);}
     static void setEnabled(boolean on){DefenseClientConfig.set(DefenseClientConfig.IDLE_ANIMATIONS,on);}
 
-    // ---- drawing ----------------------------------------------------------------------------------------------------------------------
-    /**
-     * Two transforms kept in step: the one drawn with (it starts with the camera's) and the block's own (it does not), which gives each
-     * moved face its world direction for the shading.
-     */
+    // Drawing
+    /** Two transforms kept in step: the one drawn with (it starts with the camera's) and the block's */
     static final class Xf {
         final PoseStack draw,own;
         Xf(PoseStack draw){this(draw,new PoseStack());}
@@ -101,13 +92,13 @@ public final class Animations {
         void about(double x,double y,double z,Axis axis,double degrees){if(degrees==0)return;px(x,y,z);turn(axis,degrees);px(-x,-y,-z);}
         void scaleAbout(double x,double y,double z,double sx,double sy,double sz){px(x,y,z);draw.scale((float)sx,(float)sy,(float)sz);own.scale((float)sx,(float)sy,(float)sz);px(-x,-y,-z);}
     }
-    /** What one block's parts are drawn with: where, the buffer, the light and tint, the time and the block's own seed. */
+    /** What one block's parts are drawn with: where, the buffer, the light and tint */
     record Ctx(Xf x,VertexConsumer vc,MultiBufferSource buffer,int light,float r,float g,float b,boolean live,double t,long seed){
         int glow(){return buffer==null?light:LightTexture.FULL_BRIGHT;}
     }
     private static final Direction[] SIDES={Direction.DOWN,Direction.UP,Direction.NORTH,Direction.SOUTH,Direction.WEST,Direction.EAST,null};
     private static final RandomSource RANDOM=RandomSource.create(42);
-    /** Draws one part with the world's block shading (Forge's smooth form of it, so a turned face gets the shade of the way it faces). */
+    /** Draws one part with the world's block shading */
     static void quads(Ctx c,ResourceLocation id,int light){
         var mc=Minecraft.getInstance();var baked=mc.getModelManager().getModel(id);
         var pose=c.x().draw.last();var normal=c.x().own.last().normal();int[] lights=LIGHTS;lights[0]=lights[1]=lights[2]=lights[3]=light;float[] shade=SHADE;
@@ -176,8 +167,8 @@ public final class Animations {
         }
     }
 
-    // ---- the blocks -------------------------------------------------------------------------------------------------------------------
-    /** The FOB flag's hinges (model pixels, x and z): the mast, then the far edge of each strip; the cloth hangs from y 24.75 to 30.75. */
+    // The blocks
+    /** The FOB flag's hinges (model pixels, x and z): the mast, then the far edge of each strip */
     static final double[][] FLAG_HINGES={{8.5,11.75},{10.347759,10.984633},{12.195518,10.219266},{14.043277,10.984633}};
     static void fob(Ctx c){
         var x=c.x();double[] f=c.live()?AnimationRules.flag(c.t(),c.seed()):new double[AnimationRules.FLAG_STRIPS];
@@ -194,14 +185,14 @@ public final class Animations {
         x.about(0,21.5,9.5,Axis.XP,d[1]);part(c,"satellite_beacon","dish");x.pop();
         whip(c,"satellite_beacon","whip",3.5,9.5,12.25,12);
     }
-    /** The Command Table: its antenna sways, the warning light on the canopy turns and flashes, and a sweep goes round the radar screen. */
+    /** The Command Table: its antenna sways, the warning light on the canopy turns and flashes */
     static void table(Ctx c){
         var x=c.x();whip(c,"command_table","antenna",1.75,19.25,26.25,10.5);
         boolean on=c.live()&&AnimationRules.flash(c.t(),c.seed(),1.2,.4);
         x.push();x.about(29.25,0,29.25,Axis.YP,c.live()?AnimationRules.spin(c.t(),c.seed(),1.2):0);quads(c,part("command_table","beacon"),on?c.glow():c.light());x.pop();
         if(c.live()&&c.buffer()!=null)radar(c,AnimationRules.spin(c.t(),c.seed(),3));
     }
-    /** A green sweep and its fading trail on the radar screen (its face looks north at z 28.25, centred on x 27, y 21). */
+    /** A green sweep and its fading trail on the radar screen */
     static void radar(Ctx c,double angle){
         var vc=c.buffer().getBuffer(RenderType.lines());var last=c.x().draw.last();var m=last.pose();var n=last.normal();
         float cx=27f/16,cy=21f/16,z=28.2f/16,r=2.4f/16;
@@ -212,7 +203,7 @@ public final class Animations {
             vc.vertex(m,cx+dx,cy+dy,z).color(.35f,1f,.45f,alpha[i]).normal(n,dx,dy,0).endVertex();
         }
     }
-    /** The beacon's rings rise and fall in a wave up the core and index round a quarter at a time (each its own rhythm and way round); the emitter ring above turns slowly. */
+    /** The beacon's rings rise and fall in a wave up the core and index round a quarter at a time */
     static void defenseBeacon(Ctx c,String model){
         var x=c.x();var parts=PARTS.get(model);
         for(int i=0;i<3;i++){
@@ -231,7 +222,7 @@ public final class Animations {
     /** The spark elements' centres (model pixels): the nine glyph sparks over the book, then the three on the rifle. */
     static final double[][] SPARKS={{11.05,23.3,11.8},{12.55,22.55,10.55},{13.8,21.55,9.55},{21.3,23.55,11.8},{20.05,22.55,10.8},{18.8,21.8,9.8},{15.55,22.05,6.8},{17.05,23.05,8.05},{16.05,24.3,6.3}},
         RIFLE_SPARKS={{24.75,13.75,3.75},{27.25,14.5,4.5},{29.5,13.25,3.5}};
-    /** The book floats over its levitator and turns a little, its covers breathe; the ring spins; the sparks rise and twinkle. */
+    /** The book floats over its levitator and turns a little, its covers breathe; the ring spins */
     static void enchanting(Ctx c){
         var x=c.x();double[] b=c.live()?AnimationRules.book(c.t(),c.seed()):new double[3];
         x.push();x.px(0,b[0],0);x.about(16,0,7,Axis.YP,b[1]);
@@ -256,7 +247,7 @@ public final class Animations {
         var x=c.x();double[] f=c.live()?AnimationRules.flicker(c.t(),c.seed()):new double[]{1,1};
         x.push();x.scaleAbout(bx,by,bz,f[1],f[0],f[1]);glowing(c,model,part);x.pop();
     }
-    /** The MRE Station: the heat press comes down on the pouches and lifts, the lever is pulled with it, the conveyor's rollers turn. */
+    /** The MRE Station: the heat press comes down on the pouches and lifts, the lever is pulled */
     static void mre(Ctx c){
         var x=c.x();double f=c.live()?AnimationRules.press(c.t(),c.seed()):0;
         x.push();x.px(0,-AnimationRules.PRESS_TRAVEL*f,0);part(c,"mre_maker","press");x.pop();
@@ -270,10 +261,7 @@ public final class Animations {
         var x=c.x();double[] s=c.live()?AnimationRules.sway(c.t(),c.seed(),height):new double[2];
         x.push();x.about(x0,y0,z0,Axis.XP,s[0]);x.about(x0,y0,z0,Axis.ZP,s[1]);part(c,model,part);x.pop();
     }
-    /**
-     * The cannon's crane hook, drawn inside the cannon renderer's turret transform: {@code own} repeats that transform without the camera
-     * for the shading. It swings from the end of the jib (7.25, 30.5, 20).
-     */
+    /** The cannon's crane hook, drawn inside the cannon renderer's turret transform */
     static void cannonHook(BlockEntity be,float partial,PoseStack pose,PoseStack own,MultiBufferSource buffer,int light){
         var level=be.getLevel();boolean live=enabled()&&level!=null;double t=live?(level.getGameTime()+(double)partial)/20.0:0;
         var x=new Xf(pose,own);var c=new Ctx(x,buffer.getBuffer(RenderType.cutout()),buffer,light,1f,1f,1f,live,t,be.getBlockPos().asLong());

@@ -19,12 +19,7 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/**
- * 0.0.35 (owner): the Drink Station, the Mess Hall's sibling for potions, on the owner's four models (2 wide, 1 deep, 2 tall, like the hall).
- * Mk I is a brewing stand with a 54-slot potion storage; from Mk II it mixes drinks into Brew Pots and Lattes ({@link DrinkStationMenu}).
- * The storage counts bottles inside the station (up to 64 of one kind a slot) instead of holding real stacks, so potions stay unstackable
- * everywhere else. It has no hopper or pipe access in this version.
- */
+/** The Drink Station, the Mess Hall's sibling for potions, on the four models */
 final class DrinkStation {
     private DrinkStation(){}
     static final class StationBlock extends KitchenBlock {
@@ -41,18 +36,18 @@ final class DrinkStation {
     }
     static final class StationEntity extends BlockEntity implements MenuProvider {
         UUID identity=UUID.randomUUID();final List<BlockPos> links=new ArrayList<>();
-        // ---- the potion storage: one kind (a single bottle as its pattern) and a count per slot -------------------------------------
+        // The potion storage: one kind (a single bottle as its pattern) and a count per slot
         final ItemStack[] kinds=new ItemStack[DrinkRules.STORAGE_SLOTS];final int[] counts=new int[DrinkRules.STORAGE_SLOTS];
         { Arrays.fill(kinds,ItemStack.EMPTY); }
-        // ---- the brewing stand: bottles 0-2, ingredient 3, blaze powder 4 ---------------------------------------------------------------
+        // The brewing stand: bottles 0-2, ingredient 3, blaze powder 4
         final SimpleContainer brew=new SimpleContainer(5){@Override public void setChanged(){super.setChanged();StationEntity.this.setChanged();}};
         int brewTime,fuel;private net.minecraft.world.item.Item ingredient;
-        /** The bottles the last brew made, by identity: they move to the storage when there is room; a bottle the player put there stays. */
+        /** The bottles the last brew made, by identity: they move to the storage when there is room */
         private final ItemStack[] fresh=new ItemStack[3];
-        // ---- the mixing table: potions 0-2, the Latte's cup 3, the Latte out 4, the sweetener in 5 -----------------------------------
+        // The mixing table: potions 0-2, the Latte's cup 3, the Latte out 4, the sweetener in 5
         final SimpleContainer mix=new SimpleContainer(6){@Override public void setChanged(){super.setChanged();StationEntity.this.setChanged();}};
         int tank;
-        /** The standing order (kept with the station, like the hall's): Latte or Brew Pot, the effects chosen, the sweetener steps. */
+        /** The standing order (kept with the station, like the hall's) */
         boolean latteMode;final List<ResourceLocation> order=new ArrayList<>();int steps;
         StationEntity(BlockPos pos,BlockState state){super(EternalDefense.DRINK_STATION_ENTITY.get(),pos,state);}
         int mk(){return getBlockState().getBlock() instanceof StationBlock b?b.mk:1;}
@@ -60,10 +55,10 @@ final class DrinkStation {
         int limit(){return latteMode?DrinkRules.latteEffects(mk()):tier().effects();}
         void setMode(boolean latte){if(latteMode!=latte){latteMode=latte;while(order.size()>limit())order.remove(order.size()-1);setChanged();}}
 
-        // ---- storage ------------------------------------------------------------------------------------------------------------------
+        // Storage
         int total(){int n=0;for(int c:counts)n+=c;return n;}
         static boolean storable(ItemStack stack){return DrinkData.isPotion(stack);}
-        /** Puts up to {@code amount} bottles like {@code stack} in: first with their own kind, then into empty slots. Returns how many went in. */
+        /** Puts up to amount bottles like stack in: first with their own kind, then into empty slots. */
         int insert(ItemStack stack,int amount){
             if(!storable(stack)||amount<=0)return 0;int left=amount;
             for(int i=0;i<kinds.length&&left>0;i++)if(!kinds[i].isEmpty()&&ItemStack.isSameItemSameTags(kinds[i],stack)){int n=Math.min(left,DrinkRules.PER_SLOT-counts[i]);counts[i]+=n;left-=n;}
@@ -75,7 +70,7 @@ final class DrinkStation {
             if(!storable(stack))return 0;int n=0;
             for(int i=0;i<kinds.length;i++)n+=kinds[i].isEmpty()?DrinkRules.PER_SLOT:ItemStack.isSameItemSameTags(kinds[i],stack)?DrinkRules.PER_SLOT-counts[i]:0;return n;
         }
-        /** Takes one bottle out of slot {@code i}. */
+        /** Takes one bottle out of slot i. */
         ItemStack takeOne(int i){
             if(i<0||i>=kinds.length||kinds[i].isEmpty()||counts[i]<=0)return ItemStack.EMPTY;
             var out=kinds[i].copyWithCount(1);if(--counts[i]<=0){counts[i]=0;kinds[i]=ItemStack.EMPTY;}setChanged();return out;
@@ -87,7 +82,7 @@ final class DrinkStation {
             return best;
         }
 
-        // ---- the brewing stand ---------------------------------------------------------------------------------------------------------
+        // The brewing stand
         private static final int[] BOTTLES={0,1,2};
         private net.minecraft.core.NonNullList<ItemStack> brewList(){var l=net.minecraft.core.NonNullList.withSize(5,ItemStack.EMPTY);for(int i=0;i<5;i++)l.set(i,brew.getItem(i));return l;}
         private boolean brewable(){var ing=brew.getItem(3);return !ing.isEmpty()&&BrewingRecipeRegistry.canBrew(brewList(),ing,BOTTLES);}
@@ -112,7 +107,7 @@ final class DrinkStation {
             for(int i=0;i<3;i++)fresh[i]=brew.getItem(i);
             level.levelEvent(1035,worldPosition,0);storeFresh();setChanged();
         }
-        /** Finished bottles of the last brew (a potion with an effect that the ingredient in the stand cannot brew further) go to the storage. */
+        /** Finished bottles of the last brew */
         void storeFresh(){
             var ing=brew.getItem(3);
             for(int i=0;i<3;i++){
@@ -122,14 +117,14 @@ final class DrinkStation {
             }
         }
 
-        // ---- the sweetener --------------------------------------------------------------------------------------------------------------
-        /** Pours a Regeneration potion from the sweetener slot into the tank when it fits; the empty bottle goes back to {@code who}. */
+        // The sweetener
+        /** Pours a Regeneration potion from the sweetener slot into the tank when it fits */
         boolean sweeten(ServerPlayer who){
             var in=mix.getItem(5);int mb=DrinkData.sweetener(in);if(mb==0||tank+mb>DrinkRules.TANK_MB)return false;
             tank+=mb;mix.removeItem(5,1);EternalDefense.give(who,new ItemStack(Items.GLASS_BOTTLE));setChanged();return true;
         }
 
-        // ---- Brew Pots ------------------------------------------------------------------------------------------------------------------
+        // Brew Pots
         boolean inRange(BlockPos pos){return worldPosition.distSqr(pos)<=DrinkRules.LINK_RANGE*DrinkRules.LINK_RANGE;}
         void prune(){if(level==null||level.isClientSide)return;boolean changed=links.removeIf(p->level.hasChunkAt(p)&&(!(level.getBlockEntity(p) instanceof BrewPot.PotEntity pot)||!pot.belongs(this)));if(changed)changed();}
         boolean link(BrewPot.PotEntity pot){
@@ -161,7 +156,7 @@ final class DrinkStation {
         }
         void changed(){setChanged();if(level!=null&&!level.isClientSide)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
 
-        // ---- saving ---------------------------------------------------------------------------------------------------------------------
+        // Saving
         @Override protected void saveAdditional(CompoundTag n){super.saveAdditional(n);saveShared(n);
             var store=new ListTag();for(int i=0;i<kinds.length;i++)if(!kinds[i].isEmpty()&&counts[i]>0){var t=kinds[i].save(new CompoundTag());t.putByte("Slot",(byte)i);t.putInt("Bottles",counts[i]);store.add(t);}n.put("Storage",store);
             n.put("Brew",items(brew));n.put("Mix",items(mix));n.putInt("BrewTime",brewTime);n.putInt("Fuel",fuel);if(ingredient!=null)n.putString("Ingredient",net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(ingredient).toString());
@@ -174,7 +169,7 @@ final class DrinkStation {
         @Override public void load(CompoundTag n){
             super.load(n);if(n.hasUUID("Identity"))identity=n.getUUID("Identity");links.clear();
             for(var t:n.getList("Pots",Tag.TAG_COMPOUND)){var p=BlockPos.of(((CompoundTag)t).getLong("Pos"));if(inRange(p)&&!links.contains(p)&&links.size()<3)links.add(p);}
-            if(!n.contains("Storage"))return; // the client's copy carries only the links
+            if(!n.contains("Storage"))return; // The client's copy carries only the links
             Arrays.fill(kinds,ItemStack.EMPTY);Arrays.fill(counts,0);
             for(var t:n.getList("Storage",Tag.TAG_COMPOUND)){var tag=(CompoundTag)t;int slot=tag.getByte("Slot");var stack=ItemStack.of(tag);if(slot<0||slot>=kinds.length||!storable(stack))continue;kinds[slot]=stack.copyWithCount(1);counts[slot]=Math.max(1,Math.min(DrinkRules.PER_SLOT,tag.getInt("Bottles")));}
             items(brew,n.getList("Brew",Tag.TAG_COMPOUND));items(mix,n.getList("Mix",Tag.TAG_COMPOUND));brewTime=Math.max(0,Math.min(DrinkRules.BREW_TICKS,n.getInt("BrewTime")));fuel=Math.max(0,Math.min(DrinkRules.FUEL_USES,n.getInt("Fuel")));

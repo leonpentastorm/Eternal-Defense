@@ -6,11 +6,11 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 0.0.22: the owner's supply and recall radio lines, the ammo recipes' factory parts, the minimum pay of a hunt. */
+/** The supply and recall radio lines, the ammo recipes' factory parts, the minimum pay of a hunt. */
 final class FlareVoiceAndAmmoTest {
     static String source(String name) throws Exception{return Files.readString(Path.of("src/main/java/dev/eternaldefense/beacon/"+name));}
 
-    // ---- the radio ------------------------------------------------------------------------------------------------------------------------
+    // The radio
     @Test void everyFlareHasItsOwnLines(){
         assertEquals("flare.chatter_3",SupportChatter.event(SupportCalls.Kind.FIRE,3),"the six fire support lines keep their names");
         assertEquals("flare.supply_chatter_2",SupportChatter.event(SupportCalls.Kind.SUPPLY,2));
@@ -29,7 +29,7 @@ final class FlareVoiceAndAmmoTest {
         assertTrue(script.contains("(\"Supplies flare chatter\", \"supply_chatter\", 2)")&&script.contains("(\"Recall flare chatter\", \"recall_chatter\", 3)"));
     }
 
-    // ---- ammo: twice the propellant, 20 percent more cartridge cases (rounded up) -------------------------------------------------------------
+    // Ammo: twice the propellant, 20 percent more cartridge cases (rounded up)
     @Test void ammoTakesTwiceThePropellantAndAFifthMoreCases(){
         for(int batch=1;batch<=256;batch++){
             int casesBefore=Math.max(1,(int)Math.ceil(batch/8.0)),propellantBefore=Math.max(1,(int)Math.ceil(batch/16.0));
@@ -54,7 +54,7 @@ final class FlareVoiceAndAmmoTest {
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class).getModifiers()),m+" is public");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class,String.class).getModifiers()),m+"(batch, id) is public");
     }
-    // ---- 0.0.26 (owner): weak special rounds keep one case and one propellant -----------------------------------------------------------------------
+    // Weak special rounds keep one case and one propellant
     @Test void weakSpecialRoundsKeepTheirOldPrice(){
         for(String id:List.of("hamster:flares_ammo","ronmc:bean_bag","ronmc:68pepperball","daffas_arsenal:water","bf1:medkit")){
             assertTrue(AmmoInputs.special(id),id+" is a weak special");
@@ -68,7 +68,7 @@ final class FlareVoiceAndAmmoTest {
         assertEquals(2,AmmoInputs.casings(1,"tacz:9mm"),"ordinary ammo is never as cheap as a flare");assertEquals(2,AmmoInputs.propellant(1,"tacz:9mm"));
         assertFalse(AmmoInputs.special(null));
     }
-    // ---- 0.0.26 (owner): every flare needs the cannon, the Return Flare too ---------------------------------------------------------------------------
+    // Every flare needs the cannon, the Return Flare too
     @Test void theReturnFlareNeedsTheCannon() throws Exception{
         String calls=source("SupportCalls.java");
         assertFalse(calls.contains("if(kind!=Kind.RETURN){"),"no flare is spared the cannon check");
@@ -77,7 +77,7 @@ final class FlareVoiceAndAmmoTest {
         assertTrue(gate>0&&!hunts.substring(gate,hunts.indexOf("\n    }",gate)).contains("SupportCalls.problem"),"an operation's return gate asks for no cannon");
     }
 
-    // ---- the owner's report: every operation paid 0 Ardent Energy and 1 coin --------------------------------------------------------------------
+    // The report: every operation paid 0 Ardent Energy and 1 coin
     @Test void huntsPayAndFightAtTheBeaconsNextPayoutTier() throws Exception{
         String hunts=source("Hunts.java"),warband=source("HuntWarband.java"),network=source("BeaconNetwork.java");
         assertTrue(hunts.contains("static int tier(ServerLevel l,CampaignData d){return Math.max(0,Math.min(10,BeaconNetwork.prospectiveTier(l.getServer(),d)));}"));
@@ -88,7 +88,7 @@ final class FlareVoiceAndAmmoTest {
         assertTrue(network.contains("prospective=prospectiveTier(p.server,d)"),"the beacon's Next payout uses the same function");
     }
 
-    // ---- a hunt always pays something ---------------------------------------------------------------------------------------------------------
+    // A hunt always pays something
     @Test void aHuntPaysAtLeastOneArdentAndTwoCoins() throws Exception{
         for(var kind:TacticalRules.Kind.values())for(int t=-2;t<=12;t++){
             var pay=Economy.hunt(kind,t);

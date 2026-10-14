@@ -7,7 +7,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.*;
 import java.util.*;
 
-/** Native items retain their armor, Curios, storage and plate behavior. Only acquisition changes. */
+/** Native items retain their armor, Curios, storage and plate behavior. */
 public final class ArmorPlatform {
     static final Set<String> MODS=Set.of("lrarmor","marbledsarsenal","fracturepoint","caps_awim_tactical_gear_rework","chovys_apocalypse_mod","omegarecon","tacticalvests","tactical_stuff");
     static final List<String> TYPES=List.of("all","head","vest","legs","boots","pouches","plates","vision","medical","explosives","melee","materials","field");

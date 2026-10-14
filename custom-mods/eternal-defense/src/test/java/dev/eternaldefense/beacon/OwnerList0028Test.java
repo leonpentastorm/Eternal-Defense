@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's list after 0.0.27 (0.0.28), the parts that need no world: the Exchange, the matrices, the recipe, the raid's receiver, the wood label, the gate grid. */
+/** The list the parts that need no world: the Exchange, the matrices, the recipe, the raid's receiver */
 final class OwnerList0028Test {
     static String file(String path) throws Exception{return Files.readString(Path.of(path));}
 

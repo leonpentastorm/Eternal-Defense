@@ -26,34 +26,27 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 
-/**
- * Forward Operating Bases, slice 1 (0.0.23): planting a FOB Beacon in a vanilla village, its activation raid (a vanilla raid, started with Bad
- * Omen I), immortal villagers outside that raid, the FOB shop, renaming, shovel removal and the operator commands. Server only.
- * <p>The raid: the planting player gets Bad Omen I and {@code Raids.createOrExtendRaid} is called at once (vanilla's own Bad Omen effect does
- * the same on its next tick); the raid's id is kept and its status polled once a second ({@code isVictory}, {@code isLoss}, {@code isStopped};
- * Forge 1.20.1 has no raid event). Vanilla only loses a raid when the village's beds and workstations are gone, never because villagers die,
- * so this also fails the raid when fewer than half of the villagers living there at its start are still alive ({@link FobRules#raidFailed}).
- */
+/** Forward Operating Bases: planting a FOB Beacon in a vanilla village, its activation raid */
 final class Fobs {
     private Fobs(){}
-    /** Persistent data key on a villager: the id of the FOB whose village it lives in (it stays protected wherever it walks). */
+    /** Persistent data key on a villager: the id of the FOB whose village it lives */
     static final String VILLAGER_TAG="eternalFob";
     /** Shop button ids (vanilla menu buttons, checked again here). */
     static final int BUY_SUPPLY=1,BUY_RETURN=2,BUY_FIRE=3,CALL_RAID=4,BUY_GATE=5,REPAIR=6,OUTLINE=7,BUY_CATAPULT=8;
-    /** 0.0.32: research buttons: 10 + what is given (0 emerald, 1 diamond, 2 Ardent Energy), + 3 for ten at once. */
+    /** Research buttons: 10 + what is given (0 emerald, 1 diamond, 2 Ardent Energy), + 3 for ten at once. */
     static final int RESEARCH=10,RESEARCH_TEN=3;
     static final List<String> RESEARCH_ITEMS=List.of("emerald","diamond","ardent");
-    /** The flares the FOB shop sells, at the Support Platform's prices ({@link SupportRules}). */
+    /** The flares the FOB shop sells, at the Support Platform's prices (SupportRules). */
     static final List<String> SHOP=List.of("supply","return","fire");
 
-    // ---- lookups ---------------------------------------------------------------------------------------------------------------------------
-    /** The FOB whose zone holds {@code pos} (any state), or null. Overworld only; cheap: the zones are cached. */
+    // Lookups
+    /** The FOB whose zone holds pos (any state), or null. */
     static FobData.Fob zoneAt(ServerLevel l,BlockPos pos){
         if(l.dimension()!=Level.OVERWORLD)return null;
         for(var f:FobData.get(l).fobs.values())if(FobZone.contains(FobZone.of(l,f),pos))return f;
         return null;
     }
-    /** The ACTIVE FOB whose zone holds {@code pos} (the meal bonus and the shop work only there), or null. */
+    /** The ACTIVE FOB whose zone holds pos (the meal bonus and the shop work only there), or null. */
     static FobData.Fob workingZoneAt(ServerLevel l,BlockPos pos){var f=zoneAt(l,pos);return f!=null&&FobRules.working(f.state)?f:null;}
     static FobData.Fob nearest(ServerLevel l,BlockPos pos){
         FobData.Fob best=null;double d=Double.MAX_VALUE;
@@ -62,10 +55,10 @@ final class Fobs {
     }
     static boolean raidsPossible(ServerLevel l){return l.getDifficulty()!=Difficulty.PEACEFUL&&!l.getGameRules().getBoolean(GameRules.RULE_DISABLE_RAIDS)&&l.dimensionType().hasRaids();}
 
-    // ---- planting -------------------------------------------------------------------------------------------------------------------------------
-    /** Why a FOB Beacon cannot be planted at {@code pos}: a key under {@code fob.refused.}, or null. */
+    // Planting
+    /** Why a FOB Beacon cannot be planted at pos: a key under fob.refused., or null. */
     static String plantProblem(ServerLevel l,BlockPos pos){return plantProblem(l,pos,l.dimension()==Level.OVERWORLD?FobZone.sections(l,pos):Set.of());}
-    /** As above with the spot's zone already worked out (the planting preview, {@link FobOutline}). */
+    /** As above with the spot's zone already worked out (the planting preview, FobOutline). */
     static String plantProblem(ServerLevel l,BlockPos pos,Set<Long> zone){
         if(l.dimension()!=Level.OVERWORLD)return "overworld";
         var d=FobData.get(l);boolean beacon=CampaignData.get(l.getServer().overworld()).installed();
@@ -73,7 +66,7 @@ final class Fobs {
         for(var f:d.fobs.values())if(FobZone.contains(zone,f.pos)||FobZone.contains(FobZone.of(l,f),pos)){taken=true;break;}
         return FobRules.plantProblem(beacon,d.fobs.size(),raidsPossible(l),!zone.isEmpty(),taken,zone.isEmpty()?0:FobZone.villagers(l,zone).size());
     }
-    /** A FOB Beacon was placed by a player: the FOB is made, its villagers taken under protection, and the activation raid called. */
+    /** A FOB Beacon was placed by a player: the FOB is made, its villagers taken under protection */
     static void planted(ServerLevel l,BlockPos pos,ServerPlayer p){
         var d=FobData.get(l);if(d.at(pos)!=null)return;
         var f=d.add(pos,SectionPos.asLong(SectionPos.blockToSectionCoord(pos.getX()),SectionPos.blockToSectionCoord(pos.getY()),SectionPos.blockToSectionCoord(pos.getZ())),l.getGameTime());
@@ -84,12 +77,9 @@ final class Fobs {
         String problem=callRaid(l,f,p);
         if(problem!=null)say(p,"fob.raid."+problem);
     }
-    /**
-     * 0.0.34 (owner): the war horn (the owner's recording) sounds from the FOB Beacon when the FOB is planted and when its raid starts
-     * (the activation raid and an SOS raid). Volume 8: heard 128 blocks around.
-     */
+    /** The war horn sounds from the FOB Beacon when the FOB is planted and when its raid starts */
     static final float HORN_VOLUME=8f;
-    /** The horn is about 12 seconds long: planting starts the activation raid at once, so one horn sounds for both, never two together. */
+    /** The horn is about 12 seconds long: planting starts the activation raid at once, so one horn sounds for both */
     static final int HORN_TICKS=240;
     private static final Map<Long,Long> LAST_HORN=new HashMap<>();
     static void horn(ServerLevel l,FobData.Fob f){
@@ -100,7 +90,7 @@ final class Fobs {
     }
     /** Horns sounded since the server started (for tests). */
     static int hornsSounded;
-    /** Starts the FOB's raid with this player's Bad Omen I: null when it started, else why not (a key under {@code fob.raid.}). */
+    /** Starts the FOB's raid with this player's Bad Omen I */
     static String callRaid(ServerLevel l,FobData.Fob f,ServerPlayer p){
         if(!FobRules.mayCallRaid(f.state,f.raidRunning()))return "not_now";
         if(!raidsPossible(l))return "impossible";
@@ -115,7 +105,7 @@ final class Fobs {
         refreshScreens(l,f);return null;
     }
 
-    // ---- the raid, once a second -------------------------------------------------------------------------------------------------------------------
+    // The raid, once a second
     static void tick(ServerLevel l,int clock){
         if(clock%20!=0||l.getServer().getPlayerList().getPlayerCount()==0)return;
         var d=FobData.get(l);
@@ -126,21 +116,21 @@ final class Fobs {
                 var outcome=FobRules.outcome(raid!=null,raid!=null&&raid.isVictory(),raid!=null&&raid.isLoss(),raid!=null&&raid.isStopped());
                 if(outcome==FobRules.Outcome.RUNNING){
                     if(loaded&&FobRules.raidFailed(f.raidVillagers,livingVillagers(l,f))){
-                        // our own fail rule: the vanilla raid is stopped (its bar goes away) and the FOB goes down
+                        // The mod's own fail rule: the vanilla raid is stopped (its bar goes away) and the FOB goes down
                         raid.stop();end(l,f,FobRules.Outcome.LOST,true);
                     }
                 }else end(l,f,outcome,false);
             }
             if(loaded&&clock%FobRules.ZONE_REFRESH_TICKS==0)tagVillagers(l,f);
         }
-        FobSos.second(l,d);   // the SOS clock, the open SOS and its raid (0.0.25)
+        FobSos.second(l,d);   // The SOS clock, the open SOS and its raid
     }
-    /** A raid at the FOB ended: won makes it ACTIVE, lost makes it DOWN, no result leaves it as it was (the raid can be called again). */
+    /** A raid at the FOB ended: won makes it ACTIVE, lost makes it DOWN */
     static void end(ServerLevel l,FobData.Fob f,FobRules.Outcome outcome,boolean villagersLost){
         var d=FobData.get(l);var before=f.state;f.raidId=0;f.state=FobRules.after(f.state,outcome);
         if(outcome==FobRules.Outcome.WON)f.activated=true;
         d.setDirty();
-        if(!FobSos.raidEnded(l,f,outcome))switch(outcome){   // an SOS raid is told by the SOS (0.0.25)
+        if(!FobSos.raidEnded(l,f,outcome))switch(outcome){   // An SOS raid is told by the SOS
             case WON->announce(l,Component.translatable("gui.eternal_defense.fob.won",f.name));
             case LOST->announce(l,Component.translatable(villagersLost?"gui.eternal_defense.fob.lost_villagers":"gui.eternal_defense.fob.lost",f.name));
             default->announce(l,Component.translatable("gui.eternal_defense.fob.raid_over",f.name));
@@ -148,7 +138,7 @@ final class Fobs {
         log("{}: raid ended {} ({} -> {})",f.name,outcome,before,f.state);
         refreshScreens(l,f);
     }
-    /** The villagers of this FOB still alive in the loaded world (tagged ones, wherever they ran to near the village). */
+    /** The villagers of this FOB still alive in the loaded world */
     static int livingVillagers(ServerLevel l,FobData.Fob f){
         var box=FobZone.box(FobZone.of(l,f));if(box==null)box=new net.minecraft.world.phys.AABB(f.pos);
         return l.getEntitiesOfClass(Villager.class,box.inflate(48),v->v.isAlive()&&v.getPersistentData().getLong(VILLAGER_TAG)==f.id).size();
@@ -161,16 +151,16 @@ final class Fobs {
             if(id!=f.id&&(id==0||d.byId(id)==null))v.getPersistentData().putLong(VILLAGER_TAG,f.id);
         }
         int alive=livingVillagers(l,f);
-        if(alive!=f.workers){f.workers=alive;d.setDirty();}   // the villagers set what a trip is worth
+        if(alive!=f.workers){f.workers=alive;d.setDirty();}   // The villagers set what a trip is worth
         return alive;
     }
 
-    // ---- the villagers are immortal, except during a raid at their FOB ---------------------------------------------------------------------------
-    /** Pure: is this hit on a villager cancelled? Only for a villager of an existing FOB with no raid running, and never for /kill or the void. */
+    // The villagers are immortal, except during a raid at their FOB
+    /** Pure: is this hit on a villager cancelled? */
     static boolean protect(boolean fobExists,boolean raidRunning,boolean bypassesInvulnerability){return fobExists&&!raidRunning&&!bypassesInvulnerability;}
 
-    // ---- the shop, renaming, removal ------------------------------------------------------------------------------------------------------------
-    /** A click on the FOB Beacon: always a fresh screen (a menu the server still thinks open may be gone on the client). */
+    // The shop, renaming, removal
+    /** A click on the FOB Beacon: always a fresh screen */
     static void open(ServerPlayer p,BlockPos pos){open(p,pos,"",true);}
     /** After a button or a change: the open screen is refreshed in place. */
     static void open(ServerPlayer p,BlockPos pos,String message){open(p,pos,message,false);}
@@ -197,17 +187,17 @@ final class Fobs {
         n.putInt("energy",ArdentEnergy.balance(p));n.putBoolean("creative",p.isCreative());
         var base=SupportData.get(l).of(p.getUUID());n.putBoolean("hasPlatform",base!=null&&base.platform!=null);n.putBoolean("hasCannon",base!=null&&base.cannon!=null);
         for(String id:SHOP)n.putInt("price."+id,price(id));
-        // the second listing (0.0.24): this FOB's Supply Delivery Gate, one per FOB
+        // The second listing: this FOB's Supply Delivery Gate, one per FOB
         n.putBoolean("hasGate",f.deliveryGate!=null);n.put("gateCost",WeaponPlatform.costTags(Supply.pack(p),Economy.fabrication("supply_delivery_gate")));
-        // 0.0.40 (owner): the Supply Catapult can be built here too, for the same materials as at Workshop Fabrication (paid from the pack: a FOB is outside the Home Zone)
+        // The Supply Catapult can be built here too, for the same materials as at Workshop Fabrication
         n.put("catapultCost",WeaponPlatform.costTags(Supply.pack(p),Economy.fabrication("supply_catapult")));
-        // the tribute (0.0.31): the loot slots, the next delivery, the storage at the Receiving Gate
+        // The tribute: the loot slots, the next delivery, the storage at the Receiving Gate
         Routes.tribute(f,n);n.putBoolean("hasRoute",f.hasRoute()&&f.commissioned);
-        n.putInt("villagers",villagers);   // 0.0.32: the tribute writes its own villagers (the workers, at most 20); the screen shows the living ones
-        for(int i=0;i<RESEARCH_ITEMS.size();i++)n.putInt("carry."+RESEARCH_ITEMS.get(i),carried(p,researchItem(i)));   // 0.0.32: for the research tab
+        n.putInt("villagers",villagers);   // The tribute writes its own villagers (the workers, at most 20); the screen shows the living ones
+        for(int i=0;i<RESEARCH_ITEMS.size();i++)n.putInt("carry."+RESEARCH_ITEMS.get(i),carried(p,researchItem(i)));   // For the research tab
         n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-FobData.get(l).onlineTicks):-1);
-        FobSos.state(FobData.get(l),f,n);   // the SOS, the lost villagers and the repair (0.0.25)
-        n.putString("catapult",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),"online"));   // 0.0.34 (owner): online or why not
+        FobSos.state(FobData.get(l),f,n);   // The SOS, the lost villagers and the repair
+        n.putString("catapult",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),"online"));   // Online or why not
         n.putString("message",message);
         return n;
     }
@@ -222,14 +212,14 @@ final class Fobs {
         if(id==BUY_CATAPULT){String result=buyCatapult(p,f);log("{}: {} asked for a Supply Catapult: {}",f.name,p.getGameProfile().getName(),result);open(p,pos,result);return;}
         if(id==REPAIR){String result=FobSos.repair(p,f);open(p,pos,result);return;}
         if(id>=RESEARCH&&id<RESEARCH+2*RESEARCH_TEN){int kind=(id-RESEARCH)%RESEARCH_TEN;open(p,pos,research(l,f,p,kind,id-RESEARCH>=RESEARCH_TEN?10:1));return;}
-        if(id==OUTLINE){   // 0.0.30: the zone outline of this FOB, on or off for everyone
+        if(id==OUTLINE){   // The zone outline of this FOB, on or off for everyone
             f.showZone=!f.showZone;FobData.get(l).setDirty();log("{}: {} turned the zone outline {}",f.name,p.getGameProfile().getName(),f.showZone?"on":"off");
             refreshScreens(l,f);return;
         }
         int index=id-BUY_SUPPLY;if(index<0||index>=SHOP.size())return;
         String item=SHOP.get(index);
         if(!FobRules.working(f.state)){open(p,pos,"fob.result.closed");return;}
-        if(!ArdentEnergy.spend(Supply.pack(p),price(item))){open(p,pos,"fob.result.no_energy");return;}   // 0.0.40: outside the Home Zone, the pack alone
+        if(!ArdentEnergy.spend(Supply.pack(p),price(item))){open(p,pos,"fob.result.no_energy");return;}   // Outside the Home Zone, the pack alone
         var stack=new ItemStack(flare(item));if(!p.getInventory().add(stack))p.drop(stack,false);
         log("{}: {} bought a {} flare",f.name,p.getGameProfile().getName(),item);
         open(p,pos,"fob.result.bought."+item);
@@ -238,15 +228,12 @@ final class Fobs {
     static int researchXp(int kind){return switch(kind){case 0->RouteRules.XP_EMERALD;case 1->RouteRules.XP_DIAMOND;default->RouteRules.XP_ARDENT;};}
     static net.minecraft.world.item.Item researchItem(int kind){return switch(kind){case 0->net.minecraft.world.item.Items.EMERALD;case 1->net.minecraft.world.item.Items.DIAMOND;default->EternalDefense.ARDENT_ENERGY.get();};}
     static int carried(net.minecraft.world.entity.player.Player p,net.minecraft.world.item.Item item){int n=0;for(var s:p.getInventory().items)if(s.is(item))n+=s.getCount();for(var s:p.getInventory().offhand)if(s.is(item))n+=s.getCount();return n;}
-    /** 0.0.40 (owner): a Supply Catapult built at the FOB Beacon, the same materials as at Workshop Fabrication, from the pack (the FOB is outside the Home Zone). */
+    /** A Supply Catapult built at the FOB Beacon, the same materials as at Workshop Fabrication */
     static String buyCatapult(ServerPlayer p,FobData.Fob f){
         if(!FobRules.working(f.state))return "fob.result.closed";
         return WeaponPlatform.transact(Supply.pack(p),Economy.fabrication("supply_catapult"),new ItemStack(EternalDefense.SUPPLY_CATAPULT_ITEM.get()))?"fob.result.bought.catapult":"fob.result.no_materials";
     }
-    /**
-     * 0.0.32 (owner): gives up to {@code count} emeralds, diamonds or Ardent Energy to the FOB's research (creative players give for free),
-     * never more than the last level needs; a new level is announced with what it opens. Returns the screen's message.
-     */
+    /** Gives up to count emeralds, diamonds or Ardent Energy to the FOB's research (creative players give for free) */
     static String research(ServerLevel l,FobData.Fob f,ServerPlayer p,int kind,int count){
         if(!FobRules.working(f.state))return "fob.research.closed";
         int before=f.level();if(before>=RouteRules.MAX_LEVEL)return "fob.research.max";
@@ -264,7 +251,7 @@ final class Fobs {
         log("{}: {} gave {} {} to the research ({} points, level {})",f.name,p.getGameProfile().getName(),n,RESEARCH_ITEMS.get(kind),f.researchXp,f.level());
         int after=f.level();
         if(after>before){
-            // every unlock passed is told (a big gift can pass several): the A tier, the S tier, the Supply Catapult and Specialty Shop (0.0.34)
+            // Every unlock passed is told (a big gift can pass several)
             var opens=new ArrayList<String>();
             if(after>=RouteRules.UNLOCK_A&&before<RouteRules.UNLOCK_A)opens.add(".a");
             if(after>=RouteRules.UNLOCK_S&&before<RouteRules.UNLOCK_S)opens.add(".s");
@@ -278,7 +265,7 @@ final class Fobs {
         }
         return "fob.research.given";
     }
-    /** A renamed Name Tag used on the FOB Beacon renames the FOB (the tag is used up); names are unique per beacon, any case. */
+    /** A renamed Name Tag used on the FOB Beacon renames the FOB (the tag is used up) */
     static void rename(ServerPlayer p,BlockPos pos,ItemStack tag){
         var l=p.serverLevel();var d=FobData.get(l);var f=d.at(pos);
         if(f==null){say(p,"fob.unregistered");return;}
@@ -290,22 +277,22 @@ final class Fobs {
         announce(l,Component.translatable("gui.eternal_defense.fob.renamed",old,name));
         refreshScreens(l,f);
     }
-    /** The Recovery Shovel on a FOB Beacon asks first (the beacon's own confirm screen); an unregistered one is just picked up. */
+    /** The Recovery Shovel on a FOB Beacon asks first (the beacon's own confirm screen) */
     static void requestRemoval(ServerPlayer p,BlockPos clicked){
         var l=p.serverLevel();var root=DefenseStructures.anchor(l,clicked);var f=FobData.get(l).at(root);
         if(f==null){l.removeBlock(root,false);give(p);say(p,"fob.removed_plain");return;}
         BeaconActions.requestFobRemoval(p,f.id,f.name);
     }
-    /** The confirmed removal: the FOB is deleted, its raid stopped, its villagers mortal again; the FOB Beacon goes back to the player. */
+    /** The confirmed removal: the FOB is deleted, its raid stopped, its villagers mortal again */
     static boolean remove(ServerPlayer p,long id){
         var l=p.server.overworld();var d=FobData.get(l);var f=d.byId(id);
         if(f==null||p.level()!=l||p.distanceToSqr(f.pos.getX()+.5,f.pos.getY()+.5,f.pos.getZ()+.5)>64)return false;
         if(f.raidRunning()){var raid=l.getRaids().get(f.raidId);if(raid!=null)raid.stop();}
-        FobSos.removed(l,f);   // an SOS of this FOB is called off (0.0.25)
-        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);   // its gates turn UNLINKED by themselves
+        FobSos.removed(l,f);   // An SOS of this FOB is called off
+        d.fobs.remove(f.id);d.setDirty();FobZone.forget(f.id);Routes.RUNS.remove(f.id);   // Its gates turn UNLINKED by themselves
         if(l.getBlockState(f.pos).is(EternalDefense.FOB_BEACON.get()))l.removeBlock(f.pos,false);
         give(p);
-        int handed=Routes.spill(l,f,p);if(handed>0)say(p,"fob.removed_storage",handed);   // 0.0.31: what its storage held goes to the player
+        int handed=Routes.spill(l,f,p);if(handed>0)say(p,"fob.removed_storage",handed);   // What its storage held goes to the player
         announce(l,Component.translatable("gui.eternal_defense.fob.removed",p.getDisplayName(),f.name));
         log("{} removed by {}",f.name,p.getGameProfile().getName());
         return true;
@@ -323,24 +310,20 @@ final class Fobs {
         for(var p:l.getServer().getPlayerList().getPlayers())if(p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.pos.equals(f.pos))open(p,f.pos,"");
     }
 
-    // ---- the status card --------------------------------------------------------------------------------------------------------------------------
-    /** The FOB line of a player's status card: the FOB they stand in, and how many there are (shown while they hold the shovel). */
+    // The status card
+    /** The FOB line of a player's status card: the FOB they stand */
     static void status(ServerPlayer p,CompoundTag n){
         if(p.level().dimension()!=Level.OVERWORLD)return;
         var l=p.serverLevel();var d=FobData.get(l);if(d.fobs.isEmpty())return;
-        FobSos.status(d,n);   // an open SOS is on every card (0.0.25)
+        FobSos.status(d,n);   // An open SOS is on every card
         n.putInt("fobPlaced",d.fobs.size());n.putInt("fobActive",d.count(FobRules.State.ACTIVE));
         var f=zoneAt(l,p.blockPosition());if(f==null)return;
         var here=new CompoundTag();here.putString("name",f.name);here.putString("state",f.state.id());here.putBoolean("raid",f.raidRunning());
         here.putInt("villagers",FobZone.villagers(l,FobZone.of(l,f)).size());n.put("fobHere",here);
     }
 
-    // ---- operator commands ----------------------------------------------------------------------------------------------------------------------
-    /**
-     * {@code /eternaldefense fob list|status|complete|reset|deliver|overdue|sos [expire]} (operators): all but list act on the FOB nearest to the player.
-     * deliver brings its next delivery by itself forward to now (0.0.24); overdue lets its route inspection run out within a second; sos calls
-     * an SOS now at the nearest ACTIVE FOB, sos expire lets the open SOS run out within a second (0.0.25).
-     */
+    // Operator commands
+    /** /eternaldefense fob list|status|complete|reset|deliver|overdue|sos [expire] (operators) */
     static LiteralArgumentBuilder<CommandSourceStack> command(){
         return Commands.literal("fob").requires(s->s.hasPermission(2))
             .then(Commands.literal("list").executes(c->{
@@ -392,7 +375,7 @@ final class Fobs {
             +(f.hasRoute()?", route "+(f.commissioned?"open (T "+f.baseline+" ticks, inspection "+f.clock+" ticks)":"not ridden yet"):f.deliveryGate!=null||f.receivingGate!=null?", one gate placed":"");
     }
 
-    // ---- small helpers ----------------------------------------------------------------------------------------------------------------------------
+    // Small helpers
     static void announce(ServerLevel l,Component text){
         var line=Component.literal("[FOB] ").withStyle(ChatFormatting.DARK_GREEN).append(text.copy().withStyle(ChatFormatting.GRAY));
         l.getServer().getPlayerList().broadcastSystemMessage(line,false);
@@ -400,19 +383,16 @@ final class Fobs {
     static void say(ServerPlayer p,String key,Object... args){p.displayClientMessage(Component.translatable("gui.eternal_defense."+key,args),true);}
     private static void log(String text,Object... args){com.mojang.logging.LogUtils.getLogger().info("[fob] "+text,args);}
 
-    /**
-     * Named FobEvents, not Events: Forge names the class it generates per handler after the class's simple name, the method and the event,
-     * so a second {@code Events.attack(LivingAttackEvent)} in this package (RaidAdaptation has one) crashes the game (FobTest checks it).
-     */
+    /** Named FobEvents, not Events: Forge names the class it generates per handler after the class's simple name */
     static final class FobEvents {
-        /** Villagers of a FOB cannot be hurt while no raid runs at it (any damage: players, mobs, fire, falls), except /kill and the void. */
+        /** Villagers of a FOB cannot be hurt while no raid runs at it */
         @SubscribeEvent(priority=EventPriority.HIGHEST) public void attack(LivingAttackEvent e){
             if(!(e.getEntity() instanceof Villager v)||!(v.level() instanceof ServerLevel l))return;
             long id=v.getPersistentData().getLong(VILLAGER_TAG);if(id==0)return;
             var f=FobData.get(l).byId(id);
             if(protect(f!=null,f!=null&&f.raidRunning(),e.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)))e.setCanceled(true);
         }
-        /** Lightning would turn one into a witch without hurting it first (vanilla's thunderHit): the same protection applies. */
+        /** Lightning would turn one into a witch without hurting it first (vanilla's thunderHit) */
         @SubscribeEvent(priority=EventPriority.HIGHEST) public void lightning(net.minecraftforge.event.entity.EntityStruckByLightningEvent e){
             if(!(e.getEntity() instanceof Villager v)||!(v.level() instanceof ServerLevel l))return;
             long id=v.getPersistentData().getLong(VILLAGER_TAG);if(id==0)return;
@@ -420,10 +400,10 @@ final class Fobs {
             if(protect(f!=null,f!=null&&f.raidRunning(),false))e.setCanceled(true);
         }
         @SubscribeEvent public void started(net.minecraftforge.event.server.ServerStartedEvent e){FobZone.clear();FobOutline.clear();}
-        /** A player who comes back or changes dimension gets the outlines again at once (0.0.30). */
+        /** A player who comes back or changes dimension gets the outlines again at once. */
         @SubscribeEvent public void outlineLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e){if(e.getEntity() instanceof ServerPlayer p)FobOutline.forget(p);}
         @SubscribeEvent public void outlineTravel(net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent e){if(e.getEntity() instanceof ServerPlayer p)FobOutline.forget(p);}
-        /** A FOB's villager killed while a raid runs at its FOB is recorded for the repair (0.0.25). */
+        /** A FOB's villager killed while a raid runs at its FOB is recorded for the repair. */
         @SubscribeEvent(priority=EventPriority.LOWEST) public void death(net.minecraftforge.event.entity.living.LivingDeathEvent e){
             if(e.isCanceled()||!(e.getEntity() instanceof Villager v)||!(v.level() instanceof ServerLevel l))return;
             long id=v.getPersistentData().getLong(VILLAGER_TAG);if(id==0)return;

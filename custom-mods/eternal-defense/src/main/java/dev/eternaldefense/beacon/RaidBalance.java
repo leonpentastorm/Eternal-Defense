@@ -8,7 +8,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.*;
 import net.minecraft.resources.ResourceLocation;
 
-/** Solo-first encounter roles. More defenders buy reinforcement pressure, never tougher ordinary zombies. */
+/** Solo-first encounter roles. */
 final class RaidBalance {
     static int defenders(ServerLevel level,CampaignData d){
         return Math.max(1,Math.min(8,(int)level.players().stream().filter(p->p.isAlive()&&!p.isSpectator()&&!p.isCreative()&&EternalDefense.near(p,d)).count()));
@@ -41,11 +41,7 @@ final class RaidBalance {
         if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
         if(heavy){mob.setCustomName(Component.literal("HEAVY — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);}
     }
-    /**
-     * The weapon a ranged raider needs: a skeleton or stray gets a bow, a pillager a crossbow. Raid mobs are made without vanilla's
-     * {@code finalizeSpawn} (which would add random gear), so without this a skeleton had no bow: it fought like a zombie and, as its
-     * beacon goal is a bow attack, never walked to the beacon. Called before the mob joins the world, so the beacon goals see the weapon.
-     */
+    /** The weapon a ranged raider needs: a skeleton or stray gets a bow, a pillager a crossbow. */
     static void arm(Mob mob){
         if(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton&&!(mob.getMainHandItem().getItem() instanceof BowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.BOW));
         else if(mob instanceof net.minecraft.world.entity.monster.Pillager&&!(mob.getMainHandItem().getItem() instanceof CrossbowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.CROSSBOW));

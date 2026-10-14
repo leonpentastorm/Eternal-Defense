@@ -7,12 +7,12 @@ import static dev.eternaldefense.beacon.TerrainProbe.Hazard.*;
 import static dev.eternaldefense.beacon.TerrainProbe.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The pure decisions behind raider gates: the terrain probe, the channel clock, damage delay, which gate a raider joins. */
+/** The pure decisions behind raider gates: the terrain probe, the channel clock, damage delay */
 final class RaiderGateTest {
     private static final long S=RaidMarch.TICKS_PER_SECOND;
     private static int[] flat(int n,int y){int[] s=new int[n];Arrays.fill(s,y);return s;}
 
-    // ---- the probe (look-ahead and destination check share it) -----------------------------------------------------------------------
+    // The probe (look-ahead and destination check share it)
     @Test void flatDryGroundIsClear(){
         assertEquals(NONE,TerrainProbe.probe(flat(11,64),new boolean[11],new boolean[11],1));
     }
@@ -41,7 +41,7 @@ final class RaiderGateTest {
         assertEquals(FLUID,TerrainProbe.probe(flat(11,64),fluid,new boolean[11],1));
         fluid=new boolean[11];for(int i=2;i<9;i++)fluid[i]=true; // 7 in a row
         assertEquals(NONE,TerrainProbe.probe(flat(11,64),fluid,new boolean[11],1),"seven blocks of water can be waded");
-        fluid=new boolean[11];for(int i=4;i<7;i++)fluid[i]=true; // a 3-wide pond
+        fluid=new boolean[11];for(int i=4;i<7;i++)fluid[i]=true; // A 3-wide pond
         assertEquals(NONE,TerrainProbe.probe(flat(11,64),fluid,new boolean[11],1),"a short pond must not trigger");
         assertEquals(8,RaidMarch.GATE_FLUID_SPAN);
     }
@@ -71,7 +71,7 @@ final class RaiderGateTest {
         assertEquals(DROP,TerrainProbe.probe(surface,fluid,lava,1));lava[9]=true;assertEquals(LAVA,TerrainProbe.probe(surface,fluid,lava,1));
     }
 
-    // ---- channel clock ---------------------------------------------------------------------------------------------------------------
+    // Channel clock
     @Test void aChannelLastsEightSecondsUndisturbed(){
         assertEquals(1000+8*S,RaiderGates.completeAt(1000,0));assertEquals(8,RaidMarch.CHANNEL_SECONDS);
     }
@@ -89,7 +89,7 @@ final class RaiderGateTest {
         assertEquals(3,RaidMarch.TELEGRAPH_SECONDS);
     }
 
-    // ---- which gate a raider uses ----------------------------------------------------------------------------------------------------
+    // Which gate a raider uses
     @Test void aStuckRaiderJoinsTheNearestGateWithinEightBlocks(){
         var gates=List.of(new Vec3(0,64,0),new Vec3(20,64,0),new Vec3(10,64,0));
         assertEquals(1,RaiderGates.nearestGate(gates,new Vec3(24,64,0),RaidMarch.GATE_JOIN_RADIUS));
@@ -105,12 +105,12 @@ final class RaiderGateTest {
         assertFalse(RaiderGates.hasRoom(RaidMarch.GATE_CAPACITY));assertFalse(RaiderGates.hasRoom(9));assertEquals(8,RaidMarch.GATE_CAPACITY);
     }
     @Test void aGateStandsBesideTheRaiderNotInFrontOfIt(){
-        var spot=RaiderGates.gateSpot(new Vec3(100,64,0),new Vec3(0,64,0)); // marching along -x: the gate is 1.6 blocks to the side
+        var spot=RaiderGates.gateSpot(new Vec3(100,64,0),new Vec3(0,64,0)); // Marching along -x: the gate is 1.6 blocks to the side
         assertEquals(100,spot.x,1e-9);assertEquals(64,spot.y,1e-9);assertEquals(1.6,Math.abs(spot.z),1e-9);
         var onTop=RaiderGates.gateSpot(new Vec3(5,70,5),new Vec3(5,64,5));assertEquals(1.6,Math.hypot(onTop.x-5,onTop.z-5),1e-9,"even when it stands over the beacon");
     }
 
-    // ---- escalation, in gates --------------------------------------------------------------------------------------------------------
+    // Escalation, in gates
     @Test void thirdGateThenWithdraw(){
         assertEquals(3,RaidMarch.MAX_GATES);
         assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(0,false));assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(2,false));

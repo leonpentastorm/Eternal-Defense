@@ -49,7 +49,7 @@ public final class BeaconStartup {
         if(!net.minecraftforge.fml.ModList.get().isLoaded("entityculling")){cullingReady=true;return;}
         try{
             Class<?> api=Class.forName("dev.tr7zw.entityculling.EntityCullingModBase");Object instance=api.getField("instance").get(null);if(instance==null)return;
-            // The installed mod already exempts vanilla beacons. Extend its native whitelist only.
+            // The installed mod already exempts vanilla beacons.
             ((Set<Object>)api.getField("blockEntityWhitelist").get(instance)).add(EternalDefense.BEACON_ENTITY.get());
             Object config=api.getField("config").get(instance);
             ((Set<String>)config.getClass().getField("blockEntityWhitelist").get(config)).add("eternal_defense:defense_beacon");((Set<String>)config.getClass().getField("blockEntityWhitelist").get(config)).add("eternal_defense:station");cullingReady=true;

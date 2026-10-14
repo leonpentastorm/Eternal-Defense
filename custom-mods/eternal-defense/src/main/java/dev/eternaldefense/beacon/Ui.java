@@ -12,24 +12,20 @@ import net.minecraft.locale.Language;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Shared look of every Eternal Defense screen: dark steel, brass trim and cyan instrument light.
- * Everything is drawn from rectangles so panels scale to any GUI size without stretched textures.
- * Colours follow ARTIST-BRIEF.md; orange is reserved for requirements and red for danger.
- */
+/** Shared look of every Eternal Defense screen: dark steel, brass trim and cyan instrument light. */
 final class Ui {
     private Ui(){}
     static final int NAVY=0xff111e28,DEEP=0xff0a1218,SLATE=0xff1c303d,SLATE_HI=0xff2a4555,EDGE=0xff3d5c6d,
         CYAN=0xff5ae2df,CYAN_DIM=0xff2f8d8c,CYAN_FILL=0xff17424a,MUTED=0xff9fb3bc,INK=0xffedf5f8,
         BRASS=0xffc9a24b,BRASS_DK=0xff7d6428,ORANGE=0xffffa36c,RED=0xffed7369,RED_FILL=0xff4a1f21,
         TRACK=0xff354c59,DISABLED=0xff74888f,SHADOW=0xff05090d;
-    /** Rarity, as in loot games: blue, purple, gold (the Tactical Operations classes, 0.0.21). */
+    /** Rarity, as in loot games: blue, purple, gold. */
     static final int RARE_BLUE=0xff4f9dff,EPIC_PURPLE=0xffb57bff,LEGEND_GOLD=0xffffc23d;
     /** Age accents are always printed beside the written Age name; colour is never the only cue. */
     static final int[] AGE={0xffedf5f8,0xffe8c17b,0xffa7ca8b,0xff6cd4ef,0xffc29aff,0xffff86bd,0xffedf5f8,0xffe8b85c,0xffffa36c,0xffb7e3b2,0xffedf5f8,0xff6cd4ef};
 
-    // ---- text ---------------------------------------------------------------------------------
-    /** Translatable text in this mod's {@code gui.eternal_defense} namespace. */
+    // Text
+    /** Translatable text in this mod's gui.eternal_defense namespace. */
     static Component t(String key,Object... args){return Component.translatable("gui.eternal_defense."+key,args);}
     static boolean has(String key){return I18n.exists("gui.eternal_defense."+key);}
     static String plain(String key,Object... args){return t(key,args).getString();}
@@ -39,10 +35,7 @@ final class Ui {
         int dots=font.width("…");
         return FormattedCharSequence.composite(Language.getInstance().getVisualOrder(font.substrByWidth(text,Math.max(0,width-dots))),FormattedCharSequence.forward("…",Style.EMPTY));
     }
-    /**
-     * For the real-client checks only (null in play): each text the helpers below draw adds its box and words here, so a check can prove
-     * that no two texts and no text and button overlap, and which texts were cut short. Boxes are in the screen's own coordinates.
-     */
+    /** For the real-client checks only (null in play): each text the helpers below draw adds its box and words here */
     static List<Drawn> drawn;
     record Drawn(int x,int y,int w,int h,boolean cut,String text){}
     private static void drawn(Font font,FormattedCharSequence row,int x,int y,boolean cut){
@@ -51,7 +44,7 @@ final class Ui {
     static void text(GuiGraphics g,Font font,Component text,int x,int y,int color,int width){var row=fit(font,text,width);g.drawString(font,row,x,y,color,false);drawn(font,row,x,y,font.width(text)>width);}
     static void text(GuiGraphics g,Font font,Component text,int x,int y,int color){g.drawString(font,text.getVisualOrderText(),x,y,color,false);drawn(font,text.getVisualOrderText(),x,y,false);}
     static void right(GuiGraphics g,Font font,Component text,int xRight,int y,int color){g.drawString(font,text.getVisualOrderText(),xRight-font.width(text),y,color,false);drawn(font,text.getVisualOrderText(),xRight-font.width(text),y,false);}
-    /** Wraps into at most {@code maxLines}; an overflowing last line ends in an ellipsis. Returns the next free y. */
+    /** Wraps into at most maxLines; an overflowing last line ends in an ellipsis. */
     static int wrap(GuiGraphics g,Font font,Component text,int x,int y,int width,int color,int maxLines){
         List<FormattedCharSequence> rows=font.split(text,Math.max(8,width));int shown=Math.min(rows.size(),maxLines);
         for(int i=0;i<shown;i++){
@@ -86,13 +79,10 @@ final class Ui {
         g.renderTooltip(font,heading.isEmpty()?List.of(t("platform.materials")):heading,java.util.Optional.of(new MaterialTip(costs)),mx,my);
     }
 
-    /**
-     * A tooltip made of short coloured lines, status marks and rows of item icons (the foods a recipe accepts). It draws itself,
-     * so it can order text and icons freely; the vanilla tooltip only places a component after its first line.
-     */
+    /** A tooltip made of short coloured lines, status marks and rows of item icons (the foods a recipe accepts). */
     record Block(Component text,int color,int mark,List<net.minecraft.world.item.ItemStack> icons,int more){
         static Block line(Component text,int color){return new Block(text,color,0,List.of(),0);}
-        /** {@code mark}: 1 check, 2 alert. */
+        /** Mark: 1 check, 2 alert. */
         static Block marked(int mark,Component text,int color){return new Block(text,color,mark,List.of(),0);}
         static Block icons(Component label,int color,List<net.minecraft.world.item.ItemStack> icons,int more){return new Block(label,color,0,icons,more);}
     }
@@ -124,7 +114,7 @@ final class Ui {
         }
     }
 
-    // ---- pixel marks (shapes carry meaning as well as colour) ---------------------------------------------
+    // Pixel marks (shapes carry meaning as well as colour)
     static void glyph(GuiGraphics g,int x,int y,String[] rows,int color){
         for(int r=0;r<rows.length;r++)for(int c=0;c<rows[r].length();c++)if(rows[r].charAt(c)=='#')g.fill(x+c,y+r,x+c+1,y+r+1,color);
     }
@@ -138,7 +128,7 @@ final class Ui {
     static void ghost(GuiGraphics g,net.minecraft.world.item.ItemStack stack,int x,int y){
         g.renderItem(stack,x,y);g.pose().pushPose();g.pose().translate(0,0,200);g.fill(x,y,x+16,y+16,0x990a1218);g.pose().popPose();
     }
-    /** A glass tube filled from the bottom, with a mark every {@code ticks}th of its height and a bright surface line. */
+    /** A glass tube filled from the bottom, with a mark every ticksth of its height and a bright surface line. */
     static void tank(GuiGraphics g,int x,int y,int w,int h,float fraction,int liquid,int ticks){
         g.fill(x,y,x+w,y+h,EDGE);g.fill(x+1,y+1,x+w-1,y+h-1,DEEP);
         int inner=h-2,fill=Math.round(inner*Math.max(0,Math.min(1,fraction)));
@@ -150,7 +140,7 @@ final class Ui {
         for(int i=1;i<ticks;i++){int ty=y+1+inner*i/ticks;g.fill(x,ty,x+(i%2==0?4:2),ty+1,SLATE_HI);g.fill(x+w-(i%2==0?4:2),ty,x+w,ty+1,SLATE_HI);}
     }
 
-    // ---- surfaces -----------------------------------------------------------------------------
+    // Surfaces
     static void panel(GuiGraphics g,int x,int y,int w,int h){
         g.fill(x-1,y-1,x+w+1,y+h+1,SHADOW);
         g.fill(x,y,x+w,y+h,NAVY);
@@ -172,14 +162,14 @@ final class Ui {
         g.fill(x,y,x+w,y+h,SLATE);g.fill(x,y,x+w,y+1,SLATE_HI);g.fill(x,y+h-1,x+w,y+h,DEEP);
         g.fill(x,y,x+3,y+h,accent);
     }
-    /** An inventory slot: coloured frame, recessed well. {@code x,y} is the frame's corner, the item sits one pixel inside. */
+    /** An inventory slot: coloured frame, recessed well. */
     static void slot(GuiGraphics g,int x,int y,int frame){g.fill(x,y,x+18,y+18,frame);inset(g,x+1,y+1,16,16);}
-    /** The player's inventory, 27 + 9 slots; the first frame is at {@code x,y} and the hotbar sits 58 px below. */
+    /** The player's inventory, 27 + 9 slots; the first frame is at x,y and the hotbar sits 58 px below. */
     static void inventory(GuiGraphics g,int x,int y){
         for(int r=0;r<3;r++)for(int c=0;c<9;c++)slot(g,x+c*18,y+r*18,EDGE);
         for(int c=0;c<9;c++)slot(g,x+c*18,y+58,EDGE);
     }
-    /** A key hint: the player's live key label in a small cap, then what it does. Returns the next free y. */
+    /** A key hint: the player's live key label in a small cap, then what it does. */
     static int keyHint(GuiGraphics g,Font font,Component key,Component what,int x,int y,int width){
         int w=chip(g,font,key,x,y,CYAN,Math.min(width/2,font.width(key)+10));text(g,font,what,x+w+6,y+2,MUTED,width-w-6);return y+15;
     }
@@ -196,12 +186,12 @@ final class Ui {
         int fill=Math.round(w*Math.max(0,Math.min(1,fraction)));if(fill>0){g.fill(x,y,x+fill,y+h,color);g.fill(x,y,x+fill,y+1,0x55ffffff);}
         if(w>=60)for(int i=1;i<10;i++){int tx=x+w*i/10;g.fill(tx,y,tx+1,y+h,0x66000000);}
     }
-    /** N pips with the first {@code value} lit; used for Ages and upgrade grades. */
+    /** N pips with the first value lit; used for Ages and upgrade grades. */
     static void pips(GuiGraphics g,int x,int y,int value,int max,int color){
         for(int i=0;i<max;i++){int px=x+i*6;g.fill(px,y,px+5,y+5,i<value?color:TRACK);g.fill(px,y+4,px+5,y+5,i<value?0x66000000:DEEP);}
     }
     static int pipsWidth(int max){return max*6-1;}
-    /** Small tag with an accent edge. Returns its width. */
+    /** Small tag with an accent edge. */
     static int chip(GuiGraphics g,Font font,Component text,int x,int y,int accent,int maxWidth){
         int w=Math.min(maxWidth,font.width(text)+10);
         g.fill(x,y,x+w,y+12,DEEP);g.fill(x,y,x+3,y+12,accent);g.fill(x,y+11,x+w,y+12,accent&0x99ffffff);
@@ -216,13 +206,10 @@ final class Ui {
     }
     static boolean inside(double mx,double my,int x,int y,int w,int h){return mx>=x&&mx<x+w&&my>=y&&my<y+h;}
 
-    // ---- widgets ------------------------------------------------------------------------------
+    // Widgets
     enum Look{NORMAL,PRIMARY,DANGER,TAB,TOGGLE,ROW}
     @FunctionalInterface interface Painter{void paint(GuiGraphics g,UiButton button,boolean hovered);}
-    /**
-     * One button class for every state in the brief: normal, hover, pressed, selected, disabled,
-     * locked, warning and danger. Keyboard focus draws the same cyan ring as hover plus a corner mark.
-     */
+    /** One button class for every state in the brief: normal, hover, pressed, selected, disabled, locked */
     static final class UiButton extends Button {
         Look look;boolean selected,warning,locked,on,label=true;int accent=CYAN;Painter painter;
         UiButton(int x,int y,int w,int h,Component label,Look look,OnPress press){super(x,y,w,h,label,press,DEFAULT_NARRATION);this.look=look;}
@@ -230,7 +217,7 @@ final class Ui {
         UiButton painter(Painter p){painter=p;return this;}
         /** For rows that paint their own content. */
         UiButton noLabel(){label=false;return this;}
-        /** 0.0.34: a 16 x 16 icon at the left of the label (the label is centred in what is left). */
+        /** A 16 x 16 icon at the left of the label (the label is centred in what is left). */
         net.minecraft.resources.ResourceLocation icon;
         UiButton icon(net.minecraft.resources.ResourceLocation icon){this.icon=icon;return this;}
         @Override protected void renderWidget(GuiGraphics g,int mx,int my,float partial){

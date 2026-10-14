@@ -4,10 +4,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * The supply grid: a fixed 6 x 6 backing store of which the top-left n x n corner is active (n = 3..6 by Mk level).
- * Upgrading therefore never moves an item.
- */
+/** The supply grid: a fixed 6 x 6 backing store of which the top-left n x n corner is active */
 final class GridContainer implements Container {
     final ItemStack[] items=new ItemStack[36];
     final Runnable changed;
@@ -20,7 +17,7 @@ final class GridContainer implements Container {
     @Override public void setItem(int slot,ItemStack stack){items[slot]=stack;setChanged();}
     @Override public void setChanged(){if(changed!=null)changed.run();}
     @Override public boolean stillValid(Player p){return true;}
-    /** Empties the grid without notifying anyone (used when the platform is picked up with its contents moved elsewhere). */
+    /** Empties the grid without notifying anyone */
     void clearQuietly(){java.util.Arrays.fill(items,ItemStack.EMPTY);}
     @Override public void clearContent(){java.util.Arrays.fill(items,ItemStack.EMPTY);setChanged();}
 }

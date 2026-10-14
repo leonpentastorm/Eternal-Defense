@@ -24,7 +24,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/** Opt-in production Forge checks. Run one case at a time because campaign state is shared. */
+/** Opt-in production Forge checks. */
 @net.minecraftforge.gametest.GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class MessHallV4GameTests {

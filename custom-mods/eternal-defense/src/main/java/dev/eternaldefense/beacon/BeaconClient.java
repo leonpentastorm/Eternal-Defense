@@ -20,7 +20,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Client presentation only. Every purchase and confirmation is validated on the server. */
+/** Client presentation only. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class BeaconClient {
     private static CompoundTag state=new CompoundTag();
@@ -37,18 +37,18 @@ public final class BeaconClient {
             case "rewards" -> mc.setScreen(new RaidRewardScreen(mc.screen,state));
             case "guide" -> mc.setScreen(new GuideScreen(mc.screen instanceof ControlScreen?mc.screen:null));
             case "place","remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),""));
-            case "fob_remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),packet.message()));   // 0.0.23: the message is the FOB's name
+            case "fob_remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),packet.message()));   // The message is the FOB's name
             case "close" -> {if(mc.screen instanceof PanelScreen)mc.setScreen(null);}
         }
     }
-    /** The campaign state is refreshed every second; only a long silence (a lost connection) hides the outlines. A few seconds of server lag, as when the cannon fires, must not. */
+    /** The campaign state is refreshed every second; only a long silence (a lost connection) hides the outlines. */
     static final int STALE_TICKS=600;
-    /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
+    /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse */
     private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
-    /** The base zone's radius, depth and height as the server last sent them (a beacon picked up keeps its upgrades), else a new beacon's (0.0.33: the placement preview). */
+    /** The base zone's radius, depth and height as the server last sent them */
     static int[] zoneSize(){return state.contains("radius")?new int[]{state.getInt("radius"),state.getInt("below"),state.getInt("above")}:new int[]{Rules.radius(0),Rules.below(0),Rules.above(0)};}
     private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
-    /** The raid song this wave plays (see {@link RaidPlaylist}), or null when no raid is running. */
+    /** The raid song this wave plays (see RaidPlaylist), or null when no raid is running. */
     static RaidPlaylist.Song raidSong(){
         String cue=RaidPlaylist.cue(current(),state.getString("phase"),state.getBoolean("hardRaid"),n("wave"),n("waves"),state.getString("raidType"));
         return RaidPlaylist.song(cue,RaidPlaylist.seed(state.getLong("beacon"),n("raidsStarted")),n("wave"));
@@ -60,30 +60,22 @@ public final class BeaconClient {
         @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(EternalDefense.BEACON_ENTITY.get(),Beam::new);e.registerEntityRenderer(EternalDefense.OBJECTIVE.get(),net.minecraft.client.renderer.entity.NoopRenderer::new);}
         @SubscribeEvent public static void overlays(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_status",(gui,g,partial,w,h)->hud(g,w,h));}
     }
-    /**
-     * Status card shown near a planted beacon, during raids and while holding the recovery shovel.
-     * It sits at the left edge, vertically centred, clear of chat and the hotbar (bottom), the Gun Guide
-     * (right edge), the TaCZ weapon HUD (bottom right) and block-information overlays (top centre).
-     * The raid music player sits right under it and stays for the whole raid, even where the card is hidden.
-     */
+    /** Status card shown near a planted beacon, during raids and while holding the recovery shovel. */
     private static void hud(GuiGraphics g,int w,int h){
         var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null)return;
         if(!current()){if(mission()||fobLine()!=null)drawMission(g,w,h);return;}
         var card=card(w,h);
         if(Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))drawHud(g,card);
-        else if(mission()||fobLine()!=null)drawMission(g,w,h);   // away from the base: only the mission and FOB lines
+        else if(mission()||fobLine()!=null)drawMission(g,w,h);   // Away from the base: only the mission and FOB lines
         RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
     }
-    /** A hunting mission is running (0.0.20) and this player holds its map or the shovel (0.0.21): the card gets its line, in the Overworld. */
+    /** A hunting mission is running and this player holds its map or the shovel */
     private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&TacticalClient.holdingMissionItem();}
-    /**
-     * The FOB line (0.0.23): the FOB this player stands in (its state, villagers, a raid), else while holding the shovel how many FOBs are
-     * placed and active; null when neither. Overworld only, from the last state the server sent.
-     */
+    /** The FOB line: the FOB this player stands in (its state, villagers, a raid) */
     static Component fobLine(){
         var mc=Minecraft.getInstance();
         if(mc.level==null||mc.level.dimension()!=Level.OVERWORLD||mc.level.getGameTime()-receivedAt>=STALE_TICKS)return null;
-        if(state.contains("fobSos")){var sos=state.getCompound("fobSos");   // an open SOS comes first, on every card (0.0.25)
+        if(state.contains("fobSos")){var sos=state.getCompound("fobSos");   // An open SOS comes first, on every card
             return sos.getBoolean("raid")?Ui.t("hud.fob.sos.raid",sos.getString("name")):Ui.t("hud.fob.sos",sos.getString("name"),FobClient.sosTime(sos.getLong("left")));}
         if(state.contains("fobHere")){var f=state.getCompound("fobHere");
             return Ui.t(f.getBoolean("raid")?"hud.fob.here.raid":"hud.fob.here",f.getString("name"),Ui.t("fob.state."+f.getString("state")),f.getInt("villagers"));}
@@ -116,7 +108,7 @@ public final class BeaconClient {
     /** Lines the mission takes on the status card (it wraps to a second line on a narrow card). */
     private static int missionLines(int width){return mission()?Math.min(2,Ui.lines(Minecraft.getInstance().font,TacticalClient.missionLine(),width-14)):0;}
     record Card(int x,int y,int width,int height){}
-    /** Where the status card goes on a {@code w} by {@code h} screen (also when it is hidden, so the music player does not jump). */
+    /** Where the status card goes on a w by h screen (also when it is hidden, so the music player does not jump). */
     static Card card(int w,int h){
         var font=Minecraft.getInstance().font;boolean raid=state.getString("phase").equals("raid");
         Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
@@ -143,12 +135,9 @@ public final class BeaconClient {
         if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-(ml+fl)*11-1,width-14,Ui.BRASS,ml);
         if(fl>0)Ui.wrap(g,font,fobLine(),x+9,y+height-fl*11-1,width-14,fobColor(),fl);
     }
-    /** 0.0.41 (owner): the raid skull, drawn right-aligned at {@code right}. */
+    /** The raid skull, drawn right-aligned at right. */
     static final ResourceLocation SKULL=new ResourceLocation(EternalDefense.ID,"textures/gui/skull.png");
-    /**
-     * The skull and the number of defender deaths left before the next one costs the beacon a tenth of its health (3, 2, 1; red at 1).
-     * Returns the width it took, its gap included.
-     */
+    /** The skull and the number of defender deaths left before the next one costs the beacon a tenth of its health */
     static int lives(GuiGraphics g,net.minecraft.client.gui.Font font,int right,int y){
         int left=n("livesLeft");String text=Integer.toString(left);int w=font.width(text);
         g.drawString(font,text,right-w,y+1,left<=1?Ui.RED:Ui.INK,false);
@@ -161,7 +150,7 @@ public final class BeaconClient {
     public static final class Beam implements BlockEntityRenderer<EternalDefense.DefenseEntity> {
         public Beam(BlockEntityRendererProvider.Context context){}
         @Override public void render(EternalDefense.DefenseEntity entity,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
-            Animations.draw(entity,partial,pose,buffer,light);   // 0.0.39: the rings and the emitter ring
+            Animations.draw(entity,partial,pose,buffer,light);   // The rings and the emitter ring
             if(!current()||!state.getBoolean("beam")||!entity.getBlockPos().equals(BlockPos.of(state.getLong("beacon"))))return;
             float[] color=state.getInt("health")>0?new float[]{.22f,1f,.88f}:new float[]{1f,.35f,.18f};
             pose.pushPose();pose.translate(0,state.getInt("mk")==4?2:1,0);BeaconRenderer.renderBeaconBeam(pose,buffer,BeaconRenderer.BEAM_LOCATION,partial,1f,entity.getLevel().getGameTime(),0,512,color,.2f,.28f);pose.popPose();
@@ -178,7 +167,7 @@ public final class BeaconClient {
         var mc=Minecraft.getInstance();BlockPos pos=BlockPos.of(state.getLong("beacon"));var camera=e.getCamera().getPosition();
         PoseStack pose=e.getPoseStack();pose.pushPose();pose.translate(pos.getX()-camera.x,pos.getY()-camera.y,pos.getZ()-camera.z);
         var buffers=ZONE_BUFFER;VertexConsumer lines=buffers.getBuffer(RenderType.lines());var transform=pose.last();double r=state.getInt("radius");
-        // Exact outer block faces: [-radius, radius+1), with an inclusive 65-block height.
+        // Exact outer block faces
         double lo=-r,hi=r+1;int bottom=-state.getInt("below"),ceiling=state.getInt("above")+1;
         for(int y:new int[]{bottom,0,ceiling}){
             line(lines,transform,lo,y,lo,hi,y,lo);line(lines,transform,hi,y,lo,hi,y,hi);
@@ -228,7 +217,7 @@ public final class BeaconClient {
         Ui.UiButton button(Component label,int x,int y,int w,Ui.Look look,java.util.function.Consumer<Button> click){return button(label,x,y,w,20,look,click);}
         Ui.UiButton button(Component label,int x,int y,int w,int h,Ui.Look look,java.util.function.Consumer<Button> click){return addRenderableWidget(new Ui.UiButton(x,y,w,h,label,look,click::accept));}
         void closeButton(){button(Component.literal("X"),left+pw-30,top+4,22,18,Ui.Look.NORMAL,b->onClose());}
-        /** Server feedback sits in one stable strip and disappears by itself. Returns whether it was drawn. */
+        /** Server feedback sits in one stable strip and disappears by itself. */
         boolean footer(GuiGraphics g){
             if(!messageVisible())return false;
             int y=top+ph-19;Ui.inset(g,left+10,y,pw-20,13);Ui.text(g,font,Component.literal(message),left+15,y+3,Ui.CYAN,pw-30);return true;
@@ -292,7 +281,7 @@ public final class BeaconClient {
                     fabricationButtons.add(button(Ui.t("fabrication.make"),cell.x+cell.w-41,cell.y+(cell.h-18)/2,37,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
                 }
             }else{
-                // left: what the base shows (saved with the beacon); right: this player's own music choices (saved on this computer)
+                // Left: what the base shows (saved with the beacon); right
                 int gap=settingsGap(),col=settingsColumn(w),x2=x+col+10;
                 outline=button(Component.empty(),x,contentTop()+2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("outline",""));
                 beam=button(Component.empty(),x,contentTop()+2+gap,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("beam",""));
@@ -334,7 +323,7 @@ public final class BeaconClient {
         private record FabCell(int x,int y,int w,int h){}
         /** Rows a group takes (two cells a row): the groups grow with their items. */
         private static int groupRows(int group){int end=group==2?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
-        /** 0.0.30: the list scrolls (the mouse wheel, or dragging its bar) instead of squeezing its rows, so more installations fit later. */
+        /** The list scrolls (the mouse wheel, or dragging its bar) instead of squeezing its rows */
         static final int FAB_ROW=28,FAB_HEADER=12,FAB_BAR=6;
         int fabScroll;private boolean fabDragging;
         private int fabricationRowHeight(){return FAB_ROW;}
@@ -384,7 +373,7 @@ public final class BeaconClient {
             g.disableScissor();
             int max=fabMaxScroll();
             if(max>0){
-                // the scroll bar, and a fade at the edge that hides more rows
+                // The scroll bar, and a fade at the edge that hides more rows
                 int barX=x+w-FAB_BAR,trackH=viewBottom-viewTop,thumbH=Math.max(18,trackH*trackH/fabContentHeight()),thumbY=viewTop+(trackH-thumbH)*fabScroll/max;
                 g.fill(barX,viewTop,barX+FAB_BAR,viewBottom,0x40000000);
                 g.fill(barX+1,thumbY,barX+FAB_BAR-1,thumbY+thumbH,fabDragging||Ui.inside(mx,my,barX,viewTop,FAB_BAR,trackH)?Ui.CYAN:Ui.MUTED);
@@ -412,7 +401,7 @@ public final class BeaconClient {
             int trackH=fabViewBottom()-fabViewTop(),thumbH=Math.max(18,trackH*trackH/fabContentHeight());
             scrollFabrication((int)Math.round((my-fabViewTop()-thumbH/2.0)*fabMaxScroll()/Math.max(1,trackH-thumbH)));
         }
-        // ---- Overview: "How is my base doing?" ------------------------------------------------
+        // Overview: "How is my base doing?"
         private void overview(GuiGraphics g,int x,int w){
             int y=contentTop();boolean roomy=ph>=270,dead=n("health")<=0,active=on("active");
             int statusH=roomy?58:46;
@@ -450,7 +439,7 @@ public final class BeaconClient {
                 Component status=on("surveyBusy")?Ui.t("overview.survey",n("surveyPercent")):on("surveyIncomplete")?Ui.t("overview.partial"):Ui.t("overview.live");
                 Ui.text(g,font,Ui.t("overview.breakdown"),x+2,y+2,Ui.MUTED,w/3);
                 Ui.right(g,font,status,x+w-2,y+2,Ui.MUTED);
-                // 0.0.41: a fifth column for the mod's installations (points and how many of the set stand) and the total
+                // A fifth column for the mod's installations (points and how many of the set stand) and the total
                 String[] keys={"structure","palette","details","lighting","installations","furnishings","layout","factory","platforms","total"};
                 int cell=w/5,of=BaseScoring.INSTALLATIONS.size();
                 for(int i=0;i<keys.length;i++){
@@ -462,14 +451,14 @@ public final class BeaconClient {
                 }
                 y+=15+48+3;
             }
-            // 0.0.41 (owner): how many Logistics Hubs work for this base
+            // How many Logistics Hubs work for this base
             Component hubs=n("hubs")==0?Ui.t("overview.hubs.none"):n("hubs")==1?Ui.t("overview.hubs.one",1):Ui.t("overview.hubs",n("hubs"));
             if(bottom-y>=10){Ui.text(g,font,hubs,x+2,y+1,n("hubs")>0?Ui.CYAN:Ui.MUTED,w-4);y+=12;}
             if(bottom-y>=10)Ui.text(g,font,on("expansionBlocked")?Ui.t("overview.blocked"):Ui.t("overview.cover"),x+2,y+1,on("expansionBlocked")?Ui.ORANGE:Ui.MUTED,w-4);
             claim.active=on("installed")&&on("near")&&(n("rewards")>0||on("rewardChest"));
             repair.active=ready()&&n("health")<n("maximum");
         }
-        // ---- Upgrades: "What should I improve next?" -----------------------------------------
+        // Upgrades: "What should I improve next?"
         private List<Component> upgradeCards(GuiGraphics g,int mx,int my,int x,int w){
             int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;List<Component> tooltip=null;boolean creative=on("creative");
             for(int i=0;i<BRANCHES.length;i++){
@@ -491,7 +480,7 @@ public final class BeaconClient {
                     Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
                     costs=Ui.singleCost(icon,cost,have);
                 }else{
-                    // several parts (the Vertical zone in the pack): each icon with the number needed, orange when there are not enough
+                    // Several parts (the Vertical zone in the pack): each icon with the number needed
                     int px=cx+8,step=Math.max(24,(cw-100)/prices.size());
                     for(var pr:prices){
                         var stack=item(pr.id());int owned=n("stock_"+pr.id());
@@ -533,7 +522,7 @@ public final class BeaconClient {
                 default -> Ui.t("upgrade.reconnaissance.now",reveal(grade));
             };
         }
-        /** "after 3 minutes", "after 1 minute" or "the moment a wave starts": when raiders start to glow at Reconnaissance {@code level}. */
+        /** "after 3 minutes", "after 1 minute" or "the moment a wave starts" */
         static Component reveal(int level){int minutes=Rules.revealTicks(level)/1200;return minutes<=0?Ui.t("upgrade.reconnaissance.at_once"):minutes==1?Ui.t("upgrade.reconnaissance.after_one"):Ui.t("upgrade.reconnaissance.after",minutes);}
         private static Component completeText(int branch,int grade){
             return switch(BRANCHES[branch]){
@@ -544,7 +533,7 @@ public final class BeaconClient {
                 default -> Ui.t("upgrade."+BRANCHES[branch]+".done");
             };
         }
-        // ---- Raid break: "Can I take a break or fight now?" ----------------------------------
+        // Raid break: "Can I take a break or fight now?"
         private void raidTab(GuiGraphics g,int x,int w){
             var lay=raidLayout();int y=contentTop();
             Ui.card(g,x,y,w,lay.cardH,Ui.CYAN);
@@ -574,7 +563,7 @@ public final class BeaconClient {
             respite.active=startRaid.active=controls;
             startRaid.setMessage(Ui.t(on("raidRequested")?"raid.start.booked":"raid.start"));if(on("raidRequested"))startRaid.active=false;lowerTier.active=controls&&n("raidLimit")>0;higherTier.active=controls&&n("raidLimit")<10;
         }
-        // ---- Settings: "What is protected?" ---------------------------------------------------
+        // Settings: "What is protected?"
         private void settingsTab(GuiGraphics g,int x,int w){
             int gap=settingsGap(),y=contentTop()+2,col=settingsColumn(w),x2=x+col+10,lines=Math.max(1,(gap-25)/10);boolean here=on("installed")&&on("near");
             String[] keys={"outline","beam","hurtbox"};Button[] toggles={outline,beam,hurtbox};
@@ -585,7 +574,7 @@ public final class BeaconClient {
             }
             var m=(Ui.UiButton)music;m.on=RaidMusic.enabled();m.setMessage(Ui.t("settings.music"));
             var p=(Ui.UiButton)player;p.on=RaidMusic.playerShown();p.setMessage(Ui.t("settings.player"));p.active=m.on;
-            // 0.0.39: the row under the music switches is the idle animations' own; the game's Music volume is told under the music switch when it is off
+            // The row under the music switches is the idle animations'
             int volume=Math.round(Minecraft.getInstance().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MUSIC)*100);
             Ui.wrap(g,font,volume<=0?Ui.t("settings.music.volume",volume):Ui.t("settings.music.note"),x2+4,y+25,w-col-18,volume<=0?Ui.ORANGE:Ui.MUTED,lines);
             Ui.wrap(g,font,Ui.t("settings.player.note"),x2+4,y+gap+25,w-col-18,Ui.MUTED,lines);
@@ -603,7 +592,7 @@ public final class BeaconClient {
         private RichText text;
         ConfirmScreen(String kind,String token,String fob){super(Ui.t("confirm.title"));this.kind=kind;this.token=token;this.fob=fob;}
         private boolean place(){return kind.equals("place");}
-        /** Taking a FOB Beacon back (0.0.23): its own warning, with the FOB's name. */
+        /** Taking a FOB Beacon back: its own warning, with the FOB's name. */
         private boolean fob(){return kind.equals("fob_remove");}
         @Override Component subtitle(){return Ui.t("confirm.subtitle");}
         @Override protected void init(){
@@ -635,7 +624,7 @@ public final class BeaconClient {
         final Screen parent;int page,scroll;
         private RichText cached;private int cachedPage=-1,cachedWidth;private String cachedLanguage="";
         private int navX,navTop,navWidth,navHeight,textX,textWidth,textTop,textBottom;
-        /** True: icon and title on every row. False: a two-column rail of icons whose names show on hover. */
+        /** True: icon and title on every row. */
         boolean fullList;
         final List<Ui.UiButton> nav=new ArrayList<>();
         GuideScreen(Screen parent){super(Ui.t("guide.title"));this.parent=parent;}
@@ -671,15 +660,14 @@ public final class BeaconClient {
             if(cached==null||cachedPage!=page||cachedWidth!=textWidth||!cachedLanguage.equals(language)){cached=RichText.layout(font,pageText(),textWidth-10,Ui.BRASS);cachedPage=page;cachedWidth=textWidth;cachedLanguage=language;}
             return cached;
         }
-        /** Back/Next, arrow keys and the side menu all end up here, and the menu highlight follows in render(). */
+        /** Back/Next, arrow keys and the side menu all end up here, and the menu highlight follows in render. */
         private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;cached=null;}
         @Override protected void init(){
             super.init();nav.clear();
             // The guide may be taller than the other panels: 15 rows with full-size icons need the room.
             ph=Math.min(330,height-16);top=(height-ph)/2;
             int rows=IDS.length;
-            // The menu is a full-height strip beside the page. It never goes away: when 15 icon-and-title rows do not fit,
-            // it becomes a two-column rail of icons and the names move to a tooltip.
+            // The menu is a full-height strip beside the page.
             navX=left+10;navTop=top+32;navHeight=ph-40;
             int step=(navHeight-4)/rows;
             fullList=pw>=430&&step>=17;
@@ -705,7 +693,7 @@ public final class BeaconClient {
         private void paintNav(GuiGraphics g,Ui.UiButton self,ItemStack icon){
             int x=self.getX(),y=self.getY(),w=self.getWidth(),h=self.getHeight();
             if(fullList){
-                // Full-size icon when the row is tall enough, otherwise the item at three quarters. A lighter tile keeps dark items readable.
+                // Full-size icon when the row is tall enough, otherwise the item at three quarters.
                 boolean big=h>=19;int size=big?16:12,ix=x+4,iy=y+(h-size)/2;
                 g.fill(ix,iy,ix+size,iy+size,Ui.EDGE);
                 g.pose().pushPose();g.pose().translate(ix,iy,0);if(!big)g.pose().scale(0.75f,0.75f,1f);g.renderItem(icon,0,0);g.pose().popPose();

@@ -21,23 +21,12 @@ import net.minecraftforge.network.*;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * 0.0.35 (owner): the Drink Station's one screen. Left, the vanilla brewing stand and, below it, the 54-slot potion storage (counted, so its
- * clicks are buttons, not slots). Right, from Mk II, the mixing menu, copying the Mess Hall's flow: choose effects, Gather (pulls the potions
- * from the storage first, then your pack; spends nothing), Take back, then Brew into a Brew Pot or make a Latte.
- * Buttons: 0/1 Brew Pot or Latte, 2 brew, 3 upgrade, 4 clear the order, 5 gather, 6 take back, 7 brew and replace the drink still in the
- * chosen pot (the screen asks first), 8 next sweetener step, 40+ toggle an effect (index in the effect list), 100+ choose a pot,
- * 200+ the storage: 200 + slot * 2, plus 1 with shift held.
- */
+/** The Drink Station's one screen. */
 final class DrinkStationMenu extends AbstractContainerMenu {
     static final int WIDTH=424,HEIGHT=238;
     /** Left column: the stand (the vanilla texture's region from u 12, v 12, 108 x 66) and the storage under it. */
     static final int BREW_X=8,BREW_Y=30,BREW_U=12,BREW_V=12,BREW_W=108,BREW_H=66,STORE_X=8,STORE_Y=114,STORE_COLS=9;
-    /**
-     * Right column (x 192 to 416): tabs, notices, one row of effect tiles, the Brew Pots (chips like the Mess Hall's stew pots), the mixing row
-     * (the pot or the Latte's cup, the potions, then the sweetener: its slot, its bar and the +0 / +10 / +20 button; owner, 0.0.35), the
-     * preview, the buttons, then the inventory.
-     */
+    /** Right column (x 192 to 416): tabs, notices, one row of effect tiles */
     static final int RX=192,RW=224,TAB_Y=29,STRIP_Y=46,TILE_Y=63,TILE=18,TILE_PITCH=20,TILE_COLS=11,POTS_Y=85,POT_W=40,POT_PITCH=42,SLOT_Y=106,PREVIEW_Y=127,BUTTON_Y=138,INV_X=193,INV_Y=159,HOT_Y=217;
     static final int CUP_X=193,MIX_X=217,MIX_PITCH=20,OUT_X=287,SWEET_X=287,BAR_X=308,BAR_W=62,STEPS_X=374,STEPS_W=40;
     static int brewSlotX(int u){return BREW_X+u-BREW_U;}
@@ -52,7 +41,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
     private boolean catalogueSent;private int noticeSeq,noticeKind;private String noticeKey="";private List<String> noticeArgs=List.of();
     DrinkStationMenu(int id,Inventory inv,Container brew,Container mix,BlockPos pos,int mk,DrinkStation.StationEntity station){
         super(EternalDefense.DRINK_STATION_MENU.get(),id);this.brew=brew;this.mix=mix;this.pos=pos;this.mk=mk;this.station=station;this.player=inv.player;
-        // the brewing stand, at the vanilla screen's own places
+        // The brewing stand, at the vanilla screen's own places
         int[][] bottles={{56,51},{79,58},{102,51}};
         for(int i=0;i<3;i++)addSlot(new Slot(brew,i,brewSlotX(bottles[i][0]),brewSlotY(bottles[i][1])){
             @Override public boolean mayPlace(ItemStack s){return s.is(Items.GLASS_BOTTLE)||BrewingRecipeRegistry.isValidInput(s);}
@@ -60,8 +49,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         });
         addSlot(new Slot(brew,3,brewSlotX(79),brewSlotY(17)){@Override public boolean mayPlace(ItemStack s){return BrewingRecipeRegistry.isValidIngredient(s);}});
         addSlot(new Slot(brew,4,brewSlotX(17),brewSlotY(17)){@Override public boolean mayPlace(ItemStack s){return s.is(Items.BLAZE_POWDER);}});
-        // the mixing slots: one potion each, the order's ghost shown when empty
-        // (not "index": that is Slot's own field, the slot's place in the menu, and would shadow the mixing slot's number)
+        // The mixing slots: one potion each, the order's ghost shown when empty
         for(int i=0;i<3;i++){final int mixing=i;addSlot(new Slot(mix,i,MIX_X+i*MIX_PITCH,SLOT_Y){
             @Override public boolean isActive(){return mixing<limit();}
             @Override public boolean mayPlace(ItemStack s){if(!isActive())return false;var why=refusal(s,mixing);if(!why.isEmpty()&&!player.level().isClientSide)notice(WARN,"refuse."+why);return why.isEmpty();}
@@ -75,7 +63,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
             @Override public boolean isActive(){return latte()&&DrinkRules.tier(mk).mixing();}
             @Override public boolean mayPlace(ItemStack s){return false;}
         });
-        // the sweetener sits where the Latte's output is: only one of them shows (no sweetener for the Latte)
+        // The sweetener sits where the Latte's output is: only one of them shows (no sweetener for the Latte)
         addSlot(new Slot(mix,5,SWEET_X,SLOT_Y){
             @Override public boolean isActive(){return DrinkRules.tier(mk).mixing()&&!latte();}
             @Override public boolean mayPlace(ItemStack s){if(!isActive())return false;boolean ok=DrinkData.sweetener(s)>0;if(!ok&&!player.level().isClientSide)notice(WARN,"sweet_only");return ok;}
@@ -88,7 +76,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
     @Override public boolean stillValid(Player p){return !p.isSpectator()&&station!=null&&p.level().hasChunkAt(pos)&&p.level().getBlockEntity(pos)==station&&BaseZone.problem(p.level(),pos)==null&&p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
     boolean latte(){return station!=null?station.latteMode:view.getBoolean("Latte");}
     int limit(){return latte()?DrinkRules.latteEffects(mk):DrinkRules.tier(mk).effects();}
-    /** Why this potion cannot go into mixing slot {@code index}: the rules, plus "an effect already in another slot". */
+    /** Why this potion cannot go into mixing slot index: the rules, plus "an effect already in another slot". */
     String refusal(ItemStack stack,int index){
         var others=new HashSet<MobEffect>();for(int i=0;i<3;i++)if(i!=index){var fx=DrinkData.effectOf(mix.getItem(i));if(fx!=null)others.add(fx.getEffect());}
         return DrinkData.refusal(stack,others);
@@ -98,7 +86,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
     private static String fx(Collection<ResourceLocation> ids){return "fx:"+String.join(",",ids.stream().map(ResourceLocation::toString).toList());}
     private void sound(net.minecraft.sounds.SoundEvent event,float pitch){if(player instanceof ServerPlayer sp)sp.playNotifySound(event,SoundSource.BLOCKS,.7f,pitch);}
 
-    // ---- what is on the table -----------------------------------------------------------------------------------------------------
+    // What is on the table
     /** The drink the active slots make, in slot order: one part per mixable potion. */
     List<DrinkData.Part> parts(){
         var out=new ArrayList<DrinkData.Part>();
@@ -138,7 +126,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
             int number=pots().indexOf(pot)+1;
             if(replaced)notice(DONE,"replaced",fx(ids),number,DrinkRules.minutes(drink.duration()),old);else notice(DONE,"brewed",fx(ids),number,DrinkRules.minutes(drink.duration()));
         }
-        // the potions are used up; their bottles come back
+        // The potions are used up; their bottles come back
         for(int i=0;i<limit();i++)if(!mix.getItem(i).isEmpty()){mix.removeItem(i,1);if(player instanceof ServerPlayer sp)EternalDefense.give(sp,new ItemStack(Items.GLASS_BOTTLE));}
         if(player.level() instanceof ServerLevel level){
             level.playSound(null,pos,SoundEvents.BREWING_STAND_BREW,SoundSource.BLOCKS,.8f,latte()?1.3f:1f);
@@ -147,7 +135,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         broadcastChanges();return true;
     }
 
-    // ---- the standing order ---------------------------------------------------------------------------------------------------
+    // The standing order
     private boolean toggle(ResourceLocation effect){
         if(!DrinkRules.tier(mk).mixing()){notice(WARN,"problem.locked");return false;}
         var order=station.order;
@@ -155,13 +143,13 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         if(order.size()>=limit()){notice(WARN,"order_full",limit());return false;}
         order.add(effect);station.setChanged();return true;
     }
-    /** A mixable potion of {@code effect}: the station's storage first (the strongest kind), then the pack. Nothing is spent, only moved. */
+    /** A mixable potion of effect: the station's storage first (the strongest kind), then the pack. */
     private ItemStack fetch(MobEffect effect,ServerPlayer sp){
         int slot=station.find(effect);if(slot>=0)return station.takeOne(slot);
         var inv=sp.getInventory();int best=-1,level=-1;
         for(int i=0;i<inv.items.size();i++){var s=inv.items.get(i);if(!DrinkData.mixable(s))continue;var fx=DrinkData.effectOf(s);if(fx.getEffect()==effect&&fx.getAmplifier()>level){best=i;level=fx.getAmplifier();}}
         if(best>=0)return inv.items.get(best).split(1);
-        // 0.0.40: not in the storage or the pack: the Home Zone's Logistics Center Hubs (the strongest such potion, nearest Hub first)
+        // Not in the storage or the pack: the Home Zone's Logistics Center Hubs
         var w=Supply.at(sp,pos);Supply.Borrowed pick=null;
         for(var b:Supply.borrow(w,s->DrinkData.mixable(s)&&DrinkData.effectOf(s).getEffect()==effect)){int amp=DrinkData.effectOf(b.stack).getAmplifier();if(pick==null||amp>level){pick=b;level=amp;}}
         if(pick==null)return ItemStack.EMPTY;
@@ -172,7 +160,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
     private boolean gather(ServerPlayer sp){
         if(station.order.isEmpty()){notice(WARN,"gather_choose");return false;}
         var wanted=new ArrayList<ResourceLocation>(station.order);var missing=new ArrayList<ResourceLocation>();
-        // keep what already matches the order, return the rest
+        // Keep what already matches the order, return the rest
         for(int i=0;i<3;i++){
             var s=mix.getItem(i);if(s.isEmpty())continue;var fx=DrinkData.effectOf(s);var id=fx==null?null:DrinkData.id(fx.getEffect());
             if(i<limit()&&DrinkData.mixable(s)&&id!=null&&wanted.remove(id))continue;
@@ -187,7 +175,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         if(latte()&&mix.getItem(3).isEmpty()){
             var inv=sp.getInventory();int at=-1;for(int i=0;i<inv.items.size();i++)if(CupDispenser.cup(inv.items.get(i))){at=i;break;}
             if(at>=0)mix.setItem(3,inv.items.get(at).split(1));
-            else{   // 0.0.40: a Paper Cup from a Hub in the Home Zone
+            else{   // A Paper Cup from a Hub in the Home Zone
                 var w=Supply.at(sp,pos);var cups=Supply.borrow(w,CupDispenser::cup);
                 if(cups.isEmpty())cupMissing=true;else{mix.setItem(3,cups.get(0).stack.split(1));Supply.settle(w,List.of(cups.get(0)));}
             }
@@ -203,7 +191,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         mix.setChanged();if(moved==0){notice(INFO,"table_empty");return false;}
         notice(INFO,"returned",moved);sound(SoundEvents.BUNDLE_REMOVE_ONE,1f);return true;
     }
-    /** A click on storage slot {@code slot}: with a potion in hand it goes in; otherwise one bottle comes out (shift: as many as you can carry). */
+    /** A click on storage slot slot: with a potion in hand it goes */
     private boolean storage(ServerPlayer sp,int slot,boolean shift){
         var carried=getCarried();
         if(!carried.isEmpty()){
@@ -237,7 +225,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         broadcastChanges();return done;
     }
 
-    // ---- what the screen is told ----------------------------------------------------------------------------------------------
+    // What the screen is told
     /** Effects a mixable potion of which is in the storage, the pack or on the table. */
     private Set<MobEffect> available(ServerPlayer sp){
         var set=new HashSet<MobEffect>();
@@ -282,11 +270,11 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         else if(BrewingRecipeRegistry.isValidIngredient(stack)&&!DrinkData.isPotion(stack)){if(!moveItemStackTo(stack,3,4,false))return ItemStack.EMPTY;}
         else if(CupDispenser.cup(stack)&&slots.get(SLOT_CUP).isActive()){if(!moveItemStackTo(stack,SLOT_CUP,SLOT_CUP+1,false))return ItemStack.EMPTY;}
         else if(stack.is(Items.GLASS_BOTTLE)||DrinkData.isPotion(stack)&&DrinkData.effects(stack).isEmpty()&&BrewingRecipeRegistry.isValidInput(stack)){
-            // water, awkward and other plain bottles go to the stand first, then the storage
+            // Water, awkward and other plain bottles go to the stand first, then the storage
             if(!moveItemStackTo(stack,0,3,false)){if(!DrinkData.isPotion(stack)||p.level().isClientSide||station==null)return ItemStack.EMPTY;int n=station.insert(stack,stack.getCount());if(n==0)return ItemStack.EMPTY;stack.shrink(n);}
         }
         else if(DrinkData.isPotion(stack)){
-            // every other potion goes into the counted storage (the server moves it; the client waits for the update)
+            // Every other potion goes into the counted storage (the server moves it; the client waits for the update)
             if(p.level().isClientSide||station==null)return ItemStack.EMPTY;
             int n=station.insert(stack,stack.getCount());if(n==0){notice(WARN,"storage_full");return ItemStack.EMPTY;}stack.shrink(n);
         }

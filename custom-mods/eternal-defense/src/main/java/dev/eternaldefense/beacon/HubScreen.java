@@ -11,7 +11,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** 0.0.40: the Logistics Center Hub's screen: the vanilla six-row chest, a page turner in the title bar and the slots in use. */
+/** The Logistics Center Hub's screen: the vanilla six-row chest */
 final class HubScreen extends AbstractContainerScreen<HubMenu> {
     private static final ResourceLocation CHEST=new ResourceLocation("textures/gui/container/generic_54.png");
     private Button prev,next;

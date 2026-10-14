@@ -70,7 +70,7 @@ final class MealPlannerTest {
     @Test void plannerFindsATableWheneverOneExistsOnSmallPantries(){
         var all=new ArrayList<>(pantry().values());var random=new Random(7);var values=MealRules.Effect.values();int agreed=0;
         for(int round=0;round<150;round++){
-            // at most three foods per group, so no candidate list is truncated
+            // At most three foods per group, so no candidate list is truncated
             Collections.shuffle(all,random);var chosen=new ArrayList<MealPlanner.Food>();var perGroup=new HashMap<String,Integer>();
             for(var f:all){if(chosen.size()>=8)break;if(perGroup.merge(f.group(),1,Integer::sum)<=3)chosen.add(f);}
             var catalogue=new LinkedHashMap<String,MealPlanner.Food>();chosen.forEach(f->catalogue.put(f.key(),f));
@@ -96,7 +96,7 @@ final class MealPlannerTest {
         assertEquals(1,MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE),false,4,c,stock,Set.of(),true).doubled(),"a sandwich holds three kinds: one doubled effect and one single");
         assertEquals(0,MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE),false,2,c,stock,Set.of(),true).doubled(),"Mk II cannot double");
         var mkThree=MealPlanner.plan(EnumSet.of(VITALITY,FORTITUDE),true,3,c,stock,Set.of(),true);assertEquals(1,mkThree.doubled(),"Mk III has three slots: one doubled effect and one single");assertEquals(3,mkThree.keys().size());
-        // without a second food of a group the plan still works, single strength
+        // Without a second food of a group the plan still works, single strength
         var thin=new HashMap<>(stock);thin.keySet().removeIf(k->k.equals("cooked_mutton"));
         var single=MealPlanner.plan(EnumSet.of(VITALITY),true,4,c,thin,Set.of(),true);assertNotNull(single);assertEquals(0,single.doubled());
     }

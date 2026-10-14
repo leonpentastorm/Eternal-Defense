@@ -40,11 +40,7 @@ import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraft.world.effect.MobEffect;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): an active drink's effect at home must sit still. Drinks Haste at home and counts every time Haste is
- * added, removed or runs out on the player, alone, with a meal, next to a vanilla beacon giving Haste I and then Haste II, and across the
- * zone's edge. Copied in by tools/qa/setup-qa.sh.
- */
+/** Drinks Haste at home and counts every time Haste is added, removed or runs out on the player, alone */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaDrinkLoop {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -61,7 +57,7 @@ public final class QaDrinkLoop {
     static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
     static BlockPos B(){return at(0,0,-6);}
 
-    // ---- every change of Haste on the player, with who made it (the first few) ----------------------------------------------------------
+    // Every change of Haste on the player, with who made it (the first few)
     static final List<String> EVENTS=Collections.synchronizedList(new ArrayList<>());static int traced;
     static void record(String kind,MobEffectInstance i){
         if(i==null||i.getEffect()!=MobEffects.DIG_SPEED)return;
@@ -81,7 +77,7 @@ public final class QaDrinkLoop {
             check(name+": Haste is never removed or run out ("+EVENTS.size()+" changes)",count("removed")==0&&count("expired")==0,all);
             check(name+": the player has Haste "+expect,haste().startsWith(expect),haste());},"verdict "+name);
     }
-    // ---- a rogue mod: every 15 ticks it takes every endless effect off the player (what some mods do to endless effects) ----------------------
+    // A rogue mod: every 15 ticks it takes every endless effect off the player
     static boolean rogue;static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
     static final class RogueMod {
         static void takeEndless(net.minecraft.server.level.ServerPlayer p){for(var i:new ArrayList<>(p.getActiveEffects()))if(i.isInfiniteDuration())p.removeEffect(i.getEffect());}
@@ -138,7 +134,7 @@ public final class QaDrinkLoop {
         step(5,()->{EVENTS.clear();traced=0;srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0));},"back home");
         step(300,()->check("coming home turns it endless once and then it stands still",count("removed")==0&&count("expired")==0&&haste().equals("1/inf"),String.join(", ",EVENTS)),"home again");
 
-        // ---- 0.0.37: another mod keeps taking endless effects away: the trackers stop fighting it ----------------------------------------------
+        // Another mod keeps taking endless effects away: the trackers stop fighting it
         step(5,()->{EVENTS.clear();traced=0;CHAT.clear();rogue=true;},"a rogue mod starts taking every endless effect off the player");
         step(200,()->{},"ten seconds of it");
         step(2,()->{
@@ -156,7 +152,7 @@ public final class QaDrinkLoop {
         step(40,()->check("in the field the drink counts down again (its field time, not the long timer)",time(MobEffects.DIG_SPEED)>0&&!EndlessEffects.steadyTime(time(MobEffects.DIG_SPEED)),""+time(MobEffects.DIG_SPEED)),"field");
         step(5,()->srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0)),"home again");
 
-        // ---- 0.0.37 (owner): eating at a Cook Pot uses up the bowl, drinking at a Brew Pot uses up the Paper Cup (creative keeps them, as vanilla) --
+        // Eating at a Cook Pot uses up the bowl, drinking at a Brew Pot uses up the Paper Cup
         step(5,()->srv(()->{
             sl().setBlock(at(-8,0,6),EternalDefense.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(-4,0,6),EternalDefense.COOK_POT.get().defaultBlockState(),3);
             sl().setBlock(at(8,0,6),EternalDefense.DRINK_STATION_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,6),EternalDefense.BREW_POT.get().defaultBlockState(),3);

@@ -2,10 +2,7 @@ package dev.eternaldefense.beacon;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-/**
- * Each player's own choices, in {@code config/eternal-defense-client.toml} on their computer (never sent to the server). Set from the
- * beacon's Settings tab.
- */
+/** Each player's own choices, in config/eternal-defense-client.toml on their computer (never sent to the server). */
 final class DefenseClientConfig {
     private DefenseClientConfig(){}
     static final ForgeConfigSpec SPEC;

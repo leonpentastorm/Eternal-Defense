@@ -136,7 +136,7 @@ final class SupportTest {
         base.release(second);assertFalse(base.hold(second,144,true),"only the holder can release it");
     }
     @Test void theGunNeedsTimeToTurnBeforeAnyCallCanFire(){
-        // a quarter turn at the slowest traverse, plus the settling pause, comes before the delivery time starts
+        // A quarter turn at the slowest traverse, plus the settling pause, comes before the delivery time starts
         int turn=SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(0))+SupportCannon.SETTLE_TICKS;
         assertTrue(turn>=60,"turning and settling takes a few seconds: "+turn);
         assertTrue(SupportCannon.turnTicks(90,CannonUpgrades.turnSpeed(3))+SupportCannon.SETTLE_TICKS<turn,"Faster traverse shortens it");

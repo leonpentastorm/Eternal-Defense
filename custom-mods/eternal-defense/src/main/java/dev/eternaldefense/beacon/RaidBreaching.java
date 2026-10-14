@@ -7,7 +7,7 @@ import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.phys.*;
 
-/** Raid-only digging with nearby doors preferred. Protected damage always uses the recovery journal. */
+/** Raid-only digging with nearby doors preferred. */
 final class RaidBreaching {
     static boolean breakable(ServerLevel l,CampaignData d,BlockPos p){var s=l.getBlockState(p);return l.hasChunkAt(p)&&!s.isAir()&&!DefenseStructures.beacon(l,p)&&!s.getCollisionShape(l,p).isEmpty()&&s.getDestroySpeed(l,p)>=0;}
     static BlockPos choose(ServerLevel l,CampaignData d,Mob mob){

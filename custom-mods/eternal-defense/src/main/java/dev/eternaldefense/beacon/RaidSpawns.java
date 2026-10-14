@@ -20,22 +20,22 @@ final class RaidSpawns {
         double cos=Math.cos(angle),sin=Math.sin(angle);double stretch=distance/Math.max(Math.abs(cos),Math.abs(sin));
         return new BlockPos(origin.getX()+(int)Math.round(cos*stretch),origin.getY(),origin.getZ()+(int)Math.round(sin*stretch));
     }
-    /** How far below the beacon a spawn may be: none at first, then more the longer reinforcements have been waiting for a place. */
+    /** How far below the beacon a spawn may be: none at first */
     static int allowedDrop(long waveTicks){return waveTicks>=1800?10:waveTicks>=600?4:0;}
     static boolean safe(ServerLevel l,CampaignData d,BlockPos p){
         if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+CLEARANCE||!l.hasChunkAt(p)||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p))return false;
-        // surface only, at or above the beacon's level
+        // Surface only, at or above the beacon's level
         if(p.getY()<d.beacon.getY()-allowedDrop(d.waveTicks)||p.getY()>d.beacon.getY()+24)return false;
         return environmentSafe(l,p)&&openGround(l,p);
     }
-    /** Not a crevice: the ground around the spot is open and level, so a mob dropped here can walk away in any direction. */
+    /** Not a crevice: the ground around the spot is open and level */
     static boolean openGround(ServerLevel l,BlockPos p){
         int open=0;
         for(int dx=-2;dx<=2;dx++)for(int dz=-2;dz<=2;dz++){
             var cell=p.offset(dx,0,dz);if(!l.hasChunkAt(cell))return false;
             boolean free=l.getBlockState(cell).getCollisionShape(l,cell).isEmpty()&&l.getBlockState(cell.above()).getCollisionShape(l,cell.above()).isEmpty()&&l.getBlockState(cell.below()).isSolid();
             if(free)open++;
-            else if(Math.abs(dx)<=1&&Math.abs(dz)<=1)return false; // the ring around the spot must be walkable
+            else if(Math.abs(dx)<=1&&Math.abs(dz)<=1)return false; // The ring around the spot must be walkable
         }
         return open>=18;
     }
@@ -52,17 +52,13 @@ final class RaidSpawns {
             var s=l.getBlockState(cell);String block=BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();if(!s.isAir()&&s.isSolid()&&!BaseScoring.terrain(block)&&!block.endsWith("_log")&&!block.endsWith("_stem"))return false;
         }return true;
     }
-    // ---- marchable corridors ----------------------------------------------------------------------------------------------------
-    // Raiders march straight at the beacon, so a spawn whose straight line to the zone runs through water, lava, a cliff or a wall of
-    // rock can leave a raider that never arrives, and one such raider can lose the raid. Each staging direction is therefore checked once
-    // per raid from the surface heights along it, and clean directions are preferred. Nothing is ever force-loaded: a sample in an
-    // unloaded chunk is "unknown", never a failure.
-    /** The staging ring is cut into this many world-aligned wedges (wedge 0 starts due east, counting towards +z). One probe per wedge per raid. */
+    // Marchable corridors
+    /** The staging ring is cut into this many world-aligned wedges (wedge 0 starts due east, counting towards +z). */
     static final int WEDGES=12;
     static final double WEDGE=Math.PI*2/WEDGES;
-    /** Distance between two samples along a wedge's centre ray, and where the ray starts (blocks beyond the zone radius). */
+    /** Distance between two samples along a wedge's centre ray */
     static final int PROBE_STEP=4,PROBE_FROM=8;
-    /** A rise of more than this, or a drop of more than {@link #MAX_DROP}, between two samples is a violation. */
+    /** A rise of more than this, or a drop of more than MAX_DROP, between two samples is a violation. */
     static final int MAX_STEP=2,MAX_DROP=3;
     static final int UNKNOWN=Integer.MIN_VALUE;
     /** How many wedges, and how many angles in each, a rescue tries; and how far from every player it has to land. */
@@ -71,22 +67,15 @@ final class RaidSpawns {
 
     /** Violations along a corridor (water, lava, magma, steps, drops) and how many samples could not be read. */
     record Score(int violations,int unknown){boolean clean(){return violations==0;}}
-    /**
-     * The surface profile of one wedge's centre ray: sample {@code i} lies {@code from+i*PROBE_STEP} blocks from the beacon (square ring
-     * distance, like {@link #ringAt}); {@code surface[i]} is the surface height, {@link #UNKNOWN} when it could not be read or is not natural
-     * ground; {@code hazard[i]} marks a surface of fluid or magma. Sample 0 is the one nearest the zone.
-     */
+    /** The surface profile of one wedge's centre ray: sample i lies from+i*PROBE_STEP blocks from the beacon */
     record Corridor(int from,int[] surface,boolean[] hazard){
-        /** Pure: the score of the part of the corridor between {@code distance} and the zone (what a raider spawned at {@code distance} must cross). */
+        /** Pure: the score of the part of the corridor between distance and the zone */
         Score score(int distance){return RaidSpawns.score(from,surface,hazard,distance);}
     }
-    /** Pure: wedge of an offset from the beacon, 0 to {@link #WEDGES}-1. */
+    /** Pure: wedge of an offset from the beacon, 0 to WEDGES-1. */
     static int wedgeOf(double dx,double dz){double a=Math.atan2(dz,dx);if(a<0)a+=Math.PI*2;return Math.min(WEDGES-1,(int)(a/WEDGE+1e-9));}
     static int wedgeOf(BlockPos origin,BlockPos p){return wedgeOf(p.getX()-origin.getX(),p.getZ()-origin.getZ());}
-    /**
-     * Pure. Walking inwards from {@code distance}: a hazard surface counts one violation, a rise of more than {@link #MAX_STEP} or a drop of more
-     * than {@link #MAX_DROP} between two neighbouring samples counts one. A pair with an unknown sample is not judged.
-     */
+    /** Pure. */
     static Score score(int from,int[] surface,boolean[] hazard,int distance){
         int count=Math.max(0,Math.min(surface.length,Math.floorDiv(distance-from,PROBE_STEP)+1));int violations=0,unknown=0;
         for(int i=0;i<count;i++){
@@ -103,7 +92,7 @@ final class RaidSpawns {
     private static final Map<Integer,Corridor> CORRIDORS=new HashMap<>();
     private static long corridorRaid=Long.MIN_VALUE;
     private static int probesThisRaid;
-    /** The corridor of one wedge, probed on first use and kept for the rest of the raid (so at most {@link #WEDGES} probes per raid). */
+    /** The corridor of one wedge, probed on first use and kept for the rest of the raid */
     static Corridor corridor(ServerLevel l,CampaignData d,int wedge){
         long raid=d.campaignSerial*1_000_003L+d.raidsStarted;
         if(raid!=corridorRaid){CORRIDORS.clear();corridorRaid=raid;probesThisRaid=0;}
@@ -112,15 +101,12 @@ final class RaidSpawns {
     /** A new raid, the end of one, or the server stopping: forget every probe. */
     static void forgetCorridors(){CORRIDORS.clear();corridorRaid=Long.MIN_VALUE;probesThisRaid=0;}
     static int probesThisRaid(){return probesThisRaid;}
-    /** One column of ground: its surface height ({@link #UNKNOWN} when it could not be read), and whether the surface is a fluid or lava/magma. */
+    /** One column of ground: its surface height (UNKNOWN when it could not be read) */
     record Column(int surface,boolean fluid,boolean lava){
         static final Column NOT_READABLE=new Column(UNKNOWN,false,false);
         boolean known(){return surface!=UNKNOWN;}
     }
-    /**
-     * Reads one column from the {@code MOTION_BLOCKING_NO_LEAVES} height map. Never loads a chunk: an unloaded column is unknown. A surface that is
-     * a tree trunk, or a block a player placed, is not the ground either, so it is unknown too (a trunk would look like a cliff).
-     */
+    /** Reads one column from the MOTION_BLOCKING_NO_LEAVES height map. */
     static Column column(ServerLevel l,int x,int z,Set<Long> placed){
         if(!l.hasChunkAt(new BlockPos(x,0,z)))return Column.NOT_READABLE;
         int y=l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);var top=new BlockPos(x,y-1,z);var state=l.getBlockState(top);var fluid=l.getFluidState(top);
@@ -139,13 +125,9 @@ final class RaidSpawns {
         }
         return new Corridor(from,surface,hazard);
     }
-    /** Is this column inside the protected zone (square, like the zone itself)? Players' own ground: the gate probes never judge it. */
+    /** Is this column inside the protected zone (square, like the zone itself)? */
     static boolean insideZone(CampaignData d,int x,int z){return Math.max(Math.abs(x-d.beacon.getX()),Math.abs(z-d.beacon.getZ()))<=d.radius();}
-    /**
-     * What a raider would meet in the next {@link RaidMarch#LOOKAHEAD_BLOCKS} blocks of its straight line to the beacon: lava or magma, a drop of
-     * {@link RaidMarch#GATE_DROP_BLOCKS} or more, or a stretch of {@link RaidMarch#GATE_FLUID_SPAN} wet blocks in a row. One sample per block, the
-     * raider's own feet as the first one; samples inside the zone and beyond the beacon are unknown.
-     */
+    /** What a raider would meet in the next RaidMarch.LOOKAHEAD_BLOCKS blocks of its straight line to the beacon */
     static TerrainProbe.Hazard lookAhead(ServerLevel l,CampaignData d,net.minecraft.world.entity.Mob mob){
         double dx=d.beacon.getX()+.5-mob.getX(),dz=d.beacon.getZ()+.5-mob.getZ(),len=Math.sqrt(dx*dx+dz*dz);
         if(len<1)return TerrainProbe.Hazard.NONE;dx/=len;dz/=len;
@@ -159,10 +141,7 @@ final class RaidSpawns {
         }
         return TerrainProbe.probe(surface,fluid,lava,1);
     }
-    /**
-     * The same probe along the whole straight way from {@code from} (a gate's destination) to the edge of the zone, one sample every
-     * {@link RaidMarch#DESTINATION_SPACING} blocks: a raider that comes out there must be able to march in.
-     */
+    /** The same probe along the whole straight way from from (a gate's destination) to the edge of the zone */
     static TerrainProbe.Hazard lineProbe(ServerLevel l,CampaignData d,BlockPos from){
         double dx=d.beacon.getX()-from.getX(),dz=d.beacon.getZ()-from.getZ(),len=Math.sqrt(dx*dx+dz*dz);
         if(len<1)return TerrainProbe.Hazard.NONE;dx/=len;dz/=len;
@@ -177,11 +156,7 @@ final class RaidSpawns {
         return TerrainProbe.probe(s,f,v,spacing);
     }
 
-    /**
-     * Where a reinforcement appears. Rings are tried from the outer edge of the active chunks inwards, as before; on each ring the twelve
-     * wedges are tried from a random one at a random angle. Candidates in wedges with a clean corridor come first, then those with the fewest
-     * violations; every candidate is checked at most once, so the worst case costs what it always did.
-     */
+    /** Where a reinforcement appears. */
     static BlockPos find(ServerLevel l,CampaignData d){
         int minimum=d.radius()+CLEARANCE,farthest=farthest(l,d);
         record Candidate(BlockPos column,Score score){}
@@ -203,30 +178,22 @@ final class RaidSpawns {
         FAILING.putIfAbsent(l,l.getGameTime());return null;
     }
 
-    // ---- gate spawns: when no natural ground is left (0.0.20) ------------------------------------------------------------------------
+    // Gate spawns: when no natural ground is left
     /** Without natural ground for this long, reinforcements come through a red gate closer in. */
     static final int GATE_AFTER_TICKS=200;
-    /**
-     * A gate spot is never inside the zone or within {@link #GATE_BEYOND_ZONE} blocks of its edge, never within {@link #GATE_PLAYER_DISTANCE}
-     * blocks of a player, never more than {@link #GATE_HEIGHT} blocks above or below the beacon, and it is outdoors (sky light at least
-     * {@link #GATE_SKY_LIGHT}) on ground nobody built.
-     */
+    /** A gate spot is never inside the zone or within GATE_BEYOND_ZONE blocks of its edge */
     static final int GATE_BEYOND_ZONE=12,GATE_PLAYER_DISTANCE=12,GATE_HEIGHT=32,GATE_SKY_LIGHT=13,GATE_RING_STEP=8;
     /** Where a reinforcement appears, and whether it comes through a gate. */
     record Place(BlockPos pos,boolean gate){}
-    /** Pure: it is time for gates ({@code failingSince}: when natural ground was last missed, MIN_VALUE when it was not). */
+    /** Pure: it is time for gates (failingSince: when natural ground was last missed, MIN_VALUE when it was not). */
     static boolean gateDue(long failingSince,long now){return failingSince!=Long.MIN_VALUE&&now-failingSince>=GATE_AFTER_TICKS;}
-    /** Pure: the ring distances a gate spot is tried at, from the outer edge of the active chunks in to the closest allowed. */
+    /** Pure: the ring distances a gate spot is tried at, from the outer edge of the active chunks in to the closest */
     static List<Integer> gateRings(int zoneRadius,int farthest){
         int near=zoneRadius+GATE_BEYOND_ZONE;var out=new ArrayList<Integer>();
         for(int r=Math.max(near,farthest);r>near;r-=GATE_RING_STEP)out.add(r);
         out.add(near);return out;
     }
-    /**
-     * A reinforcement's place: natural ground ({@link #find}) whenever there is any; after {@link #GATE_AFTER_TICKS} without, the nearest
-     * outdoor ground that will do ({@link #findGate}), where it comes out of a red gate. The players are told once a wave (gates, or no
-     * ground at all). Null when there is nothing yet.
-     */
+    /** A reinforcement's place: natural ground (find) whenever there */
     static Place place(ServerLevel l,CampaignData d){
         var natural=find(l,d);if(natural!=null)return new Place(natural,false);
         long now=l.getGameTime();
@@ -253,7 +220,7 @@ final class RaidSpawns {
         }
         return null;
     }
-    /** The relaxed rules of a gate spot: standing room on solid, natural, dry ground, outdoors, away from the zone and from players. */
+    /** The relaxed rules of a gate spot: standing room on solid, natural, dry ground, outdoors */
     static boolean gateSafe(ServerLevel l,CampaignData d,BlockPos p,Collection<net.minecraft.world.phys.Vec3> players,Set<Long> placed){
         if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+GATE_BEYOND_ZONE)return false;
         if(Math.abs(p.getY()-d.beacon.getY())>GATE_HEIGHT||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p))return false;
@@ -264,32 +231,26 @@ final class RaidSpawns {
         for(var cell:List.of(p,p.above()))if(!l.getBlockState(cell).getCollisionShape(l,cell).isEmpty()||!l.getFluidState(cell).isEmpty())return false;
         return l.getBrightness(net.minecraft.world.level.LightLayer.SKY,p)>=GATE_SKY_LIGHT;
     }
-    /** Every raid enemy starts with a burst of speed (Speed II for {@link #RUSH_SECONDS} seconds) so the long walk in from its spawn goes quicker. */
+    /** Every raid enemy starts with a burst of speed (Speed II for RUSH_SECONDS seconds) so the long walk */
     static final int RUSH_SECONDS=10,RUSH_AMPLIFIER=1;
     static void rush(net.minecraft.world.entity.Mob mob){mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED,RUSH_SECONDS*20,RUSH_AMPLIFIER,false,false,false));}
     /** A raid starts or ends: natural ground is looked for afresh. */
     static void forgetGates(){FAILING.clear();}
 
-    // ---- rescue: a new place for a raider that cannot get to the beacon ------------------------------------------------------------
-    /** Pure: nobody (in {@code players}) is closer than {@code min} blocks to {@code p}. */
+    // Rescue: a new place for a raider that cannot get to the beacon
+    /** Pure: nobody (in players) is closer than min blocks to p. */
     static boolean farFromPlayers(net.minecraft.world.phys.Vec3 p,Collection<net.minecraft.world.phys.Vec3> players,double min){
         for(var q:players)if(q.distanceToSqr(p)<min*min)return false;return true;
     }
-    /** Pure: the order wedges are tried in for a rescue: every wedge but the one the raider was stuck in (starting at {@code start}), then that one. */
+    /** Pure: the order wedges are tried in for a rescue: every wedge but the one the raider was stuck */
     static List<Integer> rescueOrder(int stuckWedge,int start){
         var order=new ArrayList<Integer>();for(int i=0;i<WEDGES;i++){int w=Math.floorMod(start+i,WEDGES);if(w!=stuckWedge)order.add(w);}order.add(stuckWedge);return order;
     }
-    /** Pure: the first place {@code attempt} yields, trying the wedges in {@link #rescueOrder}; null when no wedge yields one. */
+    /** Pure: the first place attempt yields, trying the wedges in rescueOrder; null when no wedge yields one. */
     static <T> T pickRescue(int stuckWedge,int start,java.util.function.IntFunction<T> attempt){
         for(int w:rescueOrder(stuckWedge,start)){T found=attempt.apply(w);if(found!=null)return found;}return null;
     }
-    /**
-     * A place for a stuck raider to come out of its gate: it passes every rule a fresh spawn does ({@link #safe}: outside the zone and its
-     * {@link #CLEARANCE}, loaded and entity-ticking, inside the world border, at or above the beacon's level, open and level ground), the straight
-     * way from it to the zone passes the {@link TerrainProbe} (no lava, chasm or wide lake), and it is at least {@link #RESCUE_PLAYER_DISTANCE}
-     * blocks from every player. It lies on the ring at the minimum distance plus the usual spread, in another wedge than the one the raider was
-     * stuck in when any other will do. Null when nothing qualifies.
-     */
+    /** A place for a stuck raider to come out of its gate: it passes every rule a fresh spawn does */
     static BlockPos findRescue(ServerLevel l,CampaignData d,int stuckWedge,Collection<net.minecraft.world.phys.Vec3> players){
         return pickRescue(stuckWedge,l.random.nextInt(WEDGES),wedge->{
             for(int tries=0;tries<RESCUE_TRIES;tries++){

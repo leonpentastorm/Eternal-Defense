@@ -4,7 +4,7 @@ import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.api.item.IGun;
 import net.minecraft.world.item.ItemStack;
 
-/** Field-radio fuel weapons cannot be refilled at our tables and have unsafe inspect/unjam animations. */
+/** Field-radio fuel weapons cannot be refilled at the tables and have unsafe inspect/unjam animations. */
 final class WeaponCompatibility {
     static boolean craftable(ItemStack stack){
         var gun=IGun.getIGunOrNull(stack);if(gun==null)return true;

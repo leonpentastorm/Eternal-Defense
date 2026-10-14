@@ -20,18 +20,10 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import java.util.*;
 
-/**
- * The supply rail of the Forward Operating Bases (0.0.24, FOB slice 2), on the server. Each FOB has at most one pair of gates (its Supply
- * Delivery Gate in its village, a Supply Receiving Gate in the base zone). A ride in a plain minecart through the Receiving Gate, then the
- * Delivery Gate, opens the route (the commissioning ride; its one-way time is the route's T); the route then delivers the FOB's tribute by
- * itself every 2T/0.8 ticks of play while its inspection clock runs, and a round trip (Receiving, Delivery, Receiving) by the same rider in the
- * same cart carries twice a passive trip and renews the clock. Tribute enters the beacon reward chest only through {@link RaidRewards#queue}.
- * Rides live in memory only: a restart, a logout or a dismount ends one. 0.0.31 (owner): the tribute is the FOB's four loot slots, delivered
- * into the Receiving Gate's own storage (a double chest's worth, take only) instead of the beacon's reward chest.
- */
+/** The supply rail of the Forward Operating Bases, on the server. */
 final class Routes {
     private Routes(){}
-    /** The cart a rider was in and where it was last tick (passes are found between two positions, never from one point). */
+    /** The cart a rider was in and where it was last tick */
     record Track(UUID cart,double x,double y,double z){}
     private static final Map<UUID,Track> TRACK=new HashMap<>();
     /** A ride under way on a route (by FOB id). */
@@ -43,7 +35,7 @@ final class Routes {
     static void clear(){TRACK.clear();RUNS.clear();}
     static final double SLACK=.2;
 
-    // ---- every server tick: riders and the gates they pass ------------------------------------------------------------------------------------------
+    // Every server tick: riders and the gates they pass
     static void tick(ServerLevel l,int clock){
         var server=l.getServer();if(server.getPlayerList().getPlayerCount()==0)return;
         var d=FobData.get(l);
@@ -64,7 +56,7 @@ final class Routes {
         if(clock%20==0)second(l,d);
     }
 
-    /** A rider in a plain minecart rolled through a gate of FOB {@code f}. */
+    /** A rider in a plain minecart rolled through a gate of FOB f. */
     static void pass(ServerLevel l,FobData d,FobData.Fob f,RailGates.Kind kind,ServerPlayer p,AbstractMinecart cart){
         if(!FobRules.working(f.state)){say(p,"route.pass.fob_down",f.name);RUNS.remove(f.id);return;}
         if(!f.hasRoute()){say(p,"route.pass.no_partner",f.name);return;}
@@ -76,7 +68,7 @@ final class Routes {
             case RESTARTED->{run.start=run.legStart=now;say(p,"route.pass.restarted",f.name);sound(p,SoundEvents.NOTE_BLOCK_BELL.value(),1.2f);}
             case BUSY->{say(p,"route.pass.busy",f.name);sound(p,SoundEvents.VILLAGER_NO,1f);}
             case START_AT_HOME->{say(p,"route.pass.start_at_home",f.name);sound(p,SoundEvents.VILLAGER_NO,1f);}
-            case WRONG_GATE->{if(now-run.legStart>RouteRules.WRONG_GATE_QUIET)say(p,"route.pass.wrong_gate");}   // not on the way back through the gate's other lane
+            case WRONG_GATE->{if(now-run.legStart>RouteRules.WRONG_GATE_QUIET)say(p,"route.pass.wrong_gate");}   // Not on the way back through the gate's other lane
             case TOO_CLOSE->{RUNS.remove(f.id);say(p,"route.pass.too_close",(int)distance,RouteRules.MIN_SEPARATION);sound(p,SoundEvents.VILLAGER_NO,1f);}
             case COMMISSIONED->{
                 f.commissioned=true;f.baseline=RouteRules.clamp(now-run.start,distance);f.clock=RouteRules.CLOCK;f.nextPassive=d.onlineTicks+RouteRules.period(f.baseline);
@@ -92,7 +84,7 @@ final class Routes {
                 RUNS.remove(f.id);
                 f.baseline=RouteRules.baseline(run.outLeg,now-run.legStart,distance);f.clock=RouteRules.CLOCK;
                 long period=RouteRules.period(f.baseline);
-                f.nextPassive=d.onlineTicks+period;d.setDirty();   // the ride carried the trips: the next passive one waits a whole period
+                f.nextPassive=d.onlineTicks+period;d.setDirty();   // The ride carried the trips: the next passive one waits a whole period
                 if(full(f)){say(p,"route.pass.complete_full",RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.VILLAGER_NO,1f);return;}
                 var brought=haul(f,RouteRules.rideTrips(sinceLast(d,f,0),period),d.onlineTicks);int stored=store(d,f,brought,"ride");
                 say(p,"route.pass.complete",stored,RouteRules.CLOCK/RouteRules.HOUR);sound(p,SoundEvents.PLAYER_LEVELUP,1.3f);
@@ -100,14 +92,14 @@ final class Routes {
             }
         }
     }
-    /** Ticks of play since the route's last delivery, {@code ahead} ticks from now; a route that never delivered gets a full ride. */
+    /** Ticks of play since the route's last delivery, ahead ticks from now */
     static long sinceLast(FobData d,FobData.Fob f,long ahead){return f.lastTrip==0?Long.MAX_VALUE/4:d.onlineTicks+ahead-f.lastTrip;}
-    /** What a ride will bring home if the way back takes as long as the way out (the tallies looked at, not spent: the Receiving Gate takes it). */
+    /** What a ride will bring home if the way back takes as long as the way out */
     static int load(FobData d,FobData.Fob f,long outLeg){
         double trips=RouteRules.rideTrips(sinceLast(d,f,outLeg),RouteRules.period(f.baseline));
         return RouteRules.total(RouteRules.trip(f.tally.clone(),f.loots(),f.yield(),trips));
     }
-    // ---- once a second: the clock, passive deliveries, rides that went wrong ----------------------------------------------------------------------
+    // Once a second: the clock, passive deliveries, rides that went wrong
     static void second(ServerLevel l,FobData d){
         d.onlineTicks+=20;long now=d.onlineTicks;boolean dirty=false;
         for(var f:d.fobs.values()){
@@ -130,7 +122,7 @@ final class Routes {
                 f.note.clear();f.lastNoteAt=now;dirty=true;
             }
         }
-        // rides that cannot go on: the rider left, died, changed world or cart, the FOB or a gate is gone, or the leg took far too long
+        // Rides that cannot go on: the rider left, died, changed world or cart, the FOB or a gate is gone
         for(var e:List.copyOf(RUNS.entrySet())){
             var f=d.byId(e.getKey());var run=e.getValue();var rider=l.getServer().getPlayerList().getPlayer(run.rider);
             String reason=null;
@@ -144,14 +136,14 @@ final class Routes {
             if(reason!=null){RUNS.remove(e.getKey());if(rider!=null){say(rider,"route.cancel."+reason,f==null?"":f.name);sound(rider,SoundEvents.VILLAGER_NO,1f);}}
         }
         if(dirty)d.setDirty();
-        // an open gate screen counts down with the route (its state again, once a second), and so does the FOB screen's tribute column (0.0.31)
+        // An open gate screen counts down with the route (its state again, once a second)
         for(var p:l.getServer().getPlayerList().getPlayers()){
             if(p.containerMenu instanceof RailGates.GateMenu menu&&menu.stillValid(p))open(p,menu.pos,menu.message);
             else if(p.containerMenu instanceof FobBlocks.FobMenu menu&&menu.stillValid(p))Fobs.open(p,menu.pos,menu.message);
         }
     }
-    // ---- the tribute (0.0.31): the slots' tallies into the Receiving Gate's storage ---------------------------------------------------------------
-    /** What {@code trips} trips bring (item id to count, the slots in order), taken out of the tallies; {@code now} is the delivery's time. */
+    // The tribute: the slots' tallies into the Receiving Gate's storage
+    /** What trips trips bring (item id to count, the slots in order), taken out of the tallies */
     static Map<String,Integer> haul(FobData.Fob f,double trips,long now){
         f.lastTrip=now;
         var loots=f.loots();int[] n=RouteRules.trip(f.tally,loots,f.yield(),trips);
@@ -165,7 +157,7 @@ final class Routes {
         for(var slot:RouteRules.Slot.values())if(f.slotOn[slot.ordinal()]&&f.depot().canAddItem(stack(f.loot(slot).id(),1)))return false;
         return true;
     }
-    /** Puts a haul into the storage; what does not fit goes back into its slot's tally (nothing is lost). Returns the items stored. */
+    /** Puts a haul into the storage; what does not fit goes back into its slot's tally (nothing is lost). */
     static int store(FobData d,FobData.Fob f,Map<String,Integer> haul,String kind){
         int stored=0;var loots=f.loots();
         for(var e:haul.entrySet()){
@@ -179,12 +171,9 @@ final class Routes {
         if(stored>0)log("{}: {} delivery of {} items into the storage",f.name,kind,stored);
         return stored;
     }
-    /**
-     * A FOB is deleted: its storage is handed to the player who took it back (what does not fit drops at their feet), or, without one, dropped
-     * at its Receiving Gate (or the FOB Beacon) if loaded. Returns the stacks handed over.
-     */
+    /** A FOB is deleted: its storage is handed to the player who took it back */
     static int spill(ServerLevel l,FobData.Fob f,ServerPlayer p){
-        // no player: dropped at the Receiving Gate, or at the FOB Beacon when the gate's land is not loaded (the FOB's always is: its block just went)
+        // No player: dropped at the Receiving Gate, or at the FOB Beacon when the gate's land is not loaded
         int stacks=0;var at=f.receivingGate!=null&&l.hasChunkAt(f.receivingGate)?f.receivingGate:f.pos;
         for(int i=0;i<f.depot().getContainerSize();i++){var s=f.depot().removeItemNoUpdate(i);if(s.isEmpty())continue;stacks++;
             if(p!=null){if(!p.getInventory().add(s))p.drop(s,false);}
@@ -199,8 +188,8 @@ final class Routes {
     }
     static long seconds(long ticks){return Math.round(ticks/20.0);}
 
-    // ---- the gates ------------------------------------------------------------------------------------------------------------------------------
-    /** Why a gate cannot stand here: a key under {@code gate.refused.}, or null. */
+    // The gates
+    /** Why a gate cannot stand here: a key under gate.refused., or null. */
     static String placeProblem(ServerLevel l,RailGates.Spot spot,RailGates.Kind kind,ItemStack stack){
         if(l.dimension()!=Level.OVERWORLD)return "overworld";
         if(spot==null)return "rail";
@@ -212,7 +201,7 @@ final class Routes {
         }else if(BaseZone.problem(l,anchor)!=null)return "zone";
         return null;
     }
-    /** A gate was placed: the Delivery Gate links to the FOB whose village it stands in; the Receiving Gate to the FOB it was carried from, or asks. */
+    /** A gate was placed: the Delivery Gate links to the FOB whose village it stands */
     static void placed(ServerLevel l,BlockPos pos,RailGates.Kind kind,ServerPlayer p,ItemStack stack){
         var d=FobData.get(l);var be=l.getBlockEntity(pos) instanceof RailGates.GateEntity g?g:null;if(be==null)return;
         if(kind==RailGates.Kind.DELIVERY){
@@ -224,7 +213,7 @@ final class Routes {
         if(f!=null&&f.receivingGate==null){link(l,d,f,RailGates.Kind.RECEIVING,pos,be);if(p!=null)say(p,"gate.linked",f.name);return;}
         if(p!=null)open(p,pos,"",true);
     }
-    /** Links a gate to FOB {@code f}. A new pair (or a moved gate) needs a new commissioning ride: the measured time no longer fits the track. */
+    /** Links a gate to FOB f. */
     static void link(ServerLevel l,FobData d,FobData.Fob f,RailGates.Kind kind,BlockPos pos,RailGates.GateEntity be){
         if(kind==RailGates.Kind.DELIVERY)f.deliveryGate=pos.immutable();else f.receivingGate=pos.immutable();
         f.commissioned=false;f.nextPassive=0;RUNS.remove(f.id);be.link(f.id);d.setDirty();
@@ -238,11 +227,11 @@ final class Routes {
         RUNS.remove(f.id);d.setDirty();
     }
     static String nameFor(ServerLevel l,long id){var f=id==0?null:FobData.get(l).byId(id);return f==null?"":f.name;}
-    /** Sends the gates of FOB {@code f} their name again (after a rename). */
+    /** Sends the gates of FOB f their name again (after a rename). */
     static void refreshNames(ServerLevel l,FobData.Fob f){
         for(var pos:new BlockPos[]{f.deliveryGate,f.receivingGate})if(pos!=null&&l.hasChunkAt(pos)&&l.getBlockEntity(pos) instanceof RailGates.GateEntity be)be.link(f.id);
     }
-    /** The traffic light of one gate, once a second (its block entity's ticker); a gate whose FOB is gone turns UNLINKED. */
+    /** The traffic light of one gate, once a second (its block entity's ticker) */
     static void light(ServerLevel l,BlockPos pos,BlockState state,RailGates.GateEntity be){
         var d=FobData.get(l);var f=be.fobId==0?null:d.byId(be.fobId);
         boolean linked=f!=null&&(pos.equals(f.deliveryGate)||pos.equals(f.receivingGate));
@@ -255,12 +244,12 @@ final class Routes {
         return RouteRules.signal(true,f.hasRoute(),FobRules.working(f.state),f.commissioned,f.clock,RUNS.containsKey(f.id),full(f));
     }
 
-    // ---- clicks: the screen, the shovel ----------------------------------------------------------------------------------------------------------
+    // Clicks: the screen, the shovel
     static void use(ServerPlayer p,BlockPos anchor,ItemStack held){
         if(held.is(EternalDefense.CONTROLLER.get())){pickUp(p,anchor);return;}
         open(p,anchor,"",true);
     }
-    /** The Recovery Shovel takes a gate back for free; the item remembers its FOB, so the gate links again where it is placed. */
+    /** The Recovery Shovel takes a gate back for free; the item remembers its FOB */
     static void pickUp(ServerPlayer p,BlockPos anchor){
         var l=p.serverLevel();var state=l.getBlockState(anchor);if(!(state.getBlock() instanceof RailGates.GateBlock gate))return;
         long id=l.getBlockEntity(anchor) instanceof RailGates.GateEntity be?be.fobId:0;var f=FobData.get(l).byId(id);
@@ -272,20 +261,20 @@ final class Routes {
     }
     static final int LINK=10;
     static void open(ServerPlayer p,BlockPos anchor,String message){open(p,anchor,message,false);}
-    /** {@code fresh}: a click on the gate always opens a new screen; otherwise an open one is refreshed in place. */
+    /** Fresh: a click on the gate always opens a new screen; otherwise an open one is refreshed in place. */
     static void open(ServerPlayer p,BlockPos anchor,String message,boolean fresh){
         var l=p.serverLevel();if(!(l.getBlockState(anchor).getBlock() instanceof RailGates.GateBlock gate))return;
         var state=state(p,anchor,message);
         if(!fresh&&p.containerMenu instanceof RailGates.GateMenu menu&&menu.pos.equals(anchor)){menu.message=message;BeaconNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Hunts.TableState(state));return;}
         var title=Component.translatable("block.eternal_defense."+gate.kind.id);
-        // the Receiving Gate's screen holds the linked FOB's storage (take only); an unlinked one shows an empty, locked one
+        // The Receiving Gate's screen holds the linked FOB's storage (take only)
         long id=l.getBlockEntity(anchor) instanceof RailGates.GateEntity be?be.fobId:0;var f=id==0?null:FobData.get(l).byId(id);
         boolean storage=gate.kind==RailGates.Kind.RECEIVING;
         net.minecraft.world.Container depot=storage&&f!=null&&anchor.equals(f.receivingGate)?f.depot():null;
         NetworkHooks.openScreen(p,new SimpleMenuProvider((cid,inv,who)->new RailGates.GateMenu(cid,inv,anchor,new CompoundTag(),storage,depot),title),buf->{buf.writeBlockPos(anchor);buf.writeNbt(state);buf.writeBoolean(storage);});
         if(p.containerMenu instanceof RailGates.GateMenu menu)menu.message=message;
     }
-    /** Everything a gate's screen shows (see {@code GateClient}). */
+    /** Everything a gate's screen shows (see GateClient). */
     static CompoundTag state(ServerPlayer p,BlockPos anchor,String message){
         var l=p.serverLevel();var d=FobData.get(l);var n=new CompoundTag();
         var gate=(RailGates.GateBlock)l.getBlockState(anchor).getBlock();
@@ -311,12 +300,12 @@ final class Routes {
         }
         return n;
     }
-    /** The FOB's four loot slots and what they bring, for the gate screens and the FOB screen (0.0.31). */
+    /** The FOB's four loot slots and what they bring, for the gate screens and the FOB screen. */
     static void tribute(FobData.Fob f,CompoundTag n){
         double distance=f.separation();long period=f.baseline>0?RouteRules.period(f.baseline):0;
         n.putString("specialty",f.specialty.id());n.putInt("villagers",Math.min(RouteRules.MAX_WORKERS,f.workers));
         n.putDouble("bonus",RouteRules.distanceBonus(distance));n.putDouble("tripsPerHour",RouteRules.tripsPerHour(period));
-        // 0.0.32: the value an hour (every slot together, before research) and the research
+        // The value an hour (every slot together, before research) and the research
         n.putDouble("valuePerHour",RouteRules.perHour(distance,f.workers));
         n.putInt("level",f.level());n.putInt("researchXp",f.researchXp);
         n.putBoolean("full",full(f));int used=0;for(int i=0;i<f.depot().getContainerSize();i++)if(!f.depot().getItem(i).isEmpty())used++;n.putInt("stored",used);n.putInt("depotSlots",f.depot().getContainerSize());
@@ -344,9 +333,9 @@ final class Routes {
         if(anchor.equals(target.receivingGate)){open(p,anchor,"gate.result.same");return;}
         var old=be.fobId==0?null:d.byId(be.fobId);if(old!=null&&anchor.equals(old.receivingGate)){old.receivingGate=null;old.commissioned=false;RUNS.remove(old.id);}
         link(l,d,target,RailGates.Kind.RECEIVING,anchor,be);
-        p.closeContainer();open(p,anchor,"gate.result.linked",true);   // a fresh screen: its storage is the new FOB's
+        p.closeContainer();open(p,anchor,"gate.result.linked",true);   // A fresh screen: its storage is the new FOB's
     }
-    /** Menu buttons of the loot slots: switch a slot on or off, choose its item (0.0.31). */
+    /** Menu buttons of the loot slots: switch a slot on or off, choose its item. */
     static final int TOGGLE=20,CHOOSE=1000,CHOICES=100;
     static int chooseButton(RouteRules.Slot slot,int index){return CHOOSE+slot.ordinal()*CHOICES+index;}
     static void choose(ServerPlayer p,BlockPos anchor,RailGates.GateEntity be,int id){
@@ -362,7 +351,7 @@ final class Routes {
             if(slotIndex<0||slotIndex>=RouteRules.Slot.values().length){open(p,anchor,"");return;}
             var slot=RouteRules.Slot.values()[slotIndex];var options=RouteRules.options(slot,f.specialty);
             if(slot==RouteRules.Slot.EMERALD||index<0||index>=options.size()){open(p,anchor,"");return;}
-            if(!RouteRules.unlocked(options.get(index),f.level())){open(p,anchor,"gate.result.locked");return;}   // 0.0.32: research opens A and S
+            if(!RouteRules.unlocked(options.get(index),f.level())){open(p,anchor,"gate.result.locked");return;}   // Research opens A and S
             switch(slot){case MINE->f.mine=index;case FARM->f.farm=index;default->f.special=index;}
             result="gate.result.chosen";
         }
@@ -372,12 +361,12 @@ final class Routes {
         Fobs.refreshScreens(l,f);
         open(p,anchor,result);
     }
-    /** The FOB shop's second listing: one Supply Delivery Gate per FOB, while it is ACTIVE (paid like any fabricated block). */
+    /** The FOB shop's second listing: one Supply Delivery Gate per FOB */
     static String buyGate(ServerPlayer p,FobData.Fob f){
         if(!FobRules.working(f.state))return "fob.result.closed";
         if(f.deliveryGate!=null)return "fob.result.has_gate";
         var stack=new ItemStack(EternalDefense.DELIVERY_GATE_ITEM.get());stack.getOrCreateTag().putLong("Fob",f.id);stack.getOrCreateTag().putString("FobName",f.name);
-        return WeaponPlatform.transact(Supply.pack(p),Economy.fabrication("supply_delivery_gate"),stack)?   // 0.0.40: at the FOB, the pack alone
+        return WeaponPlatform.transact(Supply.pack(p),Economy.fabrication("supply_delivery_gate"),stack)?   // At the FOB, the pack alone
             "fob.result.bought.gate":"fob.result.no_materials";
     }
 

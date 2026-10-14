@@ -10,13 +10,13 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** Client drawing of the chosen fire support: its icon, a large banner with its name, and the banner shown above the hotbar. */
+/** Client drawing of the chosen fire support: its icon, a large banner with its name */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class SupportHudClient {
     private SupportHudClient(){}
     static Component name(CannonUpgrades.FireType type){return Ui.t("cannon.type."+type.id);}
 
-    /** Draws a type's icon at {@code size} pixels (16, 32 or 64 use their own pre-reduced texture). */
+    /** Draws a type's icon at size pixels (16, 32 or 64 use their own pre-reduced texture). */
     static void icon(GuiGraphics g,CannonUpgrades.FireType type,int x,int y,int size){
         int src=size<=16?16:size<=32?32:64;
         g.blit(SupportHud.icon(type,src),x,y,size,size,0,0,src,src,src,src);

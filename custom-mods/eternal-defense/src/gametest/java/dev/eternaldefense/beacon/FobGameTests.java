@@ -39,13 +39,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import java.util.*;
 
-/**
- * Forward Operating Bases, slices 1 to 3 (0.0.23 to 0.0.25), on a real server level. Opt-in: start the game with {@code -Deternaldefense.fobTests=true}, then
- * {@code /fob-test}, or let tools/qa QaFob start them. THROWAWAY WORLDS ONLY: the tests clear the world's FOB records, need the campaign's
- * beacon (they borrow the hunt tests' base when none is planted) and move the first online player, because a FOB is planted, raided and
- * shopped at by a real player. A small village (a bell, three composters, two beds and NoAI villagers) is built on a stone platform high in
- * the sky, wide enough ({@value #CHUNKS} chunks each way) for vanilla to find raid spawn spots 64 blocks out.
- */
+/** Forward Operating Bases, slices 1 to 3, on a real server level. */
 @GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class FobGameTests {
@@ -62,17 +56,17 @@ public final class FobGameTests {
     }
 
     record Fixture(ServerLevel l,ServerPlayer p,List<Villager> villagers){}
-    /** A fresh village with {@code count} villagers and no FOB, and the first player standing in it. Plant after a few ticks (vanilla files the beds and workstations a tick late). */
+    /** A fresh village with count villagers and no FOB, and the first player standing in it. */
     static Fixture village(GameTestHelper h,int count){
         var l=h.getLevel();
         if(!CampaignData.get(l).installed())HuntGameTests.fixture(h);
         ground(l);clear(l);
-        // the ground of the village is laid again (an earlier test may have blown a hole in it)
+        // The ground of the village is laid again (an earlier test may have blown a hole in it)
         for(int x=-12;x<=12;x++)for(int z=-12;z<=12;z++){
             var at=VILLAGE.offset(x,-1,z);if(!l.getBlockState(at).is(Blocks.STONE))l.setBlock(at,Blocks.STONE.defaultBlockState(),2);
             for(int y=0;y<4;y++){var above=VILLAGE.offset(x,y,z);if(!l.getBlockState(above).isAir())l.setBlock(above,Blocks.AIR.defaultBlockState(),2);}
         }
-        // the village: a bell, three composters, two beds (vanilla's points of interest)
+        // The village: a bell, three composters, two beds (vanilla's points of interest)
         l.setBlock(VILLAGE,Blocks.BELL.defaultBlockState(),3);
         for(var at:List.of(VILLAGE.offset(-5,0,-5),VILLAGE.offset(5,0,-5),VILLAGE.offset(-5,0,5)))l.setBlock(at,Blocks.COMPOSTER.defaultBlockState(),3);
         for(int x:new int[]{3,5}){
@@ -84,11 +78,7 @@ public final class FobGameTests {
         var p=HuntGameTests.player(h);goTo(p,l,STAND);p.removeEffect(MobEffects.BAD_OMEN);
         return new Fixture(l,p,villagers);
     }
-    /**
-     * Vanilla counts a section as a village only when a villager has claimed a bed, workstation or bell in or near it (an occupied point of
-     * interest). The test villagers have no AI and claim nothing, so the village's points of interest are claimed here, as a villager's
-     * brain would (run a few ticks after the blocks are placed: vanilla files them a tick late).
-     */
+    /** Vanilla counts a section as a village only when a villager has claimed a bed */
     static void occupy(ServerLevel l){
         var poi=l.getPoiManager();int n=0;
         for(var at:List.of(VILLAGE,VILLAGE.offset(-5,0,-5),VILLAGE.offset(5,0,-5),VILLAGE.offset(-5,0,5),VILLAGE.offset(3,0,5),VILLAGE.offset(5,0,5)))
@@ -111,7 +101,7 @@ public final class FobGameTests {
         for(var at:BlockPos.betweenClosed(GATE_RAIL.offset(-3,0,-3),GATE_RAIL.offset(3,0,3)))if(l.getBlockState(at).getBlock() instanceof RailGates.GateBlock)l.setBlock(at.immutable(),Blocks.AIR.defaultBlockState(),3);
     }
     static void goTo(ServerPlayer p,ServerLevel l,BlockPos at){p.teleportTo(l,at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot(),p.getXRot());}
-    /** The player plants a FOB Beacon on the block below {@code at}, as the item does it (the player's own placement checks and placer). */
+    /** The player plants a FOB Beacon on the block below */
     static InteractionResult plant(Fixture f,BlockPos at){
         var stack=new ItemStack(EternalDefense.FOB_BEACON_ITEM.get());
         var hit=new BlockHitResult(Vec3.atCenterOf(at.below()),Direction.UP,at.below(),false);
@@ -124,7 +114,7 @@ public final class FobGameTests {
         var inv=p.getInventory();for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(EternalDefense.ARDENT_ENERGY.get()))inv.items.set(i,ItemStack.EMPTY);
         if(amount>0)inv.add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),amount));
     }
-    /** Ardent Energy dropped by {@code mob} over {@code tries} deaths at the player's hand (the drop rule alone, nothing is killed). */
+    /** Ardent Energy dropped by mob over tries deaths at the player's hand (the drop rule alone, nothing is killed). */
     static int ardentDrops(ServerLevel l,net.minecraft.world.entity.LivingEntity mob,ServerPlayer p,int tries){
         int n=0;
         for(int i=0;i<tries;i++){var drops=new ArrayList<ItemEntity>();new ArdentEnergy().drops(new net.minecraftforge.event.entity.living.LivingDropsEvent(mob,l.damageSources().playerAttack(p),drops,0,true));
@@ -132,7 +122,7 @@ public final class FobGameTests {
         return n;
     }
 
-    // ---- planting ---------------------------------------------------------------------------------------------------------------------------------
+    // Planting
     @GameTest(template="empty3x3x3",batch="fob_01",timeoutTicks=400)
     public static void plantingFollowsTheRulesAndCallsTheRaid(GameTestHelper h){
         var f=village(h,2);var l=f.l();
@@ -165,7 +155,7 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- the raid ---------------------------------------------------------------------------------------------------------------------------------
+    // The raid
     @GameTest(template="empty3x3x3",batch="fob_02",timeoutTicks=600)
     public static void theRaidIsLostWhenHalfTheVillagersDie(GameTestHelper h){
         var f=village(h,4);var l=f.l();
@@ -188,7 +178,7 @@ public final class FobGameTests {
             clear(l);
         }).thenSucceed();
     }
-    /** A whole vanilla raid at Bad Omen I: every raider is killed by the player as it comes; the victory makes the FOB ACTIVE. */
+    /** A whole vanilla raid at Bad Omen I: every raider is killed by the player as it comes */
     @GameTest(template="empty3x3x3",batch="fob_03",timeoutTicks=7000)
     public static void winningTheVanillaRaidMakesTheFobActive(GameTestHelper h){
         var f=village(h,3);var l=f.l();int[] killed={0},waves={0,0};
@@ -215,7 +205,7 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- protection, the Ardent rule, the operator command ---------------------------------------------------------------------------------------
+    // Protection, the Ardent rule, the operator command
     @GameTest(template="empty3x3x3",batch="fob_04",timeoutTicks=400)
     public static void activeVillagersAreImmortalAndVillageRaidersPayNoArdent(GameTestHelper h){
         var f=village(h,3);var l=f.l();
@@ -244,7 +234,7 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- meals and the status card ----------------------------------------------------------------------------------------------------------------
+    // Meals and the status card
     @GameTest(template="empty3x3x3",batch="fob_05",timeoutTicks=300)
     public static void anActiveFobZoneKeepsMealsLikeHome(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();
@@ -272,7 +262,7 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- the shop ---------------------------------------------------------------------------------------------------------------------------------
+    // The shop
     @GameTest(template="empty3x3x3",batch="fob_06",timeoutTicks=300)
     public static void theShopSellsFlaresOnlyWhileActive(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
@@ -301,7 +291,7 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- names ------------------------------------------------------------------------------------------------------------------------------------
+    // Names
     @GameTest(template="empty3x3x3",batch="fob_07",timeoutTicks=300)
     public static void aRenamedNameTagRenamesTheFob(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
@@ -324,13 +314,13 @@ public final class FobGameTests {
         }).thenSucceed();
     }
 
-    // ---- a raid without a result, the commands, the shovel ----------------------------------------------------------------------------------------
+    // A raid without a result, the commands, the shovel
     @GameTest(template="empty3x3x3",batch="fob_08",timeoutTicks=400)
     public static void theRaidCanBeCalledAgainAndTheShovelTakesTheFobBack(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var hand=p.getMainHandItem().copy();
         h.startSequence().thenIdle(3).thenExecute(()->occupy(l)).thenIdle(2).thenExecute(()->{
             h.assertTrue(plant(f,PLANT).consumesAction(),"planted");
-            l.getRaids().get(fob(l).raidId).stop();   // a raid that ends without a result (Peaceful, a timeout)
+            l.getRaids().get(fob(l).raidId).stop();   // A raid that ends without a result (Peaceful, a timeout)
         }).thenIdle(45).thenExecute(()->{
             var fob=fob(l);
             h.assertTrue(fob.state==FobRules.State.PLANTED&&!fob.raidRunning()&&FobRules.mayCallRaid(fob.state,fob.raidRunning()),"no result: still PLANTED, the raid can be called again");
@@ -339,14 +329,14 @@ public final class FobGameTests {
             h.assertTrue(command(l,p,"eternaldefense fob complete")>0&&fob.state==FobRules.State.ACTIVE,"complete");
             h.assertTrue(command(l,p,"eternaldefense fob list")==1&&command(l,p,"eternaldefense fob status")==1,"list and status");
             h.assertTrue(command(l,p,"eternaldefense fob reset")==1&&fob.state==FobRules.State.PLANTED&&!fob.activated,"reset: PLANTED again, never activated");
-            // the Recovery Shovel: a confirmation, then the FOB is gone and its FOB Beacon comes back
+            // The Recovery Shovel: a confirmation, then the FOB is gone and its FOB Beacon comes back
             p.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(EternalDefense.CONTROLLER.get()));
             int beacons=count(p,EternalDefense.FOB_BEACON_ITEM.get());
             Fobs.requestRemoval(p,PLANT.above());
             String token=BeaconActions.pendingToken(p);
             h.assertTrue(!token.isEmpty()&&fob(l)!=null,"the shovel asks first (on the upper cell too); nothing is removed yet");
             h.assertTrue(BeaconActions.confirm(p,token),"confirmed");
-            BeaconNetwork.sendState(p,"close","","");   // as the confirm button's answer does (the client's confirmation screen closes)
+            BeaconNetwork.sendState(p,"close","","");   // As the confirm button's answer does (the client's confirmation screen closes)
             h.assertTrue(fob(l)==null&&FobData.get(l).fobs.isEmpty(),"the FOB is deleted");
             h.assertTrue(l.getBlockState(PLANT).isAir()&&l.getBlockState(PLANT.above()).isAir(),"its block and upper cell are gone");
             h.assertTrue(count(p,EternalDefense.FOB_BEACON_ITEM.get())==beacons+1,"the FOB Beacon is back in the inventory");
@@ -355,13 +345,8 @@ public final class FobGameTests {
         }).thenExecute(()->{p.setItemInHand(InteractionHand.MAIN_HAND,hand);clear(l);}).thenSucceed();
     }
 
-    // ---- the supply rail (0.0.24, FOB slice 2) ---------------------------------------------------------------------------------------------------
-    /**
-     * The owner's round trip (0.0.30): two rails side by side along X, 30 blocks south of the village, 156 blocks long, joined by a curve at
-     * each end, so a cart goes out on lane A (z 38) and comes home on lane B (z 39) without stopping. The Receiving Gate stands across both
-     * near the west end, the Delivery Gate near the east end, both facing east: the anchor (right column) north of lane A, the left column south
-     * of lane B.
-     */
+    // The supply rail
+    /** The round trip: two rails side by side along X, 30 blocks south of the village, 156 blocks long */
     static final int RAIL_Z=38,LANE_A=RAIL_Z,LANE_B=RAIL_Z+1,RAIL_FROM=-78,RAIL_TO=78;
     static final BlockPos RECEIVING=new BlockPos(VILLAGE.getX()-70,VILLAGE.getY(),LANE_A-1),DELIVERY=new BlockPos(VILLAGE.getX()+70,VILLAGE.getY(),LANE_A-1);
     /** The rail fob_12 places a Delivery Gate on. */
@@ -384,7 +369,7 @@ public final class FobGameTests {
             var b=l.getBlockState(at).getBlock();
             if(l.getBlockState(at)!=want&&!(b instanceof RailGates.GateBlock)&&!(b instanceof RailGates.Part)&&!(b instanceof RailGates.Column))l.setBlock(at,want,2);
         }
-        // vanilla shapes a rail by its neighbours as it is placed (two lanes side by side would join up): the shapes are set again, unshaped
+        // Vanilla shapes a rail by its neighbours as it is placed (two lanes side by side would join up)
         for(int x=RAIL_FROM;x<=RAIL_TO;x++)for(int z:new int[]{LANE_A,LANE_B}){var at=new BlockPos(VILLAGE.getX()+x,VILLAGE.getY(),z);if(l.getBlockState(at)!=loopRail(x,z))l.setBlock(at,loopRail(x,z),2|16);}
         var fob=fob(l);var d=FobData.get(l);
         for(var kind:RailGates.Kind.values()){
@@ -403,11 +388,7 @@ public final class FobGameTests {
     static int queued(ServerLevel l){return CampaignData.get(l.getServer().overworld()).rewards.size();}
     static void trimRewards(ServerLevel l,int size){var d=CampaignData.get(l.getServer().overworld());while(d.rewards.size()>size)d.rewards.remove(d.rewards.size()-1);d.setDirty();}
 
-    /**
-     * The owner's test, as a round trip (0.0.30): a vanilla plain minecart with a seated player goes out on lane A through both gates, turns at
-     * the loop's east end and comes home on lane B through both gates again, without touching them; the ride opens the route on the way out
-     * and delivers on the way home. The cart is kept at a steady 0.4 a tick along whatever way the rail takes it (as powered rails would).
-     */
+    /** The test, as a round trip: a vanilla plain minecart with a seated player goes out on lane A through both */
     @GameTest(template="empty3x3x3",batch="fob_09",timeoutTicks=2400)
     public static void aRiddenMinecartOpensTheRouteAndARoundTripDelivers(GameTestHelper h){
         var f=village(h,10);var l=f.l();var p=f.p();var cart=new net.minecraft.world.entity.vehicle.Minecart[1];var chestCart=new Entity[1];int before[]={0};boolean[] drive={false};
@@ -420,7 +401,7 @@ public final class FobGameTests {
                 h.assertTrue(l.getBlockState(RailGates.column(at,Direction.EAST)).getBlock() instanceof RailGates.Column,"each gate stands on its two columns");
                 for(var lane:RailGates.lanes(at,Direction.EAST))h.assertTrue(l.getBlockState(lane).is(Blocks.RAIL),"a rail runs through each lane: "+lane.toShortString());
             }
-            // a chest minecart rolling through counts for nothing (it cannot carry a rider)
+            // A chest minecart rolling through counts for nothing (it cannot carry a rider)
             var chest=new net.minecraft.world.entity.vehicle.MinecartChest(l,RECEIVING.getX()-3.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(chest);chest.setDeltaMovement(.4,0,0);chestCart[0]=chest;
             var c=new net.minecraft.world.entity.vehicle.Minecart(net.minecraft.world.entity.EntityType.MINECART,l);c.setPos(RECEIVING.getX()-5.5,VILLAGE.getY(),LANE_A+.5);l.addFreshEntity(c);cart[0]=c;
             goTo(p,l,new BlockPos(RECEIVING.getX()-5,VILLAGE.getY(),LANE_A));p.startRiding(c,true);before[0]=queued(l);
@@ -428,7 +409,7 @@ public final class FobGameTests {
         .thenExecute(()->h.onEachTick(()->{var c=cart[0];if(c==null||!c.isAlive()||!drive[0])return;
             var v=c.getDeltaMovement();double speed=Math.hypot(v.x,v.z);
             if(speed<.01)c.setDeltaMovement(.4,v.y,0);else c.setDeltaMovement(v.x*.4/speed,v.y,v.z*.4/speed);
-            // the speed through and between the gates (not at the start or the turns): a gate in the way would stop the cart
+            // The speed through and between the gates (not at the start or the turns): a gate in the way would stop the cart
             if(c.getX()>RECEIVING.getX()-1&&c.getX()<DELIVERY.getX()+1&&c.tickCount>40)slowest[0]=Math.min(slowest[0],Math.hypot(c.getX()-c.xo,c.getZ()-c.zo));}))
         .thenWaitUntil(()->h.assertTrue(fob(l).commissioned,"the ride through the Delivery Gate opens the route"))
         .thenExecute(()->{
@@ -439,7 +420,7 @@ public final class FobGameTests {
         }).thenIdle(25).thenExecute(()->h.assertTrue(lamp(l,DELIVERY)==RailGates.Lamp.AMBER&&lamp(l,RECEIVING)==RailGates.Lamp.AMBER,"both lights amber while the ride is under way"))
         .thenWaitUntil(()->h.assertTrue(Routes.RUNS.isEmpty()&&"ride".equals(fob(l).lastKind),"back through the Receiving Gate: the round trip delivers"))
         .thenExecute(()->{
-            drive[0]=false;laneHome[0]=cart[0].getZ();cart[0].setDeltaMovement(0,0,0);   // stopped before the loop brings it round again
+            drive[0]=false;laneHome[0]=cart[0].getZ();cart[0].setDeltaMovement(0,0,0);   // Stopped before the loop brings it round again
             var fob=fob(l);
             h.assertTrue(Math.abs(laneHome[0]-(LANE_B+.5))<.3,"home on lane B (z "+laneHome[0]+"): the cart came round the loop");
             int perTrip=melonsPerTrip(fob);
@@ -454,11 +435,7 @@ public final class FobGameTests {
             p.stopRiding();if(cart[0]!=null)cart[0].discard();clearRoute(l);clear(l);goTo(p,l,STAND);
         }).thenSucceed();
     }
-    /**
-     * 0.0.31: the tribute is the FOB's loot slots. A farm village (emeralds, mine and specialty switched off, the farm on melon slices) gets the
-     * whole trip in its one slot; a passive trip puts them into the Receiving Gate's storage with its chat line, and stops when the inspection
-     * runs out. The storage is take only.
-     */
+    /** The tribute is the FOB's loot slots. */
     @GameTest(template="empty3x3x3",batch="fob_10",timeoutTicks=1200)
     public static void passiveTributeArrivesAndStopsWhenTheClockRunsOut(GameTestHelper h){
         var f=village(h,10);var l=f.l();var p=f.p();int[] before={0},after={0};
@@ -477,7 +454,7 @@ public final class FobGameTests {
             h.assertTrue(queued(l)==before[0],"and not in the reward chest's queue");
             h.assertTrue(fob.note.isEmpty(),"the chat line went out and the note was cleared");
             h.assertTrue(lamp(l,RECEIVING)==RailGates.Lamp.GREEN,"green while it runs");
-            // the storage is take only: a player's stack never goes in
+            // The storage is take only: a player's stack never goes in
             var menu=new RailGates.GateMenu(0,p.getInventory(),RECEIVING,new CompoundTag(),true,fob.depot());
             h.assertTrue(!menu.slots.get(0).mayPlace(new ItemStack(Items.DIRT))&&menu.quickMoveStack(p,FobData.DEPOT_SLOTS)==ItemStack.EMPTY,"nothing can be put into the storage");
             command(l,p,"eternaldefense fob overdue");h.assertTrue(fob.clock==20,"/eternaldefense fob overdue: the inspection runs out within a second");
@@ -489,7 +466,7 @@ public final class FobGameTests {
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
-    /** 0.0.31: a full storage pauses deliveries (amber); a round trip still renews the inspection but brings nothing; emptied, it runs again. */
+    /** A full storage pauses deliveries (amber); a round trip still renews the inspection but brings nothing */
     @GameTest(template="empty3x3x3",batch="fob_11",timeoutTicks=600)
     public static void aFullStoragePausesDeliveriesButARideStillRenews(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();
@@ -515,14 +492,14 @@ public final class FobGameTests {
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
-    /** A farm village: emeralds, the mine and the specialty switched off, the farm on melon slices (the villagers are the ones the FOB counts). */
+    /** A farm village: emeralds, the mine and the specialty switched off */
     static void farmVillage(FobData.Fob fob){
         fob.slotOn[0]=false;fob.slotOn[1]=false;fob.slotOn[2]=true;fob.slotOn[3]=false;Arrays.fill(fob.tally,0);
         for(int i=0;i<RouteRules.FARM_LOOT.size();i++)if(RouteRules.FARM_LOOT.get(i).id().equals("minecraft:melon_slice"))fob.farm=i;
     }
     static int melonsPerTrip(FobData.Fob fob){return (int)Math.floor(RouteRules.itemsPerTrip(RouteRules.Slot.FARM,fob.loot(RouteRules.Slot.FARM),fob.yield())+1e-9);}
     static int stored(FobData.Fob fob,Item item){int n=0;for(int i=0;i<fob.depot().getContainerSize();i++)if(fob.depot().getItem(i).is(item))n+=fob.depot().getItem(i).getCount();return n;}
-    /** The Delivery Gate is sold once per FOB, stands only over a rail in the FOB's village, the Receiving Gate only at home; a FOB's removal unlinks its gates. */
+    /** The Delivery Gate is sold once per FOB, stands only over a rail in the FOB's village */
     @GameTest(template="empty3x3x3",batch="fob_12",timeoutTicks=600)
     public static void gatesArePlacedAndSoldByTheRules(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
@@ -539,10 +516,10 @@ public final class FobGameTests {
                 Fobs.button(p,PLANT,Fobs.BUY_GATE);
                 h.assertTrue(count(p,EternalDefense.DELIVERY_GATE_ITEM.get())==1,"an ACTIVE FOB sells its Supply Delivery Gate");
                 p.closeContainer();
-                for(int i=0;i<p.getInventory().items.size();i++)if(p.getInventory().items.get(i).is(EternalDefense.DELIVERY_GATE_ITEM.get()))p.getInventory().items.set(i,ItemStack.EMPTY);   // it goes on the rails below
-                // two rails side by side (0.0.30): the gate stands across both, whichever of them is clicked
+                for(int i=0;i<p.getInventory().items.size();i++)if(p.getInventory().items.get(i).is(EternalDefense.DELIVERY_GATE_ITEM.get()))p.getInventory().items.set(i,ItemStack.EMPTY);   // It goes on the rails below
+                // Two rails side by side: the gate stands across both, whichever of them is clicked
                 for(var at:List.of(rail,second))l.setBlock(at,rail(RailShape.EAST_WEST),2);
-                for(var at:List.of(rail,second))l.setBlock(at,rail(RailShape.EAST_WEST),2|16);   // vanilla joined the two up as they were laid
+                for(var at:List.of(rail,second))l.setBlock(at,rail(RailShape.EAST_WEST),2|16);   // Vanilla joined the two up as they were laid
                 var gate=new ItemStack(EternalDefense.DELIVERY_GATE_ITEM.get());
                 h.assertTrue(useOn(f,gate,VILLAGE.offset(10,-1,-4))==InteractionResult.FAIL,"not on a rail: refused");
                 h.assertTrue(useOn(f,gate,rail).consumesAction(),"on the rails in the village: placed");
@@ -558,19 +535,19 @@ public final class FobGameTests {
                 var home=new ItemStack(EternalDefense.RECEIVING_GATE_ITEM.get());
                 l.setBlock(rail.offset(0,0,-6),rail(RailShape.EAST_WEST),2);
                 h.assertTrue(useOn(f,home,rail.offset(0,0,-6))==InteractionResult.FAIL,"a Receiving Gate outside the base zone: refused");
-                // the shovel takes it back (from its left column too), and the item remembers its FOB
+                // The shovel takes it back (from its left column too), and the item remembers its FOB
                 h.assertTrue(anchor.equals(RailGates.anchor(l,RailGates.column(anchor,facing))),"a click on the left column is a click on the gate");
                 Routes.pickUp(p,anchor);
                 h.assertTrue(l.getBlockState(anchor).isAir()&&l.getBlockState(RailGates.column(anchor,facing)).isAir()&&fob(l).deliveryGate==null,"the shovel takes the whole gate back");
                 var back=p.getInventory().items.stream().filter(s->s.is(EternalDefense.DELIVERY_GATE_ITEM.get())).findFirst().orElse(ItemStack.EMPTY);
                 h.assertTrue(back.hasTag()&&back.getTag().getLong("Fob")==fob(l).id,"the item remembers its FOB");
-                // one rail still works (the other lane stays empty)
+                // One rail still works (the other lane stays empty)
                 l.setBlock(second,Blocks.AIR.defaultBlockState(),2);
                 h.assertTrue(useOn(f,back,rail).consumesAction(),"on a lone rail: placed");
                 var lone=fob(l).deliveryGate;
                 h.assertTrue(lone!=null&&RailGates.lanes(lone,l.getBlockState(lone).getValue(RailGates.FACING)).contains(rail),"the lone rail runs through one of its lanes");
                 Routes.pickUp(p,lone);
-                // a FOB's removal turns its gates UNLINKED
+                // A FOB's removal turns its gates UNLINKED
                 var fob=route(f);
                 FobData.get(l).fobs.remove(fob.id);
             }finally{p.setGameMode(mode);}
@@ -581,10 +558,10 @@ public final class FobGameTests {
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
-    // ---- slice 3 (0.0.25): SOS, DOWN, repair --------------------------------------------------------------------------------------------------
+    // SOS, DOWN, repair
     static int ardent(ServerPlayer p){return count(p,EternalDefense.ARDENT_ENERGY.get());}
     static boolean carriesSosMap(ServerPlayer p){var d=FobData.get(p.serverLevel());return FobSos.carries(p,d.sosSerial);}
-    /** An SOS is called (operator command), the map handed out; a player in the village starts the raid; winning it ends the SOS and restarts the clock. */
+    /** An SOS is called (operator command), the map handed out; a player in the village starts the raid */
     @GameTest(template="empty3x3x3",batch="fob_13",timeoutTicks=1200)
     public static void anSosIsAnsweredAndWon(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();
@@ -616,7 +593,7 @@ public final class FobGameTests {
             h.assertTrue(!carriesSosMap(p),"the SOS map burnt");
         }).thenExecute(()->clear(l)).thenSucceed();
     }
-    /** Nobody answers: DOWN (no shop, no tribute, the route's clock paused, the lights red); the repair's base price brings it back ACTIVE. */
+    /** Nobody answers: DOWN (no shop, no tribute, the route's clock paused, the lights red) */
     @GameTest(template="empty3x3x3",batch="fob_14",timeoutTicks=1200)
     public static void anUnansweredSosPutsItDownAndARepairBringsItBack(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();long[] clock={0};
@@ -652,7 +629,7 @@ public final class FobGameTests {
             clearRoute(l);clear(l);
         }).thenSucceed();
     }
-    /** A villager killed during a FOB's raid is recorded; the repair pays for it and brings it back with its name, profession, level and trades. */
+    /** A villager killed during a FOB's raid is recorded; the repair pays for it and brings it back with its name */
     @GameTest(template="empty3x3x3",batch="fob_15",timeoutTicks=1200)
     public static void villagersLostInARaidComeBackWithTheirTrades(GameTestHelper h){
         var f=village(h,4);var l=f.l();var p=f.p();var mode=p.gameMode.getGameModeForPlayer();
@@ -716,7 +693,7 @@ public final class FobGameTests {
             clear(l);
         }).thenSucceed();
     }
-    // ---- 0.0.26 (owner): the handheld Return Flare needs the Support Cannon; an operation's return gate does not ---------------------------------
+    // The handheld Return Flare needs the Support Cannon; an operation's return gate does not
     @GameTest(template="empty3x3x3",batch="fob_17",timeoutTicks=200)
     public static void theReturnFlareNeedsTheCannonButAnOperationsGateDoesNot(GameTestHelper h){
         var hf=HuntGameTests.fixture(h);var l=hf.l();var p=HuntGameTests.player(h);
@@ -731,7 +708,7 @@ public final class FobGameTests {
                 h.assertTrue("no_cannon".equals(SupportCalls.problem(p,SupportCalls.Kind.RETURN)),"a Return Flare without the cannon is refused: "+SupportCalls.problem(p,SupportCalls.Kind.RETURN));
                 l.setBlock(gun,EternalDefense.SUPPORT_CANNON.get().defaultBlockState(),3);sd.setCannon(p.getUUID(),gun);
                 h.assertTrue(SupportCalls.problem(p,SupportCalls.Kind.RETURN)==null,"with the cannon it goes: "+SupportCalls.problem(p,SupportCalls.Kind.RETURN));
-                // an operation with no ground opens its own return gate, cannon or not
+                // An operation with no ground opens its own return gate, cannon or not
                 base.cannon=null;sd.setDirty();
                 h.assertTrue(Hunts.returnGate(l,hf.d(),p,"OP TEST"),"the operation's return gate opens without a cannon");
                 h.assertTrue(!l.getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(p.blockPosition()).inflate(4)).isEmpty(),"its portal stands in front of the player");
@@ -742,7 +719,7 @@ public final class FobGameTests {
             }
         }).thenSucceed();
     }
-    // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
+    // The Tactical Enchanting Table
     /** Where the enchanting table goes in the hunt tests' base zone (facing north: its second column east of it). */
     static final BlockPos ENCHANT=HuntGameTests.BEACON.offset(-4,0,4);
     static void clearEnchanting(ServerLevel l){
@@ -750,7 +727,7 @@ public final class FobGameTests {
             if(s.is(EternalDefense.ENCHANTING_TABLE.get())||s.is(EternalDefense.STRUCTURE_PART.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);}
         var d=TacticalEnchanting.EnchantData.get(l);d.table=null;d.mk=0;d.seals.clear();d.setDirty();
     }
-    /** {@code n} ACTIVE FOB records (no blocks: only their count matters to the table). */
+    /** N ACTIVE FOB records (no blocks: only their count matters to the table). */
     static void activeFobs(ServerLevel l,int n){
         var d=FobData.get(l);d.fobs.clear();d.sosFob=0;
         for(int i=0;i<n;i++){var f=d.add(VILLAGE.offset(400+i*100,0,0),i,0);f.state=FobRules.State.ACTIVE;f.activated=true;}
@@ -786,7 +763,7 @@ public final class FobGameTests {
             clearEnchanting(l);
         }).thenSucceed();
     }
-    /** Enchants for Ardent Energy, levels gated by ACTIVE FOBs, conflicts refused, curses never offered, the discount, the treasure seals. */
+    /** Enchants for Ardent Energy, levels gated by ACTIVE FOBs, conflicts refused, curses never offered */
     @GameTest(template="empty3x3x3",batch="fob_19",timeoutTicks=300)
     public static void enchantsFollowTheFobLevelGate(GameTestHelper h){
         var hf=HuntGameTests.fixture(h);var l=hf.l();var p=HuntGameTests.player(h);var mode=p.gameMode.getGameModeForPlayer();
@@ -795,7 +772,7 @@ public final class FobGameTests {
             l.setBlock(ENCHANT,EternalDefense.ENCHANTING_TABLE.get().defaultBlockState(),3);
             p.setGameMode(GameType.SURVIVAL);
             try{
-                p.getInventory().clearContent();for(int s=0;s<3;s++)p.getInventory().add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),64));   // 0.0.29: the pack's buys here take 104
+                p.getInventory().clearContent();for(int s=0;s<3;s++)p.getInventory().add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),64));   // The pack's buys here take 104
                 TacticalEnchanting.open(p,ENCHANT);h.assertTrue(p.containerMenu instanceof TacticalEnchanting.EnchantMenu,"the screen opens");
                 var menu=(TacticalEnchanting.EnchantMenu)p.containerMenu;
                 for(var e:TacticalEnchanting.catalogue())h.assertTrue(!e.isCurse(),"never a curse: "+TacticalEnchanting.id(e));
@@ -816,7 +793,7 @@ public final class FobGameTests {
                 before=ardent(p);buy(p,menu,"minecraft:smite",1);
                 h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:smite"),menu.gear.getItem(0))==0&&ardent(p)==before,"Smite conflicts with Sharpness: refused");
                 buy(p,menu,"minecraft:protection",1);h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:protection"),menu.gear.getItem(0))==0,"Protection does not fit a sword");
-                // the treasure: Mending needs a seal
+                // The treasure: Mending needs a seal
                 before=ardent(p);buy(p,menu,"minecraft:mending",1);
                 h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:mending"),menu.gear.getItem(0))==0&&ardent(p)==before,"Mending is locked without a seal");
                 TacticalEnchanting.button(p,menu,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending"));
@@ -827,16 +804,16 @@ public final class FobGameTests {
                 before=ardent(p);buy(p,menu,"minecraft:mending",1);
                 h.assertTrue(EnchantmentHelper.getItemEnchantmentLevel(enchantment("minecraft:mending"),menu.gear.getItem(0))==1,"then it is bought like any other");
                 h.assertTrue(ardent(p)==before-TacticalEnchanting.price(enchantment("minecraft:mending"),1,0),"at its treasure price");
-                // the table's Mk: a discount for everyone
+                // The table's Mk: a discount for everyone
                 var price=Economy.enchantingUpgrade(1);
                 if(price.ardent())p.getInventory().add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),price.amount()));else p.getInventory().add(new ItemStack(price.item(),price.amount()));
                 TacticalEnchanting.button(p,menu,TacticalEnchanting.UPGRADE);
                 h.assertTrue(TacticalEnchanting.EnchantData.get(l).mk==1,"upgraded to Mk I");
                 h.assertTrue(TacticalEnchanting.price(sharp,5,1)<TacticalEnchanting.price(sharp,5,0),"cheaper after it");
-                // taking the gear out: the menu gives it back when it closes
+                // Taking the gear out: the menu gives it back when it closes
                 p.closeContainer();
                 h.assertTrue(p.getInventory().items.stream().anyMatch(s->s.is(Items.DIAMOND_SWORD)&&EnchantmentHelper.getItemEnchantmentLevel(sharp,s)==5),"the sword comes back enchanted when the screen closes");
-            }finally{p.closeContainer();p.setGameMode(mode);activeFobs(l,0);clearEnchanting(l);}   // a failed check never leaves the menu open for what runs next
+            }finally{p.closeContainer();p.setGameMode(mode);activeFobs(l,0);clearEnchanting(l);}   // A failed check never leaves the menu open for what runs next
         }).thenSucceed();
     }
     /** A cleared Warlord pays a Warlord Seal into the reward chest; a Patrol does not. */
@@ -853,20 +830,20 @@ public final class FobGameTests {
             h.assertTrue(HuntGameTests.rewards(d,EternalDefense.WARLORD_SEAL.get())==seals+1,"a cleared Warlord pays one Warlord Seal into the reward chest");
         }).thenSucceed();
     }
-    // ---- 0.0.28: the owner's list, the parts that need a world (run with the FOB tests) -----------------------------------------------------
+    // The list, the parts that need a world (run with the FOB tests)
     /** Where the Exchange Shop goes in the hunt tests' base zone for the seal sale. */
     static final BlockPos SHOP=HuntGameTests.BEACON.offset(4,0,-4);
     @GameTest(template="empty3x3x3",batch="fob_21",timeoutTicks=200)
     public static void theOwnersListFor0028(GameTestHelper h){
         var hf=HuntGameTests.fixture(h);var l=hf.l();var d=hf.d();var hd=hf.h();var p=HuntGameTests.player(h);var mode=p.gameMode.getGameModeForPlayer();
         h.startSequence().thenExecute(()->{
-            // a wood cost reads "Wood (any log)" whether the recipe names dark oak logs or the logs tag, and any log pays it
+            // A wood cost reads "Wood (any log)" whether the recipe names dark oak logs or the logs tag, and any log pays it
             var darkOak=UniversalWood.normalize(net.minecraft.world.item.crafting.Ingredient.of(Items.DARK_OAK_LOG));
             h.assertTrue("Wood (any log)".equals(UniversalWood.label(darkOak)),"dark oak logs: "+UniversalWood.label(darkOak));
             h.assertTrue(darkOak.test(new ItemStack(Items.BIRCH_LOG))&&darkOak.test(new ItemStack(Items.CRIMSON_STEM)),"any log pays it");
             h.assertTrue("Wood (any log)".equals(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.LOGS))),"the logs tag");
             h.assertTrue(UniversalWood.label(net.minecraft.world.item.crafting.Ingredient.of(Items.IRON_INGOT)).isEmpty(),"no label for iron");
-            // a Warlord Seal sells at the Exchange Shop for 4 Ardent Energy
+            // A Warlord Seal sells at the Exchange Shop for 4 Ardent Energy
             p.setGameMode(GameType.SURVIVAL);
             try{
                 HuntGameTests.goTo(p,l,SHOP.south(2));
@@ -878,7 +855,7 @@ public final class FobGameTests {
                 ExchangeShop.buy(p,SHOP,index,true);
                 h.assertTrue(count(p,EternalDefense.WARLORD_SEAL.get())==0&&ardent(p)==value,"sold: the seal gone, "+ardent(p)+" Ardent Energy");
             }finally{p.setGameMode(mode);l.setBlock(SHOP,Blocks.AIR.defaultBlockState(),3);DefenseStructures.remove(l,SHOP);p.getInventory().clearContent();}
-            // a cleared Patrol pays twice what the shared formula gives it
+            // A cleared Patrol pays twice what the shared formula gives it
             int before=HuntGameTests.rewards(d,EternalDefense.ARDENT_ENERGY.get()),coinsBefore=HuntGameTests.rewards(d,EternalDefense.AMMO_COIN.get());
             var o=HuntGameTests.offer(hf,TacticalRules.Kind.PATROL);h.assertTrue(hd.board.accept(o.id,null)==null,"a Patrol accepted");
             var m=hd.board.mission;m.state=HuntBoard.State.ENGAGED;m.remaining=0;Hunts.complete(l,d,hd);
@@ -887,11 +864,8 @@ public final class FobGameTests {
             h.assertTrue(pay.ardent()%2==0&&pay.coins()%2==0&&pay.ardent()>=2&&pay.coins()>=4,"twice the formula: "+pay);
         }).thenSucceed();
     }
-    // ---- 0.0.30: where a FOB counts ------------------------------------------------------------------------------------------------------------
-    /**
-     * The planting preview answers as the item would (a good spot, then a village already taken), and the outline of a planted FOB is sent to
-     * the players near it until its screen turns it off (a player holding a FOB Beacon still sees it, to know the village is taken).
-     */
+    // Where a FOB counts
+    /** The planting preview answers as the item would (a good spot, then a village already taken) */
     @GameTest(template="empty3x3x3",batch="fob_22",timeoutTicks=300)
     public static void theZoneOutlineAndThePlantingPreview(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();
@@ -913,15 +887,15 @@ public final class FobGameTests {
             h.assertTrue(FobOutline.state(p,true).getList("zones",10).size()==1,"a player holding a FOB Beacon still sees it");
             Fobs.button(p,PLANT,Fobs.OUTLINE);p.closeContainer();
             h.assertTrue(fob(l).showZone,"and on again");
-            var here=p.position();p.setPos(here.x+FobOutline.NEAR+100,here.y,here.z);   // only for this check, within the tick
+            var here=p.position();p.setPos(here.x+FobOutline.NEAR+100,here.y,here.z);   // Only for this check, within the tick
             boolean gone=FobOutline.state(p,false).getList("zones",10).isEmpty();p.setPos(here.x,here.y,here.z);
             h.assertTrue(gone,"far away: no outline");
             clear(l);
         }).thenSucceed();
     }
 
-    // ---- the Supply Catapult and the specialty seller (0.0.33) -----------------------------------------------------------------------------------
-    /** Where the tests put the catapult: inside the village's section, clear of the bell, the composters, the beds and the FOB Beacon. */
+    // The Supply Catapult and the specialty seller
+    /** Where the tests put the catapult: inside the village's section, clear of the bell, the composters */
     static final BlockPos CATAPULT=VILLAGE.offset(2,0,-6),CATAPULT2=VILLAGE.offset(-3,0,-9);
     static InteractionResult placeCatapult(Fixture f,BlockPos at){
         var stack=new ItemStack(EternalDefense.SUPPLY_CATAPULT_ITEM.get());
@@ -929,7 +903,7 @@ public final class FobGameTests {
         return ((BlockItem)stack.getItem()).place(new BlockPlaceContext(f.l(),f.p(),InteractionHand.MAIN_HAND,stack,hit));
     }
     static void clearCatapults(ServerLevel l){for(var at:List.of(CATAPULT,CATAPULT2))if(l.getBlockState(at).is(EternalDefense.SUPPLY_CATAPULT.get()))l.setBlock(at,Blocks.AIR.defaultBlockState(),3);}
-    /** Placed only in a FOB's village, one per FOB, a 3 x 3 x 2 structure; the seller opens at research level 5; taken down, it is unlinked. */
+    /** Placed only in a FOB's village, one per FOB, a 3 x 3 x 2 structure; the seller opens at research level */
     @GameTest(template="empty3x3x3",batch="fob_23",timeoutTicks=300)
     public static void theCatapultStandsOnlyInAFobVillage(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();
@@ -954,7 +928,7 @@ public final class FobGameTests {
             clear(l);
         }).thenSucceed();
     }
-    /** A purchase: Ardent Energy paid, the catapult turns to the beacon and throws, the box lands beside the beacon as a parcel; refusals. */
+    /** A purchase: Ardent Energy paid, the catapult turns to the beacon and throws */
     @GameTest(template="empty3x3x3",batch="fob_24",timeoutTicks=1200)
     public static void theSellersBoxIsThrownHomeAndLandsAtTheBeacon(GameTestHelper h){
         var f=village(h,3);var l=f.l();var p=f.p();int tear=RouteRules.POTION_LOOT.indexOf(RouteRules.POTION_LOOT.stream().filter(x->x.id().equals("minecraft:ghast_tear")).findFirst().get());
@@ -981,7 +955,7 @@ public final class FobGameTests {
             var ship=fob.shipments.get(0);long due=ship.getLong("due"),spawnAt=ship.getLong("spawnAt"),now=l.getGameTime();
             h.assertTrue(due-now>=CatapultRules.FLIGHT_TICKS-30&&due-now<=CatapultRules.FLIGHT_TICKS,"it lands 12 s after the throw, as a supply drop: "+(due-now));
             h.assertTrue(spawnAt>=0&&spawnAt<=due&&ship.contains("spot"),"its landing spot is planned beside the beacon");
-            // the countdown is not waited for here: the parcel appears now and lands a fall later
+            // The countdown is not waited for here: the parcel appears now and lands a fall later
             ship.putLong("spawnAt",now);ship.putLong("due",now+(due-spawnAt));
         }).thenWaitUntil(()->h.assertTrue(fob(l).shipments.isEmpty()||fob(l).shipments.get(0).getBoolean("spawned"),"the parcel appears"))
         .thenExecute(()->{
@@ -999,7 +973,7 @@ public final class FobGameTests {
             var parcels=l.getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(beacon).inflate(8,48,8));
             h.assertTrue(parcels.size()==1&&parcels.get(0).box.countItem(Items.GHAST_TEAR)==1,"a parcel with the ghast tear beside the beacon: "+parcels.size());
             parcels.forEach(Entity::discard);
-            // the catapult holds four boxes
+            // The catapult holds four boxes
             setArdent(p,64);var fob=fob(l);
             for(int i=0;i<CatapultRules.MAX_QUEUE;i++)h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,0,1)).equals("tactical.seller.bought"),"box "+(i+1));
             h.assertTrue(SupplyCatapult.buy(p,l,SupplyCatapult.sellButton(0,0,0)).equals("tactical.seller.busy"),"a fifth waits: refused");
@@ -1016,7 +990,7 @@ public final class FobGameTests {
 
     public static final class Runner {
         private static Collection<GameTestInfo> infos=List.of();private static MultipleTestTracker tracker;private static ServerLevel level;
-        /** Result of the last finished run (for the QA harness). */
+        /** Result of the last finished run. */
         public static volatile int lastPass=-1,lastFail=-1;
         @SubscribeEvent public void fobRegister(net.minecraftforge.event.RegisterCommandsEvent e){
             ensureRegistered();

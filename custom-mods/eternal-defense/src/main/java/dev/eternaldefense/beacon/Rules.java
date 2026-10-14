@@ -10,28 +10,25 @@ public final class Rules {
     /** Base score points per building tier (5 at most). */
     public static final int BUILDING_TIER_SCORE=500;
     public static int buildingTier(int score){return Math.min(5,Math.max(0,score)/BUILDING_TIER_SCORE);}
-    /** 0.0.41 (owner): the whole set of the mod's installations in the Home Zone is worth one building tier; each one present its share. */
+    /** The whole set of the mod's installations in the Home Zone is worth one building tier */
     public static final int INSTALLATION_SET_SCORE=BUILDING_TIER_SCORE;
     public static int installationScore(int present,int of){return of<=0?0:INSTALLATION_SET_SCORE*Math.max(0,Math.min(present,of))/of;}
     public static int branchMaximum(String branch){return branch.equals("reconnaissance")?3:branch.equals("logistics")?5:branch.equals("core")?3:4;}
-    /** Active days between raids: 10 at reward tier 0, one less each tier, never below 3 (tier 7 and up). Was 7 down to 2 before 0.0.21. */
+    /** Active days between raids: 10 at reward tier 0, one less each tier, never below 3 (tier 7 and up). */
     public static int intervalDays(int tier) { return Math.max(3, 10 - Math.max(0, Math.min(10, tier))); }
-    /** The night window a raid may start in (game time of day): dusk at 13000 to 21000, so a raid has the night to run. Only the introduction ignores it. */
+    /** The night window a raid may start in (game time of day) */
     public static final int RAID_HOUR_FROM=13000,RAID_HOUR_UNTIL=21000;
     public static boolean raidHour(long dayTime){long t=Math.floorMod(dayTime,24000L);return t>=RAID_HOUR_FROM&&t<RAID_HOUR_UNTIL;}
     /** Game ticks until the next raid window opens (0 inside it). */
     public static long untilRaidHour(long dayTime){long t=Math.floorMod(dayTime,24000L);return raidHour(dayTime)?0:Math.floorMod(RAID_HOUR_FROM-t,24000L);}
     public static boolean hardRaid(int raidNumber){return raidNumber>0&&raidNumber%3==0;}
-    // Lookup tables are built once (0.0.15): these are asked thousands of times a tick (every zone test asks radius/below/above).
+    // Lookup tables are built once: these are asked thousands of times a tick
     private static final int[] BOSS_HEALTH={100,160,240,360,500,650},RADIUS={8,12,18,24},MAXIMUM_HEALTH={1000,1250,1500,2000},BELOW={3,6,10,13,16},ABOVE={8,16,24,36,48},PLATFORM_SCORE={0,40,90,180,300,450};
     public static int bossHealth(int tier){return BOSS_HEALTH[Math.max(0,Math.min(5,tier))];}
     public static int radius(int core) { return RADIUS[Math.max(0,Math.min(3,core))]; }
     public static int maximumHealth(int core) { return MAXIMUM_HEALTH[Math.max(0,Math.min(3,core))]; }
     public static int waves(int tier) { return 3 + Math.min(5, Math.max(0, tier)); }
-    /**
-     * Ticks into a wave after which the raiders still alive glow through walls, by Reconnaissance level (0.0.18): 5 minutes without it, then 3,
-     * then 1, and from the start of every wave at the top level (before 0.0.18: 1 minute, or at once with its single level).
-     */
+    /** Ticks into a wave after which the raiders still alive glow through walls, by Reconnaissance level */
     static final int[] REVEAL_TICKS={6000,3600,1200,0};
     public static int revealTicks(int reconnaissance){return REVEAL_TICKS[Math.max(0,Math.min(REVEAL_TICKS.length-1,reconnaissance))];}
     public static boolean highlightAttackers(int reconnaissance, long waveTicks) { return waveTicks >= revealTicks(reconnaissance); }
@@ -53,7 +50,7 @@ public final class Rules {
     public static int upgradeCost(int currentLevel) { return 8 * (1 << Math.min(4, Math.max(0, currentLevel))); }
     /** Defender deaths near the beacon during a raid that cost it a tenth of its health (every third one). */
     public static final int DEATHS_PER_PENALTY = 3;
-    /** 0.0.41: the deaths left before the next one costs the beacon health (3, 2, 1, then 3 again): the skull on the raid health bar. */
+    /** The deaths left before the next one costs the beacon health (3, 2, 1, then 3 again) */
     public static int livesLeft(int deaths) { return DEATHS_PER_PENALTY - Math.floorMod(deaths, DEATHS_PER_PENALTY); }
     public static int deathPenalty(int deaths, int threshold, int maximumHealth) {
         return deaths > 0 && deaths % threshold == 0 ? maximumHealth / 10 : 0;
@@ -62,8 +59,7 @@ public final class Rules {
     public static int blockScore(String id, int count) {
         // Scanner stores the highest Age, rather than quantity, for each platform kind.
         if(id.startsWith("eternal_defense:")&&id.endsWith("#platform"))return platformScore(count);
-        // Old count-only summaries retain platform compatibility. Current construction and
-        // architecture scores require real positions and geometry in BaseScoring.analyze.
+        // Old count-only summaries retain platform compatibility.
         return 0;
     }
     public static int platformScore(int age){return PLATFORM_SCORE[Math.max(0,Math.min(5,age))];}

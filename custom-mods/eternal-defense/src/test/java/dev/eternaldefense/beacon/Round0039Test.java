@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.39 animation pass: moving parts split out of the owner's models, drawn over them with idle motions. */
+/** The animation pass: moving parts split out of the models, drawn over them with idle motions. */
 final class Round0039Test {
     static final String MODELS=Round0035Test.RES+"assets/eternal_defense/models/block/";
     static String source(String name) throws Exception{return Round0035Test.source(name);}
@@ -31,7 +31,7 @@ final class Round0039Test {
         return new double[]{x+o.get(0).getAsDouble(),y+o.get(1).getAsDouble(),z+o.get(2).getAsDouble()};
     }
 
-    // ---- the split: lossless, and the generator and the renderer agree --------------------------------------------------------------
+    // The split: lossless, and the generator and the renderer agree
     @Test void everyPartTheRendererDrawsExistsAndNothingElse() throws Exception{
         var expected=new TreeSet<String>();
         for(var entry:Animations.PARTS.entrySet())for(var p:entry.getValue())expected.add(entry.getKey()+"_"+p+".json");
@@ -54,7 +54,7 @@ final class Round0039Test {
                 assertEquals(vec(whole,"from")[0],vec(parts.get(0),"from")[0],1e-9);assertEquals(vec(whole,"to")[0],vec(parts.get(parts.size()-1),"to")[0],1e-9);
                 for(int i=1;i<parts.size();i++)assertEquals(vec(parts.get(i-1),"to")[0],vec(parts.get(i),"from")[0],1e-9,"strips meet edge to edge");
                 for(var o:parts)assertEquals(whole.get("rotation"),o.get("rotation"),"each strip keeps the cloth's own turn");
-                // the south face's u runs from the first strip's start to the last strip's end, unbroken
+                // The south face's u runs from the first strip's start to the last strip's end, unbroken
                 var u=whole.getAsJsonObject("faces").getAsJsonObject("south").getAsJsonArray("uv");
                 assertEquals(u.get(0).getAsDouble(),parts.get(0).getAsJsonObject("faces").getAsJsonObject("south").getAsJsonArray("uv").get(0).getAsDouble(),1e-9);
                 assertEquals(u.get(2).getAsDouble(),parts.get(parts.size()-1).getAsJsonObject("faces").getAsJsonObject("south").getAsJsonArray("uv").get(2).getAsDouble(),1e-9);
@@ -80,7 +80,7 @@ final class Round0039Test {
         assertTrue(source("SupportClient.java").contains("draw(pose,buffer,RenderType.cutout(),Animations.TURRET_STATIC,light,overlay);"),"the cannon draws its turret without the hook");
     }
 
-    // ---- the pivots are the owner's geometry ---------------------------------------------------------------------------------------
+    // The pivots are the geometry
     @Test void theFlagHingesAreTheStripsOwnEdges() throws Exception{
         for(int k=0;k<AnimationRules.FLAG_STRIPS;k++){
             var strip=json(MODELS+"anim/fob_station_flag_"+k+".json").getAsJsonArray("elements").get(0).getAsJsonObject();
@@ -109,7 +109,7 @@ final class Round0039Test {
         assertTrue(anim.contains("x.about(8,0,10,Axis.YP,d[0])")&&anim.contains("x.about(0,21.5,9.5,Axis.XP,d[1])")&&anim.contains("x.about(0,12.25,7,Axis.XP,")&&anim.contains("x.about(7.25,30.5,20,Axis.XP,h[0])"));
     }
 
-    // ---- the satellite dish keeps clear of its whip, mast and cabinet anywhere in its range ------------------------------------------
+    // The satellite dish keeps clear of its whip, mast and cabinet anywhere in its range
     @Test void theDishNeverPassesThroughTheRestOfTheBlock() throws Exception{
         var points=new ArrayList<double[]>();
         for(var e:json(MODELS+"anim/satellite_beacon_dish.json").getAsJsonArray("elements")){
@@ -131,7 +131,7 @@ final class Round0039Test {
             assertTrue(d[0]>=AnimationRules.AZIMUTH_MIN-1e-9&&d[0]<=AnimationRules.AZIMUTH_MAX+1e-9&&d[1]>=AnimationRules.ELEVATION_MIN-1e-9&&d[1]<=AnimationRules.ELEVATION_MAX+1e-9,"t="+t);}
     }
 
-    // ---- the motions ----------------------------------------------------------------------------------------------------------------
+    // The motions
     @Test void motionsStayInTheirRangesAndMoveSmoothly(){
         long seed=987654321L;double dt=.05;
         double[] prevFlag=AnimationRules.flag(0,seed);double[] prevDish=AnimationRules.dish(0,seed);
@@ -164,7 +164,7 @@ final class Round0039Test {
         assertTrue(14.75-AnimationRules.PRESS_TRAVEL>11.9);
     }
 
-    // ---- the plumbing -------------------------------------------------------------------------------------------------------------
+    // The plumbing
     @Test void theFourBlocksWithoutDataGetABlockEntityToDrawThrough() throws Exception{
         for(var f:List.of("FobBlocks.java","TacticalBlocks.java","TacticalEnchanting.java")){
             var s=source(f);assertTrue(s.contains("implements net.minecraft.world.level.block.EntityBlock")&&s.contains("return new AnimatedParts.PartsEntity(pos,state);"),f);
@@ -181,7 +181,7 @@ final class Round0039Test {
     }
     @Test void restIsTheOwnersPoseAndThePlayerCanTurnItOff() throws Exception{
         var anim=source("Animations.java");
-        // every motion is read only while live; at rest each part is drawn untouched
+        // Every motion is read only while live; at rest each part is drawn untouched
         assertFalse(anim.replace("c.live()?AnimationRules","").replace("live?AnimationRules","").contains("AnimationRules.flag(")
             ||anim.replace("c.live()?AnimationRules","").replace("live?AnimationRules","").contains("AnimationRules.dish("),"no motion outside a live check");
         assertTrue(anim.contains("if(c.live()){x.px(0,AnimationRules.bob("),"the platform's emitter too");

@@ -7,13 +7,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
 import java.util.*;
 
-/**
- * The FOB zone is the vanilla village (0.0.23): what {@code ServerLevel.isVillage} calls a village, a 16-block section within one section of a
- * section holding a bed, a workstation or a bell that a villager has claimed (vanilla's occupied points of interest; a bed nobody sleeps in
- * makes no village). The zone of a FOB is the group of such sections joined to the
- * one its beacon stands in, only in loaded chunks and at most {@link FobRules#ZONE_REACH} sections away. It is worked out when needed, kept in
- * memory for a few seconds and never saved.
- */
+/** The FOB zone is the vanilla village: what ServerLevel.isVillage calls a village */
 final class FobZone {
     private FobZone(){}
     private record Cached(Set<Long> sections,long at){}
@@ -21,11 +15,11 @@ final class FobZone {
     static void forget(long fobId){CACHE.remove(fobId);}
     static void clear(){CACHE.clear();}
 
-    /** True when the 16-block section is part of a village by vanilla's own rule (only for a loaded chunk; nothing is ever loaded). */
+    /** True when the 16-block section is part of a village by vanilla's own rule */
     static boolean villageSection(ServerLevel l,SectionPos s){
         return l.hasChunk(s.x(),s.z())&&l.sectionsToVillage(s)<=FobRules.VILLAGE_SECTIONS;
     }
-    /** The village sections joined to the one at {@code origin} (empty when that one is no village). */
+    /** The village sections joined to the one at origin (empty when that one is no village). */
     static Set<Long> sections(ServerLevel l,BlockPos origin){
         var start=SectionPos.of(origin);var out=new HashSet<Long>();
         if(!villageSection(l,start))return out;
@@ -42,15 +36,15 @@ final class FobZone {
         }
         return out;
     }
-    /** The zone of a FOB, worked out again at most every {@link FobRules#ZONE_REFRESH_TICKS}. */
+    /** The zone of a FOB, worked out again at most every FobRules.ZONE_REFRESH_TICKS. */
     static Set<Long> of(ServerLevel l,FobData.Fob f){
         long now=l.getGameTime();var c=CACHE.get(f.id);
         if(c!=null&&now-c.at()<FobRules.ZONE_REFRESH_TICKS&&now>=c.at())return c.sections();
         var s=sections(l,f.pos);CACHE.put(f.id,new Cached(s,now));
-        if(!s.isEmpty()){var cols=columns(s);if(!java.util.Arrays.equals(cols,f.zoneColumns)){f.zoneColumns=cols;FobData.get(l).setDirty();}}   // 0.0.31: kept for the Command Table's map
+        if(!s.isEmpty()){var cols=columns(s);if(!java.util.Arrays.equals(cols,f.zoneColumns)){f.zoneColumns=cols;FobData.get(l).setDirty();}}   // Kept for the Command Table's map
         return s;
     }
-    /** The 16-block columns of a zone (x and z packed as in {@code ChunkPos.asLong}), sorted. */
+    /** The 16-block columns of a zone (x and z packed as in ChunkPos.asLong), sorted. */
     static long[] columns(Set<Long> zone){var set=new TreeSet<Long>();for(long s:zone)set.add(net.minecraft.world.level.ChunkPos.asLong(SectionPos.x(s),SectionPos.z(s)));return set.stream().mapToLong(Long::longValue).toArray();}
     static boolean contains(Set<Long> zone,BlockPos p){return zone.contains(SectionPos.asLong(SectionPos.blockToSectionCoord(p.getX()),SectionPos.blockToSectionCoord(p.getY()),SectionPos.blockToSectionCoord(p.getZ())));}
     /** The box around all sections of a zone (null when empty). */

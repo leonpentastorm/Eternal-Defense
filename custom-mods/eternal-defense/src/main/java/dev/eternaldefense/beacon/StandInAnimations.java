@@ -11,32 +11,25 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/**
- * 0.0.42 (the owner's crash with the Corpse mod): Player Animator moves a player's animation layers on only when the world ticks that
- * player. A body drawn as a player that the world never ticks (the Corpse mod's corpse: a copy of the dead player with the gun still in
- * hand) keeps every fade TaCZ starts for a held gun, and TaCZ starts one each frame, each wrapped round the one before, until drawing the
- * body overflows the stack ("Rendering entity in world", {@code StackOverflowError} in {@code AbstractFadeModifier}). This moves such a
- * stand-in's layers on once per game tick, as the world does for a real player, so each fade ends and drops off after its eight ticks.
- * Nothing changes for players the world ticks, and without Player Animator this does nothing.
- */
+/** Player Animator moves a player's animation layers on only when the world ticks that player. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class StandInAnimations {
     private StandInAnimations(){}
-    /** The game tick each stand-in was last moved on in (weak: the Corpse mod drops its copy a few seconds after it is last drawn). */
+    /** The game tick each stand-in was last moved on in */
     static final Map<Player,Long> MOVED=new WeakHashMap<>();
-    /** Never more ticks at once than a fade lasts twice over (a stand-in out of sight for a while is caught up, not replayed). */
+    /** Never more ticks at once than a fade lasts twice over */
     static final int MOST_AT_ONCE=20;
     private static Method stack,tick;private static boolean resolved,available;
 
-    /** Before the body is drawn (and TaCZ adds this frame's fade): the stand-in's layers, moved on by the ticks since it was last moved. */
+    /** Before the body is drawn (and TaCZ adds this frame's fade) */
     @SubscribeEvent(priority=EventPriority.HIGHEST) public static void render(RenderPlayerEvent.Pre e){
         var player=e.getEntity();var level=player.level();
-        if(level==null||level.getEntity(player.getId())==player||!available())return;   // a real player: the world ticks it
+        if(level==null||level.getEntity(player.getId())==player||!available())return;   // A real player: the world ticks it
         long now=level.getGameTime();Long last=MOVED.put(player,now);
         if(last==null)return;
         for(long i=0,n=ticks(last,now);i<n;i++)if(!tick(player))return;
     }
-    /** How many ticks a stand-in last moved on at {@code last} is moved on at {@code now}. */
+    /** How many ticks a stand-in last moved on at last is moved on at now. */
     static long ticks(long last,long now){return Math.max(0,Math.min(MOST_AT_ONCE,now-last));}
     private static boolean available(){
         if(!resolved){

@@ -38,7 +38,7 @@ public final class GuideClient {
         if(bindingChecked||mc.options==null||mc.options.keyMappings.length<20)return;bindingChecked=true;
         var marker=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get().resolve("eternal-defense-gun-guide-shortcut-016.applied");
         try{if(java.nio.file.Files.exists(marker))return;
-            // The 0.15 shortcut started unbound. Install only this new action; preserve player edits.
+            // The 0.15 shortcut started unbound.
             if(TOGGLE.isUnbound()){
                 boolean found=false;
                 for(var modifier:List.of(net.minecraftforge.client.settings.KeyModifier.NONE,net.minecraftforge.client.settings.KeyModifier.CONTROL,net.minecraftforge.client.settings.KeyModifier.ALT)){
@@ -57,7 +57,7 @@ public final class GuideClient {
         try{return method.isPresent()&&method.get().invoke(stack.getItem(),stack)!=null;}catch(ReflectiveOperationException ex){return false;}
     }
     public static boolean jammed(ItemStack stack){return ModList.get().isLoaded("gundb")&&stack.hasTag()&&stack.getTag().getBoolean("Jammed");}
-    // Palette shared with Defense Beacon (ARTIST-BRIEF.md). Orange marks conflicts, red marks the jam.
+    // Palette shared with Defense Beacon (ARTIST-BRIEF.md).
     private static final int PANEL=0xe6111e28,EDGE=0xff3d5c6d,CYAN=0xff5ae2df,CYAN_DIM=0xff2f8d8c,INK=0xffedf5f8,MUTED=0xff9fb3bc,
         ORANGE=0xffffa36c,RED=0xffed7369,CAP=0xff0b141b,DISABLED=0xff74888f;
     private static final int ROW=12;
@@ -71,7 +71,7 @@ public final class GuideClient {
         String key="gui.eternal_defense_gun_guide.action."+id;
         return net.minecraft.client.resources.language.I18n.exists(key)?Component.translatable(key):Component.literal(row.label());
     }
-    /** A key cap: dark inset with a lit edge. Returns its width so callers can reserve space. */
+    /** A key cap: dark inset with a lit edge. */
     private static int cap(GuiGraphics g,Font font,String label,int xRight,int y,int edge,int ink){
         int w=Math.max(15,font.width(label)+8),x=xRight-w;
         g.fill(x,y,x+w,y+ROW-1,edge);g.fill(x+1,y+1,x+w-1,y+ROW-2,CAP);g.fill(x+1,y+ROW-3,x+w-1,y+ROW-2,0xff1a2a34);
@@ -154,7 +154,7 @@ public final class GuideClient {
         Component label=t("jam");int x=w/2+14,y=h/2-7,boxW=font.width(label)*5/4+24;
         g.fill(x-1,y-1,x+boxW+1,y+15,0xff05090d);g.fill(x,y,x+boxW,y+14,pulse?0xf0701018:0xf04a0c12);
         g.fill(x,y,x+3,y+14,0xffffd23f);
-        // warning triangle: shape and the word JAM both carry the meaning, not only the red.
+        // Warning triangle: shape and the word JAM both carry the meaning, not only the red.
         g.fill(x+8,y+9,x+16,y+11,0xffffd23f);g.fill(x+9,y+7,x+15,y+9,0xffffd23f);g.fill(x+10,y+5,x+14,y+7,0xffffd23f);g.fill(x+11,y+3,x+13,y+5,0xffffd23f);
         g.fill(x+11,y+6,x+13,y+8,0xff4a0c12);
         g.pose().pushPose();g.pose().translate(x+20,y+3,0);g.pose().scale(1.25f,1.25f,1);g.drawString(font,label.getVisualOrderText(),0,0,0xffffe0e0,true);g.pose().popPose();

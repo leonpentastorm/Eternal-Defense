@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.*;
 import java.util.*;
 
-/** One authoritative payout definition for previews and payment. Rewards belong to the shared team. */
+/** One authoritative payout definition for previews and payment. */
 final class RaidRewards {
     static int waveIron(int tier){return 4+Math.max(0,Math.min(5,tier))*2;}
     static void add(List<ItemStack> list,String id,int count){if(count<=0)return;Item item=BuiltInRegistries.ITEM.get(new ResourceLocation(id));if(item==Items.AIR)throw new IllegalStateException("Missing guaranteed reward "+id);list.add(new ItemStack(item,count));}
@@ -32,10 +32,10 @@ final class RaidRewards {
         if(t>=6){add(list,"minecraft:shulker_shell",2+2*((t-6)/2));add(list,"minecraft:phantom_membrane",4+2*(t-6));}
         if(t>=8)add(list,"minecraft:dragon_breath",2*(t-7));
         add(list,"eternal_defense:universal_ammo_coin",8+8*t);
-        add(list,"eternal_defense:ardent_energy",1+t);   // the floor of the Ardent Energy income: farming and exchange sell-offs add to it
+        add(list,"eternal_defense:ardent_energy",1+t);   // The floor of the Ardent Energy income: farming and exchange sell-offs add to it
         // Bonus resources are 50% of the completion cache, rounded up; wave iron stays unchanged.
         if(hard){for(var s:list)s.setCount(s.getCount()+(s.getCount()+1)/2);if(t>=5)add(list,"minecraft:nether_star",1+extra/3);}
-        add(list,"kubejs:pressed_receiver",1);   // 0.0.28 (owner): every won raid gives one Pressed Receiver, a hard raid too (after the bonus)
+        add(list,"kubejs:pressed_receiver",1);   // Every won raid gives one Pressed Receiver, a hard raid too (after the bonus)
         supply(list,l,"ConsumableId","carfak",1+t+(hard?2+t:0));
         if(t>=1||hard)supply(list,l,"ThrowableId","m67",2*t+(hard?4+2*t:0));
         if(t>=2||hard)supply(list,l,"ThrowableId","smoke_grenade",t+(hard?2+t:0));

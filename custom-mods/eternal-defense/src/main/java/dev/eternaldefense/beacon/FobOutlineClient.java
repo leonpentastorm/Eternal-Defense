@@ -28,13 +28,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import java.util.*;
 
-/**
- * Client side of {@link FobOutline} (0.0.30): each FOB zone near the player as an olive outline of its village sections (walls with a slow
- * moving grid, like the base zone's cyan one), and, while a FOB Beacon is in hand, a see-through FOB where it would stand, the zone that spot
- * would get (green when the FOB may be planted, orange when not) and one line under the crosshair: the villagers, beds and workstations it
- * counts, or why not. 0.0.42 (owner): with a block or a creature in the way of the beacon's two cells (a hole one block high) the ghost
- * and its box are red, the line says so, and the beacon is not placed.
- */
+/** Client side of FobOutline: each FOB zone near the player as an olive outline of its village sections */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class FobOutlineClient {
     private FobOutlineClient(){}
@@ -64,18 +58,18 @@ public final class FobOutlineClient {
         return new BlockPlaceContext(mc.player,hand,mc.player.getItemInHand(hand),hit).getClickedPos();
     }
     static boolean previewGood(){return preview!=null&&preview.getString("problem").isEmpty();}
-    /** 0.0.42: is something in the way of a FOB Beacon placed at {@code at} (its two cells, as the item checks them)? */
+    /** Is something in the way of a FOB Beacon placed at at (its two cells, as the item checks them)? */
     static boolean blocked(BlockPos at){
         var mc=Minecraft.getInstance();if(mc.level==null||mc.player==null||at==null)return false;
         var state=EternalDefense.FOB_BEACON.get().defaultBlockState().setValue(FobBlocks.FACING,mc.player.getDirection().getOpposite());
         return PlacementGuard.blocked(mc.level,at,state,mc.player);
     }
-    /** 0.0.42: does this client already know the FOB Beacon cannot stand at {@code at}: something in the way, or the server's verdict for that very spot? */
+    /** Does this client already know the FOB Beacon cannot stand */
     static boolean refused(BlockPos at){return blocked(at)||preview!=null&&preview.getLong("pos")==at.asLong()&&!preview.getString("problem").isEmpty();}
     /** The ghost's colour: red with something in the way, else olive (no verdict yet), green or orange. */
     static int[] colour(BlockPos at){return blocked(at)?PlacementGuard.RED:preview==null?OLIVE:previewGood()?GOOD:BAD;}
 
-    // ---- the world: outlines and the ghost FOB ----------------------------------------------------------------------------------------------------
+    // The world: outlines and the ghost FOB
     @SubscribeEvent public static void render(RenderLevelStageEvent e){
         if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS||!overworld())return;
         var mc=Minecraft.getInstance();boolean holding=holding();
@@ -95,12 +89,7 @@ public final class FobOutlineClient {
         if(at!=null)ghost(pose,at,mc);
         pose.popPose();
     }
-    /**
-     * The outer walls of a set of 16-block sections: every side face with no zone section beyond it, its edges, a slow moving grid every
-     * four blocks and a scan line climbing the zone's whole height, and (0.0.33, owner, in place of the three lines that followed the
-     * player's feet) the FOB Beacon's ground level: a bright line with a tick every block, as the Defense Beacon's zone marks its own; the
-     * top and bottom faces get their edges only.
-     */
+    /** The outer walls of a set of 16-block sections: every side face with no zone section beyond it, its edges */
     static void outline(VertexConsumer v,PoseStack.Pose p,Set<Long> sections,int[] rgb,double time,int alpha,int ground){
         if(sections.isEmpty())return;
         int lowY=Integer.MAX_VALUE,highY=Integer.MIN_VALUE;for(long s:sections){lowY=Math.min(lowY,SectionPos.y(s));highY=Math.max(highY,SectionPos.y(s));}
@@ -108,7 +97,7 @@ public final class FobOutlineClient {
         for(long s:sections){
             int sx=SectionPos.x(s),sy=SectionPos.y(s),sz=SectionPos.z(s);double x0=sx*16,y0=sy*16,z0=sz*16,x1=x0+16,y1=y0+16,z1=z0+16;
             boolean[] open={!sections.contains(SectionPos.asLong(sx,sy,sz-1)),!sections.contains(SectionPos.asLong(sx+1,sy,sz)),!sections.contains(SectionPos.asLong(sx,sy,sz+1)),!sections.contains(SectionPos.asLong(sx-1,sy,sz))};
-            // north, east, south, west walls: (from x, from z) to (to x, to z)
+            // North, east, south, west walls: (from x, from z) to (to x, to z)
             double[][] walls={{x0,z0,x1,z0},{x1,z0,x1,z1},{x1,z1,x0,z1},{x0,z1,x0,z0}};
             for(int i=0;i<4;i++){if(!open[i])continue;var w=walls[i];
                 line(v,p,w[0],y0,w[1],w[2],y0,w[3],rgb,alpha);line(v,p,w[0],y1,w[1],w[2],y1,w[3],rgb,alpha);
@@ -118,7 +107,7 @@ public final class FobOutlineClient {
                 if(scan>=y0&&scan<y1)line(v,p,w[0],scan,w[1],w[2],scan,w[3],rgb,Math.min(255,alpha+40));
                 if(ground>=y0&&ground<y1){
                     line(v,p,w[0],ground,w[1],w[2],ground,w[3],rgb,255);
-                    // one-block ticks pointing into the zone (north wall inward is +z, east -x, south -z, west +x)
+                    // One-block ticks pointing into the zone (north wall inward is +z, east -x, south -z, west +x)
                     double ix=i==1?-.35:i==3?.35:0,iz=i==0?.35:i==2?-.35:0;
                     for(int d=0;d<=16;d++){double fx=w[0]+(w[2]-w[0])*d/16,fz=w[1]+(w[3]-w[1])*d/16;line(v,p,fx,ground,fz,fx+ix,ground,fz+iz,rgb,230);}
                 }
@@ -144,14 +133,11 @@ public final class FobOutlineClient {
         float[] rgb=PlacementGuard.tint(red,c);
         mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),consumer,state,mc.getBlockRenderer().getBlockModel(state),
             rgb[0],rgb[1],rgb[2],LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,ModelData.EMPTY,RenderType.translucent());
-        if(Animations.animated(state))Animations.drawRest(state,pose,consumer,rgb[0],rgb[1],rgb[2]);   // the flag and the rest, as placed
+        if(Animations.animated(state))Animations.drawRest(state,pose,consumer,rgb[0],rgb[1],rgb[2]);   // The flag and the rest, as placed
         BUFFER.endBatch(RenderType.translucent());
         pose.popPose();
     }
-    /**
-     * Passes every vertex on with its alpha scaled down and (0.0.42) its colour multiplied: a block model's colour argument only reaches
-     * its tinted faces (grass, leaves), so a ghost is turned red here, on every vertex.
-     */
+    /** Passes every vertex on with its alpha scaled down and its colour multiplied */
     record Faint(VertexConsumer to,float alpha,float red,float green,float blue) implements VertexConsumer {
         Faint(VertexConsumer to,float alpha){this(to,alpha,1f,1f,1f);}
         /** A ghost with something in the way: red, and a little less faint so the red reads. */
@@ -167,8 +153,8 @@ public final class FobOutlineClient {
         @Override public void unsetDefaultColor(){to.unsetDefaultColor();}
     }
 
-    // ---- the line under the crosshair ---------------------------------------------------------------------------------------------------------------
-    /** What the spot looked at gives: "FOB here: 5 villagers (3 needed), 9 beds, 4 workstations" or why not. Null with no FOB Beacon in hand. */
+    // The line under the crosshair
+    /** What the spot looked at gives: "FOB here: 5 villagers (3 needed), 9 beds, 4 workstations" or why not. */
     static Component line(){
         if(!holding()||!overworld())return null;
         if(blocked(target()))return Ui.t("fob.preview.blocked");

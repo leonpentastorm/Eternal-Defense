@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Prevent daylight ignition at its source for raiders and hunt warbands; never remove fire caused by weapons or terrain. */
+/** Prevent daylight ignition at its source for raiders and hunt warbands */
 @Mixin(Mob.class)
 public abstract class RaiderSunlightMixin {
     @Inject(method="isSunBurnTick",at=@At("HEAD"),cancellable=true)

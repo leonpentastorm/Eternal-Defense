@@ -31,7 +31,7 @@ final class LangKeysTest {
                 Matcher m=pattern.matcher(Files.readString(file));
                 while(m.find()){
                     String kind=m.group(1),key=m.group(2);
-                    if(key.endsWith("."))continue; // dynamic prefix, covered by the lists below
+                    if(key.endsWith("."))continue; // Dynamic prefix, covered by the lists below
                     if(get(key)==null)missing.add(key);
                 }
             }
@@ -50,7 +50,7 @@ final class LangKeysTest {
         for(String b:List.of("core","logistics","defense","restoration","vertical"))needed.add("upgrade."+b+".now");
         needed.addAll(List.of("support.name.supply","support.name.return","support.called","popup.raid_start","popup.raid_hard","popup.raid_sub","popup.wave","popup.wave_sub","popup.victory","popup.victory_sub","popup.defeat","popup.defeat_sub","popup.support","warning.raid","warning.imminent","upgrade.reconnaissance.now","upgrade.reconnaissance.after","upgrade.reconnaissance.after_one","upgrade.reconnaissance.at_once","upgrade.buy_parts","upgrade.short_parts","rewards.head_normal","rewards.head_hard","platform.create_progress","platform.manage.upgrade.ammo","platform.manage.upgrade.attachment","platform.manage.upgrade.armor"));
         for(var t:CannonUpgrades.FireType.values()){needed.add("support.name."+t.callId());needed.add("cannon.type."+t.id);for(String part:List.of("effect","damage","area"))needed.add("cannon."+"type."+t.id+"."+part);}
-        // Tactical Operations (0.0.20): the keys the table, the satellite and the chat build from ids
+        // Tactical Operations: the keys the table, the satellite and the chat build from ids
         for(var k:TacticalRules.Kind.values()){needed.add("tactical.class."+k.id);needed.add("tactical.card.note."+k.id);}
         for(String r:List.of("accepted","gone","no_uplink","raid","raid_warning","busy","abandoned","no_mission","maxed","too_far","short","upgraded","reprinted","scan_busy","scan_cooldown","scan_started"))needed.add("tactical.result."+r);
         for(String u:List.of("no_beacon","no_table","no_satellite","zone","too_far","no_sky"))needed.add("tactical.uplink."+u);
@@ -63,7 +63,7 @@ final class LangKeysTest {
         for(String t:RaidTypes.SPECIAL){needed.add("raidtype."+t);needed.add("raidtype.short."+t);needed.add("raidtype.tip."+t);}
         for(int age=0;age<=5;age++)needed.add("age."+age);
         for(String kind:List.of("gun","ammo","attachment","armor")){needed.add("platform.title."+kind);needed.add("platform.subtitle."+kind);needed.add("platform.station."+kind);needed.add("platform.browsing."+kind);}
-        for(String kind:List.of("ammo","attachment"))for(String n:List.of("",".one"))needed.add("platform.later_gun."+kind+n); // 0.0.41 the empty-list hint
+        for(String kind:List.of("ammo","attachment"))for(String n:List.of("",".one"))needed.add("platform.later_gun."+kind+n); // The empty-list hint
         for(String type:WeaponBrowser.TYPES)needed.add("type.gun."+type);
         try{
             var m=Pattern.compile("TYPES=List\\.of\\(([^)]*)\\)").matcher(Files.readString(Path.of("src/main/java/dev/eternaldefense/beacon/ArmorPlatform.java")));
@@ -75,7 +75,7 @@ final class LangKeysTest {
         assertTrue(missing.isEmpty(),"Missing language keys: "+missing);
     }
 
-    /** Keys that reach {@code Ui.t} through helper methods, and the full keys the server puts in messages, are invisible to the first test. */
+    /** Keys that reach Ui.t through helper methods, and the full keys the server puts in messages */
     @Test void everyKitchenAndDispenserKeyNamedInTheSourceExists() throws Exception {
         var short_=Pattern.compile("\"((?:kitchen|bowls|milk|dispenser)\\.[a-z_]+(?:\\.[a-z_]+)*)\"");
         var full=Pattern.compile("\"(gui\\.eternal_defense\\.[a-z_]+(?:\\.[a-z_]+)*)\"");

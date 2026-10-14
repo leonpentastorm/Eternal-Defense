@@ -11,15 +11,10 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import java.util.List;
 
-/**
- * 0.0.38 (owner): the MRE, packed at the MRE Station. It holds the exact totals of the foods packed into it (see {@link MreRules}) and
- * nothing else: no effects, never always-edible. Its food properties are built from those totals, so vanilla eats it the vanilla way
- * ({@code Player.eat} -> {@code FoodData.eat} with this stack's properties, vanilla's own saturation cap, the eating sound and stat), in
- * 16 ticks and only when the player is hungry. MREs with the same totals have the same tag, so they stack (to 64). Nothing comes back.
- */
+/** The MRE, packed at the MRE Station. */
 final class Mre extends Item {
     static final String TAG="Mre";
-    /** The item's own properties: an MRE with no totals restores nothing and cannot be eaten (see {@link #use}). */
+    /** The item's own properties: an MRE with no totals restores nothing and cannot be eaten (see use). */
     static final FoodProperties EMPTY=new FoodProperties.Builder().nutrition(0).saturationMod(0f).fast().build();
     Mre(){super(new Item.Properties().stacksTo(MreRules.STACK).food(EMPTY));}
 
@@ -36,7 +31,7 @@ final class Mre extends Item {
     }
     @Override public FoodProperties getFoodProperties(ItemStack stack,LivingEntity entity){
         var t=totals(stack);if(t==null)return EMPTY;
-        // no effects and never always-edible: whatever the foods had, the MRE is food and saturation only
+        // No effects and never always-edible: whatever the foods had, the MRE is food and saturation only
         return new FoodProperties.Builder().nutrition(t.nutrition()).saturationMod(MreRules.modifier(t.nutrition(),t.saturation())).fast().build();
     }
     @Override public InteractionResultHolder<ItemStack> use(Level level,Player player,InteractionHand hand){
@@ -50,7 +45,7 @@ final class Mre extends Item {
         lines.add(Component.translatable("gui.eternal_defense.mre.tip_eat").withStyle(ChatFormatting.GRAY));
     }
 
-    /** Marines Fuel: a wax crayon, the binder that seals an MRE's paper. Not food. */
+    /** Marines Fuel: a wax crayon, the binder that seals an MRE's paper. */
     static final class MarinesFuel extends Item {
         MarinesFuel(){super(new Item.Properties());}
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){lines.add(Component.translatable("gui.eternal_defense.mre.fuel_tip").withStyle(ChatFormatting.GRAY));}

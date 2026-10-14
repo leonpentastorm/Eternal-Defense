@@ -9,17 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * Tiny markup used by the field guide and confirmation screens so long copy stays in language files.
- * <pre>
- * # Heading        cyan sub-heading
- * - Bullet         marker plus indented, wrapped text; a short "Label: " at its start is coloured
- *                  ("Careful:" in red, any other label in the marker colour)
- * ~ Quiet note     muted text
- * (blank line)     paragraph gap
- * anything else    ordinary paragraph
- * </pre>
- */
+/** Tiny markup used by the field guide and confirmation screens so long copy stays in language files. # Heading */
 final class RichText {
     record Row(FormattedCharSequence text,int x,int y,int color,int marker){}
     final List<Row> rows=new ArrayList<>();
@@ -53,7 +43,7 @@ final class RichText {
         return Component.empty().append(Component.literal(body.substring(0,colon+1)).withStyle(s->s.withColor(TextColor.fromRgb(color)))).append(Component.literal(body.substring(colon+1)));
     }
 
-    /** Draws rows that intersect [clipTop, clipBottom); the caller supplies the scissor. */
+    /** Draws rows that intersect */
     void draw(GuiGraphics g,Font font,int x,int y,int scroll,int clipTop,int clipBottom){
         for(Row row:rows){
             int ry=y+row.y-scroll;if(ry+font.lineHeight<clipTop||ry>clipBottom)continue;

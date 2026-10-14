@@ -12,7 +12,7 @@ import net.minecraftforge.event.entity.living.*;
 import net.minecraftforge.eventbus.api.*;
 import java.util.*;
 
-/** Damage-driven trap learning. No trap/block search: only this raid's registered attackers learn. */
+/** Damage-driven trap learning. */
 public final class RaidAdaptation {
     private RaidAdaptation(){}
     public static final double STEP=.25;
@@ -59,7 +59,7 @@ public final class RaidAdaptation {
     private static Kind kind(LivingEntity target,DamageSource source){
         if(weapon(source))return null;
         long now=target.level().getGameTime();var n=target.getPersistentData();
-        // A flame arrow's later ownerless burn ticks still belong to its weapon. Contact with lava/fire is a trap again.
+        // A flame arrow's later ownerless burn ticks still belong to its weapon.
         if(source.is(DamageTypes.ON_FIRE)&&n.getLong(FIRE_UNTIL)>now)return null;
         if(source.is(DamageTypes.MAGIC)&&n.getLong(POISON_UNTIL)>now)return null;
         if(source.is(DamageTypes.WITHER)&&n.getLong(WITHER_UNTIL)>now)return null;
@@ -67,7 +67,7 @@ public final class RaidAdaptation {
         for(var k:Kind.values())if(source.is(k.tag))return k;
         return null; // Void, commands, starvation and unknown combat types are never inferred as traps.
     }
-    /** Optional weapon integrations can mark their ownerless shots with eternalDefensiveWeapon, or call this narrow boundary. */
+    /** Optional weapon integrations can mark their ownerless shots with eternalDefensiveWeapon */
     public static boolean weaponDamage(LivingEntity target,DamageSource source,float amount){
         boolean old=WEAPON_CALL.get();WEAPON_CALL.set(true);
         try{return target.hurt(source,amount);}finally{if(old)WEAPON_CALL.set(true);else WEAPON_CALL.remove();}
@@ -75,7 +75,7 @@ public final class RaidAdaptation {
     public static void weaponFire(LivingEntity target,int ticks){
         target.getPersistentData().putLong(FIRE_UNTIL,target.level().getGameTime()+Math.max(0,ticks)+20);
     }
-    /** A weapon froze the target (the Cryo Shell): the frost damage that follows belongs to the weapon, not to a trap. */
+    /** A weapon froze the target (the Cryo Shell): the frost damage that follows belongs to the weapon */
     public static void weaponFreeze(LivingEntity target,int ticks){
         target.getPersistentData().putLong(FREEZE_UNTIL,target.level().getGameTime()+Math.max(0,ticks)+20);
     }

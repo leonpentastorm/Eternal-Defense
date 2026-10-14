@@ -16,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.UUID;
 
-/** Server logic of the base support system: validation, announcements, cannon lookups, parcel delivery and the trip home. */
+/** Server logic of the base support system: validation, announcements, cannon lookups */
 final class SupportCalls {
     private SupportCalls(){}
     enum Kind{
@@ -25,8 +25,8 @@ final class SupportCalls {
         static Kind of(int ordinal){var v=values();return v[Math.max(0,Math.min(v.length-1,ordinal))];}
     }
 
-    // ---- lookups ----------------------------------------------------------------------------------
-    /** The player's platform block entity, loading its chunk if needed. Null when they have none (or it is gone). */
+    // Lookups
+    /** The player's platform block entity, loading its chunk if needed. */
     static SupportPlatform.PlatformEntity platform(ServerLevel any,UUID owner){
         var overworld=any.getServer().overworld();var base=SupportData.get(overworld).of(owner);
         if(base==null||base.platform==null)return null;
@@ -39,47 +39,46 @@ final class SupportCalls {
         if(base==null||base.cannon==null||!overworld.isLoaded(base.cannon))return null;
         return overworld.getBlockEntity(base.cannon) instanceof SupportCannon.CannonEntity c?c:null;
     }
-    /** The cannon that can really be seen turning: loaded and ticking in the Overworld. Otherwise calls use the same timing without the visible turret. */
+    /** The cannon that can really be seen turning: loaded and ticking in the Overworld. */
     static SupportCannon.CannonEntity liveCannon(ServerLevel at,UUID owner){
         if(at.dimension()!=Level.OVERWORLD)return null;
         var c=cannon(at,owner);
         return c!=null&&at.isPositionEntityTicking(c.getBlockPos())?c:null;
     }
 
-    // ---- validation -------------------------------------------------------------------------------
-    /** Null when the call may go ahead, otherwise a language key suffix under {@code support.refused.} describing what is wrong. */
+    // Validation
+    /** Null when the call may go ahead, otherwise a language key suffix under support.refused. */
     static String problem(ServerPlayer p,Kind kind){
         var overworld=p.getServer().overworld();
         var base=SupportData.get(overworld).of(p.getUUID());
         if(kind!=Kind.RETURN&&p.level().dimension()!=Level.OVERWORLD){
-            // only fire support can be called in another dimension, and only with the Dimensional Link upgrade
+            // Only fire support can be called in another dimension, and only with the Dimensional Link upgrade
             if(kind!=Kind.FIRE||base==null||base.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]<=0)return "wrong_dimension";
         }
         var platform=platform(overworld,p.getUUID());
         if(platform==null)return "no_platform";
         if(BaseZone.problem(overworld,platform.getBlockPos())!=null)return "disabled";
-        // every flare needs the cannon, the Return Flare too (owner, 0.0.26); the return gate an operation opens when there is no ground
-        // ({@link Hunts#returnGate}) carries its own destination and never comes here
+        // Every flare needs the cannon, the Return Flare too
         if(base==null||base.cannon==null)return "no_cannon";
-        overworld.getChunkAt(base.cannon);   // a base far from every player (or a player in another dimension) still has its cannon
+        overworld.getChunkAt(base.cannon);   // A base far from every player (or a player in another dimension) still has its cannon
         if(!overworld.getBlockState(base.cannon).is(EternalDefense.SUPPORT_CANNON.get()))return "no_cannon";
         if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
         if(kind==Kind.SUPPLY&&!platform.hasItems())return "empty_grid";
         if(kind==Kind.RETURN&&returnSpot(overworld,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING))==null)return "return_blocked";
         return null;
     }
-    /** Tells the player why nothing happened. Their flare is never used up when a call is refused. */
+    /** Tells the player why nothing happened. */
     static void refuse(ServerPlayer p,String problem){
         var text=Component.translatable("gui.eternal_defense.support.refused."+problem).withStyle(ChatFormatting.RED);
         p.sendSystemMessage(text);p.displayClientMessage(text,true);
     }
-    /** A short status line (chat and action bar) under {@code support.notice.}; used for what the cannon is doing and for a barrage already under way. */
+    /** A short status line (chat and action bar) under support.notice. */
     static void notice(ServerPlayer p,String key,ChatFormatting color){
         if(p==null)return;
         var text=Component.translatable("gui.eternal_defense.support.notice."+key).withStyle(color);
         p.sendSystemMessage(text);p.displayClientMessage(text,true);
     }
-    /** One extra grey chat line (no action bar) under {@code support.notice.}. */
+    /** One extra grey chat line (no action bar) under support.notice.. */
     static void noticeDetail(ServerPlayer p,String key){
         if(p!=null)p.sendSystemMessage(Component.translatable("gui.eternal_defense.support.notice."+key).withStyle(ChatFormatting.GRAY));
     }
@@ -91,20 +90,20 @@ final class SupportCalls {
         return dx*dx+dz*dz>(double)SupportRules.CANNON_HEARING*SupportRules.CANNON_HEARING;
     }
     static void announce(ServerPlayer caller,Kind kind){announce(caller,kind.id);}
-    /** Everyone sees who is calling what: a centre-screen toast and one chat line (for fire support, the caller's own chosen type). */
+    /** Everyone sees who is calling what: a centre-screen toast and one chat line */
     static void announce(ServerPlayer caller,String what){
         BeaconNetwork.announce(caller.serverLevel(),"support",0,0,caller.getGameProfile().getName(),what);
         caller.getServer().getPlayerList().broadcastSystemMessage(Component.translatable("gui.eternal_defense.support.called",caller.getDisplayName(),Component.translatable("gui.eternal_defense.support.name."+what)).withStyle(ChatFormatting.GOLD),false);
     }
 
-    // ---- supply drops ---------------------------------------------------------------------------------
+    // Supply drops
     /** Takes everything out of the platform's grid and returns it as a saveable list. */
     static ListTag takeGrid(ServerPlayer p){
         var platform=platform(p.serverLevel(),p.getUUID());var list=new ListTag();
         if(platform!=null)for(ItemStack s:platform.takeAll())list.add(s.save(new CompoundTag()));
         return list;
     }
-    /** Open blocks above {@code at}, up to the drop height. */
+    /** Open blocks above at, up to the drop height. */
     static int clearAbove(ServerLevel level,BlockPos at){
         int clear=0;
         for(int dy=1;dy<=SupportRules.PARCEL_DROP_HEIGHT&&at.getY()+dy<level.getMaxBuildHeight();dy++){
@@ -129,7 +128,7 @@ final class SupportCalls {
         level.addFreshEntity(parcel);return parcel.getUUID();
     }
 
-    // ---- return portal -----------------------------------------------------------------------------------
+    // Return portal
     /** A cell a player can stand in: two open blocks, a solid floor, nothing harmful. */
     static boolean standable(ServerLevel level,BlockPos c){
         if(!level.hasChunkAt(c))return false;
@@ -138,13 +137,13 @@ final class SupportCalls {
         if(!feet.getFluidState().isEmpty()||!head.getFluidState().isEmpty())return false;
         return !feet.is(net.minecraft.world.level.block.Blocks.FIRE)&&!floor.is(net.minecraft.world.level.block.Blocks.MAGMA_BLOCK)&&!floor.is(net.minecraft.world.level.block.Blocks.CACTUS)&&!floor.is(net.minecraft.world.level.block.Blocks.CAMPFIRE);
     }
-    /** The cells of a platform's return zone: the two blocks in front of it, two blocks tall. They are kept clear (no building) so the portal always has room. */
+    /** The cells of a platform's return zone: the two blocks in front of it, two blocks tall. */
     static List<BlockPos> returnZone(BlockPos platform,Direction facing){
         var list=new java.util.ArrayList<BlockPos>();
         for(int d=1;d<=2;d++)for(int h=0;h<=1;h++)list.add(platform.relative(facing,d).above(h));
         return list;
     }
-    /** Where the portal delivers a player: the front of the platform, or the nearest safe cell around it. Null when there is none (the return is cancelled, the flare is not used). */
+    /** Where the portal delivers a player: the front of the platform, or the nearest safe cell around it. */
     static Vec3 returnSpot(ServerLevel level,BlockPos platform,Direction facing){
         BlockPos front=platform.relative(facing);
         for(BlockPos c:new BlockPos[]{front,front.relative(facing),front.above(),front.below()})if(standable(level,c))return Vec3.atBottomCenterOf(c);
@@ -160,7 +159,7 @@ final class SupportCalls {
         var home=p.getServer().overworld();var platform=platform(home,p.getUUID());if(platform==null)return null;
         return returnSpot(home,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING));
     }
-    /** The owner stepped into their return portal: send them to the front of their platform. Returns where they arrived, or null when refused. */
+    /** The owner stepped into their return portal: send them to the front of their platform. */
     static Vec3 finishReturn(ServerPlayer p){
         String problem=problem(p,Kind.RETURN);if(problem!=null){refuse(p,problem);return null;}
         var home=p.getServer().overworld();var platform=platform(home,p.getUUID());
@@ -169,7 +168,7 @@ final class SupportCalls {
         travel(p,home,spot,facing.toYRot());
         return spot;
     }
-    /** Where the portal back to the throw spot opens: a free cell near the platform's front, not the arrival cell itself. */
+    /** Where the portal back to the throw spot opens: a free cell near the platform's front */
     static Vec3 backPortalSpot(ServerLevel home,UUID owner){
         var platform=platform(home,owner);if(platform==null)return null;
         Direction f=platform.getBlockState().getValue(SupportPlatform.FACING);BlockPos front=platform.getBlockPos().relative(f);

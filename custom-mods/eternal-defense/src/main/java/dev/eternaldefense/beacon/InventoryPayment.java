@@ -3,13 +3,9 @@ package dev.eternaldefense.beacon;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-/**
- * Pays a request's costs. 0.0.40: from the player's pack first, then from the Home Zone's Logistics Center Hubs, nearest first
- * ({@link Supply}). The allocation is a minimum-cost maximum flow ({@link SupplyRules#allocate}), so overlapping tags and repeated inputs never
- * count a slot twice and never block a request that could be paid. Planned on copies, carried out only when everything is there.
- */
+/** Pays a request's costs. */
 final class InventoryPayment {
-    /** {@code inventory}: copies of the pack's slots (main, then off hand) after paying; {@code pulls}: what the Hubs pay. */
+    /** Inventory: copies of the pack's slots (main, then off hand) after paying; pulls: what the Hubs pay. */
     record Plan(List<ItemStack> inventory,int[] allocated,boolean payable,List<Supply.Pull> pulls){}
     static boolean matches(WeaponPlatform.Cost cost,ItemStack stack){
         if(stack.isEmpty())return false;
@@ -26,7 +22,7 @@ final class InventoryPayment {
     static Plan plan(Supply.Where w,List<WeaponPlatform.Cost> costs){
         var p=w.player();
         var inventory=new ArrayList<>(p.getInventory().items.stream().map(ItemStack::copy).toList());p.getInventory().offhand.forEach(s->inventory.add(s.copy()));
-        // the sources: every pack slot (tier 0), then every kind of item each Hub holds that some cost accepts (tier 1 = nearest Hub)
+        // The sources: every pack slot (tier 0), then every kind of item each Hub holds that some cost accepts
         var stacks=new ArrayList<ItemStack>(inventory);var supply=new ArrayList<Integer>();var tier=new ArrayList<Integer>();var kinds=new ArrayList<Supply.Pull>();
         for(var s:inventory){supply.add(s.getCount());tier.add(0);kinds.add(null);}
         if(!costs.isEmpty()){var hubs=Supply.hubs(w);
@@ -41,18 +37,18 @@ final class InventoryPayment {
         for(int s=0;s<sources;s++){int n=alloc.from(s);if(n<=0)continue;if(kinds.get(s)==null){inventory.get(s).shrink(n);continue;}
             var pull=new Supply.Pull(kinds.get(s).hub(),kinds.get(s).key(),n);pulls.add(pull);
             int c=0;while(c<count-1&&alloc.taken()[s][c]<=0)c++;firstCost.put(pull,c);}
-        // the Hub line names what it paid in the request's own order (the recipe's), not in the order the Hub happens to store it
+        // The Hub line names what it paid in the request's own order (the recipe's)
         pulls.sort(Comparator.comparingInt(firstCost::get));
         return new Plan(inventory,alloc.got(),alloc.payable(),pulls);
     }
-    /** Pays and hands over {@code output}: everything or nothing (the output must fit in the pack). Creative players pay nothing. */
+    /** Pays and hands over output: everything or nothing (the output must fit in the pack). */
     static boolean commit(Supply.Where w,List<WeaponPlatform.Cost> costs,ItemStack output){
         var p=w.player();
         var plan=plan(w,p.isCreative()?List.of():costs);if(!plan.payable())return false;var slots=plan.inventory();var rest=output.copy();int main=p.getInventory().items.size();
         for(int i=0;i<main&&!rest.isEmpty();i++){var stack=slots.get(i);if(!stack.isEmpty()&&ItemStack.isSameItemSameTags(stack,rest)){int fit=Math.min(rest.getCount(),Math.max(0,stack.getMaxStackSize()-stack.getCount()));stack.grow(fit);rest.shrink(fit);}}
         for(int i=0;i<main&&!rest.isEmpty();i++)if(slots.get(i).isEmpty()){int amount=Math.min(rest.getCount(),rest.getMaxStackSize());slots.set(i,rest.copyWithCount(amount));rest.shrink(amount);}
         if(!rest.isEmpty())return false;
-        for(var pull:plan.pulls())if(pull.hub().storage.count(pull.key())<pull.count())return false;   // planned this tick on the server thread: always there
+        for(var pull:plan.pulls())if(pull.hub().storage.count(pull.key())<pull.count())return false;   // Planned this tick on the server thread: always there
         for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
         var paid=new ArrayList<Supply.Pull>();for(var pull:plan.pulls()){int n=pull.hub().storage.extract(pull.key(),pull.count(),false);if(n>0)paid.add(new Supply.Pull(pull.hub(),pull.key(),n));}
         HubNotices.pulled(p,paid);

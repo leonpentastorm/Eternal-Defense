@@ -17,14 +17,11 @@ import net.minecraft.world.level.block.Block;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Support gear (platform, cannon, Exchange Shop, Command Table, Satellite Beacon) only exists inside the live zone of the Defense Beacon. It cannot be placed
- * outside it, stops working while the beacon is missing, and is moved for free with the Beacon Recovery Shovel.
- */
+/** Support gear */
 final class BaseZone {
     private BaseZone(){}
 
-    /** Null when {@code pos} is inside the zone of a standing beacon, otherwise a language key suffix under {@code support.zone.}. */
+    /** Null when pos is inside the zone of a standing beacon, otherwise a language key suffix under support.zone.. */
     static String problem(Level level,BlockPos pos){
         if(!(level instanceof ServerLevel server))return null;
         if(server.dimension()!=Level.OVERWORLD)return "overworld";
@@ -41,7 +38,7 @@ final class BaseZone {
         var b=data.beacon;int r=data.radius();
         return new net.minecraft.world.phys.AABB(b.getX()-r,b.getY()-data.below(),b.getZ()-r,b.getX()+r+1,b.getY()+data.above()+1,b.getZ()+r+1);
     }
-    /** True when {@code box} overlaps the protected zone of a standing beacon in this dimension (a Bunker Buster is never allowed to dig there). */
+    /** True when box overlaps the protected zone of a standing beacon in this dimension */
     static boolean touches(ServerLevel level,net.minecraft.world.phys.AABB box){
         if(level.dimension()!=Level.OVERWORLD)return false;
         var data=CampaignData.get(level.getServer().overworld());
@@ -62,17 +59,16 @@ final class BaseZone {
     /** A block item that refuses to place outside the beacon zone (and applies the subclass' own rules). */
     static class ZoneItem extends BlockItem {
         ZoneItem(Block block){super(block,new Item.Properties());}
-        /** Extra rules of the subclass; a language key suffix under {@code support.} or null. */
+        /** Extra rules of the subclass; a language key suffix under support. */
         String extra(BlockPlaceContext c){return null;}
         @Override public InteractionResult place(BlockPlaceContext c){
-            // 0.0.42: anything in the way of any cell is refused on both sides (the preview is red), so the item is never spent on a guess;
-            // the footprint is checked in the state the piece will be placed in (the Command Table's depends on which way it faces)
+            // Anything in the way of any cell is refused on both sides (the preview is red)
             var state=getBlock().getStateForPlacement(c);
             if(PlacementGuard.blocked(c,state)){if(state!=null&&!c.getLevel().isClientSide)say(c.getPlayer(),"no_room");return PlacementGuard.refuse(c);}
             if(!c.getLevel().isClientSide){
                 String zone=problem(c.getLevel(),c.getClickedPos());
                 if(zone!=null){say(c.getPlayer(),"zone."+zone);return PlacementGuard.refuse(c);}
-                // 0.0.42: no cell of a bigger piece (the cannon's 3 x 3 x 2) may stand in a Support Platform's return zone
+                // No cell of a bigger piece (the cannon's 3 x 3 x 2) may stand in a Support Platform's return zone
                 if(c.getLevel() instanceof net.minecraft.server.level.ServerLevel server)for(var cell:DefenseStructures.cells(c.getClickedPos(),state))if(ReturnZone.inside(server,cell)){say(c.getPlayer(),"keep_clear");return PlacementGuard.refuse(c);}
                 String extra=extra(c);
                 if(extra!=null){say(c.getPlayer(),extra);return PlacementGuard.refuse(c);}
@@ -89,7 +85,7 @@ final class BaseZone {
 
     /** Beacon Recovery Shovel on support gear: picks it up for free (a platform keeps its Mk level and grid). */
     static boolean relocate(ServerPlayer p,ServerLevel level,BlockPos clicked){
-        if(LogisticsHub.isHub(level.getBlockState(clicked)))return LogisticsHub.relocate(p,level,clicked);   // 0.0.40: its items wait for it in the saved data
+        if(LogisticsHub.isHub(level.getBlockState(clicked)))return LogisticsHub.relocate(p,level,clicked);   // Its items wait for it in the saved data
         BlockPos root=DefenseStructures.anchor(level,clicked);var state=level.getBlockState(root);
         ItemStack stack;UUID owner=null;
         if(state.is(EternalDefense.EXCHANGE_SHOP.get())){stack=new ItemStack(EternalDefense.EXCHANGE_SHOP_ITEM.get());}
@@ -102,8 +98,8 @@ final class BaseZone {
             be.grid.clearQuietly();
         }
         else if(state.is(EternalDefense.COMMAND_TABLE.get())){stack=new ItemStack(EternalDefense.COMMAND_TABLE_ITEM.get());}
-        else if(state.is(EternalDefense.ENCHANTING_TABLE.get())){stack=new ItemStack(EternalDefense.ENCHANTING_TABLE_ITEM.get());}   // its Mk and unlocks live in the base's record
-        else if(state.is(EternalDefense.SATELLITE_BEACON.get())){stack=new ItemStack(EternalDefense.SATELLITE_BEACON_ITEM.get());stack.getOrCreateTag().putInt("Mk",state.getValue(TacticalBlocks.MK));}   // for the tooltip only: the Mk itself is kept in HuntData
+        else if(state.is(EternalDefense.ENCHANTING_TABLE.get())){stack=new ItemStack(EternalDefense.ENCHANTING_TABLE_ITEM.get());}   // Its Mk and unlocks live in the base's record
+        else if(state.is(EternalDefense.SATELLITE_BEACON.get())){stack=new ItemStack(EternalDefense.SATELLITE_BEACON_ITEM.get());stack.getOrCreateTag().putInt("Mk",state.getValue(TacticalBlocks.MK));}   // For the tooltip only: the Mk itself is kept in HuntData
         else if(state.is(EternalDefense.SUPPORT_CANNON.get())&&level.getBlockEntity(root) instanceof SupportCannon.CannonEntity be){
             owner=be.owner;
             if(owner!=null&&!owner.equals(p.getUUID())){say(p,"not_yours",be.ownerName);return true;}

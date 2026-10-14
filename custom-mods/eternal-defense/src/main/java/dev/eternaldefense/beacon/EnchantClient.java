@@ -17,11 +17,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The Tactical Enchanting Table's screen (0.0.27): the gear slot and the player's inventory on the left with the ACTIVE FOBs, the table's Mk
- * and the Warlord Seals; on the right every enchant the gear takes, each level a button with its price, a locked level saying why. The list
- * is worked out here from the slot and the state the server sends ({@link TacticalEnchanting#state}); every purchase is checked again there.
- */
+/** The Tactical Enchanting Table's screen: the gear slot and the player's inventory on the left with the ACTIVE */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class EnchantClient {
     private EnchantClient(){}
@@ -30,7 +26,7 @@ public final class EnchantClient {
     static void state(CompoundTag data){if(net.minecraft.client.Minecraft.getInstance().screen instanceof EnchantScreen s)s.update(data);}
 
     static final class EnchantScreen extends AbstractContainerScreen<TacticalEnchanting.EnchantMenu> {
-        /** 0.0.30: bigger and calmer (the owner saw the empty slot's line run into the FOB line). A level button fits "III" (22 wide, 23 apart). */
+        /** Bigger and calmer. */
         static final int W=440,H=260,ROW=22,LIST_X=214,LEVEL_W=22,LEVEL_STEP=23;
         /** The left column: x 14, 184 wide; each block of text has its own band, with a rule between them. */
         static final int SIDE_X=14,SIDE_W=184,GEAR_LABEL_Y=34,GEAR_TEXT_LINES=3,FOBS_RULE_Y=82,FOBS_Y=88,MK_RULE_Y=114,MK_Y=120,UPGRADE_Y=132,ENERGY_Y=158;
@@ -49,7 +45,7 @@ public final class EnchantClient {
         @Override protected void init(){
             super.init();clearWidgets();rows.clear();
             addRenderableWidget(new Ui.UiButton(leftPos+W-28,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
-            // the table's next Mk
+            // The table's next Mk
             int mk=data.getInt("mk");
             if(mk<EnchantRules.MAX_MK){
                 var up=addRenderableWidget(new Ui.UiButton(leftPos+SIDE_X,topPos+UPGRADE_Y,SIDE_W,18,Ui.t("enchant.upgrade",EnchantRules.roman(mk+1),EnchantRules.DISCOUNT[mk+1]),Ui.Look.NORMAL,b->click(TacticalEnchanting.UPGRADE)));
@@ -66,7 +62,7 @@ public final class EnchantClient {
                 var e=rows.get(r);int index=TacticalEnchanting.catalogue().indexOf(e);boolean treasure=TacticalEnchanting.treasure(e);
                 int unlocked=treasure?EnchantRules.unlockedLevel(TacticalEnchanting.id(e),seals(e),e.getMaxLevel()):e.getMaxLevel();
                 int bx=levelsX(e);
-                // a treasure enchant still locked (or its next level): one seal unlocks it
+                // A treasure enchant still locked (or its next level): one seal unlocks it
                 if(treasure&&EnchantRules.sealsForNext(TacticalEnchanting.id(e),seals(e),e.getMaxLevel())>0){
                     int ti=EnchantRules.TREASURE.indexOf(TacticalEnchanting.id(e));boolean has=data.getBoolean("creative")||data.getInt("sealsCarried")>0;
                     var seal=addRenderableWidget(new Ui.UiButton(bx-50,y+2,46,16,Ui.t("enchant.unlock"),Ui.Look.NORMAL,b->click(TacticalEnchanting.UNLOCK+ti)));
@@ -93,7 +89,7 @@ public final class EnchantClient {
             Ui.panel(g,leftPos,topPos,W,H);
             Ui.header(g,font,leftPos,topPos,W,title,Ui.t("enchant.subtitle"));
             int x=leftPos+SIDE_X,w=SIDE_W;
-            // the gear: its slot, and beside it what goes there (up to three lines, ending above the first rule) or what is in it
+            // The gear: its slot, and beside it what goes there
             Ui.text(g,font,Ui.t("enchant.gear"),x,topPos+GEAR_LABEL_Y,Ui.BRASS,w);
             int gx=leftPos+TacticalEnchanting.EnchantMenu.GEAR_X,gy=topPos+TacticalEnchanting.EnchantMenu.GEAR_Y;
             Ui.slot(g,gx-1,gy-1,ARCANE);
@@ -105,17 +101,17 @@ public final class EnchantClient {
                 Ui.text(g,font,have.isEmpty()?Ui.t("enchant.gear.none"):Ui.t("enchant.gear.has",have.size()),tx,gy+11,Ui.MUTED,tw);
             }
             for(int i=1;i<menu.slots.size();i++){var sl=menu.slots.get(i);Ui.slot(g,leftPos+sl.x-1,topPos+sl.y-1,Ui.EDGE);}
-            // the ACTIVE FOBs
+            // The ACTIVE FOBs
             Ui.rule(g,x,topPos+FOBS_RULE_Y,w);
             Ui.text(g,font,Ui.t("enchant.fobs",fobs(),FobRules.MAX_FOBS),x,topPos+FOBS_Y,fobs()>0?FobClient.OLIVE:Ui.ORANGE,w);
             Ui.text(g,font,Ui.t("enchant.fobs.how"),x,topPos+FOBS_Y+12,Ui.MUTED,w);
-            // the table's Mk and its upgrade button (or "Fully upgraded"), then what you carry
+            // The table's Mk and its upgrade button (or "Fully upgraded"), then what you carry
             Ui.rule(g,x,topPos+MK_RULE_Y,w);
             int mk=data.getInt("mk");
             Ui.text(g,font,mk==0?Ui.t("enchant.mk.none"):Ui.t("enchant.mk",EnchantRules.roman(mk),EnchantRules.DISCOUNT[mk]),x,topPos+MK_Y,Ui.INK,w);
             if(mk>=EnchantRules.MAX_MK)Ui.text(g,font,Ui.t("enchant.mk.max"),x,topPos+UPGRADE_Y+5,Ui.MUTED,w);
             Ui.text(g,font,data.getBoolean("creative")?Ui.t("enchant.energy.creative",data.getInt("sealsCarried")):Ui.t("enchant.energy",data.getInt("energy"),data.getInt("sealsCarried")),x,topPos+ENERGY_Y,Ui.MUTED,w);
-            // the list
+            // The list
             int lx=leftPos+LIST_X,lw=W-LIST_X-12;
             Ui.text(g,font,Ui.t("enchant.list"),lx,topPos+36,ARCANE,lw);
             if(gear.isEmpty()){Ui.wrap(g,font,Ui.t("enchant.list.empty"),lx,listTop(),lw,Ui.MUTED,6);}
@@ -130,13 +126,13 @@ public final class EnchantClient {
                 Component sub=have>0?Ui.t("enchant.row.has",EnchantRules.roman(have)):treasure&&seals(e)==0?Ui.t("enchant.row.treasure"):Ui.t("enchant.row.top",EnchantRules.roman(top));
                 Ui.text(g,font,sub,lx+6,ry+12,Ui.MUTED,nameW);
             }
-            // the last result under the list; a long one (a refusal naming the enchant) takes two lines, in place of the scroll hint
+            // The last result under the list; a long one (a refusal naming the enchant) takes two lines
             var line=message();boolean twoLines=line!=null&&font.width(line)>lw;
             if(rows.size()>visibleRows()&&!twoLines)Ui.text(g,font,Ui.t("enchant.scroll",scroll+1,Math.min(rows.size(),scroll+visibleRows()),rows.size()),lx,topPos+H-22,Ui.MUTED,lw);
             if(line!=null){String key=data.getString("message");int color=key.equals("enchant.result.done")||key.equals("enchant.result.upgraded")||key.equals("enchant.result.unlocked")?FobClient.OLIVE:Ui.ORANGE;
                 if(twoLines)Ui.wrap(g,font,line,lx,topPos+H-23,lw,color,2);else Ui.text(g,font,line,lx,topPos+H-12,color,lw);}
         }
-        /** The last result the server sent: its finished line when it names an enchant, else the message key's text; null when there is none. */
+        /** The last result the server sent: its finished line when it names an enchant, else the message key's text */
         Component message(){
             var key=data.getString("message");if(key.isEmpty())return null;
             return data.contains("detail")?Component.Serializer.fromJson(data.getString("detail")):Component.translatable("gui.eternal_defense."+key);
@@ -144,7 +140,7 @@ public final class EnchantClient {
         @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             renderBackground(g);super.render(g,mx,my,partial);renderTooltip(g,mx,my);
-            // an enchant's name (cut short in a narrow row): its full name, top level and the ACTIVE FOBs each level needs
+            // An enchant's name (cut short in a narrow row): its full name, top level and the ACTIVE FOBs each level needs
             int ry=listTop();
             for(int r=scroll;r<rows.size()&&r<scroll+visibleRows();r++,ry+=ROW){
                 var e=rows.get(r);int nameRight=levelsX(e)-(TacticalEnchanting.treasure(e)&&EnchantRules.sealsForNext(TacticalEnchanting.id(e),seals(e),e.getMaxLevel())>0?54:4);

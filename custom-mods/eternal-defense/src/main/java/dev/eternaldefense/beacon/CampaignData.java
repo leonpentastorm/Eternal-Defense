@@ -19,7 +19,7 @@ public final class CampaignData extends SavedData {
     public int reconnaissance,raidsStarted,vertical,respitePurchases,nextRaidBonus;
     public long respiteTicks;
     public boolean introCompleted,introRaid;
-    /** Start raid was pressed by day: the raid starts when night falls (0.0.21, raids only come at night). */
+    /** Start raid was pressed by day: the raid starts when night falls. */
     public boolean raidRequested;
     public boolean hardRaid,bossSpawned,bossKilled;
     public UUID bossId;
@@ -37,9 +37,9 @@ public final class CampaignData extends SavedData {
     public final Map<Long,Damage> damage=new LinkedHashMap<>();
     public final Map<String,Integer> baseCounts=new HashMap<>();
     public final List<CompoundTag> rewards=new ArrayList<>();
-    /** The reward chest: part of the beacon itself. Claimed rewards wait here (54 slots) until the team takes them. */
+    /** The reward chest: part of the beacon itself. */
     public final net.minecraft.world.SimpleContainer rewardBox=new net.minecraft.world.SimpleContainer(54);
-    /** Kind of the raid in progress and of the next one (see {@link RaidTypes}); "normal" for an ordinary raid. */
+    /** Kind of the raid in progress and of the next one (see RaidTypes); "normal" for an ordinary raid. */
     public String raidType="normal",nextRaidType="normal";
     public final List<CompoundTag> destroyedTurrets=new ArrayList<>();
     public record Damage(BlockState before,CompoundTag entity) {}
@@ -65,7 +65,7 @@ public final class CampaignData extends SavedData {
         resetProgress();snapshot.clear();beacon=BlockPos.ZERO;phase="unplaced";setDirty();
     }
     public boolean inside(BlockPos p){return inside(p.getX(),p.getY(),p.getZ());}
-    /** {@link #inside(BlockPos)} without a position object (the base score asks this for every block it scores). */
+    /** Inside(BlockPos) without a position object (the base score asks this for every block it scores). */
     public boolean inside(int x,int y,int z){
         long dx=x-beacon.getX(),dz=z-beacon.getZ();
         return Math.abs(dx)<=radius() && Math.abs(dz)<=radius() && y>=beacon.getY()-below() && y<=beacon.getY()+above();

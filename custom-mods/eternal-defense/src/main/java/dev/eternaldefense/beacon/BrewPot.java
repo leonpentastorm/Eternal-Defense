@@ -12,11 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 
-/**
- * 0.0.35 (owner): the Brew Pot, the Cook Pot's sibling for drinks (the owner's copper kettle, 1 x 1 x 2). It is linked to a Drink Station
- * within 8 blocks and holds ONE serving: right-click it with a Paper Cup and you drink it at once (the cup is used up, as the bowl at a Cook Pot; 0.0.37). Its
- * chalkboard shows the drink, its effects and its time.
- */
+/** The Brew Pot, the Cook Pot's sibling for drinks. */
 final class BrewPot {
     private BrewPot(){}
     static final class PotBlock extends KitchenBlock {
@@ -47,11 +43,11 @@ final class BrewPot {
             for(var s:stations)if(s.link(this))return s;return null;
         }
         boolean empty(){return drink==null;}
-        /** {@code replace}: the brewer confirmed that the drink still in the pot is poured away. */
+        /** Replace: the brewer confirmed that the drink still in the pot is poured away. */
         boolean fill(DrinkStation.StationEntity station,DrinkData next,boolean replace){if(!(replace||empty())||!belongs(station)||validLink()!=station||next.latte())return false;drink=next;changed();return true;}
         void changed(){
             setChanged();if(level==null||level.isClientSide)return;level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);
-            // the station's taps show the pots' drinks: let its model know
+            // The station's taps show the pots' drinks: let its model know
             if(linkedStation!=null&&level.hasChunkAt(linkedStation))level.sendBlockUpdated(linkedStation,level.getBlockState(linkedStation),level.getBlockState(linkedStation),3);
         }
         void use(ServerPlayer p,InteractionHand hand){
@@ -64,7 +60,7 @@ final class BrewPot {
             }
             if(station==null||BaseZone.problem(level,station.getBlockPos())!=null){p.displayClientMessage(Component.translatable("gui.eternal_defense.drinks.no_station"),true);return;}
             if(empty()){p.displayClientMessage(Component.translatable("gui.eternal_defense.drinks.pot_empty"),true);return;}
-            // one serving: drunk at once; the cup is used up (0.0.37, owner: a sink for cups; creative keeps it, as vanilla)
+            // One serving: drunk at once; the cup is used up
             var served=drink;drink=null;changed();PlayerDrinks.drink(p,served);
             if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);
             level.playSound(null,p.blockPosition(),SoundEvents.GENERIC_DRINK,SoundSource.PLAYERS,.8f,1f);

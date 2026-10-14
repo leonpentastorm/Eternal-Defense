@@ -12,7 +12,7 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** Purchases and Mk upgrades at the Support Platform. Results travel back through the menu's synced data slots. */
+/** Purchases and Mk upgrades at the Support Platform. */
 final class SupportShop {
     private SupportShop(){}
     static final int BOUGHT=1,NO_ENERGY=2,NO_PLATING=3,MAXED=4,UPGRADED=5;

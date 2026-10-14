@@ -50,7 +50,7 @@ final class HardRaids {
         var entity=l.getEntity(d.bossId);if(!(entity instanceof LivingEntity boss)||!boss.isAlive()){clear(l);return;}
         // Some native entities apply their configured health on their first loaded tick.
         if(boss instanceof Mob mob&&boss.getMaxHealth()!=Rules.scaledBossHealth(d.raidTier,Math.max(1,boss.getPersistentData().getInt("eternalBossDefenders"))))balance(mob,d.raidTier);
-        var bar=BARS.get(l);if(bar!=null&&l.getGameTime()%5!=0)return;   // the bar is refreshed four times a second
+        var bar=BARS.get(l);if(bar!=null&&l.getGameTime()%5!=0)return;   // The bar is refreshed four times a second
         if(bar==null)BARS.put(l,bar=new ServerBossEvent(Component.literal("RAID BOSS"),BossEvent.BossBarColor.RED,BossEvent.BossBarOverlay.PROGRESS));
         bar.setName(Component.literal("RAID BOSS: ").append(boss.getType().getDescription()).append("  "+(int)Math.ceil(boss.getHealth())+" / "+(int)boss.getMaxHealth()));bar.setProgress(Math.max(0,Math.min(1,boss.getHealth()/boss.getMaxHealth())));
         Set<net.minecraft.server.level.ServerPlayer> eligible=new HashSet<>();for(var p:l.getServer().getPlayerList().getPlayers())if(EternalDefense.near(p,d)){eligible.add(p);bar.addPlayer(p);}for(var p:new ArrayList<>(bar.getPlayers()))if(!eligible.contains(p))bar.removePlayer(p);

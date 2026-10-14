@@ -6,13 +6,13 @@ import java.nio.file.Path;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.35 list, Part 2: the Drink Station, the Brew Pot, the Cup Dispenser, the Paper Cup, the Latte and the active drink. */
+/** The list, Part 2: the Drink Station, the Brew Pot, the Cup Dispenser, the Paper Cup */
 final class Round0035Test {
     static final String SRC="src/main/java/dev/eternaldefense/beacon/",RES="src/main/resources/";
     static String source(String name) throws Exception{return Files.readString(Path.of(SRC+name));}
     static String lang() throws Exception{return Files.readString(Path.of(RES+"assets/eternal_defense/lang/en_us.json"));}
 
-    // ---- the numbers --------------------------------------------------------------------------------------------------------------
+    // The numbers
     @Test void effectsAndPotsPerTier(){
         for(int mk=1;mk<=4;mk++){var t=DrinkRules.tier(mk);assertEquals(mk-1,t.effects(),"effects at Mk "+mk);assertEquals(mk-1,t.pots(),"Brew Pots at Mk "+mk);assertEquals(mk>=2,t.mixing());}
         assertEquals(List.of(0,1,2,2),List.of(DrinkRules.latteEffects(1),DrinkRules.latteEffects(2),DrinkRules.latteEffects(3),DrinkRules.latteEffects(4)),"a Latte carries up to 2, never more than the tier");
@@ -45,7 +45,7 @@ final class Round0035Test {
     }
     static boolean lang_has(String key){try{return lang().contains("\"gui.eternal_defense."+key+"\"");}catch(Exception e){return false;}}
 
-    // ---- the active drink never takes what it did not give ----------------------------------------------------------------------------
+    // The active drink never takes what it did not give
     @Test void theTrackerKnowsItsOwnEffects(){
         assertTrue(PlayerDrinks.ours(1,true,-1,1,true,6000),"endless at home, its level: its own");
         assertTrue(PlayerDrinks.ours(1,false,6000,1,false,6010),"in the field, its level and time");
@@ -83,7 +83,7 @@ final class Round0035Test {
         assertTrue(drinks.contains("PlayerLoggedOutEvent"),"logging out pauses it (the timer only runs while the player ticks)");
     }
 
-    // ---- blocks, models, recipes, prices --------------------------------------------------------------------------------------------
+    // Blocks, models, recipes, prices
     @Test void theOwnersModelsAreInstalledAndUsed() throws Exception{
         for(var m:List.of("drink_mixer_mk1","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","drink_mixer","drink_pot","drink_pot_liquid","cup_dispenser"))assertTrue(Files.exists(Path.of(RES+"assets/eternal_defense/models/block/"+m+".json")),m);
         for(var m:List.of("drink_cup","drink_cup_empty","drink_pot","cup_dispenser","drink_mixer_mk1"))assertTrue(Files.exists(Path.of(RES+"assets/eternal_defense/models/item/"+m+".json")),m);
@@ -109,7 +109,7 @@ final class Round0035Test {
         var cup=Files.readString(Path.of(RES+"data/eternal_defense/recipes/drink_cup_empty.json"));assertTrue(cup.contains("minecraft:paper")&&cup.contains("\"count\": 4"),"paper makes four cups");
     }
     @Test void theMixingSlotsDoNotShadowSlotIndex() throws Exception{
-        // found on the real client: a captured "index" inside an anonymous Slot reads Slot's own field (5 to 7), so every mixing slot was inactive
+        // Found on the real client: a captured "index" inside an anonymous Slot reads Slot's own field (5 to 7)
         var menu=source("DrinkStationMenu.java");assertFalse(menu.contains("final int index=i;addSlot"),"the mixing slot's number has its own name");
         assertTrue(menu.contains("mixing<limit()"));
     }

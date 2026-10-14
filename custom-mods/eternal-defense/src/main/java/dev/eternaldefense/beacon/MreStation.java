@@ -21,23 +21,18 @@ import net.minecraft.world.phys.BlockHitResult;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 0.0.38 (owner): the MRE Station, one kitchen block (1 x 1 x 2, the owner's ration packer) with one screen: six food slots, a Marines
- * Fuel slot, a Paper slot and an output slot; Make and Take back. Each MRE takes one of each food in the slots, 1 Marines Fuel and 1 Paper
- * and holds their exact totals (see {@link MreRules}). The server checks everything again on Make and makes it in one step: nothing is
- * spent unless the MRE is made. Bowls and bottles the foods came in go back to the player's pack, or drop at their feet.
- */
+/** The MRE Station, one kitchen block with one screen */
 final class MreStation {
     private MreStation(){}
     static final int FUEL=MreRules.FOOD_SLOTS,PAPER=FUEL+1,OUTPUT=PAPER+1,SLOTS=OUTPUT+1;
 
-    /** The food an item gives as vanilla would feed it to {@code who}: any edible item, modded ones too, except an MRE; null if it cannot go in. */
+    /** The food an item gives as vanilla would feed it to who: any edible item, modded ones too, except an MRE */
     static MreRules.Food food(ItemStack stack,LivingEntity who){
         if(stack.isEmpty()||stack.is(EternalDefense.MRE.get())||!stack.isEdible())return null;
         var p=stack.getFoodProperties(who);if(p==null)return null;
         var f=new MreRules.Food(p.getNutrition(),p.getSaturationModifier());return f.valid()?f:null;
     }
-    /** What a food leaves behind when eaten: its crafting remainder (the honey bottle's glass bottle, most modded bowls), or the stews' bowl. */
+    /** What a food leaves behind when eaten: its crafting remainder */
     static ItemStack containerOf(ItemStack food){
         if(food.hasCraftingRemainingItem())return food.getCraftingRemainingItem().copy();
         if(food.getItem() instanceof BowlFoodItem||food.getItem() instanceof SuspiciousStewItem)return new ItemStack(Items.BOWL);
@@ -47,11 +42,11 @@ final class MreStation {
     static int nutritionExcept(Container c,int skip,LivingEntity who){
         int n=0;for(int i=0;i<MreRules.FOOD_SLOTS;i++){if(i==skip)continue;var f=food(c.getItem(i),who);if(f!=null)n+=f.nutrition();}return n;
     }
-    /** May this food go into food slot {@code slot}? Only food, and never past 20 nutrition for one MRE. */
+    /** May this food go into food slot slot? */
     static boolean accepts(Container c,int slot,ItemStack stack,LivingEntity who){
         var f=food(stack,who);return f!=null&&MreRules.fits(nutritionExcept(c,slot,who),f.nutrition());
     }
-    /** What one MRE from these slots would be, or why there is none: {@code problem} is a language key under {@code mre.problem.}. */
+    /** What one MRE from these slots would be, or why there is none: problem is a language key under mre.problem.. */
     record Check(String problem,MreRules.Totals totals){boolean ready(){return problem==null;}}
     static Check check(Container c,LivingEntity who){
         var foods=new ArrayList<MreRules.Food>();
@@ -97,7 +92,7 @@ final class MreStation {
             for(var t:tag.getList("Items",Tag.TAG_COMPOUND)){var row=(CompoundTag)t;int slot=row.getByte("Slot");if(slot>=0&&slot<SLOTS)items.setItem(slot,ItemStack.of(row));}
         }
         @Override public Component getDisplayName(){return Component.translatable("block.eternal_defense.mre_maker");}
-        /** 0.0.39: its press, lever and rollers are drawn while any of the two-tall model is in view. */
+        /** Its press, lever and rollers are drawn while any of the two-tall model is in view. */
         @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition).inflate(2);}
         @Override public AbstractContainerMenu createMenu(int id,Inventory inv,Player player){return new StationMenu(id,inv,items,worldPosition,this);}
     }
@@ -105,7 +100,7 @@ final class MreStation {
     static final class StationMenu extends AbstractContainerMenu {
         /** 238 tall: it fits a 720p window at GUI scale 3 (240). */
         static final int WIDTH=176,HEIGHT=238;
-        /** Slot corners (the item's top left): the food in a 3 x 2 grid, the fuel over the paper, the output; the pack below. */
+        /** Slot corners (the item's top left): the food in a 3 x 2 grid, the fuel over the paper, the output */
         static final int FOOD_X=17,FOOD_Y=43,FUEL_X=81,FUEL_Y=43,PAPER_Y=61,OUT_X=139,OUT_Y=52,INV_Y=158;
         static final int MAKE=0,TAKE_BACK=1;
         final Container items;final BlockPos pos;final StationEntity owner;final Player player;
@@ -128,7 +123,7 @@ final class MreStation {
             boolean done=button==MAKE?make(sp):button==TAKE_BACK&&takeBack(sp);
             broadcastChanges();return done;
         }
-        /** One MRE, all or nothing: every check first, then the slots are used up, the MRE goes to the output and the containers come back. */
+        /** One MRE, all or nothing: every check first, then the slots are used up */
         boolean make(ServerPlayer p){
             var check=check();
             if(!check.ready()){say(p,Component.translatable("gui.eternal_defense.mre.problem."+check.problem(),MreRules.MAX_NUTRITION).withStyle(ChatFormatting.RED));sound(p,SoundEvents.VILLAGER_NO,.6f,1.3f);return false;}

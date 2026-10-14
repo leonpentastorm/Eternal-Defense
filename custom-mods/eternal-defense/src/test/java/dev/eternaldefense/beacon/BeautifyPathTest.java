@@ -3,7 +3,7 @@ package dev.eternaldefense.beacon;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The pure parts of the Beautify Path (0.0.16): the falling ordnance, the scrolling cannon menu and the six new fire supports. */
+/** The pure parts of the Beautify Path: the falling ordnance */
 final class BeautifyPathTest {
     @Test void ordnanceFallsInItsFlightTimeThenTravelsOn(){
         assertEquals(0,Ordnance.Fall.drop(48,30,0,0,0),1e-9);
@@ -44,7 +44,7 @@ final class BeautifyPathTest {
             for(int lv=0;lv<=3;lv++)assertEquals(1,CannonUpgrades.volleys(type,lv),type+" is one round (0.0.18)");
         assertEquals(4,CannonUpgrades.volleys(CannonUpgrades.FireType.SHOCKWAVE,0));assertEquals(10,CannonUpgrades.volleys(CannonUpgrades.FireType.SHOCKWAVE,3));
         assertFalse(CannonUpgrades.FireType.STARSHELL.damaging());assertTrue(CannonUpgrades.FireType.NAPALM.damaging());
-        // the new types were added after the old ones, so saved choices and packets keep their meaning
+        // The new types were added after the old ones, so saved choices and packets keep their meaning
         assertEquals(5,CannonUpgrades.FireType.CURSE.ordinal());assertEquals(6,CannonUpgrades.FireType.CLUSTER.ordinal());
         assertEquals(CannonUpgrades.FireType.values().length,SupportHud.ACCENT.length,"every type has its colour");
     }

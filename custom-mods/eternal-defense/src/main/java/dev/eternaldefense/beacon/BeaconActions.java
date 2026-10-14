@@ -38,7 +38,7 @@ final class BeaconActions {
         String token=UUID.randomUUID().toString();
         pending.put(p.getUUID(),new Pending("remove",token,null,InteractionHand.MAIN_HAND,p.server.overworld().getGameTime()+1200,d.campaignSerial));BeaconNetwork.open(p,"remove",token);
     }
-    /** The Recovery Shovel on a FOB Beacon (0.0.23): the beacon's confirm screen, with the FOB's name; the FOB is found again by its id. */
+    /** The Recovery Shovel on a FOB Beacon: the beacon's confirm screen, with the FOB's name */
     static void requestFobRemoval(ServerPlayer p,long fobId,String name){
         String token=UUID.randomUUID().toString();
         pending.put(p.getUUID(),new Pending("fob_remove",token,null,InteractionHand.MAIN_HAND,p.server.overworld().getGameTime()+1200,fobId));

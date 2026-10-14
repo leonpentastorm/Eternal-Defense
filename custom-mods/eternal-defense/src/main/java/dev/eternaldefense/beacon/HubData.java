@@ -16,11 +16,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import java.util.*;
 
-/**
- * 0.0.40: every Logistics Center Hub's inventory, kept with the world (the overworld's saved data, file {@code eternal_defense_logistics_hubs}),
- * keyed by the Hub's id. The Hub's 27 blocks only point at it. This is the one source of truth: a Hub whose chunks are unloaded, or that
- * straddles a chunk border, still has exactly one inventory, and the supply source can draw from it.
- */
+/** Every Logistics Center Hub's inventory, kept with the world */
 final class HubData extends SavedData {
     static final String NAME="eternal_defense_logistics_hubs";
 
@@ -30,29 +26,23 @@ final class HubData extends SavedData {
         /** False while it is picked up with the Recovery Shovel (its items stay here, waiting for it to be placed again). */
         boolean placed;
         final HubStorage storage=new HubStorage();
-        // not saved: whether it may work (inside the Home Zone), checked once a second (SupplyRules.recheck), and the handler every one of its blocks hands out
+        // Not saved: whether it may work (inside the Home Zone), checked once a second (SupplyRules.recheck)
         private long checkedAt=SupplyRules.NEVER;private boolean working;private LazyOptional<IItemHandler> handler=LazyOptional.empty();
         Hub(UUID id){this.id=id;}
-        /**
-         * True when it is placed in the Home Zone of a standing Defense Beacon. Looked up at most once a second; when it stops working, the
-         * handler its blocks gave out is invalidated, so hoppers and Create let go of it.
-         */
+        /** True when it is placed in the Home Zone of a standing Defense Beacon. */
         boolean working(ServerLevel level){
             long now=level.getGameTime();
             if(SupplyRules.recheck(checkedAt,now)){checkedAt=now;boolean was=working;working=placed&&level.dimension()==dimension&&inZone(level);if(was&&!working)invalidate();}
             return working;
         }
-        /**
-         * Inside the Home Zone of a planted beacon. With the beacon's chunk loaded the beacon block itself must stand (as for all base gear);
-         * with it unloaded (a factory kept loaded around the Hub alone) the campaign's record of the planted beacon decides.
-         */
+        /** Inside the Home Zone of a planted beacon. */
         private boolean inZone(ServerLevel level){
             if(level.dimension()!=Level.OVERWORLD)return false;
             var d=CampaignData.get(level.getServer().overworld());
             if(!d.installed()||!d.inside(anchor))return false;
             return !level.hasChunkAt(d.beacon)||BaseZone.problem(level,anchor)==null;
         }
-        /** The item handler for hoppers and Create: the same one on every face of all 27 blocks, empty while the Hub does not work. */
+        /** The item handler for hoppers and Create: the same one on every face of all 27 blocks */
         LazyOptional<IItemHandler> handler(ServerLevel level){
             if(!working(level))return LazyOptional.empty();
             if(!handler.isPresent())handler=LazyOptional.of(()->storage);
@@ -80,7 +70,7 @@ final class HubData extends SavedData {
     /** Broken (it was empty, or a creative player broke it and its items were dropped): forgotten. */
     void remove(Hub hub){hub.invalidate();hubs.remove(hub.id);setDirty();}
 
-    /** Hubs that are placed, work (inside the Home Zone) and are in {@code level}, nearest to {@code pos} first. */
+    /** Hubs that are placed, work (inside the Home Zone) and are in level, nearest to pos first. */
     List<Hub> working(ServerLevel level,BlockPos pos){
         var out=new ArrayList<Hub>();for(var h:hubs.values())if(h.placed&&h.dimension==level.dimension()&&h.working(level))out.add(h);
         out.sort(Comparator.comparingDouble((Hub h)->h.distanceSq(pos)).thenComparing(h->h.id));return out;

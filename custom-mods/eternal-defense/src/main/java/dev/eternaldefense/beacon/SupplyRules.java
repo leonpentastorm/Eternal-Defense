@@ -2,40 +2,28 @@ package dev.eternaldefense.beacon;
 
 import java.util.*;
 
-/**
- * 0.0.40: the supply source's rules as plain numbers, so they can be tested alone. A request ("these items for this player, here") is
- * paid from sources: the player's pack first, then the Logistics Center Hubs of the Home Zone, nearest first. {@link Supply} turns real
- * inventories into these numbers and back.
- */
+/** The supply source's rules as plain numbers, so they can be tested alone. */
 final class SupplyRules {
     private SupplyRules(){}
 
-    /** A unit from a Hub costs this much more than one from the pack, so the pack always pays first; the Hub's rank is added on top. */
+    /** A unit from a Hub costs this much more than one from the pack, so the pack always pays first */
     static final long HUB_UNIT=1_000_000L;
-    /** Source tier: 0 is the player's pack, 1 the nearest Hub, 2 the next one ... */
+    /** Source tier: 0 is the player's pack, 1 the nearest Hub, 2 the next one... */
     static long weight(int tier){return tier<=0?0:HUB_UNIT+tier;}
 
-    /** {@code taken[s][c]}: units source {@code s} pays toward cost {@code c}; {@code got[c]}: units each cost received. */
+    /** Taken[s][c]: units source s pays toward cost c; got[c]: units each cost received. */
     record Allocation(int[][] taken,int[] got,boolean payable){
-        /** Units taken from source {@code s} in all. */
+        /** Units taken from source s in all. */
         int from(int s){int n=0;for(int v:taken[s])n+=v;return n;}
     }
 
-    /**
-     * Pays every cost from the sources it accepts: as many units as there are, with the fewest from Hubs and, among those, the nearest Hubs
-     * first (a minimum-cost maximum flow, so overlapping ingredients such as tags never block a request that could be paid). Payable only
-     * when every cost gets its full amount; the caller then consumes exactly {@code taken}, otherwise nothing.
-     * @param supply units at each source
-     * @param tier   each source's tier ({@link #weight})
-     * @param demand units each cost needs (0 or less makes the request unpayable)
-     * @param accepts {@code accepts[s][c]}: source {@code s} may pay cost {@code c}
-     */
+    /** Pays every cost from the sources it accepts: as many units as there are, with the fewest from Hubs */
     static Allocation allocate(int[] supply,int[] tier,int[] demand,boolean[][] accepts){
         int sources=supply.length,costs=demand.length;
         var taken=new int[sources][costs];var got=new int[costs];
         boolean valid=costs>0;for(int d:demand)if(d<=0)valid=false;
         if(!valid)return new Allocation(taken,got,costs==0);
-        // nodes: 0 source, 1..S the sources, S+1..S+C the costs, S+C+1 the sink
+        // Nodes: 0 source, 1..S the sources, S+1..S+C the costs, S+C+1 the sink
         int n=sources+costs+2,sink=n-1;var graph=new Graph(n);
         int[] supplyEdge=new int[sources];int[][] payEdge=new int[sources][costs];
         for(int s=0;s<sources;s++){supplyEdge[s]=graph.add(0,1+s,Math.max(0,supply[s]),weight(tier[s]));for(int c=0;c<costs;c++)payEdge[s][c]=accepts[s][c]?graph.add(1+s,1+sources+c,Math.max(0,supply[s]),0):-1;}
@@ -45,7 +33,7 @@ final class SupplyRules {
         return new Allocation(taken,got,flow==total);
     }
 
-    /** Successive shortest paths (Bellman-Ford, the graphs are small: a pack, a few Hubs' item kinds and a handful of costs). */
+    /** Successive shortest paths */
     private static final class Graph {
         final int n;final List<int[]> edges=new ArrayList<>();final List<List<Integer>> out=new ArrayList<>();final List<Long> cost=new ArrayList<>();
         Graph(int n){this.n=n;for(int i=0;i<n;i++)out.add(new ArrayList<>());}
@@ -72,31 +60,31 @@ final class SupplyRules {
         }
     }
 
-    // ---- the Hub's chat line ---------------------------------------------------------------------------------------------------------
+    // The Hub's chat line
     /** How long, in ticks, the same player's pulls keep adding to one running total before the line is sent (2 s). */
     static final int MERGE_TICKS=40;
     /** Item kinds named in one line; the rest become "and N more". */
     static final int NAMED=3;
-    /** One kind of item pulled from the Hub: {@code key} tells kinds apart, {@code count} is how many. */
+    /** One kind of item pulled from the Hub: key tells kinds apart, count is how many. */
     record Pulled(String key,int count){}
-    /** Adds {@code more} to a running total: the same kind adds up, a new kind joins at the end (first pulled, first named). */
+    /** Adds more to a running total: the same kind adds up, a new kind joins at the end (first pulled, first named). */
     static List<Pulled> merge(List<Pulled> running,List<Pulled> more){
         var map=new LinkedHashMap<String,Integer>();for(var p:running)map.merge(p.key(),p.count(),Integer::sum);for(var p:more)if(p.count()>0)map.merge(p.key(),p.count(),Integer::sum);
         var out=new ArrayList<Pulled>();map.forEach((k,v)->out.add(new Pulled(k,v)));return out;
     }
-    /** True while a pull at {@code now} still belongs to the running total last added to at {@code last}. */
+    /** True while a pull at now still belongs to the running total last added to at last. */
     static boolean sameRun(long last,long now){return now-last<=MERGE_TICKS;}
-    /** True when the running total last added to at {@code last} is due to be sent at {@code now}. */
+    /** True when the running total last added to at last is due to be sent at now. */
     static boolean due(long last,long now){return now-last>MERGE_TICKS;}
 
-    // ---- the Hub's Home Zone check -----------------------------------------------------------------------------------------------------------
+    // The Hub's Home Zone check
     /** A Hub checks once a second whether it may work (inside the Home Zone of a standing beacon). */
     static final int ZONE_CHECK_TICKS=20;
     /** Not checked yet (a Hub just placed or loaded). */
     static final long NEVER=Long.MIN_VALUE;
-    /** True when a Hub last checked at {@code checkedAt} must check again at {@code now} (also when the clock went back). */
+    /** True when a Hub last checked at checkedAt must check again at now (also when the clock went back). */
     static boolean recheck(long checkedAt,long now){return checkedAt==NEVER||now<checkedAt||now-checkedAt>=ZONE_CHECK_TICKS;}
-    /** The kinds a line names (at most {@link #NAMED}) and how many more kinds it only counts. */
+    /** The kinds a line names (at most NAMED) and how many more kinds it only counts. */
     record Line(List<Pulled> named,int more){}
     static Line line(List<Pulled> items){
         var named=new ArrayList<Pulled>();for(var p:items)if(p.count()>0&&named.size()<NAMED)named.add(p);

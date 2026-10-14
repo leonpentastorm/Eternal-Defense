@@ -17,16 +17,9 @@ import java.util.*;
 /** A real attackable objective lets native melee, arrows, crossbows and TaCZ bullets hit the beacon. */
 final class BeaconCombat {
     static final int AMBIENT_RANGE=24;
-    /**
-     * During a raid (0.0.21) cover no longer hides the beacon: an ordinary hostile this many blocks past the zone's edge, seen or not,
-     * goes for it too, alongside the raiders. Natural mobs spawn at least 24 blocks from players, who stand at the beacon in a raid, so
-     * the reach has to go past 24 for the rule to matter.
-     */
+    /** During a raid cover no longer hides the beacon: an ordinary hostile this many blocks past the zone's edge */
     static final int RAID_ATTRACT_BEYOND=48;
-    /**
-     * Pure: does a hostile go for the beacon? A raider always does. Otherwise, between raids: within {@link #AMBIENT_RANGE} and in sight
-     * (cover hides the beacon); during a raid: within the zone radius plus {@link #RAID_ATTRACT_BEYOND}, seen or not.
-     */
+    /** Pure: does a hostile go for the beacon? */
     static boolean attracted(boolean raider,boolean raid,double distance,int zoneRadius,boolean seen){
         if(raider)return true;
         return raid?distance<=zoneRadius+RAID_ATTRACT_BEYOND:distance<=AMBIENT_RANGE&&seen;
@@ -50,11 +43,7 @@ final class BeaconCombat {
     static boolean hostile(Mob mob){return !SpecialForcesRaids.defeated(mob)&&!(mob instanceof Objective)&&(mob.getType().getCategory()==MobCategory.MONSTER||mob instanceof Monster||mob.getPersistentData().getBoolean("eternalRaider"));}
     @SubscribeEvent public void join(EntityJoinLevelEvent event){if(!event.getLevel().isClientSide&&event.getEntity() instanceof Mob mob&&hostile(mob))attach(mob);}
     @SubscribeEvent public void projectile(net.minecraftforge.event.entity.ProjectileImpactEvent event){if(event.getRayTraceResult() instanceof BlockHitResult hit)blockImpact(event.getProjectile(),hit);}
-    /**
-     * TaCZ traces physical frames before entities; those real impacts hit the same bounded objective. TaCZ is a required mod, so this listens to
-     * its block-impact event itself: a listener on the base event class would be called for every event the game posts (every entity tick,
-     * every render pass), only to throw almost all of them away.
-     */
+    /** TaCZ traces physical frames before entities; those real impacts hit the same bounded objective. */
     @SubscribeEvent public void gunBlockImpact(com.tacz.guns.api.event.server.AmmoHitBlockEvent event){
         if(event.getClass()!=com.tacz.guns.api.event.server.AmmoHitBlockEvent.class)return; // TaCZ's own event only, as before (not a subclass)
         blockImpact(event.getAmmo(),event.getHitResult());
@@ -67,14 +56,14 @@ final class BeaconCombat {
     /** Whether a mob got the beacon goals (for the tests: a hunt warband never does). */
     static boolean isAttached(Mob mob){return attached.contains(mob);}
     static void attach(Mob mob){
-        if(HuntWarband.hunter(mob))return;   // a hunt warband fights the team where it stands, never the beacon
+        if(HuntWarband.hunter(mob))return;   // A hunt warband fights the team where it stands, never the beacon
         if(!attached.add(mob))return;
         mob.targetSelector.addGoal(0,new TargetBeacon(mob));
-        if(RaidTypes.glider(mob))return; // vexes and phantoms are steered straight at their target by RaidTypes
-        mob.goalSelector.addGoal(-1,new RaiderGates.ChannelGoal(mob)); // outranks everything: a raider channeling at a gate cannot move
+        if(RaidTypes.glider(mob))return; // Vexes and phantoms are steered straight at their target by RaidTypes
+        mob.goalSelector.addGoal(-1,new RaiderGates.ChannelGoal(mob)); // Outranks everything: a raider channeling at a gate cannot move
         Goal nativeRanged=mob.goalSelector.getAvailableGoals().stream().map(WrappedGoal::getGoal).filter(g->{String name=g.getClass().getName();return name.endsWith(".GunAttackGoal")||name.endsWith("$GuardianAttackGoal")||name.endsWith("$BlazeAttackGoal")||name.endsWith("$GhastShootFireballGoal");}).findFirst().orElse(null);
         if(nativeRanged!=null)mob.goalSelector.addGoal(0,new RangedBeacon(mob,nativeRanged));
-        // a bow or crossbow attack never starts without the weapon: an unarmed skeleton or pillager walks in and hits instead of standing still
+        // A bow or crossbow attack never starts without the weapon
         else if(mob instanceof AbstractSkeleton skeleton&&skeleton.getMainHandItem().getItem() instanceof net.minecraft.world.item.BowItem)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedBowAttackGoal<>(skeleton,1,40,10)));
         else if(mob instanceof Pillager pillager&&pillager.getMainHandItem().getItem() instanceof net.minecraft.world.item.CrossbowItem)mob.goalSelector.addGoal(0,new RangedBeacon(mob,new RangedCrossbowAttackGoal<>(pillager,1,10)));
         else if(mob instanceof AbstractSkeleton||mob instanceof Pillager)mob.goalSelector.addGoal(0,new MeleeBeacon(mob));
@@ -84,7 +73,7 @@ final class BeaconCombat {
     static boolean inDetectionRange(Mob mob,Objective target){
         if(SpecialForcesRaids.defeated(mob))return false;
         boolean raider=mob.getPersistentData().getBoolean("eternalRaider");double distance=Math.sqrt(mob.distanceToSqr(target));
-        // the sight check (a ray cast) only when it can matter: between raids and within reach
+        // The sight check (a ray cast) only when it can matter: between raids and within reach
         return attracted(raider,target.raid,distance,target.zoneRadius,!raider&&!target.raid&&distance<=AMBIENT_RANGE&&mob.hasLineOfSight(target));
     }
     static boolean needsBreach(Mob mob,CampaignData d){boolean ranged=mob.goalSelector.getAvailableGoals().stream().anyMatch(g->g.getGoal() instanceof RangedBeacon);return mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+1,d.beacon.getZ()+.5)>(ranged?196:9)||ranged&&mob.getTarget() instanceof Objective target&&!mob.hasLineOfSight(target);}
@@ -105,13 +94,13 @@ final class BeaconCombat {
     static boolean approach(Mob mob,double x,double y,double z,double speed){
         var w=waypoint(mob,x,y,z);if(w==null)return false;
         if(mob.getNavigation().moveTo(w[0],w[1],w[2],speed)&&!mob.getNavigation().isDone())return true;
-        // No usable path (walls, water, rock): head straight for the spot anyway; RaidBreaching digs when the way is really shut.
+        // No usable path (walls, water, rock): head straight for the spot anyway
         push(mob,w,speed);return true;
     }
     /** Straight toward the spot with no path search (between searches, while the mob has no path). */
     static boolean step(Mob mob,double x,double y,double z,double speed){var w=waypoint(mob,x,y,z);if(w==null)return false;push(mob,w,speed);return true;}
     private static void push(Mob mob,double[] w,double speed){RaidMarch.forcedMove(mob,mob.level().getGameTime());mob.getMoveControl().setWantedPosition(w[0],w[1],w[2],speed);}
-    /** The spot itself, or a point 16 blocks toward it on the ground when it is far (paths stay short); null when that chunk is not loaded. */
+    /** The spot itself, or a point 16 blocks toward it on the ground when it is far (paths stay short) */
     private static double[] waypoint(Mob mob,double x,double y,double z){
         double dx=x-mob.getX(),dz=z-mob.getZ(),distance=Math.sqrt(dx*dx+dz*dz);
         if(distance>24){x=mob.getX()+dx/distance*16;z=mob.getZ()+dz/distance*16;
@@ -128,11 +117,11 @@ final class BeaconCombat {
         @Override public void tick(){var target=mob.getTarget();if(target==null)return;mob.getLookControl().setLookAt(target,30,30);
             double reach=Math.max(2.2,mob.getBbWidth()+target.getBbWidth());
             if(mob.distanceToSqr(target)>reach*reach||!mob.hasLineOfSight(target)){
-                // a path search every 10 ticks; in between, a mob without a path keeps walking straight (a search every tick cost the most in raids)
+                // A path search every 10 ticks; in between, a mob without a path keeps walking straight
                 if(mob.tickCount%10==0)approach(mob,target.getX(),target.getY(),target.getZ(),1.15);
                 else if(mob.getNavigation().isDone())step(mob,target.getX(),target.getY(),target.getZ(),1.15);}
             else{mob.getNavigation().stop();if(--cooldown<=0){cooldown=20;
-                if(mob instanceof Creeper creeper)creeper.ignite(); // creepers have no melee attack: they blow up at the beacon
+                if(mob instanceof Creeper creeper)creeper.ignite(); // Creepers have no melee attack: they blow up at the beacon
                 else{mob.swing(InteractionHand.MAIN_HAND);mob.doHurtTarget(target);}}}
         }
     }
@@ -161,7 +150,6 @@ final class BeaconCombat {
         void setMark(int value){if(mark!=value||getBbWidth()!=(value==4?3:1)||getBbHeight()!=(value==4?2:1)){mark=value;refreshDimensions();}}
         @Override public net.minecraft.world.entity.EntityDimensions getDimensions(net.minecraft.world.entity.Pose pose){return net.minecraft.world.entity.EntityDimensions.scalable(mark==4?3:1,mark==4?2:1);}
         // Sight ends just above the installation, so its own frame cannot hide it.
-        // Solid cover placed over or around it still participates in vanilla sight checks.
         @Override protected float getStandingEyeHeight(net.minecraft.world.entity.Pose pose,net.minecraft.world.entity.EntityDimensions size){return size.height+.05f;}
         long serial;final Map<UUID,Long> lastHit=new HashMap<>();
         /** Set each tick from the campaign: a raid runs (cover no longer hides the beacon) and the zone's radius. */

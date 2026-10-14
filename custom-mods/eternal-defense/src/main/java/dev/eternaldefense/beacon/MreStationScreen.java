@@ -10,12 +10,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * 0.0.38 (owner): the MRE Station's one screen. Top: the six food slots, the Marines Fuel over the Paper, an arrow and the output. Under
- * them the live totals of one MRE, a row each: nutrition out of 20 (a mark per point) and saturation; holding a food over a food slot
- * previews it, in red when it would pass 20 (the slot refuses it). Then Make and Take back, one line that says what is missing or what
- * Make will give, and the pack. The screen only reads the slots; the server checks everything again.
- */
+/** The MRE Station's one screen. */
 final class MreStationScreen extends AbstractContainerScreen<MreStation.StationMenu> {
     static final int W=MreStation.StationMenu.WIDTH,H=MreStation.StationMenu.HEIGHT;
     static final int CARD_Y=30,CARD_H=54,TOTALS_Y=87,TOTALS_H=36,BUTTON_Y=126,STATUS_Y=145;
@@ -46,7 +41,7 @@ final class MreStationScreen extends AbstractContainerScreen<MreStation.StationM
     @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
         int x=leftPos,y=topPos;var check=menu.check();boolean ready=check.ready();int accent=ready?Ui.CYAN:Ui.BRASS;
         Ui.panel(g,x,y,W,H);Ui.header(g,font,x,y,W,title,Ui.t("mre.subtitle"));
-        // the slots: food, the seal (fuel over paper), the output
+        // The slots: food, the seal (fuel over paper), the output
         Ui.card(g,x+8,y+CARD_Y,160,CARD_H,accent);
         Ui.text(g,font,Ui.t("mre.food_label"),x+16,y+CARD_Y+3,Ui.INK,62);
         Ui.text(g,font,Ui.t("mre.seal_label"),x+MreStation.StationMenu.FUEL_X-1,y+CARD_Y+3,Ui.INK,40);
@@ -60,26 +55,26 @@ final class MreStationScreen extends AbstractContainerScreen<MreStation.StationM
         Ui.slot(g,x+MreStation.StationMenu.OUT_X-1,y+MreStation.StationMenu.OUT_Y-1,accent);
         if(menu.items.getItem(MreStation.OUTPUT).isEmpty())Ui.ghost(g,new ItemStack(EternalDefense.MRE.get()),x+MreStation.StationMenu.OUT_X,y+MreStation.StationMenu.OUT_Y);
         var label=Ui.t("mre.output_label");Ui.text(g,font,label,x+MreStation.StationMenu.OUT_X+8-font.width(label)/2,y+MreStation.StationMenu.OUT_Y+21,Ui.MUTED);
-        // the live totals of one MRE
+        // The live totals of one MRE
         Ui.card(g,x+8,y+TOTALS_Y,160,TOTALS_H,accent);
         int n=MreStation.nutritionExcept(menu.items,-1,menu.player);float sat=check.totals()==null?0:check.totals().saturation();
         var p=preview();int base=p==null?n:p.others();
-        // a row each: the label on the left, the number on the right, the bar under them
+        // A row each: the label on the left, the number on the right, the bar under them
         Ui.text(g,font,Ui.t("mre.nutrition_label"),x+BAR_X,y+TOTALS_Y+3,Ui.INK,70);
         Ui.right(g,font,Ui.t("mre.nutrition_value",p==null?n:p.others()+p.food().nutrition(),MreRules.MAX_NUTRITION),x+BAR_X+BAR_W,y+TOTALS_Y+3,p!=null&&!p.fits()?Ui.RED:n>=MreRules.MAX_NUTRITION?Ui.CYAN:Ui.INK);
         nutritionBar(g,x+BAR_X,y+TOTALS_Y+13,base,p==null?0:p.food().nutrition(),p!=null&&!p.fits());
         Ui.text(g,font,Ui.t("mre.saturation_label"),x+BAR_X,y+TOTALS_Y+21,Ui.INK,70);
         Ui.right(g,font,Component.literal(MreRules.number(sat)),x+BAR_X+BAR_W,y+TOTALS_Y+21,Ui.MUTED);
         Ui.bar(g,x+BAR_X,y+TOTALS_Y+31,BAR_W,3,sat/MreRules.MAX_SATURATION,SATURATION);
-        // what Make will do, or what is missing
+        // What Make will do, or what is missing
         Component status;int color;
         if(ready){status=Ui.t("mre.status.ready",check.totals().nutrition(),MreRules.number(check.totals().saturation()));int back=menu.containers().size();if(back>0)status=status.copy().append(Ui.t("mre.status.back",back));color=Ui.CYAN;}
         else{status=Ui.t("mre.problem."+check.problem(),MreRules.MAX_NUTRITION);color=check.problem().equals("no_food")?Ui.MUTED:Ui.ORANGE;}
         Ui.text(g,font,status,x+8,y+STATUS_Y,color,160);
-        // no "Inventory" label: the screen stays 238 tall, so it fits a 720p window at GUI scale 3
+        // No "Inventory" label: the screen stays 238 tall, so it fits a 720p window at GUI scale 3
         Ui.inventory(g,x+7,y+MreStation.StationMenu.INV_Y-1);
     }
-    /** 20 points, a mark at each and a stronger one every 2 (a hunger shank); the held food shows after the slots, cyan or red. */
+    /** 20 points, a mark at each and a stronger one every 2 (a hunger shank) */
     private static void nutritionBar(GuiGraphics g,int x,int y,int have,int adding,boolean over){
         int per=BAR_W/MreRules.MAX_NUTRITION;
         g.fill(x,y,x+BAR_W,y+5,Ui.TRACK);g.fill(x,y+4,x+BAR_W,y+5,Ui.DEEP);

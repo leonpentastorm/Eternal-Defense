@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The pure decisions behind stuck raiders: the progress tracker, the escalation ladder, corridor scoring and the rescue place filter. */
+/** The pure decisions behind stuck raiders: the progress tracker, the escalation ladder */
 final class StuckRaiderTest {
     private static final long S=RaidMarch.TICKS_PER_SECOND;
 
-    // ---- progress tracker ----------------------------------------------------------------------------------------------------------
+    // Progress tracker
     @Test void realProgressRestartsTheStallClockAndMovesTheReference(){
         var t=RaidMarch.start(100,0);
         t=RaidMarch.observe(t,96,10*S,false); // 4 blocks closer
@@ -37,7 +37,7 @@ final class StuckRaiderTest {
     @Test void aBusyRaiderIsNeverStuckAndBeingBusyRestartsTheClock(){
         var t=RaidMarch.start(80,0);
         assertFalse(RaidMarch.stuck(t,40*S,true),"busy right now");
-        // busy at second 40: the stall clock restarts, so the raider gets the whole 25 s again once it stops
+        // Busy at second 40: the stall clock restarts, so the raider gets the whole 25 s again once it stops
         t=RaidMarch.observe(t,80,40*S,true);assertEquals(40*S,t.improvedAt());
         assertFalse(RaidMarch.stuck(t,40*S+24*S,false));assertTrue(RaidMarch.stuck(t,40*S+25*S,false));
     }
@@ -48,7 +48,7 @@ final class StuckRaiderTest {
         assertFalse(RaidMarch.stuck(t,1000+24*S,false));assertTrue(RaidMarch.stuck(t,1000+25*S,false));
     }
     @Test void theGraceWindowAloneDefersAFlagOnAnOldStall(){
-        var t=RaidMarch.start(90,0); // stalled since second 0
+        var t=RaidMarch.start(90,0); // Stalled since second 0
         assertTrue(RaidMarch.stuck(t,600,false));
         var dry=RaidMarch.dry(t,600);
         assertEquals(1,dry.dry());assertEquals(0,dry.improvedAt(),"the stall itself is not forgiven");
@@ -63,7 +63,7 @@ final class StuckRaiderTest {
         var t=RaidMarch.observe(null,42,77,false);assertEquals(42,t.best());assertEquals(77,t.improvedAt());assertFalse(RaidMarch.stuck(t,77,false));
     }
 
-    // ---- busy ------------------------------------------------------------------------------------------------------------------------
+    // Busy
     @Test void busyMeansMeleeReachFiringRangeARecentBreachADefenderOrAFrozenChunk(){
         assertTrue(RaidMarch.inMeleeReach(2.0,2.2,true));assertTrue(RaidMarch.inMeleeReach(2.2,2.2,true));
         assertFalse(RaidMarch.inMeleeReach(2.0,2.2,false),"in reach but behind a block is not attacking");assertFalse(RaidMarch.inMeleeReach(2.3,2.2,true));
@@ -76,7 +76,7 @@ final class StuckRaiderTest {
         assertTrue(RaidMarch.busy(false,false,false,true,false));assertTrue(RaidMarch.busy(false,false,false,false,true));
     }
 
-    // ---- escalation ladder -----------------------------------------------------------------------------------------------------------
+    // Escalation ladder
     @Test void aRaiderOpensThreeGatesAndIsWithdrawnOnTheFourthStall(){
         assertEquals(3,RaidMarch.MAX_GATES);
         int rescues=0;var steps=new ArrayList<RaidMarch.Step>();
@@ -95,7 +95,7 @@ final class StuckRaiderTest {
         assertEquals("1 stuck raider withdrew",RaidMarch.withdrawnMessage(1));assertEquals("2 stuck raiders withdrew",RaidMarch.withdrawnMessage(2));
     }
 
-    // ---- bookkeeping: nothing is kept for raiders that are gone ----------------------------------------------------------------------
+    // Bookkeeping: nothing is kept for raiders that are gone
     @Test void pruningDropsEveryEntryOfAGoneRaiderAndResetClearsTheRest(){
         RaidMarch.forget();
         var alive=UUID.randomUUID();var gone=UUID.randomUUID();
@@ -110,7 +110,7 @@ final class StuckRaiderTest {
         assertEquals(2,RaidMarch.takeWithdrawn());assertEquals(0,RaidMarch.takeWithdrawn(),"announced once, then the count starts again");
     }
 
-    // ---- marchable corridors ---------------------------------------------------------------------------------------------------------
+    // Marchable corridors
     private static int[] flat(int n,int y){int[] s=new int[n];Arrays.fill(s,y);return s;}
     @Test void aFlatDryCorridorIsClean(){
         var s=RaidSpawns.score(24,flat(30,64),new boolean[30],24+29*RaidSpawns.PROBE_STEP);
@@ -128,19 +128,19 @@ final class StuckRaiderTest {
         assertFalse(RaidSpawns.score(24,flat(30,64),hazard,24+29*4).clean());
     }
     @Test void stepsAndDropsAreJudgedInTheDirectionOfTheMarch(){
-        // sample 0 is nearest the zone; the raider walks from the high index to the low one
-        int[] up={64,61};   // walking inwards the ground rises by 3: too steep
+        // Sample 0 is nearest the zone; the raider walks from the high index to the low one
+        int[] up={64,61};   // Walking inwards the ground rises by 3: too steep
         assertEquals(1,RaidSpawns.score(24,up,new boolean[2],28).violations());
-        int[] okUp={64,62}; // a rise of 2 is fine
+        int[] okUp={64,62}; // A rise of 2 is fine
         assertTrue(RaidSpawns.score(24,okUp,new boolean[2],28).clean());
-        int[] down={60,64}; // walking inwards it drops by 4: a fall
+        int[] down={60,64}; // Walking inwards it drops by 4: a fall
         assertEquals(1,RaidSpawns.score(24,down,new boolean[2],28).violations());
-        int[] okDown={61,64}; // a drop of 3 is fine
+        int[] okDown={61,64}; // A drop of 3 is fine
         assertTrue(RaidSpawns.score(24,okDown,new boolean[2],28).clean());
     }
     @Test void aCliffAndALakeAddUp(){
         int[] surface={64,64,70,70,66,66};boolean[] hazard={false,false,false,true,false,false};
-        // pairs: 64-64 ok; 64-70 rise 64-70=-6 -> drop of 6 (violation); 70-70 ok; 70-66 rise 4 (violation); 66-66 ok; plus the lake
+        // Pairs: 64-64 ok; 64-70 rise 64-70=-6 -> drop of 6 (violation); 70-70 ok; 70-66 rise 4 (violation); 66-66 ok
         assertEquals(3,RaidSpawns.score(24,surface,hazard,24+5*4).violations());
     }
     @Test void unknownSamplesAreNeitherFailuresNorJudged(){
@@ -163,7 +163,7 @@ final class StuckRaiderTest {
         assertEquals(0,RaidSpawns.wedgeOf(5,0));assertEquals(3,RaidSpawns.wedgeOf(0,5));assertEquals(6,RaidSpawns.wedgeOf(-5,0));assertEquals(9,RaidSpawns.wedgeOf(0,-5));assertEquals(11,RaidSpawns.wedgeOf(5,-.01));
     }
 
-    // ---- rescue place --------------------------------------------------------------------------------------------------------------
+    // Rescue place
     @Test void aRescueNeedsEveryPlayerAtLeastTwentyFourBlocksAway(){
         var spot=new Vec3(0,64,0);
         assertTrue(RaidSpawns.farFromPlayers(spot,List.of(),24));
@@ -192,7 +192,7 @@ final class StuckRaiderTest {
         assertNull(RaidSpawns.pickRescue(4,0,w->null));
     }
 
-    // ---- diagnostics -------------------------------------------------------------------------------------------------------------------
+    // Diagnostics
     @Test void theLogLineIsOneLineOfKeyValuePairsStartingWithTheEvent(){
         var f=new LinkedHashMap<String,String>();f.put("type","minecraft:zombie");f.put("forcedMove","3s ago");f.put("dest","-");
         assertEquals("[stuck] event=RESCUE type=minecraft:zombie forcedMove=3s ago dest=-",RaidRescue.line("RESCUE",f));

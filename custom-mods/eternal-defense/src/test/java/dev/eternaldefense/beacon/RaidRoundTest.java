@@ -6,12 +6,12 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's list of 0.0.21: armed raiders, night-only raids, raids that ignore cover, the hunt arrival, the maps, the colours, the Starshell. */
+/** The list of: armed raiders, night-only raids, raids that ignore cover, the hunt arrival, the maps */
 final class RaidRoundTest {
     static final String SRC="src/main/java/dev/eternaldefense/beacon/";
     static String source(String file) throws Exception{return Files.readString(Path.of(SRC+file));}
 
-    // ---- raiders ----------------------------------------------------------------------------------------------------------------------
+    // Raiders
     @Test void everyRaidSkeletonAndPillagerIsArmedBeforeItJoins() throws Exception{
         String beacon=source("EternalDefense.java");
         int raider=beacon.indexOf("static Mob raider(");assertTrue(raider>0,"one place makes a raid mob");
@@ -25,7 +25,7 @@ final class RaidRoundTest {
             "an unarmed skeleton or pillager still walks in and hits the beacon");
     }
 
-    // ---- when raids come --------------------------------------------------------------------------------------------------------------
+    // When raids come
     @Test void raidsOnlyStartAtNight(){
         assertFalse(Rules.raidHour(6000),"noon");assertFalse(Rules.raidHour(12999));
         assertTrue(Rules.raidHour(13000),"dusk");assertTrue(Rules.raidHour(20999));assertFalse(Rules.raidHour(21000),"too late to start one");
@@ -46,14 +46,14 @@ final class RaidRoundTest {
         int[] days={10,9,8,7,6,5,4,3};for(int t=0;t<days.length;t++)assertEquals(days[t],Rules.intervalDays(t));
     }
 
-    // ---- what a raid draws in ---------------------------------------------------------------------------------------------------------
+    // What a raid draws in
     @Test void duringARaidCoverNoLongerHidesTheBeacon() throws Exception{
         int zone=18;
         assertTrue(BeaconCombat.attracted(true,false,500,zone,false),"a raider always comes");
-        // between raids: within 24 blocks and seen
+        // Between raids: within 24 blocks and seen
         assertTrue(BeaconCombat.attracted(false,false,20,zone,true));assertFalse(BeaconCombat.attracted(false,false,20,zone,false),"cover hides it");
         assertFalse(BeaconCombat.attracted(false,false,30,zone,true),"too far");
-        // during a raid: within the zone plus 48, seen or not
+        // During a raid: within the zone plus 48, seen or not
         assertTrue(BeaconCombat.attracted(false,true,20,zone,false),"cover no longer hides it");
         assertTrue(BeaconCombat.attracted(false,true,zone+BeaconCombat.RAID_ATTRACT_BEYOND,zone,false));
         assertFalse(BeaconCombat.attracted(false,true,zone+BeaconCombat.RAID_ATTRACT_BEYOND+1,zone,true));
@@ -65,7 +65,7 @@ final class RaidRoundTest {
         assertEquals(.6+.5,BeaconAlerts.ALARM_PERIOD_TICKS/20.0,1e-9,"0.6 s clip, 0.5 s pause");
     }
 
-    // ---- hunts: arrival ---------------------------------------------------------------------------------------------------------------
+    // Hunts: arrival
     @Test void theAnchorIsLookedForFromTheXOutwards(){
         var order=TacticalRules.anchorOrder(TacticalRules.ANCHOR_SEARCH);
         assertArrayEquals(new int[]{0,0},order.get(0),"the X itself first");
@@ -87,7 +87,7 @@ final class RaidRoundTest {
     }
     @Test void anArrivalNeedsOneBlockAndNoGroundOpensAReturnGate() throws Exception{
         String band=source("HuntWarband.java");
-        assertTrue(band.contains("return anchor;   // one block is all a warband needs"),"no ring ground: the warband comes out at the anchor");
+        assertTrue(band.contains("return anchor;"),"no ring ground: the warband comes out at the anchor");
         assertTrue(band.contains("if(found.complete()&&m.state==HuntBoard.State.ACTIVE){noGround(l,d,h,m);return;}"),"no ground only once all of it was looked at");
         assertTrue(band.contains("Hunts.returnGate(l,d,p,m.offer.codename)")&&band.contains("Hunts.unreachable(l,d,h);"),"return gates, then the offer is replaced");
         assertFalse(band.contains("openGround"),"no more need for a 5 x 5 patch of open natural ground");
@@ -95,7 +95,7 @@ final class RaidRoundTest {
         assertTrue(source("RaidTypes.java").contains("for(int id:HuntWarband.markIds(l))raiders.add(id);"),"hunt mobs carry the raid's red mark");
     }
 
-    // ---- hunts: maps, HUD, table ------------------------------------------------------------------------------------------------------
+    // Hunts: maps, HUD, table
     @Test void mapsOfOperationsThatAreOverBurn(){
         var b=new HuntBoard();
         b.offers.add(new HuntBoard.Offer(7,TacticalRules.Kind.PATROL,"OP A",0,0,300,0));b.offers.add(new HuntBoard.Offer(8,TacticalRules.Kind.WARLORD,"OP B",0,0,300,90));
@@ -126,17 +126,17 @@ final class RaidRoundTest {
         assertEquals(12,Hunts.DRY_MARGIN);
     }
 
-    // ---- the Starshell ----------------------------------------------------------------------------------------------------------------
+    // The Starshell
     @Test void theStarshellHasteLastsLongEnoughToUse(){
         assertEquals(600,CannonUpgrades.STAR_SPEED_TICKS,"30 s from each pulse: steady while it burns, 30 s after");
         assertTrue(CannonUpgrades.STAR_SPEED_TICKS>200,"over 10 s, so its icon does not blink as if ending");
         assertTrue(CannonUpgrades.STAR_SPEED_TICKS>CannonUpgrades.STAR_PULSE_TICKS);
     }
-    // ---- the Exchange Shop (side quest) -----------------------------------------------------------------------------------------------
+    // The Exchange Shop (side quest)
     static List<TextTable.Row> buys(String template){return TextTable.parse(ExchangeShop.sections(List.of(template.split("\n"))).get("buy"),id->true,64,9999).rows();}
     @Test void theShopSellsRareVanillaMaterialsToo(){
         var pack=buys(ExchangeShop.PACK);
-        // 0.0.21: 8 gold 2, an ender pearl 3, a diamond 6; a blaze rod 3, 6 since 0.0.41 (owner)
+        // 8 gold 2, an ender pearl 3, a diamond 6; a blaze rod 3, 6
         for(var rare:List.of(new TextTable.Row("minecraft:gold_ingot",8,2),new TextTable.Row("minecraft:blaze_rod",1,6),new TextTable.Row("minecraft:ender_pearl",1,3),new TextTable.Row("minecraft:diamond",1,6))){
             var p=pack.stream().filter(r->r.id().equals(rare.id())).findFirst().orElse(null);
             assertNotNull(p,rare.id()+" can be bought");
@@ -145,8 +145,7 @@ final class RaidRoundTest {
         assertTrue(pack.stream().anyMatch(r->r.id().equals("create:precision_mechanism")),"the pack's own goods stay");
     }
     @Test void theShopSellsIronInBulkSlightlyCheaperPerIngot(){
-        // 0.0.43 (owner): iron comes as ore (16 for 2 energy) and the bulk lot is 8 blocks for 8; a block is still a little cheaper per
-        // ingot than ore smelted in a furnace (Create's crusher gets about 1.75 ingots out of one ore, which makes ore the better buy)
+        // Iron comes as ore (16 for 2 energy) and the bulk lot is 8 blocks
         var list=buys(ExchangeShop.PACK);
         assertTrue(list.stream().noneMatch(r->r.id().equals("minecraft:iron_ingot")),"no ingots any more");
         var ore=list.stream().filter(r->r.id().equals("minecraft:iron_ore")).findFirst().orElseThrow();
@@ -158,7 +157,7 @@ final class RaidRoundTest {
         assertTrue(perIngotInBulk>=perOre*.85,"but only a little (1/9 instead of 1/8)");
     }
     @Test void theProtocolMovedOn() throws Exception{
-        // 0.0.21 moved it to 30 (MissionSync carries the mission id); 0.0.23 to 31 (FOB screen and removal confirmation), see FobTest
+        // Moved it to 30 (MissionSync carries the mission id); to 31 (FOB screen and removal confirmation), see FobTest
         assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition; the states lost their \"standalone\" flag)");
     }
 }

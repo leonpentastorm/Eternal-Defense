@@ -15,24 +15,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
-/**
- * A shell, a bomb or a starshell falling onto a fire support flare. It is only there to be seen and heard: it falls from high above the flare,
- * whistles on the way down and lands exactly when the flare's own clock resolves the shot (all damage and effects stay with the flare). The
- * cannon at the base fires up into the sky; nothing flies from it to the target, so there is no long projectile flight to simulate, and a
- * flare below ground (Quantum tunneling) is reached the same way: the ordnance passes through the rock.
- * <p>Styles: {@link #SHELL} (artillery shell, banded in the fire support's colour), {@link #BOMB} (the Bunker Buster, which keeps boring down
- * through its crater after it lands), {@link #STAR} (a starshell's burning light that sinks slowly after it bursts high over the flare).
- * Never saved, cannot be hit or pushed; the client predicts the fall from the synced numbers.
- */
+/** A shell, a bomb or a starshell falling onto a fire support flare. */
 final class Ordnance extends Entity {
     static final int SHELL=0,BOMB=1,STAR=2,WELL=3;
-    /** Height above the flare a shell or bomb is first seen at (blocks); it falls faster and faster from there (0.0.18; 48 and steady before). */
+    /** Height above the flare a shell or bomb is first seen at (blocks); it falls faster and faster from there. */
     static final double DROP_HEIGHT=80;
     static final EntityDataAccessor<Integer> STYLE=SynchedEntityData.defineId(Ordnance.class,EntityDataSerializers.INT);
     static final EntityDataAccessor<Integer> TYPE=SynchedEntityData.defineId(Ordnance.class,EntityDataSerializers.INT);
     /** Ticks until it lands. */
     static final EntityDataAccessor<Integer> FLIGHT=SynchedEntityData.defineId(Ordnance.class,EntityDataSerializers.INT);
-    /** Ticks it keeps going after it lands (a bomb boring through its crater, a star sinking) and how far it travels in that time. */
+    /** Ticks it keeps going after it lands */
     static final EntityDataAccessor<Integer> AFTER=SynchedEntityData.defineId(Ordnance.class,EntityDataSerializers.INT);
     static final EntityDataAccessor<Float> AFTER_DEPTH=SynchedEntityData.defineId(Ordnance.class,EntityDataSerializers.FLOAT);
     /** Height of the fall, so the client can work out the speed itself. */
@@ -45,15 +37,15 @@ final class Ordnance extends Entity {
     /** The pure arithmetic of the fall, apart so it can be checked without the entity's synced data. */
     static final class Fall {
         private Fall(){}
-        /** Pure: how far down (blocks) it is after {@code age} ticks: the fall, then the slower travel after landing. */
+        /** Pure: how far down (blocks) it is after age ticks: the fall, then the slower travel after landing. */
         static double drop(double height,int flight,int after,double afterDepth,double age){return drop(height,flight,after,afterDepth,age,false);}
-        /** Pure: the same; with {@code falling} the round speeds up like something dropped (a shell or bomb), without it it sinks evenly (the star). */
+        /** Pure: the same; with falling the round speeds up like something dropped (a shell or bomb) */
         static double drop(double height,int flight,int after,double afterDepth,double age,boolean falling){
             if(age<=flight){double k=Math.max(0,age)/Math.max(1,flight);return height*(falling?k*k:k);}
             return height+afterDepth*Math.min(1,(age-flight)/Math.max(1,after));
         }
     }
-    /** Server: drops one onto {@code target}; it lands {@code flight} ticks from now. */
+    /** Server: drops one onto target; it lands flight ticks from now. */
     static Ordnance drop(ServerLevel level,Vec3 target,int style,CannonUpgrades.FireType type,int flight,double height,int after,double afterDepth){
         var o=EternalDefense.ORDNANCE.get().create(level);if(o==null)return null;
         o.entityData.set(STYLE,style);o.entityData.set(TYPE,type.ordinal());o.entityData.set(FLIGHT,flight);o.entityData.set(HEIGHT,(float)height);
@@ -66,7 +58,7 @@ final class Ordnance extends Entity {
     int flight(){return entityData.get(FLIGHT);}
     int after(){return entityData.get(AFTER);}
     float size(){return entityData.get(SIZE);}
-    /** Server: a gravity well's vortex on the ground at {@code at}, {@code radius} blocks each way, for {@code ticks}. */
+    /** Server: a gravity well's vortex on the ground at at, radius blocks each way, for ticks. */
     static Ordnance well(ServerLevel level,Vec3 at,CannonUpgrades.FireType type,int ticks,double radius){
         var o=drop(level,at,WELL,type,ticks,0,0,0);if(o!=null)o.entityData.set(SIZE,(float)radius);return o;
     }
@@ -76,7 +68,7 @@ final class Ordnance extends Entity {
 
     @Override protected void defineSynchedData(){entityData.define(STYLE,SHELL);entityData.define(TYPE,0);entityData.define(FLIGHT,30);entityData.define(AFTER,0);entityData.define(AFTER_DEPTH,0f);entityData.define(HEIGHT,(float)DROP_HEIGHT);entityData.define(SIZE,0f);}
     @Override public void tick(){
-        if(target==null)target=position().subtract(0,entityData.get(HEIGHT),0);   // the client sees it first at its starting point
+        if(target==null)target=position().subtract(0,entityData.get(HEIGHT),0);   // The client sees it first at its starting point
         super.tick();
         double down=Fall.drop(entityData.get(HEIGHT),flight(),after(),entityData.get(AFTER_DEPTH),tickCount,style()==SHELL||style()==BOMB);
         setPos(target.x,target.y+entityData.get(HEIGHT)-down,target.z);

@@ -56,7 +56,7 @@ public final class UpgradeGameTests {
         long previousDay=l.getDayTime();l.setDayTime(18000); // Sunburn and an old world's clock must not interrupt the bow fixture.
         arena(l,pos.below());
         d.damage.clear();d.destroyedTurrets.clear();d.resetProgress();d.beacon=pos;d.phase="preparation";d.campaignSerial++;l.setBlock(pos,EternalDefense.BEACON.get().defaultBlockState(),3);
-        // Fake observer stays outside interception range. It never joins the server's real player list.
+        // Fake observer stays outside interception range.
         p.moveTo(pos.getX()+20,pos.getY()+1,pos.getZ()+20,0,0);l.addNewPlayer(p);BeaconCombat.tick(l,d);
         var objective=BeaconCombat.objective(l);h.assertTrue(objective!=null,"An enabled planted beacon creates its attack objective");
         var zombie=EntityType.ZOMBIE.create(l);zombie.moveTo(pos.getX()+2,pos.getY()+1,pos.getZ()+.5,0,0);zombie.setNoGravity(true);l.addFreshEntity(zombie);zombie.setTarget(objective);

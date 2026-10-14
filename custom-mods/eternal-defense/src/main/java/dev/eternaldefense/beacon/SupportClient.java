@@ -48,13 +48,13 @@ public final class SupportClient {
     @SubscribeEvent public static void supportScreens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(EternalDefense.SUPPORT_MENU.get(),SupportScreen::new));}
 
     static void draw(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay){drawTinted(pose,buffer,type,model,light,overlay,1f,1f,1f);}
-    /** Draws an additional block model; faces with a tint index take the colour (the rest keep their texture's own colours). */
+    /** Draws an additional block model; faces with a tint index take the colour */
     static void drawTinted(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay,float r,float g,float b){
         var mc=Minecraft.getInstance();BakedModel baked=mc.getModelManager().getModel(model);
         mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),buffer.getBuffer(type),null,baked,r,g,b,light,overlay,ModelData.EMPTY,type);
     }
 
-    // ---- owner nameplates ---------------------------------------------------------------------------------------------------
+    // Owner nameplates
     static final ResourceLocation PLATE=new ResourceLocation(EternalDefense.ID,"textures/entity/nameplate.png");
     /** Names of more than this many letters are split over two lines so they stay readable on a small plate. */
     static final int PLATE_LINE=9;
@@ -65,10 +65,7 @@ public final class SupportClient {
         for(int d=0;d<=cut-2;d++){for(int c:new int[]{cut-d,cut+d}){if(c>2&&c<name.length()-2&&(name.charAt(c)=='_'||name.charAt(c)=='-')){return java.util.List.of(name.substring(0,c+(name.charAt(c)=='_'?0:1)).replace("_",""),name.substring(c+1));}}}
         return java.util.List.of(name.substring(0,cut),name.substring(cut));
     }
-    /**
-     * A brass-framed plate with the owner's name, standing at {@code (cx, bottom, z)} (block units, in the block's own frame) and
-     * facing +Z. {@code width} is the plate width in blocks; the height follows the number of lines; {@code tilt} leans it back.
-     */
+    /** A brass-framed plate with the name, standing at (cx, bottom, z) */
     static void plate(PoseStack pose,MultiBufferSource buffer,net.minecraft.client.gui.Font font,String name,int light,float cx,float bottom,float z,float width,float tilt){
         var lines=plateLines(name);int textW=1;for(var l:lines)textW=Math.max(textW,font.width(l));
         float pad=.035f,s=Math.min(.03f,(width-2*pad)/textW),h=lines.size()*9*s+2*pad;
@@ -76,8 +73,8 @@ public final class SupportClient {
         var last=pose.last();var m=last.pose();var n=last.normal();
         var vc=buffer.getBuffer(RenderType.entityCutout(PLATE));
         float hw=width/2;
-        quad(vc,m,n,-hw,0,hw,h,0f,light,.25f);                                    // brass frame
-        quad(vc,m,n,-hw+.018f,.018f,hw-.018f,h-.018f,.004f,light,.75f);          // dark face
+        quad(vc,m,n,-hw,0,hw,h,0f,light,.25f);                                    // Brass frame
+        quad(vc,m,n,-hw+.018f,.018f,hw-.018f,h-.018f,.004f,light,.75f);          // Dark face
         pose.translate(-textW*s/2f,h-pad,.009f);pose.scale(s,-s,s);
         for(int i=0;i<lines.size();i++){
             float lw=font.width(lines.get(i));
@@ -91,22 +88,22 @@ public final class SupportClient {
             vc.vertex(m,c[0],c[1],z).color(255,255,255,255).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0f,0f,1f).endVertex();
     }
 
-    /** The owner's rickety little sign, stuck on top of the platform. It is only drawn (no hitbox), so the platform stays two blocks tall. */
+    /** The rickety little sign, stuck on top of the platform. */
     static final class PlatformRenderer implements BlockEntityRenderer<SupportPlatform.PlatformEntity> {
         private final net.minecraft.client.gui.Font font;
         PlatformRenderer(BlockEntityRendererProvider.Context ctx){font=ctx.getFont();}
         @Override public void render(SupportPlatform.PlatformEntity be,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
-            Animations.draw(be,partial,pose,buffer,light);   // 0.0.39: the emitter
+            Animations.draw(be,partial,pose,buffer,light);   // The emitter
             if(be.ownerName==null||be.ownerName.isEmpty())return;
             var facing=be.getBlockState().getValue(SupportPlatform.FACING);
             pose.pushPose();
             pose.translate(.5,0,.5);pose.mulPose(Axis.YP.rotationDegrees(-((facing.toYRot()+180f)%360f)));
-            // the post, two crossed strips from the top cap of the platform
-            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(PLATE)); // no culling: a flat strip would vanish seen from its back
+            // The post, two crossed strips from the top cap of the platform
+            var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(PLATE)); // No culling: a flat strip would vanish seen from its back
             pose.pushPose();pose.translate(-.18,1.9,0);pose.mulPose(Axis.ZP.rotationDegrees(-5f));
             for(int side=0;side<2;side++){var last=pose.last();quad(vc,last.pose(),last.normal(),-.035f,0,.035f,.55f,0f,light,.25f);pose.mulPose(Axis.YP.rotationDegrees(90f));}
             pose.popPose();
-            // the board hangs a little crooked from the post, readable from both sides
+            // The board hangs a little crooked from the post, readable from both sides
             pose.pushPose();pose.translate(-.18,2.32,0);pose.mulPose(Axis.ZP.rotationDegrees(9f));
             for(int side=0;side<2;side++){plate(pose,buffer,font,be.ownerName,light,0f,-.12f,.012f,.8f,0f);pose.mulPose(Axis.YP.rotationDegrees(180f));}
             pose.popPose();
@@ -126,22 +123,22 @@ public final class SupportClient {
             float k=(float)SupportCannon.SCALE,turn=(float)SupportCannon.TURN_Y;
             pose.translate(.5,turn,.5);pose.mulPose(Axis.YP.rotationDegrees(yaw));pose.scale(k,k,k);pose.translate(-.5,-turn,-.5);
             draw(pose,buffer,RenderType.cutout(),Animations.TURRET_STATIC,light,overlay);
-            // 0.0.39: the crane hook swings; the same turret transform without the camera, for its shading
+            // The crane hook swings; the same turret transform without the camera, for its shading
             var own=new PoseStack();own.translate(.5,turn,.5);own.mulPose(Axis.YP.rotationDegrees(yaw));own.scale(k,k,k);own.translate(-.5,-turn,-.5);
             Animations.cannonHook(be,partial,pose,own,buffer,light);
-            // the barrel hinges on the turret and slides back along its own axis when it fires
+            // The barrel hinges on the turret and slides back along its own axis when it fires
             float t=Math.max(0f,(be.recoil-partial)/SupportCannon.RECOIL_TICKS);
             pose.translate(.5,1.7,.5);
             pose.mulPose(Axis.XP.rotationDegrees((float)SupportCannon.PITCH_DEGREES));
             pose.translate(0,0,Math.sin(t*Math.PI)*0.45);
-            pose.translate(-.5,-.5,-1.5);   // the barrel model keeps its hinge at (8, 8, 24)
+            pose.translate(-.5,-.5,-1.5);   // The barrel model keeps its hinge at (8, 8, 24)
             draw(pose,buffer,RenderType.cutout(),BARREL,light,overlay);
             pose.popPose();
         }
         @Override public boolean shouldRenderOffScreen(SupportCannon.CannonEntity be){return false;}
     }
 
-    /** The red parachute of a paratrooper (any raider marked as floating down) and the red exclamation mark above every raider. */
+    /** The red parachute of a paratrooper (any raider marked as floating down) and the red exclamation mark above */
     @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
     public static final class TrooperChutes {
         static final ResourceLocation RED=new ResourceLocation(EternalDefense.ID,"textures/entity/parachute_red.png");
@@ -157,7 +154,7 @@ public final class SupportClient {
             if(RaidTypes.RAIDERS.contains(mob.getId())&&mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition())<=96*96)
                 mark(e.getPoseStack(),e.getMultiBufferSource(),mob,chute?mob.getBbHeight()+3.6f:mob.getBbHeight()+.75f,mob.tickCount+e.getPartialTick(),net.minecraft.client.Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
         }
-        /** A camera-facing exclamation mark that bobs above the head; it is drawn fully bright and a little larger the farther away the mob is. */
+        /** A camera-facing exclamation mark that bobs above the head */
         static void mark(PoseStack pose,MultiBufferSource buffer,net.minecraft.world.entity.LivingEntity mob,float height,float age,org.joml.Quaternionf camera){
             double distance=Math.sqrt(mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition()));
             float size=.5f+(float)Math.min(.9,distance/60.0*.9),bob=(float)Math.sin(age*.2)*.06f;
@@ -172,7 +169,7 @@ public final class SupportClient {
         }
     }
 
-    /** Draws a flare with its own item sprite, a Return Flare as a standing purple portal, and a landed Fire Support Flare with its red area box. */
+    /** Draws a flare with its own item sprite, a Return Flare as a standing purple portal */
     static final class FlareRenderer extends EntityRenderer<SupportFlares.FlareEntity> {
         static final ResourceLocation PORTAL=new ResourceLocation(EternalDefense.ID,"textures/entity/return_portal.png");
         private final net.minecraft.client.renderer.entity.ItemRenderer items;
@@ -188,10 +185,7 @@ public final class SupportClient {
             pose.popPose();
             if(kind==SupportCalls.Kind.FIRE&&landed)area(e,partial,pose,buffer);
         }
-        /**
-         * The area box, drawn exactly where the shells act, as edges only: a filled translucent box writes depth and hid everything behind it
-         * (the shop and platform next to a flare vanished). Red for the damaging types, green for healing, violet for curses.
-         */
+        /** The area box, drawn exactly where the shells act, as edges only */
         private void area(SupportFlares.FlareEntity e,float partial,PoseStack pose,MultiBufferSource buffer){
             double r=e.radius();
             AABB box=SupportFlares.boxFor(e.type(),net.minecraft.world.phys.Vec3.ZERO,r);
@@ -203,11 +197,7 @@ public final class SupportClient {
         @Override public ResourceLocation getTextureLocation(SupportFlares.FlareEntity e){return TextureAtlas.LOCATION_BLOCKS;}
     }
 
-    /**
-     * A standing portal, two blocks tall, turned towards the camera, drawn from the Return portal sprite (four frames side by side). It grows in over
-     * its first twelve ticks. {@code frameTicks} is how long one frame lasts; the colour tints the sprite. The player's Return portal draws it white
-     * and fast, the Raider Gate red and slow, so the two can never be mistaken for each other.
-     */
+    /** A standing portal, two blocks tall, turned towards the camera */
     static void drawPortal(PoseStack pose,MultiBufferSource buffer,net.minecraft.client.renderer.entity.EntityRenderDispatcher dispatcher,float age,float frameTicks,int red,int green,int blue,int alpha){
         float grow=Math.min(1f,age/12f),pulse=1f+.04f*Mth.sin(age*.3f);
         int frame=(int)(age/frameTicks)%4;float u0=frame/4f,u1=(frame+1)/4f;
@@ -222,10 +212,7 @@ public final class SupportClient {
     private static void corner(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float x,float y,float u,float v,int red,int green,int blue,int alpha){
         vc.vertex(m,x,y,0f).color(red,green,blue,alpha).uv(u,v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(n,0f,1f,0f).endVertex();
     }
-    /**
-     * Falling ordnance: a shell banded in its fire support's colour, or the Bunker Buster bomb (bigger, slowly turning), both nose down;
-     * a starshell is drawn as a burning star that sinks slowly after it bursts.
-     */
+    /** Falling ordnance: a shell banded in its fire support's colour, or the Bunker Buster bomb */
     static final class OrdnanceRenderer extends EntityRenderer<Ordnance> {
         static final ResourceLocation STAR=new ResourceLocation(EternalDefense.ID,"textures/entity/starshell.png"),VORTEX=new ResourceLocation(EternalDefense.ID,"textures/entity/gravity_well.png");
         OrdnanceRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
@@ -247,10 +234,7 @@ public final class SupportClient {
             drawTinted(pose,buffer,RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS),bomb?BOMB:SHELL,light,OverlayTexture.NO_OVERLAY,((c>>16)&255)/255f,((c>>8)&255)/255f,(c&255)/255f);
             pose.popPose();
         }
-        /**
-         * The gravity well: its vortex sprite lying on the ground, exactly as wide as the well's area, turning; a smaller copy turns the other
-         * way above it. It grows in over a second and fades out in its last second.
-         */
+        /** The gravity well: its vortex sprite lying on the ground, exactly as wide as the well's area, turning */
         private static void vortex(Ordnance o,float age,PoseStack pose,MultiBufferSource buffer){
             float r=o.size();if(r<=0)return;
             float grow=Math.min(1f,age/20f),fade=Math.max(0f,Math.min(1f,(o.flight()-age)/20f));int alpha=(int)(230*Math.min(grow,fade));
@@ -261,7 +245,7 @@ public final class SupportClient {
                 pose.pushPose();pose.translate(0,.06+layer*.04,0);pose.mulPose(Axis.YP.rotationDegrees(spin));
                 var last=pose.last();var m=last.pose();var n=last.normal();int a=layer==0?alpha:alpha*3/4;
                 flat(vc,m,n,-size,-size,0f,0f,a);flat(vc,m,n,-size,size,0f,1f,a);flat(vc,m,n,size,size,1f,1f,a);flat(vc,m,n,size,-size,1f,0f,a);
-                flat(vc,m,n,size,-size,1f,0f,a);flat(vc,m,n,size,size,1f,1f,a);flat(vc,m,n,-size,size,0f,1f,a);flat(vc,m,n,-size,-size,0f,0f,a);   // seen from below too
+                flat(vc,m,n,size,-size,1f,0f,a);flat(vc,m,n,size,size,1f,1f,a);flat(vc,m,n,-size,size,0f,1f,a);flat(vc,m,n,-size,-size,0f,0f,a);   // Seen from below too
                 pose.popPose();
             }
         }
@@ -274,10 +258,7 @@ public final class SupportClient {
         @Override public ResourceLocation getTextureLocation(Ordnance o){return TextureAtlas.LOCATION_BLOCKS;}
     }
 
-    /**
-     * The gate a stuck raider channels beside, and the spawn gate enemies come out of: the Return portal sprite in red, at about half the speed;
-     * a spawn gate is drawn {@link #SPAWN_SCALE} times as big, so it shows around the enemy stepping out of it. Nothing else is drawn.
-     */
+    /** The gate a stuck raider channels beside, and the spawn gate enemies come out */
     static final class GateRenderer extends EntityRenderer<RaiderGate> {
         static final float SPAWN_SCALE=1.6f;
         GateRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=0f;}
@@ -289,10 +270,7 @@ public final class SupportClient {
         @Override public ResourceLocation getTextureLocation(RaiderGate e){return FlareRenderer.PORTAL;}
     }
 
-    /**
-     * The parcel and, while it falls, its parachute: a domed canopy of twelve alternating panels on twelve cords. The canopy is drawn from
-     * vertices so it can be as big as it needs to be (about 5 blocks across) instead of being limited to a block model's size.
-     */
+    /** The parcel and, while it falls, its parachute: a domed canopy of twelve alternating panels on twelve cords. */
     static final class ParcelRenderer extends EntityRenderer<SupportCrate.ParcelEntity> {
         static final ResourceLocation CHUTE=new ResourceLocation(EternalDefense.ID,"textures/entity/parachute.png");
         static final int GORES=12,RINGS=5;
@@ -311,13 +289,13 @@ public final class SupportClient {
             if(e.falling()){pose.pushPose();pose.translate(0,CRATE_TOP,0);canopy(pose,buffer,light,age,CHUTE);pose.popPose();}
             pose.popPose();
         }
-        /** The canopy and its cords, drawn with its cords starting at the current origin. {@code texture} picks the colours (olive and sand for supplies, red and white for paratroopers). */
+        /** The canopy and its cords, drawn with its cords starting at the current origin. */
         static void canopy(PoseStack pose,MultiBufferSource buffer,int light,float age,ResourceLocation texture){
             pose.pushPose();
             var last=pose.last();var m=last.pose();var n=last.normal();
             var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(texture));
             float breathe=1f+.02f*Mth.sin(age*.15f);
-            // canopy: rings from the rim up to the crown, panels alternating between two colours
+            // Canopy: rings from the rim up to the crown, panels alternating between two colours
             for(int i=0;i<GORES;i++){
                 float a0=(float)(i*2*Math.PI/GORES),a1=(float)((i+1)*2*Math.PI/GORES);
                 float u0=(i%2==0?0f:1f/3f)+.01f,u1=(i%2==0?1f/3f:2f/3f)-.01f;
@@ -329,7 +307,7 @@ public final class SupportClient {
                     float vv0=.03f+.94f*(j/(float)RINGS),vv1=.03f+.94f*((j+1)/(float)RINGS);
                     vert(vc,m,n,v00,u0,vv0,nx,ny,nz,light);vert(vc,m,n,v10,u1,vv0,nx,ny,nz,light);vert(vc,m,n,v11,u1,vv1,nx,ny,nz,light);vert(vc,m,n,v01,u0,vv1,nx,ny,nz,light);
                 }
-                // the cord hangs from the middle of the panel's lower edge down to the crate's top edge
+                // The cord hangs from the middle of the panel's lower edge down to the crate's top edge
                 float am=(a0+a1)/2;
                 float[] top={Mth.cos(am)*RADIUS*breathe*.99f,RIM,Mth.sin(am)*RADIUS*breathe*.99f};
                 float[] bot={Mth.clamp(Mth.cos(am)*.7f,-.44f,.44f),0f,Mth.clamp(Mth.sin(am)*.7f,-.44f,.44f)};
@@ -344,7 +322,7 @@ public final class SupportClient {
         static void cord(com.mojang.blaze3d.vertex.VertexConsumer vc,org.joml.Matrix4f m,org.joml.Matrix3f n,float[] a,float[] b,int light){
             float dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],len=Mth.sqrt(dx*dx+dy*dy+dz*dz);if(len<1e-4f)return;
             dx/=len;dy/=len;dz/=len;
-            float sx=dy*0-dz*1,sy=dz*0-dx*0,sz=dx*1-dy*0;   // dir x up-ish axis
+            float sx=dy*0-dz*1,sy=dz*0-dx*0,sz=dx*1-dy*0;   // Dir x up-ish axis
             float sl=Mth.sqrt(sx*sx+sy*sy+sz*sz);if(sl<1e-4f){sx=1;sy=0;sz=0;sl=1;}
             sx/=sl;sy/=sl;sz/=sl;
             float tx=dy*sz-dz*sy,ty=dz*sx-dx*sz,tz=dx*sy-dy*sx;

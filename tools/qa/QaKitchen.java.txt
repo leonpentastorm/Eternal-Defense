@@ -26,11 +26,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client and drives the Mess Hall, both dispensers and the beacon screens
- * the way a player does, checking server state and taking screenshots. Copied into a throwaway tree by tools/qa/setup-qa.sh.
- * Scenario parts come from /tmp/claude-0/qa-kitchen.flag (default: all): equiv kitchen stew legendary tiers dispensers beacon table.
- */
+/** Copied into a throwaway tree by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaKitchen {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -45,10 +41,7 @@ public final class QaKitchen {
     static void srv(Runnable r){server().execute(r);}
     static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
     static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;com.mojang.logging.LogUtils.getLogger().info("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
-    /**
-     * The software renderer is slower than the game tick, so a screenshot is taken a few finished frames after it was asked for, and the
-     * script waits for it, so the picture shows the state the step just set up.
-     */
+    /** The software renderer is slower than the game tick */
     static int frames,due;static boolean holding;static String pendingShot="";
     static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
     @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
@@ -119,7 +112,7 @@ public final class QaKitchen {
     }
     static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
 
-    // ---- the v6 composition, kept verbatim as the reference for the differential check -----------------------------------
+    // The v6 composition, kept verbatim as the reference for the differential check
     static boolean oldDoubles(boolean stew,int mk,int first,int second,boolean legendary){return stew&&mk>=4&&first>=2&&(!legendary||second>=2);}
     record OldPreview(MealData meal,int occupied,boolean staple,String problem){}
     static OldPreview oldCompose(net.minecraft.world.Container ingredients,boolean stew,int mk,Set<MealRules.Effect> selected){
@@ -161,7 +154,7 @@ public final class QaKitchen {
         for(int t=0;t<trials;t++){
             var c=new net.minecraft.world.SimpleContainer(8);int n=random.nextInt(7);
             for(int i=0;i<n;i++){var item=foods.get(random.nextInt(foods.size()));c.setItem(random.nextInt(6),new ItemStack(item,1+random.nextInt(5)));}
-            boolean stew=true;int mk=4;Set<MealRules.Effect> selected=null; // 0.0.11: only a Mk IV stew still follows the v6 rules
+            boolean stew=true;int mk=4;Set<MealRules.Effect> selected=null; // Only a Mk IV stew still follows the v6 rules
             if(random.nextInt(3)>0){selected=EnumSet.noneOf(MealRules.Effect.class);int k=random.nextInt(4);while(selected.size()<k)selected.add(values[random.nextInt(values.length)]);}
             var before=oldCompose(c,stew,mk,selected);var after=IngredientTraits.compose(c,stew,mk,selected);
             boolean ok;
@@ -173,7 +166,7 @@ public final class QaKitchen {
         }
         check("compose is equivalent to the v6 implementation on "+trials+" random Mk IV stew tables of real foods ("+mapped+" rejections became 'missing')",mismatched==0,"same="+same+" differ="+mismatched);
     }
-    // ---- the four hall levels ---------------------------------------------------------------------------
+    // The four hall levels
     static BlockPos tierPos(int mk){return mk==1?at(-6,0,0):mk==2?at(-12,0,0):at(-6,0,6);}
     static MessHall.HallEntity hallAt(BlockPos p){return (MessHall.HallEntity)sl().getBlockEntity(p);}
     static void openAt(BlockPos p){srv(()->{var h=hallAt(p);h.discover();net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(p);b.writeVarInt(h.mk());});});}
@@ -209,7 +202,7 @@ public final class QaKitchen {
             step(3,()->click(ui().primary),"click Make sandwich");
             step(8,()->{check("a sandwich with Vitality is in the output slot",srvGet(()->{var out=hall().ingredients.getItem(6);var meal=PreparedSandwich.meal(out);return meal!=null&&meal.bonuses().size()==1&&meal.bonuses().get(0).effect()==MealRules.Effect.VITALITY;}),"");
                 check("the fillings were spent",srvGet(()->hall().ingredients.getItem(0).isEmpty()||hall().ingredients.getItem(0).getCount()<20),"");shot("k07_made");},"state");
-            // a second recipe: Firepower conflicts with Vitality (both want Protein), so the toggle is refused with a toast
+            // A second recipe: Firepower conflicts with Vitality (both want Protein), so the toggle is refused with a toast
             step(3,()->click(cell(MealRules.Effect.FIREPOWER)),"click Firepower while Vitality is chosen");
             step(8,()->{check("Firepower is refused alongside Vitality",!order().contains(MealRules.Effect.FIREPOWER.ordinal())&&view().getString("Notice").equals("order_conflict"),view().getString("Notice"));shot("k08_conflict_toast");},"state");
             step(3,()->click(ui().clear),"click Clear");
@@ -276,7 +269,7 @@ public final class QaKitchen {
                     step(8,()->click(ui().primary),"Cook stew");
                     step(10,()->{var pot=srvGet(()->(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0)));
                         check("Mk "+level+": the stew lasts "+minutes+" minutes and fills "+(2*level+1)+" servings",pot.stew!=null&&pot.stew.duration()==minutes*1200&&pot.servings==2*level+1,pot.stew==null?"no stew":"duration="+pot.stew.duration()+" servings="+pot.servings);shot("t"+level+"3_cooked");},"state");
-                    // cooking over a pot that still has stew: the screen asks first, "Keep it" changes nothing, "Replace stew" refills the pot
+                    // Cooking over a pot that still has stew: the screen asks first, "Keep it" changes nothing
                     step(3,()->srv(()->{var pot=(CookPot.PotEntity)sl().getBlockEntity(pos.offset(3,0,0));pot.servings=pot.servings-1;pot.changed();var h=hallAt(pos);
                         h.ingredients.setItem(0,new ItemStack(Items.COOKED_CHICKEN,16));h.ingredients.setItem(1,new ItemStack(Items.COOKED_MUTTON,16));h.ingredients.setItem(2,new ItemStack(Items.CARROT,16));}),"use one serving and restock the table");
                     step(8,()->click(ui().pots.get(0)),"choose the pot that still has stew");
@@ -294,7 +287,7 @@ public final class QaKitchen {
                 }
                 step(3,()->close(),"close");
             }
-            // the Cook Pot's lamp gives light, and its board can be read at night from both sides
+            // The Cook Pot's lamp gives light, and its board can be read at night from both sides
             step(5,()->{var pot=tierPos(3).offset(3,0,0);int light=srvGet(()->sl().getBrightness(net.minecraft.world.level.LightLayer.BLOCK,pot.above()));
                 check("the Cook Pot's lamp gives light on its board",light>=8,"block light on the upper cell="+light);
                 srv(()->{sl().setDayTime(18000);sp().teleportTo(sl(),pot.getX()+.5,sy,pot.getZ()+4.5,180,-8);});},"night, stand south of the pot");
@@ -320,7 +313,7 @@ public final class QaKitchen {
             until("bowl screen",40,()->mc().screen instanceof BowlDispenserScreen,()->{});
             step(10,()->{check("the Bowl Dispenser screen opens",mc().screen instanceof BowlDispenserScreen,String.valueOf(mc().screen));shot("d01_bowl_screen");},"shot");
             step(3,()->{close();mc().options.keyShift.setDown(false);},"close and stand up");
-            // milk
+            // Milk
             step(5,()->{BAR.clear();CHAT.clear();srv(()->{sp().removeAllEffects();PlayerMeals.clear(sp());var d=(MilkDispenser.DispenserEntity)sl().getBlockEntity(at(11,0,0));d.tank.setFluid(new net.minecraftforge.fluids.FluidStack(net.minecraftforge.common.ForgeMod.MILK.get(),5750));});},"fill the milk dispenser, clear the player");
             step(5,()->useBlock(at(11,0,0)),"use milk with no effects");
             step(10,()->{check("milk with nothing to clear tells you so",barHas("no effects"),lastBar());

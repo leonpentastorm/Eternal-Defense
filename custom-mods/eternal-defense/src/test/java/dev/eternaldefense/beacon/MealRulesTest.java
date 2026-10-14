@@ -26,13 +26,13 @@ final class MealRulesTest {
         assertEquals(2,MealRules.HOME_MULTIPLIER);assertEquals(36000,MealRules.FIELD_TICKS);assertEquals(MealRules.FIELD_TICKS,MealRules.tier(4).ticks(),"the longest meal is the old fixed half hour");
     }
     @Test void stewCostsGrowWithTheLevelAndConsumeRealFood(){
-        int[] costs={12,21,30,36};for(int mk=1;mk<=4;mk++){   // 0.0.35 (owner): three times the food; the servings stay
+        int[] costs={12,21,30,36};for(int mk=1;mk<=4;mk++){   // Three times the food; the servings stay
             assertEquals(new int[]{3,3,5,7,9}[mk],MealRules.tier(mk).servings(),"servings unchanged");
             assertEquals(costs[mk-1],MealRules.tier(mk).ingredients());var plan=MealRules.plan(new int[]{16,16,16},new int[]{0,1,2},costs[mk-1]);
             assertEquals(costs[mk-1],Arrays.stream(plan).sum());assertTrue(Arrays.stream(plan).allMatch(n->n>0));
         }
     }
-    /** 0.0.35 (owner): a sandwich takes two of each filling and two bread. */
+    /** A sandwich takes two of each filling and two bread. */
     @Test void aSandwichTakesTwoOfEachFillingAndTwoBread(){
         assertEquals(2,MealRules.SANDWICH_FILLING);assertEquals(2,MealRules.SANDWICH_BREAD);
         assertArrayEquals(new int[]{2,2,2},MealRules.planEach(new int[]{5,9,2},new int[]{0,1,2},2));
@@ -82,13 +82,13 @@ final class MealRulesTest {
         assertEquals(.8,blast.home(),1e-9);assertEquals(.6,hardy.home(),1e-9);
     }
     @Test void theThreeReplacedEffectsKeepTheirPlaceAndCarryTheOwnersNumbers(){
-        // 0.0.35 (owner): Mobility, Hearth and Springy Step were replaced in place; their slots, button ids and foods stay
+        // Mobility, Hearth and Springy Step were replaced in place; their slots, button ids and foods stay
         var v=MealRules.Effect.values();
         assertEquals(MealRules.Effect.HARDY,v[3]);assertEquals("hardy",MealRules.Effect.HARDY.id);assertEquals(.15,MealRules.Effect.HARDY.amount,1e-9);assertEquals(.6,MealRules.Effect.HARDY.cap(),1e-9);
         assertEquals("blast_ward",MealRules.Effect.BLAST_WARD.id);assertEquals(.20,MealRules.Effect.BLAST_WARD.amount,1e-9);assertEquals(.8,MealRules.Effect.BLAST_WARD.cap(),1e-9);
         assertEquals("projectile_ward",MealRules.Effect.PROJECTILE_WARD.id);assertEquals(.15,MealRules.Effect.PROJECTILE_WARD.amount,1e-9);assertEquals(.9,MealRules.Effect.PROJECTILE_WARD.cap(),1e-9);
         for(var old:new String[]{"mobility","hearth","springy"})assertNull(MealRules.Effect.of(old),"a saved meal with an old id just expires");
-        // single, at home: base 15% doubled is 30%
+        // Single, at home: base 15% doubled is 30%
         assertEquals(.30,new MealData.Bonus(MealRules.Effect.HARDY,1).home(),1e-9);assertEquals(.15,new MealData.Bonus(MealRules.Effect.HARDY,1).field(),1e-9);
     }
     @Test void hardyGivesBackItsShareOfTheHungerGainedAndNoMoreThanItsCap(){

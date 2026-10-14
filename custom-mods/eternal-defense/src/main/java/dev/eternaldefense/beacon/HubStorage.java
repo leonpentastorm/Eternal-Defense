@@ -9,22 +9,16 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import java.util.*;
 
-/**
- * 0.0.40: one Logistics Center Hub's 270 slots (normal stacking; an unstackable item takes a slot of its own). It lives in the world's saved
- * data ({@link HubData}), never in a block entity, so a Hub across chunk borders or with unloaded chunks cannot lose or copy items.
- * <p>An index is kept with every change: how many of each kind of item it holds, which slots hold each kind and which slots are empty. So
- * "how many X", inserting and the supply's pulls never scan the 270 slots, and the item handler's per-slot calls (which Create and hoppers
- * make constantly) are a single lookup with no copy.
- */
+/** One Logistics Center Hub's 270 slots (normal stacking; an unstackable item takes a slot of its own). */
 final class HubStorage implements IItemHandler {
     static final int SLOTS=270,PAGE=54,PAGES=SLOTS/PAGE;
 
-    /** A kind of item: the item and its tag (as {@link ItemStack#isSameItemSameTags}). The hash is worked out once. */
+    /** A kind of item: the item and its tag (as ItemStack.isSameItemSameTags). */
     static final class Key {
         final Item item;final CompoundTag tag;private final int hash;
         private Key(Item item,CompoundTag tag){this.item=item;this.tag=tag;this.hash=31*System.identityHashCode(item)+(tag==null?0:tag.hashCode());}
         static Key of(ItemStack s){return new Key(s.getItem(),s.getTag()==null?null:s.getTag().copy());}
-        /** A stack of this kind ({@code count} items). */
+        /** A stack of this kind (count items). */
         ItemStack stack(int count){var s=new ItemStack(item,count);if(tag!=null)s.setTag(tag.copy());return s;}
         @Override public boolean equals(Object o){return o instanceof Key k&&k.item==item&&Objects.equals(k.tag,tag);}
         @Override public int hashCode(){return hash;}
@@ -41,7 +35,7 @@ final class HubStorage implements IItemHandler {
 
     HubStorage(){Arrays.fill(slots,ItemStack.EMPTY);for(int i=0;i<SLOTS;i++)empty.add(i);}
 
-    // ---- the index --------------------------------------------------------------------------------------------------------------------
+    // The index
     private void unindex(int slot){
         var key=seenKey[slot];if(key==null)return;
         int left=counts.getOrDefault(key,0)-seenCount[slot];if(left>0)counts.put(key,left);else counts.remove(key);
@@ -53,7 +47,7 @@ final class HubStorage implements IItemHandler {
         var key=Key.of(s);seenKey[slot]=key;seenCount[slot]=s.getCount();
         counts.merge(key,s.getCount(),Integer::sum);where.computeIfAbsent(key,k->new TreeSet<>()).add(slot);empty.remove(slot);
     }
-    /** Brings the index up to date with one slot whose stack may have been changed in place. True if it had changed. */
+    /** Brings the index up to date with one slot whose stack may have been changed in place. */
     boolean resync(int slot){
         var s=slots[slot];var key=seenKey[slot];
         if(s.isEmpty()?key==null:key!=null&&seenCount[slot]==s.getCount()&&key.item==s.getItem()&&Objects.equals(key.tag,s.getTag()))return false;
@@ -63,7 +57,7 @@ final class HubStorage implements IItemHandler {
     void resync(int from,int count){boolean changed=false;for(int i=Math.max(0,from);i<Math.min(SLOTS,from+count);i++)changed|=resync(i);if(changed)onChange.run();}
     void resyncAll(){resync(0,SLOTS);}
 
-    // ---- reading -------------------------------------------------------------------------------------------------------------------------
+    // Reading
     ItemStack get(int slot){return slots[slot];}
     /** How many of this kind it holds. */
     int count(Key key){return counts.getOrDefault(key,0);}
@@ -74,9 +68,9 @@ final class HubStorage implements IItemHandler {
     boolean isEmpty(){return empty.size()==SLOTS;}
     int usedSlots(){return SLOTS-empty.size();}
 
-    // ---- changing ------------------------------------------------------------------------------------------------------------------------
+    // Changing
     void set(int slot,ItemStack stack){slots[slot]=stack==null?ItemStack.EMPTY:stack;unindex(slot);index(slot);onChange.run();}
-    /** Puts a stack in: first onto stacks of the same kind that have room, then into the first empty slots. Returns what did not fit. */
+    /** Puts a stack in: first onto stacks of the same kind that have room, then into the first empty slots. */
     ItemStack insert(ItemStack stack,boolean simulate){
         if(stack.isEmpty())return ItemStack.EMPTY;
         int left=stack.getCount(),limit=Math.min(64,stack.getMaxStackSize());boolean changed=false;
@@ -93,7 +87,7 @@ final class HubStorage implements IItemHandler {
         if(changed)onChange.run();
         return left<=0?ItemStack.EMPTY:stack.copyWithCount(left);
     }
-    /** Takes up to {@code amount} of one kind, from its last slots first (the first ones stay put). Returns how many were taken. */
+    /** Takes up to amount of one kind, from its last slots first (the first ones stay put). */
     int extract(Key key,int amount,boolean simulate){
         if(amount<=0)return 0;var set=where.get(key);if(set==null)return 0;
         if(simulate)return Math.min(amount,count(key));
@@ -107,7 +101,7 @@ final class HubStorage implements IItemHandler {
     /** Everything out (a Hub broken while it still holds items drops them). */
     List<ItemStack> drain(){var out=new ArrayList<ItemStack>();for(int i=0;i<SLOTS;i++)if(!slots[i].isEmpty()){out.add(slots[i]);slots[i]=ItemStack.EMPTY;unindex(i);}onChange.run();return out;}
 
-    // ---- the item handler (hoppers, droppers, Create's funnels, chutes and arms): one slot at a time --------------------------------------
+    // The item handler (hoppers, droppers, Create's funnels, chutes and arms): one slot at a time
     @Override public int getSlots(){return SLOTS;}
     /** The slot's own stack, not a copy (the handler's contract: callers do not change it). */
     @Override public ItemStack getStackInSlot(int slot){return slot<0||slot>=SLOTS?ItemStack.EMPTY:slots[slot];}
@@ -131,7 +125,7 @@ final class HubStorage implements IItemHandler {
     @Override public int getSlotLimit(int slot){var s=getStackInSlot(slot);return s.isEmpty()?64:Math.min(64,s.getMaxStackSize());}
     @Override public boolean isItemValid(int slot,ItemStack stack){return true;}
 
-    // ---- saving ---------------------------------------------------------------------------------------------------------------------------
+    // Saving
     ListTag save(){var list=new ListTag();for(int i=0;i<SLOTS;i++)if(!slots[i].isEmpty()){var t=slots[i].save(new CompoundTag());t.putShort("Slot",(short)i);list.add(t);}return list;}
     void load(ListTag list){
         Arrays.fill(slots,ItemStack.EMPTY);Arrays.fill(seenKey,null);Arrays.fill(seenCount,0);counts.clear();where.clear();empty.clear();for(int i=0;i<SLOTS;i++)empty.add(i);

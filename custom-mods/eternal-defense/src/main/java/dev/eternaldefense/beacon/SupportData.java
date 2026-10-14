@@ -5,20 +5,17 @@ import net.minecraft.nbt.*;
 import net.minecraft.server.level.ServerLevel;
 import java.util.*;
 
-/**
- * World-wide registry of base support gear. Every player owns at most one Support Platform and one Support Cannon;
- * the blocks themselves hold the grid and Mk level, this only remembers where each player's gear is.
- */
+/** World-wide registry of base support gear. */
 final class SupportData extends net.minecraft.world.level.saveddata.SavedData {
     static final String NAME="eternal_defense_support_v2";
-    /** One player's gear and cannon setup: where it is, the upgrade levels they bought and the fire support they chose. */
+    /** One player's gear and cannon setup: where it is, the upgrade levels they bought and the fire support they */
     static final class Base{
         BlockPos platform,cannon;int fire;final int[] up=new int[CannonUpgrades.Upgrade.values().length];
         boolean configured(){if(fire!=0)return true;for(int v:up)if(v!=0)return true;return false;}
         CannonUpgrades.FireType type(){return CannonUpgrades.FireType.of(fire);}
         /** The one call using this player's cannon right now (not saved: a restarted server starts with the cannon free). */
         private UUID holder;private long holdUntil;private boolean holderFire;
-        /** Takes the cannon for {@code id} or says no because another call holds it. A holder that stops refreshing for 2 seconds loses it. */
+        /** Takes the cannon for id or says no because another call holds it. */
         boolean hold(UUID id,long now,boolean fire){
             if(holder==null||holder.equals(id)||now>holdUntil){holder=id;holdUntil=now+40;holderFire=fire;return true;}
             return false;

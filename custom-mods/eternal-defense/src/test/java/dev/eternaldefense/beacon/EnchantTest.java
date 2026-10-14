@@ -9,7 +9,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static dev.eternaldefense.beacon.EnchantRules.*;
 
-/** The Tactical Enchanting Table (0.0.27, FOB slice 4) without a world: the level gate, the prices, the discount, the seals, the model. */
+/** The Tactical Enchanting Table without a world: the level gate, the prices, the discount, the seals, the model. */
 final class EnchantTest {
     static final String SRC="src/main/java/dev/eternaldefense/beacon/",ASSETS="src/main/resources/assets/eternal_defense/";
 
@@ -24,7 +24,7 @@ final class EnchantTest {
             }
         }
         assertEquals(0,fobsFor(1,1),"one-level enchants (Mending, Silk Touch) are always available");
-        // the brief's table for the common maxima
+        // The brief's table for the common maxima
         assertArrayEquals(new int[]{0,5},new int[]{fobsFor(1,2),fobsFor(2,2)});
         assertArrayEquals(new int[]{0,3,5},new int[]{fobsFor(1,3),fobsFor(2,3),fobsFor(3,3)});
         assertArrayEquals(new int[]{0,2,4,5},new int[]{fobsFor(1,4),fobsFor(2,4),fobsFor(3,4),fobsFor(4,4)});
@@ -32,7 +32,7 @@ final class EnchantTest {
         for(int fobs=0;fobs<=5;fobs++)for(int max=1;max<=5;max++){int top=maxLevel(max,fobs);assertTrue(fobsFor(top,max)<=fobs&&(top==max||fobsFor(top+1,max)>fobs),"the highest level allowed, "+fobs+" FOBs, max "+max);}
     }
     @Test void pricesFollowRarityAndLevel(){
-        // 0.0.29 (owner): the base doubled; 0.0.28 (owner): you pay twice the base (Ardent Energy pays for little else)
+        // The base doubled; you pay twice the base (Ardent Energy pays for little else)
         assertEquals(8,price(Rarity.COMMON,1,false));assertEquals(40,price(Rarity.COMMON,5,false),"Sharpness V");
         assertEquals(36,price(Rarity.UNCOMMON,3,false),"Unbreaking III");
         assertEquals(60,price(Rarity.RARE,3,false),"Fortune III");

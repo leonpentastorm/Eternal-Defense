@@ -45,12 +45,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
-/**
- * 0.0.40: the Logistics Center Hub, a 3 x 3 x 3 depot (the owner's model). The middle block of the middle layer is the anchor: it draws the
- * model and holds the Hub's id; the other 26 blocks are invisible parts. Every one of the 27 blocks opens the same menu and hands hoppers and
- * Create the same inventory, which lives in {@link HubData}. It works only inside the Home Zone; it cannot be broken while it holds items
- * (creative players can), nor blown up, burnt or pushed.
- */
+/** The Logistics Center Hub, a 3 x 3 x 3 depot. */
 final class LogisticsHub {
     private LogisticsHub(){}
     /** A part's place in the cube, each axis stored as offset + 1 (0..2); the anchor is (1, 1, 1). */
@@ -62,10 +57,7 @@ final class LogisticsHub {
     /** All 27 blocks, the anchor first. */
     static List<BlockPos> cells(BlockPos anchor){var out=new ArrayList<BlockPos>();out.add(anchor);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)out.add(anchor.offset(x,y,z));return out;}
     static BlockState part(int x,int y,int z){return EternalDefense.LOGISTICS_HUB_PART.get().defaultBlockState().setValue(DX,x+1).setValue(DY,y+1).setValue(DZ,z+1);}
-    /**
-     * True when the Hub holds items. The server reads the storage itself (so there is no moment, right after items go in, when it could be
-     * mined); the client reads the anchor's synced flag, so mining shows no cracks.
-     */
+    /** True when the Hub holds items. */
     static boolean occupied(BlockGetter level,BlockPos pos){
         if(level instanceof ServerLevel server){var hub=hub(server,pos);return hub!=null&&!hub.storage.isEmpty();}
         return level.getBlockEntity(anchor(level,pos)) instanceof HubEntity be&&be.occupied;
@@ -76,9 +68,9 @@ final class LogisticsHub {
     }
     static void say(Player p,String key,Object... args){if(p!=null)p.displayClientMessage(Component.translatable("gui.eternal_defense.hub."+key,args),true);}
 
-    // ---- shared behaviour of the anchor and its parts -------------------------------------------------------------------------------
+    // Shared behaviour of the anchor and its parts
     static InteractionResult open(Level level,BlockPos pos,Player player,InteractionHand hand){
-        // the Recovery Shovel picks the Hub up (the shovel's own use, which runs only when the block lets it through)
+        // The Recovery Shovel picks the Hub up (the shovel's own use, which runs only when the block lets it through)
         if(player.getItemInHand(hand).is(EternalDefense.CONTROLLER.get()))return InteractionResult.PASS;
         if(!(player instanceof ServerPlayer sp))return InteractionResult.SUCCESS;
         var anchor=anchor(level,pos);var hub=hub(level,anchor);
@@ -114,7 +106,7 @@ final class LogisticsHub {
             if(!l.isClientSide&&!s.is(next.getBlock())&&l instanceof ServerLevel server){
                 var data=HubData.get(server);var hub=l.getBlockEntity(pos) instanceof HubEntity be?data.hub(be.hubId):null;
                 if(hub!=null&&hub.placed&&hub.anchor.equals(pos)){
-                    // a creative player's break, or a removal by commands or other mods: nothing may be lost, so what it holds is dropped
+                    // A creative player's break, or a removal by commands or other mods
                     var items=hub.storage.drain();
                     for(var stack:items)Containers.dropItemStack(l,pos.getX()+.5,pos.getY()+.2,pos.getZ()+.5,stack);
                     if(!items.isEmpty())com.mojang.logging.LogUtils.getLogger().info("[Logistics Hub] the Hub at {} was removed while holding {} stacks: dropped them",pos.toShortString(),items.size());
@@ -137,7 +129,7 @@ final class LogisticsHub {
         @Override public void attack(BlockState s,Level l,BlockPos pos,Player p){if(!l.isClientSide&&guarded(l,pos,p))say(p,"empty_first");}
         @Override public boolean onDestroyedByPlayer(BlockState s,Level l,BlockPos pos,Player p,boolean willHarvest,FluidState fluid){
             if(guarded(l,pos,p)){if(!l.isClientSide)say(p,"empty_first");return false;}
-            // breaking any block of the Hub breaks the Hub: the anchor drops the item (not for creative players)
+            // Breaking any block of the Hub breaks the Hub: the anchor drops the item (not for creative players)
             var anchor=anchor(l,pos);if(!l.isClientSide&&l.getBlockState(anchor).is(EternalDefense.LOGISTICS_HUB.get()))l.destroyBlock(anchor,!p.isCreative(),p);
             return super.onDestroyedByPlayer(s,l,pos,p,willHarvest,fluid);
         }
@@ -146,25 +138,22 @@ final class LogisticsHub {
         @Override public void onBlockExploded(BlockState s,Level l,BlockPos pos,Explosion e){}
         @Override public boolean isFlammable(BlockState s,BlockGetter l,BlockPos pos,Direction d){return false;}
         @Override public ItemStack getCloneItemStack(BlockGetter l,BlockPos pos,BlockState s){return new ItemStack(EternalDefense.LOGISTICS_HUB_ITEM.get());}
-        /** A part removed by something other than a player (a command, another mod): the anchor puts it back on its next check. */
+        /** A part removed by something other than a player (a command, another mod) */
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
             if(!l.isClientSide&&!s.is(next.getBlock())){var anchor=pos.offset(1-s.getValue(DX),1-s.getValue(DY),1-s.getValue(DZ));if(l.hasChunkAt(anchor)&&l.getBlockState(anchor).is(EternalDefense.LOGISTICS_HUB.get()))l.scheduleTick(anchor,l.getBlockState(anchor).getBlock(),2);}
             super.onRemove(s,l,pos,next,moving);
         }
     }
 
-    // ---- block entities: every one of the 27 hands out the Hub's inventory ------------------------------------------------------------
+    // Block entities: every one of the 27 hands out the Hub's inventory
     /** One of a Hub's 27 block entities: which Hub it belongs to (saved as "Hub"). */
     interface Cell {UUID hubId();void link(UUID id);}
-    /** The item handler every block of Hub {@code id} hands out, on every face: the Hub's one inventory, empty while it does not work. */
+    /** The item handler every block of Hub id hands out, on every face */
     static <T> LazyOptional<T> itemHandler(@Nullable Level level,@Nullable UUID id){
         if(level instanceof ServerLevel server&&id!=null){var hub=HubData.get(server).hub(id);if(hub!=null)return hub.handler(server).cast();}
         return LazyOptional.empty();
     }
-    /**
-     * Makes a part's block entity: a plain one, or, in the pack edition with Create loaded, one Create's belts can hand items to directly
-     * (set by {@code CreateArmCompat} before any world loads). Both save the same data under the same id.
-     */
+    /** Makes a part's block entity: a plain one, or, in the pack edition with Create loaded */
     static BlockEntityType.BlockEntitySupplier<BlockEntity> partFactory=PartEntity::new;
     abstract static class CellEntity extends BlockEntity implements Cell {
         UUID hubId;
@@ -184,7 +173,7 @@ final class LogisticsHub {
         void serverTick(){
             if(!(level instanceof ServerLevel server)||++ticks%20!=0)return;
             var data=HubData.get(server);var hub=data.hub(hubId);
-            // placed by a command, copied by a structure, or its record lost: it gets a fresh, empty inventory
+            // Placed by a command, copied by a structure, or its record lost: it gets a fresh, empty inventory
             if(hub==null||!hub.anchor.equals(worldPosition)||!hub.placed){hub=data.place(null,server.dimension(),worldPosition,getBlockState().getValue(DefenseStructures.FACING));link(hub.id);}
             hub.working(server);
             boolean now=!hub.storage.isEmpty();if(now!=occupied){occupied=now;setChanged();server.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
@@ -212,12 +201,12 @@ final class LogisticsHub {
         PartEntity(BlockPos pos,BlockState state){super(EternalDefense.LOGISTICS_HUB_PART_ENTITY.get(),pos,state);}
     }
 
-    // ---- the item: placed as the whole 3 x 3 x 3 Hub, centred on the block looked at -------------------------------------------------
+    // The item: placed as the whole 3 x 3 x 3 Hub, centred on the block looked at
     static final class HubItem extends BlockItem {
         HubItem(Block block){super(block,new Item.Properties().stacksTo(1).fireResistant());}
-        /** The anchor for a Hub placed with this context: the block above the clicked spot, so the Hub stands on the ground. */
+        /** The anchor for a Hub placed with this context: the block above the clicked spot */
         static BlockPos anchorFor(BlockPlaceContext c){return c.getClickedPos().above();}
-        /** 0.0.42: is every one of the 27 cells free (nothing solid, no block entity, no creature)? The preview is red when not. */
+        /** Is every one of the 27 cells free (nothing solid, no block entity, no creature)? */
         static boolean free(Level level,BlockPos anchor){
             for(var p:cells(anchor)){
                 if(!level.isInWorldBounds(p)||!level.getWorldBorder().isWithinBounds(p)||!level.hasChunkAt(p)||!level.getBlockState(p).canBeReplaced()||level.getBlockEntity(p)!=null
@@ -227,7 +216,7 @@ final class LogisticsHub {
         }
         @Override public InteractionResult place(BlockPlaceContext c){
             var level=c.getLevel();var player=c.getPlayer();var anchor=anchorFor(c);var facing=c.getHorizontalDirection().getOpposite();
-            if(level.isClientSide)return free(level,anchor)?InteractionResult.SUCCESS:InteractionResult.FAIL;   // the server places it; the client only does not swing at a red preview
+            if(level.isClientSide)return free(level,anchor)?InteractionResult.SUCCESS:InteractionResult.FAIL;   // The server places it; the client only does not swing at a red preview
             for(var p:cells(anchor)){
                 String zone=BaseZone.problem(level,p);if(zone!=null){BaseZone.say(player,"zone."+zone);return InteractionResult.FAIL;}
                 if(level instanceof ServerLevel server&&ReturnZone.inside(server,p)){BaseZone.say(player,"keep_clear");return InteractionResult.FAIL;}
@@ -252,7 +241,7 @@ final class LogisticsHub {
         }
     }
 
-    /** The Beacon Recovery Shovel on any block of a Hub: picked up as an item that remembers it, its items waiting in the saved data. */
+    /** The Beacon Recovery Shovel on any block of a Hub: picked up as an item that remembers */
     static boolean relocate(ServerPlayer p,ServerLevel level,BlockPos clicked){
         if(!isHub(level.getBlockState(clicked)))return false;
         var anchor=anchor(level,clicked);var hub=hub(level,anchor);

@@ -12,13 +12,7 @@ import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/**
- * 0.0.40: the line the Logistics Center Hub sends when it pays part of a request ("Dev just pulled 54 Iron Ingot from the Hub", "Dev just
- * spent 12 Ardent Energy from the Hub"). Only the part the Hub paid is named; a request the pack covered sends nothing; hoppers and Create
- * never send anything (they do not go through {@link Supply}). One action is one line naming at most three kinds of item, then "and N
- * more"; the same player's pulls within 2 seconds add up to one running total, sent when they stop. It goes to the player and to everyone in
- * the Home Zone, and to the server log.
- */
+/** The line the Logistics Center Hub sends when it pays part of a request */
 final class HubNotices {
     private HubNotices(){}
     private static final class Running {

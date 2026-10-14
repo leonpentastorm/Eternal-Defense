@@ -62,8 +62,7 @@ public final class ClientDefaults {
                     else if(name.contains("ftbquests")&&(name.contains("open")||name.endsWith("quests")))desired=keyboard("l");
                     if(desired!=null&&!selected.containsKey(m)&&!occupied.contains(desired.id()))assign(selected,occupied,m,desired);
                 }
-                // Vanilla movement/inventory keeps its familiar keys. Mouse combat bindings are
-                // intentionally shared with weapon handlers, which cancel the vanilla action.
+                // Vanilla movement/inventory keeps its familiar keys.
                 Set<String> vanilla=new HashSet<>(List.of("key.attack","key.use","key.forward","key.back","key.left","key.right","key.jump","key.sneak","key.sprint","key.inventory","key.drop","key.swapOffhand","key.pickItem","key.chat","key.command","key.playerlist","key.togglePerspective","key.smoothCamera","key.socialInteractions","key.spectatorOutlines","key.fullscreen","key.screenshot"));
                 for(int i=1;i<=9;i++)vanilla.add("key.hotbar."+i);
                 for(KeyMapping m:mappings)if(vanilla.contains(m.getName())&&!selected.containsKey(m)) {

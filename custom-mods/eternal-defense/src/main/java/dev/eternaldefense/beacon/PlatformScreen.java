@@ -8,10 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-/**
- * Responsive two-column browser; bounded server pages and only selected-recipe costs.
- * Recipe costs and current-table upgrades share this browser; starter installations are fabricated at the beacon.
- */
+/** Responsive two-column browser; bounded server pages and only selected-recipe costs. */
 final class PlatformScreen extends BeaconClient.PanelScreen {
     private static CompoundTag data=new CompoundTag();
     private final List<BeaconClient.Hover> hoverItems=new ArrayList<>();
@@ -94,10 +91,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     private void navigate(int page){int target=WeaponBrowser.page(page,total(),layout.capacity());if(upgrades){upgradePage=target;selected=costScroll=0;}else if(!navigating&&target!=data.getInt("page"))browse(target);}
     private void jump(){try{navigate(Integer.parseInt(pageJump.getValue())-1);}catch(NumberFormatException ignored){}pageJump.setFocused(false);}
     private static boolean armor(){return data.getString("kind").equals("armor");}
-    /**
-     * Why an ammo or attachment table shows nothing: no gun in hand, or (0.0.41, back from before the UI redo) a gun whose parts
-     * all need a later Age of this table, counted, or a gun with nothing in the catalogue. Null while a search or Age filter is on.
-     */
+    /** Why an ammo or attachment table shows nothing: no gun in hand */
     private Component emptyHint(){
         if(data.getString("notice").equals("Equip a gun"))return Ui.t("platform.hold_gun",ControlHints.interact());
         if(!search.getValue().isBlank()||ageFilter!=0)return null;
@@ -225,10 +219,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
             g.renderComponentTooltip(font,lines,mx,my);break;
         }}
     }
-    /**
-     * The upgrade view: the Age ladder, what the next Age unlocks, the materials, and one button that does it. Nothing else on the screen,
-     * so the whole panel reads left to right and top to bottom: where you are, where you go next, what it costs, press.
-     */
+    /** The upgrade view: the Age ladder, what the next Age unlocks, the materials, and one button that does it. */
     private void renderUpgrade(GuiGraphics g,int mx,int my,float partial){
         for(var row:rows)row.visible=false;
         search.visible=find.visible=previous.visible=next.visible=pageJump.visible=go.visible=false;ageButton.visible=false;
@@ -239,13 +230,13 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         boolean missing=false;if(!creative)for(var c:costs)if(((CompoundTag)c).getInt("have")<((CompoundTag)c).getInt("count"))missing=true;
         boolean nether=age==2&&!data.getBoolean("netherVisited"),compact=ph<280;
         String kind=data.getString("kind");int accent=AGE_COLORS[Math.min(5,age+1)];
-        // where you are: the table you are standing at, beside the tabs
+        // Where you are: the table you are standing at, beside the tabs
         var station=new ItemStack(ArmorPlatform.station(kind).get());g.renderItem(station,left+14,top+65);
         Ui.text(g,font,Ui.t("platform.title."+(Ui.has("platform.title."+kind)?kind:"gun")),left+36,top+66,Ui.INK,pw/2-60);
         Ui.text(g,font,age==0?Ui.t("platform.no_table"):Ui.t("platform.age_line",age,ageName(age)),left+36,top+76,age==0?Ui.DISABLED:AGE_COLORS[age],pw/2-60);
         int x0=left+14,w0=pw-28,y0=top+(compact?90:94),h0=ph-(y0-top)-(compact?10:14);
         Ui.card(g,x0,y0,w0,h0,maxed?Ui.BRASS:Ui.CYAN);
-        // the ladder: done, you are here, next, later
+        // The ladder: done, you are here, next, later
         int inner=w0-18,gap=4,segW=(inner-gap*4)/5,segH=compact?14:16,ly=y0+6;long t=net.minecraft.Util.getMillis();
         for(int i=1;i<=5;i++){
             int sx=x0+10+(i-1)*(segW+gap),color=AGE_COLORS[i];boolean done=i<age||maxed&&i==age,here=i==age&&!maxed,upNext=i==age+1;
@@ -256,14 +247,14 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
             if(done){Ui.check(g,sx+3,ly+(segH-8)/2,Ui.INK);tx=sx+13;}
             Ui.text(g,font,ageName(i),tx,ly+(segH-8)/2,ink,segW-(tx-sx)-3);
         }
-        // where you go next
+        // Where you go next
         int y=ly+segH+(compact?5:8);
         if(maxed){Ui.text(g,font,Ui.t("platform.upgrade_maxed"),x0+10,y,Ui.BRASS,w0-20);y+=compact?12:14;if(!compact)Ui.wrap(g,font,Ui.t("platform.upgrade_maxed_info"),x0+10,y,w0-20,Ui.MUTED,2);}
         else{
             Ui.text(g,font,Ui.t("platform.heading.next",ageName(age+1)),x0+10,y,accent,w0-20);y+=compact?11:12;
             Ui.wrap(g,font,Ui.t(compact?"platform.upgrade_info_short":"platform.upgrade_info"),x0+10,y,w0-20,Ui.MUTED,compact?1:2);y+=compact?11:22;
         }
-        // what it costs
+        // What it costs
         int bottom=y0+h0-(compact?26:30),costY=y+2;
         if(!maxed&&!costs.isEmpty()){
             int cols=w0>=380?3:2,cw=(w0-20)/cols,rowsFit=Math.max(1,(bottom-(nether?10:2)-costY)/20),per=cols*rowsFit;
@@ -279,7 +270,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
             if(costs.size()>per)Ui.right(g,font,Ui.t("platform.scroll",costs.size()),x0+w0-10,bottom-9,Ui.MUTED);
         }
         if(nether&&!maxed)Ui.text(g,font,Ui.t("platform.nether"),x0+10,bottom-9,Ui.ORANGE,w0-20);
-        // the one button
+        // The one button
         upgrade.setX(x0+10);upgrade.setWidth(w0-20);upgrade.setY(y0+h0-(compact?24:26));
         upgrade.setMessage(maxed?Ui.t("platform.upgrade_maxed"):Ui.t("platform.upgrade_to",ageName(age+1)));
         upgrade.active=chosen!=null&&age>=1&&!maxed&&!nether&&!missing;upgrade.warning=false;

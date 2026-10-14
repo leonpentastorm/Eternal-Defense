@@ -12,10 +12,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Centre-screen announcements: raid start, each wave, victory, defeat, and support calls.
- * Big events queue one after another; support calls stack as small toasts underneath.
- */
+/** Centre-screen announcements: raid start, each wave, victory, defeat, and support calls. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class BeaconPopups {
     enum Style{RAID,WAVE,VICTORY,DEFEAT,SUPPORT}

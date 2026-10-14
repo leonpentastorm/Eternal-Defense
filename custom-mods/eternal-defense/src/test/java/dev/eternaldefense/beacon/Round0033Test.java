@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.33 Supply Catapult and specialty seller, the parts that need no world. */
+/** The Supply Catapult and specialty seller, the parts that need no world. */
 final class Round0033Test {
     static String lang() throws Exception{return Files.readString(Path.of(EnchantTest.ASSETS+"lang/en_us.json"));}
 
@@ -18,7 +18,7 @@ final class Round0033Test {
         assertEquals(2,CatapultRules.lotSize(RouteRules.tiered("minecraft:ender_pearl",4)));
         assertEquals(16,CatapultRules.lotSize(RouteRules.tiered("minecraft:bone",1)));
         assertEquals(32,CatapultRules.lotSize(RouteRules.plain("minecraft:dried_kelp",.5)));
-        // every specialty item: a lot is worth about one S item, never nothing
+        // Every specialty item: a lot is worth about one S item, never nothing
         for(var spec:RouteRules.Specialty.values())for(var l:spec.options()){int n=CatapultRules.lotSize(l);assertTrue(n>=1,l.id());assertTrue(n*l.value()>=CatapultRules.LOT_VALUE*.66&&n*l.value()<=CatapultRules.LOT_VALUE*1.5,l.id()+" "+n);}
     }
     @Test void pricesLiveInEconomy(){
@@ -46,14 +46,14 @@ final class Round0033Test {
         assertTrue(CatapultRules.armAngle(CatapultRules.RELEASE_TICK)<=-45&&CatapultRules.armAngle(CatapultRules.RELEASE_TICK-1)>-45,"the box leaves as the arm passes -45 degrees");
         float last=0;for(float t=0;t<=CatapultRules.THROW_TICKS;t+=.25f){float a=CatapultRules.armAngle(t);assertTrue(a<=last+1e-4);last=a;}
         assertEquals(50,CatapultRules.CYCLE);
-        // facing north the box leaves the cup up and to the north, from the owner's cup position
+        // Facing north the box leaves the cup up and to the north, from the cup position
         double[] r=CatapultRules.release(0,1);
         assertEquals(.5,r[0],1e-9);assertEquals(26.9/16,r[1],1e-9);assertEquals(.5+7.6/16,r[2],1e-9);
         assertEquals(0,r[3],1e-9);assertEquals(.707,r[4],1e-9);assertEquals(-.707,r[5],1e-9);
-        // turned to the east (the cannon's yaw -90) it flies east
+        // Turned to the east (the cannon's yaw -90) it flies east
         double[] e=CatapultRules.release(-90,1);assertEquals(.707,e[3],1e-9);assertEquals(0,e[5],1e-9);
         assertEquals(-90,CatapultRules.yawTo(0,0,10,0),1e-4);assertEquals(0,CatapultRules.yawTo(0,0,0,-10),1e-4);
-        // 0.0.34: the flight home is the Supply Flare's 12 seconds whatever the distance (Round0034Test)
+        // The flight home is the Supply Flare's 12 seconds whatever the distance
         assertEquals(240,CatapultRules.FLIGHT_TICKS);
     }
     @Test void sellerButtonsHaveTheirOwnIds(){
@@ -96,7 +96,7 @@ final class Round0033Test {
         for(String why:List.of("overworld","not_fob","has_catapult","no_room"))assertTrue(lang.contains("\"gui.eternal_defense.catapult.refused."+why+"\""),why);
         assertTrue(lang.contains("# Supply Catapult"),"a Field Guide card");
     }
-    /** The block event that starts the throw (and the cannon's recoil) reaches the block entity and so the clients (found by the real client run). */
+    /** The block event that starts the throw (and the cannon's recoil) reaches the block entity and so the clients */
     @Test void blockEventsReachTheBlockEntity(){
         for(String f:List.of("SupplyCatapult.java","SupportCannon.java"))
             assertTrue(SosTest.source(f).contains("public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}"),f);

@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-/** Exchange Shop menu: pick an offer, press Buy. Prices and stock come from the server's text file. */
+/** Exchange Shop menu: pick an offer, press Buy. */
 final class ExchangeScreen extends BeaconClient.PanelScreen {
     private static final int ROW=24;
     private final BlockPos pos;private CompoundTag data;

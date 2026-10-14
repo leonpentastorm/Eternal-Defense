@@ -31,12 +31,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): the 0.0.38 MRE Station on a real client. Places it with its item, fills it with real slot clicks,
- * presses its real buttons, sends a cheating click, checks every MRE against vanilla's own FoodData fed each food alone, eats MREs in
- * survival by holding the use key (time, hunger rule, effects, containers), the Marines Fuel recipe, the Workshop, the Field Guide, and
- * takes screenshots. Copied in by tools/qa/setup-qa.sh.
- */
+/** Places it with its item, fills it with real slot clicks, presses its real buttons, sends a cheating click */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaMre {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -66,7 +61,7 @@ public final class QaMre {
     static BlockPos B(){return at(0,0,-14);}
     static BlockPos S(){return at(0,0,0);}
 
-    // ---- one frame's texts and the window sizes (as QaDrinks) ----------------------------------------------------------------------
+    // One frame's texts and the window sizes (as QaDrinks)
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
@@ -89,7 +84,7 @@ public final class QaMre {
             var ws=new ArrayList<net.minecraft.client.gui.components.AbstractWidget>();for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.visible)ws.add(w);
             for(int i=0;i<ws.size();i++)for(int j=i+1;j<ws.size();j++){var a=ws.get(i);var b=ws.get(j);if(hit(a.getX(),a.getY(),a.getWidth(),a.getHeight(),b.getX(),b.getY(),b.getWidth(),b.getHeight()))bad.add("button over button");}
             for(var slot:cs.getMenu().slots)if(slot.isActive())for(var w:ws)if(hit(px+slot.x,py+slot.y,16,16,w.getX(),w.getY(),w.getWidth(),w.getHeight()))bad.add("a slot under the button '"+w.getMessage().getString()+"'");
-            // and no text over a slot
+            // And no text over a slot
             for(var slot:cs.getMenu().slots)if(slot.isActive())for(var a:boxes)if(hit(px+slot.x-1,py+slot.y-1,18,18,a.x(),a.y(),a.w(),a.h()))bad.add("'"+a.text()+"' over a slot");
         }
         if(s instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> whole&&(whole.getGuiTop()<0||whole.getGuiTop()+whole.getYSize()>s.height||whole.getGuiLeft()<0||whole.getGuiLeft()+whole.getXSize()>s.width))bad.add("the panel ("+whole.getXSize()+" x "+whole.getYSize()+") does not fit the window");
@@ -116,7 +111,7 @@ public final class QaMre {
             var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
     }
 
-    // ---- the station and its screen ---------------------------------------------------------------------------------------------------
+    // The station and its screen
     static MreStationScreen screen(){return mc().screen instanceof MreStationScreen s?s:null;}
     /** Server thread only. */
     static MreStation.StationEntity st(){return (MreStation.StationEntity)sl().getBlockEntity(S());}
@@ -126,15 +121,15 @@ public final class QaMre {
     /** The menu's slot of the player's inventory slot k (9..35 the pack, 0..8 the hotbar). */
     static int invSlot(int k){return k>=9?k:36+k;}
     static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
-    /** As a player does it: pick up the stack in pack slot k, right-click one into station slot target, put the rest back. */
+    /** As a player does it: pick up the stack in pack slot k, right-click one into station slot target */
     static void placeOne(int k,int target){slotClick(invSlot(k),0,ClickType.PICKUP);slotClick(target,1,ClickType.PICKUP);slotClick(invSlot(k),0,ClickType.PICKUP);}
     static void useBlock(BlockPos pos){mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos),Direction.NORTH,pos,false));}
     static void close(){mc().player.closeContainer();}
     static int count(net.minecraft.world.item.Item item){return srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;});}
     static void give(int k,ItemStack s){srv(()->sp().getInventory().setItem(k,s));}
 
-    // ---- what vanilla gives for one food alone: its own FoodData, a bar with room, fed the real item --------------------------------------
-    /** {nutrition, saturation gained}: FoodData.eat(item, stack, player), Forge's path with the stack's own food properties. Server thread. */
+    // What vanilla gives for one food alone: its own FoodData, a bar with room, fed the real item
+    /** {nutrition, saturation gained}: FoodData.eat(item, stack, player) */
     static float[] alone(ItemStack food){
         var fp=food.getFoodProperties(sp());int n=fp.getNutrition();var fd=new FoodData();fd.setFoodLevel(20-n);fd.setSaturation(0);fd.eat(food.getItem(),food,sp());
         return new float[]{fd.getFoodLevel()-(20-n),fd.getSaturationLevel()};
@@ -142,11 +137,11 @@ public final class QaMre {
     /** The exact sums vanilla would give for these foods eaten one at a time, each alone. */
     static MreRules.Totals expected(ItemStack... foods){return srvGet(()->{int n=0;double s=0;for(var f:foods){var a=alone(f);n+=(int)a[0];s+=a[1];}return new MreRules.Totals(n,(float)Math.min(s,20));});}
     static MreRules.Totals output(){return srvGet(()->Mre.totals(st().items.getItem(MreStation.OUTPUT)));}
-    /** The foods one by one through vanilla's FoodData from {food, saturation}: the bar after. Server thread. */
+    /** The foods one by one through vanilla's FoodData from {food, saturation}: the bar after. */
     static float[] oneByOne(int food,float sat,ItemStack... foods){var fd=new FoodData();fd.setFoodLevel(food);fd.setSaturation(sat);for(var f:foods)fd.eat(f.getItem(),f,sp());return new float[]{fd.getFoodLevel(),fd.getSaturationLevel()};}
     static ItemStack suspicious(){var s=new ItemStack(Items.SUSPICIOUS_STEW);net.minecraft.world.item.SuspiciousStewItem.saveMobEffect(s,MobEffects.BLINDNESS,200);return s;}
 
-    // ---- eating by holding the use key, and the server's view of it --------------------------------------------------------------------
+    // Eating by holding the use key, and the server's view of it
     static int eatState,eatWait,eatTicks;static long useStart=-1,useEnd=-1;static int useDuration=-1;static String usedItem="";
     @SubscribeEvent public static void useStart(LivingEntityUseItemEvent.Start e){if(e.getEntity() instanceof ServerPlayer p){useStart=p.serverLevel().getGameTime();useDuration=e.getDuration();usedItem=e.getItem().getItem().toString();}}
     static float[] atFinish={-1,-1};
@@ -162,7 +157,7 @@ public final class QaMre {
     static float[] bar(){return atFinish.clone();}
     /** The hotbar slot 0 holds this; the client selects it. */
     static void inHand(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
-    /** What vanilla's FoodData.eat adds to saturation for this MRE: nutrition x the MRE's modifier x 2 (before the bar's cap). */
+    /** What vanilla's FoodData.eat adds to saturation for this MRE */
     static float got(MreRules.Totals t){return MreRules.saturation(t.nutrition(),MreRules.modifier(t.nutrition(),t.saturation()));}
 
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
@@ -192,7 +187,7 @@ public final class QaMre {
     static int bowlsBefore,bottlesBefore;
 
     static void script(){
-        // ---- a planted beacon (the Home Zone); the player north of where the station goes, facing south --------------------------------------
+        // A planted beacon (the Home Zone); the player north of where the station goes, facing south
         step(5,()->srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
             sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
@@ -210,7 +205,7 @@ public final class QaMre {
         step(10,()->shot("m01_station_world"),"world shot");
         step(5,()->{mc().options.hideGui=false;mc().player.setXRot(10);},"HUD back");
 
-        // ---- the pack: foods, fuel, paper ---------------------------------------------------------------------------------------------
+        // The pack: foods, fuel, paper
         step(5,()->srv(()->{var inv=sp().getInventory();
             inv.setItem(9,new ItemStack(Items.BREAD,16));inv.setItem(10,new ItemStack(Items.APPLE,8));inv.setItem(11,new ItemStack(Items.CARROT,8));inv.setItem(12,new ItemStack(Items.DRIED_KELP,8));
             inv.setItem(13,new ItemStack(Items.COOKED_BEEF,4));inv.setItem(14,new ItemStack(Items.GOLDEN_CARROT,4));inv.setItem(15,new ItemStack(Items.MUSHROOM_STEW));inv.setItem(16,new ItemStack(Items.BEETROOT_SOUP));
@@ -227,13 +222,13 @@ public final class QaMre {
             check("Make is off and Take back is off",screen()!=null&&!screen().make.active&&!screen().takeBack.active,"");
             check("its title, the slots' labels and the totals at 0",screen().getTitle().getString().equals("MRE Station")&&drawnHas("Food")&&drawnHas("Seal")&&drawnHas("Nutrition")&&drawnHas("0 / 20")&&drawnHas("Saturation"),drawnAll());
             shot("m02_screen_empty");},"empty");
-        // ---- refusals: no stone in a food slot, fuel and paper only in their own slots ------------------------------------------------
+        // Refusals: no stone in a food slot, fuel and paper only in their own slots
         step(4,()->placeOne(27,0),"try the stone in a food slot");
         step(4,()->placeOne(28,MreStation.PAPER),"try Marines Fuel in the paper slot");
         step(4,()->placeOne(29,MreStation.FUEL),"try Paper in the fuel slot");
         step(6,()->check("stone, fuel in the paper slot and paper in the fuel slot are all refused",slotS(0).isEmpty()&&slotS(MreStation.PAPER).isEmpty()&&slotS(MreStation.FUEL).isEmpty()&&count(Items.STONE)==1&&count(Items.PAPER)==16&&count(EternalDefense.MARINES_FUEL.get())==19,slots()),"refused");
 
-        // ---- P1: bread, apple, carrot, dried kelp, two of each (two MREs) -----------------------------------------------------------------
+        // P1: bread, apple, carrot, dried kelp, two of each (two MREs)
         step(3,()->{placeOne(9,0);placeOne(9,0);placeOne(10,1);placeOne(10,1);placeOne(11,2);placeOne(11,2);placeOne(12,3);placeOne(12,3);},"two bread, two apples, two carrots, two dried kelp");
         step(3,()->{placeOne(28,MreStation.FUEL);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);placeOne(29,MreStation.PAPER);},"two Marines Fuel, two Paper");
         step(8,()->{P1=expected(new ItemStack(Items.BREAD),new ItemStack(Items.APPLE),new ItemStack(Items.CARROT),new ItemStack(Items.DRIED_KELP));recordFrame=true;},"what vanilla gives for each alone");
@@ -260,7 +255,7 @@ public final class QaMre {
         step(6,()->{var lines=String.join(" / ",screen().getMenu().slots.get(MreStation.OUTPUT).getItem().getTooltipLines(mc().player,net.minecraft.world.item.TooltipFlag.NORMAL).stream().map(c->c.getString()).toList());
             check("the MRE's tooltip: 13 of 20 nutrition, 12.6 saturation, no effects",lines.contains("MRE")&&lines.contains("13 of 20 nutrition, 12.6 saturation")&&lines.contains("Eat it when you are hungry. No effects."),lines);shot("m05_mre_tooltip");},"tooltip");
 
-        // ---- P2: four bread = 20, the cap -------------------------------------------------------------------------------------------------
+        // P2: four bread = 20, the cap
         step(3,()->{placeOne(9,0);placeOne(9,1);placeOne(9,2);placeOne(9,3);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"four bread (20 nutrition), fuel, paper");
         step(6,()->{P2=expected(new ItemStack(Items.BREAD),new ItemStack(Items.BREAD),new ItemStack(Items.BREAD),new ItemStack(Items.BREAD));
             check("four bread make exactly 20 nutrition: allowed",srvGet(()->MreStation.check(st().items,sp()).totals().nutrition())==20,slots());},"20");
@@ -271,7 +266,7 @@ public final class QaMre {
         step(4,()->recordFrame=true,"record a frame");
         step(4,()->{check("the bar shows the would-be total in red: Nutrition 24 / 20",drawnHas("24 / 20"),drawnAll());shot("m06_over_twenty");},"preview");
         step(3,()->{
-            // a cheating client: it claims the apple went into slot 4 and its cursor is empty
+            // A cheating client: it claims the apple went into slot 4 and its cursor is empty
             var p=mc().player;var menu=p.containerMenu;var changed=new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemStack>();changed.put(4,new ItemStack(Items.APPLE));
             mc().getConnection().send(new net.minecraft.network.protocol.game.ServerboundContainerClickPacket(menu.containerId,menu.getStateId(),4,0,ClickType.PICKUP,ItemStack.EMPTY,changed));},"a cheating click packet: 'the apple is in slot 5'");
         step(8,()->{
@@ -293,7 +288,7 @@ public final class QaMre {
         step(3,()->{var k=srvGet(()->{for(int i=0;i<36;i++)if(sp().getInventory().getItem(i).is(EternalDefense.MRE.get()))return i;return -1;});placeOne(k,0);},"try an MRE in a food slot");
         step(6,()->check("an MRE does not go into an MRE",slotS(0).isEmpty()&&count(EternalDefense.MRE.get())==3,slots()),"refused");
 
-        // ---- P3: mushroom stew, honey, suspicious stew, spider eye = 20; the bowls and the bottle come back --------------------------------
+        // P3: mushroom stew, honey, suspicious stew, spider eye = 20; the bowls and the bottle come back
         step(3,()->{placeOne(15,0);placeOne(17,1);placeOne(18,2);placeOne(19,3);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);
             bowlsBefore=count(Items.BOWL);bottlesBefore=count(Items.GLASS_BOTTLE);},"mushroom stew, honey bottle, suspicious stew (Blindness), spider eye");
         step(6,()->{P3=expected(new ItemStack(Items.MUSHROOM_STEW),new ItemStack(Items.HONEY_BOTTLE),suspicious(),new ItemStack(Items.SPIDER_EYE));click(screen().make);},"Make");
@@ -304,14 +299,14 @@ public final class QaMre {
         step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"into the pack");
         step(4,()->mre3=srvGet(()->{for(var s:sp().getInventory().items)if(P3.equals(Mre.totals(s)))return s.copy();return ItemStack.EMPTY;}),"found");
 
-        // ---- P4: golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish, chorus fruit = 19 --------------------------------
+        // P4: golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish, chorus fruit = 19
         step(3,()->{placeOne(20,0);placeOne(21,1);placeOne(22,2);placeOne(23,3);placeOne(24,4);placeOne(25,5);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"six foods with effects");
         step(6,()->{P4=expected(new ItemStack(Items.GOLDEN_APPLE),new ItemStack(Items.ENCHANTED_GOLDEN_APPLE),new ItemStack(Items.ROTTEN_FLESH),new ItemStack(Items.CHICKEN),new ItemStack(Items.PUFFERFISH),new ItemStack(Items.CHORUS_FRUIT));click(screen().make);},"Make");
         step(8,()->check("six foods: vanilla's exact sums (19 nutrition, 23.8 saturation stored as 20)",P4.equals(output())&&P4.nutrition()==19&&P4.saturation()==20f,output()+" vs "+P4),"made");
         step(3,()->slotClick(MreStation.OUTPUT,0,ClickType.QUICK_MOVE),"into the pack");
         step(4,()->mre4=srvGet(()->{for(var s:sp().getInventory().items)if(P4.equals(Mre.totals(s)))return s.copy();return ItemStack.EMPTY;}),"found");
 
-        // ---- an overflow put in behind the screen's back: the server counts again on Make --------------------------------------------------
+        // An overflow put in behind the screen's back: the server counts again on Make
         step(3,()->{placeOne(9,0);placeOne(9,1);placeOne(9,2);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"three bread (15)");
         step(5,()->srv(()->st().items.setItem(3,new ItemStack(Items.COOKED_BEEF))),"a cooked beef (8) set straight into slot 4 on the server, past the slot's check");
         step(6,()->{recordFrame=true;},"frame");
@@ -320,13 +315,13 @@ public final class QaMre {
         step(4,()->{BAR.clear();click(screen().takeBack);},"press Take back");
         step(8,()->{boolean empty=true;for(int i=0;i<MreStation.SLOTS;i++)empty&=slotS(i).isEmpty();
             check("Take back empties the station into the pack",empty&&count(Items.COOKED_BEEF)==5&&barHas("Took back 6 items."),slots()+" / "+String.join(" | ",BAR));},"taken back");
-        // ---- no paper: Make is off and says so ---------------------------------------------------------------------------------------------
+        // No paper: Make is off and says so
         step(3,()->{placeOne(9,0);placeOne(28,MreStation.FUEL);},"bread and fuel, no paper");
         step(6,()->recordFrame=true,"frame");
         step(3,()->{check("without paper: 'Add Paper.', Make off",drawnHas("Add Paper.")&&!screen().make.active,drawnAll());BeaconNetwork.menuButton(screen().getMenu().containerId,MreStation.StationMenu.MAKE);},"Make sent anyway");
         step(6,()->check("the server makes nothing without paper",slotS(0).getCount()==1&&slotS(MreStation.FUEL).getCount()==1&&slotS(MreStation.OUTPUT).isEmpty(),slots()),"refused");
         step(3,()->click(screen().takeBack),"Take back");
-        // ---- a full pack: the bowl drops at the player's feet --------------------------------------------------------------------------------
+        // A full pack: the bowl drops at the player's feet
         step(3,()->{placeOne(16,0);placeOne(28,MreStation.FUEL);placeOne(29,MreStation.PAPER);},"beetroot soup, fuel, paper");
         step(5,()->srv(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(inv.getItem(i).isEmpty()||inv.getItem(i).is(Items.BOWL))inv.setItem(i,new ItemStack(Items.COBBLESTONE,64));}),"fill every free slot of the pack (no bowl stack with room either)");
         step(5,()->{bowlsBefore=count(Items.BOWL);click(screen().make);},"Make");
@@ -335,8 +330,7 @@ public final class QaMre {
         step(5,()->srv(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(inv.getItem(i).is(Items.COBBLESTONE))inv.setItem(i,ItemStack.EMPTY);for(var ie:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,sp().getBoundingBox().inflate(4)))ie.discard();}),"clear the cobblestone");
         step(5,()->close(),"close the screen");
 
-        // ---- eating in survival -------------------------------------------------------------------------------------------------------------
-        // E1: P1 (13, 12.6) with room on the bar: all of it lands, in 16 ticks, exactly as the four foods one by one
+        // Eating in survival
         step(3,()->{hungry(7,0);inHand(mre1.copyWithCount(2));bowlsBefore=count(Items.BOWL);},"E1: the two P1 MREs in hand, the food bar at 7");
         step(10,()->{},"sync");
         step(1,QaMre::holdUse,"E1: hold the use key");
@@ -375,7 +369,7 @@ public final class QaMre {
             check("E4: eaten, the bar 1 -> 20, saturation the stored 20 (vanilla's cap is the bar)",useEnd>0&&b[0]==20&&b[1]==Math.min(got(P4),20f)&&Math.abs(b[1]-20f)<=Math.ulp(20f),b[0]+" / "+b[1]);
             check("E4: no effects at all (golden apple, enchanted golden apple, rotten flesh, raw chicken, pufferfish)",srvGet(()->sp().getActiveEffects().isEmpty()),srvGet(()->sp().getActiveEffects().toString()));
             check("E4: no chorus fruit teleport",srvGet(()->sp().position().distanceTo(where[0])<.01),srvGet(()->sp().position().toString())+" vs "+where[0]);},"E4");
-        // E5: P3 with Poison on: the honey does not cure it, no Blindness from the stew, no more poison from the spider eye
+        // E5: P3 with Poison on: the honey does not cure it, no Blindness from the stew
         step(3,()->{hungry(0,0);inHand(mre3.copy());srv(()->{sp().removeAllEffects();sp().addEffect(new MobEffectInstance(MobEffects.POISON,1200,0));});bowlsBefore=count(Items.BOWL);bottlesBefore=count(Items.GLASS_BOTTLE);},"E5: Poison on, the P3 MRE, an empty bar");
         step(10,()->{},"sync");
         step(1,QaMre::holdUse,"E5: hold the use key");
@@ -400,7 +394,7 @@ public final class QaMre {
         until("kelp eaten",80,()->eatState==0,()->{});
         step(3,()->check("an MRE takes as long as vanilla's dried kelp (16 ticks): "+mreTime[0]+" vs "+(useEnd-useStart),useDuration==16&&mreTime[0]==useEnd-useStart,mreTime[0]+" vs "+(useEnd-useStart)),"time");
 
-        // ---- Marines Fuel's recipe, in this edition's data ------------------------------------------------------------------------------------
+        // Marines Fuel's recipe, in this edition's data
         step(5,()->{
             var result=srvGet(()->{
                 var grid=new net.minecraft.world.inventory.TransientCraftingContainer(sp().inventoryMenu,2,2);grid.setItem(0,new ItemStack(Items.CLAY_BALL));grid.setItem(3,new ItemStack(Items.LIME_DYE));
@@ -413,7 +407,7 @@ public final class QaMre {
             check("any dye, anywhere in the grid (shapeless): black dye too",other.is(EternalDefense.MARINES_FUEL.get())&&other.getCount()==2,other.toString());
             check("Marines Fuel is not food and stacks to 64",!new ItemStack(EternalDefense.MARINES_FUEL.get()).isEdible()&&new ItemStack(EternalDefense.MARINES_FUEL.get()).getMaxStackSize()==64,"");},"recipe");
 
-        // ---- Workshop Fabrication: the 8th Kitchen card, bought with this edition's price -----------------------------------------------------
+        // Workshop Fabrication: the 8th Kitchen card, bought with this edition's price
         step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();
             inv.add(new ItemStack(false?EternalDefense.ARDENT_ENERGY.get():EternalDefense.PLATING.get(),4));inv.add(new ItemStack(Items.IRON_INGOT,8));inv.add(new ItemStack(Items.SMOKER));}),"the price in the pack");
         step(5,()->{var msg=srvGet(()->WorkshopFabrication.buy(sp(),"mre_maker"));
@@ -428,14 +422,14 @@ public final class QaMre {
             check("the MRE Station is the Kitchen group's 8th card: right column, bottom row",ok,"mre "+buttons.get(at).getX()+","+buttons.get(at).getY()+" cup "+buttons.get(cup).getX()+","+buttons.get(cup).getY());
             shot("m07_workshop");},"workshop");
         step(5,()->mc().setScreen(null),"close");
-        // ---- the Field Guide -------------------------------------------------------------------------------------------------------------
+        // The Field Guide
         step(5,()->{var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
         step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("mre");g.scroll=0;}},"the MRE page");
         step(30,()->{check("the Field Guide has the MRE page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("mre"),"");shot("m08_guide_mre");},"guide");
         step(5,()->{if(mc().screen instanceof BeaconClient.GuideScreen g)g.scroll=200;},"scroll");
         step(20,()->shot("m09_guide_mre_more"),"guide 2");
         step(5,()->mc().setScreen(null),"close");
-        // ---- breaking the station drops it and what it holds ---------------------------------------------------------------------------------
+        // Breaking the station drops it and what it holds
         step(5,()->srv(()->{st().items.setItem(0,new ItemStack(Items.BREAD,3));st().items.setItem(MreStation.PAPER,new ItemStack(Items.PAPER,5));}),"three bread and five paper inside");
         step(5,()->srv(()->sl().destroyBlock(S(),true)),"break it");
         step(10,()->{

@@ -4,12 +4,12 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The owner's 0.0.37 notes: bowls and Paper Cups are used up at the pots; an endless home effect that another mod keeps taking away stops blinking. */
+/** The notes: bowls and Paper Cups are used up at the pots */
 final class Round0037Test {
     static String source(String name) throws Exception{return Round0035Test.source(name);}
     static String body(String src,String from,String to){return Round0036Test.body(src,from,to);}
 
-    // ---- bowls and cups are a sink ---------------------------------------------------------------------------------------------------
+    // Bowls and cups are a sink
     @Test void eatingAndDrinkingAtThePotsUseUpTheBowlAndTheCup() throws Exception{
         var cook=body(source("CookPot.java"),"void use(ServerPlayer p,InteractionHand hand){","@Override protected void saveAdditional");
         assertTrue(cook.contains("PlayerMeals.eat(p,stew);")&&cook.indexOf("PlayerMeals.eat(p,stew);")<cook.indexOf("if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);"),"the bowl is used up after the serving is eaten");
@@ -28,7 +28,7 @@ final class Round0037Test {
         assertTrue(t.apply("guide.kitchen.body").contains("The bowl is used up.")&&t.apply("guide.drinks.body").contains("The cup is used up"));
     }
 
-    // ---- an endless home effect that something keeps taking away ----------------------------------------------------------------------
+    // An endless home effect that something keeps taking away
     @Test void twoLossesWithinHalfAMinuteSwitchToTheLongTimer(){
         var times=new ArrayDeque<Long>();
         assertFalse(EndlessEffects.trips(times,100),"one loss is not enough (a totem, a one-off)");

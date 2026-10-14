@@ -45,23 +45,7 @@ import java.io.File;
 import java.util.*;
 import java.util.function.Supplier;
 
-/**
- * QA ONLY (never part of a release; compiled in the Create compat source set of a QA copy made with QA_CREATE=1): the Logistics Center Hub
- * with Create 6.0.8 itself running, in the pack edition. Builds and runs, with Create's own machines:
- * <ol>
- * <li>a production line that makes one of our materials, Resonance Coils (the pack's heated mixing recipe, mirrored as a datapack recipe):
- *     a creative motor, a mechanical mixer, a basin on a fuelled blaze burner; the basin spills onto a belt and the belt runs straight into
- *     the Hub (no funnel);</li>
- * <li>a belt ending at an andesite funnel on the Hub's face (the belt sunk in the ground, so the funnel is the only way in);</li>
- * <li>an extraction line: a brass funnel under the Hub with an item filter (diamonds), then an attribute filter (food), into a chute and
- *     an item vault;</li>
- * <li>a chute and a smart chute (with a filter) feeding the Hub from above;</li>
- * <li>two mechanical arms: one puts items from a depot into the Hub, one takes items out of the Hub onto a second depot (arms have no chest point);</li>
- * <li>an item vault standing against the Hub;</li>
- * <li>Create's own item helper (what funnels and arms call) on a full Hub, timed.</li>
- * </ol>
- * Results: QA_CHECK lines, QA_SHOT, QA_DONE.
- */
+/** 0.8 itself running, in the pack edition. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaHubCreate {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -84,7 +68,7 @@ public final class QaHubCreate {
     }
     static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
 
-    // ---- Create's blocks, by name (so nothing here depends on Create's registration helpers) -----------------------------------------------------
+    // Create's blocks, by name (so nothing here depends on Create's registration helpers)
     static Block create(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation("create",id));}
     static Item createItem(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation("create",id));}
     @SuppressWarnings({"unchecked","rawtypes"})
@@ -98,7 +82,7 @@ public final class QaHubCreate {
     static int total(IItemHandler h){int n=0;if(h!=null)for(int i=0;i<h.getSlots();i++)n+=h.getStackInSlot(i).getCount();return n;}
     static String contents(IItemHandler h){var m=new TreeMap<String,Integer>();if(h!=null)for(int i=0;i<h.getSlots();i++){var s=h.getStackInSlot(i);if(!s.isEmpty())m.merge(BuiltInRegistries.ITEM.getKey(s.getItem()).getPath(),s.getCount(),Integer::sum);}return m.toString();}
     static void insert(IItemHandler h,ItemStack s){if(h!=null){var rest=ItemHandlerHelper.insertItemStacked(h,s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}}
-    /** A creative motor at {@code pos} turning toward {@code facing} at {@code rpm}. */
+    /** A creative motor at pos turning toward facing at rpm. */
     static void motor(BlockPos pos,Direction facing,int rpm){
         put(pos,with(create("creative_motor").defaultBlockState(),"facing",facing.getName()));
         if(sl().getBlockEntity(pos) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(rpm);else log("QA_NOTE no motor entity at {}",pos);
@@ -109,10 +93,10 @@ public final class QaHubCreate {
     /** HA: the Hub's anchor (its bottom layer on the ground); B: the beacon. */
     static BlockPos HA,B;
     static void places(){HA=new BlockPos(sx+2000,sy+1,sz);B=HA.offset(0,-1,-16);}
-    // the coil line: burner and basin west of the Hub, the belt on the ground running east into the Hub's west face
+    // The coil line: burner and basin west of the Hub, the belt on the ground running east into the Hub's west face
     static BlockPos burner(){return HA.offset(-9,-1,0);}static BlockPos basin(){return HA.offset(-9,0,0);}static BlockPos mixer(){return HA.offset(-9,2,0);}
     static BlockPos beltStart(){return HA.offset(-8,-1,0);}static BlockPos beltEnd(){return HA.offset(-2,-1,0);}
-    // the extraction line: a brass funnel in the ground under the Hub's middle, a chute and a vault below it
+    // The extraction line: a brass funnel in the ground under the Hub's middle, a chute and a vault below it
     static BlockPos funnel(){return HA.offset(0,-2,0);}static BlockPos chute(){return HA.offset(0,-3,0);}static BlockPos vault(){return HA.offset(0,-4,0);}
 
     static boolean reloading;
@@ -142,7 +126,7 @@ public final class QaHubCreate {
     static void script(){
         step(60,()->{srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
-            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sp().getInventory().clearContent();sp().teleportTo(sl(),HA.getX()-4.5,sy,HA.getZ()-9.5,0,20);});   /* the starting kit's beacon would draw its ghost in every shot */
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sp().getInventory().clearContent();sp().teleportTo(sl(),HA.getX()-4.5,sy,HA.getZ()-9.5,0,20);});   /* The starting kit's beacon would draw its ghost in every shot */
             mc().options.cloudStatus().set(CloudStatus.OFF);},"go to the factory site, 2000 blocks out");
         until("the site is loaded",200,()->srvGet(()->sl().hasChunkAt(HA)&&sl().hasChunkAt(B)&&sl().hasChunkAt(burner())),()->{});
         step(20,()->srv(()->{
@@ -155,7 +139,7 @@ public final class QaHubCreate {
             check("with Create loaded, the 26 parts are the Create-aware ones (belts can deliver to them)",r.equals("26"),r);
             check("the mechanical arm knows the Hub (its interaction point type is registered)",srvGet(()->com.simibubi.create.api.registry.CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE.get(new ResourceLocation(EternalDefense.ID,"logistics_hub"))!=null),"");},"Create-aware parts");
 
-        // ---- 1. the coil line: mixer, basin, blaze burner, belt straight into the Hub ---------------------------------------------------------
+        // 1.
         step(10,()->srv(()->{
             put(burner(),with(create("blaze_burner").defaultBlockState(),"blaze","smouldering"));/* "none" is the empty burner: no blaze, no block entity */put(basin(),create("basin").defaultBlockState());
             put(mixer(),create("mechanical_mixer").defaultBlockState());
@@ -185,8 +169,7 @@ public final class QaHubCreate {
             check("nothing fell off the belt's end",srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(beltEnd()).inflate(3)).isEmpty()),"");
             shot("create01_coil_line");},"coils delivered");
 
-        // ---- 1b. a belt ending at a funnel: the belt sunk one block into the ground, its last segment under an andesite funnel on the Hub's south face.
-        // The belt's own end runs into the ground, not the Hub, so the funnel is the only way in.
+        // 1b.
         final BlockPos fStart=HA.offset(0,-2,8),fEnd=HA.offset(0,-2,2),fFunnel=HA.offset(0,-1,2);
         step(10,()->srv(()->{
             put(fStart,with(create("shaft").defaultBlockState(),"axis","x"));put(fEnd,with(create("shaft").defaultBlockState(),"axis","x"));
@@ -208,12 +191,12 @@ public final class QaHubCreate {
             tp(HA.getX()+4.5,sy+2,HA.getZ()+8.5,150,30);},"funnel line");
         step(20,()->shot("create04_funnel_line"),"the funnel line");
 
-        // ---- 2. extraction: a brass funnel under the Hub with an item filter, then an attribute filter, into a chute and a vault ---------------------
+        // 2.
         step(10,()->srv(()->{
             var h=hub(HA);h.storage.insert(new ItemStack(Items.DIAMOND,64),false);h.storage.insert(new ItemStack(Items.COBBLESTONE,64),false);h.storage.insert(new ItemStack(Items.BREAD,32),false);
             put(vault(),create("item_vault").defaultBlockState());put(chute(),create("chute").defaultBlockState());
             put(funnel(),with(with(with(create("brass_funnel").defaultBlockState(),"facing","down"),"extracting","true"),"powered","false"));
-            // the filter goes on before the funnel's first tick, as a player sets it before the funnel has run
+            // The filter goes on before the funnel's first tick, as a player sets it before the funnel has run
             var f=BlockEntityBehaviour.get(sl().getBlockEntity(funnel()),FilteringBehaviour.TYPE);note=f==null?"no filter slot":"filter set "+f.setFilter(new ItemStack(Items.DIAMOND));}),"64 diamonds, 64 cobblestone, 32 bread in the Hub; a brass funnel under it (filter: diamonds), a chute and an item vault below");
         until("the diamonds reach the vault",600,()->srvGet(()->count(handler(vault(),Direction.UP),Items.DIAMOND)>=64),()->{});
         step(5,()->{
@@ -228,8 +211,8 @@ public final class QaHubCreate {
             check("with an attribute filter (food) it pulls the bread and leaves the cobblestone and the coils",srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)==32&&inHub(Items.BREAD)==0&&inHub(Items.COBBLESTONE)==64&&inHub(EternalDefense.COIL.get())==8),r+" / "+note);
             srv(()->put(funnel(),Blocks.GRASS_BLOCK.defaultBlockState()));},"attribute filter");
 
-        // ---- 3. a chute and a smart chute (filtered) feeding the Hub from above ----------------------------------------------------------------
-        step(10,()->srv(()->{put(HA.offset(0,2,0),create("chute").defaultBlockState());put(HA.offset(1,2,0),with(create("smart_chute").defaultBlockState(),"powered","false"));/* set down by hand it is unpowered */}),"a chute and a smart chute on top of the Hub");
+        // 3.
+        step(10,()->srv(()->{put(HA.offset(0,2,0),create("chute").defaultBlockState());put(HA.offset(1,2,0),with(create("smart_chute").defaultBlockState(),"powered","false"));/* Set down by hand it is unpowered */}),"a chute and a smart chute on top of the Hub");
         step(10,()->srv(()->{
             var f=BlockEntityBehaviour.get(sl().getBlockEntity(HA.offset(1,2,0)),FilteringBehaviour.TYPE);boolean set=f!=null&&f.setFilter(new ItemStack(Items.IRON_INGOT));
             insert(handler(HA.offset(0,2,0),Direction.UP),new ItemStack(Items.REDSTONE,16));
@@ -238,7 +221,7 @@ public final class QaHubCreate {
         step(5,()->check("a chute and a filtered smart chute feed the Hub from above (16 redstone, 16 iron); the smart chute refuses what its filter does not pass",
             srvGet(()->inHub(Items.REDSTONE)==16&&inHub(Items.IRON_INGOT)==16)&&note.endsWith("false"),srvGet(()->inHub(Items.REDSTONE)+" redstone, "+inHub(Items.IRON_INGOT)+" iron")+" / "+note),"chutes");
 
-        // ---- 4. mechanical arms: depot -> Hub, Hub -> depot --------------------------------------------------------------------------------------
+        // 4.
         final BlockPos arm1=HA.offset(-1,-1,-3),arm2=HA.offset(1,-1,-3),cog=HA.offset(0,-1,-3),depot=arm1.west(),chest=arm2.east();/* "chest": a second depot (arms have no chest point) */
         step(10,()->srv(()->{
             for(var p:new BlockPos[]{HA.offset(0,2,0),HA.offset(1,2,0)})put(p,Blocks.AIR.defaultBlockState());
@@ -260,13 +243,13 @@ public final class QaHubCreate {
             tp(HA.getX()+.5,sy+2,HA.getZ()-8.5,0,20);},"arms");
         step(20,()->{shot("create02_arms");srv(()->{for(var p:new BlockPos[]{arm1,arm2,cog,cog.above(),depot,chest})put(p,Blocks.AIR.defaultBlockState());});},"remove the arms");
 
-        // ---- 5. an item vault standing against the Hub ------------------------------------------------------------------------------------------------
+        // 5.
         final BlockPos side=HA.offset(2,-1,0);
         step(10,()->srv(()->{put(side,create("item_vault").defaultBlockState());insert(handler(side,Direction.UP),new ItemStack(Items.EMERALD,20));}),"an item vault against the Hub's east face, 20 emeralds in it");
         step(20,()->check("the vault keeps its own inventory and the Hub its own (they do not merge), the Hub's 27 blocks stand",
             srvGet(()->count(handler(side,Direction.UP),Items.EMERALD)==20&&inHub(Items.EMERALD)==0&&count(handler(HA.offset(1,-1,0),Direction.EAST),Items.EMERALD)==0&&handler(HA.offset(1,-1,0),Direction.EAST).getSlots()==HubStorage.SLOTS),""),"vault beside");
 
-        // ---- 6. Create's item helper on a full Hub (what funnels, chutes and arms call) ---------------------------------------------------------------
+        // 6.
         step(5,()->{
             String r=srvGet(()->{var s=new HubStorage();s.insert(new ItemStack(Items.COBBLESTONE,64*269),false);s.insert(new ItemStack(Items.DIAMOND,64),false);
                 long t0=System.nanoTime();int ok=0;for(int i=0;i<2000;i++)if(!ItemHelper.extract(s,st->st.is(Items.DIAMOND),ItemHelper.ExtractionCountMode.UPTO,64,true).isEmpty())ok++;

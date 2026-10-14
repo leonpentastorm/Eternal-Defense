@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 0.0.19: the fire support radio answers a flare instead of the siren; the falling round's sound (the 0.0.16 whistle in 0.0.19, the incoming sound again in 0.0.20). */
+/** The fire support radio answers a flare instead of the siren; the falling round's sound. */
 final class RadioAndWhistleTest {
     @Test void theRadioLinesAreShippedAndTheSirenIsGone() throws Exception{
         var sounds=json("/assets/eternal_defense/sounds.json");var lang=json("/assets/eternal_defense/lang/en_us.json");
@@ -43,7 +43,7 @@ final class RadioAndWhistleTest {
         assertEquals(3,SupportChatter.lines(SupportCalls.Kind.RETURN).length,"0.0.22: a return flare gets the owner's three recall lines");
         assertEquals(7,SupportChatter.pick(new int[]{7},7,3),"a single line may repeat");
     }
-    /** 0.0.20: the owner asked for the 0.0.18 incoming sound again; the 0.0.19 whistle was lost whenever its round left the player's view. */
+    /** The incoming whistle stays audible while its round is out of view. */
     @Test void theIncomingSoundIsBackAndPlaysWhereTheRoundLands() throws Exception{
         var sounds=json("/assets/eternal_defense/sounds.json");
         assertTrue(sounds.has("ordnance.incoming"),"the incoming sound is registered");
@@ -54,7 +54,7 @@ final class RadioAndWhistleTest {
         assertFalse(OrdnanceClient.incomingDue(0));assertTrue(OrdnanceClient.incomingDue(1),"played the first tick a client sees the round");
         assertTrue(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK));assertFalse(OrdnanceClient.incomingDue(OrdnanceClient.INCOMING_LATEST_TICK+1),"too late: it would end after the impact");
     }
-    /** 0.0.41: one radio line at a time per player; spamming flares or seller orders adds no second voice. */
+    /** One radio line at a time per player; spamming flares or seller orders adds no second voice. */
     @Test void theRadioWaitsForTheLineThatIsPlaying() throws Exception{
         for(var kind:SupportCalls.Kind.values())for(int n:SupportChatter.lines(kind)){
             double seconds=HandTunedRoundTest.ogg("/assets/eternal_defense/sounds/sfx/"+SupportChatter.event(kind,n).substring("flare.".length())+".ogg").seconds();

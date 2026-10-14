@@ -26,11 +26,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.File;
 import java.util.*;
 
-/**
- * QA ONLY (never part of a release): boots a flat world on the real client, opens the Field Guide the way a player does, pages through every
- * page (scrolling each one to its end) and takes a screenshot per screen, then repeats a few pages at a larger GUI scale and opens the plant
- * confirmation. Copied into a throwaway tree by tools/qa/setup-qa.sh.
- */
+/** Copied into a throwaway tree by tools/qa/setup-qa.sh. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaGuide {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
@@ -45,10 +41,7 @@ public final class QaGuide {
     static void srv(Runnable r){server().execute(r);}
     static <T> T srvGet(java.util.function.Supplier<T> s){return server().submit(s).join();}
     static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;com.mojang.logging.LogUtils.getLogger().info("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
-    /**
-     * The software renderer is slower than the game tick, so a screenshot is taken a few finished frames after it was asked for, and the
-     * script waits for it, so the picture shows the state the step just set up.
-     */
+    /** The software renderer is slower than the game tick */
     static int frames,due;static boolean holding;static String pendingShot="";
     static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
     @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
@@ -123,7 +116,7 @@ public final class QaGuide {
     static BeaconClient.GuideScreen guide(){return mc().screen instanceof BeaconClient.GuideScreen g?g:null;}
     static void key(int code){mc().screen.keyPressed(code,0,0);}
 
-    /** The side menu has an entry per page, stays inside the panel, never overlaps itself and leaves the page column alone. */
+    /** The side menu has an entry per page, stays inside the panel */
     static void menu(String label){
         var g=guide();var rows=g.nav;boolean inside=true,overlap=false;int right=0,backX=-1;
         for(var b:rows){inside&=b.getX()>=g.left&&b.getY()>=g.top&&b.getX()+b.getWidth()<=g.left+g.pw&&b.getY()+b.getHeight()<=g.top+g.ph-8;right=Math.max(right,b.getX()+b.getWidth());}
@@ -154,7 +147,7 @@ public final class QaGuide {
         step(3,()->menu("scale 3"),"menu geometry at scale 3");
         pages("g");
         step(3,()->{var g=guide();check("the last page is the Reference",g.page==GuideText.IDS.length-1,"page="+g.page);},"at the end");
-        // a larger window shows the page list on the left
+        // A larger window shows the page list on the left
         step(3,()->{mc().options.guiScale().set(2);mc().resizeDisplay();},"GUI scale 2");
         step(10,()->{menu("scale 2");var g=guide();g.page=0;g.scroll=0;shot("w01_start_scale2");},"scale 2: start");
         step(3,()->{var g=guide();for(var c:g.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().contains(Ui.plain("guide.gear.title"))){click(b);break;}},"click the Gun Guide entry in the list");

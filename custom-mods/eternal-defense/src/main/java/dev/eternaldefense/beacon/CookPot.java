@@ -44,7 +44,7 @@ final class CookPot {
         }
         boolean empty(){return stew==null||servings<=0;}
         boolean fill(MessHall.HallEntity hall,MealData meal,int count){return fill(hall,meal,count,false);}
-        /** {@code replace}: the cook confirmed that the stew still in the pot is thrown away. */
+        /** Replace: the cook confirmed that the stew still in the pot is thrown away. */
         boolean fill(MessHall.HallEntity hall,MealData meal,int count,boolean replace){if(!(replace||empty())||!belongs(hall)||validLink()!=hall||!meal.stew())return false;stew=meal;servings=count;changed();return true;}
         void changed(){setChanged();if(level!=null&&!level.isClientSide)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         void use(ServerPlayer p,InteractionHand hand){
@@ -53,7 +53,7 @@ final class CookPot {
             if(!p.getItemInHand(hand).is(Items.BOWL)){p.sendSystemMessage(empty()?Component.translatable("gui.eternal_defense.kitchen.pot_empty"):Component.translatable("gui.eternal_defense.kitchen.pot_status",stew.name(),servings));if(!empty())for(var b:stew.bonuses())p.sendSystemMessage(b.description(false));if(hall==null)p.sendSystemMessage(Component.translatable("gui.eternal_defense.kitchen.no_hall"));return;}
             if(hall==null||BaseZone.problem(level,hall.getBlockPos())!=null){p.displayClientMessage(Component.translatable("gui.eternal_defense.kitchen.no_hall"),true);return;}
             if(empty()){p.displayClientMessage(Component.translatable("gui.eternal_defense.kitchen.pot_empty"),true);return;}
-            // Direct serving consumes the stew immediately; the bowl is used up (0.0.37, owner: a sink for bowls; creative keeps it, as vanilla).
+            // Direct serving consumes the stew immediately; the bowl is used up.
             PlayerMeals.eat(p,stew);p.getFoodData().eat(10,.8f);servings--;if(servings==0)stew=null;changed();
             if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);
             p.displayClientMessage(Component.translatable("gui.eternal_defense.kitchen.served",servings),true);

@@ -30,22 +30,17 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 
-/**
- * The Command Table and the Satellite Beacon (0.0.20), the owner's models. Both live only inside the beacon zone, one of each per base, and move
- * for free with the Recovery Shovel. The table is 2 wide, 2 tall and 2 deep: its anchor is the front right block (seen from the front), the
- * model reaching to the left ({@code facing.getClockWise()}) and to the back; the seven other blocks are invisible structure parts. The satellite
- * is 1 x 2 x 1 like the Exchange Shop. The uplink between them is worked out when it is needed ({@link Hunts#uplink}), never saved.
- */
+/** The Command Table and the Satellite Beacon, the models. */
 final class TacticalBlocks {
     private TacticalBlocks(){}
     static final DirectionProperty FACING=HorizontalDirectionalBlock.FACING;
-    /** Satellite level I to III; one model for now, so per-level models can be dropped in later through the blockstate file. */
+    /** Satellite level I to III; one model for now, so per-level models can be dropped in later through */
     static final IntegerProperty MK=IntegerProperty.create("mk",1,TacticalRules.MAX_MK);
     /** The table's footprint, from its anchor: 2 wide (clockwise of the facing), 2 deep (behind), 2 tall. */
     static final int TABLE_WIDE=2,TABLE_DEEP=2,TABLE_TALL=2;
 
     static final class TableBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
-        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        /** Its moving parts are drawn through a data-less block entity (AnimatedParts). */
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         TableBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->7).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING);}
@@ -66,11 +61,11 @@ final class TacticalBlocks {
     }
 
     static final class SatelliteBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
-        /** 0.0.39: its moving parts are drawn through a data-less block entity (AnimatedParts). */
+        /** Its moving parts are drawn through a data-less block entity (AnimatedParts). */
         @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AnimatedParts.PartsEntity(pos,state);}
         SatelliteBlock(){super(Properties.of().strength(3,6).noOcclusion().lightLevel(s->4).sound(SoundType.METAL));registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(MK,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,MK);}
-        /** The Mk comes from the server's record of the base ({@link HuntData#satelliteMk}), never from the item. */
+        /** The Mk comes from the server's record of the base (HuntData.satelliteMk), never from the item. */
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){
             int mk=c.getLevel() instanceof ServerLevel server?TacticalRules.mk(HuntData.get(server).satelliteMk):1;
             return defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite()).setValue(MK,mk);
@@ -118,10 +113,7 @@ final class TacticalBlocks {
         }
     }
 
-    /**
-     * The table's menu: no slots. The board travels in the opening buffer; Accept, Abandon, Upgrade, Scan and Reprint are vanilla menu
-     * buttons ({@link #clickMenuButton}), each checked again on the server ({@link Hunts#button}).
-     */
+    /** The table's menu: no slots. */
     static final class TableMenu extends AbstractContainerMenu {
         final BlockPos pos;final CompoundTag data;
         TableMenu(int id,Inventory inv,BlockPos pos,CompoundTag data){super(EternalDefense.TABLE_MENU.get(),id);this.pos=pos;this.data=data;}

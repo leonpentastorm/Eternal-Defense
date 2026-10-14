@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Supplier;
 
-/** Independently upgraded, bounded workstations. Recipes, upgrades and inventory mutations are server-owned. */
+/** Independently upgraded, bounded workstations. */
 public final class WeaponPlatform {
     static final IntegerProperty AGE=IntegerProperty.create("age",1,5);
     static final String[] AGES={"","Frontier","World Wars","Modern","Advanced","Exotic"};
@@ -141,7 +141,7 @@ public final class WeaponPlatform {
             try{
                 ItemStack output=(ItemStack)recipe.getClass().getMethod("getOutput").invoke(recipe);
                 if(output.isEmpty()||!validIndex(output)||!WeaponCompatibility.craftable(output))continue;
-                if(MagazineBridge.isMagazine(output)){if(kind.equals("ammo"))magazines.add(new Object[]{id,recipe,output});continue;}   // after the rounds: a magazine's Age looks at theirs
+                if(MagazineBridge.isMagazine(output)){if(kind.equals("ammo"))magazines.add(new Object[]{id,recipe,output});continue;}   // After the rounds: a magazine's Age looks at theirs
                 Gate gate=catalogue().get(id.toString());
                 if(gate==null){var tag=output.getOrCreateTag();String type=tag.contains("GunId")?"gun":tag.contains("AmmoId")?"ammo":"attachment";
                     String indexed=tag.getString(type.equals("gun")?"GunId":type.equals("ammo")?"AmmoId":"AttachmentId");gate=new Gate(5,type,indexed.isEmpty()?id.toString():indexed);}
@@ -150,7 +150,7 @@ public final class WeaponPlatform {
             }catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",id,e);}
         }
         if(kind.equals("ammo")){
-            // 0.0.42 (owner): a magazine is listed no later than the rounds it holds, as the table lists them
+            // A magazine is listed no later than the rounds it holds, as the table lists them
             Map<String,Integer> rounds=new HashMap<>();for(var e:list)if(e.output.hasTag()&&e.output.getTag().contains("AmmoId"))rounds.merge(e.output.getTag().getString("AmmoId"),e.gate.age,Math::min);
             for(var m:magazines)try{list.add(new Entry((ResourceLocation)m[0],m[1],MagazineBridge.gate((ItemStack)m[2],rounds),(ItemStack)m[2]));}
                 catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",m[0],e);}
@@ -174,7 +174,7 @@ public final class WeaponPlatform {
         case 1->List.of(cost("minecraft:iron_ingot",64),cost("create:andesite_alloy",32),cost("create:cogwheel",16),cost("kubejs:pressed_receiver",16));
         case 2->List.of(cost("kubejs:hardened_receiver",16),cost("create:precision_mechanism",32),cost("minecraft:blaze_rod",8),cost("create:brass_sheet",32));
         case 3->List.of(cost("kubejs:hardened_receiver",64),cost("create:precision_mechanism",64),cost("minecraft:netherite_scrap",16),cost("eternal_defense:resonance_coil",16));
-        case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("eternal_defense:restoration_matrix",8));   // 0.0.28: 16 matrices before (halved with the matrix recipe doubled)
+        case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("eternal_defense:restoration_matrix",8));   // 16 matrices before (halved with the matrix recipe doubled)
         default->List.of();};}
     static Cost cost(String id,int amount){return new Cost(Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id))),amount);}
     static List<Cost> costs(Entry e)throws ReflectiveOperationException{
@@ -194,7 +194,7 @@ public final class WeaponPlatform {
         String id=switch(e.gate.age){case 1,2->"kubejs:pressed_receiver";case 3,4->"kubejs:hardened_receiver";default->"kubejs:exotic_receiver";};
         if(e.gate.kind.equals("gun"))addUnlessPresent(costs,cost(id,e.gate.age==2?2:1));
         else if(e.gate.kind.equals("ammo")){
-            // 0.0.26: the platform sets the cases and propellant itself, whatever the recipe (or an older pack script) lists
+            // The platform sets the cases and propellant itself, whatever the recipe (or an older pack script) lists
             String ammo=e.output.hasTag()&&e.output.getTag().contains("AmmoId")?e.output.getTag().getString("AmmoId"):e.gate.id;
             costs=new ArrayList<>(costs);costs.removeIf(c->is(c,"kubejs:cartridge_case")||is(c,"kubejs:propellant"));
             costs.add(cost("kubejs:cartridge_case",AmmoInputs.casings(e.output.getCount(),ammo)));
@@ -202,7 +202,7 @@ public final class WeaponPlatform {
         }else addUnlessPresent(costs,cost("create:iron_sheet",2));
         return InventoryPayment.consolidate(costs);
     }
-    /** Does this cost ask for the item {@code id} (false when the item does not exist, as in a run without KubeJS)? */
+    /** Does this cost ask for the item id (false when the item does not exist, as in a run without KubeJS)? */
     private static boolean is(Cost c,String id){var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id));return item!=net.minecraft.world.item.Items.AIR&&c.ingredient.test(new ItemStack(item));}
     private static void addUnlessPresent(List<Cost> list,Cost cost){if(list.stream().noneMatch(c->Arrays.stream(cost.ingredient.getItems()).anyMatch(c.ingredient::test)))list.add(cost);}
     /** Plan on copies, including output capacity; commit once, never consume partial inputs. */
@@ -228,7 +228,7 @@ public final class WeaponPlatform {
         catch(ReflectiveOperationException ex){com.mojang.logging.LogUtils.getLogger().error("Platform recipe failed: {}",id,ex);return "Recipe could not load; nothing consumed.";}
     }
     @SubscribeEvent public void nativeMenu(PlayerContainerEvent.Open event){
-        // Native table packets require this menu. Closing it server-side seals the Age bypass.
+        // Native table packets require this menu.
         if(event.getEntity() instanceof ServerPlayer p&&event.getContainer().getClass().getName().equals("com.tacz.guns.inventory.GunSmithTableMenu")){
             p.closeContainer();p.sendSystemMessage(Component.literal("Use a Universal Gun, Ammo or Attachment Platform. Their Ages unlock all packs."));
         }
@@ -307,7 +307,7 @@ public final class WeaponPlatform {
         return n;
     }
     static ListTag costTags(Supply.Where w,List<Cost> costs){
-        // Count is a signed byte in ItemStack NBT. Icons always use one item; quantities travel as ints.
+        // Count is a signed byte in ItemStack NBT.
         ListTag rows=new ListTag();var plan=InventoryPayment.plan(w,costs);int index=0;for(Cost cost:costs){var row=new CompoundTag();ItemStack[] choices=cost.ingredient.getItems();row.put("item",(choices.length==0?ItemStack.EMPTY:choices[0].copyWithCount(1)).save(new CompoundTag()));row.putString("label",UniversalWood.label(cost.ingredient));row.putInt("count",cost.count);row.putInt("have",w.player().isCreative()?cost.count:plan.allocated()[index]);index++;rows.add(row);}return rows;
     }
 }

@@ -18,10 +18,10 @@ final class SpecialForcesRaids {
     static int count(int tier,int players){return tier<4?0:Math.min(5,(tier<7?1:2)+Math.max(0,Math.min(4,players)-1));}
     static boolean soldier(Entity e){return installed()&&e.getClass().getName().equals("su.uTa4u.specialforces.entities.SwatEntity");}
     private static volatile Boolean installed;
-    /** Is the optional Special Forces mod (taczsf) here? Without it no soldier can exist, so nothing has to be looked for. Asked once. */
+    /** Is the optional Special Forces mod (taczsf) here? */
     static boolean installed(){
         var known=installed;if(known!=null)return known;
-        var mods=net.minecraftforge.fml.ModList.get();if(mods==null)return false; // not booted yet (unit tests): ask again later
+        var mods=net.minecraftforge.fml.ModList.get();if(mods==null)return false; // Not booted yet (unit tests): ask again later
         installed=known=mods.isLoaded("taczsf");return known;
     }
     @SubscribeEvent public void start(ServerStartedEvent event){
@@ -81,13 +81,13 @@ final class SpecialForcesRaids {
     static void retire(Entity e,ServerLevel l){
         if(!(e instanceof Mob mob)||!defeated(e))return;
         try{stateSetter.invoke(e,(byte)2);}catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot preserve defeated soldier corpse",ex);}
-        // Native DEAD bodies stay lootable at one HP. No revival, targeting, glow or breach goals.
+        // Native DEAD bodies stay lootable at one HP.
         mob.setHealth(1);mob.setTarget(null);mob.getNavigation().stop();mob.setNoAi(true);mob.setInvulnerable(true);mob.setGlowingTag(false);
         mob.getPersistentData().putBoolean("eternalCorpse",true);mob.getPersistentData().putBoolean("eternalRaider",false);
         if(!mob.getPersistentData().contains("eternalCorpseUntil"))mob.getPersistentData().putLong("eternalCorpseUntil",l.getGameTime()+12000);
     }
     static void cleanup(ServerLevel l){
-        if(!installed())return; // runs every second over every entity of the Overworld: skip it when no soldier can exist
+        if(!installed())return; // Runs every second over every entity of the Overworld: skip it when no soldier can exist
         for(Entity e:l.getAllEntities())if(corpse(e)&&l.getGameTime()>=e.getPersistentData().getLong("eternalCorpseUntil"))e.discard();
     }
     static void balance(Mob mob,int tier){

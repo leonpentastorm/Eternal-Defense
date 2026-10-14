@@ -17,27 +17,23 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/**
- * Marks two fire supports leave on a hostile mob until it dies (0.0.36, owner). Napalm Carpet sets every mob that can burn Ablaze: it
- * burns by our own timer whatever water, rain or anything else does, and every burn counts as the weapon's (never a fire trap the raid
- * learns). Spotter Arrows mark a mob: it glows and takes more from every kind of damage. Both live in the mob's persistent data.
- */
+/** Marks two fire supports leave on a hostile mob until it dies. */
 final class FireMarks {
     private FireMarks(){}
     static final String ABLAZE="eternalAblaze",MARKED="eternalMarked";
     /** Ablaze: damage a second before the Damage upgrade; a raid boss takes half. */
     static final float ABLAZE_DAMAGE=4f,BOSS_ABLAZE_SHARE=.5f;
     static final int ABLAZE_INTERVAL=20,ABLAZE_FIRE_TICKS=60;
-    /** Spotter Arrows: the hit each volley deals before the Damage upgrade, and how much more a Marked mob takes (a raid boss less). */
+    /** Spotter Arrows: the hit each volley deals before the Damage upgrade */
     static final float SPOTTER_HIT=4f,MARKED_BONUS=.30f,BOSS_MARKED_BONUS=.15f;
 
     /** Pure: what an Ablaze mob takes each second. */
     static float ablaze(float perSecond,boolean boss){return perSecond*(boss?BOSS_ABLAZE_SHARE:1f);}
-    /** Pure: the burn a napalm with the Damage upgrade's {@code multiplier} marks a mob with. */
+    /** Pure: the burn a napalm with the Damage upgrade's multiplier marks a mob with. */
     static float ablazeFor(float multiplier){return ABLAZE_DAMAGE*multiplier;}
-    /** Pure: what a Marked mob takes from a hit of {@code amount}. */
+    /** Pure: what a Marked mob takes from a hit of amount. */
     static float marked(float amount,boolean boss){return amount*(1+(boss?BOSS_MARKED_BONUS:MARKED_BONUS));}
-    /** Pure: a mob can be set Ablaze only when fire hurts it: not fire immune (blazes, Nether mobs) and without Fire Resistance. */
+    /** Pure: a mob can be set Ablaze only when fire hurts */
     static boolean canBurn(boolean fireImmune,boolean fireResistance){return !fireImmune&&!fireResistance;}
     /** Pure: the burn a mob keeps when it is set Ablaze again: the stronger one, never the sum. */
     static float rekindle(float had,float perSecond){return Math.max(had,perSecond);}
@@ -66,23 +62,20 @@ final class FireMarks {
         SPOTTING.set(true);
         try{return RaidAdaptation.weaponDamage(e,source,amount);}finally{SPOTTING.remove();}
     }
-    /**
-     * One second of Ablaze: the weapon's fire damage, on our own timer. It is on top of everything else: it ignores the half second of
-     * invulnerability after a hit and leaves it as it was, so it never cuts the carpet's damage or the next sword or arrow hit short.
-     */
+    /** One second of Ablaze: the weapon's fire damage, on the mod's own timer. */
     private static void burn(LivingEntity e,float amount){
         int invulnerable=e.invulnerableTime;e.invulnerableTime=0;BURNING.set(true);
         try{RaidAdaptation.weaponDamage(e,e.damageSources().onFire(),amount);}finally{BURNING.remove();e.invulnerableTime=invulnerable;}
     }
 
     public static final class MarkEvents {
-        /** Ablaze: keeps the flames on (out of water) and burns once a second. Every other living thing leaves at the first test. */
+        /** Ablaze: keeps the flames on (out of water) and burns once a second. */
         @SubscribeEvent public void ablazeTick(LivingEvent.LivingTickEvent e){
             var mob=e.getEntity();
             if(!(mob instanceof Enemy)||!(mob.level() instanceof ServerLevel level)||!ablaze(mob)||!mob.isAlive())return;
             RaidAdaptation.weaponFire(mob,ABLAZE_FIRE_TICKS);
             if(!mob.isInWater()){
-                // rain puts the flames out (with a hiss) every tick, so there the fire shows as flame particles; elsewhere it is lit again
+                // Rain puts the flames out (with a hiss) every tick, so there the fire shows as flame particles
                 if(mob.isInWaterRainOrBubble()){if(level.getGameTime()%4==0)level.sendParticles(ParticleTypes.FLAME,mob.getX(),mob.getY()+mob.getBbHeight()*.5,mob.getZ(),3,mob.getBbWidth()*.3,mob.getBbHeight()*.3,mob.getBbWidth()*.3,.01);}
                 else if(mob.getRemainingFireTicks()<ABLAZE_INTERVAL)mob.setRemainingFireTicks(ABLAZE_FIRE_TICKS);
             }
@@ -92,7 +85,7 @@ final class FireMarks {
         @SubscribeEvent public void ablazeAttack(LivingAttackEvent e){
             if(!BURNING.get()&&e.getSource().is(DamageTypes.ON_FIRE)&&e.getEntity() instanceof Enemy&&ablaze(e.getEntity()))e.setCanceled(true);
         }
-        /** Marked: every hit counts this much more, whatever it is (guns, explosions, fire, poison, wither); not what ignores invulnerability. */
+        /** Marked: every hit counts this much more, whatever it is (guns, explosions, fire, poison, wither) */
         @SubscribeEvent public void markedHurt(LivingHurtEvent e){
             if(e.getAmount()<=0||e.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY))return;
             var mob=e.getEntity();if(!(mob instanceof Enemy)||!marked(mob))return;

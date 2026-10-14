@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-/** A two-cell kitchen installation. Dispensing consumes stock, including in creative. */
+/** A two-cell kitchen installation. */
 final class BowlDispenser {
     static boolean emptyHands(Player p){return p.getMainHandItem().isEmpty()&&p.getOffhandItem().isEmpty();}
     static final class DispenserBlock extends KitchenBlock {
@@ -52,7 +52,7 @@ final class BowlDispenser {
             if(!stock.getItem(0).is(Items.BOWL))return false;
             var bowl=stock.removeItem(0,1);EternalDefense.give(player,bowl);setChanged();return true;
         }
-        /** Hands out one bowl and says so: action bar line (low stock in gold), a pop of sound and a bowl flying out of the front. */
+        /** Hands out one bowl and says so: action bar line (low stock in gold) */
         void take(ServerPlayer player,BlockState state,net.minecraft.server.level.ServerLevel level,BlockPos pos){
             if(!stock.getItem(0).is(Items.BOWL)){
                 player.displayClientMessage(Component.translatable("gui.eternal_defense.bowls.empty").withStyle(net.minecraft.ChatFormatting.RED),true);
