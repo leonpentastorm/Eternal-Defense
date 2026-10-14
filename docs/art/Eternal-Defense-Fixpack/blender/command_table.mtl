@@ -1,0 +1,3 @@
+newmtl command_table
+Kd 1 1 1
+map_Kd textures/block/command_table.png

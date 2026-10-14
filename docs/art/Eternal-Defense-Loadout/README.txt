@@ -117,9 +117,9 @@ COIN BANK (viewer's left)
   Coin return tray below at y 1..2.5.
 
 FACES  (limit ~700)
-  loadout_station 300, door_right 62, door_left 65, ring 81, arm_a 28, arm_b 28
-  -> 564 faces for the whole rig (assembled item model: 564)
-  loadout_station.png: 512 x 512, about 50% filled.
+  loadout_station 300, door_right 65, door_left 68, ring 81, arm_a 28, arm_b 28
+  -> 570 faces for the whole rig (assembled item model: 570)
+  loadout_station.png: 512 x 512, about 51% filled.
 
 ==========================================================================================
 PART 2 - LOADOUT CAPSULE  (1 x 1 x 2, x/z 0..16, y 0..32, anchor = bottom cell, front = north)

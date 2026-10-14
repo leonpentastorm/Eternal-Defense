@@ -1,0 +1,3 @@
+newmtl mre_maker
+Kd 1 1 1
+map_Kd textures/block/mre_maker.png

@@ -238,21 +238,24 @@ public final class EternalDefense {
         give(p,new ItemStack(GUIDE.get()));give(p,new ItemStack(CONTROLLER.get()));p.getPersistentData().putBoolean("eternalSupportGranted03",true);
     }
     static void give(ServerPlayer p,ItemStack stack){if(!p.getInventory().add(stack)&&!stack.isEmpty())p.drop(stack,false);}
+    /** The starter gun: TaCZ's own .22 revolver, so it exists with TaCZ alone. */
+    static final ResourceLocation STARTER_GUN=new ResourceLocation("tacz:taurus943"),STARTER_AMMO=new ResourceLocation("tacz:22wmr");
+    static final int STARTER_ROUNDS=64;
     static void grantStarter(ServerPlayer p) {
         if(p.getPersistentData().getBoolean("eternalStarterGranted"))return;
         Item gunItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:modern_kinetic_gun"));
         Item ammoItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:ammo"));
-        if(gunItem==Items.AIR||ammoItem==Items.AIR)return;
+        if(gunItem==Items.AIR||ammoItem==Items.AIR||com.tacz.guns.api.TimelessAPI.getCommonGunIndex(STARTER_GUN).isEmpty())return;
         try {
-            ItemStack gun=new ItemStack(gunItem),ammo=new ItemStack(ammoItem,64);
-            gunItem.getClass().getMethod("setGunId",ItemStack.class,ResourceLocation.class).invoke(gunItem,gun,new ResourceLocation("qkl:fk15p"));
+            ItemStack gun=new ItemStack(gunItem),ammo=new ItemStack(ammoItem,STARTER_ROUNDS);
+            gunItem.getClass().getMethod("setGunId",ItemStack.class,ResourceLocation.class).invoke(gunItem,gun,STARTER_GUN);
             gunItem.getClass().getMethod("setCurrentAmmoCount",ItemStack.class,int.class).invoke(gunItem,gun,0);
             gun.getOrCreateTag().putString("GunFireMode","SEMI");
-            ammoItem.getClass().getMethod("setAmmoId",ItemStack.class,ResourceLocation.class).invoke(ammoItem,ammo,new ResourceLocation("qkl:16mm"));
+            ammoItem.getClass().getMethod("setAmmoId",ItemStack.class,ResourceLocation.class).invoke(ammoItem,ammo,STARTER_AMMO);
             if(!p.getInventory().add(gun)&&!gun.isEmpty())p.drop(gun,false);
             if(!p.getInventory().add(ammo)&&!ammo.isEmpty())p.drop(ammo,false);
             p.getPersistentData().putBoolean("eternalStarterGranted",true);
-            feedback(p,"[Eternal Defense] Starter kit: one FK15P flintlock and 64 round balls. Reload with R; it holds one round and reloads slowly.");
+            feedback(p,"[Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds.");
         } catch(ReflectiveOperationException ex) {
             com.mojang.logging.LogUtils.getLogger().error("Eternal Defense starter kit could not access the installed TaCZ item API",ex);
         }

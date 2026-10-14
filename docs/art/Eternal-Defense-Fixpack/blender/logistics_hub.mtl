@@ -1,0 +1,3 @@
+newmtl logistics_hub
+Kd 1 1 1
+map_Kd textures/block/logistics_hub.png

@@ -3,8 +3,10 @@ loaderVersion="[47,)"
 license="MIT"
 [[mods]]
 modId="eternal_defense_gun_guide"
-version="1.1.2"
+version="1.1.3"
 displayName="Eternal Defense: Gun Guide"
+logoFile="eternal_defense_gun_guide_logo.png"
+logoBlur=false
 displayTest="IGNORE_SERVER_VERSION"
 description="Live gun controls and a crosshair jam warning. Client HUD; no gameplay or networking changes."
 [[dependencies.eternal_defense_gun_guide]]

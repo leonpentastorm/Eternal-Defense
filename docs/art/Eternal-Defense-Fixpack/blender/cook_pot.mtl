@@ -1,0 +1,3 @@
+newmtl cook_pot
+Kd 1 1 1
+map_Kd textures/block/cook_pot.png

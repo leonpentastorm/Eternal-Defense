@@ -22,7 +22,7 @@ public final class BeaconGameTests {
         h.assertTrue(Rules.highlightAttackers(d.reconnaissance,d.waveTicks),"Purchased reconnaissance persists and applies immediately");h.succeed();
     }
     @GameTest(template="empty3x3x3",timeoutTicks=40)
-    public static void flintlockKitIsGrantedOncePerPlayer(GameTestHelper h) throws Exception {
+    public static void starterKitIsGrantedOncePerPlayer(GameTestHelper h) throws Exception {
         if(!net.minecraftforge.fml.ModList.get().isLoaded("tacz")){h.succeed();return;}
         var player=net.minecraftforge.common.util.FakePlayerFactory.getMinecraft(h.getLevel());player.getInventory().clearContent();player.getPersistentData().remove("eternalStarterGranted");
         EternalDefense.grantStarter(player);EternalDefense.grantStarter(player);
@@ -31,12 +31,12 @@ public final class BeaconGameTests {
             if(stack.isEmpty())continue;String item=net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
             if(item.equals("tacz:modern_kinetic_gun")) {
                 guns+=stack.getCount();var id=stack.getItem().getClass().getMethod("getGunId",ItemStack.class).invoke(stack.getItem(),stack);
-                h.assertTrue(id.toString().equals("qkl:fk15p"),"Starter must use the FK15P flintlock");
+                h.assertTrue(id.toString().equals("tacz:taurus943"),"Starter must be the .22 Model 943 revolver");
                 var gunIndex=(java.util.Optional<?>)Class.forName("com.tacz.guns.api.TimelessAPI").getMethod("getCommonGunIndex",net.minecraft.resources.ResourceLocation.class).invoke(null,id);
-                h.assertTrue(gunIndex.isPresent(),"The flintlock gunpack must actually be loaded");
+                h.assertTrue(gunIndex.isPresent(),"The revolver must come with TaCZ itself");
             } else if(item.equals("tacz:ammo")) {
                 var id=stack.getItem().getClass().getMethod("getAmmoId",ItemStack.class).invoke(stack.getItem(),stack);
-                h.assertTrue(id.toString().equals("qkl:16mm"),"Starter rounds must match the flintlock");rounds+=stack.getCount();
+                h.assertTrue(id.toString().equals("tacz:22wmr"),"Starter rounds must match the revolver");rounds+=stack.getCount();
             }
         }
         h.assertTrue(guns==1&&rounds==64,"Logging in again must not duplicate the starter kit");h.succeed();

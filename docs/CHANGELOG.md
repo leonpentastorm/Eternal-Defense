@@ -1,5 +1,15 @@
 # Change log
 
+## 1.1.3 — The owner's list after 1.1.2: fixed models, logos, the starter revolver, a clean print, no empty tables (2026-10-14, branch `feature/display-tuner`)
+
+After 1.1.2 on the same branch; `dev` and `main` unchanged. No packet changed: Eternal Defense's network protocol stays **41**, the displays channel **1**. Rules: GDD 1.1.3; tests: `docs/ROUND-1.1.3-TESTING.md`.
+
+* **Starter kit** (owner): the starter gun is now **TaCZ's own .22 Model 943 revolver with one stack (64) of .22 WMR**. It comes with TaCZ alone; the flintlock musket needed a gun pack that a bare install does not have, so new players got nothing there.
+* **Tables with nothing to make** (owner): Workshop Fabrication no longer sells a weapon, ammo, attachment or armor table that no installed mod gives anything to make. Its card says *No mod adds anything to it*, Make is off, the tooltip explains, and the server refuses the order with nothing taken. With only the required mods this is the armor table.
+* **Loadout Station** (owner): no black block outline while a print plays, from the walk in until the doors have shut (with the camera shots on or off); players watching someone else print see none on that station either.
+* **Models** (owner's fixpack): parts that floated or clipped now sit where they belong: Command Table, Cook Pot, Cup Dispenser, Defense Beacon Mk III, Drink Station Mk I to IV, Brew Pot, Exchange Shop, Logistics Center Hub, Mess Hall Mk I to IV, Milk Dispenser, MRE Station, Satellite Beacon, Supply Receiving Gate and the Loadout Station. The four workshop tables keep their current models (owner).
+* **Logos**: a pixel-art icon and banner for each of the three mods (`docs/branding/`); each mod shows its logo in the game's Mods list.
+
 ## 1.1.2 — The displays: one key press, a recipe for every stand, the Weapon Display Tuner (2026-10-14, branch `feature/display-tuner`)
 
 From 1.1.1 on `feature/loadout-station`; `dev` and `main` unchanged. Eternal Defense's network protocol stays **41**; the displays mod has its own channel (`eternal_defense_displays:main`, protocol 1), so client and server both need 1.1.2. Rules: GDD 1.1.2; tests: `docs/ROUND-1.1.2-TESTING.md`.

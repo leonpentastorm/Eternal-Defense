@@ -14,8 +14,8 @@ SRC = ROOT / 'docs/art/Eternal-Defense-Loadout'
 ASSETS = ROOT / 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense'
 NAMESPACE = 'eternal_defense'
 # README "FACES": faces per model
-FACES = {'loadout_station': 300, 'loadout_station_door_right': 62, 'loadout_station_door_left': 65, 'loadout_station_ring': 81,
-         'loadout_station_arm_a': 28, 'loadout_station_arm_b': 28, 'loadout_station_assembled': 564,
+FACES = {'loadout_station': 300, 'loadout_station_door_right': 65, 'loadout_station_door_left': 68, 'loadout_station_ring': 81,
+         'loadout_station_arm_a': 28, 'loadout_station_arm_b': 28, 'loadout_station_assembled': 570,
          'loadout_capsule': 148, 'loadout_capsule_door': 2, 'loadout_capsule_item': 150}
 FACING_Y = {'north': 0, 'east': 90, 'south': 180, 'west': 270}
 

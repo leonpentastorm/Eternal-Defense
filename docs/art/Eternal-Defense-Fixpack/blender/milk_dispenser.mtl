@@ -1,0 +1,3 @@
+newmtl milk_dispenser
+Kd 1 1 1
+map_Kd textures/block/milk_dispenser.png

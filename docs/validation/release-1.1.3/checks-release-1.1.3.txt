@@ -1,0 +1,52 @@
+QA_NOTE INVENTORY 0=defense_beaconx1 1=field_guidex1 2=beacon_controllerx1 3=modern_kinetic_gunx1 4=ammox64 
+QA_CHECK PASS the starter gun is TaCZ's .22 Model 943 revolver (tacz:taurus943) 0=defense_beaconx1 1=field_guidex1 2=beacon_controllerx1 3=modern_kinetic_gunx1 4=ammox64 
+QA_CHECK PASS with one stack of its ammo: 64 rounds of .22 WMR (tacz:22wmr) 64 rounds
+QA_CHECK PASS no musket or other gun pack's item is given 0=defense_beaconx1 1=field_guidex1 2=beacon_controllerx1 3=modern_kinetic_gunx1 4=ammox64 
+QA_CHECK PASS the chat line names the revolver, its ammo and the reload key  || [Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds. | Welcome to Eternal Defense. Right-click your Field Guide to get started.
+QA_CHECK PASS its ammo item is what TaCZ's revolver data asks for 
+QA_CHECK PASS it starts empty 0 rounds
+QA_CHECK PASS the reload key loads 8 rounds 8 rounds
+QA_CHECK PASS taken from the stack: 56 left 56 rounds
+QA_CHECK PASS one shot fires: 7 rounds left 7 rounds
+QA_NOTE TABLE gun_platform empty=false entries=54
+QA_NOTE TABLE ammo_platform empty=false entries=25
+QA_NOTE TABLE attachment_platform empty=false entries=119
+QA_NOTE TABLE armor_platform empty=true entries=0
+QA_CHECK PASS the weapon, ammo and attachment tables have something to make (TaCZ's own guns) 
+QA_CHECK PASS the armor table has nothing to make with these mods (no armor mod installed) 
+QA_CHECK PASS the kitchen and support rows are never 'empty' 
+QA_NOTE BUY armor: Universal Armor Platform: no installed mod adds anything to make there, so it is not fabricated. Nothing consumed. | gun: Missing materials or inventory space. Nothing consumed.
+QA_CHECK PASS buying the armor table is refused: nothing installed adds anything to make there Universal Armor Platform: no installed mod adds anything to make there, so it is not fabricated. Nothing consumed.
+QA_CHECK PASS and no armor table lands in the pack 0=modern_kinetic_gunx1 1=field_guidex1 2=beacon_controllerx1 4=ammox56 
+QA_CHECK PASS the weapon table is not refused for that reason (here: missing materials) Missing materials or inventory space. Nothing consumed.
+QA_CHECK PASS the tab opens 2 24
+QA_CHECK PASS the client is told the armor table is empty {costs:[{count:16,have:0,item:{Count:1b,id:"minecraft:iron_ingot"},label:""},{count:16,have:0,item:{Count:1b,id:"minecraft:gold_ingot"},label:""},{count:8,have:0,item:{Count:1b,id:"create:andesite_alloy"},label:""}],empty:1b,id:"armor_platform",item:{Count:1b,id:"eternal_defense:armor_platform"}}
+QA_CHECK PASS and the other three tables are not 
+QA_CHECK PASS its Make button is off and not marked as short of materials active=false warning=false
+QA_CHECK PASS the server answers on the beacon screen that nothing installed adds anything to make there Universal Armor Platform: no installed mod adds anything to make there, so it is not fabricated. Nothing consumed.
+QA_CHECK PASS still no armor table in the pack 
+QA_CHECK PASS the station stands (27 cells) 
+QA_CHECK PASS camera shots on: before the print the outline is drawn on the station as usual before 16 drawn/0 hidden, during 0/0, after 0/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots on: the print starts  || Dev has made the advancement [Suit Up]
+QA_NOTE OUTLINE camera shots on: before 16 drawn/0 hidden, during 0/59, after 17/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots on: while the print plays no block outline is drawn before 16 drawn/0 hidden, during 0/59, after 17/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots on: after it the outline is back before 16 drawn/0 hidden, during 0/59, after 17/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots on: the kit was printed (chainmail chestplate worn) 0=crossbowx1 1=arrowx32 8=cooked_beefx16 36=chainmail_bootsx1 38=chainmail_chestplatex1 39=chainmail_helmetx1 
+QA_CHECK PASS camera shots off: before the print the outline is drawn on the station as usual before 16 drawn/0 hidden, during 0/0, after 0/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots off: the print starts Kit on. What you wore went to the station?s Locker. || Dev has made the advancement [Suit Up]
+QA_NOTE OUTLINE camera shots off: before 16 drawn/0 hidden, during 0/59, after 18/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots off: while the print plays no block outline is drawn before 16 drawn/0 hidden, during 0/59, after 18/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots off: after it the outline is back before 16 drawn/0 hidden, during 0/59, after 18/0; another's print: on the station 0/0, elsewhere 0/0
+QA_CHECK PASS camera shots off: the kit was printed (chainmail chestplate worn) 0=crossbowx1 1=arrowx32 8=cooked_beefx16 36=chainmail_bootsx1 38=chainmail_chestplatex1 39=chainmail_helmetx1 
+QA_CHECK PASS this client sees another player's print playing (not its own) 
+QA_NOTE OUTLINE another's print: before 0 drawn/0 hidden, during 0/0, after 0/0; another's print: on the station 0/27, elsewhere 14/0
+QA_CHECK PASS another player's print: no outline on the station while it plays before 0 drawn/0 hidden, during 0/0, after 0/0; another's print: on the station 0/27, elsewhere 14/0
+QA_CHECK PASS another player's print: other blocks keep their outline before 0 drawn/0 hidden, during 0/0, after 0/0; another's print: on the station 0/27, elsewhere 14/0
+QA_CHECK PASS every block state of the mod has its model (494 states) 
+QA_CHECK PASS every item of the mod has its model (60 items) 
+QA_CHECK PASS all 52 moving-part models load 
+QA_CHECK PASS all 19 replaced models stand in the row 
+QA_CHECK PASS eternal_defense: the mod list shows its logo, 480 x 160 minecraft:dynamic/modlogo_1 480x160
+QA_CHECK PASS eternal_defense_displays: the mod list shows its logo, 480 x 160 minecraft:dynamic/modlogo_2 480x160
+QA_NOTE MODLIST eternal_defense_gun_guide is not loaded in this run
+QA_DONE pass=41 fail=0

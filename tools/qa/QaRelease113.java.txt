@@ -1,0 +1,367 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.3: the starter revolver, the replaced models, tables with nothing to make, no outline during a print, the mod list logos. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease113 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> BAR=Collections.synchronizedList(new ArrayList<>()),CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay()){BAR.add(t);log("QA_BAR {}",t);}else{CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(BAR){if(BAR.stream().anyMatch(b->b.contains(s)))return true;}synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String messages(){return String.join(" | ",BAR)+" || "+String.join(" | ",CHAT);}
+    static void clearMessages(){BAR.clear();CHAT.clear();}
+
+    // The block outline: counted after every other listener, canceled or not, by phase of the print
+    static int phase=-1;static final int[] DRAWN=new int[5],HIDDEN=new int[5];
+    @SubscribeEvent(priority=EventPriority.LOWEST,receiveCanceled=true) public static void outline(net.minecraftforge.client.event.RenderHighlightEvent.Block e){
+        if(phase<0||phase>4)return;
+        // The print's own frames end with its last tick (the doors shut); a frame after that, before the server's end arrives, counts as after
+        int ph=phase;if(ph==1){var tl=clientTimeline();if(tl!=null&&clientElapsed()>=tl.end())ph=2;}
+        if(e.isCanceled())HIDDEN[ph]++;else DRAWN[ph]++;
+        if(!e.isCanceled()&&(ph==1||ph==3))note("OUTLINE DRAWN phase {} t={} on {} {}",ph,clientElapsed(),e.getTarget().getBlockPos().toShortString(),BuiltInRegistries.BLOCK.getKey(mc().level.getBlockState(e.getTarget().getBlockPos()).getBlock()));
+    }
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r113",GameType.SURVIVAL,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r113",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    /** Standing (no flight): the print walks the player. */
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    /** A free camera (spectator): feet at x,y,z looking at tx,ty,tz. */
+    static void view(double x,double y,double z,double tx,double ty,double tz){
+        double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;float yaw=(float)Math.toDegrees(Math.atan2(-dx,dz)),pitch=(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz)));
+        srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});var p=mc().player;p.setDeltaMovement(Vec3.ZERO);p.setYRot(yaw);p.setXRot(pitch);
+    }
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;sp().getInventory().setChanged();});mc().player.getInventory().selected=0;}
+    static void inGame(){mc().setWindowActive(true);if(!mc().mouseHandler.isMouseGrabbed())mc().mouseHandler.grabMouse();}
+    /** A real press and release of a key mapping, as the keyboard sends it. */
+    static void press(net.minecraft.client.KeyMapping k){
+        inGame();var key=k.getKey();long w=mc().getWindow().getWindow();
+        if(key.getType()!=InputConstants.Type.KEYSYM)throw new IllegalStateException("not a keyboard key: "+key);
+        mc().keyboardHandler.keyPress(w,key.getValue(),0,1,0);mc().keyboardHandler.keyPress(w,key.getValue(),0,0,0);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static String inventory(){return srvGet(()->{var b=new StringBuilder();var inv=sp().getInventory();for(int i=0;i<inv.getContainerSize();i++)if(!inv.getItem(i).isEmpty())b.append(i).append('=').append(BuiltInRegistries.ITEM.getKey(inv.getItem(i).getItem()).getPath()).append('x').append(inv.getItem(i).getCount()).append(' ');return b.toString();});}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(200,64,200)))e.discard();}
+
+    // TaCZ
+    static String gunId(ItemStack s){var g=com.tacz.guns.api.item.IGun.getIGunOrNull(s);return g==null?"":g.getGunId(s).toString();}
+    static int rounds(ItemStack s){var g=com.tacz.guns.api.item.IGun.getIGunOrNull(s);return g==null?-1:g.getCurrentAmmoCount(s)+(g.hasBulletInBarrel(s)?1:0);}
+    static String ammoId(ItemStack s){var a=com.tacz.guns.api.item.IAmmo.getIAmmoOrNull(s);return a==null?"":a.getAmmoId(s).toString();}
+    /** The slot of the starter revolver in the server's inventory, or -1. */
+    static int revolverSlot(){return srvGet(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(gunId(inv.getItem(i)).equals("tacz:taurus943"))return i;return -1;});}
+    static int revolverRounds(){return srvGet(()->{var inv=sp().getInventory();for(int i=0;i<36;i++)if(gunId(inv.getItem(i)).equals("tacz:taurus943"))return rounds(inv.getItem(i));return -1;});}
+    static int wmr(){return srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(ammoId(s).equals("tacz:22wmr"))n+=s.getCount();return n;});}
+
+    // The places
+    /** B: the beacon (core 3); S: the Loadout Station's anchor (facing north); ROW: the replaced models, west to east */
+    static BlockPos B,S,ROW;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);S=B.offset(0,1,10);ROW=new BlockPos(sx-70,sy,sz+60);}
+    static void beacon(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();
+        var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+
+    // The replaced models: block, where the camera aims (from the block's north-west corner), how far it stands
+    record Subject(String name,Supplier<BlockState> state,BlockPos pos,double cx,double cy,double cz,double dist){}
+    static final List<Subject> SUBJECTS=new ArrayList<>();
+    static BlockState north(Block b){
+        var s=b.defaultBlockState();
+        for(var p:s.getProperties())if(p instanceof net.minecraft.world.level.block.state.properties.DirectionProperty d&&d.getPossibleValues().contains(Direction.NORTH))s=s.setValue(d,Direction.NORTH);
+        return s;
+    }
+    static int nextX;
+    static void subject(String name,Supplier<BlockState> state,int width,int up,double cx,double cy,double cz,double dist){
+        SUBJECTS.add(new Subject(name,state,ROW.offset(nextX,up,0),cx,cy,cz,dist));nextX+=width+5;
+    }
+    static void subjects(){
+        subject("command_table",()->north(EternalDefense.COMMAND_TABLE.get()),2,0,1,1,1,4.6);
+        subject("cook_pot",()->north(EternalDefense.COOK_POT.get()),1,0,.5,.95,.5,3);
+        subject("cup_dispenser",()->north(EternalDefense.CUP_DISPENSER.get()),1,0,.5,1,.5,3);
+        subject("defense_beacon_mk3",()->north(EternalDefense.BEACON.get()).setValue(DefenseStructures.MK,3),1,0,.5,.5,.5,2.4);
+        int mk=1;for(var b:List.of(EternalDefense.DRINK_STATION_I,EternalDefense.DRINK_STATION_II,EternalDefense.DRINK_STATION_III,EternalDefense.DRINK_STATION_IV))subject("drink_mixer_mk"+mk++,()->north(b.get()),2,0,1,.95,.5,3.8);
+        subject("brew_pot",()->north(EternalDefense.BREW_POT.get()),1,0,.5,.95,.5,3);
+        subject("exchange_shop",()->north(EternalDefense.EXCHANGE_SHOP.get()),1,0,.5,1,.5,3.2);
+        subject("logistics_hub",()->north(EternalDefense.LOGISTICS_HUB.get()),3,1,.5,.5,.5,6.2);
+        mk=1;for(var b:List.of(EternalDefense.MESS_HALL_I,EternalDefense.MESS_HALL_II,EternalDefense.MESS_HALL_III,EternalDefense.MESS_HALL_IV))subject("mess_hall_mk"+mk++,()->north(b.get()),2,0,1,.95,.5,3.8);
+        subject("milk_dispenser",()->north(EternalDefense.MILK_DISPENSER.get()),1,0,.5,1,.5,3);
+        subject("mre_station",()->north(EternalDefense.MRE_STATION.get()),1,0,.5,1,.5,3);
+        subject("satellite_beacon",()->north(EternalDefense.SATELLITE_BEACON.get()),1,0,.5,.95,.4,3.4);
+        nextX+=2;subject("receiving_gate",()->north(EternalDefense.RECEIVING_GATE.get()),4,0,0,1,.5,6.4);
+    }
+    /** The camera at an angle around a subject: 0 is in front (north of it), 180 behind. */
+    static void around(Subject s,double degrees){
+        double a=Math.toRadians(degrees),tx=s.pos().getX()+s.cx(),ty=s.pos().getY()+s.cy(),tz=s.pos().getZ()+s.cz();
+        double x=tx-Math.sin(a)*s.dist(),z=tz-Math.cos(a)*s.dist(),y=ty+s.dist()*.32-1.62;
+        view(x,y,z,tx,ty,tz);
+    }
+
+    // The Loadout Station
+    static LoadoutStation.StationEntity clientStation(){return mc().level.getBlockEntity(S) instanceof LoadoutStation.StationEntity be?be:null;}
+    static float clientElapsed(){var be=clientStation();return be==null||be.occupant==null?-1:be.elapsed(mc().level.getGameTime(),0);}
+    static LoadoutRules.Timeline clientTimeline(){var be=clientStation();return be==null?null:be.timeline();}
+    static boolean printingOnServer(){return srvGet(()->LoadoutPrint.of(sp().getUUID())!=null);}
+    static void readyNow(){srv(()->{var d=LoadoutData.get(sl());d.players.setReadyAt(sp().getUUID(),0);d.setDirty();});}
+    static void face(){tp(S.getX()+.5,sy,S.getZ()-3.5,0,10);}
+    static void quickPrint(){var p=mc().player;p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY));
+        p.input.shiftKeyDown=true;click(S.offset(0,-1,-1),Direction.NORTH);p.input.shiftKeyDown=false;
+        p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.RELEASE_SHIFT_KEY));}
+    static List<ItemStack> kit(){
+        var empty=ItemStack.EMPTY;
+        return List.of(st(Items.CHAINMAIL_BOOTS,1),empty,st(Items.CHAINMAIL_CHESTPLATE,1),st(Items.CHAINMAIL_HELMET,1),empty,
+            st(Items.CROSSBOW,1),st(Items.ARROW,32),empty,empty,empty,empty,empty,empty,st(Items.COOKED_BEEF,16));
+    }
+    static void resetOutline(){Arrays.fill(DRAWN,0);Arrays.fill(HIDDEN,0);}
+    static String outlines(){return "before "+DRAWN[0]+" drawn/"+HIDDEN[0]+" hidden, during "+DRAWN[1]+"/"+HIDDEN[1]+", after "+DRAWN[2]+"/"+HIDDEN[2]+"; another's print: on the station "+DRAWN[3]+"/"+HIDDEN[3]+", elsewhere "+DRAWN[4]+"/"+HIDDEN[4];}
+    /** Standing (no flight), looking from x,y,z at tx,ty,tz. */
+    static void stand(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    /** This client's station as another player's print syncs it: their id, the start tick, the walks (or none: the print over). */
+    static void otherPrint(boolean on){
+        var be=clientStation();var tag=be.getUpdateTag();
+        if(on){tag.putUUID("Occupant",UUID.fromString("8a6b3c55-3c1e-4d3e-9a0b-2b0c55d5e001"));tag.putString("Name","Rival");tag.putLong("Start",mc().level.getGameTime());tag.putInt("Entry",15);tag.putInt("ExitWalk",15);}
+        else{tag.remove("Occupant");tag.remove("Name");}
+        be.handleUpdateTag(tag);
+    }
+
+    // Workshop Fabrication
+    static final List<String> TABLES=List.of("gun_platform","ammo_platform","attachment_platform","armor_platform");
+    static net.minecraft.nbt.CompoundTag clientState(){return (net.minecraft.nbt.CompoundTag)staticField(BeaconClient.class,"state");}
+    static net.minecraft.nbt.CompoundTag fabRow(String id){var rows=clientState().getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);for(int i=0;i<rows.size();i++)if(rows.getCompound(i).getString("id").equals(id))return rows.getCompound(i);return null;}
+    static int[] cell(BeaconClient.ControlScreen s,int index){
+        try{var m=BeaconClient.ControlScreen.class.getDeclaredMethod("fabricationCell",int.class,int.class,int.class);m.setAccessible(true);var c=m.invoke(s,index,s.left+14,s.pw-28);
+            return new int[]{(int)field(c,"x"),(int)field(c,"y"),(int)field(c,"w"),(int)field(c,"h")};}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}
+    }
+
+    static void script(){
+        // 1. The starter kit, given on first join
+        until("the starter kit arrives",200,()->revolverSlot()>=0,()->{
+            var inv=inventory();note("INVENTORY {}",inv);
+            check("the starter gun is TaCZ's .22 Model 943 revolver (tacz:taurus943)",revolverSlot()>=0,inv);
+            check("with one stack of its ammo: 64 rounds of .22 WMR (tacz:22wmr)",wmr()==64,wmr()+" rounds");
+            check("no musket or other gun pack's item is given",srvGet(()->{for(var s:sp().getInventory().items){var id=gunId(s);if(!id.isEmpty()&&!id.equals("tacz:taurus943"))return false;if(BuiltInRegistries.ITEM.getKey(s.getItem()).getNamespace().equals("musketmod"))return false;}return true;}),inv);
+            check("the chat line names the revolver, its ammo and the reload key",said("Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR"),messages());
+            check("its ammo item is what TaCZ's revolver data asks for",srvGet(()->com.tacz.guns.api.TimelessAPI.getCommonGunIndex(new ResourceLocation("tacz:taurus943")).map(g->g.getGunData().getAmmoId().toString()).orElse("none")).equals("tacz:22wmr"),"");
+        });
+        step(5,QaRelease113::beacon,"plant the beacon (core 3); a still world");
+        // The revolver works: reload with the reload key, one shot with the fire key
+        step(30,()->{int slot=revolverSlot();srv(()->{var inv=sp().getInventory();var gun=inv.getItem(slot).copy();inv.setItem(slot,ItemStack.EMPTY);inv.setItem(0,gun);inv.selected=0;inv.setChanged();
+            sp().getAbilities().mayfly=false;sp().getAbilities().flying=false;sp().onUpdateAbilities();});mc().player.getInventory().selected=0;tp(sx+20.5,sy,sz+.5,0,-30);},"the revolver in hand (hotbar 1), looking at the sky, survival");
+        step(10,()->{check("it starts empty",revolverRounds()==0,revolverRounds()+" rounds");press(com.tacz.guns.client.input.ReloadKey.RELOAD_KEY);},"press the reload key");
+        until("reloaded",300,()->revolverRounds()>=8,()->{});
+        step(10,()->{check("the reload key loads 8 rounds",revolverRounds()==8,revolverRounds()+" rounds");check("taken from the stack: 56 left",wmr()==56,wmr()+" rounds");shot("r113_starter_revolver");},"loaded");
+        step(2,()->{inGame();net.minecraft.client.KeyMapping.set(com.tacz.guns.client.input.ShootKey.SHOOT_KEY.getKey(),true);},"hold the fire key");
+        step(3,()->net.minecraft.client.KeyMapping.set(com.tacz.guns.client.input.ShootKey.SHOOT_KEY.getKey(),false),"let go");
+        step(20,()->check("one shot fires: 7 rounds left",revolverRounds()==7,revolverRounds()+" rounds"),"fired");
+
+        // 2. Workshop Fabrication: a table no installed mod gives anything to make
+        step(10,()->{tp(B.getX()+.5,sy,B.getZ()-2.5,0,10);srv(()->{for(var id:TABLES)note("TABLE {} empty={} entries={}",id,WorkshopFabrication.empty(sp(),id),
+            id.equals("gun_platform")?WeaponPlatform.weaponEntries(sp(),"",false).size():WeaponPlatform.entries(sp(),id.substring(0,id.indexOf('_')),"").size());});},"near the beacon: what each table has");
+        step(5,()->{
+            check("the weapon, ammo and attachment tables have something to make (TaCZ's own guns)",srvGet(()->!WorkshopFabrication.empty(sp(),"gun_platform")&&!WorkshopFabrication.empty(sp(),"ammo_platform")&&!WorkshopFabrication.empty(sp(),"attachment_platform")),"");
+            check("the armor table has nothing to make with these mods (no armor mod installed)",srvGet(()->WorkshopFabrication.empty(sp(),"armor_platform")),"");
+            check("the kitchen and support rows are never 'empty'",srvGet(()->WorkshopFabrication.ITEMS.stream().filter(id->!TABLES.contains(id)).noneMatch(id->WorkshopFabrication.empty(sp(),id))),"");
+        },"which tables are empty");
+        step(5,()->{
+            String armor=srvGet(()->WorkshopFabrication.buy(sp(),"armor_platform")),gun=srvGet(()->WorkshopFabrication.buy(sp(),"gun_platform"));note("BUY armor: {} | gun: {}",armor,gun);
+            check("buying the armor table is refused: nothing installed adds anything to make there",armor.contains("no installed mod adds anything to make there"),armor);
+            check("and no armor table lands in the pack",srvGet(()->inPack(WorkshopFabrication.item("armor_platform"))==0),inventory());
+            check("the weapon table is not refused for that reason (here: missing materials)",!gun.contains("no installed mod")&&gun.startsWith("Missing materials"),gun);
+        },"buy: refused for the empty table only");
+        step(5,()->srv(()->BeaconNetwork.open(sp(),"menu","")),"open the beacon");
+        until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
+        step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(Ui.t("tab.fabrication").getString())){b.onPress();break;}},"the Workshop Fabrication tab");
+        step(10,()->{
+            var s=(BeaconClient.ControlScreen)mc().screen;var armor=fabRow("armor_platform");
+            check("the tab opens",s.tab==2&&s.fabricationButtons.size()==WorkshopFabrication.ITEMS.size(),s.tab+" "+s.fabricationButtons.size());
+            check("the client is told the armor table is empty",armor!=null&&armor.getBoolean("empty"),String.valueOf(armor));
+            check("and the other three tables are not",TABLES.stream().filter(t->!t.equals("armor_platform")).allMatch(t->{var r=fabRow(t);return r!=null&&!r.getBoolean("empty");}),"");
+            int i=WorkshopFabrication.ITEMS.indexOf("armor_platform");var b=s.fabricationButtons.get(i);
+            check("its Make button is off and not marked as short of materials",!b.active&&!b.warning,"active="+b.active+" warning="+b.warning);
+            var c=cell(s,i);hover(c[0]+10,c[1]+c[3]/2.0);
+        },"the armor card");
+        step(8,()->shot("r113_fabrication_armor_empty"),"picture: the armor card and its tooltip");
+        step(3,()->{var s=(BeaconClient.ControlScreen)mc().screen;var c=cell(s,WorkshopFabrication.ITEMS.indexOf("gun_platform"));hover(c[0]+10,c[1]+c[3]/2.0);},"hover the weapon table");
+        step(8,()->shot("r113_fabrication_gun"),"picture: a table with things to make");
+        step(5,()->{((BeaconClient.PanelScreen)mc().screen).message="";BeaconNetwork.action("fabricate:armor_platform","");},"send the order anyway (as a modified client would)");
+        step(15,()->{var m=mc().screen instanceof BeaconClient.PanelScreen p?p.message:"no screen";
+            check("the server answers on the beacon screen that nothing installed adds anything to make there",m.contains("no installed mod adds anything to make there"),m);
+            check("still no armor table in the pack",srvGet(()->inPack(WorkshopFabrication.item("armor_platform"))==0),"");},"refused");
+        step(5,()->mc().setScreen(null),"close");
+
+        // 3. The Loadout Station: no block outline while the print plays
+        step(20,()->{clearMessages();srv(()->{sp().getInventory().setItem(0,st(EternalDefense.LOADOUT_STATION_ITEM.get(),1));sp().getInventory().selected=0;});mc().player.getInventory().selected=0;tp(S.getX()+.5,sy,S.getZ()-4.5,0,30);},"hold the station in front of its spot");
+        step(5,()->click(S.below(2),Direction.UP),"place it (a real right-click on the ground)");
+        step(20,()->check("the station stands (27 cells)",srvGet(()->{int ok=0;for(var p:LoadoutStation.cells(S))if(LoadoutStation.isStation(sl().getBlockState(p))&&LoadoutStation.anchor(sl(),p).equals(S))ok++;return ok;})==27,""),"placed");
+        step(5,()->srv(()->{var m=LoadoutStation.machine(sl(),S);var coin=LoadoutCoin.create(kit());coin.setCount(3);m.shelf.setItem(0,coin);
+            var inv=sp().getInventory();for(int i=0;i<36;i++)inv.setItem(i,ItemStack.EMPTY);for(int i=0;i<4;i++)inv.armor.set(i,ItemStack.EMPTY);inv.offhand.set(0,ItemStack.EMPTY);
+            inv.items.set(3,st(Items.APPLE,5));inv.armor.set(3,st(Items.IRON_HELMET,1));inv.setChanged();}),"three coins in slot 1; plain gear");
+        for(boolean cinematic:new boolean[]{true,false}){String tag=cinematic?"camera shots on":"camera shots off";
+            step(5,()->{DefenseClientConfig.set(DefenseClientConfig.LOADOUT_CINEMATIC,cinematic);readyNow();face();resetOutline();},tag+": in front, looking at the doors");
+            step(5,()->phase=0,"count outlines before");
+            step(30,()->{},"look at the station for 1.5 s");
+            step(1,()->{phase=-1;check(tag+": before the print the outline is drawn on the station as usual",DRAWN[0]>0&&HIDDEN[0]==0,outlines());},"before");
+            step(2,QaRelease113::quickPrint,tag+": sneak + right-click the doors");
+            until(tag+": the client sees the print",60,()->clientElapsed()>=0,()->{phase=1;check(tag+": the print starts",printingOnServer(),messages());});
+            until(tag+": mid print",400,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.cycleStart()+24;},()->shot(cinematic?"r113_print_camera":"r113_print_own_eyes"));
+            until(tag+": the print ends",900,()->!printingOnServer()&&clientElapsed()<0,()->phase=2);
+            step(2,QaRelease113::face,"back in front of the station");
+            step(30,()->{},"look at it for 1.5 s");
+            step(1,()->{phase=-1;note("OUTLINE {}: {}",tag,outlines());
+                check(tag+": while the print plays no block outline is drawn",DRAWN[1]==0,outlines());
+                check(tag+": after it the outline is back",DRAWN[2]>0,outlines());
+                check(tag+": the kit was printed (chainmail chestplate worn)",srvGet(()->sp().getInventory().armor.get(2).is(Items.CHAINMAIL_CHESTPLATE)),inventory());},"after");
+        }
+        step(2,()->DefenseClientConfig.set(DefenseClientConfig.LOADOUT_CINEMATIC,true),"camera shots back on");
+        // Another player's print: this player, aside, sees no outline on the station; elsewhere as usual
+        step(5,()->{resetOutline();stand(S.getX()+3.5,sy,S.getZ()-3.5,S.getX()+1.5,sy+1.4,S.getZ()-1);},"aside, looking at the station's front");
+        step(2,()->{otherPrint(true);phase=3;check("this client sees another player's print playing (not its own)",clientStation().occupant!=null&&LoadoutClient.held()==null,"");},"another player's print, as the server syncs it to this client");
+        step(40,()->{},"watch it for 2 s");
+        step(1,()->{phase=4;stand(S.getX()+3.5,sy,S.getZ()-3.5,S.getX()+6.5,sy-.5,S.getZ()-3.5);},"look at the ground beside");
+        step(20,()->{},"1 s");
+        step(1,()->{phase=-1;note("OUTLINE another's print: {}",outlines());
+            check("another player's print: no outline on the station while it plays",DRAWN[3]==0&&HIDDEN[3]>0,outlines());
+            check("another player's print: other blocks keep their outline",DRAWN[4]>0&&HIDDEN[4]==0,outlines());},"bystander");
+        step(5,()->otherPrint(false),"that print over");
+
+        // 4. The replaced models: none missing, each from the front, the front left and behind
+        subjects();
+        step(10,()->srv(()->{for(var s:SUBJECTS)sl().setBlock(s.pos(),s.state().get(),3);}),"every replaced model in a row, facing north");
+        step(60,()->{srv(()->sp().setGameMode(GameType.SPECTATOR));mc().options.hideGui=true;view(ROW.getX()+20,sy+3,ROW.getZ()-12,ROW.getX()+20,sy,ROW.getZ());},"a spectator over the row (the chunks load)");
+        step(2,()->{
+            var models=mc().getModelManager();var missing=models.getMissingModel();
+            var bad=new ArrayList<String>();int states=0;
+            for(var e:BuiltInRegistries.BLOCK.entrySet()){if(!e.getKey().location().getNamespace().equals(EternalDefense.ID))continue;
+                for(var st:e.getValue().getStateDefinition().getPossibleStates()){if(st.getRenderShape()!=RenderShape.MODEL)continue;states++;if(mc().getBlockRenderer().getBlockModel(st)==missing)bad.add(st.toString());}}
+            check("every block state of the mod has its model ("+states+" states)",bad.isEmpty(),String.join(", ",bad.subList(0,Math.min(12,bad.size()))));
+            var badItems=new ArrayList<String>();int items=0;
+            for(var e:BuiltInRegistries.ITEM.entrySet()){if(!e.getKey().location().getNamespace().equals(EternalDefense.ID))continue;items++;
+                if(mc().getItemRenderer().getItemModelShaper().getItemModel(new ItemStack(e.getValue()))==missing)badItems.add(e.getKey().location().getPath());}
+            check("every item of the mod has its model ("+items+" items)",badItems.isEmpty(),String.join(", ",badItems));
+            var parts=new ArrayList<String>();int n=0;
+            for(var entry:Animations.PARTS.entrySet())for(var p:entry.getValue()){n++;if(models.getModel(Animations.part(entry.getKey(),p))==missing)parts.add(entry.getKey()+"_"+p);}
+            check("all "+n+" moving-part models load",parts.isEmpty(),String.join(", ",parts));
+            var placed=new ArrayList<String>();for(var s:SUBJECTS)if(!mc().level.getBlockState(s.pos()).is(s.state().get().getBlock()))placed.add(s.name());
+            check("all "+SUBJECTS.size()+" replaced models stand in the row",placed.isEmpty(),String.join(", ",placed));
+        },"models");
+        for(var s:SUBJECTS)for(int angle:new int[]{0,35,180}){
+            step(4,()->around(s,angle),s.name()+" at "+angle);
+            step(14,()->shot("r113_model_"+s.name()+"_"+angle),"picture");
+        }
+        // The Loadout Station's new model, closed, from the same three sides
+        var station=new Subject("loadout_station",null,S,.5,.6,.5,6.4);
+        for(int angle:new int[]{0,35,180}){step(4,()->around(station,angle),"loadout station at "+angle);step(14,()->shot("r113_model_loadout_station_"+angle),"picture");}
+        step(4,()->{mc().options.hideGui=false;srv(()->sp().setGameMode(GameType.SURVIVAL));tp(sx+.5,sy,sz+.5,0,0);},"HUD back; survival");
+
+        // 5. The logos in the game's mod list
+        step(10,()->mc().setScreen(new net.minecraftforge.client.gui.ModListScreen(null)),"open Mods");
+        for(var mod:List.of(EternalDefense.ID,"eternal_defense_displays","eternal_defense_gun_guide")){
+            step(5,()->{
+                var screen=(net.minecraftforge.client.gui.ModListScreen)mc().screen;var list=(net.minecraftforge.client.gui.widget.ModListWidget)field(screen,"modList");
+                var entry=list.children().stream().filter(x->x.getInfo().getModId().equals(mod)).findFirst().orElse(null);
+                if(entry==null){note("MODLIST {} is not loaded in this run",mod);return;}
+                screen.setSelected(entry);},"select "+mod);
+            step(10,()->{
+                var screen=(net.minecraftforge.client.gui.ModListScreen)mc().screen;var list=(net.minecraftforge.client.gui.widget.ModListWidget)field(screen,"modList");
+                if(list.children().stream().noneMatch(x->x.getInfo().getModId().equals(mod)))return;
+                var info=field(screen,"modInfo");var path=field(info,"logoPath");var dims=(net.minecraftforge.common.util.Size2i)field(info,"logoDims");
+                check(mod+": the mod list shows its logo, 480 x 160",path!=null&&dims!=null&&dims.width==480&&dims.height==160,path+" "+(dims==null?"":dims.width+"x"+dims.height));
+                shot("r113_modlist_"+mod);},"logo of "+mod);
+        }
+        step(5,()->mc().setScreen(null),"close");
+    }
+}

@@ -35,7 +35,7 @@ class RulesTest {
         assertTrue(Rules.showHud("raid",false,true));assertTrue(Rules.showHud("disabled",true,true));
         assertFalse(Rules.showHud("unplaced",true,true));assertFalse(Rules.showHud("decommissioning",true,true));assertFalse(Rules.showHud("raid",true,false));
     }
-    @Test void starterWavesGiveTheSlowFlintlockTimeToWork() {
+    @Test void starterWavesStaySmall() {
         assertEquals(4,Rules.enemies(0,1,1));assertEquals(7,Rules.enemies(0,1,2));assertEquals(6,Rules.enemies(0,3,1));
         assertEquals(2,Rules.contactDamage(0,0));assertEquals(1,Rules.contactDamage(0,4));assertTrue(Rules.contactDamage(5,0)>Rules.contactDamage(0,0));
     }

@@ -49,7 +49,7 @@ def overlay(kind, half, light):
              "shade": False, "faces": {"north": {"uv": [u, v, u + 4, v + 4], "texture": "#lamps"}}}
         if on: e["forge_data"] = {"block_light": 15, "sky_light": 15}
         out.append(e)
-    return {"credit": "Eternal Defense: the gate's live light, drawn over the owner's three lamps of this half (front face); the owner's files are unchanged",
+    return {"credit": "Eternal Defense",
             "ambientocclusion": False, "textures": {"lamps": "eternal_defense:block/supply_gate_lamps", "particle": "eternal_defense:block/supply_gate_lamps"}, "elements": out}
 
 def blockstate(model_base):

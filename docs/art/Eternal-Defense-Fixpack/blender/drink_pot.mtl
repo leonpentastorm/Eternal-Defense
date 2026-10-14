@@ -1,0 +1,3 @@
+newmtl drink_pot
+Kd 1 1 1
+map_Kd textures/block/drink_pot.png

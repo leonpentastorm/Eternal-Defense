@@ -313,7 +313,11 @@ public final class BeaconClient {
             if(tab==2&&upgradeHoverCosts!=null){
                 var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);var fabItem=ItemStack.EMPTY;String id="";
                 for(int i=0;i<fabricationButtons.size()&&i<rows.size();i++){var cell=fabricationCell(i,left+14,pw-28);if(Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h)){fabItem=ItemStack.of(rows.getCompound(i).getCompound("item"));id=rows.getCompound(i).getString("id");}}
-                Ui.materialTooltip(g,font,fabItem.isEmpty()?List.of(Ui.t("tab.fabrication")):List.of(fabItem.getHoverName(),Ui.t("fabrication.desc."+id)),upgradeHoverCosts,mx,my);
+                boolean none=false;for(int i=0;i<rows.size();i++)if(rows.getCompound(i).getString("id").equals(id))none=rows.getCompound(i).getBoolean("empty");
+                // A table with nothing to make shows why instead of a price
+                if(none&&!fabItem.isEmpty()){var lines=new ArrayList<net.minecraft.util.FormattedCharSequence>();lines.add(fabItem.getHoverName().getVisualOrderText());
+                    lines.addAll(font.split(Ui.t("fabrication.desc."+id),240));lines.addAll(font.split(Ui.t("fabrication.empty").copy().withStyle(net.minecraft.ChatFormatting.GOLD),240));g.renderTooltip(font,lines,mx,my);}
+                else Ui.materialTooltip(g,font,fabItem.isEmpty()?List.of(Ui.t("tab.fabrication")):List.of(fabItem.getHoverName(),Ui.t("fabrication.desc."+id)),upgradeHoverCosts,mx,my);
             }
         }
         /** Starter installations in three groups: the four tables, the kitchen, and support and trade. */
@@ -356,18 +360,19 @@ public final class BeaconClient {
                 button.setX(cell.x+cell.w-41);button.setY(cell.y+(cell.h-18)/2);
                 button.visible=i<rows.size()&&fabShown(cell);if(i>=rows.size())continue;
                 var row=rows.getCompound(i);var id=row.getString("id");var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
-                boolean enough=on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count"));
+                boolean empty=row.getBoolean("empty"),enough=!empty&&(on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count")));
                 int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;
                 if(cell.y+cell.h<viewTop||cell.y>viewBottom)continue;
                 Ui.card(g,cell.x,cell.y,cell.w,cell.h,enough&&here?FAB_ACCENT[group]:Ui.EDGE);
                 g.renderItem(item,cell.x+7,cell.y+(cell.h-16)/2);
                 Ui.text(g,font,Ui.t("fabrication.name."+id),cell.x+27,cell.y+4,enough&&here?Ui.INK:Ui.MUTED,cell.w-27-44);
                 int costX=cell.x+27,costY=cell.y+cell.h-12;
-                for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));int need=cost.getInt("count"),have=cost.getInt("have");boolean short_=!on("creative")&&have<need;
+                if(empty)Ui.text(g,font,Ui.t("fabrication.empty_short"),costX,costY,Ui.ORANGE,cell.w-27-44);
+                else for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));int need=cost.getInt("count"),have=cost.getInt("have");boolean short_=!on("creative")&&have<need;
                     g.pose().pushPose();g.pose().translate(costX,costY-1,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
                     var count=Component.literal(Integer.toString(need));g.drawString(font,count,costX+9,costY,short_?Ui.ORANGE:Ui.MUTED,false);costX+=12+font.width(count);
                 }
-                button.active=here&&enough;button.warning=!enough&&here;
+                button.active=here&&enough;button.warning=!enough&&here&&!empty;
                 if(inView&&Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h))upgradeHoverCosts=costs;
             }
             g.disableScissor();

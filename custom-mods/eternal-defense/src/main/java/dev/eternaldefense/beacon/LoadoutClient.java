@@ -106,6 +106,15 @@ public final class LoadoutClient {
         /** Where the held player goes this tick from where the tick began: the path, reached at no more than CATCH_UP blocks a tick. */
         private static Vec3 step(Vec3 from,Vec3 target){var n=LoadoutRules.toward(new double[]{from.x,from.y,from.z},new double[]{target.x,target.y,target.z});return new Vec3(n[0],n[1],n[2]);}
         @SubscribeEvent public static void heldInteract(InputEvent.InteractionKeyMappingTriggered e){if(held()!=null&&held().timeline().holding(elapsed(held(),0))){e.setCanceled(true);e.setSwingHand(false);}}
+        // No block outline over a print: none for the printed player, none on a printing station for anyone
+        @SubscribeEvent public static void heldOutline(net.minecraftforge.client.event.RenderHighlightEvent.Block e){if(printing()||playing(e.getTarget().getBlockPos()))e.setCanceled(true);}
+        static boolean printing(){var be=held();return LoadoutCinematic.running()||be!=null&&playing(be);}
+        /** The print plays at this station: from the walk in until its doors have closed. */
+        static boolean playing(LoadoutStation.StationEntity be){float t=elapsed(be,0);return be.occupant!=null&&t>=0&&t<be.timeline().end();}
+        private static boolean playing(net.minecraft.core.BlockPos pos){
+            var level=Minecraft.getInstance().level;if(level==null||!LoadoutStation.isStation(level.getBlockState(pos)))return false;
+            return level.getBlockEntity(LoadoutStation.anchor(level,pos)) instanceof LoadoutStation.StationEntity be&&playing(be);
+        }
     }
 
     // Renderers

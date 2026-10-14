@@ -60,8 +60,8 @@ final class LoadoutModel {
     static final Set<String> STATION_GLOW_PREFIXES=Set.of("Screen","Status_lamps","Lamp_","Beacon_L","Beacon_R","Ceiling_light_f","Ceiling_light_b");
     static final Set<String> RING_GLOW=Set.of("Print_front","Print_back","Print_L","Print_R");
     // README l.120: faces per model
-    static final Map<String,Integer> FACES=Map.of("loadout_station",300,"loadout_station_door_right",62,"loadout_station_door_left",65,"loadout_station_ring",81,
-        "loadout_station_arm_a",28,"loadout_station_arm_b",28,"loadout_station_assembled",564);
+    static final Map<String,Integer> FACES=Map.of("loadout_station",300,"loadout_station_door_right",65,"loadout_station_door_left",68,"loadout_station_ring",81,
+        "loadout_station_arm_a",28,"loadout_station_arm_b",28,"loadout_station_assembled",570);
 
     // README l.125: the capsule, 1 x 1 x 2, anchor at the bottom, front north
     static final double CAPSULE_HEIGHT=32;

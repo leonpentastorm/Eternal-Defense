@@ -27,7 +27,7 @@ SPLITS = {
     'satellite_beacon': {
         'azimuth': ['Turntable', 'Yoke_base', 'Yoke_arm_0', 'Yoke_arm_1', 'Elevation_axle'],
         'dish': ['Dish', 'Dish_wide', 'Dish_tall', 'Dish_wide_2', 'Dish_tall_2', 'Shell', 'Shell_v', 'Shell_h', 'Hub', 'Mount',
-                 'LNB', 'Horn', 'Emitter', 'Strut_low', 'Strut_high'],
+                 'LNB', 'Horn', 'Emitter', 'Feed_boom_low', 'Feed_boom_high'],
         'whip': ['Whip', 'Whip_tip'],
     },
     'command_table': {

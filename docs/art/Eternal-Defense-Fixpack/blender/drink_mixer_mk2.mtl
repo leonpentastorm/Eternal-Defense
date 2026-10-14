@@ -1,0 +1,3 @@
+newmtl drink_mixer_mk2
+Kd 1 1 1
+map_Kd textures/block/drink_mixer_mk2.png

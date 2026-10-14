@@ -3,3 +3,11 @@ doors 0-105 deg: CLEAR
   right door at 100 deg spans x -7.66..0.42 z -23.66..-9.84
 ring 0..-29.0 px: CLEAR
   lowest ring point at full travel: y -13.50 (floor plate top -13.5)
+arms +-45 deg: CLEAR
+  lowest arm point over the sweep: y 21.99 (must stay above 21.5)
+clear column 14 x 35 x 14 px (x,y,z): EMPTY
+capsule door 0..4 px: CLEAR | closed covers window: True, open clears it: True
+coplanar overlapping faces: none
+faces: station parts {'loadout_station': 300, 'loadout_station_door_left': 68, 'loadout_station_door_right': 65, 'loadout_station_ring': 81, 'loadout_station_arm_a': 28, 'loadout_station_arm_b': 28} total 570 (limit ~700)
+faces: capsule parts {'loadout_capsule': 148, 'loadout_capsule_door': 2} total 150 (limit ~150)
+ALL CHECKS PASS
