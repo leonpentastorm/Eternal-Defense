@@ -1,12 +1,13 @@
 # Change log
 
-## 1.1.1 — The owner's list after 1.1.0 (2026-10-14, branch `feature/loadout-station`, in progress: no release jars yet)
+## 1.1.1 — The owner's list after 1.1.0 (2026-10-14, branch `feature/loadout-station`)
 
 After 1.1.0 on the same branch; `dev` and `main` unchanged. No packet added or changed: network protocol stays **41**. Rules: GDD 1.1.1; tests: `docs/ROUND-1.1.1-TESTING.md`.
 
 * **Loadout Station clicks reversed** (owner): a right-click anywhere on the station opens its screen; **sneak and right-click** prints the active coin at once, even with an item in hand. The sneak still held from that click does not skip the camera shots; a fresh press does.
 * **The wardrobe** (owner): the 9 coin slots stand in a column between the closet and the pack area, numbered on a brass rail, the selected row lit and the active slot tagged **Active** (the slot numbers no longer overlap the coin counts); a click on a row shows that slot in the closet. The pack area stays a row. The screen is 408 pixels wide.
 * **The capsule plunges** (owner): no parachute; it falls from 96 blocks above at 4 blocks a tick through anything on the way, trailing smoke, and hits as the countdown ends with an explosion's sound, smoke, the ground thrown up and a short view shake nearby (no block broken, no one hurt); its door then **opens by itself**. With the kit still inside, closing the menu leaves it open; emptied, it folds away.
+* **After a print** the player is let go standing on the exit cell (no slide; put on it when more than half a block off).
 * **The owner's Loadout radio lines**: four lines answer a Loadout call (`tools/audio/import_chatter.py`, group "Loadout chatter"); the no-voice build keeps the supply call's game sound.
 * **Exchange**: a scroll bar beside the offers (drag it or use the wheel); the "offers N to M of T" line sits under the list instead of behind the tabs; a long offer name reads in full on hover.
 * **Support Platform Shop**: hovering a product shows its whole note and the item's own description.

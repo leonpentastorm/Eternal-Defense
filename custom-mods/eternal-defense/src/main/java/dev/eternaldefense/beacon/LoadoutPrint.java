@@ -212,6 +212,7 @@ final class LoadoutPrint {
             }
             if(t==tl.closeStart()){
                 sound(level,s.anchor,DefenseConfig.LOADOUT_DOOR_SOUND.get(),.9f,.7f);
+                if(p!=null&&p.level()==level)release(p,s);
                 if(p!=null){say(p,"printed."+(s.stowedTo.isEmpty()?"none":s.stowedTo),ChatFormatting.GREEN);}
             }
             if(t>=tl.end())finish(server,s,be);
@@ -226,6 +227,12 @@ final class LoadoutPrint {
             p.connection.teleport(at[0],at[1],at[2],yaw,p.getXRot());
             com.mojang.logging.LogUtils.getLogger().info("[Loadout Station] {} was {} blocks off the path at tick {}: put back",s.name,String.format(Locale.ROOT,"%.2f",drift),s.elapsed(now));
         }
+    }
+    /** The walk out is over: the player is let go on the exit cell (put there when more than RELEASE blocks off). */
+    private static void release(ServerPlayer p,Session s){
+        p.setDeltaMovement(Vec3.ZERO);var e=s.exit;double off=Math.sqrt(p.distanceToSqr(e[0],e[1],e[2]));
+        if(off>LoadoutRules.RELEASE){s.corrections++;p.connection.teleport(e[0],e[1],e[2],s.standYaw,p.getXRot());
+            com.mojang.logging.LogUtils.getLogger().info("[Loadout Station] {} was {} blocks off the exit cell: put on it",s.name,String.format(Locale.ROOT,"%.2f",off));}
     }
     private static void finish(MinecraftServer server,Session s,LoadoutStation.StationEntity be){
         var data=LoadoutData.get(server.overworld());long now=now(server);

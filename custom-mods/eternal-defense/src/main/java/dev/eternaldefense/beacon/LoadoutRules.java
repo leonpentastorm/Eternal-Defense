@@ -39,6 +39,8 @@ final class LoadoutRules {
     static final int TURN_TICKS=8;
     /** Fastest a held player moves on their own screen to reach the path, when the print reached them late (blocks per tick). */
     static final double CATCH_UP=.45;
+    /** At the end of the walk out the player is put on the exit cell when further off than this (blocks). */
+    static final double RELEASE=.5;
     /** Ticks a client may run behind the server's clock before its held player counts as off the path. */
     static final int LAG_TICKS=3;
 

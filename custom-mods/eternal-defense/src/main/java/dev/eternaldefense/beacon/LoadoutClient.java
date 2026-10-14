@@ -97,6 +97,8 @@ public final class LoadoutClient {
             var mc=Minecraft.getInstance();if(e.phase!=TickEvent.Phase.END||e.side.isServer()||e.player!=mc.player)return;
             var be=held();if(be==null)return;float t=elapsed(be,0);if(!be.timeline().holding(t))return;
             var p=mc.player;var to=step(new Vec3(p.xo,p.yo,p.zo),at(be,t+1));p.setPos(to.x,to.y,to.z);
+            // The last held tick: let go standing still, with no step left to slide on
+            if(!be.timeline().holding(t+1))p.setDeltaMovement(Vec3.ZERO);
             float yaw=yaw(be,t+1);p.yBodyRot=yaw;
             if(LoadoutCinematic.running()){p.setYRot(yaw);p.yHeadRot=yaw;p.setXRot(0);}
             p.fallDistance=0;

@@ -194,4 +194,11 @@ class LoadoutRulesTest {
         String cinematic=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutCinematic.java"));
         assertTrue(cinematic.contains("if(!mc.options.keyShift.isDown())sneakFreeFor=be.start;else if(sneakFreeFor==be.start){skip(be);return;}"),"the sneak held for a quick print does not skip the shots");
     }
+    @Test void thePlayerIsLetGoStandingOnTheExitCell() throws Exception{
+        assertTrue(LoadoutRules.RELEASE>0&&LoadoutRules.RELEASE<=LoadoutRules.DRIFT,"at the end of the walk out a smaller miss than during it is put right");
+        String print=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutPrint.java"));
+        assertTrue(print.contains("if(t==tl.closeStart()){")&&print.contains("release(p,s);"),"the release happens as the doors start to close");
+        String client=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutClient.java"));
+        assertTrue(client.contains("if(!be.timeline().holding(t+1))p.setDeltaMovement(Vec3.ZERO);"),"the last held step leaves no speed to slide on");
+    }
 }
