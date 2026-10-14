@@ -122,7 +122,7 @@ public final class QaWorld {
         step(5,()->{mc().options.hideGui=true;camera(-6,2,9,4,1.5,3);},"cam all");
         step(30,()->shot("r3_gear"),"shot");
         step(2,()->camera(5,3,14,8,2,6),"cam cannon");step(30,()->shot("r3_cannon"),"shot");
-        boolean auraOnly=new java.io.File("/tmp/claude-0/qa-aura.flag").exists();
+        boolean auraOnly=new java.io.File("/tmp/ed-qa/qa-aura.flag").exists();
         if(!auraOnly){
         // The cannon menu
         step(5,()->{mc().options.hideGui=false;energy(100);face(sx+8.5,sy,sz+9.5,0,10);},"energy, go near the cannon");
@@ -272,9 +272,9 @@ public final class QaWorld {
     static void zombieAt(net.minecraft.server.level.ServerLevel level,double x,double y,double z){var z0=net.minecraft.world.entity.EntityType.ZOMBIE.create(level);z0.setNoAi(true);z0.setPersistenceRequired();z0.setPos(x,y,z);level.addFreshEntity(z0);}
     static final List<String> bunkerHpLog=new ArrayList<>();static float bunkerLast;static long r4Land,r4Fire,r4Parcel;static int r4Shots;static Vec3 r4At;static float r4Hp;
     static final List<Long> SHOT_TICKS=new ArrayList<>();static int lastShots;
-    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r4.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r4.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     // ======================= ROUND 5
-    static boolean part5(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r5.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part5(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r5.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     static net.minecraft.world.entity.Mob r5Mob;static final java.util.Set<String> r5Types=new java.util.TreeSet<>();
     static boolean spawnRaider(String type,int tier){
         return srvGet(()->{try{var d=CampaignData.get(sl());d.raidType=type;d.raidTier=tier;d.introRaid=false;d.phase="raid";d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=50;
@@ -864,7 +864,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         step(10,()->check("without a beacon the platform will not open",strangerMenu,""),"disabled platform");
     }
     // ======================= MUSIC PLAYER + BEAUTIFY (flag file qa-r7.flag; parts: music settings menu fire) =======================
-    static boolean part7(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r7.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part7(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r7.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     static void raidState(String type,boolean hard,int wave){srv(()->{var d=CampaignData.get(sl());d.phase="raid";d.raidType=type;d.hardRaid=hard;d.raidTier=0;d.introRaid=false;d.introCompleted=true;d.wave=wave;d.raidsStarted=7;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.setDirty();BeaconNetwork.syncNearby(sl(),d);});}
     static String playing(){var s=RaidMusic.nowPlaying();return s==null?"none":s.id()+"/"+s.pool();}
     static RaidPlaylist.Song expected(String pool,int wave){return srvGet(()->{var d=CampaignData.get(sl());return RaidPlaylist.song(pool,RaidPlaylist.seed(d.beacon.asLong(),d.raidsStarted),wave);});}
@@ -987,7 +987,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
     }
     // ======================= HAND-TUNED SOUNDS AND FIRE SUPPORTS (flag file qa-r8.flag) =======================
-    static boolean part8(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r8.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part8(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r8.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     static int r8Settled=-1,r8Shot=-1,r8Tick,r8Shots0,r8Grinds0;static boolean r8Calling;static int maxFire,maxSnow,maxLight;static boolean sawSlow5,sawHaste,sawGlow8,sawWell,sawTipped,sawShake,sawPotion;static float minHp;static double mean0,minMean8,maxMean8,meanWell3s=Double.NaN;static boolean armWell;static int wellTick=-1;static int alarms;static long lastAlarmAt;
     /** The server's cannon, for code already running on the server thread (cannon would wait on that same thread). */
     static SupportCannon.CannonEntity gunSrv(){return SupportCalls.cannon(sl(),sp().getUUID());}
@@ -1114,7 +1114,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
     }
     // R9: the songs with no repeat in a raid, the new fanfare, the radio chatter instead of the siren
-    static boolean part9(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r9.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return false;}}
+    static boolean part9(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r9.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return false;}}
     /** Every sound of the mod (and the firework pop) the client really starts: game time, event, pitch. */
     record Heard(long tick,long nanos,String id,float pitch,double x,double y,double z){}
     static final java.util.List<Heard> HEARD=new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -1266,7 +1266,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             if(++r8Watch%20==0)srv(()->{var d=CampaignData.get(sl());if(d.lastAttackTick!=r8LastAttack&&d.beacon!=null){r8LastAttack=d.lastAttackTick;var b=Vec3.atCenterOf(d.beacon);var who=new StringBuilder();
                 for(var ent:sl().getEntities(null,new net.minecraft.world.phys.AABB(b,b).inflate(6)))if(ent instanceof net.minecraft.world.entity.Mob m&&!(ent instanceof BeaconCombat.Objective))who.append(m.getType().getDescriptionId()).append(m.isNoAi()?"(noAI)":"").append(String.format(" %.1f; ",Math.sqrt(m.distanceToSqr(b))));
                 com.mojang.logging.LogUtils.getLogger().info("QA_NOTE beacon hit at game tick {}; mobs within 6 blocks: {}",d.lastAttackTick,who.length()==0?"none":who);}});}
-        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/claude-0/qa-r9.flag").exists())scriptR9();else if(new java.io.File("/tmp/claude-0/qa-r8.flag").exists())scriptR8();else if(new java.io.File("/tmp/claude-0/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/claude-0/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/claude-0/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/claude-0/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/claude-0/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/claude-0/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());if(new java.io.File("/tmp/ed-qa/qa-r9.flag").exists())scriptR9();else if(new java.io.File("/tmp/ed-qa/qa-r8.flag").exists())scriptR8();else if(new java.io.File("/tmp/ed-qa/qa-r7.flag").exists())scriptR7();else if(new java.io.File("/tmp/ed-qa/qa-models.flag").exists())scriptModels();else if(new java.io.File("/tmp/ed-qa/qa-r6.flag").exists())scriptR6();else if(new java.io.File("/tmp/ed-qa/qa-r5.flag").exists())scriptR5();else if(new java.io.File("/tmp/ed-qa/qa-r4.flag").exists())scriptR4();else if(new java.io.File("/tmp/ed-qa/qa-r3.flag").exists())scriptR3();else script();com.mojang.logging.LogUtils.getLogger().info("QA_START spawn {} {} {}",sx,sy,sz);return;}
         if(wait>0){wait--;return;}
         var head=STEPS.peek();
         if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)com.mojang.logging.LogUtils.getLogger().info("QA_TIMEOUT {}",head[2]);}
@@ -1277,7 +1277,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     }
 
     // ======================= MESS HALL V3 (parts: sign halls ui effects raids air march siege sun)
-    static boolean part6(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r6.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part6(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-r6.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     static final net.minecraft.world.level.block.Block[] HALLS=new net.minecraft.world.level.block.Block[4];
     static net.minecraft.world.level.block.Block hallBlock(int mk){return switch(mk){case 2->EternalDefense.MESS_HALL_II.get();case 3->EternalDefense.MESS_HALL_III.get();case 4->EternalDefense.MESS_HALL_IV.get();default->EternalDefense.MESS_HALL_I.get();};}
     static int distToBeacon(net.minecraft.world.entity.Entity e){var b=B();return (int)Math.sqrt(e.distanceToSqr(b.getX()+.5,b.getY(),b.getZ()+.5));}

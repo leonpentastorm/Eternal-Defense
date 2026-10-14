@@ -23,7 +23,8 @@ public final class GunDisplays {
         rack("wall_case",false,true,false,true,false),rack("wall_case_wide",true,true,false,true,false),
         rack("display_heavy",true,false,false,false,true));
     public static final RegistryObject<BlockEntityType<DisplayRacks.DisplayEntity>> DISPLAY_ENTITY=ENTITIES.register("gun_display",()->BlockEntityType.Builder.of(DisplayRacks.DisplayEntity::new,RACKS.stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
-    public static final RegistryObject<CreativeModeTab> TAB=TABS.register("displays",()->CreativeModeTab.builder().title(Component.translatable("itemGroup.eternal_defense_displays")).icon(()->new ItemStack(RACKS.get(7).get())).displayItems((p,out)->RACKS.forEach(b->out.accept(b.get()))).build());
+    public static final RegistryObject<Item> TUNER=ITEMS.register("display_tuner",DisplayTuner::new);
+    public static final RegistryObject<CreativeModeTab> TAB=TABS.register("displays",()->CreativeModeTab.builder().title(Component.translatable("itemGroup.eternal_defense_displays")).icon(()->new ItemStack(RACKS.get(7).get())).displayItems((p,out)->{RACKS.forEach(b->out.accept(b.get()));out.accept(TUNER.get());}).build());
     private static RegistryObject<Block> rack(String name,boolean wide,boolean wall,boolean compact,boolean glass,boolean heavy){RegistryObject<Block> block=BLOCKS.register(name,()->new DisplayRacks.Rack(wide,wall,compact,glass,heavy));ITEMS.register(name,()->new DisplayRacks.RackItem(block.get()));return block;}
-    public GunDisplays(){var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);}
+    public GunDisplays(){var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);DisplayNetwork.register();}
 }

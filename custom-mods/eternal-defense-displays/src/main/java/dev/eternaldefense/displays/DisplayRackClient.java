@@ -22,8 +22,12 @@ public final class DisplayRackClient {
             pose.pushPose();pose.translate(.5,.5,.5);
             int rotation=switch(state.getValue(DisplayRacks.FACING)){case EAST->90;case SOUTH->180;case WEST->270;default->0;};pose.mulPose(Axis.YN.rotationDegrees(rotation));
             pose.translate(rack.wide?.5:0,rack.gunY()/16.0-.5,rack.gunZ()/16.0-.5);
+            // The tuner's settings: right and front as seen by a player facing the stand
+            var tune=TunerScreen.shown(entity);
+            pose.translate(-tune.right()/16.0,tune.up()/16.0,-tune.out()/16.0);
+            pose.mulPose(Axis.YP.rotationDegrees(tune.turn()));pose.mulPose(Axis.ZN.rotationDegrees(tune.tilt()));pose.mulPose(Axis.XP.rotationDegrees(tune.roll()));
             // Use TaCZ's native FIXED item path so skins and installed attachments render too.
-            float scale=rack.gunScale();pose.scale(scale,scale,scale); // FIXED guns are already upright; no extra inversion.
+            float scale=rack.gunScale()*tune.size();pose.scale(scale,scale,scale); // FIXED guns are already upright; no extra inversion.
             Minecraft.getInstance().getItemRenderer().renderStatic(entity.gun(),ItemDisplayContext.FIXED,light,overlay,pose,buffers,entity.getLevel(),0);pose.popPose();
         }
         @Override public int getViewDistance(){return 48;}

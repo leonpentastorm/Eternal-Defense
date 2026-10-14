@@ -1,18 +1,28 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "item": "eternal_defense_displays:display_case"
-    },
-    {
-      "item": "eternal_defense_displays:display_case"
-    },
-    {
-      "item": "minecraft:iron_ingot"
-    }
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "HWH",
+    "III"
   ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "H": {
+      "item": "minecraft:tripwire_hook"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "W": {
+      "tag": "minecraft:wool_carpets"
+    }
+  },
   "result": {
     "item": "eternal_defense_displays:display_case_wide",
     "count": 1
-  }
+  },
+  "show_notification": true
 }

@@ -129,7 +129,7 @@ public final class QaRelease101 {
             check("no unfinished parts in the tab",main.stream().noneMatch(s->path(s).startsWith("incomplete_")),"");
             log("QA_NOTE Eternal Defense tab: {}",main.stream().map(s->path(s)).toList());
             var stands=tab("eternal_defense_displays:displays");
-            if(withDisplays){check("the displays tab holds the 11 stands",stands.size()==11&&stands.stream().allMatch(s->ns(s).equals("eternal_defense_displays")),stands.size()+"");}
+            if(withDisplays){check("the displays tab holds the 11 stands",stands.stream().filter(s->s.getItem() instanceof net.minecraft.world.item.BlockItem).count()==11&&stands.stream().allMatch(s->ns(s).equals("eternal_defense_displays")),stands.size()+"");}
             else check("no displays tab without the mod",stands.isEmpty(),""+stands.size());
         },"creative tabs");
         step(5,()->{

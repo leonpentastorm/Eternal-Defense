@@ -44,20 +44,28 @@ public final class DisplayRacks {
         float gunScale(){return heavy?.65f:glass?(wide?.48f:.30f):(wide?.8f:.5f);}
         double gunY(){return heavy?13.5:glass?(wall?9.75:wide?20:17.25):(compact?(wall?7.75:17.5):(wall?8.5:19.5));}
         double gunZ(){return glass?(wall?12.25:8):(compact?(wall?13.25:8.5):(wall?12:8));}
-        private final Map<Direction,VoxelShape> shapes=new EnumMap<>(Direction.class);
+        private final Map<Direction,VoxelShape> shapes=new EnumMap<>(Direction.class),partShapes=new EnumMap<>(Direction.class),solid=new EnumMap<>(Direction.class),partSolid=new EnumMap<>(Direction.class);
         Rack(boolean wide,boolean wall,boolean compact){this(wide,wall,compact,false);}
         Rack(boolean wide,boolean wall,boolean compact,boolean glass){this(wide,wall,compact,glass,false);}
         Rack(boolean wide,boolean wall,boolean compact,boolean glass,boolean heavy){super(Properties.of().strength(2.5f,6).noOcclusion());this.wide=wide;this.wall=wall;this.compact=compact;this.glass=glass;this.heavy=heavy;
             registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(PART,false));
+            // Floor stands span the block's width, as the gun lying on them does
+            var b=(heavy?Block.box(.25,0,.75,15.75,6.75,15.25):glass?(wall?Block.box(.5,0,8.75,15.5,16,16):Block.box(.5,0,.75,15.5,wide?27:22,15)):(wall?Block.box(0,2,10,16,14,16):Block.box(0,0,2,16,compact?18.5:20.5,14))).bounds();
+            // The heavy stand's outline also covers the gun above its low base
+            var aim=heavy?b.setMaxY(20/16.0):b;
             for(Direction facing:Direction.Plane.HORIZONTAL){
-                VoxelShape s=heavy?Block.box(.25,0,.75,15.75,6.75,15.25):glass?(wall?Block.box(.5,0,8.75,15.5,16,16):Block.box(.5,0,.75,15.5,wide?27:22,15)):(wall?Block.box(0,2,10,16,14,16):Block.box(2,0,2,14,compact?18.5:20.5,14));
                 int turns=switch(facing){case EAST->1;case SOUTH->2;case WEST->3;default->0;};
-                for(int turn=0;turn<turns;turn++){var box=s.bounds();s=Shapes.box(1-box.maxZ,box.minY,box.minX,1-box.minZ,box.maxY,box.maxX);}shapes.put(facing,s);
+                shapes.put(facing,turned(half(aim,false),turns));partShapes.put(facing,turned(half(aim,true),turns));
+                solid.put(facing,turned(half(b,false),turns));partSolid.put(facing,turned(half(b,true),turns));
             }
         }
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(FACING,PART);}
         @Override public RenderShape getRenderShape(BlockState s){return s.getValue(PART)?RenderShape.INVISIBLE:RenderShape.MODEL;}
-        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return shapes.get(s.getValue(FACING));}
+        /** The halves of a wide stand meet, so the middle where its gun sits can be aimed at. */
+        private AABB half(AABB b,boolean part){return !wide?b:part?b.setMinX(0):b.setMaxX(1);}
+        private static VoxelShape turned(AABB box,int turns){for(int turn=0;turn<turns;turn++)box=new AABB(1-box.maxZ,box.minY,box.minX,1-box.minZ,box.maxY,box.maxX);return Shapes.create(box);}
+        @Override public VoxelShape getShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return (s.getValue(PART)?partShapes:shapes).get(s.getValue(FACING));}
+        @Override public VoxelShape getCollisionShape(BlockState s,BlockGetter l,BlockPos p,CollisionContext c){return (s.getValue(PART)?partSolid:solid).get(s.getValue(FACING));}
         @Override public net.minecraft.world.level.material.PushReaction getPistonPushReaction(BlockState s){return net.minecraft.world.level.material.PushReaction.BLOCK;}
         @Override public BlockState getStateForPlacement(BlockPlaceContext c){
             var state=defaultBlockState().setValue(FACING,c.getHorizontalDirection().getOpposite());BlockPos p=c.getClickedPos();
@@ -78,7 +86,8 @@ public final class DisplayRacks {
         @Override public InteractionResult use(BlockState s,Level l,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){
             if(hand!=InteractionHand.MAIN_HAND)return InteractionResult.PASS;
             var entity=l.getBlockEntity(anchor(l,p));if(!(entity instanceof DisplayEntity display))return InteractionResult.PASS;
-            var held=player.getItemInHand(hand);if(!held.isEmpty()&&!isGun(held))return InteractionResult.PASS;
+            var held=player.getItemInHand(hand);if(held.is(GunDisplays.TUNER.get()))return DisplayTuner.tune(l,p,player);
+            if(!held.isEmpty()&&!isGun(held))return InteractionResult.PASS;
             if(!l.isClientSide){
                 if(held.isEmpty()){ItemStack gun=display.take();if(!gun.isEmpty()&&!player.getInventory().add(gun))player.drop(gun,false);}
                 else {ItemStack previous=display.swap(held.copyWithCount(1));if(!player.isCreative())held.shrink(1);if(!previous.isEmpty()&&!player.getInventory().add(previous))player.drop(previous,false);}
@@ -96,26 +105,42 @@ public final class DisplayRacks {
         }
     }
     public static final class DisplayEntity extends BlockEntity {
-        private ItemStack gun=ItemStack.EMPTY;
+        private ItemStack gun=ItemStack.EMPTY;private DisplayTuning.Tune tune=DisplayTuning.Tune.DEFAULT;
         public DisplayEntity(BlockPos p,BlockState s){super(GunDisplays.DISPLAY_ENTITY.get(),p,s);}
         public ItemStack gun(){return gun;}
+        /** How the gun sits on this stand; it stays when guns are swapped. */
+        public DisplayTuning.Tune tune(){return tune;}
+        public void tune(DisplayTuning.Tune t){t=t.clamped();if(t.equals(tune))return;tune=t;changed();}
+        /** Shown on this client before the server answers. */
+        void preview(DisplayTuning.Tune t){tune=t.clamped();}
         public ItemStack swap(ItemStack incoming){ItemStack previous=gun;gun=incoming.copyWithCount(1);changed();return previous;}
         public ItemStack take(){var previous=gun;gun=ItemStack.EMPTY;if(!previous.isEmpty())changed();return previous;}
         private void changed(){setChanged();if(level!=null&&!level.isClientSide)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
-        @Override protected void saveAdditional(CompoundTag n){super.saveAdditional(n);if(!gun.isEmpty())n.put("Item",gun.save(new CompoundTag()));}
-        @Override public void load(CompoundTag n){super.load(n);gun=n.contains("Item",Tag.TAG_COMPOUND)?ItemStack.of(n.getCompound("Item")):ItemStack.EMPTY;}
-        @Override public CompoundTag getUpdateTag(){return saveWithoutMetadata();}
+        @Override protected void saveAdditional(CompoundTag n){
+            super.saveAdditional(n);if(!gun.isEmpty())n.put("Item",gun.save(new CompoundTag()));
+            if(!tune.isDefault()){var t=new CompoundTag();for(var s:DisplayTuning.Setting.values())t.putFloat(s.key(),tune.get(s));n.put("Tune",t);}
+        }
+        @Override public void load(CompoundTag n){
+            super.load(n);gun=n.contains("Item",Tag.TAG_COMPOUND)?ItemStack.of(n.getCompound("Item")):ItemStack.EMPTY;
+            var t=DisplayTuning.Tune.DEFAULT;
+            if(n.contains("Tune",Tag.TAG_COMPOUND)){var c=n.getCompound("Tune");for(var s:DisplayTuning.Setting.values())if(c.contains(s.key(),Tag.TAG_ANY_NUMERIC))t=t.with(s,c.getFloat(s.key()));}
+            tune=t;
+        }
+        // An empty update tag never reaches the client, so an emptied stand says so
+        @Override public CompoundTag getUpdateTag(){var n=saveWithoutMetadata();n.putBoolean("Shown",!gun.isEmpty());return n;}
         @Override public ClientboundBlockEntityDataPacket getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
-        @Override public AABB getRenderBoundingBox(){return new AABB(worldPosition).inflate(2);}
+        @Override public AABB getRenderBoundingBox(){return new AABB(worldPosition).inflate(3);}
     }
     static final class RackItem extends BlockItem {
         RackItem(Block b){super(b,new Item.Properties());}
-        /** Short interaction cues from the language file; the second block describes only what is special about */
+        /** Short interaction cues from the language file, then what is special about this stand. */
         @Override public void appendHoverText(ItemStack s,Level l,List<Component> lines,TooltipFlag flag){
             super.appendHoverText(s,l,lines,flag);
-            lines.add(Component.translatable("tooltip.eternal_defense_displays.insert").withStyle(net.minecraft.ChatFormatting.GRAY));
-            lines.add(Component.translatable("tooltip.eternal_defense_displays.swap").withStyle(net.minecraft.ChatFormatting.GRAY));
+            var interact=Component.keybind("key.tacz.interact.desc").withStyle(net.minecraft.ChatFormatting.WHITE);
+            lines.add(Component.translatable("tooltip.eternal_defense_displays.insert",interact).withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.translatable("tooltip.eternal_defense_displays.swap",interact).withStyle(net.minecraft.ChatFormatting.GRAY));
             lines.add(Component.translatable("tooltip.eternal_defense_displays.retrieve").withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.translatable("tooltip.eternal_defense_displays.tune").withStyle(net.minecraft.ChatFormatting.GRAY));
             if(getBlock() instanceof Rack rack){
                 if(rack.wall)lines.add(Component.translatable("tooltip.eternal_defense_displays.wall").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
                 if(rack.glass)lines.add(Component.translatable("tooltip.eternal_defense_displays.glass").withStyle(net.minecraft.ChatFormatting.DARK_AQUA));

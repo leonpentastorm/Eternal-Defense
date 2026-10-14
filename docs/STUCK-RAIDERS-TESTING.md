@@ -28,7 +28,7 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 
 Found and fixed with these runs: the first runs crashed the server because the harness ticked the test framework a second time (a development run already ticks it; the runner now asks Forge); tests were registered twice and the two copies pruned each other's trackers (in production there is one campaign, so this only affected the test harness).
 
-How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa pack QaStuck`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`. On a server, `-Deternaldefense.stuckTests=true` registers the tests and `/stuck-raider-test` (permission level 2) starts them.
+How to run: `tools/qa/setup-qa.sh /tmp/ed-qa/qa pack QaStuck`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`. On a server, `-Deternaldefense.stuckTests=true` registers the tests and `/stuck-raider-test` (permission level 2) starts them.
 
 ## Not tested
 

@@ -4,7 +4,7 @@ Also covers the real-client checks of the Beautify Path (0.0.16), which were not
 
 ## How it was run
 
-* Real client (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), driven by the `r7` scenario of `tools/qa/QaWorld.java.txt` (`echo all > /tmp/claude-0/qa-r7.flag`, then `tools/qa/setup-qa.sh <dir> <pack|standalone> QaWorld` and `runClient`; parts: `music settings menu pictures loop fire`). The scenario sets raid states on the integrated server (kind, hard or not, wave) and reads what the client decides (`RaidMusic.nowPlaying()`), takes screenshots, clicks the Settings switches and the cannon menu like a player, and fires every new fire support at zombies.
+* Real client (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), driven by the `r7` scenario of `tools/qa/QaWorld.java.txt` (`echo all > /tmp/ed-qa/qa-r7.flag`, then `tools/qa/setup-qa.sh <dir> <pack|standalone> QaWorld` and `runClient`; parts: `music settings menu pictures loop fire`). The scenario sets raid states on the integrated server (kind, hard or not, wave) and reads what the client decides (`RaidMusic.nowPlaying()`), takes screenshots, clicks the Settings switches and the cannon menu like a player, and fires every new fire support at zombies.
 * **Sound.** The machine has no sound card. The client was started with OpenAL Soft's `wave` backend (`ALSOFT_CONF` pointing at a config with `drivers = wave`), so the game's real audio output was written to a WAV file. That file was then cut into 2-second windows and each window cross-correlated against every music file (8 kHz mono): a score near 1.00 means that file, at that position, is what the game was playing. Nobody listened to it.
 
 ## Results

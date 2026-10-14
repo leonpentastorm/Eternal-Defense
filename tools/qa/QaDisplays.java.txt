@@ -1,0 +1,381 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import dev.eternaldefense.displays.DisplayNetwork;
+import dev.eternaldefense.displays.DisplayRacks;
+import dev.eternaldefense.displays.DisplayTuning;
+import dev.eternaldefense.displays.GunDisplays;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of the displays: the interact key on every stand from four angles, empty hands, the recipes, the Weapon Display Tuner. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaDisplays {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> BAR=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay()){BAR.add(t);log("QA_BAR {}",t);}else log("QA_CHAT {}",t);
+    }
+    static boolean barHas(String s){synchronized(BAR){return BAR.stream().anyMatch(b->b.contains(s));}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_displays",GameType.CREATIVE,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_displays",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static String id(Item i){return BuiltInRegistries.ITEM.getKey(i).toString();}
+    /** Teleport and hover there: flight on at both ends, no drift. */
+    static void tp(double x,double y,double z,float yaw,float pitch){
+        srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});
+        var p=mc().player;p.getAbilities().flying=true;p.setDeltaMovement(Vec3.ZERO);p.setYRot(yaw);p.setXRot(pitch);
+    }
+    /** Feet at x,y,z, looking at tx,ty,tz. */
+    static void look(double x,double y,double z,double tx,double ty,double tz){
+        y=Math.max(y,sy+.25);double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;sp().getInventory().setChanged();});mc().player.getInventory().selected=0;}
+    static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
+    /** The real right mouse button: what the game runs for a right-click. */
+    static void rightClick(){try{var m=Minecraft.class.getDeclaredMethod("startUseItem");m.setAccessible(true);m.invoke(mc());}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    /** The game counts as "in game" for TaCZ: no screen, the mouse grabbed, the window active. */
+    static void inGame(){mc().setWindowActive(true);if(!mc().mouseHandler.isMouseGrabbed())mc().mouseHandler.grabMouse();}
+    /** A real press and release of TaCZ's interact key, as the keyboard would send it. */
+    static void interactKey(){
+        inGame();var key=com.tacz.guns.client.input.InteractKey.INTERACT_KEY.getKey();long w=mc().getWindow().getWindow();
+        if(key.getType()==InputConstants.Type.MOUSE)throw new IllegalStateException("interact is on a mouse button: "+key);
+        mc().keyboardHandler.keyPress(w,key.getValue(),0,1,0);mc().keyboardHandler.keyPress(w,key.getValue(),0,0,0);
+    }
+    static String keyName(){return com.tacz.guns.client.input.InteractKey.INTERACT_KEY.getTranslatedKeyMessage().getString();}
+    static ItemStack gun(String gunId,boolean attachments){
+        var stack=new ItemStack(item("tacz:modern_kinetic_gun"));var g=com.tacz.guns.api.item.IGun.getIGunOrNull(stack);
+        g.setGunId(stack,new ResourceLocation(gunId));
+        if(attachments){var types=new HashSet<Object>();int n=0;
+            for(var e:com.tacz.guns.api.TimelessAPI.getAllCommonAttachmentIndex()){
+                var att=new ItemStack(item("tacz:attachment"));var ia=com.tacz.guns.api.item.IAttachment.getIAttachmentOrNull(att);if(ia==null)continue;ia.setAttachmentId(att,e.getKey());
+                var type=e.getValue().getType();if(types.contains(type)||!g.allowAttachment(stack,att))continue;g.installAttachment(stack,att);types.add(type);if(++n>=3)break;}}
+        g.setCurrentAmmoCount(stack,7);stack.setHoverName(Component.literal(gunId.substring(gunId.indexOf(':')+1).toUpperCase(Locale.ROOT)+" on show"));return stack;
+    }
+    static String gunId(ItemStack s){var g=com.tacz.guns.api.item.IGun.getIGunOrNull(s);return g==null?id(s.getItem()):g.getGunId(s).toString();}
+    static boolean present(String gunId){return com.tacz.guns.api.TimelessAPI.getCommonGunIndex(new ResourceLocation(gunId)).isPresent();}
+
+    // The stands: one row facing north, a stone wall behind, wall types one block up
+    static final List<BlockPos> ROOTS=new ArrayList<>();static final List<DisplayRacks.Rack> RACKS=new ArrayList<>();
+    static String GA,GB;static ItemStack A,B;static BlockPos TABLE;
+    static DisplayRacks.Rack rack(int i){return RACKS.get(i);}
+    static boolean wallType(DisplayRacks.Rack r){var id=BuiltInRegistries.BLOCK.getKey(r).getPath();return id.contains("rack")||id.startsWith("wall_");}
+    static String name(int i){return BuiltInRegistries.BLOCK.getKey(rack(i)).getPath();}
+    static ItemStack shown(BlockPos root){return srvGet(()->sl().getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d?d.gun().copy():null);}
+    static DisplayTuning.Tune tune(BlockPos root){return srvGet(()->sl().getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d?d.tune():null);}
+    static DisplayTuning.Tune clientTune(BlockPos root){return mc().level.getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d?d.tune():null;}
+    static void put(BlockPos root,ItemStack gun){srv(()->{if(sl().getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d)d.swap(gun);});}
+    static void empty(BlockPos root){srv(()->{if(sl().getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d)d.take();});}
+    static void setTune(BlockPos root,DisplayTuning.Tune t){srv(()->{if(sl().getBlockEntity(root) instanceof DisplayRacks.DisplayEntity d)d.tune(t);});}
+    /** Centre of the stand's outline, both halves of a wide one. */
+    static Vec3 target(int i){
+        var root=ROOTS.get(i);var st=sl().getBlockState(root);AABB box=st.getShape(sl(),root).bounds().move(root);
+        if(rack(i).wide()){var p=DisplayRacks.partner(root,st);box=box.minmax(sl().getBlockState(p).getShape(sl(),p).bounds().move(p));}
+        return box.getCenter();
+    }
+    /** Fly 2.6 blocks from the stand at an angle (degrees, + to the east) and a rise (blocks above its centre), looking at it. */
+    static void aim(int i,double angle,double rise){
+        var t=srvGet(()->target(i));double a=Math.toRadians(angle),d=2.6;
+        look(t.x+Math.sin(a)*d,t.y+rise-1.62,t.z-Math.cos(a)*d,t.x,t.y,t.z);
+    }
+    static String aimed(int i){var h=mc().hitResult;if(!(h instanceof BlockHitResult b))return "no block";var a=DisplayRacks.anchor(mc().level,b.getBlockPos());return a.equals(ROOTS.get(i))?"on "+name(i)+(b.getBlockPos().equals(a)?"":" (its other half)"):"on "+mc().level.getBlockState(b.getBlockPos()).getBlock();}
+    static int count(Item item){return srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;});}
+    static boolean packHasGun(String gunId){return srvGet(()->{for(var s:sp().getInventory().items)if(!s.isEmpty()&&gunId(s).equals(gunId))return true;return false;});}
+    static String hand(){return srvGet(()->{var s=sp().getMainHandItem();return s.isEmpty()?"empty":gunId(s);});}
+
+    // The tuner screen, read through its widgets (minus, slider, plus for each setting; then Reset, Copy, Paste, Done)
+    static boolean tunerOpen(){return mc().screen!=null&&mc().screen.getClass().getSimpleName().equals("TunerScreen");}
+    static List<AbstractWidget> widgets(){var out=new ArrayList<AbstractWidget>();if(mc().screen!=null)for(var c:mc().screen.children())if(c instanceof AbstractWidget w)out.add(w);return out;}
+    static AbstractWidget minus(DisplayTuning.Setting s){return widgets().get(3*s.ordinal());}
+    static AbstractSliderButton slider(DisplayTuning.Setting s){return (AbstractSliderButton)widgets().get(3*s.ordinal()+1);}
+    static AbstractWidget plus(DisplayTuning.Setting s){return widgets().get(3*s.ordinal()+2);}
+    static AbstractWidget button(int n){return widgets().get(21+n);}
+    static void press(AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static void press(AbstractWidget w,int times){for(int i=0;i<times;i++)press(w);}
+    /** A click on a slider at a fraction of its length, as the mouse would. */
+    static void slide(DisplayTuning.Setting s,double f){var w=slider(s);var screen=mc().screen;double x=w.getX()+4+f*(w.getWidth()-8),y=w.getY()+w.getHeight()/2.0;screen.mouseClicked(x,y,0);screen.mouseReleased(x,y,0);}
+    static DisplayTuning.Tune draft(){try{var f=mc().screen.getClass().getDeclaredField("draft");f.setAccessible(true);return (DisplayTuning.Tune)f.get(mc().screen);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static String tuneText(DisplayTuning.Tune t){return t==null?"null":String.format(Locale.ROOT,"size %.2f right %.2f up %.2f out %.2f tilt %.0f turn %.0f roll %.0f",t.size(),t.right(),t.up(),t.out(),t.tilt(),t.turn(),t.roll());}
+    /** Every widget inside the panel and the window, none over another, every label fits its widget. */
+    static void tunerLayout(String name){
+        var ws=widgets();var bad=new ArrayList<String>();var font=mc().font;int W=mc().screen.width,H=mc().screen.height;
+        for(var a:ws){
+            if(a.getX()<0||a.getY()<0||a.getX()+a.getWidth()>W||a.getY()+a.getHeight()>H)bad.add("outside: "+a.getMessage().getString());
+            if(font.width(a.getMessage())>a.getWidth()-4)bad.add("label too long: '"+a.getMessage().getString()+"' "+font.width(a.getMessage())+">"+(a.getWidth()-4));
+            for(var b:ws)if(a!=b&&ws.indexOf(a)<ws.indexOf(b)&&a.getX()<b.getX()+b.getWidth()&&b.getX()<a.getX()+a.getWidth()&&a.getY()<b.getY()+b.getHeight()&&b.getY()<a.getY()+a.getHeight())bad.add("'"+a.getMessage().getString()+"' over '"+b.getMessage().getString()+"'");
+        }
+        int hint=font.split(Component.translatable("screen.eternal_defense_displays.tuner.hint"),172-12).size();if(hint>2)bad.add("hint takes "+hint+" lines");
+        check(name+": "+ws.size()+" controls in a "+W+"x"+H+" window, none outside, none over another, every label fits, hint in 2 lines",ws.size()==25&&bad.isEmpty(),String.join(" | ",bad));
+    }
+
+    static void script(){
+        RACKS.clear();ROOTS.clear();for(var r:GunDisplays.RACKS)RACKS.add((DisplayRacks.Rack)r.get());
+        for(int i=0;i<RACKS.size();i++)ROOTS.add(new BlockPos(sx-22+i*4,wallType(RACKS.get(i))?sy+1:sy,sz+4));
+        // 1. The row of stands
+        step(40,()->{srv(()->{
+            var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().setDayTime(6000);
+            for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,new AABB(sx,sy,sz,sx,sy,sz).inflate(128,32,128)))e.discard();
+            for(int i=0;i<RACKS.size();i++){
+                var r=RACKS.get(i);var root=ROOTS.get(i);
+                for(int dx=0;dx<(r.wide()?2:1);dx++)for(int dy=0;dy<3;dy++)sl().setBlock(new BlockPos(root.getX()+dx,sy+dy,root.getZ()+1),Blocks.STONE_BRICKS.defaultBlockState(),3);
+                sl().setBlock(root,r.defaultBlockState().setValue(DisplayRacks.FACING,Direction.NORTH),3);
+            }
+            TABLE=new BlockPos(sx,sy,sz-6);sl().setBlock(TABLE,Blocks.CRAFTING_TABLE.defaultBlockState(),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().getAbilities().flying=true;sp().getAbilities().invulnerable=true;sp().onUpdateAbilities();});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"eleven stands facing north; survival, flying");
+        step(5,()->{
+            int n=srvGet(()->{int ok=0;for(int i=0;i<ROOTS.size();i++)if(sl().getBlockEntity(ROOTS.get(i)) instanceof DisplayRacks.DisplayEntity)ok++;return ok;});
+            check("all 11 stands stand (wall types on their wall)",n==11&&RACKS.size()==11,n+" of "+RACKS.size());
+            var guns=new ArrayList<String>();for(var g:List.of("tacz:ak47","tacz:m4a1","tacz:glock_17","tacz:deagle","tacz:hk_mp5a5"))if(present(g))guns.add(g);
+            check("two TaCZ guns to show",guns.size()>=2,guns.toString());GA=guns.get(0);GB=guns.get(1);A=gun(GA,true);B=gun(GB,false);note("guns {} and {}, key {}",GA,GB,keyName());
+            check("TaCZ lists the stands for its interact key",srvGet(()->{for(var r:RACKS)if(!com.tacz.guns.config.util.InteractKeyConfigRead.canInteractBlock(r.defaultBlockState()))return false;return true;}),"");
+        },"stands and guns");
+        step(5,()->{
+            var r=srvGet(()->{var out=new StringBuilder();var ctx=net.minecraft.world.phys.shapes.CollisionContext.empty();
+                for(int i=0;i<RACKS.size();i++){var root=ROOTS.get(i);var st=sl().getBlockState(root);var shape=st.getShape(sl(),root).bounds();
+                    if(rack(i).wide()){var p=DisplayRacks.partner(root,st);var ps=sl().getBlockState(p).getShape(sl(),p).bounds();if(shape.maxX<1||ps.minX>0)out.append(name(i)).append(" halves apart; ");}
+                    if(!wallType(rack(i))&&!rack(i).glass()&&!name(i).contains("heavy")&&(shape.minX>0||shape.maxX<1))out.append(name(i)).append(" narrower than the block; ");}
+                int heavy=RACKS.size()-1;var hs=sl().getBlockState(ROOTS.get(heavy));
+                double outline=hs.getShape(sl(),ROOTS.get(heavy)).max(Direction.Axis.Y)*16,solid=hs.getCollisionShape(sl(),ROOTS.get(heavy),ctx).max(Direction.Axis.Y)*16;
+                out.append("heavy outline ").append(outline).append(" px, collision ").append(solid).append(" px");return out.toString();});
+            check("wide halves meet in the middle, floor stands span the block, the heavy stand's outline covers its gun (20 px) and its base stays low (6.75 px)",r.equals("heavy outline 20.0 px, collision 6.75 px"),r);
+            mc().options.hideGui=true;look(sx-1.5,sy+2.2,sz-6.5,sx-1.5,sy+1,sz+4.5);},"shapes; camera over the row");
+        step(25,()->shot("dp01_row_empty"),"picture: the empty row");
+        step(5,()->mc().options.hideGui=false,"HUD back");
+
+        // 2. The interact key with a gun: once, on every stand, from four angles; an empty hand takes it back
+        double[][] angles={{0,0},{-40,.3},{40,.3},{0,1.5}};String[] angleNames={"front","from the left","from the right","from above"};
+        for(int i=0;i<11;i++)for(int a=0;a<angles.length;a++){
+            int stand=i,an=a;
+            step(4,()->{hold(A.copy());aim(stand,angles[an][0],angles[an][1]);},"hold gun A at "+name(stand)+" "+angleNames[an]);
+            step(4,()->{note("aimed {} in game {}",aimed(stand),com.tacz.guns.util.InputExtraCheck.isInGame());interactKey();},"press the interact key once");
+            step(4,()->{var s=shown(ROOTS.get(stand));check(name(stand)+" "+angleNames[an]+": one press of "+keyName()+" puts the gun on",s!=null&&!s.isEmpty()&&gunId(s).equals(GA)&&hand().equals("empty"),"shown="+(s==null?null:gunId(s))+" hand="+hand()+" aim="+aimed(stand));
+                if(stand==0&&an==0)shot("dp02_gun_in");},"gun on");
+            step(4,()->{inGame();rightClick();},"right-click with an empty hand");
+            step(4,()->{var s=shown(ROOTS.get(stand));var seen=mc().level.getBlockEntity(ROOTS.get(stand)) instanceof DisplayRacks.DisplayEntity d?d.gun():null;
+                check(name(stand)+" "+angleNames[an]+": an empty-hand right-click takes it back (and this client sees the stand empty)",s!=null&&s.isEmpty()&&packHasGun(GA)&&seen!=null&&seen.isEmpty(),"shown="+(s==null?null:s.isEmpty()?"empty":gunId(s))+" client="+(seen==null?null:seen.isEmpty()?"empty":gunId(seen))+" pack has it "+packHasGun(GA)+" aim="+aimed(stand));
+                srv(()->sp().getInventory().clearContent());},"gun off");
+        }
+        // Swap, and the aim button does not put a gun on
+        step(4,()->{put(ROOTS.get(0),A.copy());hold(B.copy());aim(0,0,0);},"gun A on the stand, gun B in hand");
+        step(4,()->{inGame();rightClick();},"right-click (aim) with gun B");
+        step(4,()->check("right-click with a gun only aims: the stand keeps gun A, gun B stays in hand",gunId(shown(ROOTS.get(0))).equals(GA)&&hand().equals(GB),"shown="+gunId(shown(ROOTS.get(0)))+" hand="+hand()),"aim does nothing");
+        step(4,()->{interactKey();},"press the interact key with gun B");
+        step(4,()->check("the interact key swaps: gun B on show, gun A back in the pack",gunId(shown(ROOTS.get(0))).equals(GB)&&packHasGun(GA)&&!packHasGun(GB),"shown="+gunId(shown(ROOTS.get(0)))+" hand="+hand()),"swapped");
+        step(4,()->{var s=shown(ROOTS.get(0));check("the gun keeps its name and ammo on the stand",s.getHoverName().getString().contains("on show")&&com.tacz.guns.api.item.IGun.getIGunOrNull(s).getCurrentAmmoCount(s)==7,s.getHoverName().getString());},"item data kept");
+        step(4,()->{hold(new ItemStack(Items.STICK));aim(0,0,0);},"a stick in hand");
+        step(4,()->{inGame();rightClick();},"right-click with a stick");
+        step(4,()->check("a non-gun item leaves the stand alone",gunId(shown(ROOTS.get(0))).equals(GB)&&count(Items.STICK)==1,""),"stick");
+        // Tooltips name the player's own key
+        step(4,()->{
+            var lines=new ItemStack(rack(0)).getTooltipLines(mc().player,TooltipFlag.NORMAL).stream().map(Component::getString).toList();
+            check("the stand's tooltip names the interact key ("+keyName()+") and the tuner",lines.stream().anyMatch(l->l.contains(keyName())&&l.contains("display"))&&lines.stream().anyMatch(l->l.contains("Tuner")),String.join(" / ",lines));
+            var tl=new ItemStack(GunDisplays.TUNER.get()).getTooltipLines(mc().player,TooltipFlag.NORMAL).stream().map(Component::getString).toList();
+            check("the tuner's name and tooltip",tl.get(0).equals("Weapon Display Tuner")&&tl.size()>=3,String.join(" / ",tl));
+        },"tooltips");
+        step(4,()->{hold(A.copy());aim(1,0,0);},"gun A at the wall rack");
+        step(6,()->shot("dp03_interact_prompt"),"picture: TaCZ's interact prompt on a stand");
+
+        // 3. Recipes: each grid makes only its own stand, and a real crafting table makes all twelve
+        var names=new ArrayList<String>();for(var r:RACKS)names.add(BuiltInRegistries.BLOCK.getKey(r).getPath());names.add("display_tuner");
+        step(4,()->srv(()->{sp().getInventory().clearContent();sp().getInventory().add(new ItemStack(Items.IRON_INGOT,1));}),"an iron ingot in the pack");
+        step(10,()->{var res=srvGet(()->{
+            var rm=sl().getRecipeManager();var bad=new ArrayList<String>();int ok=0;
+            for(var n:names){
+                var key=new ResourceLocation(GunDisplays.ID,n);var r=rm.byKey(key).orElse(null);
+                if(!(r instanceof ShapedRecipe sr)){bad.add(n+": no shaped recipe");continue;}
+                var grid=new TransientCraftingContainer(new CraftingMenu(-1,sp().getInventory()),3,3);
+                for(int k=0;k<sr.getIngredients().size();k++){var items=sr.getIngredients().get(k).getItems();if(items.length>0)grid.setItem((k/sr.getWidth())*3+k%sr.getWidth(),items[0].copyWithCount(1));}
+                var all=rm.getRecipesFor(RecipeType.CRAFTING,grid,sl());
+                if(all.size()==1&&all.get(0).getId().equals(key))ok++;else bad.add(n+": "+all.stream().map(x->x.getId().toString()).toList());
+            }
+            var old=new TransientCraftingContainer(new CraftingMenu(-1,sp().getInventory()),3,3);old.setItem(0,new ItemStack(rack(0)));old.setItem(1,new ItemStack(rack(0)));old.setItem(2,new ItemStack(Items.IRON_INGOT));
+            return new Object[]{ok,String.join(" | ",bad),rm.getRecipesFor(RecipeType.CRAFTING,old,sl()).isEmpty()};});
+            check("each of the 12 grids matches only its own recipe among every loaded mod's",(int)res[0]==12,(String)res[1]);
+            check("two stands and an iron ingot no longer make a wide one",(boolean)res[2],"");
+            var unlocked=srvGet(()->{int n=0;for(var x:names)if(sp().getRecipeBook().contains(new ResourceLocation(GunDisplays.ID,x)))n++;return n;});
+            check("holding iron unlocks all 12 recipes in the recipe book",unlocked==12,unlocked+" of 12");
+        },"recipe grids");
+        step(4,()->{srv(()->sp().getInventory().clearContent());look(TABLE.getX()+.5,sy,TABLE.getZ()-2.2,TABLE.getX()+.5,TABLE.getY()+.5,TABLE.getZ()+.5);},"at the crafting table");
+        for(int r=0;r<12;r++){int ri=r;
+            step(4,()->srv(()->{var rm=sl().getRecipeManager();var sr=(ShapedRecipe)rm.byKey(new ResourceLocation(GunDisplays.ID,names.get(ri))).get();var inv=sp().getInventory();inv.clearContent();
+                int slot=9;for(var ing:sr.getIngredients()){var items=ing.getItems();if(items.length==0)continue;var it=items[0].getItem();boolean have=false;for(var s:inv.items)if(s.is(it))have=true;if(!have)inv.setItem(slot++,new ItemStack(it,it.getMaxStackSize()));}inv.selected=8;inv.setChanged();}),"ingredients for "+names.get(ri));
+            step(1,()->mc().player.getInventory().selected=8,"an empty hand");
+            step(6,()->{inGame();rightClick();},"open the crafting table");
+            step(4,()->{
+                if(!(mc().player.containerMenu instanceof CraftingMenu menu)){check(names.get(ri)+": the crafting table opened",false,"menu="+mc().player.containerMenu);return;}
+                var sr=(ShapedRecipe)sl().getRecipeManager().byKey(new ResourceLocation(GunDisplays.ID,names.get(ri))).get();
+                for(int k=0;k<sr.getIngredients().size();k++){var items=sr.getIngredients().get(k).getItems();if(items.length==0)continue;var it=items[0].getItem();int from=-1;
+                    for(int s=10;s<menu.slots.size();s++)if(menu.getSlot(s).getItem().is(it)){from=s;break;}
+                    int cell=1+(k/sr.getWidth())*3+k%sr.getWidth();slotClick(from,0,ClickType.PICKUP);slotClick(cell,1,ClickType.PICKUP);slotClick(from,0,ClickType.PICKUP);}
+            },"lay out "+names.get(ri)+" in the grid by hand");
+            step(4,()->{var menu=mc().player.containerMenu;var out=menu.getSlot(0).getItem();
+                check("crafting table: "+names.get(ri)+" comes out",id(out.getItem()).equals(GunDisplays.ID+":"+names.get(ri)),id(out.getItem()));
+                if(ri==0)shot("dp04_crafting_gun_stand");if(ri==11)shot("dp05_crafting_tuner");},"result");
+            step(4,()->slotClick(0,0,ClickType.QUICK_MOVE),"take it");
+            step(4,()->{check(names.get(ri)+" lands in the pack",count(item(GunDisplays.ID+":"+names.get(ri)))>=1,"");mc().player.closeContainer();},"in the pack");
+        }
+
+        // 4. The tuner: an empty stand says what to do
+        BlockPos[] S=new BlockPos[3];
+        step(4,()->{S[0]=ROOTS.get(0);S[1]=ROOTS.get(1);S[2]=ROOTS.get(6);empty(S[1]);put(S[0],A.copy());put(S[2],B.copy());setTune(S[0],DisplayTuning.Tune.DEFAULT);setTune(S[2],DisplayTuning.Tune.DEFAULT);
+            BAR.clear();srv(()->sp().getInventory().clearContent());hold(new ItemStack(GunDisplays.TUNER.get()));aim(1,0,0);},"the tuner at the empty wall rack");
+        step(4,()->{inGame();rightClick();},"use it");
+        step(6,()->check("an empty stand: no screen, the hint 'Put a gun on the stand first.'",!tunerOpen()&&barHas("Put a gun on the stand first."),String.valueOf(BAR)),"empty stand");
+        // A fixed front camera on stand 0 for the pictures
+        step(4,()->{var t=srvGet(()->target(0));look(t.x,t.y-1.62+.3,t.z-2.8,t.x,t.y,t.z);},"in front of the gun stand");
+        step(4,()->{inGame();rightClick();},"use the tuner on it");
+        step(4,()->{check("the tuner opens its screen on a stand with a gun",tunerOpen(),""+mc().screen);var t=srvGet(()->target(0));look(t.x,t.y-1.62+.3,t.z-2.8,t.x+.9,t.y+.1,t.z);},"screen open; turn so the stand is right of the panel");
+        step(4,()->{if(tunerOpen()){tunerLayout("tuner at GUI scale "+mc().options.guiScale().get());shot("dp10_tuner_open");}},"layout");
+        step(4,()->{check("the game keeps running behind the tuner (no pause)",!mc().isPaused(),"");press(plus(DisplayTuning.Setting.SIZE),10);},"Size: + ten times");
+        step(6,()->{check("size + ten times: 150% on the screen and on the server",Math.abs(draft().size()-1.5f)<1e-4&&Math.abs(tune(S[0]).size()-1.5f)<1e-4,tuneText(draft())+" / server "+tuneText(tune(S[0])));
+            check("the size bar reads 'Size: 150%'",slider(DisplayTuning.Setting.SIZE).getMessage().getString().equals("Size: 150%"),slider(DisplayTuning.Setting.SIZE).getMessage().getString());shot("dp11_size_150");},"size 150");
+        step(4,()->slide(DisplayTuning.Setting.TURN,.75),"Turn: click three quarters along the bar");
+        step(6,()->{check("turn bar at 3/4: +90 degrees, sent to the server",Math.abs(tune(S[0]).turn()-90)<1e-4,tuneText(tune(S[0])));shot("dp12_turn_90");},"turn 90");
+        step(4,()->{press(plus(DisplayTuning.Setting.UP),4);slide(DisplayTuning.Setting.RIGHT,.25);press(minus(DisplayTuning.Setting.TILT),2);slide(DisplayTuning.Setting.ROLL,.5);press(plus(DisplayTuning.Setting.ROLL),3);press(minus(DisplayTuning.Setting.OUT),3);},"up +4, right at 1/4, tilt -2 steps, roll middle +3 steps, out -3");
+        step(6,()->{var t=tune(S[0]);var want=new DisplayTuning.Tune(1.5f,-8,4,-3,-30,90,45);
+            check("every setting reaches the server: "+tuneText(want),t.equals(want),"server "+tuneText(t)+" screen "+tuneText(draft()));
+            check("the bars read their values",slider(DisplayTuning.Setting.RIGHT).getMessage().getString().equals("Left / Right: -8")&&slider(DisplayTuning.Setting.ROLL).getMessage().getString().equals("Roll: +45"),slider(DisplayTuning.Setting.RIGHT).getMessage().getString()+" | "+slider(DisplayTuning.Setting.ROLL).getMessage().getString());
+            shot("dp13_all_settings");},"all settings");
+        step(4,()->{press(button(1));press(button(3));},"Copy, then Done");
+        step(4,()->{check("Done closes the tuner",!tunerOpen(),""+mc().screen);check("this client shows the new settings at once",tuneText(clientTune(S[0])).equals(tuneText(tune(S[0]))),tuneText(clientTune(S[0])));},"closed");
+        step(4,()->{mc().options.hideGui=true;},"HUD off");
+        step(6,()->shot("dp14_tuned_in_world"),"picture: the tuned gun in the world");
+        step(4,()->{mc().options.hideGui=false;var t=srvGet(()->target(6));look(t.x,t.y-1.62+.15,t.z-1.9,t.x,t.y,t.z);},"to the glass case with gun B");
+        step(4,()->{inGame();rightClick();},"tuner on it");
+        step(4,()->{check("Paste is ready after Copy",tunerOpen()&&button(2).active,"");press(button(2));},"Paste");
+        step(4,()->{check("Paste puts the copied settings on the screen",draft().equals(tune(S[0])),tuneText(draft()));press(button(3));},"Done");
+        step(6,()->{check("the glass case now has the copied settings",tune(S[2]).equals(tune(S[0])),tuneText(tune(S[2])));},"pasted");
+        step(4,()->{inGame();rightClick();},"tuner on the glass case again");
+        step(4,()->{press(button(0));press(button(3));},"Reset, Done");
+        step(6,()->{check("Reset: the default again, saved without a Tune entry",tune(S[2]).isDefault()&&!srvGet(()->sl().getBlockEntity(S[2]).saveWithoutMetadata().contains("Tune")),tuneText(tune(S[2])));},"reset");
+        step(4,()->{
+            var r=srvGet(()->{var be=(DisplayRacks.DisplayEntity)sl().getBlockEntity(S[0]);var tag=be.saveWithoutMetadata();var copy=new DisplayRacks.DisplayEntity(S[0],be.getBlockState());copy.load(tag);return copy.tune().equals(be.tune())+" "+tag.getCompound("Tune");});
+            check("the settings are saved with the stand and read back",r.startsWith("true"),r);
+        },"saved");
+        // Swapping guns keeps the stand's settings
+        step(4,()->{var t=srvGet(()->target(0));hold(B.copy());look(t.x,t.y-1.62+.15,t.z-1.9,t.x,t.y,t.z);},"gun B in hand at the tuned stand");
+        step(4,()->interactKey(),"interact key: swap");
+        step(4,()->check("after a swap the stand keeps its settings",gunId(shown(S[0])).equals(GB)&&tune(S[0]).equals(new DisplayTuning.Tune(1.5f,-8,4,-3,-30,90,45)),tuneText(tune(S[0]))),"swap keeps settings");
+        // The server's checks
+        step(4,()->{hold(new ItemStack(GunDisplays.TUNER.get()));DisplayNetwork.CHANNEL.sendToServer(new DisplayNetwork.Tune(S[0],new DisplayTuning.Tune(50,400,-400,99,999,-999,7.4f)));},"send wild numbers with the tuner in hand");
+        step(6,()->check("wild numbers are held to the limits",tune(S[0]).equals(new DisplayTuning.Tune(3,16,-16,16,180,-180,7)),tuneText(tune(S[0]))),"clamped");
+        step(4,()->{setTune(S[0],DisplayTuning.Tune.DEFAULT);hold(A.copy());},"default again; a gun in hand instead of the tuner");
+        step(4,()->DisplayNetwork.CHANNEL.sendToServer(new DisplayNetwork.Tune(S[0],DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.SIZE,2))),"send without the tuner");
+        step(6,()->check("without a tuner in hand the server ignores it",tune(S[0]).isDefault(),tuneText(tune(S[0]))),"no tuner");
+        step(4,()->{hold(new ItemStack(GunDisplays.TUNER.get()));tp(S[0].getX()+.5,sy,S[0].getZ()-20,0,0);},"tuner in hand, 20 blocks away");
+        step(6,()->DisplayNetwork.CHANNEL.sendToServer(new DisplayNetwork.Tune(S[0],DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.SIZE,2))),"send from afar");
+        step(6,()->check("from 20 blocks away the server ignores it",tune(S[0]).isDefault(),tuneText(tune(S[0]))),"too far");
+        step(4,()->{var t=srvGet(()->target(1));look(t.x,t.y-1.62+.15,t.z-1.9,t.x,t.y,t.z);DisplayNetwork.CHANNEL.sendToServer(new DisplayNetwork.Tune(S[1],DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.SIZE,2)));},"send for the empty stand");
+        step(6,()->check("an empty stand cannot be tuned",tune(S[1]).isDefault(),tuneText(tune(S[1]))),"empty");
+        // The screen closes when the gun is taken away
+        step(4,()->{var t=srvGet(()->target(0));look(t.x,t.y-1.62+.15,t.z-1.9,t.x,t.y,t.z);},"back at the gun stand");
+        step(4,()->{inGame();rightClick();},"open the tuner");
+        step(4,()->{check("tuner open",tunerOpen(),"");empty(S[0]);},"someone takes the gun");
+        step(6,()->check("the tuner closes when the stand has no gun any more",!tunerOpen(),""+mc().screen),"closes");
+        // Sneaking with the tuner works too
+        step(4,()->put(S[0],A.copy()),"gun back");
+        step(4,()->{var p=mc().player;p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY));p.input.shiftKeyDown=true;p.setShiftKeyDown(true);
+            note("sneaking {}",p.isSecondaryUseActive());inGame();rightClick();},"use the tuner while sneaking");
+        step(4,()->{var p=mc().player;check("sneaking: the tuner still opens",tunerOpen(),""+mc().screen);p.input.shiftKeyDown=false;p.setShiftKeyDown(false);p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.RELEASE_SHIFT_KEY));if(tunerOpen())mc().setScreen(null);},"stand up");
+        // A smaller GUI: GUI scale 3 (the smallest standard screen height)
+        step(4,()->{mc().options.guiScale().set(3);mc().resizeDisplay();},"GUI scale 3");
+        step(4,()->{inGame();rightClick();},"open the tuner");
+        step(4,()->{if(tunerOpen()){tunerLayout("tuner at GUI scale 3");shot("dp15_tuner_gui3");}else check("tuner open at GUI scale 3",false,"");},"layout at scale 3");
+        step(4,()->{mc().setScreen(null);mc().options.guiScale().set(2);mc().resizeDisplay();},"GUI scale 2 again");
+
+        // 5. What each setting does, seen from the front (one setting at a time)
+        Object[][] looks={{"default",DisplayTuning.Tune.DEFAULT},{"right8",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.RIGHT,8)},{"up8",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.UP,8)},
+            {"front8",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.OUT,8)},{"tilt30",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.TILT,30)},{"turn45",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.TURN,45)},
+            {"roll45",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.ROLL,45)},{"size200",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.SIZE,2)},{"size50",DisplayTuning.Tune.DEFAULT.with(DisplayTuning.Setting.SIZE,.5f)}};
+        step(4,()->{mc().options.hideGui=true;var t=srvGet(()->target(0));look(t.x,t.y-1.62,t.z-2.3,t.x,t.y,t.z);},"front camera, HUD off");
+        for(var l:looks){step(6,()->setTune(S[0],(DisplayTuning.Tune)l[1]),"set "+l[0]);step(4,()->shot("dp2x_"+l[0]),"picture "+l[0]);}
+        // 6. The whole row with guns
+        step(4,()->{for(int i=0;i<11;i++){put(ROOTS.get(i),(i%2==0?A:B).copy());setTune(ROOTS.get(i),DisplayTuning.Tune.DEFAULT);}look(sx-1.5,sy+2.2,sz-6.5,sx-1.5,sy+1,sz+4.5);},"a gun on every stand");
+        step(25,()->shot("dp30_row_full"),"picture: the full row");
+        step(4,()->{setTune(ROOTS.get(1),new DisplayTuning.Tune(1.2f,0,2,0,0,0,-90));setTune(ROOTS.get(4),new DisplayTuning.Tune(1,0,0,0,25,0,0));var t=srvGet(()->target(1));look(t.x-3,t.y-1.62+.6,t.z-3.6,t.x-.5,t.y,t.z);},"two tuned stands");
+        step(20,()->{shot("dp31_row_tuned");mc().options.hideGui=false;},"picture: tuned stands in the row");
+    }
+}

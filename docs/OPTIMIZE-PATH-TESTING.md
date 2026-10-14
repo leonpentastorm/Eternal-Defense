@@ -23,7 +23,7 @@ The first run of the new test file had **two failing tests whose setups were wro
 
 **Regression:** the 11 Raider Gates GameTests (`tools/qa/QaStuck.java.txt`, which drive `RaidRescue`, `BeaconCombat`'s goals and the real `EternalDefense.raid` loop) pass **11 of 11** on the final code.
 
-How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa-opt pack QaOptimize`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`.
+How to run: `tools/qa/setup-qa.sh /tmp/ed-qa/qa-opt pack QaOptimize`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`.
 
 ## Not tested
 

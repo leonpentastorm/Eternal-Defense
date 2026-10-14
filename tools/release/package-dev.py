@@ -60,6 +60,7 @@ Install
 3. Copy mods/ into the mods folder.
 4. Start a new world: worlds made with earlier builds are not converted.
 A dedicated server: Tactical Movement (tacticalmovement-1.0.0.jar) only works on clients; keep it off the server.
+Client and server must run the same versions of Eternal Defense and the displays (they compare network versions when a player joins).
 '''
 
 

@@ -2,10 +2,10 @@
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
 # QA_CREATE=1 (pack only): Create runs too; QA_MODS=<dir>: the jars in it run too (0.0.42); the scenario is compiled in the Create compat source set; the first run needs the network.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice|QaRelease101|QaLoadout]   (QA_NO_DISPLAYS=1: without the displays mod)   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice|QaRelease101|QaLoadout|QaDisplays]   (QA_NO_DISPLAYS=1: without the displays mod)   (QaWorld scenario by flag file, e.g. echo all > /tmp/ed-qa/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
-DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
+DST="${1:-/tmp/ed-qa/qa}"; FLAVOR="${2:-pack}"
 # 0.0.41: the standalone edition is discontinued; the second argument stays for old command lines and must be "pack"
 if [ "$FLAVOR" != "pack" ]; then echo "Only the pack edition exists since 0.0.41 (got: $FLAVOR)." >&2; exit 2; fi
 rm -rf "$DST"; mkdir -p "$DST"
@@ -78,7 +78,7 @@ PY
   touch "$DST/custom-mods/eternal-defense/run-client/qa-novoice"
 fi
 echo "QA copy ready in $DST (pack edition)."
-echo "1. echo all > /tmp/claude-0/qa-r5.flag   (parts: sign reward exchange upgrade hard raids dbg all)"
-echo "2. cd $DST && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 xvfb-run -a ./gradlew --no-daemon --offline :eternal-defense:runClient > /tmp/claude-0/qa.log 2>&1"
-echo "3. grep QA_CHECK /tmp/claude-0/qa.log ; screenshots land in $DST/custom-mods/eternal-defense/run-client/shots/screenshots (look for run-client under the module)"
+echo "1. echo all > /tmp/ed-qa/qa-r5.flag   (parts: sign reward exchange upgrade hard raids dbg all)"
+echo "2. cd $DST && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 xvfb-run -a ./gradlew --no-daemon --offline :eternal-defense:runClient > /tmp/ed-qa/qa.log 2>&1"
+echo "3. grep QA_CHECK /tmp/ed-qa/qa.log ; screenshots land in $DST/custom-mods/eternal-defense/run-client/shots/screenshots (look for run-client under the module)"
 echo "Kill leftover client JVMs by PID afterwards (pkill -x java misses them)."

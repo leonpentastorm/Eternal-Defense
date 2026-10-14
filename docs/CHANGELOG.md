@@ -1,5 +1,17 @@
 # Change log
 
+## 1.1.2 — The displays: one key press, a recipe for every stand, the Weapon Display Tuner (2026-10-14, branch `feature/display-tuner`)
+
+From 1.1.1 on `feature/loadout-station`; `dev` and `main` unchanged. Eternal Defense's network protocol stays **41**; the displays mod has its own channel (`eternal_defense_displays:main`, protocol 1), so client and server both need 1.1.2. Rules: GDD 1.1.2; tests: `docs/ROUND-1.1.2-TESTING.md`.
+
+* **Putting a gun on a stand** (owner): with a gun in hand, **one press of TaCZ's interact key** (H in the pack) puts it on display or swaps it with the gun there; a right-click with an empty hand takes it back. The stands are now on TaCZ's interact-key list; before, the key did nothing on them and the right button only aims.
+* **Aiming at a stand**: the two halves of a wide stand now meet in the middle where the gun sits (aiming there used to hit the wall behind), floor stands span the block, and the heavy stand can be aimed at by its gun.
+* **An emptied stand** shows empty to everyone at once (the old gun used to stay in view until the chunk reloaded).
+* **Recipes** (owner): every stand has its own crafting recipe with vanilla items (armor stand, item frame, glass, iron block and others; table in the displays README); the wide stands are no longer made from two small ones.
+* **Weapon Display Tuner** (owner): a screwdriver (iron nugget, iron ingot, stick). Right-click a stand holding a gun to change the gun's size (25% to 300%), position (16 pixels each way) and angle (tilt, turn, roll); changes show live, Copy/Paste between stands, Reset; the settings stay with the stand.
+* Tooltips name the player's own interact key; the Field Guide's Gun Displays card explains the key and the tuner.
+* Shipped textures and sounds carry no embedded notes (a test checks it); one texture's embedded metadata was removed, its pixels unchanged.
+
 ## 1.1.1 — The owner's list after 1.1.0 (2026-10-14, branch `feature/loadout-station`)
 
 After 1.1.0 on the same branch; `dev` and `main` unchanged. No packet added or changed: network protocol stays **41**. Rules: GDD 1.1.1; tests: `docs/ROUND-1.1.1-TESTING.md`.

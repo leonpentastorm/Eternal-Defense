@@ -1,20 +1,24 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    " I ",
-    " P ",
-    " I "
+    " H ",
+    "NSN"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
+    "H": {
+      "item": "minecraft:tripwire_hook"
     },
-    "P": {
-      "tag": "minecraft:planks"
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone_slab"
     }
   },
   "result": {
     "item": "eternal_defense_displays:display_pistol_stand",
     "count": 1
-  }
+  },
+  "show_notification": true
 }

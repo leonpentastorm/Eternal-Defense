@@ -1,20 +1,31 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "III",
-    "IPI",
-    "III"
+    "HCH",
+    "IBI",
+    "SSS"
   ],
   "key": {
+    "B": {
+      "item": "minecraft:iron_block"
+    },
+    "C": {
+      "item": "minecraft:chain"
+    },
+    "H": {
+      "item": "minecraft:tripwire_hook"
+    },
     "I": {
       "item": "minecraft:iron_ingot"
     },
-    "P": {
-      "tag": "minecraft:planks"
+    "S": {
+      "item": "minecraft:smooth_stone_slab"
     }
   },
   "result": {
     "item": "eternal_defense_displays:display_heavy",
     "count": 1
-  }
+  },
+  "show_notification": true
 }

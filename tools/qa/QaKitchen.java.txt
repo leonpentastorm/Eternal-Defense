@@ -51,7 +51,7 @@ public final class QaKitchen {
     static BlockPos at(int dx,int dy,int dz){return new BlockPos(sx+dx,sy+dy,sz+dz);}
     static BlockPos B(){return at(0,0,-12);}
     static net.minecraft.world.entity.player.Inventory inv(){return sp().getInventory();}
-    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-kitchen.flag")).trim();return t.isEmpty()||t.equals("all")||Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
+    static boolean part(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/ed-qa/qa-kitchen.flag")).trim();return t.isEmpty()||t.equals("all")||Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
 
     @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
         var text=e.getMessage().getString();

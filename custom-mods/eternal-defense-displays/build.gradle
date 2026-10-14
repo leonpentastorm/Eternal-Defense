@@ -1,9 +1,11 @@
 plugins { id 'java'; id 'net.minecraftforge.gradle' version '6.0.54' }
-version = '1.1.1'
+version = '1.1.2'
 group = 'dev.eternaldefense'
 base { archivesName = 'eternal-defense-displays' }
 java { toolchain.languageVersion = JavaLanguageVersion.of(17); withSourcesJar() }
 minecraft { mappings channel: 'official', version: '1.20.1' }
-dependencies { minecraft 'net.minecraftforge:forge:1.20.1-47.4.20' }
+repositories { mavenCentral() }
+dependencies { minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'; testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3' }
+tasks.named('test', Test) { useJUnitPlatform() }
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 tasks.named('jar', Jar).configure { finalizedBy 'reobfJar' }

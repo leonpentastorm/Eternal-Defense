@@ -1,0 +1,152 @@
+QA_CHECK PASS all 11 stands stand (wall types on their wall) 11 of 11
+QA_CHECK PASS two TaCZ guns to show [tacz:ak47, tacz:m4a1, tacz:glock_17, tacz:deagle, tacz:hk_mp5a5]
+QA_CHECK PASS TaCZ lists the stands for its interact key 
+QA_CHECK PASS wide halves meet in the middle, floor stands span the block, the heavy stand's outline covers its gun (20 px) and its base stays low (6.75 px) heavy outline 20.0 px, collision 6.75 px
+QA_CHECK PASS display_stand front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand
+QA_CHECK PASS display_stand front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand
+QA_CHECK PASS display_stand from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand
+QA_CHECK PASS display_stand from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand
+QA_CHECK PASS display_stand from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand
+QA_CHECK PASS display_stand from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand
+QA_CHECK PASS display_stand from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand
+QA_CHECK PASS display_stand from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand
+QA_CHECK PASS display_rack front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack
+QA_CHECK PASS display_rack front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack
+QA_CHECK PASS display_rack from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack
+QA_CHECK PASS display_rack from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack
+QA_CHECK PASS display_rack from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack
+QA_CHECK PASS display_rack from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack
+QA_CHECK PASS display_rack from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack
+QA_CHECK PASS display_rack from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack
+QA_CHECK PASS display_stand_wide front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_stand_wide front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_stand_wide from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand_wide
+QA_CHECK PASS display_stand_wide from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand_wide
+QA_CHECK PASS display_stand_wide from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_stand_wide from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_stand_wide from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_stand_wide from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_stand_wide (its other half)
+QA_CHECK PASS display_rack_wide front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_rack_wide front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_rack_wide from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack_wide
+QA_CHECK PASS display_rack_wide from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack_wide
+QA_CHECK PASS display_rack_wide from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_rack_wide from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_rack_wide from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_rack_wide from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_rack_wide (its other half)
+QA_CHECK PASS display_pistol_stand front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_stand from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_stand
+QA_CHECK PASS display_pistol_rack front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_pistol_rack
+QA_CHECK PASS display_pistol_rack from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_pistol_rack
+QA_CHECK PASS display_case front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case
+QA_CHECK PASS display_case front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case
+QA_CHECK PASS display_case from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case
+QA_CHECK PASS display_case from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case
+QA_CHECK PASS display_case from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case
+QA_CHECK PASS display_case from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case
+QA_CHECK PASS display_case from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case
+QA_CHECK PASS display_case from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case
+QA_CHECK PASS display_case_wide front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case_wide (its other half)
+QA_CHECK PASS display_case_wide front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case_wide (its other half)
+QA_CHECK PASS display_case_wide from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case_wide
+QA_CHECK PASS display_case_wide from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case_wide
+QA_CHECK PASS display_case_wide from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case_wide (its other half)
+QA_CHECK PASS display_case_wide from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case_wide (its other half)
+QA_CHECK PASS display_case_wide from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_case_wide (its other half)
+QA_CHECK PASS display_case_wide from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_case_wide (its other half)
+QA_CHECK PASS wall_case front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case
+QA_CHECK PASS wall_case front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case
+QA_CHECK PASS wall_case from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case
+QA_CHECK PASS wall_case from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case
+QA_CHECK PASS wall_case from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case
+QA_CHECK PASS wall_case from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case
+QA_CHECK PASS wall_case from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case
+QA_CHECK PASS wall_case from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case
+QA_CHECK PASS wall_case_wide front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case_wide (its other half)
+QA_CHECK PASS wall_case_wide front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case_wide (its other half)
+QA_CHECK PASS wall_case_wide from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case_wide
+QA_CHECK PASS wall_case_wide from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case_wide
+QA_CHECK PASS wall_case_wide from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case_wide (its other half)
+QA_CHECK PASS wall_case_wide from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case_wide (its other half)
+QA_CHECK PASS wall_case_wide from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on wall_case_wide (its other half)
+QA_CHECK PASS wall_case_wide from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on wall_case_wide (its other half)
+QA_CHECK PASS display_heavy front: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_heavy (its other half)
+QA_CHECK PASS display_heavy front: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_heavy (its other half)
+QA_CHECK PASS display_heavy from the left: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_heavy
+QA_CHECK PASS display_heavy from the left: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_heavy
+QA_CHECK PASS display_heavy from the right: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_heavy (its other half)
+QA_CHECK PASS display_heavy from the right: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_heavy (its other half)
+QA_CHECK PASS display_heavy from above: one press of H puts the gun on shown=tacz:ak47 hand=empty aim=on display_heavy (its other half)
+QA_CHECK PASS display_heavy from above: an empty-hand right-click takes it back (and this client sees the stand empty) shown=empty client=empty pack has it true aim=on display_heavy (its other half)
+QA_CHECK PASS right-click with a gun only aims: the stand keeps gun A, gun B stays in hand shown=tacz:ak47 hand=tacz:m4a1
+QA_CHECK PASS the interact key swaps: gun B on show, gun A back in the pack shown=tacz:m4a1 hand=tacz:ak47
+QA_CHECK PASS the gun keeps its name and ammo on the stand M4A1 on show
+QA_CHECK PASS a non-gun item leaves the stand alone 
+QA_CHECK PASS the stand's tooltip names the interact key (H) and the tuner Gun Stand / Hold a gun and press H to put it on display. / Press H with another gun to swap them. / Right-click with an empty hand to take the gun back. / Use a Weapon Display Tuner on it to change the gun's size, position and angle.
+QA_CHECK PASS the tuner's name and tooltip Weapon Display Tuner / Right-click a stand that holds a gun to change the gun's size, position and angle. / The settings stay with the stand when you swap guns.
+QA_CHECK PASS each of the 12 grids matches only its own recipe among every loaded mod's 
+QA_CHECK PASS two stands and an iron ingot no longer make a wide one 
+QA_CHECK PASS holding iron unlocks all 12 recipes in the recipe book 12 of 12
+QA_CHECK PASS crafting table: display_stand comes out eternal_defense_displays:display_stand
+QA_CHECK PASS display_stand lands in the pack 
+QA_CHECK PASS crafting table: display_rack comes out eternal_defense_displays:display_rack
+QA_CHECK PASS display_rack lands in the pack 
+QA_CHECK PASS crafting table: display_stand_wide comes out eternal_defense_displays:display_stand_wide
+QA_CHECK PASS display_stand_wide lands in the pack 
+QA_CHECK PASS crafting table: display_rack_wide comes out eternal_defense_displays:display_rack_wide
+QA_CHECK PASS display_rack_wide lands in the pack 
+QA_CHECK PASS crafting table: display_pistol_stand comes out eternal_defense_displays:display_pistol_stand
+QA_CHECK PASS display_pistol_stand lands in the pack 
+QA_CHECK PASS crafting table: display_pistol_rack comes out eternal_defense_displays:display_pistol_rack
+QA_CHECK PASS display_pistol_rack lands in the pack 
+QA_CHECK PASS crafting table: display_case comes out eternal_defense_displays:display_case
+QA_CHECK PASS display_case lands in the pack 
+QA_CHECK PASS crafting table: display_case_wide comes out eternal_defense_displays:display_case_wide
+QA_CHECK PASS display_case_wide lands in the pack 
+QA_CHECK PASS crafting table: wall_case comes out eternal_defense_displays:wall_case
+QA_CHECK PASS wall_case lands in the pack 
+QA_CHECK PASS crafting table: wall_case_wide comes out eternal_defense_displays:wall_case_wide
+QA_CHECK PASS wall_case_wide lands in the pack 
+QA_CHECK PASS crafting table: display_heavy comes out eternal_defense_displays:display_heavy
+QA_CHECK PASS display_heavy lands in the pack 
+QA_CHECK PASS crafting table: display_tuner comes out eternal_defense_displays:display_tuner
+QA_CHECK PASS display_tuner lands in the pack 
+QA_CHECK PASS an empty stand: no screen, the hint 'Put a gun on the stand first.' [Put a gun on the stand first.]
+QA_CHECK PASS the tuner opens its screen on a stand with a gun dev.eternaldefense.displays.TunerScreen@662fad11
+QA_CHECK PASS tuner at GUI scale 2: 25 controls in a 640x360 window, none outside, none over another, every label fits, hint in 2 lines 
+QA_CHECK PASS the game keeps running behind the tuner (no pause) 
+QA_CHECK PASS size + ten times: 150% on the screen and on the server size 1.50 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0 / server size 1.50 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0
+QA_CHECK PASS the size bar reads 'Size: 150%' Size: 150%
+QA_CHECK PASS turn bar at 3/4: +90 degrees, sent to the server size 1.50 right 0.00 up 0.00 out 0.00 tilt 0 turn 90 roll 0
+QA_CHECK PASS every setting reaches the server: size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45 server size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45 screen size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45
+QA_CHECK PASS the bars read their values Left / Right: -8 | Roll: +45
+QA_CHECK PASS Done closes the tuner null
+QA_CHECK PASS this client shows the new settings at once size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45
+QA_CHECK PASS Paste is ready after Copy 
+QA_CHECK PASS Paste puts the copied settings on the screen size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45
+QA_CHECK PASS the glass case now has the copied settings size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45
+QA_CHECK PASS Reset: the default again, saved without a Tune entry size 1.00 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0
+QA_CHECK PASS the settings are saved with the stand and read back true {out:-3.0f,right:-8.0f,roll:45.0f,size:1.5f,tilt:-30.0f,turn:90.0f,up:4.0f}
+QA_CHECK PASS after a swap the stand keeps its settings size 1.50 right -8.00 up 4.00 out -3.00 tilt -30 turn 90 roll 45
+QA_CHECK PASS wild numbers are held to the limits size 3.00 right 16.00 up -16.00 out 16.00 tilt 180 turn -180 roll 7
+QA_CHECK PASS without a tuner in hand the server ignores it size 1.00 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0
+QA_CHECK PASS from 20 blocks away the server ignores it size 1.00 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0
+QA_CHECK PASS an empty stand cannot be tuned size 1.00 right 0.00 up 0.00 out 0.00 tilt 0 turn 0 roll 0
+QA_CHECK PASS tuner open 
+QA_CHECK PASS the tuner closes when the stand has no gun any more null
+QA_CHECK PASS sneaking: the tuner still opens dev.eternaldefense.displays.TunerScreen@53bf821c
+QA_CHECK PASS tuner at GUI scale 3: 25 controls in a 427x240 window, none outside, none over another, every label fits, hint in 2 lines 
+QA_DONE pass=150 fail=0
+QA_DONE pass=150 fail=0
