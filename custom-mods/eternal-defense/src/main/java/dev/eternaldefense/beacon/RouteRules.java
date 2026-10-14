@@ -29,8 +29,6 @@ final class RouteRules {
         /** Its icons (textures/gui/tribute): the merged one shows the fisher's and the herder's side by side. */
         List<String> icons(){return this==FISHING_HUSBANDRY?List.of("spec_fishing","spec_husbandry"):List.of("spec_"+id());}
         static Specialty of(int ordinal){var v=values();return v[Math.floorMod(ordinal,v.length)];}
-        /** The specialty a 0.0.31 to 0.0.33 save meant by its ordinal (fishing, husbandry, potions, trader, monsters). */
-        static Specialty legacy(int ordinal){return switch(Math.floorMod(ordinal,5)){case 0,1->FISHING_HUSBANDRY;case 2->POTIONS;case 3->TRADER;default->MONSTERS;};}
         /** By id; null for none. */
         static Specialty byId(String id){for(var s:values())if(s.id().equals(id))return s;return null;}
         /** By id as the client gets it, Fishing & Animal Husbandry for an unknown one. */

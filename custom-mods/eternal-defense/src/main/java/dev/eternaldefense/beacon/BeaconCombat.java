@@ -103,13 +103,20 @@ final class BeaconCombat {
         @Override public void stop(){if(mob.getTarget() instanceof Objective)mob.setTarget(null);}
     }
     static boolean approach(Mob mob,double x,double y,double z,double speed){
-        double dx=x-mob.getX(),dz=z-mob.getZ(),distance=Math.sqrt(dx*dx+dz*dz);
-        // Small intermediate paths keep distant reinforcements within native pathfinding limits.
-        if(distance>24){x=mob.getX()+dx/distance*16;z=mob.getZ()+dz/distance*16;
-            if(mob.level() instanceof ServerLevel l){var p=net.minecraft.core.BlockPos.containing(x,mob.getY(),z);if(!l.hasChunkAt(p))return false;var surface=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p);y=Math.abs(surface.getY()-mob.getY())<=12?surface.getY():mob.getY();}}
-        if(mob.getNavigation().moveTo(x,y,z,speed)&&!mob.getNavigation().isDone())return true;
+        var w=waypoint(mob,x,y,z);if(w==null)return false;
+        if(mob.getNavigation().moveTo(w[0],w[1],w[2],speed)&&!mob.getNavigation().isDone())return true;
         // No usable path (walls, water, rock): head straight for the spot anyway; RaidBreaching digs when the way is really shut.
-        RaidMarch.forcedMove(mob,mob.level().getGameTime());mob.getMoveControl().setWantedPosition(x,y,z,speed);return true;
+        push(mob,w,speed);return true;
+    }
+    /** Straight toward the spot with no path search (between searches, while the mob has no path). */
+    static boolean step(Mob mob,double x,double y,double z,double speed){var w=waypoint(mob,x,y,z);if(w==null)return false;push(mob,w,speed);return true;}
+    private static void push(Mob mob,double[] w,double speed){RaidMarch.forcedMove(mob,mob.level().getGameTime());mob.getMoveControl().setWantedPosition(w[0],w[1],w[2],speed);}
+    /** The spot itself, or a point 16 blocks toward it on the ground when it is far (paths stay short); null when that chunk is not loaded. */
+    private static double[] waypoint(Mob mob,double x,double y,double z){
+        double dx=x-mob.getX(),dz=z-mob.getZ(),distance=Math.sqrt(dx*dx+dz*dz);
+        if(distance>24){x=mob.getX()+dx/distance*16;z=mob.getZ()+dz/distance*16;
+            if(mob.level() instanceof ServerLevel l){var p=net.minecraft.core.BlockPos.containing(x,mob.getY(),z);if(!l.hasChunkAt(p))return null;var surface=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p);y=Math.abs(surface.getY()-mob.getY())<=12?surface.getY():mob.getY();}}
+        return new double[]{x,y,z};
     }
     static final class MeleeBeacon extends Goal {
         final Mob mob;int cooldown;
@@ -120,7 +127,10 @@ final class BeaconCombat {
         @Override public void stop(){mob.setAggressive(false);mob.getNavigation().stop();}
         @Override public void tick(){var target=mob.getTarget();if(target==null)return;mob.getLookControl().setLookAt(target,30,30);
             double reach=Math.max(2.2,mob.getBbWidth()+target.getBbWidth());
-            if(mob.distanceToSqr(target)>reach*reach||!mob.hasLineOfSight(target)){if(mob.tickCount%10==0||mob.getNavigation().isDone())approach(mob,target.getX(),target.getY(),target.getZ(),1.15);}
+            if(mob.distanceToSqr(target)>reach*reach||!mob.hasLineOfSight(target)){
+                // a path search every 10 ticks; in between, a mob without a path keeps walking straight (a search every tick cost the most in raids)
+                if(mob.tickCount%10==0)approach(mob,target.getX(),target.getY(),target.getZ(),1.15);
+                else if(mob.getNavigation().isDone())step(mob,target.getX(),target.getY(),target.getZ(),1.15);}
             else{mob.getNavigation().stop();if(--cooldown<=0){cooldown=20;
                 if(mob instanceof Creeper creeper)creeper.ignite(); // creepers have no melee attack: they blow up at the beacon
                 else{mob.swing(InteractionHand.MAIN_HAND);mob.doHurtTarget(target);}}}

@@ -1,0 +1,49 @@
+{
+  "flare.chatter_1": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.chatter_2": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.chatter_3": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.chatter_4": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.chatter_5": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.chatter_6": {
+    "name": "minecraft:block.beacon.power_select"
+  },
+  "flare.supply_chatter_1": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
+  "flare.supply_chatter_2": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
+  "flare.recall_chatter_1": {
+    "name": "minecraft:block.beacon.activate"
+  },
+  "flare.recall_chatter_2": {
+    "name": "minecraft:block.beacon.activate"
+  },
+  "flare.recall_chatter_3": {
+    "name": "minecraft:block.beacon.activate"
+  },
+  "seller.order_chatter_1": {
+    "name": "minecraft:entity.villager.yes"
+  },
+  "seller.order_chatter_2": {
+    "name": "minecraft:entity.villager.yes"
+  },
+  "seller.order_chatter_3": {
+    "name": "minecraft:entity.villager.yes"
+  },
+  "seller.order_chatter_4": {
+    "name": "minecraft:entity.villager.yes"
+  }
+}

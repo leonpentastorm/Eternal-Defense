@@ -152,7 +152,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
         var t=r.getCompound("tribute");
         // 0.0.34: saved by name; a save of 0.0.31 to 0.0.33 holds the ordinal of five specialties (fishing and husbandry are one now)
         var named=RouteRules.Specialty.byId(t.getString("spec"));
-        f.specialty=named!=null?named:t.contains("specialty")?RouteRules.Specialty.legacy(t.getInt("specialty")):RouteRules.Specialty.of((int)f.id);
+        f.specialty=named!=null?named:RouteRules.Specialty.of((int)f.id);
         boolean wasHusbandry=named==null&&t.contains("specialty")&&Math.floorMod(t.getInt("specialty"),5)==1;
         if(t.contains("on")){byte[] on=t.getByteArray("on");for(int i=0;i<f.slotOn.length&&i<on.length;i++)f.slotOn[i]=on[i]!=0;}
         if(RouteRules.enabled(f.slotOn)==0)f.slotOn[0]=true;

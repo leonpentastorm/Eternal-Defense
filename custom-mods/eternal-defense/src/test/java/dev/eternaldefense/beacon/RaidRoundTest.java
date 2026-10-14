@@ -157,13 +157,6 @@ final class RaidRoundTest {
         assertTrue(perIngotInBulk<perOre,"the bulk lot is a little cheaper per ingot than smelted ore");
         assertTrue(perIngotInBulk>=perOre*.85,"but only a little (1/9 instead of 1/8)");
     }
-    @Test void anUntouchedOldDefaultFileGetsTheNewDefaultAnEditedOneIsKept(){
-        String old=ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_BEFORE_0021;
-        assertTrue(ExchangeShop.oldDefault(old));
-        assertTrue(ExchangeShop.oldDefault(old.replace("\n","   \n")+"\n\n"),"trailing spaces and blank lines do not matter");
-        assertFalse(ExchangeShop.oldDefault(old.replace("universal_ammo_coin x16 = 3","universal_ammo_coin x16 = 4")),"an edited file is the admin's: kept");
-        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK),"the current default is not replaced");
-    }
     @Test void theProtocolMovedOn() throws Exception{
         // 0.0.21 moved it to 30 (MissionSync carries the mission id); 0.0.23 to 31 (FOB screen and removal confirmation), see FobTest
         assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition; the states lost their \"standalone\" flag)");

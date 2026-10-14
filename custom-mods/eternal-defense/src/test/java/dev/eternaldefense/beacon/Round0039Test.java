@@ -179,15 +179,6 @@ final class Round0039Test {
         assertTrue(source("PlacementPreviewClient.java").contains("Animations.drawRest(state,pose,consumer,"),"the placement ghost shows the whole model");
         assertTrue(body(source("SupportClient.java"),"public void render(SupportPlatform.PlatformEntity be","\n        }").indexOf("Animations.draw(")<body(source("SupportClient.java"),"public void render(SupportPlatform.PlatformEntity be","\n        }").indexOf("return;"),"before the nameplate's early exit");
     }
-    @Test void blocksPlacedBeforeTheAnimationsGetTheirBlockEntityWhenTheirChunkLoads() throws Exception{
-        var parts=source("AnimatedParts.java");
-        assertTrue(source("EternalDefense.java").contains("MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());"),"the chunk-load handler is registered");
-        assertTrue(parts.contains("if(event.getLevel() instanceof ServerLevel&&event.getChunk() instanceof LevelChunk chunk)restore(chunk);"),"on the server, as the chunk loads (before it is sent)");
-        assertTrue(parts.contains("state.is(EternalDefense.FOB_BEACON.get())||state.is(EternalDefense.SATELLITE_BEACON.get())||state.is(EternalDefense.COMMAND_TABLE.get())||state.is(EternalDefense.ENCHANTING_TABLE.get())"),"the same four blocks as the block entity type");
-        assertTrue(parts.contains("section.maybeHas(AnimatedParts::needsEntity)"),"sections without them are skipped by their palette");
-        var restore=body(parts,"static int restore(LevelChunk chunk)","\n    }");
-        assertTrue(restore.contains("LevelChunk.EntityCreationType.IMMEDIATE")&&!restore.contains("setBlock"),"it makes the block entity and changes no block");
-    }
     @Test void restIsTheOwnersPoseAndThePlayerCanTurnItOff() throws Exception{
         var anim=source("Animations.java");
         // every motion is read only while live; at rest each part is drawn untouched

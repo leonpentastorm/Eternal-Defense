@@ -1,0 +1,230 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): a profile of the mod with every feature running, recorded with Java Flight Recorder (one recording per
+ * phase, in run-client/profile/): a base with every installation in its zone, a FOB with its route and catapult, the HUD, the placement
+ * previews, the beacon menu, and a raid with its waves. Copied in by setup-qa.sh (QA_CREATE=1). Results: QA_PHASE lines, the .jfr files, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaProfile {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    /** A step runs, then the next one waits {@code delay} ticks. */
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    /** Waits {@code ticks}, then runs the check. */
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    /** Every sound of the mod the client actually starts. */
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(EternalDefense.ID))return;
+        SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
+    }
+    static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
+    /**
+     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
+     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
+     * connection's own, in the integrated server's local channel the packets arrive as objects).
+     */
+    static boolean hooked;
+    static void hookSounds(){
+        if(hooked||mc().getConnection()==null)return;hooked=true;
+        mc().getConnection().getConnection().channel().pipeline().addBefore("packet_handler","qa_sounds",new io.netty.channel.ChannelInboundHandlerAdapter(){
+            @Override public void channelRead(io.netty.channel.ChannelHandlerContext ctx,Object msg)throws Exception{
+                ResourceLocation id=null;
+                if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
+                else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
+                if(id!=null&&id.getNamespace().equals(EternalDefense.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                super.channelRead(ctx,msg);
+            }
+        });
+        log("QA_NOTE sound packets are counted at the client's connection");
+    }
+
+    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+
+    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static net.minecraft.client.gui.components.AbstractWidget button(String label){
+        if(mc().screen==null)return null;for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget b&&b.getMessage().getString().equals(label))return b;return null;
+    }
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
+
+    static BlockPos B,V,PLANT,RECV,DELIV;
+    static void places(){B=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy,Math.floorDiv(sz,16)*16);V=B.offset(300,0,0);PLANT=V.offset(0,0,-3);RECV=B.offset(0,0,-14);DELIV=V.offset(-20,0,30);}
+    static void sync(){srv(()->BeaconNetwork.syncNearby(sl(),CampaignData.get(sl())));}
+    static void command(String c){srv(()->server().getCommands().performPrefixedCommand(sp().createCommandSourceStack().withPermission(4),c));}
+    static FobData.Fob fob(){return srvGet(()->{var d=FobData.get(sl());return d.fobs.isEmpty()?null:d.fobs.values().iterator().next();});}
+    // ---- one Flight Recorder recording per phase ---------------------------------------------------------------------------------------
+    static jdk.jfr.Recording rec;static String recName;
+    static void startRec(String name){
+        try{var c=jdk.jfr.Configuration.getConfiguration("profile");rec=new jdk.jfr.Recording(c);rec.setName(name);rec.start();recName=name;log("QA_PHASE start {}",name);}catch(Exception x){log("QA_NOTE jfr {}",x);}
+    }
+    static void stopRec(){
+        if(rec==null)return;
+        try{new File("profile").mkdirs();rec.dump(java.nio.file.Path.of("profile",recName+".jfr"));rec.stop();rec.close();log("QA_PHASE end {} frames={} serverTickMs={}",recName,frames,String.format("%.3f",server().getAverageTickTime()));}catch(Exception x){log("QA_NOTE jfr {}",x);}
+        rec=null;
+    }
+    /** Places a block item of the mod as a player would (its own placement rules, owner, facing). */
+    static String place(String reg,BlockPos at){
+        var item=BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,reg));
+        if(!(item instanceof net.minecraft.world.item.BlockItem bi))return reg+": no block item";
+        var stack=new ItemStack(item);var hit=new BlockHitResult(Vec3.atCenterOf(at.below()).add(0,.5,0),Direction.UP,at.below(),false);
+        var r=bi.place(new net.minecraft.world.item.context.BlockPlaceContext(sl(),sp(),InteractionHand.MAIN_HAND,stack,hit));
+        return r.consumesAction()?null:reg+": "+r;
+    }
+
+    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_profile",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_profile",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;hookSounds();sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(18000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
+            sp().teleportTo(sl(),B.getX()+.5,sy,B.getZ()+20.5,180,20);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);},"to the base site (night: raids start only at night)");
+        until("the base site is loaded",300,()->loaded(B),()->{});
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=true;d.showBoundary=true;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);}),"plant the beacon (core 3)");
+        step(5,()->sync(),"sync");
+        // every installation, on a grid in the zone, through its own item
+        step(10,()->{var problems=srvGet(()->{var out=new ArrayList<String>();int i=0;
+                var spots=new ArrayList<BlockPos>();for(int x=-14;x<=14;x+=7)for(int z=-14;z<=14;z+=7)if(!(x==0&&z==0)&&!(x==0&&z==-14))spots.add(B.offset(x,0,z));
+                for(String id:BaseScoring.INSTALLATIONS){if(id.equals("supply_receiving_gate"))continue;String reg=id.equals("mess_hall")||id.equals("drink_mixer")?id+"_mk1":id;
+                    String p=place(reg,spots.get(i++));if(p!=null)out.add(p);}
+                return out;});
+            log("QA_NOTE placed installations, problems: {}",problems);},"every installation in the zone");
+        step(20,()->{var g=srvGet(()->{var gun=new ArrayList<String>();for(var id:BaseScoring.INSTALLATIONS){String reg=id.equals("mess_hall")||id.equals("drink_mixer")?id+"_mk1":id;
+                var b=BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,reg));boolean found=false;
+                for(var p:BlockPos.betweenClosed(B.offset(-18,-1,-18),B.offset(18,3,18)))if(sl().getBlockState(p).is(b)){found=true;break;}
+                if(!found)gun.add(reg);}return gun;});log("QA_NOTE installations missing: {}",g);},"check");
+        // a FOB in a test village, its route home and a catapult
+        step(5,()->srv(()->sp().teleportTo(sl(),V.getX()+.5,sy,V.getZ()+8.5,180,10)),"to the village site");
+        until("the village site is loaded",300,()->loaded(V),()->{});
+        step(5,()->srv(()->{var l=sl();
+            for(int x=-12;x<=12;x++)for(int z=-12;z<=12;z++)for(int y=0;y<4;y++)l.setBlock(V.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);
+            l.setBlock(V,net.minecraft.world.level.block.Blocks.BELL.defaultBlockState(),3);
+            for(var at:List.of(V.offset(-5,0,-5),V.offset(5,0,-5),V.offset(-5,0,5)))l.setBlock(at,net.minecraft.world.level.block.Blocks.COMPOSTER.defaultBlockState(),3);
+            for(int x:new int[]{3,5}){var foot=V.offset(x,0,4);var bed=net.minecraft.world.level.block.Blocks.WHITE_BED.defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING,Direction.SOUTH);
+                l.setBlock(foot,bed.setValue(net.minecraft.world.level.block.BedBlock.PART,net.minecraft.world.level.block.state.properties.BedPart.FOOT),3);l.setBlock(foot.south(),bed.setValue(net.minecraft.world.level.block.BedBlock.PART,net.minecraft.world.level.block.state.properties.BedPart.HEAD),3);}
+            for(int i=0;i<8;i++){var v=net.minecraft.world.entity.EntityType.VILLAGER.create(l);var at=V.offset(-4+i%4*2,0,-1+i/4*2);v.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);v.setNoAi(true);v.setPersistenceRequired();l.addFreshEntity(v);}
+        }),"a test village");
+        step(10,()->srv(()->{var poi=sl().getPoiManager();for(var at:List.of(V,V.offset(-5,0,-5),V.offset(5,0,-5),V.offset(-5,0,5),V.offset(3,0,5),V.offset(5,0,5)))poi.take(h->true,(h,p)->p.equals(at),at,1);}),"its points of interest");
+        step(10,()->{var r=srvGet(()->FobGameTests.plant(new FobGameTests.Fixture(sl(),sp(),List.of()),PLANT));log("QA_NOTE FOB planted {}",r);},"plant the FOB Beacon");
+        step(20,()->command("eternaldefense fob complete"),"complete its raid");
+        step(20,()->srv(()->{var l=sl();var d=FobData.get(l);if(d.fobs.isEmpty())return;var f=d.fobs.values().iterator().next();
+            for(var kind:RailGates.Kind.values()){var at=kind==RailGates.Kind.DELIVERY?DELIV:RECV;var block=(kind==RailGates.Kind.DELIVERY?EternalDefense.DELIVERY_GATE:EternalDefense.RECEIVING_GATE).get();
+                l.setBlock(at,block.defaultBlockState().setValue(RailGates.FACING,Direction.EAST),3);Routes.link(l,d,f,kind,at,(RailGates.GateEntity)l.getBlockEntity(at));}
+            f.commissioned=true;f.baseline=600;f.clock=RouteRules.CLOCK;d.setDirty();
+            log("QA_NOTE catapult: {}",place("supply_catapult",V.offset(8,0,-8)));}),"gates linked (the Receiving Gate in the base), route open, a catapult");
+        // ---- phase 1: idle at the base, HUD on, everything in view -------------------------------------------------------------------------
+        step(5,()->{srv(()->{sp().getInventory().clearContent();sp().teleportTo(sl(),B.getX()+.5,sy+6,B.getZ()+24.5,180,25);sp().getAbilities().flying=true;sp().onUpdateAbilities();});},"back home, hovering over the base");
+        until("the base is loaded",300,()->loaded(B)&&loaded(B.offset(-14,0,-14))&&loaded(B.offset(14,0,14)),()->{});
+        step(200,()->sync(),"settle (10 s)");
+        step(5,()->{frames=0;startRec("1_idle_base");},"record: idle");
+        step(600,()->{},"30 s idle with the base in view");
+        step(5,()->stopRec(),"stop");
+        // ---- phase 2: holding pieces (the placement previews) ------------------------------------------------------------------------------
+        step(5,()->{srv(()->{sp().getInventory().setItem(0,new ItemStack(EternalDefense.SUPPORT_CANNON_ITEM.get()));sp().getInventory().setItem(1,new ItemStack(EternalDefense.FOB_BEACON_ITEM.get()));sp().getInventory().selected=0;});
+            mc().player.getInventory().selected=0;frames=0;startRec("2_preview");},"record: a Support Cannon in hand, looking at the ground");
+        step(300,()->{mc().player.getInventory().selected=1;},"15 s with the cannon's preview, then the FOB Beacon");
+        step(300,()->{},"15 s with the FOB Beacon's preview");
+        step(5,()->{stopRec();srv(()->sp().getInventory().clearContent());},"stop");
+        // ---- phase 3: the beacon menu open --------------------------------------------------------------------------------------------------
+        step(5,()->{mc().player.connection.sendCommand("eternaldefense");frames=0;startRec("3_menu");},"record: the beacon menu");
+        step(400,()->{},"20 s with the menu open");
+        step(5,()->{stopRec();mc().setScreen(null);},"stop");
+        // ---- phase 4: a raid -------------------------------------------------------------------------------------------------------------
+        step(5,()->{srv(()->{sp().teleportTo(sl(),B.getX()+.5,sy,B.getZ()+3.5,180,10);sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().getAbilities().flying=false;sp().onUpdateAbilities();sp().addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,20*600,4,false,false));sp().addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.REGENERATION,20*600,4,false,false));});command("eternaldefense test-raid");},"start a raid, standing by the beacon");
+        until("the raid runs",600,()->srvGet(()->CampaignData.get(sl()).phase.equals("raid")),()->log("QA_NOTE raid phase {}",srvGet(()->CampaignData.get(sl()).phase)));
+        step(400,()->{},"20 s for the first wave to come");
+        step(5,()->{frames=0;startRec("4_raid");},"record: the raid");
+        step(1200,()->log("QA_NOTE raid: wave {} raiders {} remaining {}",srvGet(()->CampaignData.get(sl()).wave),srvGet(()->CampaignData.get(sl()).raiders.size()),srvGet(()->CampaignData.get(sl()).spawnRemaining)),"60 s of raid");
+        step(5,()->stopRec(),"stop");
+    }
+}

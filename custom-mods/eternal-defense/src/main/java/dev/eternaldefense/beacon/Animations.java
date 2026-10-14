@@ -54,7 +54,13 @@ public final class Animations {
         PARTS.put("mre_maker",List.of("press","roller_0","roller_1","lever"));
         PARTS.put("support_cannon_turret",List.of("hook"));
     }
-    static ResourceLocation part(String model,String part){return new ResourceLocation(EternalDefense.ID,"block/anim/"+model+"_"+part);}
+    /** Part model ids, made once (drawn every frame). */
+    private static final java.util.Map<String,java.util.Map<String,ResourceLocation>> PART_IDS=new java.util.concurrent.ConcurrentHashMap<>();
+    static ResourceLocation part(String model,String part){
+        var byPart=PART_IDS.get(model);if(byPart==null)PART_IDS.put(model,byPart=new java.util.concurrent.ConcurrentHashMap<>());
+        var id=byPart.get(part);if(id==null)byPart.put(part,id=new ResourceLocation(EternalDefense.ID,"block/anim/"+model+"_"+part));
+        return id;
+    }
     /** The cannon's turret without its crane hook (the hook swings). */
     static final ResourceLocation TURRET_STATIC=new ResourceLocation(EternalDefense.ID,"block/support_cannon_turret_static");
 
@@ -104,17 +110,19 @@ public final class Animations {
     /** Draws one part with the world's block shading (Forge's smooth form of it, so a turned face gets the shade of the way it faces). */
     static void quads(Ctx c,ResourceLocation id,int light){
         var mc=Minecraft.getInstance();var baked=mc.getModelManager().getModel(id);
-        var pose=c.x().draw.last();var normal=c.x().own.last().normal();int[] lights={light,light,light,light};
+        var pose=c.x().draw.last();var normal=c.x().own.last().normal();int[] lights=LIGHTS;lights[0]=lights[1]=lights[2]=lights[3]=light;float[] shade=SHADE;
         for(var side:SIDES){
             RANDOM.setSeed(42);
             for(var q:baked.getQuads(null,side,RANDOM,ModelData.EMPTY,null)){
-                float s=q.isShade()?diffuse(normal,q.getDirection()):1f;
-                c.vc().putBulkData(pose,q,new float[]{s,s,s,s},c.r(),c.g(),c.b(),lights,OverlayTexture.NO_OVERLAY,false);
+                float s=q.isShade()?diffuse(normal,q.getDirection()):1f;shade[0]=shade[1]=shade[2]=shade[3]=s;
+                c.vc().putBulkData(pose,q,shade,c.r(),c.g(),c.b(),lights,OverlayTexture.NO_OVERLAY,false);
             }
         }
     }
+    /** Scratch arrays for quads (render thread only; the vertex consumer copies them). */
+    private static final int[] LIGHTS=new int[4];private static final float[] SHADE=new float[4];private static final org.joml.Vector3f FACE=new org.joml.Vector3f();
     static float diffuse(org.joml.Matrix3f normal,Direction face){
-        var n=new org.joml.Vector3f(face.getStepX(),face.getStepY(),face.getStepZ());normal.transform(n);n.normalize();
+        var n=FACE.set(face.getStepX(),face.getStepY(),face.getStepZ());normal.transform(n);n.normalize();
         return Math.min(1f,n.x*n.x*.6f+n.y*n.y*((3f+n.y)/4f)+n.z*n.z*.8f);
     }
     static void part(Ctx c,String model,String part){quads(c,part(model,part),c.light());}

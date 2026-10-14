@@ -4,6 +4,6 @@ tasks.named('build') {
 }
 tasks.register('releaseJars') {
     group = 'build'
-    description = 'Build the release JARs (0.0.41: the pack edition only; the standalone edition is discontinued).'
-    dependsOn 'build'
+    description = 'Build the release JARs: the three mods, and the no-voice edition of Eternal Defense.'
+    dependsOn 'build', ':eternal-defense:noVoiceJar'
 }

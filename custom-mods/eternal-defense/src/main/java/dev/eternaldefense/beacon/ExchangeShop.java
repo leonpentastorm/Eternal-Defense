@@ -85,139 +85,8 @@ final class ExchangeShop {
         minecraft:ender_pearl = 3
         minecraft:diamond = 6
         """;
-    /** The default of 0.0.41 and 0.0.42 (16 iron ingots for 1, 16 iron blocks for 8, 16 andesite alloy for 2): an untouched file gets the new default. */
-    static final String PACK_0041="""
-        [sell]
-        eternal_defense:warlord_seal = 4
-        eternal_defense:reinforced_plating x2 = 1
-        eternal_defense:logistics_module x2 = 1
-        eternal_defense:resonance_coil x2 = 1
-        eternal_defense:restoration_matrix = 1
-        create:brass_ingot x16 = 1
-        create:andesite_alloy x32 = 1
-        create:precision_mechanism x2 = 1
-        create:electron_tube x8 = 1
-        kubejs:cartridge_case x32 = 1
-        kubejs:propellant x32 = 1
-
-        [buy]
-        eternal_defense:universal_ammo_coin x16 = 3
-        eternal_defense:reinforced_plating = 2
-        eternal_defense:logistics_module = 2
-        eternal_defense:resonance_coil = 3
-        eternal_defense:restoration_matrix = 4
-        create:precision_mechanism = 3
-        create:brass_ingot x8 = 3
-        create:andesite_alloy x16 = 2
-        kubejs:cartridge_case x16 = 2
-        kubejs:propellant x16 = 2
-        minecraft:iron_ingot x16 = 1
-        minecraft:iron_block x16 = 8
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 6
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
-    /** The pack edition's default from 0.0.28 to 0.0.40 (a blaze rod for 3): an untouched file gets the new default. */
-    static final String PACK_0028="""
-        [sell]
-        eternal_defense:warlord_seal = 4
-        eternal_defense:reinforced_plating x2 = 1
-        eternal_defense:logistics_module x2 = 1
-        eternal_defense:resonance_coil x2 = 1
-        eternal_defense:restoration_matrix = 1
-        create:brass_ingot x16 = 1
-        create:andesite_alloy x32 = 1
-        create:precision_mechanism x2 = 1
-        create:electron_tube x8 = 1
-        kubejs:cartridge_case x32 = 1
-        kubejs:propellant x32 = 1
-
-        [buy]
-        eternal_defense:universal_ammo_coin x16 = 3
-        eternal_defense:reinforced_plating = 2
-        eternal_defense:logistics_module = 2
-        eternal_defense:resonance_coil = 3
-        eternal_defense:restoration_matrix = 4
-        create:precision_mechanism = 3
-        create:brass_ingot x8 = 3
-        create:andesite_alloy x16 = 2
-        kubejs:cartridge_case x16 = 2
-        kubejs:propellant x16 = 2
-        minecraft:iron_ingot x16 = 1
-        minecraft:iron_block x16 = 8
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 3
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
-    /** The pack edition's default from 0.0.21 to 0.0.27 (before the Warlord Seal could be sold): an untouched file gets the new default. */
-    static final String PACK_0021="""
-        [sell]
-        eternal_defense:reinforced_plating x2 = 1
-        eternal_defense:logistics_module x2 = 1
-        eternal_defense:resonance_coil x2 = 1
-        eternal_defense:restoration_matrix = 1
-        create:brass_ingot x16 = 1
-        create:andesite_alloy x32 = 1
-        create:precision_mechanism x2 = 1
-        create:electron_tube x8 = 1
-        kubejs:cartridge_case x32 = 1
-        kubejs:propellant x32 = 1
-
-        [buy]
-        eternal_defense:universal_ammo_coin x16 = 3
-        eternal_defense:reinforced_plating = 2
-        eternal_defense:logistics_module = 2
-        eternal_defense:resonance_coil = 3
-        eternal_defense:restoration_matrix = 4
-        create:precision_mechanism = 3
-        create:brass_ingot x8 = 3
-        create:andesite_alloy x16 = 2
-        kubejs:cartridge_case x16 = 2
-        kubejs:propellant x16 = 2
-        minecraft:iron_ingot x16 = 1
-        minecraft:iron_block x16 = 8
-        minecraft:gold_ingot x8 = 2
-        minecraft:blaze_rod = 3
-        minecraft:ender_pearl = 3
-        minecraft:diamond = 6
-        """;
-    /** The pack edition's default before 0.0.21: a world whose file is still exactly this gets the new default (an edited file is kept). */
-    static final String PACK_BEFORE_0021="""
-        [sell]
-        eternal_defense:reinforced_plating x2 = 1
-        eternal_defense:logistics_module x2 = 1
-        eternal_defense:resonance_coil x2 = 1
-        eternal_defense:restoration_matrix = 1
-        create:brass_ingot x16 = 1
-        create:andesite_alloy x32 = 1
-        create:precision_mechanism x2 = 1
-        create:electron_tube x8 = 1
-        kubejs:cartridge_case x32 = 1
-        kubejs:propellant x32 = 1
-
-        [buy]
-        eternal_defense:universal_ammo_coin x16 = 3
-        eternal_defense:reinforced_plating = 2
-        eternal_defense:logistics_module = 2
-        eternal_defense:resonance_coil = 3
-        eternal_defense:restoration_matrix = 4
-        create:precision_mechanism = 3
-        create:brass_ingot x8 = 3
-        create:andesite_alloy x16 = 2
-        kubejs:cartridge_case x16 = 2
-        kubejs:propellant x16 = 2
-        """;
     static final List<TextTable.Row> DEFAULT_BUY=List.of(new TextTable.Row("eternal_defense:universal_ammo_coin",16,3));
     static String template(){return HEADER+"\n"+PACK;}
-    /** Pure: the file's text with each line's trailing spaces and the blank lines at its end dropped (to compare a file with a template). */
-    static String normal(String text){return text.lines().map(String::stripTrailing).collect(java.util.stream.Collectors.joining("\n")).strip();}
-    /** Pure: is this file the untouched default of an earlier version (so it may be replaced by the current one)? */
-    static boolean oldDefault(String text){
-        for(String old:List.of(PACK_BEFORE_0021,PACK_0021,PACK_0028,PACK_0041))if(normal(text).equals(normal(HEADER+"\n"+old)))return true;
-        return false;
-    }
 
     /** Splits the file's lines into its [sell] and [buy] sections (anything before a header is ignored). */
     static java.util.Map<String,List<String>> sections(List<String> lines){
@@ -229,18 +98,11 @@ final class ExchangeShop {
         }
         return map;
     }
-    /** Reads the file, creating it from the template if missing. An old single-list file is kept as .old and replaced. Problems are logged, never fatal. */
+    /** Reads the file, creating it from the template if missing. Problems are logged, never fatal. */
     static Offers offers(){
         Path file=FMLPaths.CONFIGDIR.get().resolve(FILE);
         try{
             var lines=Files.exists(file)?Files.readAllLines(file):List.<String>of();
-            if(!lines.isEmpty()&&lines.stream().noneMatch(l->l.trim().equalsIgnoreCase("[sell]")||l.trim().equalsIgnoreCase("[buy]"))){
-                Files.move(file,file.resolveSibling(FILE.replace(".txt",".old.txt")),StandardCopyOption.REPLACE_EXISTING);lines=List.of();
-                com.mojang.logging.LogUtils.getLogger().warn("{} used the old single-list format; it was kept as an .old file and replaced with buy and sell sections",FILE);
-            }
-            if(!lines.isEmpty()&&oldDefault(String.join("\n",lines))){
-                lines=List.of();com.mojang.logging.LogUtils.getLogger().info("{} was the untouched default of an earlier version; it now has the 0.0.43 default (16 Iron Ore for 2 Ardent Energy, 8 iron blocks for 8, 16 andesite alloy for 1)",FILE);
-            }
             if(lines.isEmpty()){Files.writeString(file,template());lines=Files.readAllLines(file);}
             var parts=sections(lines);java.util.function.Predicate<String> exists=id->{var rl=ResourceLocation.tryParse(id);return rl!=null&&BuiltInRegistries.ITEM.containsKey(rl)&&BuiltInRegistries.ITEM.get(rl)!=net.minecraft.world.item.Items.AIR;};
             var buy=TextTable.parse(parts.getOrDefault("buy",List.of()),exists,64,9999);var sell=TextTable.parse(parts.getOrDefault("sell",List.of()),exists,64,9999);

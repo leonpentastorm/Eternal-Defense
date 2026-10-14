@@ -60,12 +60,9 @@ final class Round0041Test {
         assertFalse(line.contains(".heated()"),"no heat");
         assertFalse(line.contains("hardened_alloy"));
     }
-    @Test void aBlazeRodCostsSixAndUntouchedFilesMoveOn(){
+    @Test void aBlazeRodCostsSix(){
         var rod=RaidRoundTest.buys(ExchangeShop.PACK).stream().filter(r->r.id().equals("minecraft:blaze_rod")).findFirst().orElseThrow();
         assertEquals(1,rod.count());assertEquals(6,rod.value());
-        assertTrue(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0028),"the 0.0.28 default is replaced");
-        assertEquals(ExchangeShop.PACK_0028.replace("minecraft:blaze_rod = 3","minecraft:blaze_rod = 6"),ExchangeShop.PACK_0041,"the only change of 0.0.41 (0.0.43 changed iron and andesite alloy, Round0043Test)");
-        assertFalse(ExchangeShop.oldDefault(ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0028.replace("minecraft:diamond = 6","minecraft:diamond = 7")),"an edited file is kept");
     }
 
     // ---- the Logistics Hub zone ---------------------------------------------------------------------------------------------------------

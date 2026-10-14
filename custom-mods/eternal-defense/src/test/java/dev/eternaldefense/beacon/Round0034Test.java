@@ -104,19 +104,7 @@ final class Round0034Test {
         assertTrue(lang().contains("\"gui.eternal_defense.gate.specialty.fishing_husbandry\": \"Fishing & Animal Husbandry\""),"both names");
         assertTrue(all.size()<=Routes.CHOICES);
     }
-    @Test void oldSavesFindTheirSpecialty(){
-        for(int old=0;old<5;old++){
-            var d=new FobData();var f=d.add(new BlockPos(0,64,0),1L,0L);f.special=2;
-            var tag=d.save(new CompoundTag());var t=((CompoundTag)tag.getList("fobs",10).get(0)).getCompound("route").getCompound("tribute");
-            t.remove("spec");t.putInt("specialty",old);
-            var back=FobData.load(tag).byId(f.id);
-            assertEquals(Specialty.legacy(old),back.specialty);
-            if(old==1)assertEquals("minecraft:chicken",RouteRules.loot(Slot.SPECIALTY,back.specialty,back.special).id(),"a husbandry choice still points at the same item");
-            else assertEquals(2,back.special);
-        }
-        assertEquals(Specialty.FISHING_HUSBANDRY,Specialty.legacy(0));assertEquals(Specialty.FISHING_HUSBANDRY,Specialty.legacy(1));
-        assertEquals(Specialty.POTIONS,Specialty.legacy(2));assertEquals(Specialty.TRADER,Specialty.legacy(3));assertEquals(Specialty.MONSTERS,Specialty.legacy(4));
-        // saved by name from now on
+    @Test void aFobSavesItsSpecialtyByName(){
         var d=new FobData();var f=d.add(new BlockPos(0,64,0),1L,0L);f.specialty=Specialty.MONSTERS;
         assertEquals("monsters",((CompoundTag)d.save(new CompoundTag()).getList("fobs",10).get(0)).getCompound("route").getCompound("tribute").getString("spec"));
         assertEquals(Specialty.MONSTERS,FobData.load(d.save(new CompoundTag())).byId(f.id).specialty);

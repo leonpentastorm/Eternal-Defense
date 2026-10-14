@@ -204,15 +204,15 @@ public final class QaRound43 {
         step(5,()->check("Create runs in this client (andesite alloy and the Create stones exist)",BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:andesite_alloy"))&&BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:asurine")),""),"Create");
 
         // ---- the Exchange: an untouched 0.0.42 file moves on; the new prices; three buys --------------------------------------------------------------
-        step(5,()->{try{java.nio.file.Files.writeString(OFFERS,ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0041);}catch(Exception x){log("QA_NOTE {}",x);}
-            srv(()->sl().setBlock(EX,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"the offers file as 0.0.41 and 0.0.42 wrote it; an Exchange in the zone");
+        step(5,()->{try{java.nio.file.Files.deleteIfExists(OFFERS);}catch(Exception x){log("QA_NOTE {}",x);}
+            srv(()->sl().setBlock(EX,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"no offers file yet; an Exchange in the zone");
         step(20,()->look(EX.south(3),EX.getX()+.5,EX.getY()+.8,EX.getZ()+.5),"face it");
         step(10,()->click(EX,Direction.SOUTH),"open it (a real click)");
         until("the Exchange opens",100,()->mc().screen instanceof ExchangeScreen,()->{});
         step(5,()->{
             check("the Exchange opens",mc().screen instanceof ExchangeScreen,String.valueOf(mc().screen));
             String file="";try{file=java.nio.file.Files.readString(OFFERS);}catch(Exception x){file=x.toString();}
-            check("the untouched 0.0.42 offers file now holds the 0.0.43 default",ExchangeShop.normal(file).equals(ExchangeShop.normal(ExchangeShop.template())),file.length()+" chars");
+            check("the offers file is written with the default",file.strip().equals(ExchangeShop.template().strip()),file.length()+" chars");
             var ore=offer("minecraft:iron_ore");var blocks=offer("minecraft:iron_block");var alloy=offer("create:andesite_alloy");
             check("Iron Ore: 16 for 2 Ardent Energy",ore!=null&&ItemStack.of(ore.getCompound("item")).getCount()==16&&ore.getInt("cost")==2,String.valueOf(ore));
             check("iron blocks: 8 for 8",blocks!=null&&ItemStack.of(blocks.getCompound("item")).getCount()==8&&blocks.getInt("cost")==8,String.valueOf(blocks));

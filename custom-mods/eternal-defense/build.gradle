@@ -13,19 +13,22 @@ base { archivesName = 'eternal-defense' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // 0.0.40: the Create compat (mechanical arms and the Logistics Center Hub). Compiled against Create, packed into the jar, loaded by name when
 // Create is present (it always is: Create is a required dependency).
-sourceSets { create { java { srcDirs = ['src/create/java'] }; resources { srcDirs = [] } } }
+sourceSets {
+    create { java { srcDirs = ['src/create/java'] }; resources { srcDirs = [] } }
+    gametest { java { srcDirs = ['src/gametest/java'] }; resources { srcDirs = ['src/gametest/resources'] } }
+}
 minecraft {
     mappings channel: 'official', version: '1.20.1'
     runs {
         gameTestServer {
             workingDirectory project.file('gametest-run')
             property 'forge.enabledGameTestNamespaces', 'eternal_defense'
-            mods { eternal_defense { source sourceSets.main; source sourceSets.create } }
+            mods { eternal_defense { source sourceSets.main; source sourceSets.create; source sourceSets.gametest } }
         }
         server {
             workingDirectory project.file('run')
             args '--nogui'
-            mods { eternal_defense { source sourceSets.main; source sourceSets.create } }
+            mods { eternal_defense { source sourceSets.main; source sourceSets.create; source sourceSets.gametest } }
         }
     }
 }
@@ -50,6 +53,7 @@ dependencies {
     createCompileOnly('net.createmod.ponder:Ponder-Forge-1.20.1:1.0.91'){ transitive = false }   // Create's block entities implement a Ponder interface (a type name only: not remapped)
 }
 sourceSets.create.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+sourceSets.gametest.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
 mixin {
     add sourceSets.main, 'eternal_defense.refmap.json'
     config 'eternal_defense.mixins.json'
@@ -64,3 +68,44 @@ tasks.named('jar', Jar).configure { manifest { attributes('MixinConfigs': 'etern
 // (a Create SmartBlockEntity) inherits setChanged() and the level field from Minecraft's BlockEntity, leaves those names unmapped, and the
 // Hub crashed the real game when placed (NoSuchMethodError), while the development runtime, which uses the official names, never showed it.
 reobf { jar { libraries.from(sourceSets.create.compileClasspath) } }
+
+// No-voice edition: the release jar with every spoken line replaced by a game sound (src/novoice/voice-replacements.json).
+def soundsFile = file('src/main/resources/assets/eternal_defense/sounds.json')
+def voiceMapFile = file('src/novoice/voice-replacements.json')
+def voiceFiles = {
+    def sounds = new groovy.json.JsonSlurper().parse(soundsFile)
+    new groovy.json.JsonSlurper().parse(voiceMapFile).keySet().collectMany { event ->
+        sounds[event].sounds.collect { s -> def n = (s instanceof Map ? s.name : s).split(':'); "assets/${n[0]}/sounds/${n[1]}.ogg".toString() }
+    }
+}
+def noVoiceSounds = tasks.register('noVoiceSounds') {
+    inputs.files soundsFile, voiceMapFile
+    def out = layout.buildDirectory.file('novoice/assets/eternal_defense/sounds.json')
+    outputs.file out
+    doLast {
+        def sounds = new groovy.json.JsonSlurper().parse(soundsFile)
+        new groovy.json.JsonSlurper().parse(voiceMapFile).each { event, game ->
+            if (!sounds.containsKey(event)) throw new GradleException("No sound event ${event}")
+            def entry = [name: game.name, type: 'event']
+            if (game.pitch) entry.pitch = game.pitch
+            sounds[event].sounds = [entry]
+        }
+        def f = out.get().asFile
+        f.parentFile.mkdirs()
+        f.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(sounds))
+    }
+}
+tasks.register('noVoiceJar', Zip) {
+    group = 'build'
+    dependsOn 'reobfJar', noVoiceSounds
+    archiveFileName = "eternal-defense-${version}-novoice.jar"
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from(zipTree(tasks.named('jar', Jar).flatMap { it.archiveFile })) {
+        exclude 'assets/eternal_defense/sounds.json'
+        exclude voiceFiles()
+        filesMatching('META-INF/mods.toml') { filter { line -> line.startsWith("description='''") ? line.replace("description='''", "description='''No-voice edition: radio lines use game sounds. ") : line } }
+    }
+    from(layout.buildDirectory.dir('novoice'))
+}

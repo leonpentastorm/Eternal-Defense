@@ -163,29 +163,15 @@ public final class EternalDefense {
     public EternalDefense() {
         net.minecraftforge.common.ForgeMod.enableMilkFluid();
         var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);DefenseSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();
-        if(Boolean.getBoolean("eternaldefense.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
         // 0.0.40: with Create: mechanical arms may use the Logistics Center Hub (the class is compiled against Create, loaded by name)
         if(net.minecraftforge.fml.ModList.get().isLoaded("create"))
             try{Class.forName("dev.eternaldefense.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
             catch(ReflectiveOperationException|LinkageError e){com.mojang.logging.LogUtils.getLogger().warn("[Logistics Hub] mechanical arms cannot use the Hub: {}",e.toString());}
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
         MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());MinecraftForge.EVENT_BUS.register(new EndlessEffects.EndlessEvents());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,DefenseConfig.SPEC,"eternal-defense-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,DefenseClientConfig.SPEC,"eternal-defense-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
-        MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
+        MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
         MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new PlayerDrinks.DrinkEvents());MinecraftForge.EVENT_BUS.register(new DrinkStation.GuardEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());MinecraftForge.EVENT_BUS.register(new Routes.RouteEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
-        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
-        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV2GameTests.KitchenV2TestRunner());
-        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
-        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV5GameTests.KitchenV5Verification());
-        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV6GameTests.KitchenV6Verification());
-        if(Boolean.getBoolean("eternaldefense.stuckTests"))MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
-        if(Boolean.getBoolean("eternaldefense.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
-        if(Boolean.getBoolean("eternaldefense.huntTests"))MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());
-        if(Boolean.getBoolean("eternaldefense.fobTests"))MinecraftForge.EVENT_BUS.register(new FobGameTests.Runner());
-        if(Boolean.getBoolean("eternaldefense.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
-        if(Boolean.getBoolean("eternaldefense.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
-        if(Boolean.getBoolean("eternaldefense.v4ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV4ClientSmoke());
-        if(Boolean.getBoolean("eternaldefense.kitchenSmoke"))MinecraftForge.EVENT_BUS.register(new MessHallSmoke());
     }
     public static final class DefenseEntity extends BlockEntity {
         public DefenseEntity(BlockPos pos,BlockState state){super(BEACON_ENTITY.get(),pos,state);}
@@ -263,30 +249,6 @@ public final class EternalDefense {
     private static final com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack> RAID_TYPE_SUGGEST=(c,b)->{b.suggest("normal");for(String t:RaidTypes.SPECIAL)b.suggest(t);return b.buildFuture();};
     private static boolean raidTypeOk(String t){return t.equals("normal")||RaidTypes.special(t);}
     @SubscribeEvent public void commands(RegisterCommandsEvent event) {
-        // Explicit opt-in for our isolated integration server; normal packs expose no test commands.
-        if(Boolean.getBoolean("eternaldefense.integrationTests")) {
-            if(net.minecraft.gametest.framework.GameTestRegistry.getAllTestFunctions().isEmpty())
-                net.minecraft.gametest.framework.GameTestRegistry.register(BeaconGameTests.class);
-                net.minecraft.gametest.framework.GameTestRegistry.register(PlatformGameTests.class);
-                net.minecraft.gametest.framework.GameTestRegistry.register(CompatibilityGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(UpgradeGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseSevenGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(CampaignEightGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseNineGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(RemodelGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseElevenGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseTwelveGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseThirteenGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(SoundResourceGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(GunPackSyncGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(BrowserGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(DisplayRackGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(SpawnSixteenGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(ArmorGameTests.class);
-            net.minecraft.gametest.framework.GameTestRegistry.register(AmmoCatalogueGameTests.class);
-            net.minecraft.gametest.framework.TestCommand.register(event.getDispatcher());
-            event.getDispatcher().register(Commands.literal("eternaldefense-integration").requires(s->s.hasPermission(2)).executes(c->{IntegrationTests.start(c.getSource().getLevel());return 1;}));
-        }
         event.getDispatcher().register(Commands.literal("eternaldefense")
             .executes(c->{BeaconNetwork.open(c.getSource().getPlayerOrException(),"menu","");return 1;})
             .then(Commands.literal("boundary").executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());d.showBoundary=!d.showBoundary;d.setDirty();return 1;}))
@@ -375,7 +337,6 @@ public final class EternalDefense {
     static void announce(ServerLevel l,String s){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Eternal Defense] "+s).withStyle(ChatFormatting.GOLD),false);}
     @SubscribeEvent public void tick(TickEvent.ServerTickEvent event) {
         if(event.phase!=TickEvent.Phase.END)return;
-        if(Boolean.getBoolean("eternaldefense.integrationTests"))IntegrationTests.tick();
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
         Hunts.tick(l,d,clock);
         Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);SupplyCatapult.tick(l,clock);
