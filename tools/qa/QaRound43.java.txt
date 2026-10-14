@@ -34,7 +34,7 @@ import java.io.File;
 import java.util.*;
 import java.util.function.Supplier;
 
-/** Sh with QA_CREATE=1). */
+/** Real-client checks of the 0.0.43 changes (run with QA_CREATE=1). */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound43 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();

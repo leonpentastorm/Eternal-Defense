@@ -143,7 +143,7 @@ final class Routes {
         }
     }
     // The tribute: the slots' tallies into the Receiving Gate's storage
-    /** What trips trips bring (item id to count, the slots in order), taken out of the tallies */
+    /** What a number of trips bring (item id to count, slots in order), taken from the tallies. */
     static Map<String,Integer> haul(FobData.Fob f,double trips,long now){
         f.lastTrip=now;
         var loots=f.loots();int[] n=RouteRules.trip(f.tally,loots,f.yield(),trips);

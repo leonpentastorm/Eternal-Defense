@@ -58,7 +58,7 @@ public final class FobOutlineClient {
         return new BlockPlaceContext(mc.player,hand,mc.player.getItemInHand(hand),hit).getClickedPos();
     }
     static boolean previewGood(){return preview!=null&&preview.getString("problem").isEmpty();}
-    /** Is something in the way of a FOB Beacon placed at at (its two cells, as the item checks them)? */
+    /** Whether something blocks a FOB Beacon placed here (both cells, as the item checks). */
     static boolean blocked(BlockPos at){
         var mc=Minecraft.getInstance();if(mc.level==null||mc.player==null||at==null)return false;
         var state=EternalDefense.FOB_BEACON.get().defaultBlockState().setValue(FobBlocks.FACING,mc.player.getDirection().getOpposite());

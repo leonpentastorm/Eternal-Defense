@@ -5,7 +5,7 @@ final class CatapultRules {
     private CatapultRules(){}
     /** The seller opens at the top research level only. */
     static final int SELLER_LEVEL=RouteRules.MAX_LEVEL;
-    /** A lot is worth one S-tier item: one S item, two A items, four B... */
+    /** A lot is worth one S-tier item: one S, two A, four B, or by stack worth. */
     static final double LOT_VALUE=RouteRules.TIER_VALUE[5];
     /** The two buy buttons: one lot, or four. */
     static final int[] LOTS={1,4};
@@ -13,7 +13,7 @@ final class CatapultRules {
     static final int MAX_QUEUE=4;
 
     static int lotSize(RouteRules.Loot loot){return Math.max(1,(int)Math.round(LOT_VALUE/loot.value()));}
-    /** Ardent Energy for lots lots. */
+    /** Ardent Energy for a number of lots. */
     static int price(int lots){return Math.max(0,lots)*Economy.sellerLotPrice();}
 
     /** Why a FOB's seller is closed: a key under tactical.seller.closed., or null when it is open. */
@@ -56,7 +56,7 @@ final class CatapultRules {
         boolean ready(){return Math.abs(target-yaw)<0.6f&&Math.abs(speed)<0.2f;}
         /** Aims the shortest way round at goal. */
         void aim(float goal){float diff=goal-yaw;diff=((diff%360)+540)%360-180;target=yaw+diff;}
-        /** The arm's pitch partial of a tick on. */
+        /** Arm pitch, partial ticks ahead. */
         float armAngle(float partial){return throwAge<0?0:armAngle(throwAge+partial);}
         /** One tick: box a box waits to be thrown toward goal. */
         Event step(boolean box,float goal){

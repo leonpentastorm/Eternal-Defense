@@ -17,7 +17,7 @@ final class PlayerDrinks extends SavedData {
     static final int TOLERANCE=40;
     static final class State {
         final DrinkData drink;int remaining;boolean home;
-        /** Vanilla effects the drink's own covers: a weaker (or equal) potion that vanilla's stacking would drop under */
+        /** Vanilla effects hidden under the drink's own, restored when it ends. */
         final List<Covered> covered=new ArrayList<>();
         State(DrinkData drink,int remaining){this.drink=drink;this.remaining=remaining;}
         void cover(net.minecraft.resources.ResourceLocation effect,Layer l){

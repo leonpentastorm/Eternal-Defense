@@ -1,5 +1,15 @@
 # Change log
 
+## 1.0.0 — Release: Eternal Defense (2026-10-14, `dev` merged into `main`)
+
+`dev` merged into `main` at the owner's request; tag `v1.0.0`. No packet changed: network protocol stays **41** (the channel is now `eternal_defense:control`, so a 0.0.x client cannot join). Rules: GDD 1.0.0; tests: `docs/ROUND-1.0.0-TESTING.md`.
+
+* **One name** (owner): the project, the three mods and everything in them are Eternal Defense. Mod ids `eternal_defense`, `eternal_defense_gun_guide`, `eternal_defense_displays`; item, block, sound and data ids, config files (`eternal-defense-*.toml`, `eternal-defense-exchange.txt`), the command `/eternaldefense`, the pack's scripts, quest book and welcome message follow. All three jars are version 1.0.0. **Start a fresh world:** worlds and configs of 0.0.x builds are not converted (their blocks and items of the mod are gone); the old-default upgrades of the Exchange file, FOB specialties saved by number and 0.0.38 block entities were removed.
+* **Two builds of the main mod** (owner): `eternal-defense-1.0.0.jar` with the radio voice lines, and `eternal-defense-1.0.0-novoice.jar`, where each of the 15 spoken lines plays a game sound (fire support calls: the beacon's select sound; supply calls: a note block bit; recall calls: the beacon's activate sound; Specialty Seller orders: a villager's yes). Install one of them.
+* **Faster raids:** a raider without a path to the beacon no longer asks for one every tick; it asks every 10 ticks, walks straight on in between and heads for a waypoint 16 blocks ahead when the beacon is far. In the profiled raid the server tick fell from 13.1 ms to 9.1 ms on average and the mod's share of server time from 39 % to 19 %. Idle animations and the hard raid boss bar cost less. No rule changed.
+* **Clean jars and code** (owner): the jars carry no tests, QA harnesses, test structures, readme or notes (GameTests moved to a development-only `gametest` source set); every code comment is one short neutral line; `mods.toml` files carry no comments.
+* Tools: `make-testpack.py --novoice` and a migration of 0.0.x profile exports to the new ids; `package-dev.py` makes the release zip of each build; QA harnesses `QaProfile` and `QaVoice` (`QA_NOVOICE=1`).
+
 ## 0.0.43 — The owner's Exchange and mine list (2026-10-14, branch `feature/logistics-hub`)
 
 On `feature/logistics-hub` after 0.0.42. No packet changed: network protocol stays **41**. Rules: GDD 0.0.43; tests: `docs/ROUND-0043-TESTING.md`.

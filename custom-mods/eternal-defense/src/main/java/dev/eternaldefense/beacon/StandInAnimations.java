@@ -15,9 +15,9 @@ import java.util.WeakHashMap;
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class StandInAnimations {
     private StandInAnimations(){}
-    /** The game tick each stand-in was last moved on in */
+    /** Last game tick each stand-in was advanced (weak keys). */
     static final Map<Player,Long> MOVED=new WeakHashMap<>();
-    /** Never more ticks at once than a fade lasts twice over */
+    /** Most ticks caught up at once. */
     static final int MOST_AT_ONCE=20;
     private static Method stack,tick;private static boolean resolved,available;
 

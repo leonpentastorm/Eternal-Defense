@@ -443,7 +443,7 @@ public final class EternalDefense {
         BlockPos spawnPos;
         if(raidType.equals("paratroopers")&&!bossNow)spawnPos=RaidTypes.dropPoint(l,d);
         else{
-            // Natural ground far out first; with none for a while, the reinforcement comes through a red gate closer in
+            // Natural ground far out first, else a red gate closer in.
             var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();
             if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos,net.minecraft.world.phys.Vec3.atCenterOf(d.beacon));   // The gate stands behind it, seen from the base
         }
@@ -457,7 +457,7 @@ public final class EternalDefense {
         RaidTypes.broadcast(l,d);
         return true;
     }
-    /** One ordinary raider of this wave at at: armed, tagged, balanced for the raid tier, with the speed burst */
+    /** One ordinary raider of this wave: armed, tagged, balanced for the raid tier, with the speed burst. */
     static Mob raider(ServerLevel l,CampaignData d,EntityType<?> type,String role,String raidType,BlockPos at){
         Entity entity=type.create(l);if(!(entity instanceof Mob mob))return null;
         mob.moveTo(at.getX()+0.5,at.getY(),at.getZ()+0.5,l.random.nextFloat()*360,0);mob.setPersistenceRequired();mob.getPersistentData().putBoolean("eternalRaider",true);

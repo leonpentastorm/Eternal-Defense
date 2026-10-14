@@ -12,7 +12,7 @@ final class RaidRescue {
     private RaidRescue(){}
     static boolean logging(){return Boolean.getBoolean("eternaldefense.stuckLog");}
 
-    /** Pure-ish: raiders the tracker applies to. */
+    /** Raiders the tracker applies to. */
     static boolean eligible(Mob mob){
         var data=mob.getPersistentData();
         return data.getBoolean("eternalRaider")&&!RaidTypes.flyer(mob)&&!RaidTypes.glider(mob)&&!data.getBoolean("eternalChute")
@@ -95,7 +95,7 @@ final class RaidRescue {
     static void reset(ServerLevel l){RaidMarch.forget();RaidSpawns.forgetCorridors();RaiderGates.reset(l);}
 
     // Diagnostics
-    /** Pure: one log line, [stuck] event=... */
+    /** One stuck-raider log line. */
     static String line(String event,LinkedHashMap<String,String> fields){
         var out=new StringBuilder("[stuck] event=").append(event);fields.forEach((k,v)->out.append(' ').append(k).append('=').append(v));return out.toString();
     }

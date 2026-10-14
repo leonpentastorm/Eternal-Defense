@@ -42,7 +42,7 @@ final class MreStation {
     static int nutritionExcept(Container c,int skip,LivingEntity who){
         int n=0;for(int i=0;i<MreRules.FOOD_SLOTS;i++){if(i==skip)continue;var f=food(c.getItem(i),who);if(f!=null)n+=f.nutrition();}return n;
     }
-    /** May this food go into food slot slot? */
+    /** Whether this food may go into the given food slot. */
     static boolean accepts(Container c,int slot,ItemStack stack,LivingEntity who){
         var f=food(stack,who);return f!=null&&MreRules.fits(nutritionExcept(c,slot,who),f.nutrition());
     }

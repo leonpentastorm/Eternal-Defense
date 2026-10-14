@@ -201,7 +201,7 @@ final class LogisticsHub {
         PartEntity(BlockPos pos,BlockState state){super(EternalDefense.LOGISTICS_HUB_PART_ENTITY.get(),pos,state);}
     }
 
-    // The item: placed as the whole 3 x 3 x 3 Hub, centred on the block looked at
+    // Hub item: places the 3 x 3 x 3 Hub around the targeted block.
     static final class HubItem extends BlockItem {
         HubItem(Block block){super(block,new Item.Properties().stacksTo(1).fireResistant());}
         /** The anchor for a Hub placed with this context: the block above the clicked spot */

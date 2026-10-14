@@ -32,7 +32,7 @@ final class ScanSampler {
     /** Vanilla's water shading: deeper is darker. */
     static int waterBrightness(int depth,int x,int z){double d=depth*.1+((x+z)&1)*.2;return d<.5?HIGH:d>.9?LOW:NORMAL;}
 
-    /** Samples row row of an image centred on (centerX, centerZ) with scale blocks a pixel. */
+    /** Samples one row of an image centred on (centerX, centerZ), scale blocks per pixel. */
     static void row(Terrain terrain,int centerX,int centerZ,int scale,int row,byte[] colors,byte[] fresh,int[] north,int[] biomes){
         int size=TacticalRules.SCAN_SIZE,half=size/2,step=TacticalRules.BIOME_STEP;
         int z=centerZ+(row-half)*scale+scale/2;

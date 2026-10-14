@@ -19,7 +19,7 @@ public final class AmmoInputs {
     static final int CASE_ROUNDS=8,PROPELLANT_ROUNDS=16;
     /** Propellant x2; cartridge cases x6/5 (+20 percent), rounded up. */
     static final int PROPELLANT_FACTOR=2,CASE_NUMERATOR=6,CASE_DENOMINATOR=5;
-    /** Pure: one part per per rounds started, at least one. */
+    /** One part per started group of per rounds, at least one. */
     static int before(int batch,int per){return Math.max(1,(Math.max(1,batch)+per-1)/per);}
     /** Pure: cartridge cases for a batch of batch rounds: 20 percent more than rounded up (1 becomes 2, 4 becomes 5). */
     public static int casings(int batch){int n=before(batch,CASE_ROUNDS);return (n*CASE_NUMERATOR+CASE_DENOMINATOR-1)/CASE_DENOMINATOR;}

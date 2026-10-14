@@ -5,7 +5,7 @@ final class AnimationRules {
     private AnimationRules(){}
     static final double TAU=Math.PI*2;
 
-    /** A fraction in */
+    /** Fraction in [0, 1) from a seed: each block's own phase. */
     static double phase(long seed){long h=seed*0x9E3779B97F4A7C15L;h^=h>>>31;h*=0xBF58476D1CE4E5B9L;h^=h>>>29;return (h>>>11)*0x1.0p-53;}
     /** Another independent fraction for the same seed (salted). */
     static double phase(long seed,int salt){return phase(seed*31+salt*0x632BE59BD9B4E019L);}

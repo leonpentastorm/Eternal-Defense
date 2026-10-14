@@ -219,7 +219,7 @@ final class RouteRules {
     static boolean passive(boolean fobActive,boolean commissioned,long clock,boolean full){return fobActive&&commissioned&&clock>0&&!full;}
 
     // A pass through a gate
-    /** Pure: did a cart moving from (px, py, pz) to (cx, cy, cz) roll through a gate whose rail cell is at */
+    /** Whether a cart moving from p to c passed the gate at g. */
     static int crossing(double px,double py,double pz,double cx,double cy,double cz,int gx,int gy,int gz,boolean alongX,double slack){
         return crossing(px,py,pz,cx,cy,cz,gx,gy,gz,alongX,1,slack);
     }

@@ -1,0 +1,20 @@
+Production dedicated servers, Forge 47.4.20, the owner's pack (2026-10-14)
+
+1. The 0.0.41 test-pack server with the three 1.0.0 jars (voiced), renamed scripts and quests, new world
+Done (62.793s)! For help, type "help"
+
+2. The same with the no-voice jar
+Loaded 6/6 KubeJS server scripts in 0.048 s with 0 errors and 0 warnings
+Done (64.771s)! For help, type "help"
+
+3. Fresh install of Eternal-Defense-1.0.0-test.mrpack (final jars)
+	- eternal_defense 1.0.0
+	- eternal_defense_displays 1.0.0
+	- eternal_defense_gun_guide 1.0.0
+40_universal_wood.js#10: [Eternal Defense] Universal wood inputs applied to 12475 recipes.
+90_eternal_defense_recipe_policy.js#14: [Eternal Defense] Native station acquisition disabled; reduced conversion materials to 25% in 44 recipes.
+20_guns_and_ammo.js#42: [Eternal Defense] Factory gates applied to 1284 TaCZ recipes.
+Done (62.268s)! For help, type "help"
+[03:45:40] [INFO] Loaded 1/1 KubeJS startup scripts in 0.705 s with 0 errors and 0 warnings
+[03:46:27] [INFO] Loaded 6/6 KubeJS server scripts in 0.039 s with 0 errors and 0 warnings
+lines with the old ids or name in boot.log and the KubeJS logs: 0

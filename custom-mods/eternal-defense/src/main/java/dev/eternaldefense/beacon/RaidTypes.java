@@ -68,7 +68,7 @@ final class RaidTypes {
         mob.getPersistentData().putBoolean("eternalChute",true);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,20*90,0,false,false,false));
     }
-    /** Tells every client which mobs are raiders (they get the red exclamation mark) and which of them float under */
+    /** Raider ids (red mark) and those under a parachute, for every client. */
     record Marks(int[] raiders,int[] chuted) {
         static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);}
         static Marks decode(net.minecraft.network.FriendlyByteBuf b){return new Marks(b.readVarIntArray(),b.readVarIntArray());}

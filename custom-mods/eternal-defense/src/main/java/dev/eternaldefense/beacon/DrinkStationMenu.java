@@ -191,7 +191,7 @@ final class DrinkStationMenu extends AbstractContainerMenu {
         mix.setChanged();if(moved==0){notice(INFO,"table_empty");return false;}
         notice(INFO,"returned",moved);sound(SoundEvents.BUNDLE_REMOVE_ONE,1f);return true;
     }
-    /** A click on storage slot slot: with a potion in hand it goes */
+    /** A click on a storage slot: a potion in hand goes in, otherwise one comes out. */
     private boolean storage(ServerPlayer sp,int slot,boolean shift){
         var carried=getCarried();
         if(!carried.isEmpty()){

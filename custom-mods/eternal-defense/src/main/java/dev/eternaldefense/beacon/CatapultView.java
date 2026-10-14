@@ -89,6 +89,6 @@ final class CatapultView {
         g.disableScissor();
     }
     static boolean shown(long fob){return LIVE.containsKey(fob);}
-    /** For the */
+    /** Current heading and throw state, or null. */
     static float[] state(long fob){var live=of(fob);return live==null?null:new float[]{live.now().yaw(),live.now().throwAge(),live.now().loaded()?1:0,live.now().waiting(),live.now().flying(),live.now().landsIn()};}
 }

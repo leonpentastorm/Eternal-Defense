@@ -156,7 +156,7 @@ final class RaiderGates {
         l.sendParticles(ParticleTypes.REVERSE_PORTAL,c.x,c.y+1,c.z,40,.4,.8,.4,.1);l.playSound(null,c.x,c.y,c.z,SoundEvents.ENDERMAN_TELEPORT,SoundSource.HOSTILE,.8f,1.1f);
         return gate;
     }
-    /** Spot moved by blocks level away from from; unmoved when from is missing or right above or below it. */
+    /** Spot moved level away from a source; unmoved when the source is missing or directly above or below. */
     static Vec3 behind(Vec3 spot,Vec3 from,double by){
         if(from==null)return spot;
         double dx=spot.x-from.x,dz=spot.z-from.z,len=Math.sqrt(dx*dx+dz*dz);

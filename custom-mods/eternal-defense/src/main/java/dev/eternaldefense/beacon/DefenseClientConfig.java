@@ -13,7 +13,7 @@ final class DefenseClientConfig {
         RAID_MUSIC=b.comment("Play the raid songs and the victory fanfare. Off: the game's own music keeps playing during raids.").define("raidMusic",true);
         MUSIC_PLAYER=b.comment("Show the name of the raid song under the beacon's status card while a raid runs.").define("musicPlayer",true);
         b.pop();
-        b.comment("0.0.39: the idle animations of the mod's blocks (the FOB flag, the satellite dish, the beacon rings, flames and the rest).").push("visuals");
+        b.comment("The idle animations of the mod's blocks (the FOB flag, the satellite dish, the beacon rings, flames and the rest).").push("visuals");
         IDLE_ANIMATIONS=b.comment("Animate the moving parts. Off: they stand still where the model puts them.").define("idleAnimations",true);
         b.pop();
         SPEC=b.build();

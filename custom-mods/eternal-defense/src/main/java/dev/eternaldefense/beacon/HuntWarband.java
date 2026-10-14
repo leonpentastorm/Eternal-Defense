@@ -119,7 +119,7 @@ final class HuntWarband {
     }
     /** Where the anchor search ended: the block (or null), and whether every column was loaded and looked at. */
     record Found(BlockPos anchor,boolean complete){}
-    /** The anchor: the first column from the objective outwards a mob can stand on */
+    /** First standable column outward from the objective (loaded chunks only). */
     static Found findAnchor(ServerLevel l,HuntBoard.Offer o){
         boolean complete=true;
         for(int[] c:ANCHOR_ORDER){

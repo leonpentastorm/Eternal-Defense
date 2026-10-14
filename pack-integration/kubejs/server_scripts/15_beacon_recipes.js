@@ -10,7 +10,7 @@ ServerEvents.recipes(event => {
     event.recipes.create.pressing(l,l)
   ]).transitionalItem(l).loops(2).id('kubejs:beacon/logistics');
   event.recipes.create.mixing('4x eternal_defense:resonance_coil',['create:precision_mechanism','minecraft:ender_pearl','4x minecraft:redstone','2x create:golden_sheet']).heated().id('kubejs:beacon/defense');
-  // 8 matrices per craft (was 4) and a Brass Receiver in the middle (was a Hardened Receiver)
+  // 8 matrices per craft, with a Brass Receiver in the middle
   event.recipes.create.mechanical_crafting('8x eternal_defense:restoration_matrix',[' B B ','BPEPB',' EHE ','BPEPB',' B B '],{
     B:'create:brass_sheet',P:'create:precision_mechanism',E:'minecraft:ender_pearl',H:'kubejs:brass_receiver'
   }).id('kubejs:beacon/restoration');

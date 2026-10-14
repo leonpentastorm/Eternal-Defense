@@ -114,7 +114,7 @@ public final class PlacementPreviewClient {
     }
     /** The ghost's tint: the model's own colours washed toward cyan */
     static float[] ghostTint(boolean blocked){return PlacementGuard.tint(blocked,CYAN);}
-    /** The base zone a Defense Beacon planted at at would get, drawn as the planted beacon draws */
+    /** The base zone a Defense Beacon planted here would get, drawn like a planted one. */
     static void zone(VertexConsumer v,PoseStack.Pose p,BlockPos at,double time){
         int[] size=BeaconClient.zoneSize();int r=size[0];
         double x0=at.getX()-r,x1=at.getX()+r+1,z0=at.getZ()-r,z1=at.getZ()+r+1,ground=at.getY(),bottom=ground-size[1],top=ground+size[2]+1;

@@ -378,7 +378,7 @@ final class Hunts {
         if(pay.coins()>0)stacks.add(new ItemStack(EternalDefense.AMMO_COIN.get(),pay.coins()));
         if(m.offer.kind==TacticalRules.Kind.WARLORD)stacks.add(new ItemStack(EternalDefense.WARLORD_SEAL.get()));   // It unlocks a treasure enchant
         if(d.installed())RaidRewards.queue(d,stacks);
-        HuntWarband.discard(l,m.offer.id);   // A mob spawned again after being lost, still around: the mission is over
+        HuntWarband.discard(l,m.offer.id);   // A lost mob that spawned again ends the mission.
         h.missionMap=null;h.board.settle();h.setDirty();sync(l,h,null);
         for(var player:l.getServer().getPlayerList().getPlayers())burnMaps(player,id->id==m.offer.id);   // The operation is over: its maps burn
         announce(l,Component.translatable("gui.eternal_defense.tactical.cleared",m.offer.codename,pay.ardent(),pay.coins()));

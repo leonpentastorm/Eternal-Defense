@@ -17,7 +17,7 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class ClientDefaults {
     private static boolean checked;
-    private static final String REVISION="playtest-1";
+    private static final String REVISION="1";
     private static final Gson JSON=new GsonBuilder().setPrettyPrinting().create();
     private record Binding(KeyModifier modifier,String key) {
         String id(){return modifier+":"+key;}

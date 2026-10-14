@@ -1,0 +1,55 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.Pattern;
+
+/** Resolves every radio line on a real client: game sounds in the no-voice copy (QA_NOVOICE=1), the voice files otherwise. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaVoice {
+    static boolean done;static int pass,fail,wait;
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e){
+        var mc=Minecraft.getInstance();
+        if(done||e.phase!=TickEvent.Phase.END||!(mc.screen instanceof TitleScreen)||mc.getOverlay()!=null)return;
+        if(++wait<40)return;
+        done=true;
+        try{run(mc);}catch(Throwable t){check("harness",false,String.valueOf(t));}
+        log("QA_DONE pass={} fail={}",pass,fail);
+        mc.stop();
+    }
+    static void run(Minecraft mc)throws Exception{
+        boolean noVoice=Files.exists(Path.of("qa-novoice"));
+        String map=Files.readString(Path.of("qa-voicemap.json"));
+        var entry=Pattern.compile("\"([a-z0-9_.]+)\"\\s*:\\s*\\{\\s*\"name\"\\s*:\\s*\"minecraft:([a-z0-9_.]+)\"").matcher(map);
+        var random=RandomSource.create(1);int lines=0;
+        while(entry.find()){
+            lines++;
+            var id=new ResourceLocation(EternalDefense.ID,entry.group(1));
+            var events=mc.getSoundManager().getSoundEvent(id);
+            if(events==null){check(id.getPath(),false,"no sound event");continue;}
+            var sound=events.getSound(random);
+            String at=sound.getLocation().toString();
+            if(noVoice){
+                var game=mc.getSoundManager().getSoundEvent(new ResourceLocation("minecraft",entry.group(2)));
+                boolean known=game!=null&&game.getSound(random).getLocation().getNamespace().equals("minecraft");
+                check(id.getPath(),known&&sound.getLocation().getNamespace().equals("minecraft")&&!at.equals("minecraft:empty"),"plays "+at+" (event minecraft:"+entry.group(2)+")");
+            }else{
+                boolean file=mc.getResourceManager().getResource(sound.getPath()).isPresent();
+                check(id.getPath(),sound.getLocation().getNamespace().equals(EternalDefense.ID)&&file,"plays "+at+(file?"":" (missing file)"));
+            }
+        }
+        check("radio lines",lines==15,lines+" lines in the map");
+        var other=mc.getSoundManager().getSoundEvent(new ResourceLocation(EternalDefense.ID,"cannon.fire"));
+        check("other sounds untouched",other!=null&&other.getSound(random).getLocation().getNamespace().equals(EternalDefense.ID),other==null?"none":other.getSound(random).getLocation().toString());
+    }
+}

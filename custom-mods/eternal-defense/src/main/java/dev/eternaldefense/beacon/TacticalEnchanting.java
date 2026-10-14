@@ -164,9 +164,9 @@ final class TacticalEnchanting {
         return false;
     }
     static EnchantRules.Rarity rarity(Enchantment e){return EnchantRules.Rarity.values()[Math.min(3,e.getRarity().ordinal())];}
-    /** The price of level level of e at a table of Mk mk. */
+    /** Price of an enchant level at a table of the given Mk. */
     static int price(Enchantment e,int level,int mk){return EnchantRules.discounted(EnchantRules.price(rarity(e),level,treasure(e)),mk);}
-    /** Why level level of e cannot be bought for gear now (a key under enchant.locked.), or null. */
+    /** Why an enchant level cannot be bought for gear now (key under enchant.locked.), or null. */
     static String problem(ItemStack gear,Enchantment e,int level,int activeFobs,int seals){
         boolean compatible=true;var have=EnchantmentHelper.getEnchantments(gear);
         for(var other:have.keySet())if(other!=e&&!e.isCompatibleWith(other)){compatible=false;break;}

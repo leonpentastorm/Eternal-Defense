@@ -141,7 +141,7 @@ final class RaidSpawns {
         }
         return TerrainProbe.probe(surface,fluid,lava,1);
     }
-    /** The same probe along the whole straight way from from (a gate's destination) to the edge of the zone */
+    /** The same probe along the straight way from a gate's destination to the zone edge. */
     static TerrainProbe.Hazard lineProbe(ServerLevel l,CampaignData d,BlockPos from){
         double dx=d.beacon.getX()-from.getX(),dz=d.beacon.getZ()-from.getZ(),len=Math.sqrt(dx*dx+dz*dz);
         if(len<1)return TerrainProbe.Hazard.NONE;dx/=len;dz/=len;

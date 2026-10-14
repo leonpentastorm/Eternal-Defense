@@ -25,7 +25,7 @@ final class RaidPlaylist {
     }
     /** Pure: the same number for every player of one raid of one base. */
     static long seed(long beacon,int raidNumber){return beacon*0x9E3779B97F4A7C15L+raidNumber*0xC2B2AE3D27D4EB4FL;}
-    /** Pure: the song of wave wave (from 1) of a raid of kind cue (see cue); null for no song. */
+    /** Song for a wave (from 1) of a raid cue; null for none. */
     static Song song(String cue,long seed,int wave){
         if(cue.isEmpty()||wave<1)return null;
         if(cue.equals("boss")||cue.equals("special")&&wave==1){var own=pool(cue);if(!own.isEmpty())return own.get(0);}

@@ -6,7 +6,7 @@ import java.util.Map;
 /** The Tactical Enchanting Table: the pure rules, without Minecraft types, so they can be unit tested. */
 final class EnchantRules {
     private EnchantRules(){}
-    /** The level gate: ACTIVE FOBs needed for level level of an enchant whose highest level is max */
+    /** Active FOBs needed for an enchant level, given the enchant's highest level. */
     static int fobsFor(int level,int max){
         if(max<=1||level<=1)return 0;
         int l=Math.min(level,max);
@@ -23,7 +23,7 @@ final class EnchantRules {
     static final int TREASURE_FACTOR=2;
     /** The price is twice the base: Ardent Energy pays for little else, Create parts buy the other upgrades. */
     static final int PACK_FACTOR=2;
-    /** Pure: the full price of level level (before a table upgrade): rarity x level (x2 for treasure), x2. */
+    /** Full price of a level before table upgrades: rarity x level (x2 for treasure), x2. */
     static int price(Rarity rarity,int level,boolean treasure){
         return PER_LEVEL_BASE[rarity.ordinal()]*Math.max(1,level)*(treasure?TREASURE_FACTOR:1)*PACK_FACTOR;
     }
@@ -41,7 +41,7 @@ final class EnchantRules {
     static final List<String> TREASURE=List.of("minecraft:mending","minecraft:frost_walker","minecraft:soul_speed","minecraft:swift_sneak");
     /** The ones whose levels II and III each cost one more seal (the first seal opens level I). */
     static final List<String> SEALED_LEVELS=List.of("minecraft:soul_speed","minecraft:swift_sneak");
-    /** Pure: the highest level of treasure enchant id that seals seals spent on it unlock (0: locked). */
+    /** Highest treasure enchant level unlocked by the seals spent on it (0: locked). */
     static int unlockedLevel(String id,int seals,int max){
         if(seals<=0)return 0;
         return SEALED_LEVELS.contains(id)?Math.min(max,seals):max;

@@ -88,7 +88,7 @@ public final class BaseScoring {
         Set<Long> designed=new HashSet<>();Map<String,Integer> furnishing=new HashMap<>(),machines=new HashMap<>();Set<String> palette=new HashSet<>(),installed=new HashSet<>();var anchors=new Anchors();int lights=0,details=0;int[] ages=new int[4];
         for(var e:blocks.entrySet()){
             var s=e.getValue();var k=kind(s);String id=k.id();if(k.part())continue;if(s.isAir()||!s.getFluidState().isEmpty()||k.beacon())continue;
-            if(k.installation()!=null)installed.add(k.installation());   // Counted besides whatever else the block counts for
+            if(k.installation()!=null)installed.add(k.installation());   // Counted in addition to the block's own category.
             if(s.getBlock() instanceof WeaponPlatform.Station station){int kind=station.kind.equals("gun")?0:station.kind.equals("ammo")?1:station.kind.equals("attachment")?2:3;ages[kind]=Math.max(ages[kind],s.getValue(WeaponPlatform.AGE));continue;}
             if(factory(s,k)){machines.merge(id,1,Integer::sum);continue;}
             if(placed.contains(e.getKey())||!k.terrain())designed.add(e.getKey());

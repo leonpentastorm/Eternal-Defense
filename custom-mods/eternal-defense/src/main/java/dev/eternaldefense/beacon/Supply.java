@@ -44,7 +44,7 @@ final class Supply {
     /** Part of a request a Hub paid: so many of one kind. */
     record Pull(HubData.Hub hub,HubStorage.Key key,int count){}
 
-    // Moves that are not payments (the kitchens' Gather): the Hubs' items as stand-ins the caller may take from
+    // Hub items lent for moves that are not payments (kitchen Gather)
     /** One kind of item in a Hub, as a stack the caller may shrink; settle then takes what was used from the Hub. */
     static final class Borrowed {
         final HubData.Hub hub;final HubStorage.Key key;final ItemStack stack;final int had;

@@ -7,7 +7,7 @@ import net.minecraft.world.item.*;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.*;
 
-/** Disposable-world UI checks; never enabled unless explicitly launched for */
+/** Disposable-world UI checks, run only on request. */
 public final class MealV6ClientSmoke {
     static final BlockPos ROOT=new BlockPos(36864,101,0);
     private boolean ready;private int ticks;

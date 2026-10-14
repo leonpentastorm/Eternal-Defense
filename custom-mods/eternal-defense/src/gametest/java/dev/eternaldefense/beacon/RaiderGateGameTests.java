@@ -120,7 +120,7 @@ public final class RaiderGateGameTests {
             h.succeed();
         });
     }
-    /** Terrain set across a raider's straight line to the beacon, from to to blocks ahead */
+    /** Terrain across a raider's straight line to the beacon, between two distances ahead. */
     private static List<BlockPos> across(ServerLevel l,BlockPos raider,int from,int to,int half,net.minecraft.world.level.block.state.BlockState state,int depth){
         double dx=BEACON.getX()-raider.getX(),dz=BEACON.getZ()-raider.getZ(),len=Math.sqrt(dx*dx+dz*dz);dx/=len;dz/=len;
         var done=new LinkedHashSet<BlockPos>();

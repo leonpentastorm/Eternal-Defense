@@ -228,7 +228,7 @@ public final class TacticalClient {
             int need=Math.max(font.width(where(f)),f.getBoolean("sos")?font.width(Ui.t("tactical.fob.sos",FobClient.sosTime(f.getLong("sosLeft")),FobClient.sosTime(Math.max(1,data.getLong("sosTotal"))))):font.width(route(f)));
             int shortW=font.width(Ui.t("tactical.seller.open.short"))+16+RADIO_W;
             if(fobW()-16-full-4-other>=need)return full;
-            // An SOS row is crowded by Reprint SOS map: the seller steps aside there on a small window until the SOS is over
+            // On a small window the seller button yields to Reprint SOS map during an SOS.
             return fobW()-16-shortW-4-other>=need||!f.getBoolean("sos")?shortW:0;
         }
         private Component sellLabel(int w){return font.width(Ui.t("tactical.seller.open"))+16+RADIO_W<=w?Ui.t("tactical.seller.open"):Ui.t("tactical.seller.open.short");}

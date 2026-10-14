@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-/** Support Cannon menu: the chosen fire support in large letters, the fire support types to choose from */
+/** Support Cannon menu: the chosen fire support and the types to pick. */
 final class CannonScreen extends BeaconClient.PanelScreen {
     private static final int BANNER=36;
     /** Upgrades as shown: the ones with several levels on top */

@@ -1,0 +1,78 @@
+QaProfile (QA_CREATE=1), real client with Create; JFR 'profile' settings; serverTickMs = average server tick of the phase
+
+BEFORE (the renamed 0.0.43 code, before the 1.0.0 optimization)
+QA_PHASE end 1_idle_base frames=441 serverTickMs=2.915
+QA_PHASE end 2_preview frames=735 serverTickMs=3.086
+QA_PHASE end 3_menu frames=406 serverTickMs=3.256
+QA_PHASE end 4_raid frames=1520 serverTickMs=13.146
+
+AFTER (1.0.0)
+QA_PHASE end 1_idle_base frames=608 serverTickMs=3.972
+QA_PHASE end 2_preview frames=711 serverTickMs=3.951
+QA_PHASE end 3_menu frames=390 serverTickMs=4.132
+QA_PHASE end 4_raid frames=1447 serverTickMs=9.136
+
+Raid phase, server thread (JFR execution samples)
+BEFORE
+== Server thread: 346 samples, 136 with our code (39.3%)
+  inclusive:
+      94  27.2%  dev.eternaldefense.beacon.BeaconCombat.approach
+      86  24.9%  dev.eternaldefense.beacon.BeaconCombat$MeleeBeacon.tick
+      41  11.8%  dev.eternaldefense.beacon.BeaconCombat$RangedBeacon.tick
+       6   1.7%  dev.eternaldefense.beacon.EternalDefense.tick
+       6   1.7%  dev.eternaldefense.beacon.__EternalDefense_tick_ServerTickEvent.invoke
+       5   1.4%  dev.eternaldefense.beacon.DefenseStructures$Part.getShape
+  topmost own frame:
+      89  25.7%  dev.eternaldefense.beacon.BeaconCombat.approach
+      31   9.0%  dev.eternaldefense.beacon.BeaconCombat$RangedBeacon.tick
+       3   0.9%  dev.eternaldefense.beacon.DefenseStructures.cell
+       2   0.6%  dev.eternaldefense.beacon.BeaconCombat$MeleeBeacon.tick
+       2   0.6%  dev.eternaldefense.beacon.BeaconNetwork.state
+       1   0.3%  dev.eternaldefense.beacon.CampaignData.installed
+       1   0.3%  dev.eternaldefense.beacon.SupplyCatapult.present
+       1   0.3%  dev.eternaldefense.beacon.StructureMigration.tick
+       1   0.3%  dev.eternaldefense.beacon.PlayerDrinks.get
+       1   0.3%  dev.eternaldefense.beacon.SupplyRules$Graph.add
+       1   0.3%  dev.eternaldefense.beacon.WeaponPlatform.cost
+       1   0.3%  dev.eternaldefense.beacon.DefenseStructures.anchor
+4_raid.jfr 346 server samples, pathfinding 116 (33.5%)
+AFTER
+== Server thread: 337 samples, 64 with our code (19.0%)
+  inclusive:
+      30   8.9%  dev.eternaldefense.beacon.BeaconCombat$RangedBeacon.tick
+      27   8.0%  dev.eternaldefense.beacon.BeaconCombat.approach
+      27   8.0%  dev.eternaldefense.beacon.BeaconCombat$MeleeBeacon.tick
+       6   1.8%  dev.eternaldefense.beacon.EternalDefense.tick
+       6   1.8%  dev.eternaldefense.beacon.__EternalDefense_tick_ServerTickEvent.invoke
+       4   1.2%  dev.eternaldefense.beacon.EternalDefense.raid
+  topmost own frame:
+      26   7.7%  dev.eternaldefense.beacon.BeaconCombat.approach
+      26   7.7%  dev.eternaldefense.beacon.BeaconCombat$RangedBeacon.tick
+       2   0.6%  dev.eternaldefense.beacon.RaidRescue.tick
+       2   0.6%  dev.eternaldefense.beacon.DefenseStructures.cell
+       1   0.3%  dev.eternaldefense.beacon.RaidSpawns.column
+       1   0.3%  dev.eternaldefense.beacon.RaidMarch.idle
+       1   0.3%  dev.eternaldefense.beacon.BeaconCombat.waypoint
+       1   0.3%  dev.eternaldefense.beacon.RaidTypes.broadcast
+       1   0.3%  dev.eternaldefense.beacon.BeaconCombat$MeleeBeacon.tick
+       1   0.3%  dev.eternaldefense.beacon.BeaconCombat$Objective.travel
+       1   0.3%  dev.eternaldefense.beacon.InventoryPayment.plan
+       1   0.3%  dev.eternaldefense.beacon.RaidMarch.forcedMove
+4_raid.jfr 337 server samples, pathfinding 51 (15.1%)
+
+Mod share of samples in the other phases (before -> after)
+1_idle_base
+== Render thread: 159 samples, 28 with our code (17.6%)
+== Server thread: 186 samples, 21 with our code (11.3%)
+== Render thread: 134 samples, 18 with our code (13.4%)
+== Server thread: 175 samples, 16 with our code (9.1%)
+2_preview
+== Render thread: 86 samples, 10 with our code (11.6%)
+== Server thread: 99 samples, 3 with our code (3.0%)
+== Render thread: 83 samples, 11 with our code (13.3%)
+== Server thread: 119 samples, 5 with our code (4.2%)
+3_menu
+== Render thread: 57 samples, 17 with our code (29.8%)
+== Server thread: 60 samples, 4 with our code (6.7%)
+== Render thread: 55 samples, 11 with our code (20.0%)
+== Server thread: 73 samples, 4 with our code (5.5%)

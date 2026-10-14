@@ -170,7 +170,7 @@ final class FobTest {
         assertTrue(seen.containsKey("FobEvents_attack_LivingAttackEvent")&&seen.containsKey("Events_attack_LivingAttackEvent"),"both attack handlers were found: "+seen.keySet());
         assertTrue(duplicates.isEmpty(),"handlers that would share one generated class: "+duplicates);
     }
-    /** Brace depth of the block opened at open, measured at at (positive: still open). */
+    /** Brace depth of a block, measured at a position (positive: still open). */
     private static int depth(String text,int open,int at){int d=0;for(int i=open;i<at;i++){char ch=text.charAt(i);if(ch=='{')d++;else if(ch=='}')d--;}return d;}
     /** The footprint comes from the model: y 0..32 is two blocks */
     @Test void theFootprintComesFromTheOwnersModel() throws Exception{

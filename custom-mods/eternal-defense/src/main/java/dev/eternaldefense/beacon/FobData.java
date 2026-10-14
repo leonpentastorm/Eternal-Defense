@@ -78,7 +78,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     final Map<Long,Fob> fobs=new LinkedHashMap<>();
     /** Ticks of play: grows by 20 a second while at least one player is online */
     long onlineTicks;
-    /** Slice 3, one SOS for the server (FobSos): ticks of play until the next one */
+    /** Ticks of play until the next server-wide SOS. */
     long sosClock,sosFob,sosLeft,sosSerial;CompoundTag sosMap;
 
     static FobData get(ServerLevel any){return any.getServer().overworld().getDataStorage().computeIfAbsent(FobData::load,FobData::new,NAME);}

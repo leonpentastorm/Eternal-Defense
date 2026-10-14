@@ -197,7 +197,7 @@ final class Fobs {
         for(int i=0;i<RESEARCH_ITEMS.size();i++)n.putInt("carry."+RESEARCH_ITEMS.get(i),carried(p,researchItem(i)));   // For the research tab
         n.putLong("nextIn",f.nextPassive>0?Math.max(0,f.nextPassive-FobData.get(l).onlineTicks):-1);
         FobSos.state(FobData.get(l),f,n);   // The SOS, the lost villagers and the repair
-        n.putString("catapult",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),"online"));   // Online or why not
+        n.putString("catapult",java.util.Objects.requireNonNullElse(SupplyCatapult.closed(l,f),"online"));   // Online state or the reason it is not
         n.putString("message",message);
         return n;
     }

@@ -1,0 +1,19 @@
+QaVoice, voiced copy, real client, 2026-10-14
+QA_CHECK PASS flare.chatter_1 plays eternal_defense:sfx/chatter_1
+QA_CHECK PASS flare.chatter_2 plays eternal_defense:sfx/chatter_2
+QA_CHECK PASS flare.chatter_3 plays eternal_defense:sfx/chatter_3
+QA_CHECK PASS flare.chatter_4 plays eternal_defense:sfx/chatter_4
+QA_CHECK PASS flare.chatter_5 plays eternal_defense:sfx/chatter_5
+QA_CHECK PASS flare.chatter_6 plays eternal_defense:sfx/chatter_6
+QA_CHECK PASS flare.supply_chatter_1 plays eternal_defense:sfx/supply_chatter_1
+QA_CHECK PASS flare.supply_chatter_2 plays eternal_defense:sfx/supply_chatter_2
+QA_CHECK PASS flare.recall_chatter_1 plays eternal_defense:sfx/recall_chatter_1
+QA_CHECK PASS flare.recall_chatter_2 plays eternal_defense:sfx/recall_chatter_2
+QA_CHECK PASS flare.recall_chatter_3 plays eternal_defense:sfx/recall_chatter_3
+QA_CHECK PASS seller.order_chatter_1 plays eternal_defense:sfx/order_chatter_1
+QA_CHECK PASS seller.order_chatter_2 plays eternal_defense:sfx/order_chatter_2
+QA_CHECK PASS seller.order_chatter_3 plays eternal_defense:sfx/order_chatter_3
+QA_CHECK PASS seller.order_chatter_4 plays eternal_defense:sfx/order_chatter_4
+QA_CHECK PASS radio lines 15 lines in the map
+QA_CHECK PASS other sounds untouched eternal_defense:sfx/cannon_fire
+QA_DONE pass=17 fail=0

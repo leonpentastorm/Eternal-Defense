@@ -58,7 +58,7 @@ final class Ordnance extends Entity {
     int flight(){return entityData.get(FLIGHT);}
     int after(){return entityData.get(AFTER);}
     float size(){return entityData.get(SIZE);}
-    /** Server: a gravity well's vortex on the ground at at, radius blocks each way, for ticks. */
+    /** Server: a gravity well's vortex on the ground around a position. */
     static Ordnance well(ServerLevel level,Vec3 at,CannonUpgrades.FireType type,int ticks,double radius){
         var o=drop(level,at,WELL,type,ticks,0,0,0);if(o!=null)o.entityData.set(SIZE,(float)radius);return o;
     }

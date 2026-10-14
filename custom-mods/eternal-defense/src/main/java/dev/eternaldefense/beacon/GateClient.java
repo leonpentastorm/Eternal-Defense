@@ -263,7 +263,7 @@ public final class GateClient {
             int half=rw/2;
             if(h>=30){
                 Ui.text(g,font,Ui.t("gate.next.title"),rx+8,y+4,Ui.BRASS,half-16);
-                // 1.5 times as big: the delivery the player waits for
+                // Drawn 1.5 times as big: the awaited delivery.
                 if(font.width(when)*1.5f<=half-16){g.pose().pushPose();g.pose().translate(rx+8,y+16,0);g.pose().scale(1.5f,1.5f,1);
                     g.drawString(font,when,0,0,next>=0?Ui.INK:Ui.MUTED,false);g.pose().popPose();}
                 else Ui.wrap(g,font,when,rx+8,y+15,half-16,next>=0?Ui.INK:Ui.MUTED,2);
@@ -345,7 +345,7 @@ public final class GateClient {
         }
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix){return line(g,x,y,w,ok,what,fix,2);}
         private int line(GuiGraphics g,int x,int y,int w,boolean ok,Component what,Component fix,int fixLines){
-            int bottom=topPos+imageHeight-(changeBelow?34:16);if(y+9>bottom)return y;   // No room left (a very small window): the rest is cut, never drawn over
+            int bottom=topPos+imageHeight-(changeBelow?34:16);if(y+9>bottom)return y;   // No room left on a very small window: the rest is cut.
             fixLines=Math.max(0,Math.min(fixLines,(bottom-y-10)/11));
             if(ok)Ui.check(g,x,y+1,FobClient.OLIVE);else Ui.cross(g,x,y+1,Ui.RED);
             Ui.text(g,font,what,x+9,y,ok?Ui.INK:Ui.ORANGE,w-9);

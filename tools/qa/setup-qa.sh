@@ -2,7 +2,7 @@
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
 # QA_CREATE=1 (pack only): Create runs too; QA_MODS=<dir>: the jars in it run too (0.0.42); the scenario is compiled in the Create compat source set; the first run needs the network.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines]   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice]   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
@@ -60,6 +60,21 @@ if [ -n "${QA_MODS:-}" ]; then
 fi
 # first launch would stop at the narrator screen: start with known client options
 mkdir -p "$DST/custom-mods/eternal-defense/run-client" && cp "$SRC/tools/qa/qa-options.txt" "$DST/custom-mods/eternal-defense/run-client/options.txt"
+cp "$SRC/custom-mods/eternal-defense/src/novoice/voice-replacements.json" "$DST/custom-mods/eternal-defense/run-client/qa-voicemap.json"
+# QA_NOVOICE=1: the client runs the no-voice edition's sounds.json, without the voice files (build noVoiceJar in the repo first)
+if [ "${QA_NOVOICE:-0}" = "1" ]; then
+  unzip -o -q "$SRC/custom-mods/eternal-defense/build/libs/eternal-defense-"*"-novoice.jar" assets/eternal_defense/sounds.json -d "$DST/novoice"
+  cp "$DST/novoice/assets/eternal_defense/sounds.json" "$B/resources/assets/eternal_defense/sounds.json"
+  python3 - "$SRC/custom-mods/eternal-defense/src/main/resources/assets/eternal_defense/sounds.json" "$DST/custom-mods/eternal-defense/run-client/qa-voicemap.json" "$B/resources" <<'PY'
+import json,sys,os
+sounds=json.load(open(sys.argv[1]));voice=json.load(open(sys.argv[2]))
+for event in voice:
+    for s in sounds[event]['sounds']:
+        ns,name=(s['name'] if isinstance(s,dict) else s).split(':')
+        os.remove(os.path.join(sys.argv[3],'assets',ns,'sounds',name+'.ogg'))
+PY
+  touch "$DST/custom-mods/eternal-defense/run-client/qa-novoice"
+fi
 echo "QA copy ready in $DST (pack edition)."
 echo "1. echo all > /tmp/claude-0/qa-r5.flag   (parts: sign reward exchange upgrade hard raids dbg all)"
 echo "2. cd $DST && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 xvfb-run -a ./gradlew --no-daemon --offline :eternal-defense:runClient > /tmp/claude-0/qa.log 2>&1"

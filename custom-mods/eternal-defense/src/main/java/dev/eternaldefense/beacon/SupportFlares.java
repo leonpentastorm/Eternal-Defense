@@ -153,7 +153,7 @@ final class SupportFlares {
         boolean open(){return entityData.get(OPEN);}
         /** The red box of this flare's area: the same box hurts, digs and is drawn. */
         AABB box(){return boxFor(type(),position(),radius());}
-        /** Opens a portal back to to that lasts ticks; owner only. */
+        /** Opens a return portal for the owner only. */
         static FlareEntity backPortal(ServerLevel level,Player owner,Vec3 at,Vec3 to,String toDim,CannonUpgrades.Config cfg,int ticks){
             var f=new FlareEntity(EternalDefense.FLARE.get(),level);
             f.setOwner(owner);f.configure(SupportCalls.Kind.RETURN,new ListTag(),cfg);f.life=ticks;f.dest=to;f.destDim=toDim;f.arm=60;f.openAt=0;

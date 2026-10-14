@@ -9,14 +9,14 @@ final class SosRules {
     // The SOS clock
     /** One clock for the whole server, in ticks of play (FobData.onlineTicks) */
     static final long SOS_MIN=720_000L,SOS_MAX=864_000L;
-    /** Pure: the ticks of play before the next SOS for a random number in */
+    /** Ticks of play before the next SOS, for roll in [0, 1); SOS_MIN to SOS_MAX inclusive. */
     static long delay(double random){
         double r=Math.max(0,Math.min(Math.nextDown(1.0),random));
         return Math.min(SOS_MAX,SOS_MIN+(long)Math.floor(r*(SOS_MAX-SOS_MIN+1)));
     }
     /** Pure: does the SOS clock count down this second? */
     static boolean counts(int activeFobs,boolean sosOpen,boolean homeRaid,boolean homeWarning){return activeFobs>0&&!sosOpen&&!homeRaid&&!homeWarning;}
-    /** Pure: which ACTIVE FOB calls (its index among them, in id order) for a random number in */
+    /** Index of the active FOB that calls, in id order, for roll in [0, 1); -1 if none. */
     static int pick(int active,double random){return active<=0?-1:(int)Math.max(0,Math.min(active-1,Math.floor(random*active)));}
 
     // The answer
@@ -45,7 +45,7 @@ final class SosRules {
     static int villagerCost(int[] byLevel,int level){return byLevel.length==0?0:byLevel[Math.max(1,Math.min(byLevel.length,level))-1];}
     /** Pure: the price of a repair: the base price when the FOB is DOWN (none when it only brings villagers back) */
     static int repairCost(boolean down,int base,int[] villagerCosts){int t=down?Math.max(0,base):0;for(int c:villagerCosts)t+=Math.max(0,c);return t;}
-    /** Pure: is there anything to pay for? */
+    /** Whether a repair has anything to pay for. */
     static boolean mayRepair(FobRules.State state,int lost,boolean raidRunning){return !raidRunning&&(state==FobRules.State.DOWN||lost>0);}
     /** Pure: a repaired DOWN FOB is ACTIVE again if it ever won a raid */
     static FobRules.State repaired(FobRules.State state,boolean activated){return state!=FobRules.State.DOWN?state:activated?FobRules.State.ACTIVE:FobRules.State.PLANTED;}

@@ -173,7 +173,7 @@ final class SupplyCatapult {
         float goal=base.installed()?CatapultRules.yawTo(pos.getX()+.5,pos.getZ()+.5,base.beacon.getX()+.5,base.beacon.getZ()+.5):f.motion.rest;
         var event=f.motion.step(ship!=null,goal);
         boolean seen=l.isPositionEntityTicking(pos);
-        // A throw cut short (the game was closed mid-throw): the box is on its way all the same
+        // A throw interrupted by a restart still delivers.
         if(!f.motion.throwing())for(var s:f.shipments)if(s.getString("stage").equals("throwing")){thrown(l,f,s);d.setDirty();}
         switch(event){
             case LOADED->{if(seen)l.playSound(null,pos,SoundEvents.CROSSBOW_LOADING_START,SoundSource.BLOCKS,1.5f,.6f);}

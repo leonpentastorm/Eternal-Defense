@@ -12,7 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /** Hostile mobs killed by players sometimes drop Ardent Energy */
 final class ArdentEnergy {
-    /** Pure drop rule, so it can be tested: roll is a uniform random number in */
+    /** Drop rule; roll is uniform in [0, 1). */
     static int amount(double roll,double chance,int looting,double lootingBonus,boolean boss,int bossAmount,float maxHealth){
         if(boss)return Math.max(1,bossAmount);
         double p=Math.max(0,Math.min(1,chance+Math.max(0,looting)*lootingBonus));

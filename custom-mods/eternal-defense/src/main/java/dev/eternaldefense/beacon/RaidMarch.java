@@ -33,19 +33,19 @@ final class RaidMarch {
     static final String GATES="eternalGates";
 
     // Raider gates
-    /** How far ahead of a raider, in blocks along the straight line to the beacon */
+    /** Blocks of terrain checked ahead of a raider, one sample per block. */
     static final int LOOKAHEAD_BLOCKS=10;
-    /** Terrain a raider cannot cross: a drop of this many blocks between two neighbouring samples... */
+    /** Impassable drop between two neighbouring samples, in blocks. */
     static final int GATE_DROP_BLOCKS=6;
-    /** ... */
+    /** Impassable run of surface fluid, in blocks; lava and magma always count. */
     static final int GATE_FLUID_SPAN=8;
     /** Distance between two samples when a destination's whole way to the zone is checked with the same probe. */
     static final int DESTINATION_SPACING=2;
     /** A raider channels this long beside its gate before it reappears. */
     static final int CHANNEL_SECONDS=8,EXIT_LINGER_SECONDS=2;
-    /** Each time the channeler is hurt (checked once a second) the channel takes this much longer... */
+    /** Channel delay added each time the channeler is hurt (checked once a second). */
     static final int DAMAGE_DELAY_SECONDS=3;
-    /** ... */
+    /** Cap on the total channel delay. */
     static final int MAX_DELAY_SECONDS=10;
     /** The destination shows particles and a portal sound this long before the raider appears. */
     static final int TELEGRAPH_SECONDS=3;

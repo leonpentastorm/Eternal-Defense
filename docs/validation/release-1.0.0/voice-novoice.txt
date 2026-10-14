@@ -1,0 +1,19 @@
+QaVoice, no-voice copy (QA_NOVOICE=1), real client, 2026-10-14
+QA_CHECK PASS flare.chatter_1 plays minecraft:block/beacon/power2 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.chatter_2 plays minecraft:block/beacon/power3 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.chatter_3 plays minecraft:block/beacon/power2 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.chatter_4 plays minecraft:block/beacon/power2 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.chatter_5 plays minecraft:block/beacon/power1 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.chatter_6 plays minecraft:block/beacon/power3 (event minecraft:block.beacon.power_select)
+QA_CHECK PASS flare.supply_chatter_1 plays minecraft:note/bit (event minecraft:block.note_block.bit)
+QA_CHECK PASS flare.supply_chatter_2 plays minecraft:note/bit (event minecraft:block.note_block.bit)
+QA_CHECK PASS flare.recall_chatter_1 plays minecraft:block/beacon/activate (event minecraft:block.beacon.activate)
+QA_CHECK PASS flare.recall_chatter_2 plays minecraft:block/beacon/activate (event minecraft:block.beacon.activate)
+QA_CHECK PASS flare.recall_chatter_3 plays minecraft:block/beacon/activate (event minecraft:block.beacon.activate)
+QA_CHECK PASS seller.order_chatter_1 plays minecraft:mob/villager/yes3 (event minecraft:entity.villager.yes)
+QA_CHECK PASS seller.order_chatter_2 plays minecraft:mob/villager/yes1 (event minecraft:entity.villager.yes)
+QA_CHECK PASS seller.order_chatter_3 plays minecraft:mob/villager/yes2 (event minecraft:entity.villager.yes)
+QA_CHECK PASS seller.order_chatter_4 plays minecraft:mob/villager/yes1 (event minecraft:entity.villager.yes)
+QA_CHECK PASS radio lines 15 lines in the map
+QA_CHECK PASS other sounds untouched eternal_defense:sfx/cannon_fire
+QA_DONE pass=17 fail=0

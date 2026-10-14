@@ -1,55 +1,39 @@
-# Eternal Defense / Eternal Defense
+# Eternal Defense
 
-Editable Java, assets, recipes and Gradle projects for the three Eternal Defense mods. This is the **0.21.0 source handoff** for the UI redesign, rather than a decompiled release archive.
+Source of the Eternal Defense mods for Minecraft 1.20.1 (Forge 47): defend a beacon base against night raids, build a Create factory, arm it with TaCZ guns, and run forward bases, supply lines and kitchens.
 
-| Project | Version | Purpose |
+**Version 1.0.0** (file `VERSION`, tag `v1.0.0`).
+
+| Project | Jar | Purpose |
 | --- | --- | --- |
-| `custom-mods/eternal-defense` | 0.21.0 | Shared defense beacon, raid campaign, progression and Universal Weapon Platform |
-| `custom-mods/eternal-defense-gun-guide` | 0.21.0 | Client weapon controls guide and supported gun-jam warning |
-| `custom-mods/eternal-defense-displays` | 1.1.0 | Eleven weapon stands, racks and glass cases |
+| `custom-mods/eternal-defense` | `eternal-defense-1.0.0.jar`, or `eternal-defense-1.0.0-novoice.jar` | The defense beacon, raids, support gear, Weapon Platform, Exchange, forward bases, kitchens, Logistics Hub |
+| `custom-mods/eternal-defense-gun-guide` | `eternal-defense-gun-guide-1.0.0.jar` | Client HUD with the held gun's controls and a jam alert |
+| `custom-mods/eternal-defense-displays` | `eternal-defense-displays-1.0.0.jar` | Weapon stands, racks and glass cases |
 
-Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Since 0.0.41 only the curated modpack (pack) edition is built.
-
-**Project 0.0.43** (file `VERSION`): the Exchange sells iron as ore (16 for 2) and iron blocks by 8, andesite alloy for 1; a FOB's mine can send clay and decorative stones. 0.0.42: the corpse crash fixed, placement that never eats the item (red previews), the return zone kept clear of falling blocks, magazines with their rounds. Since 0.0.41 the pack edition is the only one, and the mods it cannot run without are required in `mods.toml` (see [PACK-EDITION.md](docs/PACK-EDITION.md)). Where the project stands, how to build and test, and what is unverified: [docs/HANDOFF.md](docs/HANDOFF.md); every round: [docs/CHANGELOG.md](docs/CHANGELOG.md); the rules: [docs/GAME-DESIGN-DOCUMENT.md](docs/GAME-DESIGN-DOCUMENT.md). Network protocol **41**. Project versions (`VERSION`) are separate from the JAR versions above.
-
-The test pack for a round is the owner's exported Modrinth profile with this build's jars and scripts (`tools/release/make-testpack.py`); it is too large for the repository and is handed over directly. Until 1.0, start a fresh world for each feature.
+The main mod comes in two builds: with the radio voice lines, and **no-voice**, where each spoken radio line plays a game sound instead. Install one of them. The required mods (TaCZ, TaCZ Attributes, Create, KubeJS, KubeJS Create, LesRaisins Tactical Equipments, JEI) and the test pack are described in [PACK-EDITION.md](docs/PACK-EDITION.md). 1.0.0 renamed every id: start a fresh world.
 
 ## Build
 
-Requires **JDK 17**. Gradle 8.8, ForgeGradle 6.0.54, Minecraft 1.20.1 and Forge 47.4.20 are pinned. The wrapper downloads Gradle; a separate Gradle installation is unnecessary.
-
-Linux/macOS:
+Requires **JDK 17**. Gradle 8.8, ForgeGradle 6.0.54, Minecraft 1.20.1 and Forge 47.4.20 are pinned; the wrapper downloads Gradle.
 
 ```sh
 ./gradlew --no-daemon build releaseJars
 ```
 
-Windows PowerShell:
+On Windows: `.\gradlew.bat --no-daemon build releaseJars`.
 
-```powershell
-.\gradlew.bat --no-daemon build releaseJars
-```
+Each project's `build/libs` then holds its jar; the main project also holds the no-voice jar. The displays project also makes a sources jar for developers. `build` runs the unit tests. The first dependency resolution needs network access (TaCZ and TaCZ Attributes from Curse Maven, JEI, Create for the compat code); offline builds need those artifacts cached. For a cloud environment see [NETWORK-ALLOWLIST.txt](docs/NETWORK-ALLOWLIST.txt) and [CLOUD-SETUP.md](docs/CLOUD-SETUP.md).
 
-After building, each project's `build/libs` contains its JAR (the pack edition; since 0.0.41 there is no `-standalone.jar`). The displays project also produces a sources JAR, which is for developers rather than installation. `build` runs the Java unit tests. The beacon now compiles against pinned public TaCZ and TaCZ Attributes artifacts from Curse Maven and JEI APIs. First dependency resolution needs network access; offline builds require those artifacts and MixinGradle already cached. No launcher-instance dependency paths or embedded addon JARs are used. **These commands passed for v6; see its validation record for runtime coverage.**
+GameTests and their test structures are in the `gametest` source set: development runs load them, the release jars leave them out.
 
-For a cloud environment's first build, see [NETWORK-ALLOWLIST.txt](docs/NETWORK-ALLOWLIST.txt) and [network setup](docs/CLOUD-SETUP.md).
+## Documentation
 
-## Playtest
+* [docs/HANDOFF.md](docs/HANDOFF.md): where the project stands, how to build and test, what is unverified.
+* [docs/GAME-DESIGN-DOCUMENT.md](docs/GAME-DESIGN-DOCUMENT.md): the rules and numbers.
+* [docs/CHANGELOG.md](docs/CHANGELOG.md): every release.
+* [docs/GUIDE-STYLE.md](docs/GUIDE-STYLE.md): how the in-game guide text is written.
+* `pack-integration`: the pack's KubeJS recipes and FTB Quests.
 
-Use the test pack of the round (the owner's Eternal Defense profile with this build's jars), or install the three jars into a copy of that profile. The required mods are listed in [PACK-EDITION.md](docs/PACK-EDITION.md); Forge names any that is missing. A headless build does not confirm that a screen looks correct in Minecraft.
+## Licensing
 
-The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989) and TaCZ Attributes project 1113285 / file 8470731. Download third-party mods from their authors; they are not vendored into the source projects.
-
-## Contents and baseline
-
-- `src/main/java`: shared behavior and screens.
-- `src/main/resources`: pack release metadata, authored assets, language files and data.
-- `src/test/java`: Java unit tests where present.
-- `pack-integration`: authored KubeJS recipes and FTB Quests for reference.
-- `docs/RELEASE-VALIDATION-0.21.0.json`: prior release validation, with its scope and limits. It is a historical baseline, not a claim that future UI changes have been tested.
-
-The original `Eternal-Defense-Standalone-Mods-0.21.0.zip` remains as the initial release artifact. Edit the source projects for the redesign. Do not unpack release JARs over them.
-
-Licensing remains as declared by each mod. Gun Displays code is MIT; its supplied artwork is reserved, as detailed in its `LICENSE.txt`. Including art in this repository for the owner's UI collaboration does not change its license.
-
-Previous v2/v3 distributions and validation records are historical artifacts. They do not contain the v4 changes or validate this backend.
+Each mod keeps the license declared in its `mods.toml` (MIT for the code). Gun Displays code is MIT; its supplied artwork is All Rights Reserved by its creator, as its `LICENSE.txt` details. Third-party mods are downloaded from their authors and are not part of this repository.
