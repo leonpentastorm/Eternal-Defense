@@ -1,13 +1,13 @@
 // TaCZ JS integrates gunpack recipes with the standard recipe manager.
 // New gunpacks inherit conservative gates. Override classifications in the JSON catalogue.
 ServerEvents.recipes(event => {
-  var ages = JsonIO.read('kubejs/config/arsenal_weapon_ages.json') || {};
-  var componentAges = JsonIO.read('kubejs/config/arsenal_component_ages.json') || {};
+  var ages = JsonIO.read('kubejs/config/eternal_defense_weapon_ages.json') || {};
+  var componentAges = JsonIO.read('kubejs/config/eternal_defense_component_ages.json') || {};
   let modified = 0;
-  const historical = Java.loadClass('dev.createarsenal.beacon.HistoricalGuns');
+  const historical = Java.loadClass('dev.eternaldefense.beacon.HistoricalGuns');
   // Cartridge cases and propellant per ammo batch (0.0.22: twice the propellant, 20 percent more cases, rounded up; 0.0.26: weak special rounds
   // such as flares keep one case and one propellant), shared with the Ammo Platform, which sets the same amounts itself.
-  const ammoInputs = Java.loadClass('dev.createarsenal.beacon.AmmoInputs');
+  const ammoInputs = Java.loadClass('dev.eternaldefense.beacon.AmmoInputs');
   event.forEachRecipe({type:'tacz:gun_smith_table_crafting'}, recipe => {
     var json = JSON.parse(recipe.json.toString());
     if (!json.result || !json.materials) return;
@@ -42,5 +42,5 @@ ServerEvents.recipes(event => {
     });
     recipe.merge(json); modified++;
   });
-  console.info('[Create Arsenal] Factory gates applied to '+modified+' TaCZ recipes.');
+  console.info('[Eternal Defense] Factory gates applied to '+modified+' TaCZ recipes.');
 });

@@ -10,14 +10,14 @@ BUILD SUCCESSFUL in 1m 8s
 38 actionable tasks: 23 executed, 15 up-to-date
 
 {
-  "arsenal-beacon": {
+  "eternal-defense": {
     "tests": 74,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
     "execution": "executed in delivery build"
   },
-  "arsenal-gun-guide": {
+  "eternal-defense-gun-guide": {
     "tests": 7,
     "failures": 0,
     "errors": 0,

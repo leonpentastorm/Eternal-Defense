@@ -2,8 +2,8 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
-* **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_20`, opt-in `-Darsenal.fobTests=true` or `/fob-test`). They run on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
+* **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_20`, opt-in `-Deternaldefense.fobTests=true` or `/fob-test`). They run on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), `QaFob` on a fresh NORMAL world: slices 1 to 3 as before, then slice 4 at home:
   * place the Tactical Enchanting Table with a right-click; open it;
   * put a diamond sword in its slot;

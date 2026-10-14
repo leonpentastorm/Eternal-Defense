@@ -4,7 +4,7 @@ Branch `feature/drink-station`, after 0.0.36.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime with TaCZ, `xvfb`), the new harness `tools/qa/QaDrinkLoop.java.txt` on a fresh flat world with a Defense Beacon (the player stands in its Home Zone). It counts every time Haste is added to the player, taken off or runs out (Forge's `MobEffectEvent.Added`, `Remove`, `Expired`), with the code that did it, and plays a rogue mod that takes every endless effect off the player every 15 ticks.
 
 ## Results

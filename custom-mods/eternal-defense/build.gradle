@@ -1,0 +1,66 @@
+buildscript {
+    repositories { mavenCentral(); maven { url = 'https://repo.spongepowered.org/repository/maven-public/' } }
+    dependencies { classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT' }
+}
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+}
+apply plugin: 'org.spongepowered.mixin'
+version = '1.0.0'
+group = 'dev.eternaldefense'
+base { archivesName = 'eternal-defense' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// 0.0.40: the Create compat (mechanical arms and the Logistics Center Hub). Compiled against Create, packed into the jar, loaded by name when
+// Create is present (it always is: Create is a required dependency).
+sourceSets { create { java { srcDirs = ['src/create/java'] }; resources { srcDirs = [] } } }
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    runs {
+        gameTestServer {
+            workingDirectory project.file('gametest-run')
+            property 'forge.enabledGameTestNamespaces', 'eternal_defense'
+            mods { eternal_defense { source sourceSets.main; source sourceSets.create } }
+        }
+        server {
+            workingDirectory project.file('run')
+            args '--nogui'
+            mods { eternal_defense { source sourceSets.main; source sourceSets.create } }
+        }
+    }
+}
+repositories {
+    mavenCentral(); maven { url = 'https://maven.blamejared.com' }
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/'; content { includeGroup 'org.spongepowered' } }
+    maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
+    maven { url = 'https://maven.createmod.net'; content { includeGroup 'com.simibubi.create'; includeGroup 'net.createmod.ponder' } }
+}
+dependencies {
+    implementation project(":eternal-defense-displays")
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
+    // Pinned official artifacts, development/runtime only; neither addon is shaded into our jars.
+    implementation fg.deobf('curse.maven:timeless-and-classics-zero-1028108:9037989')
+    implementation fg.deobf('curse.maven:tacz-attributes-1113285:8470731')
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly fg.deobf('mezz.jei:jei-1.20.1-common-api:15.62.0.217')
+    compileOnly fg.deobf('mezz.jei:jei-1.20.1-forge-api:15.62.0.217')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    // 0.0.40: compile only, for the Create compat source set; never shaded
+    createCompileOnly(fg.deobf('com.simibubi.create:create-1.20.1:6.0.8-291:slim')){ transitive = false }
+    createCompileOnly('net.createmod.ponder:Ponder-Forge-1.20.1:1.0.91'){ transitive = false }   // Create's block entities implement a Ponder interface (a type name only: not remapped)
+}
+sourceSets.create.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+mixin {
+    add sourceSets.main, 'eternal_defense.refmap.json'
+    config 'eternal_defense.mixins.json'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('test', Test) { useJUnitPlatform() }
+tasks.named('jar', Jar).configure { from sourceSets.create.output; finalizedBy 'reobfJar' }
+
+tasks.named('jar', Jar).configure { manifest { attributes('MixinConfigs': 'eternal_defense.mixins.json') } }
+
+// 0.0.41: the release jar's name mapping (official -> SRG) must see Create's classes too. Without them it cannot tell that CreateHubPart
+// (a Create SmartBlockEntity) inherits setChanged() and the level field from Minecraft's BlockEntity, leaves those names unmapped, and the
+// Hub crashed the real game when placed (NoSuchMethodError), while the development runtime, which uses the official names, never showed it.
+reobf { jar { libraries.from(sourceSets.create.compileClasspath) } }

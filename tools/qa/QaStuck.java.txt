@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
  * integrated server, with the diagnostics log switched on. Copied into a throwaway tree by tools/qa/setup-qa.sh.
  * Results: QA_CHECK lines (one per test, from the STUCK_TEST_* lines of the runner) and QA_SUMMARY.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaStuck {
     static int tick;static boolean created,started,done;
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
@@ -38,7 +38,7 @@ public final class QaStuck {
         if(!started){
             if(++tick<260)return;started=true;
             mc.getSingleplayerServer().execute(()->{
-                System.setProperty("arsenal.stuckLog","true");
+                System.setProperty("eternaldefense.stuckLog","true");
                 MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
                 RaiderGateGameTests.Runner.start(mc.getSingleplayerServer().overworld());
             });
@@ -58,7 +58,7 @@ public final class QaStuck {
             server.execute(()->{
                 var level=server.overworld();var player=server.getPlayerList().getPlayers().get(0);
                 double x=player.getX(),y=player.getY(),z=player.getZ();player.teleportTo(level,x,y,z,0f,5f);
-                var gate=ArsenalBeacon.RAIDER_GATE.get().create(level);gate.moveTo(x+1.6,y,z+6,0,0);level.addFreshEntity(gate);
+                var gate=EternalDefense.RAIDER_GATE.get().create(level);gate.moveTo(x+1.6,y,z+6,0,0);level.addFreshEntity(gate);
                 var husk=net.minecraft.world.entity.EntityType.HUSK.create(level);husk.moveTo(x,y,z+6,180,0);husk.setNoAi(true);husk.setPersistenceRequired();level.addFreshEntity(husk);
                 var red=new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(1f,.1f,.1f),1.1f);
                 for(int i=0;i<12;i++){double a=i*Math.PI/6;level.sendParticles(red,x+Math.cos(a)*.7,y+.15,z+6+Math.sin(a)*.7,1,0,0,0,0);}

@@ -16,7 +16,7 @@ with zipfile.ZipFile(args.backend_jar) as jar:
 files={}
 for edition in ('pack','standalone'):
     suffix='-standalone' if edition=='standalone' else ''
-    for mod,version in [('arsenal-beacon','0.21.0'),('arsenal-gun-guide','0.21.0'),('arsenal-displays','1.1.0')]:
+    for mod,version in [('eternal-defense','0.21.0'),('eternal-defense-gun-guide','0.21.0'),('eternal-defense-displays','1.1.0')]:
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
@@ -62,9 +62,9 @@ by a visible gate. See docs/GAME-DESIGN-DOCUMENT.md section 5.2 and docs/CHANGEL
 
 HOW TO LOOK AT IT
 * Start a raid near lava, a cliff edge or a wide lake and watch the raiders that stop at it (they will not walk in).
-  Add -Darsenal.stuckLog=true to the game's JVM arguments and the log gets one "[stuck] event=..." line for every
+  Add -Deternaldefense.stuckLog=true to the game's JVM arguments and the log gets one "[stuck] event=..." line for every
   trigger, channel, teleport, cancel and withdrawal, with the terrain around the raider.
-* -Darsenal.stuckTests=true registers the opt-in GameTests and the /stuck-raider-test command (permission level 2).
+* -Deternaldefense.stuckTests=true registers the opt-in GameTests and the /stuck-raider-test command (permission level 2).
   They force-load and build a large stone platform far from spawn (chunk x 750): use a THROWAWAY world only.
 
 LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
@@ -80,7 +80,7 @@ files['THIRD-PARTY.md']=b'''# Included required addon
 
 TaCZ Attributes 1.4 by leopoko, mod ID `tacz_attributes`, MIT.
 The unmodified published JAR is supplied separately in each edition folder;
-it is not shaded into any Arsenal JAR. Install only one copy.
+it is not shaded into any Eternal Defense JAR. Install only one copy.
 
 Author download: https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731
 Source: https://github.com/leopoko/TaCZ_Attributes/tree/91612b5b505a87e2ddcd48b1b1ae1f9c95f482a1
@@ -89,7 +89,7 @@ The published JAR contains no standalone LICENSE/NOTICE file; its metadata is
 preserved unchanged. Standard MIT terms accompany this attribution in licenses/.
 
 TaCZ and optional LesRaisins are not redistributed in this archive.
-Arsenal display artwork remains All Rights Reserved by its creator.
+Eternal Defense display artwork remains All Rights Reserved by its creator.
 '''
 files['licenses/tacz-attributes-MIT.txt']=b'''TaCZ Attributes by leopoko - MIT License
 Attribution supplied from the upstream project; no copyright year is asserted.
@@ -113,7 +113,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 files['SHA512SUMS']=(''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name,data in sorted(files.items()))).encode()
-out=repo/('dist/Arsenal-RaiderGates-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
+out=repo/('dist/Eternal-Defense-RaiderGates-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
     for name,data in sorted(files.items()):archive.writestr(name,data)
 with zipfile.ZipFile(out) as archive:

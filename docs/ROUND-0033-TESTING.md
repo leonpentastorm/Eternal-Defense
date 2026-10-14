@@ -4,7 +4,7 @@ Branch `feature/supply-catapult`.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_24`; `fob_23` and `fob_24` are new), on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720 at GUI scale 2; the size checks at 640 x 360, 480 x 270 and 427 x 240), `QaFob` on a fresh NORMAL world in a generated village and at home, the editions one after the other, with the overlap check (`Ui.drawn`) on the new screens.
 

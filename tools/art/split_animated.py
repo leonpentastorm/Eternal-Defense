@@ -14,7 +14,7 @@ import copy, json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ASSETS = ROOT / 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon'
+ASSETS = ROOT / 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense'
 MODELS = ASSETS / 'models/block'
 
 SPLITS = {
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         text = state.read_text()
         new = text
         for name in SPLITS:
-            new = new.replace(f'"arsenal_beacon:block/{name}"', f'"arsenal_beacon:block/{name}_static"')
+            new = new.replace(f'"eternal_defense:block/{name}"', f'"eternal_defense:block/{name}_static"')
         if new != text:
             state.write_text(new)
             print('blockstate', state.name)

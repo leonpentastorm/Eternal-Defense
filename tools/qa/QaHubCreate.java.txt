@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import com.simibubi.create.content.kinetics.belt.BeltBlockEntity;
 import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
@@ -62,7 +62,7 @@ import java.util.function.Supplier;
  * </ol>
  * Results: QA_CHECK lines, QA_SHOT, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaHubCreate {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -147,13 +147,13 @@ public final class QaHubCreate {
         until("the site is loaded",200,()->srvGet(()->sl().hasChunkAt(HA)&&sl().hasChunkAt(B)&&sl().hasChunkAt(burner())),()->{});
         step(20,()->srv(()->{
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.setDirty();
-            put(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1));
-            put(HA,ArsenalBeacon.LOGISTICS_HUB.get().defaultBlockState());}),"the beacon; a Hub set down (its own block entity builds the rest)");
+            put(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1));
+            put(HA,EternalDefense.LOGISTICS_HUB.get().defaultBlockState());}),"the beacon; a Hub set down (its own block entity builds the rest)");
         until("the Hub's 27 blocks stand",200,()->srvGet(()->{int n=0;for(var p:LogisticsHub.cells(HA))if(LogisticsHub.isHub(sl().getBlockState(p)))n++;return n==27&&hub(HA)!=null&&hub(HA).working(sl());}),()->{});
         step(5,()->{
             String r=srvGet(()->{int create=0;for(var p:LogisticsHub.cells(HA))if(!p.equals(HA)&&sl().getBlockEntity(p) instanceof CreateHubPart)create++;return create+"";});
             check("with Create loaded, the 26 parts are the Create-aware ones (belts can deliver to them)",r.equals("26"),r);
-            check("the mechanical arm knows the Hub (its interaction point type is registered)",srvGet(()->com.simibubi.create.api.registry.CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE.get(new ResourceLocation(ArsenalBeacon.ID,"logistics_hub"))!=null),"");},"Create-aware parts");
+            check("the mechanical arm knows the Hub (its interaction point type is registered)",srvGet(()->com.simibubi.create.api.registry.CreateBuiltInRegistries.ARM_INTERACTION_POINT_TYPE.get(new ResourceLocation(EternalDefense.ID,"logistics_hub"))!=null),"");},"Create-aware parts");
 
         // ---- 1. the coil line: mixer, basin, blaze burner, belt straight into the Hub ---------------------------------------------------------
         step(10,()->srv(()->{
@@ -178,10 +178,10 @@ public final class QaHubCreate {
             srv(()->{var in=handler(basin(),Direction.UP);
                 insert(in,new ItemStack(createItem("precision_mechanism"),2));insert(in,new ItemStack(Items.ENDER_PEARL,2));insert(in,new ItemStack(Items.REDSTONE,8));insert(in,new ItemStack(createItem("golden_sheet"),4));});
             tp(HA.getX()-4.5,sy+3,HA.getZ()-8.5,20,25);},"two batches of the coil's ingredients into the basin");
-        until("the mixer makes 8 Resonance Coils and the belt brings them into the Hub",1200,()->srvGet(()->inHub(ArsenalBeacon.COIL.get())>=8),()->{});
+        until("the mixer makes 8 Resonance Coils and the belt brings them into the Hub",1200,()->srvGet(()->inHub(EternalDefense.COIL.get())>=8),()->{});
         step(5,()->{
-            String r=srvGet(()->inHub(ArsenalBeacon.COIL.get())+" coils in the Hub, basin "+contents(handler(basin(),Direction.UP))+", belt items "+(sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b?b.getInventory().getTransportedItems().size():-1));
-            check("Create made Resonance Coils (heated mixing) and the belt delivered all 8 straight into the Hub",srvGet(()->inHub(ArsenalBeacon.COIL.get())==8),r);
+            String r=srvGet(()->inHub(EternalDefense.COIL.get())+" coils in the Hub, basin "+contents(handler(basin(),Direction.UP))+", belt items "+(sl().getBlockEntity(beltStart()) instanceof BeltBlockEntity b?b.getInventory().getTransportedItems().size():-1));
+            check("Create made Resonance Coils (heated mixing) and the belt delivered all 8 straight into the Hub",srvGet(()->inHub(EternalDefense.COIL.get())==8),r);
             check("nothing fell off the belt's end",srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(beltEnd()).inflate(3)).isEmpty()),"");
             shot("create01_coil_line");},"coils delivered");
 
@@ -225,7 +225,7 @@ public final class QaHubCreate {
         until("the bread reaches the vault",600,()->srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)>=32),()->{});
         step(5,()->{
             String r=srvGet(()->"vault "+contents(handler(vault(),Direction.UP))+", Hub cobble "+inHub(Items.COBBLESTONE)+" bread "+inHub(Items.BREAD));
-            check("with an attribute filter (food) it pulls the bread and leaves the cobblestone and the coils",srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)==32&&inHub(Items.BREAD)==0&&inHub(Items.COBBLESTONE)==64&&inHub(ArsenalBeacon.COIL.get())==8),r+" / "+note);
+            check("with an attribute filter (food) it pulls the bread and leaves the cobblestone and the coils",srvGet(()->count(handler(vault(),Direction.UP),Items.BREAD)==32&&inHub(Items.BREAD)==0&&inHub(Items.COBBLESTONE)==64&&inHub(EternalDefense.COIL.get())==8),r+" / "+note);
             srv(()->put(funnel(),Blocks.GRASS_BLOCK.defaultBlockState()));},"attribute filter");
 
         // ---- 3. a chute and a smart chute (filtered) feeding the Hub from above ----------------------------------------------------------------
@@ -245,8 +245,8 @@ public final class QaHubCreate {
             put(depot,create("depot").defaultBlockState());put(chest,create("depot").defaultBlockState());
             put(cog,with(create("cogwheel").defaultBlockState(),"axis","y"));
             put(arm1,create("mechanical_arm").defaultBlockState());put(arm2,create("mechanical_arm").defaultBlockState());
-            arm(arm1,List.of(new Object[]{"create:depot",depot,"TAKE"},new Object[]{ArsenalBeacon.ID+":logistics_hub",HA.offset(-1,-1,-1),"DEPOSIT"}));
-            arm(arm2,List.of(new Object[]{ArsenalBeacon.ID+":logistics_hub",HA.offset(1,-1,-1),"TAKE"},new Object[]{"create:depot",chest,"DEPOSIT"}));
+            arm(arm1,List.of(new Object[]{"create:depot",depot,"TAKE"},new Object[]{EternalDefense.ID+":logistics_hub",HA.offset(-1,-1,-1),"DEPOSIT"}));
+            arm(arm2,List.of(new Object[]{EternalDefense.ID+":logistics_hub",HA.offset(1,-1,-1),"TAKE"},new Object[]{"create:depot",chest,"DEPOSIT"}));
             motor(cog.above(),Direction.DOWN,64);
             insert(handler(depot,Direction.UP),new ItemStack(Items.COPPER_INGOT,16));}),"two arms: one takes from a depot (16 copper) and puts into the Hub, one takes from the Hub and puts onto a second depot");
         final int[] before={0};

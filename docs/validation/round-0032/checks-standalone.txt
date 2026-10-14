@@ -11,7 +11,7 @@ PASS planting started a vanilla raid raid=23, villagers at its start=4
 PASS everyone reads the announcement 
 PASS the block stands two tall 
 PASS the planted FOB's zone outline reaches the client [Zone[id=32, name=FOB BLACK LANCE, state=planted, sections=[-307863210688508, -303465164177404, -299067117666300, -307863210688507, -303465164177403, -299067117666299, -307863210688509, -303465164177405, -299067117666301, -307863211737084, -307863207542780, -303465165225980, -303465161031676, -299067118714876, -299067114520572, -307863211737083, -307863207542779, -303465165225979, -303465161031675, -299067118714875, -299067114520571, -307863211737085, -307863207542781, -303465165225981, -303465161031677, -299067118714877, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725]]]
-PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@3c3c0916
+PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@3c3c0916
 PASS the status card has the FOB line with the shovel in hand FOB BLACK LANCE | PLANTED | RAID | 4 villagers
 PASS the FOB is ACTIVE ACTIVE
 PASS everyone reads that it is ACTIVE 
@@ -22,7 +22,7 @@ PASS the outline is off for the FOB
 PASS and gone from the client []
 PASS the outline is back 
 PASS the client shows the FOB Zone effect 
-PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+PASS the meal does not run down there effect.eternal_defense.meal_might, Duration: infinite
 PASS the FOB is renamed North Gate
 PASS everyone reads the new name 
 PASS the Field Guide has the FOB page 
@@ -34,7 +34,7 @@ PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
 PASS the cart rolls on the rail 
 PASS the cart rolled on through the gate with its rider seated x=-1079.2944829259916 gate x=-1082
 PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@42a327e
+PASS the Receiving Gate asks which FOB it serves dev.eternaldefense.beacon.GateClient$GateScreen@42a327e
 PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=291, z=1}
 PASS the route is open and its round trip delivered true ride 432
 PASS the light at home turns green, on both columns 
@@ -124,7 +124,7 @@ PASS the SOS calls the FOB sos=32 left=167940
 PASS everyone reads the SOS 
 PASS the SOS map is handed out 
 PASS the status card leads with the SOS SOS North Gate | 6 d 23 h left | go there
-PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@117aa4ba
+PASS the Command Table opens on its FOBs tab dev.eternaldefense.beacon.TacticalClient$TableScreen@117aa4ba
 PASS it lists the FOB: its name, its distance from the base, its state {bearing:268.0644445255384d,distance:21110,id:32L,level:2,name:"North Gate",route:1b,signal:"green",sos:1b,sosLeft:167880L,specialty:"monsters",state:"active",v
 PASS and the time left to answer its SOS left=167880
 PASS the table knows the map is not carried 
@@ -199,7 +199,7 @@ PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
 PASS the FOB screen, Research tab at 427x240: 30 texts, none over another or over a button, all in the panel 0 
 PASS the FOB screen, Research tab at 427x240: no text cut short 
 PASS the table stands in the zone, its parts with it 
-PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@4827711c
+PASS the enchanting screen opens dev.eternaldefense.beacon.EnchantClient$EnchantScreen@4827711c
 PASS Sharpness I applied 
 PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -208,9 +208,9 @@ PASS everyone reads it
 PASS Mending applied 
 PASS the table is Mk I 
 PASS the sword comes back enchanted 
-PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@45a16cac
+PASS the Exchange opens dev.eternaldefense.beacon.ExchangeScreen@45a16cac
 PASS the Exchange buys the Warlord Seal for 8 Ardent Energy value=8
-PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@433b7810
+PASS the shovel asks first dev.eternaldefense.beacon.BeaconClient$ConfirmScreen@433b7810
 PASS nothing is removed yet 
 PASS the FOB is deleted 
 PASS its block is gone 

@@ -4,7 +4,7 @@ Branch `feature/drink-station`.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720 at GUI scale 2; the size checks at 640 x 360, 480 x 270 and 427 x 240), the new harness `tools/qa/QaDrinks.java.txt` on a fresh NORMAL world (creative, one step in survival to pay for an upgrade). It drives the screens with real clicks (the screen's own `mouseClicked`, vanilla slot clicks through the client's game mode, the mod's menu-button packet), checks the server's state and the client's view, records each frame's texts for the size checks and takes screenshots.
 
 ## Results

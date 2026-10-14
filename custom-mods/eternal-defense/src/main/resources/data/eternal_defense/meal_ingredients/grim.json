@@ -1,0 +1,10 @@
+{
+  "ingredient": {
+    "tag": "eternal_defense:meal/grim"
+  },
+  "staple": false,
+  "effects": {
+    "blast_ward": 1
+  },
+  "family": "fungi"
+}

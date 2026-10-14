@@ -7,7 +7,7 @@ Same environment as `MESS-HALL-V7-TESTING.md`: Linux container, JDK 17, Forge 47
 * `./gradlew --no-daemon --offline build releaseJars` (JDK 17) succeeds for all three modules and both editions; **96 beacon unit tests, 0 failures** (8 new since 0.0.8: 4 in `LangKeysTest`, 4 in `GuideTextTest`).
 * `LangKeysTest.everyGuideCardFollowsTheSameFormat`: every card that starts with *What it is* also has *You get*, *How it works* and *How to unlock*, in that order, in both editions.
 * `LangKeysTest.guideSentencesStayShortAndPlain`: no guide line over 330 characters and no sentence over 42 words.
-* `LangKeysTest.everyRegisteredFeatureHasAGuideCard`: every block and item registered in `ArsenalBeacon.java` has a card or is listed as an ingredient; `Gun Guide` and `Gun Displays` cards are required as well. The registration parser was checked by hand against the source: it finds 29 ids.
+* `LangKeysTest.everyRegisteredFeatureHasAGuideCard`: every block and item registered in `EternalDefense.java` has a card or is listed as an ingredient; `Gun Guide` and `Gun Displays` cards are required as well. The registration parser was checked by hand against the source: it finds 29 ids.
 * `GuideTextTest`: `[pack]` / `[standalone]` lines reach only their edition, bullets continue the list above, the Reference tab uses the viewer's edition.
 * The existing guide tests still pass unchanged in intent (standalone text never mentions pack-only mods, pack text keeps the Create/Essential/FTB instructions, the support page quotes the real numbers).
 

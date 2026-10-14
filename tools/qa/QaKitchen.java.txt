@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -31,7 +31,7 @@ import java.util.*;
  * the way a player does, checking server state and taking screenshots. Copied into a throwaway tree by tools/qa/setup-qa.sh.
  * Scenario parts come from /tmp/claude-0/qa-kitchen.flag (default: all): equiv kitchen stew legendary tiers dispensers beacon table.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaKitchen {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -67,7 +67,7 @@ public final class QaKitchen {
     static String lastBar(){return BAR.isEmpty()?"":BAR.get(BAR.size()-1);}
     static boolean barHas(String s){return BAR.stream().anyMatch(b->b.contains(s));}
 
-    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);});}
+    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);});}
     static MessHallScreen ui(){return mc().screen instanceof MessHallScreen s?s:null;}
     /** Call only inside srv/srvGet lambdas (the server thread): a nested srvGet would wait on itself. */
     static MessHall.HallEntity hall(){return (MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));}
@@ -181,9 +181,9 @@ public final class QaKitchen {
     static Ui.UiButton upgradeButton(){if(!(mc().screen instanceof PlatformScreen screen))return null;for(var c:screen.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().startsWith(Ui.plain("platform.upgrade_to","").trim()))return b;return null;}
     static void script(){
         step(5,()->{mc().options.guiScale().set(3);mc().resizeDisplay();cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("weather clear");cmd("kill @e[type=!player]");beacon();},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));CampaignData.get(sl()).core=3;
-            sl().setBlock(at(0,0,0),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,0),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
-            sl().setBlock(at(8,0,0),ArsenalBeacon.BOWL_DISPENSER.get().defaultBlockState(),3);sl().setBlock(at(11,0,0),ArsenalBeacon.MILK_DISPENSER.get().defaultBlockState(),3);
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));CampaignData.get(sl()).core=3;
+            sl().setBlock(at(0,0,0),EternalDefense.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,0),EternalDefense.COOK_POT.get().defaultBlockState(),3);
+            sl().setBlock(at(8,0,0),EternalDefense.BOWL_DISPENSER.get().defaultBlockState(),3);sl().setBlock(at(11,0,0),EternalDefense.MILK_DISPENSER.get().defaultBlockState(),3);
             sp().teleportTo(sl(),sx+.5,sy,sz+3.5,180,0);pack();}),"place hall, pot and both dispensers");
         step(20,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));h.discover();}),"link the pot");
         if(part("equiv"))step(5,()->equivalence(),"differential check of compose against the v6 implementation");
@@ -249,8 +249,8 @@ public final class QaKitchen {
             for(int mk=1;mk<=3;mk++){
                 final int level=mk;final BlockPos pos=tierPos(mk);final int minutes=10+5*mk;
                 step(5,()->srv(()->{
-                    var block=level==1?ArsenalBeacon.MESS_HALL_I.get():level==2?ArsenalBeacon.MESS_HALL_II.get():ArsenalBeacon.MESS_HALL_III.get();
-                    sl().setBlock(pos,block.defaultBlockState(),3);sl().setBlock(pos.offset(3,0,0),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
+                    var block=level==1?EternalDefense.MESS_HALL_I.get():level==2?EternalDefense.MESS_HALL_II.get():EternalDefense.MESS_HALL_III.get();
+                    sl().setBlock(pos,block.defaultBlockState(),3);sl().setBlock(pos.offset(3,0,0),EternalDefense.COOK_POT.get().defaultBlockState(),3);
                     var h=hallAt(pos);h.ingredients.clearContent();
                     h.ingredients.setItem(0,new ItemStack(Items.COOKED_CHICKEN,16));h.ingredients.setItem(1,new ItemStack(Items.COOKED_MUTTON,16));h.ingredients.setItem(2,new ItemStack(Items.CARROT,16));h.ingredients.setItem(7,new ItemStack(Items.BREAD,4));
                     h.setOrder(EnumSet.noneOf(MealRules.Effect.class));h.setMode(false);h.discover();

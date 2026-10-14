@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -24,7 +24,7 @@ import java.io.File;
 import java.util.*;
 
 /** QA ONLY (never committed): boots a flat world and drives gameplay through the real integrated server. */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaWorld {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick;static boolean created,built;static int sx,sy,sz;
@@ -57,7 +57,7 @@ public final class QaWorld {
     static net.minecraft.world.phys.AABB around(int dx,int dz,double r){return new net.minecraft.world.phys.AABB(sx+dx-r,sy-6,sz+dz-r,sx+dx+r,sy+70,sz+dz+r);}
     static net.minecraft.world.item.ItemStack stack(net.minecraft.world.item.Item i,int n){return new net.minecraft.world.item.ItemStack(i,n);}
     static net.minecraft.world.entity.player.Inventory inv(){return sp().getInventory();}
-    static int energy(){return count(sp(),"arsenal_beacon:ardent_energy");}
+    static int energy(){return count(sp(),"eternal_defense:ardent_energy");}
     static void hold(net.minecraft.world.item.ItemStack s){srv(()->{inv().setItem(0,s);inv().selected=0;});}
     static long ticks(){return server().getTickCount();}
     static void face(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));}
@@ -70,17 +70,17 @@ public final class QaWorld {
     static SupportCannon.CannonEntity cannon(){return srvGet(()->SupportCalls.cannon(sl(),sp().getUUID()));}
     static double expectedYaw(double px,double pz,double cx,double cz){return Math.toDegrees(Math.atan2(-(px-cx),-(pz-cz)));}
     static BlockPos B(){return at(0,0,-12);}
-    static int parts(BlockPos root){return srvGet(()->{int n=0;for(var p:BlockPos.betweenClosed(root.offset(-1,0,-1),root.offset(1,1,1)))if(sl().getBlockState(p).is(ArsenalBeacon.STRUCTURE_PART.get()))n++;return n;});}
+    static int parts(BlockPos root){return srvGet(()->{int n=0;for(var p:BlockPos.betweenClosed(root.offset(-1,0,-1),root.offset(1,1,1)))if(sl().getBlockState(p).is(EternalDefense.STRUCTURE_PART.get()))n++;return n;});}
     static void beacon(boolean on){srv(()->{
         var d=CampaignData.get(sl());
-        if(on){d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);}
+        if(on){d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);}
         else{sl().setBlock(B(),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);}
     });}
     static net.minecraft.world.entity.player.Player dummy;
 
 
     static void own(BlockPos p){srv(()->{var be=sl().getBlockEntity(p);if(be instanceof SupportPlatform.PlatformEntity pe){pe.owner=sp().getUUID();pe.ownerName="Dev";}if(be instanceof SupportCannon.CannonEntity ce){ce.owner=sp().getUUID();ce.ownerName="Dev";}});}
-    static void energy(int n){srv(()->{var inv=inv();for(int i=0;i<inv.getContainerSize();i++)if(inv.getItem(i).is(ArsenalBeacon.ARDENT_ENERGY.get()))inv.setItem(i,net.minecraft.world.item.ItemStack.EMPTY);int left=n;while(left>0){int c=Math.min(64,left);inv.add(stack(ArsenalBeacon.ARDENT_ENERGY.get(),c));left-=c;}});}
+    static void energy(int n){srv(()->{var inv=inv();for(int i=0;i<inv.getContainerSize();i++)if(inv.getItem(i).is(EternalDefense.ARDENT_ENERGY.get()))inv.setItem(i,net.minecraft.world.item.ItemStack.EMPTY);int left=n;while(left>0){int c=Math.min(64,left);inv.add(stack(EternalDefense.ARDENT_ENERGY.get(),c));left-=c;}});}
     static void near(){srv(()->sp().teleportTo(sl(),sx+8.5,sy,sz+9.5,0,0));}
     /** Walk up to the cannon, hold exactly n energy and buy several levels of one upgrade. */
     static void buy(String label,int idx,int times,int n){step(3,()->{near();energy(n);},label+": go to the cannon");step(15,()->{for(int i=0;i<times;i++)act(CannonControl.UPGRADE,idx);},label+": buy");}
@@ -94,7 +94,7 @@ public final class QaWorld {
     static void fireTest(int idx,String label,int expectShots,Runnable extra,Runnable verify){
         step(3,()->{clearFlares();near();},label+": near");
         step(8,()->{act(CannonControl.SELECT,idx);},label+": select");
-        step(10,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);sp().setHealth(20);cmd("time set 18000");});},label+": setup");
+        step(10,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);sp().setHealth(20);cmd("time set 18000");});},label+": setup");
         step(25,()->{shots0=cannon().shots;throwHeld();},label+": throw");
         until(label+": landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(1,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60)).get(0);fireAt2=f.position();spawnZombies(fireAt2);
@@ -106,17 +106,17 @@ public final class QaWorld {
     }
     static void scriptR3(){
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
         // ---- placement of the 2-tall blocks and the cannon
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(10,()->{check("platform placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(ArsenalBeacon.SUPPORT_PLATFORM.get())),"");check("platform is two blocks tall (structure part above)",srvGet(()->sl().getBlockState(at(0,1,0)).is(ArsenalBeacon.STRUCTURE_PART.get())),String.valueOf(srvGet(()->sl().getBlockState(at(0,1,0)))));},"platform checks");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(10,()->{check("platform placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(EternalDefense.SUPPORT_PLATFORM.get())),"");check("platform is two blocks tall (structure part above)",srvGet(()->sl().getBlockState(at(0,1,0)).is(EternalDefense.STRUCTURE_PART.get())),String.valueOf(srvGet(()->sl().getBlockState(at(0,1,0)))));},"platform checks");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
         step(10,()->check("cannon placed (17 parts)",parts(at(8,0,6))==17,"parts="+parts(at(8,0,6))),"cannon check");
-        step(5,()->{hold(stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
+        step(5,()->{hold(stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
         step(10,()->placeHeld(at(-3,-1,0)),"place shop");
-        step(10,()->{check("shop placed with its upper part",srvGet(()->sl().getBlockState(at(-3,0,0)).is(ArsenalBeacon.EXCHANGE_SHOP.get())&&sl().getBlockState(at(-3,1,0)).is(ArsenalBeacon.STRUCTURE_PART.get())),"");},"shop checks");
+        step(10,()->{check("shop placed with its upper part",srvGet(()->sl().getBlockState(at(-3,0,0)).is(EternalDefense.EXCHANGE_SHOP.get())&&sl().getBlockState(at(-3,1,0)).is(EternalDefense.STRUCTURE_PART.get())),"");},"shop checks");
         step(5,()->srv(()->{sp().gameMode.destroyBlock(at(-3,1,0));}),"break the shop by its upper half");
         step(10,()->check("breaking the upper half breaks the whole shop",srvGet(()->sl().getBlockState(at(-3,0,0)).isAir()&&sl().getBlockState(at(-3,1,0)).isAir()),""),"shop gone");
         // ---- screenshots of the new models
@@ -140,12 +140,12 @@ public final class QaWorld {
         step(5,()->{for(int i=0;i<3;i++)act(CannonControl.UPGRADE,1);},"rate x3");
         step(30,()->{check("rate of fire level 3",base().up[1]==3,"level="+base().up[1]);check("interval is down to 20 ticks",CannonUpgrades.interval(base().up[1])==20,"");check("energy: 1280 - 500 = 780",energy()==780,"energy="+energy());},"verify rate");
         // ---- quantum tunneling gate: a roofed flare is handed back until it is bought
-        step(5,()->srv(()->{clearFlares();for(int x=14;x<=24;x++)for(int z=14;z<=24;z++)sl().setBlock(at(x,5,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);inv().setItem(1,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=1;sp().teleportTo(sl(),sx+19.5,sy,sz+19.5,0,88);}),"roof");
+        step(5,()->srv(()->{clearFlares();for(int x=14;x<=24;x++)for(int z=14;z<=24;z++)sl().setBlock(at(x,5,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);inv().setItem(1,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=1;sp().teleportTo(sl(),sx+19.5,sy,sz+19.5,0,88);}),"roof");
         step(15,()->throwHeld(),"throw underground");
-        step(70,()->{check("without quantum tunneling an underground fire flare comes back",count(sp(),"arsenal_beacon:fire_support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(19,19,30)).isEmpty(),"n="+count(sp(),"arsenal_beacon:fire_support_flare"));},"verify back");
+        step(70,()->{check("without quantum tunneling an underground fire flare comes back",count(sp(),"eternal_defense:fire_support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(19,19,30)).isEmpty(),"n="+count(sp(),"eternal_defense:fire_support_flare"));},"verify back");
         buy("quantum",4,2,780);
         step(25,()->{check("quantum tunneling bought once, 400 energy",base().up[4]==1&&energy()==380,"lv="+base().up[4]+" energy="+energy());},"verify quantum");
-        step(5,()->srv(()->{inv().setItem(1,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=1;sp().teleportTo(sl(),sx+19.5,sy,sz+19.5,0,88);}),"back under the roof");
+        step(5,()->srv(()->{inv().setItem(1,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=1;sp().teleportTo(sl(),sx+19.5,sy,sz+19.5,0,88);}),"back under the roof");
         step(15,()->throwHeld(),"throw underground again");
         until("underground flare lands",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(19,19,30));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(60,()->{check("with quantum tunneling the underground flare stays and works",!sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(19,19,30)).isEmpty()&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(19,19,30)).get(0).landed(),"");},"verify stay");
@@ -165,7 +165,7 @@ public final class QaWorld {
         fireTest(5,"CURSE",6,()->{},()->{check("curse: zombies in the box got the debuffs (or are dead from them)",true,"");});
         step(2,()->clearFlares(),"cleanup");
         // ---- quick curse effect probe: single throw, read effects before they kill
-        step(3,()->near(),"near");step(8,()->act(CannonControl.SELECT,5),"select curse");step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"curse probe setup");
+        step(3,()->near(),"near");step(8,()->act(CannonControl.SELECT,5),"select curse");step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"curse probe setup");
         step(25,()->{shots0=cannon().shots;throwHeld();},"curse probe throw");
         until("curse probe landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(1,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60)).get(0);fireAt2=f.position();spawnZombies(fireAt2);}),"probe zombies");
@@ -175,7 +175,7 @@ public final class QaWorld {
             check("curse: zombies are withering, slowed, blinded and glowing",w>=4&&s>=4&&b>=4&&g>=4,"wither="+w+" slow="+s+" blind="+b+" glow="+g);shot("r3_curse");},"curse effects");
         step(2,()->clearFlares(),"cleanup");
         // ---- slowness field
-        step(3,()->near(),"near");step(8,()->act(CannonControl.SELECT,0),"select explosion");step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"slow probe setup");
+        step(3,()->near(),"near");step(8,()->act(CannonControl.SELECT,0),"select explosion");step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"slow probe setup");
         step(25,()->{shots0=cannon().shots;throwHeld();},"slow probe throw");
         until("slow probe landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(1,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60)).get(0);fireAt2=f.position();spawnZombies(fireAt2);}),"probe zombies");
@@ -184,7 +184,7 @@ public final class QaWorld {
         step(2,()->clearFlares(),"cleanup");
         // ---- portal upgrade: five minutes, home and back
         buy("portal",6,1,260);
-        step(20,()->{check("lasting portal bought for 200",base().up[6]==1&&energy()==60,"lv="+base().up[6]);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.RETURN_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+30.5,sy,sz+26.5,0,10);});},"verify portal upgrade");
+        step(20,()->{check("lasting portal bought for 200",base().up[6]==1&&energy()==60,"lv="+base().up[6]);srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.RETURN_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+30.5,sy,sz+26.5,0,10);});},"verify portal upgrade");
         step(25,()->throwHeld(),"throw return flare far away");
         until("portal landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(30,26,40));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(2,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(30,26,40)).get(0);portalAt=f.position();var n=new net.minecraft.nbt.CompoundTag();f.saveWithoutId(n);check("the portal lasts 5 minutes",n.getInt("Life")==6000,"life="+n.getInt("Life"));srv(()->sp().teleportTo(sl(),portalAt.x,portalAt.y,portalAt.z,0,0));},"step in");
@@ -197,7 +197,7 @@ public final class QaWorld {
         // ---- healing aura
         buy("aura",7,1,260);
         step(5,()->srv(()->{var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));be.grid.setItem(0,stack(net.minecraft.world.item.Items.IRON_INGOT,5));}),"fill grid");
-        step(20,()->{check("healing aura bought for 200",base().up[7]==1&&energy()==60,"lv="+base().up[7]);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+.5,sy,sz-3+.5,0,-10);});},"supply flare");
+        step(20,()->{check("healing aura bought for 200",base().up[7]==1&&energy()==60,"lv="+base().up[7]);srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+.5,sy,sz-3+.5,0,-10);});},"supply flare");
         step(25,()->throwHeld(),"throw supply flare");
         until("aura flare landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(2,()->srv(()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,60)).get(0);landAt=f.position();sp().teleportTo(sl(),landAt.x+2,landAt.y,landAt.z,0,0);sp().setHealth(8);}),"stand by the flare, hurt");
@@ -211,7 +211,7 @@ public final class QaWorld {
         step(2,()->check("the aura ended",true,""),"aura ended");
         // ---- relocation keeps upgrades; stranger cannot operate
         step(5,()->{srv(()->BaseZone.relocate(sp(),sl(),at(8,0,6)));},"shovel the cannon");
-        step(15,()->{check("relocating the cannon keeps the upgrades",base()!=null&&base().up[1]==3&&base().up[4]==1,"");hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"re-place");
+        step(15,()->{check("relocating the cannon keeps the upgrades",base()!=null&&base().up[1]==3&&base().up[4]==1,"");hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"re-place");
         step(10,()->placeHeld(at(8,-1,6)),"place again");
         step(15,()->{check("the re-placed cannon turns with the traverse upgrade",cannon().traverse==1,"");},"traverse restored");
         step(5,()->{mc().options.hideGui=true;camera(5,3,14,8,2,6);srv(()->{var c=cannon();c.aimAt(sl(),new Vec3(sx-20,sy,sz+30));});},"aim for a screenshot");
@@ -222,12 +222,12 @@ public final class QaWorld {
     static void scriptModels(){
         step(10,()->{cmd("gamemode creative");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");mc().options.hideGui=true;},"setup");
         step(10,()->srv(()->{
-            sl().setBlock(at(0,0,0),ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,1).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
-            sl().setBlock(at(5,0,0),ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,2).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
-            sl().setBlock(at(10,0,0),ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,3).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
-            sl().setBlock(at(15,0,0),ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,4).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
-            sl().setBlock(at(-5,0,0),ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,net.minecraft.core.Direction.SOUTH),3);
-            sl().setBlock(at(0,0,12),ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState(),3);
+            sl().setBlock(at(0,0,0),EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,1).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
+            sl().setBlock(at(5,0,0),EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,2).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
+            sl().setBlock(at(10,0,0),EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,3).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
+            sl().setBlock(at(15,0,0),EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,4).setValue(SupportPlatform.FACING,net.minecraft.core.Direction.SOUTH),3);
+            sl().setBlock(at(-5,0,0),EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,net.minecraft.core.Direction.SOUTH),3);
+            sl().setBlock(at(0,0,12),EternalDefense.SUPPORT_CANNON.get().defaultBlockState(),3);
         }),"place");
         step(10,()->srv(()->{var c=(SupportCannon.CannonEntity)sl().getBlockEntity(at(0,0,12));c.yaw=c.prevYaw=c.target=0;}),"cannon yaw");
         // shop
@@ -241,7 +241,7 @@ public final class QaWorld {
         step(2,()->camera(15,1.6,2.6,15,1.4,0),"mk4 front");step(25,()->shot("m_platform_mk4_front"),"s");
         step(2,()->camera(17.5,3.2,-3,15,0.9,0),"mk4 back");step(25,()->shot("m_platform_mk4_back"),"s");
         // cannon
-        step(2,()->{mc().options.hideGui=false;srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));inv().setItem(1,stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));inv().setItem(2,stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));inv().setItem(3,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().setItem(4,stack(ArsenalBeacon.RETURN_FLARE.get(),1));inv().setItem(5,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().setItem(6,stack(ArsenalBeacon.ARDENT_ENERGY.get(),1));});},"hotbar items");
+        step(2,()->{mc().options.hideGui=false;srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));inv().setItem(1,stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));inv().setItem(2,stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));inv().setItem(3,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().setItem(4,stack(EternalDefense.RETURN_FLARE.get(),1));inv().setItem(5,stack(EternalDefense.FIRE_FLARE.get(),1));inv().setItem(6,stack(EternalDefense.ARDENT_ENERGY.get(),1));});},"hotbar items");
         step(20,()->shot("m_hotbar"),"hotbar shot");
         step(2,()->{srv(()->{inv().selected=2;});mc().options.hideGui=true;},"hold cannon");step(20,()->shot("m_hand_cannon"),"hand shot");
         step(2,()->{srv(()->{inv().selected=1;});},"hold platform");step(20,()->shot("m_hand_platform"),"hand shot");
@@ -279,16 +279,16 @@ public final class QaWorld {
     static net.minecraft.world.entity.Mob r5Mob;static final java.util.Set<String> r5Types=new java.util.TreeSet<>();
     static boolean spawnRaider(String type,int tier){
         return srvGet(()->{try{var d=CampaignData.get(sl());d.raidType=type;d.raidTier=tier;d.introRaid=false;d.phase="raid";d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=50;
-            var m=ArsenalBeacon.class.getDeclaredMethod("spawn",net.minecraft.server.level.ServerLevel.class,CampaignData.class);m.setAccessible(true);return (boolean)m.invoke(null,sl(),d);}catch(Throwable t){com.mojang.logging.LogUtils.getLogger().info("QA_NOTE spawn failed {}",t.toString());return false;}});
+            var m=EternalDefense.class.getDeclaredMethod("spawn",net.minecraft.server.level.ServerLevel.class,CampaignData.class);m.setAccessible(true);return (boolean)m.invoke(null,sl(),d);}catch(Throwable t){com.mojang.logging.LogUtils.getLogger().info("QA_NOTE spawn failed {}",t.toString());return false;}});
     }
     static void scriptR5(){
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
-        step(5,()->{hold(stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
+        step(5,()->{hold(stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
         step(10,()->placeHeld(at(-3,-1,0)),"place shop");
         step(20,()->{},"settle");
         if(part5("sign")){
@@ -333,11 +333,11 @@ public final class QaWorld {
             },"verify");
         }
         if(part5("dbg")){
-            step(5,()->{srv(()->{inv().clearContent();inv().setItem(2,stack(ArsenalBeacon.PLATING.get(),4));sp().teleportTo(sl(),sx-3+.5,sy,sz-4+.5,0,0);});},"carry plating");
+            step(5,()->{srv(()->{inv().clearContent();inv().setItem(2,stack(EternalDefense.PLATING.get(),4));sp().teleportTo(sl(),sx-3+.5,sy,sz-4+.5,0,0);});},"carry plating");
             step(10,()->{
-                var cost=java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(ArsenalBeacon.PLATING.get()),2));
-                boolean ok=srvGet(()->InventoryPayment.commit(sp(),cost,new net.minecraft.world.item.ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),1)));
-                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE direct commit {} plating={} energy={} creative={}",ok,count(sp(),"arsenal_beacon:reinforced_plating"),energy(),sp().isCreative());
+                var cost=java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(EternalDefense.PLATING.get()),2));
+                boolean ok=srvGet(()->InventoryPayment.commit(sp(),cost,new net.minecraft.world.item.ItemStack(EternalDefense.ARDENT_ENERGY.get(),1)));
+                com.mojang.logging.LogUtils.getLogger().info("QA_NOTE direct commit {} plating={} energy={} creative={}",ok,count(sp(),"eternal_defense:reinforced_plating"),energy(),sp().isCreative());
                 var offers=srvGet(()->ExchangeShop.offers());com.mojang.logging.LogUtils.getLogger().info("QA_NOTE sell offers {} buy {}",offers.sell(),offers.buy().size());
                 com.mojang.logging.LogUtils.getLogger().info("QA_NOTE problem {} dist {} block {}",srvGet(()->BaseZone.problem(sl(),at(-3,0,0))),sp().distanceToSqr(sx-3+.5,sy+.5,sz+.5),srvGet(()->sl().getBlockState(at(-3,0,0))));
             },"direct");
@@ -351,34 +351,34 @@ public final class QaWorld {
                 try{var f=ExchangeScreen.class.getDeclaredField("sell");f.setAccessible(true);f.setBoolean(mc().screen,true);mc().screen.resize(mc(),mc().screen.width,mc().screen.height);}catch(Throwable t){com.mojang.logging.LogUtils.getLogger().info("QA_NOTE {}",t.toString());}
             },"screen");
             step(15,()->shot("r5_exchange_sell"),"sell tab shot");
-            step(3,()->{if(!false)srv(()->inv().setItem(2,stack(ArsenalBeacon.PLATING.get(),4)));int before=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),0,true));r4Shots=before;},"sell the first listed item");
+            step(3,()->{if(!false)srv(()->inv().setItem(2,stack(EternalDefense.PLATING.get(),4)));int before=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),0,true));r4Shots=before;},"sell the first listed item");
             step(20,()->{if(false)check("selling a diamond paid 2 Ardent Energy and took the diamond",energy()==r4Shots+2&&count(sp(),"minecraft:diamond")==2,"energy="+energy()+" diamonds="+count(sp(),"minecraft:diamond"));
-                else check("selling 2 reinforced plating paid 1 Ardent Energy",energy()==r4Shots+1&&count(sp(),"arsenal_beacon:reinforced_plating")==2,"energy="+energy()+" plating="+count(sp(),"arsenal_beacon:reinforced_plating"));},"sold");
+                else check("selling 2 reinforced plating paid 1 Ardent Energy",energy()==r4Shots+1&&count(sp(),"eternal_defense:reinforced_plating")==2,"energy="+energy()+" plating="+count(sp(),"eternal_defense:reinforced_plating"));},"sold");
             step(3,()->{energy(5);},"5 energy");
             step(10,()->{r4Shots=energy();BeaconNetwork.CHANNEL.sendToServer(new ExchangeShop.Buy(at(-3,0,0),false?0:1,false));},"buy");
-            step(20,()->{check("buying spent Ardent Energy and gave the goods",energy()<r4Shots,"energy "+r4Shots+" -> "+energy()+" plating="+count(sp(),"arsenal_beacon:reinforced_plating")+" coins="+count(sp(),"arsenal_beacon:universal_ammo_coin"));
+            step(20,()->{check("buying spent Ardent Energy and gave the goods",energy()<r4Shots,"energy "+r4Shots+" -> "+energy()+" plating="+count(sp(),"eternal_defense:reinforced_plating")+" coins="+count(sp(),"eternal_defense:universal_ammo_coin"));
                 if(!false)check("a plating costs 2 energy to buy but pays 0.5 to sell",energy()==r4Shots-2,"energy="+energy());mc().setScreen(null);},"bought");
         }
         if(part5("upgrade")){
             step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.defense=0;d.health=1;inv().clearContent();sp().teleportTo(sl(),sx+.5,sy,sz-8+.5,0,0);}),"beacon upgrade and repair, "+(false?"standalone":"pack"));
-            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),7)));},"one short");
-            step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"defense")),"try");
+            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(EternalDefense.COIL.get(),7)));},"one short");
+            step(5,()->srv(()->EternalDefense.upgrade(sp(),"defense")),"try");
             step(10,()->{check("a beacon upgrade is refused when one short ("+(false?"4 Ardent Energy":"8 resonance coils")+")",CampaignData.get(sl()).defense==0,"def="+CampaignData.get(sl()).defense);
-                if(false)energy(4);else srv(()->inv().setItem(0,stack(ArsenalBeacon.COIL.get(),8)));},"short");
-            step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"defense")),"buy");
+                if(false)energy(4);else srv(()->inv().setItem(0,stack(EternalDefense.COIL.get(),8)));},"short");
+            step(5,()->srv(()->EternalDefense.upgrade(sp(),"defense")),"buy");
             step(10,()->{if(false)check("the first standalone beacon upgrade costs 4 Ardent Energy",CampaignData.get(sl()).defense==1&&energy()==0,"def="+CampaignData.get(sl()).defense+" energy="+energy());
-                else check("the first pack beacon upgrade costs 8 resonance coils (no Ardent Energy)",CampaignData.get(sl()).defense==1&&count(sp(),"arsenal_beacon:resonance_coil")==0&&energy()==0,"def="+CampaignData.get(sl()).defense);},"bought");
-            step(3,()->{if(false)energy(6);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),8)));},"repair materials");
-            step(3,()->srv(()->ArsenalBeacon.repair(sp())),"repair");
-            step(10,()->{check("repair costs "+(false?"6 Ardent Energy":"8 plating"),CampaignData.get(sl()).health>1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"hp="+CampaignData.get(sl()).health);},"repaired");
+                else check("the first pack beacon upgrade costs 8 resonance coils (no Ardent Energy)",CampaignData.get(sl()).defense==1&&count(sp(),"eternal_defense:resonance_coil")==0&&energy()==0,"def="+CampaignData.get(sl()).defense);},"bought");
+            step(3,()->{if(false)energy(6);else srv(()->inv().setItem(0,stack(EternalDefense.PLATING.get(),8)));},"repair materials");
+            step(3,()->srv(()->EternalDefense.repair(sp())),"repair");
+            step(10,()->{check("repair costs "+(false?"6 Ardent Energy":"8 plating"),CampaignData.get(sl()).health>1&&energy()==0&&count(sp(),"eternal_defense:reinforced_plating")==0,"hp="+CampaignData.get(sl()).health);},"repaired");
             step(5,()->{near();energy(0);},"cannon upgrade prices");
-            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(ArsenalBeacon.PLATING.get(),6)));},"exactly the first traverse level");
+            step(5,()->{if(false)energy(3);else srv(()->inv().setItem(0,stack(EternalDefense.PLATING.get(),6)));},"exactly the first traverse level");
             step(5,()->act(CannonControl.UPGRADE,0),"buy traverse 1");
-            step(15,()->{check("the first traverse level costs "+(false?"3 Ardent Energy":"6 reinforced plating, never Ardent Energy"),base().up[0]==1&&energy()==0&&count(sp(),"arsenal_beacon:reinforced_plating")==0,"lv="+base().up[0]);mc().setScreen(null);},"traverse");
+            step(15,()->{check("the first traverse level costs "+(false?"3 Ardent Energy":"6 reinforced plating, never Ardent Energy"),base().up[0]==1&&energy()==0&&count(sp(),"eternal_defense:reinforced_plating")==0,"lv="+base().up[0]);mc().setScreen(null);},"traverse");
         }
         if(part5("hard")){
             step(3,()->{near();},"near");step(8,()->act(CannonControl.SELECT,3),"select bunker");
-            step(10,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+60.5,sy,sz+14.5,180,-10);});CHAT.clear();},"far outside");
+            step(10,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+60.5,sy,sz+14.5,180,-10);});CHAT.clear();},"far outside");
             step(25,()->{r4Shots=cannon().shots;throwHeld();},"throw");
             until("landed",300,()->landedFlare(),()->{});
             step(1,()->srv(()->{
@@ -405,9 +405,9 @@ public final class QaWorld {
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz-8+.5,0,0);inv().clearContent();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob)e.discard();}),"clear mobs");
             step(5,()->{var ok=spawnRaider("paratroopers",3);check("a paratrooper spawn succeeded",ok,"");},"spawn a paratrooper");
             step(5,()->{
-                r5Mob=null;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalRaider")||m.getPersistentData().getBoolean("arsenalChute"))r5Mob=m;
-                check("the paratrooper spawned high above the base with a parachute (slow falling)",r5Mob!=null&&r5Mob.getY()>sy+30&&r5Mob.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING)&&r5Mob.getPersistentData().getBoolean("arsenalChute"),r5Mob==null?"none":r5Mob.getType()+" y="+r5Mob.getY());
-                check("a tier 3 paratrooper is a heavy",r5Mob!=null&&r5Mob.getPersistentData().getString("arsenalRole").equals("heavy"),r5Mob==null?"":r5Mob.getPersistentData().getString("arsenalRole"));
+                r5Mob=null;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("eternalRaider")||m.getPersistentData().getBoolean("eternalChute"))r5Mob=m;
+                check("the paratrooper spawned high above the base with a parachute (slow falling)",r5Mob!=null&&r5Mob.getY()>sy+30&&r5Mob.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING)&&r5Mob.getPersistentData().getBoolean("eternalChute"),r5Mob==null?"none":r5Mob.getType()+" y="+r5Mob.getY());
+                check("a tier 3 paratrooper is a heavy",r5Mob!=null&&r5Mob.getPersistentData().getString("eternalRole").equals("heavy"),r5Mob==null?"":r5Mob.getPersistentData().getString("eternalRole"));
                 srv(()->{if(r5Mob!=null){r5Mob.setPos(r5Mob.getX(),sy+22,r5Mob.getZ());}});
             },"check it");
             step(3,()->{if(r5Mob!=null){var ce=mc().level.getEntity(r5Mob.getId());com.mojang.logging.LogUtils.getLogger().info("QA_NOTE client sees the trooper: {} effects={} onGround={} enemy={}",ce,ce instanceof net.minecraft.world.entity.LivingEntity le?le.getActiveEffects():null,ce==null?null:ce.onGround(),ce instanceof net.minecraft.world.entity.monster.Enemy);}},"debug client");
@@ -436,15 +436,15 @@ public final class QaWorld {
     static void scriptR4(){
         // ---- world, beacon and the three pieces of gear, placed the way a player does it ---------------------------------
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
-        step(5,()->{hold(stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
+        step(5,()->{hold(stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
         step(10,()->placeHeld(at(-3,-1,0)),"place shop");
         step(30,()->{
-            check("gear placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(ArsenalBeacon.SUPPORT_PLATFORM.get())&&sl().getBlockState(at(8,0,6)).is(ArsenalBeacon.SUPPORT_CANNON.get())&&sl().getBlockState(at(-3,0,0)).is(ArsenalBeacon.EXCHANGE_SHOP.get())),"");
+            check("gear placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(EternalDefense.SUPPORT_PLATFORM.get())&&sl().getBlockState(at(8,0,6)).is(EternalDefense.SUPPORT_CANNON.get())&&sl().getBlockState(at(-3,0,0)).is(EternalDefense.EXCHANGE_SHOP.get())),"");
             var cp=mc().level.getBlockEntity(at(0,0,0));var cc=mc().level.getBlockEntity(at(8,0,6));
             check("the client knows the platform's owner (for its nameplate)",cp instanceof SupportPlatform.PlatformEntity pe&&"Dev".equals(pe.ownerName),String.valueOf(cp instanceof SupportPlatform.PlatformEntity pe2?pe2.ownerName:cp));
             check("the client knows the cannon's owner (for its nameplate)",cc instanceof SupportCannon.CannonEntity ce&&"Dev".equals(ce.ownerName),String.valueOf(cc instanceof SupportCannon.CannonEntity ce2?ce2.ownerName:cc));
@@ -466,7 +466,7 @@ public final class QaWorld {
         }
         if(part("supply")){
         // ---- supply call: the turret must visibly turn (and grind), the delivery delay starts after the shot -------------------
-        step(5,()->{mc().options.hideGui=false;fillGrid();giveFlares(ArsenalBeacon.SUPPLY_FLARE.get(),1);srv(()->sp().teleportTo(sl(),sx+30.5,sy,sz+14.5,90,-5));CHAT.clear();CHAT_AT.clear();},"supply setup (east of the cannon)");
+        step(5,()->{mc().options.hideGui=false;fillGrid();giveFlares(EternalDefense.SUPPLY_FLARE.get(),1);srv(()->sp().teleportTo(sl(),sx+30.5,sy,sz+14.5,90,-5));CHAT.clear();CHAT_AT.clear();},"supply setup (east of the cannon)");
         step(20,()->{startSampler(at(8,0,6));r4Shots=cannon().shots;throwHeld();},"throw the supply flare");
         until("supply flare landed",300,()->landedFlare(),()->{});
         step(1,()->{r4Land=ticks();r4At=flares().get(0).position();},"landed");
@@ -496,7 +496,7 @@ public final class QaWorld {
         // ---- Barrage in process ---------------------------------------------------------------------------------------------
         step(3,()->{clearFlares();near();},"near the cannon");
         step(8,()->act(CannonControl.SELECT,0),"select explosion");
-        step(10,()->{giveFlares(ArsenalBeacon.FIRE_FLARE.get(),2);srv(()->sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10));CHAT.clear();SHOT_TICKS.clear();lastShots=cannon().shots;
+        step(10,()->{giveFlares(EternalDefense.FIRE_FLARE.get(),2);srv(()->sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10));CHAT.clear();SHOT_TICKS.clear();lastShots=cannon().shots;
             SAMPLERS.clear();SAMPLERS.add(()->{int n=cannon().shots;if(n>lastShots){for(int i=lastShots;i<n;i++)SHOT_TICKS.add(ticks());lastShots=n;}});},"two fire flares");
         step(25,()->{r4Shots=cannon().shots;throwHeld();},"throw the first");
         step(4,()->srv(()->inv().selected=1),"switch to the second");
@@ -513,7 +513,7 @@ public final class QaWorld {
         }
         if(part("far")){
         // ---- a player far away is told what the cannon does ------------------------------------------------------------------
-        step(5,()->{clearFlares();fillGrid();giveFlares(ArsenalBeacon.SUPPLY_FLARE.get(),1);srv(()->sp().teleportTo(sl(),sx+90.5,sy,sz+14.5,90,-5));CHAT.clear();},"go 80 blocks away");
+        step(5,()->{clearFlares();fillGrid();giveFlares(EternalDefense.SUPPLY_FLARE.get(),1);srv(()->sp().teleportTo(sl(),sx+90.5,sy,sz+14.5,90,-5));CHAT.clear();},"go 80 blocks away");
         step(80,()->{},"let the chunks load");
         step(5,()->{r4Shots=cannon().shots;throwHeld();},"throw far from the cannon");
         until("far flare landed",300,()->landedFlare(),()->{});
@@ -528,7 +528,7 @@ public final class QaWorld {
         step(3,()->{near();},"near");step(8,()->act(CannonControl.SELECT,3),"select bunker");
         step(10,()->{
             check("the client was told the choice (bunker)",SupportHud.chosen==3,"chosen="+SupportHud.chosen);
-            srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;
+            srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;
                 sp().setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD,stack(net.minecraft.world.item.Items.DIAMOND_HELMET,1));sp().setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST,stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,1));
                 sp().setItemSlot(net.minecraft.world.entity.EquipmentSlot.LEGS,stack(net.minecraft.world.item.Items.DIAMOND_LEGGINGS,1));sp().setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,stack(net.minecraft.world.item.Items.DIAMOND_BOOTS,1));
                 sp().setHealth(20);sp().teleportTo(sl(),sx+60.5,sy,sz+14.5,180,-10);});CHAT.clear();},"bunker setup (diamond armor, far outside the zone)");
@@ -568,15 +568,15 @@ public final class QaWorld {
         step(8,()->{camera(r4At.x-sx,16,r4At.z-sz+14,r4At.x-sx,-1,r4At.z-sz);},"look into the crater");
         step(40,()->shot("r4_bunker_crater"),"crater shot");
         // inside the zone: handed back with the sharp word, nothing is dug
-        step(5,()->{cmd("gamemode survival");mc().options.hideGui=false;srv(()->sp().fallDistance=0);srv(()->{for(var s:net.minecraft.world.entity.EquipmentSlot.values())if(s.getType()==net.minecraft.world.entity.EquipmentSlot.Type.ARMOR)sp().setItemSlot(s,net.minecraft.world.item.ItemStack.EMPTY);sp().setHealth(20);inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+2.5,sy,sz+8.5,180,-10);});CHAT.clear();
+        step(5,()->{cmd("gamemode survival");mc().options.hideGui=false;srv(()->sp().fallDistance=0);srv(()->{for(var s:net.minecraft.world.entity.EquipmentSlot.values())if(s.getType()==net.minecraft.world.entity.EquipmentSlot.Type.ARMOR)sp().setItemSlot(s,net.minecraft.world.item.ItemStack.EMPTY);sp().setHealth(20);inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+2.5,sy,sz+8.5,180,-10);});CHAT.clear();
             check("a box inside the zone touches it",srvGet(()->BaseZone.touches(sl(),SupportFlares.bunkerBox(new Vec3(sx+2,sy,sz-2),8))),"");
             check("a box that only overlaps the zone's edge touches it",srvGet(()->BaseZone.touches(sl(),SupportFlares.bunkerBox(new Vec3(sx+30,sy,sz),8))),"");
             check("a box fully outside the zone does not",!srvGet(()->BaseZone.touches(sl(),SupportFlares.bunkerBox(new Vec3(sx+45,sy,sz),8))),"");
         },"bunker inside the zone");
         step(20,()->{r4Shots=cannon().shots;throwHeld();},"throw the bunker flare inside my own base");
-        until("flare comes back",400,()->count(sp(),"arsenal_beacon:fire_support_flare")==1,()->{});
+        until("flare comes back",400,()->count(sp(),"eternal_defense:fire_support_flare")==1,()->{});
         step(10,()->{
-            check("bunker in the base: the flare was handed back",count(sp(),"arsenal_beacon:fire_support_flare")==1&&flares().isEmpty(),"");
+            check("bunker in the base: the flare was handed back",count(sp(),"eternal_defense:fire_support_flare")==1&&flares().isEmpty(),"");
             check("bunker in the base: the player is told off",chatIndex("moron")>=0,String.valueOf(CHAT));
             check("bunker in the base: the cannon never fired",cannon().shots==r4Shots,"");
         },"bunker returned");
@@ -586,7 +586,7 @@ public final class QaWorld {
         buy("aoe",8,2,340);
         step(20,()->{check("area of effect: two levels bought (120 + 220)",base().up[8]==2&&energy()==0,"lv="+base().up[8]+" energy="+energy());},"aoe bought");
         step(3,()->{near();},"near");step(8,()->act(CannonControl.SELECT,0),"select explosion");
-        step(10,()->{cmd("time set 18000");srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"aoe flare");
+        step(10,()->{cmd("time set 18000");srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);});},"aoe flare");
         step(25,()->{r4Shots=cannon().shots;throwHeld();},"throw");
         until("aoe flare landed",300,()->landedFlare(),()->{});
         step(1,()->srv(()->{var f=flares().get(0);r4At=f.position();
@@ -600,7 +600,7 @@ public final class QaWorld {
             check("area of effect: zombies at 6.5 blocks (inside the wider box) died",in==0,"alive inside="+in);check("area of effect: zombies at 8.3 blocks (outside it) lived",out==2,"alive outside="+out);},"aoe verify");
         step(2,()->clearFlares(),"cleanup");
         // the same box next to the platform and the shop: the models must stay visible with only its edges drawn
-        step(3,()->{mc().options.hideGui=true;srv(()->{var cfg=CannonUpgrades.Config.of(SupportData.get(sl()).of(sp().getUUID()).up,CannonUpgrades.FireType.CURSE);var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),cfg);f.setPos(sx-1.5,sy,sz+2.5);f.setNoGravity(true);f.getEntityData().set(SupportFlares.FlareEntity.LANDED,true);sl().addFreshEntity(f);});},"a curse flare between the shop and the platform");
+        step(3,()->{mc().options.hideGui=true;srv(()->{var cfg=CannonUpgrades.Config.of(SupportData.get(sl()).of(sp().getUUID()).up,CannonUpgrades.FireType.CURSE);var f=new SupportFlares.FlareEntity(EternalDefense.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),cfg);f.setPos(sx-1.5,sy,sz+2.5);f.setNoGravity(true);f.getEntityData().set(SupportFlares.FlareEntity.LANDED,true);sl().addFreshEntity(f);});},"a curse flare between the shop and the platform");
         step(3,()->camera(-9,3,-7,-1.5,1.2,1),"look at the box with the gear inside");
         step(22,()->shot("r4_aoe_with_gear"),"gear shot");
         step(2,()->camera(4,2.6,9,-1.5,1.2,0),"from the other side");
@@ -612,16 +612,16 @@ public final class QaWorld {
         step(5,()->srv(()->{
             var nether=server().getLevel(net.minecraft.world.level.Level.NETHER);
             for(int x=-8;x<=8;x++)for(int z=-8;z<=8;z++){nether.setBlock(new BlockPos(sx+x,100,sz+z),net.minecraft.world.level.block.Blocks.NETHERRACK.defaultBlockState(),2);for(int y=101;y<=110;y++)nether.setBlock(new BlockPos(sx+x,y,sz+z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);}
-            inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().setItem(1,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;
+            inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().setItem(1,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;
             sp().teleportTo(nether,sx+.5,101,sz+.5,0,0);}),"go to the Nether (no dimensional link)");
         step(20,()->{
             check("in the Nether without the link a fire flare is refused",srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE))!=null&&srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE)).equals("wrong_dimension"),String.valueOf(srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE))));
             CHAT.clear();throwHeld();},"throw a fire flare in the Nether");
-        step(25,()->{check("the refused flare is kept",count(sp(),"arsenal_beacon:fire_support_flare")==1&&server().getLevel(net.minecraft.world.level.Level.NETHER).getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(sx-30,90,sz-30,sx+30,130,sz+30)).isEmpty(),"");},"refused");
+        step(25,()->{check("the refused flare is kept",count(sp(),"eternal_defense:fire_support_flare")==1&&server().getLevel(net.minecraft.world.level.Level.NETHER).getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(sx-30,90,sz-30,sx+30,130,sz+30)).isEmpty(),"");},"refused");
         step(3,()->srv(()->{sp().teleportTo(sl(),sx+8.5,sy,sz+9.5,0,0);}),"back home to buy the link");
         step(5,()->{energy(500);},"500 energy");
         step(10,()->act(CannonControl.UPGRADE,9),"buy Dimensional link");
-        step(15,()->{check("dimensional link bought for 500",base().up[9]==1,"lv="+base().up[9]);srv(()->{var nether=server().getLevel(net.minecraft.world.level.Level.NETHER);inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().setItem(1,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(nether,sx+.5,101,sz+.5,0,0);});CHAT.clear();},"into the Nether with the link");
+        step(15,()->{check("dimensional link bought for 500",base().up[9]==1,"lv="+base().up[9]);srv(()->{var nether=server().getLevel(net.minecraft.world.level.Level.NETHER);inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().setItem(1,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(nether,sx+.5,101,sz+.5,0,0);});CHAT.clear();},"into the Nether with the link");
         step(20,()->{
             check("with the link a fire flare is allowed in the Nether",srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE))==null,String.valueOf(srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE))));
             check("a supply flare is still refused in the Nether",String.valueOf(srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.SUPPLY))).equals("wrong_dimension"),"");
@@ -641,12 +641,12 @@ public final class QaWorld {
         if(part("workshop")){
         // ---- the workshop sells the shop and the platform; placement anywhere in the zone ------------------------------------
         step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(net.minecraft.world.item.Items.IRON_INGOT,64));inv().setItem(1,stack(net.minecraft.world.item.Items.COPPER_INGOT,64));inv().setItem(2,stack(net.minecraft.world.item.Items.REDSTONE,64));inv().setItem(3,stack(net.minecraft.world.item.Items.GLASS,16));});},"materials");
-        step(5,()->{String r=srvGet(()->WeaponPlatform.purchase(sp(),"support"));check("the workshop sells a Support Platform",count(sp(),"arsenal_beacon:support_platform")==1,r);},"buy support platform");
-        step(5,()->{String r=srvGet(()->WeaponPlatform.purchase(sp(),"exchange"));check("the workshop sells an Exchange Shop",count(sp(),"arsenal_beacon:exchange_shop")==1,r);
+        step(5,()->{String r=srvGet(()->WeaponPlatform.purchase(sp(),"support"));check("the workshop sells a Support Platform",count(sp(),"eternal_defense:support_platform")==1,r);},"buy support platform");
+        step(5,()->{String r=srvGet(()->WeaponPlatform.purchase(sp(),"exchange"));check("the workshop sells an Exchange Shop",count(sp(),"eternal_defense:exchange_shop")==1,r);
             check("paying took iron, copper, redstone and glass",count(sp(),"minecraft:iron_ingot")==64-32&&count(sp(),"minecraft:copper_ingot")==64-32&&count(sp(),"minecraft:glass")==16-8,"iron="+count(sp(),"minecraft:iron_ingot")+" copper="+count(sp(),"minecraft:copper_ingot")+" glass="+count(sp(),"minecraft:glass"));},"buy exchange shop");
-        step(5,()->{srv(()->{inv().clearContent();});String r=srvGet(()->WeaponPlatform.purchase(sp(),"support"));check("with no materials the workshop sells nothing",count(sp(),"arsenal_beacon:support_platform")==0,r);},"cannot afford");
+        step(5,()->{srv(()->{inv().clearContent();});String r=srvGet(()->WeaponPlatform.purchase(sp(),"support"));check("with no materials the workshop sells nothing",count(sp(),"eternal_defense:support_platform")==0,r);},"cannot afford");
         // the workshop screen itself
-        step(5,()->srv(()->{sl().setBlock(at(-6,0,-6),ArsenalBeacon.GUN_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,1),3);PlatformRegistry.get(sl()).track(at(-6,0,-6),sl().getBlockState(at(-6,0,-6)));sp().teleportTo(sl(),sx-6+.5,sy,sz-4+.5,0,0);}),"a weapon table");
+        step(5,()->srv(()->{sl().setBlock(at(-6,0,-6),EternalDefense.GUN_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,1),3);PlatformRegistry.get(sl()).track(at(-6,0,-6),sl().getBlockState(at(-6,0,-6)));sp().teleportTo(sl(),sx-6+.5,sy,sz-4+.5,0,0);}),"a weapon table");
         step(5,()->srv(()->WeaponPlatform.open(sp(),at(-6,0,-6))),"open it");
         step(40,()->{
             check("the weapon platform screen opened",mc().screen instanceof PlatformScreen,String.valueOf(mc().screen));
@@ -658,7 +658,7 @@ public final class QaWorld {
         }
         if(part("hud")){
         // ---- the HUD and the cannon menu --------------------------------------------------------------------------------------------
-        step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+8.5,sy,sz+9.5,0,10);});},"hold a fire flare");
+        step(5,()->{srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+8.5,sy,sz+9.5,0,10);});},"hold a fire flare");
         step(8,()->act(CannonControl.SELECT,2),"choose Narukami");
         step(25,()->{mc().setScreen(null);},"close the menu that the reply opened");
         step(10,()->{mc().options.hideGui=false;check("the client's choice follows the server (Narukami)",SupportHud.chosen==2,"chosen="+SupportHud.chosen);shot("r4_hud");},"HUD shot");
@@ -671,10 +671,10 @@ public final class QaWorld {
         if(part("placement")){
         // ---- the cannon and the platform far apart -------------------------------------------------------------------------------
         step(5,()->{srv(()->{inv().clearContent();BaseZone.relocate(sp(),sl(),at(8,0,6));});},"pick the cannon up with the shovel");
-        step(15,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+20.5,sy,sz+12.5,0,0);},"carry it 20 blocks away");
+        step(15,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+20.5,sy,sz+12.5,0,0);},"carry it 20 blocks away");
         step(10,()->placeHeld(at(20,-1,9)),"place it at the far edge of the zone");
         step(15,()->{
-            check("the cannon stands 20 blocks from the platform inside the zone",srvGet(()->sl().getBlockState(at(20,0,9)).is(ArsenalBeacon.SUPPORT_CANNON.get())),"");
+            check("the cannon stands 20 blocks from the platform inside the zone",srvGet(()->sl().getBlockState(at(20,0,9)).is(EternalDefense.SUPPORT_CANNON.get())),"");
             String p=srvGet(()->SupportCalls.problem(sp(),SupportCalls.Kind.FIRE));
             check("a cannon far from the platform still works (no 12 block limit)",p==null,String.valueOf(p));
             check("and a supply call is accepted too",srvGet(()->{fillGridDirect();return SupportCalls.problem(sp(),SupportCalls.Kind.SUPPLY);})==null,"");
@@ -686,35 +686,35 @@ public final class QaWorld {
     static void script(){
         // ===== world: a Mk-4 beacon (radius 24) 20 blocks north of spawn, night so nothing burns ===========
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
         step(5,()->{
             var s=srvGet(()->BaseZone.problem(sl(),at(0,0,0)));check("zone: inside an active beacon zone is allowed",s==null,String.valueOf(s));
             var o=srvGet(()->BaseZone.problem(sl(),at(40,0,0)));check("zone: outside the radius is refused",o!=null&&o.equals("outside"),String.valueOf(o));
         },"zone checks");
 
         // ===== placement rules ========================================================================
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+40.5,sy,sz-3+.5,0,0);},"outside: hold platform");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+40.5,sy,sz-3+.5,0,0);},"outside: hold platform");
         step(15,()->{var r=placeHeld(at(40,-1,0));check("platform outside the zone cannot be placed",!r.consumesAction()&&srvGet(()->sl().getBlockState(at(40,0,0)).isAir()),String.valueOf(r));},"outside: place");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"inside: hold platform");
-        step(10,()->{var r=placeHeld(at(0,-1,0));check("platform inside the zone is placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(ArsenalBeacon.SUPPORT_PLATFORM.get())),String.valueOf(r));},"inside: place");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"inside: hold platform");
+        step(10,()->{var r=placeHeld(at(0,-1,0));check("platform inside the zone is placed",srvGet(()->sl().getBlockState(at(0,0,0)).is(EternalDefense.SUPPORT_PLATFORM.get())),String.valueOf(r));},"inside: place");
         step(10,()->{
             var be=platform();check("platform remembers its owner",be!=null&&sp().getUUID().equals(be.owner),be==null?"none":String.valueOf(be.owner));
             var base=srvGet(()->SupportData.get(sl()).of(sp().getUUID()));check("the registry knows the platform",base!=null&&at(0,0,0).equals(base.platform),String.valueOf(base==null?null:base.platform));
             check("the platform faces the player",srvGet(()->sl().getBlockState(at(0,0,0)).getValue(SupportPlatform.FACING))==net.minecraft.core.Direction.NORTH,"");
         },"platform checks");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+6.5,sy,sz-3+.5,0,0);},"second platform");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+6.5,sy,sz-3+.5,0,0);},"second platform");
         step(10,()->{var r=placeHeld(at(6,-1,0));check("a second platform for the same player is refused",srvGet(()->sl().getBlockState(at(6,0,0)).isAir()),String.valueOf(r));},"second platform place");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
-        step(10,()->{var r=placeHeld(at(8,-1,6));check("cannon placed inside the zone",srvGet(()->sl().getBlockState(at(8,0,6)).is(ArsenalBeacon.SUPPORT_CANNON.get())),String.valueOf(r));},"cannon place");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(10,()->{var r=placeHeld(at(8,-1,6));check("cannon placed inside the zone",srvGet(()->sl().getBlockState(at(8,0,6)).is(EternalDefense.SUPPORT_CANNON.get())),String.valueOf(r));},"cannon place");
         step(10,()->{
             check("the cannon fills 3 x 3 x 2 (17 structure parts)",parts(at(8,0,6))==17,"parts="+parts(at(8,0,6)));
             var c=cannon();check("cannon remembers its owner",c!=null&&sp().getUUID().equals(c.owner),"");
         },"cannon checks");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx-8.5,sy,sz+.5,0,0);},"second cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx-8.5,sy,sz+.5,0,0);},"second cannon");
         step(10,()->{var r=placeHeld(at(-8,-1,6));check("a second cannon for the same player is refused",srvGet(()->sl().getBlockState(at(-8,0,7)).isAir()),String.valueOf(r));},"second cannon place");
-        step(5,()->{hold(stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
-        step(10,()->{var r=placeHeld(at(-3,-1,0));check("exchange shop placed inside the zone",srvGet(()->sl().getBlockState(at(-3,0,0)).is(ArsenalBeacon.EXCHANGE_SHOP.get())),String.valueOf(r));},"shop place");
-        step(5,()->{hold(stack(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),1));face(sx+40.5,sy,sz-3+.5,0,0);},"shop outside");
+        step(5,()->{hold(stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));face(sx-3.5,sy,sz-3+.5,0,0);},"hold shop");
+        step(10,()->{var r=placeHeld(at(-3,-1,0));check("exchange shop placed inside the zone",srvGet(()->sl().getBlockState(at(-3,0,0)).is(EternalDefense.EXCHANGE_SHOP.get())),String.valueOf(r));},"shop place");
+        step(5,()->{hold(stack(EternalDefense.EXCHANGE_SHOP_ITEM.get(),1));face(sx+40.5,sy,sz-3+.5,0,0);},"shop outside");
         step(10,()->{var r=placeHeld(at(40,-1,0));check("exchange shop outside the zone is refused",srvGet(()->sl().getBlockState(at(40,0,0)).isAir()),String.valueOf(r));},"shop outside place");
 
         // ===== screenshots of the models ===========================================================
@@ -738,7 +738,7 @@ public final class QaWorld {
         step(30,()->shot("r2_all_gear"),"shot");
 
         // ===== platform menu ownership + shop purchases =========================================
-        step(5,()->{mc().options.hideGui=false;srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.ARDENT_ENERGY.get(),64));inv().setItem(1,stack(ArsenalBeacon.ARDENT_ENERGY.get(),64));inv().setItem(2,stack(ArsenalBeacon.ARDENT_ENERGY.get(),64));inv().setItem(3,stack(ArsenalBeacon.ARDENT_ENERGY.get(),64));inv().setItem(4,stack(ArsenalBeacon.ARDENT_ENERGY.get(),64));inv().setItem(5,stack(ArsenalBeacon.PLATING.get(),64));});face(sx+.5,sy,sz-3+.5,0,10);},"energy");
+        step(5,()->{mc().options.hideGui=false;srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.ARDENT_ENERGY.get(),64));inv().setItem(1,stack(EternalDefense.ARDENT_ENERGY.get(),64));inv().setItem(2,stack(EternalDefense.ARDENT_ENERGY.get(),64));inv().setItem(3,stack(EternalDefense.ARDENT_ENERGY.get(),64));inv().setItem(4,stack(EternalDefense.ARDENT_ENERGY.get(),64));inv().setItem(5,stack(EternalDefense.PLATING.get(),64));});face(sx+.5,sy,sz-3+.5,0,10);},"energy");
         step(10,()->srv(()->{var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));var real=be.owner;be.owner=java.util.UUID.randomUUID();be.ownerName="Someone";sl().getBlockState(at(0,0,0)).use(sl(),sp(),net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at(0,0,0)),net.minecraft.core.Direction.NORTH,at(0,0,0),false));strangerMenu=!(sp().containerMenu instanceof SupportPlatform.PlatformMenu);be.owner=real;be.ownerName=sp().getGameProfile().getName();}),"stranger opens");
         step(10,()->check("someone else's platform does not open for me",strangerMenu,""),"stranger check");
         step(5,()->srv(()->sl().getBlockState(at(0,0,0)).use(sl(),sp(),net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at(0,0,0)),net.minecraft.core.Direction.NORTH,at(0,0,0),false))),"owner opens");
@@ -747,17 +747,17 @@ public final class QaWorld {
         step(10,()->shot("r2_platform_gui_shop"),"shop shot");
         step(2,()->{energyBefore=energy();for(int i=0;i<4;i++)BeaconNetwork.CHANNEL.sendToServer(new SupportShop.Buy(i));},"buy all");
         step(30,()->{
-            check("bought cannon, support, return and fire flares",count(sp(),"arsenal_beacon:support_cannon")==1&&count(sp(),"arsenal_beacon:support_flare")==1&&count(sp(),"arsenal_beacon:return_flare")==1&&count(sp(),"arsenal_beacon:fire_support_flare")==1,"");
+            check("bought cannon, support, return and fire flares",count(sp(),"eternal_defense:support_cannon")==1&&count(sp(),"eternal_defense:support_flare")==1&&count(sp(),"eternal_defense:return_flare")==1&&count(sp(),"eternal_defense:fire_support_flare")==1,"");
             check("prices: 150 + 30 + 20 + 100 = 300 energy",energyBefore-energy()==300,"spent="+(energyBefore-energy()));
         },"verify buy");
         step(2,()->((SupportScreen)mc().screen).onClose(),"close gui");
 
         // ===== supply flare outdoors ================================================================
-        step(10,()->srv(()->{var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));be.grid.setItem(0,stack(net.minecraft.world.item.Items.IRON_INGOT,16));be.grid.setItem(1,stack(net.minecraft.world.item.Items.DIAMOND,2));be.grid.setItem(2,stack(net.minecraft.world.item.Items.GOLD_INGOT,5));inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;}),"fill grid");
+        step(10,()->srv(()->{var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));be.grid.setItem(0,stack(net.minecraft.world.item.Items.IRON_INGOT,16));be.grid.setItem(1,stack(net.minecraft.world.item.Items.DIAMOND,2));be.grid.setItem(2,stack(net.minecraft.world.item.Items.GOLD_INGOT,5));inv().clearContent();inv().setItem(0,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;}),"fill grid");
         step(5,()->{flaresBefore=1;energyBefore=energy();face(sx+.5,sy,sz-3+.5,0,-10);},"face south, throw");
         step(10,()->{camera(-6,2,-6,4,1,4);},"watch");
         step(5,()->{face(sx+.5,sy,sz-3+.5,0,-20);throwStart=ticks();throwHeld();},"throw supply");
-        step(15,()->{check("support flare used up",count(sp(),"arsenal_beacon:support_flare")==0,"");check("throwing costs no energy",energyBefore-energy()==0,"spent="+(energyBefore-energy()));check("the grid was emptied",platform().hasItems()==false,"");},"verify throw");
+        step(15,()->{check("support flare used up",count(sp(),"eternal_defense:support_flare")==0,"");check("throwing costs no energy",energyBefore-energy()==0,"spent="+(energyBefore-energy()));check("the grid was emptied",platform().hasItems()==false,"");},"verify throw");
         until("flare lands",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(2,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,60)).get(0);landAt=f.position();landTick=ticks();var cf=mc().level.getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(sx-80,sy-10,sz-80,sx+80,sy+60,sz+80));check("the client shows the supply flare as itself",!cf.isEmpty()&&cf.get(0).kind()==SupportCalls.Kind.SUPPLY&&cf.get(0).landed(),"");},"flare landed");
         step(6,()->{var c=cannon();double ex=expectedYaw(landAt.x,landAt.z,sx+8.5,sz+6.5);float t=srvGet(()->c.target);double diff=((t-ex)%360+540)%360-180;check("cannon turns toward the FLARE, not the player",Math.abs(diff)<2.5,"target="+t+" flare yaw="+ex+" playerYaw="+expectedYaw(sp().getX(),sp().getZ(),sx+8.5,sz+6.5));check("the heavy turret has not snapped there",Math.abs(srvGet(()->c.yaw)-t)>1f||srvGet(()->c.ready()),"yaw="+srvGet(()->c.yaw));shot("r2_supply_flare_landed");},"cannon aim");
@@ -780,16 +780,16 @@ public final class QaWorld {
 
 step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof SupportFlares.FlareEntity||e instanceof SupportCrate.ParcelEntity)e.discard();}),"cleanup");
         // ===== refusals keep the flare ====================================================================
-        step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;}),"empty-grid flare");
+        step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;}),"empty-grid flare");
         step(5,()->throwHeld(),"throw with empty grid");
-        step(20,()->check("empty grid: flare is kept",count(sp(),"arsenal_beacon:support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,80)).isEmpty(),"n="+count(sp(),"arsenal_beacon:support_flare")),"empty-grid check");
+        step(20,()->check("empty grid: flare is kept",count(sp(),"eternal_defense:support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,80)).isEmpty(),"n="+count(sp(),"eternal_defense:support_flare")),"empty-grid check");
 
         // ===== underground supply (7 s, appears at the caller) ====================================
         step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof SupportFlares.FlareEntity||e instanceof SupportCrate.ParcelEntity)e.discard();}),"cleanup");
         step(5,()->srv(()->{
             for(int x=-18;x<=-8;x++)for(int z=-6;z<=4;z++)sl().setBlock(at(x,5,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);
             var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));be.grid.setItem(0,stack(net.minecraft.world.item.Items.COAL,32));
-            inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx-13+.5,sy,sz-2+.5,0,10);
+            inv().clearContent();inv().setItem(0,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx-13+.5,sy,sz-2+.5,0,10);
         }),"build roof, fill grid");
         step(20,()->{throwStart=ticks();throwHeld();},"throw underground");
         until("underground flare lands",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-13,0,20));return !f.isEmpty()&&f.get(0).landed();},()->{});
@@ -802,9 +802,9 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
 
         step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof SupportFlares.FlareEntity||e instanceof SupportCrate.ParcelEntity)e.discard();}),"cleanup");
         // ===== return flare: a portal ================================================================
-        step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.RETURN_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+22.5,sy,sz+20.5,0,10);}),"far away");
+        step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.RETURN_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+22.5,sy,sz+20.5,0,10);}),"far away");
         step(25,()->{throwHeld();},"throw return flare");
-        step(10,()->check("return flare used up on throwing",count(sp(),"arsenal_beacon:return_flare")==0,""),"consumed");
+        step(10,()->check("return flare used up on throwing",count(sp(),"eternal_defense:return_flare")==0,""),"consumed");
         until("portal flare lands",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(22,20,40));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(10,()->{var cf=mc().level.getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(sx-80,sy-10,sz-80,sx+80,sy+60,sz+80));check("the client knows it is a landed Return Flare",!cf.isEmpty()&&cf.get(0).kind()==SupportCalls.Kind.RETURN&&cf.get(0).landed(),cf.isEmpty()?"none":cf.get(0).kind()+" landed="+cf.get(0).landed());},"client sync");
         step(30,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(22,20,40)).get(0);portalAt=f.position();camera(22.5-sx+sx,0,20,portalAt.x-sx,1,portalAt.z-sz);},"look at portal");
@@ -817,7 +817,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
 
         step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof SupportFlares.FlareEntity||e instanceof SupportCrate.ParcelEntity)e.discard();}),"cleanup");
         // ===== fire support: red box, exact shells ====================================================
-        step(5,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,200)))if(e instanceof net.minecraft.world.entity.monster.Zombie)e.discard();inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);}),"fire setup");
+        step(5,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,200)))if(e instanceof net.minecraft.world.entity.monster.Zombie)e.discard();inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+10.5,180,-10);}),"fire setup");
         step(2,()->cmd("time set 18000"),"night for the fire test");
         step(20,()->{shotsBefore=cannon().shots;healthBefore=sp().getHealth();throwHeld();},"throw fire flare");
         until("fire flare lands",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,0,60));return !f.isEmpty()&&f.get(0).landed();},()->{});
@@ -842,25 +842,25 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         // ===== relocation with the shovel + disabled without a beacon =========================
         step(5,()->srv(()->{var be=(SupportPlatform.PlatformEntity)sl().getBlockEntity(at(0,0,0));be.grid.setItem(4,stack(net.minecraft.world.item.Items.EMERALD,9));inv().clearContent();sp().teleportTo(sl(),sx+.5,sy,sz-3+.5,0,0);BaseZone.relocate(sp(),sl(),at(0,0,0));}),"shovel the platform");
         step(15,()->{
-            check("the platform was picked up for free",srvGet(()->sl().getBlockState(at(0,0,0)).isAir())&&count(sp(),"arsenal_beacon:support_platform")==1,"");
-            var item=srvGet(()->{for(var s:inv().items)if(s.is(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get()))return s;return net.minecraft.world.item.ItemStack.EMPTY;});
+            check("the platform was picked up for free",srvGet(()->sl().getBlockState(at(0,0,0)).isAir())&&count(sp(),"eternal_defense:support_platform")==1,"");
+            var item=srvGet(()->{for(var s:inv().items)if(s.is(EternalDefense.SUPPORT_PLATFORM_ITEM.get()))return s;return net.minecraft.world.item.ItemStack.EMPTY;});
             check("the picked-up platform remembers Mk-4",item.getTag()!=null&&item.getTag().getInt("Mk")==4,String.valueOf(item.getTag()));
             check("registry forgot the old spot",srvGet(()->SupportData.get(sl()).of(sp().getUUID())==null||SupportData.get(sl()).of(sp().getUUID()).platform==null),"");
-            srv(()->{inv().selected=0;for(int i=0;i<36;i++)if(inv().getItem(i).is(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get())){var s=inv().getItem(i);inv().setItem(i,net.minecraft.world.item.ItemStack.EMPTY);inv().setItem(0,s);}face(sx+10.5,sy,sz-3+.5,0,0);});
+            srv(()->{inv().selected=0;for(int i=0;i<36;i++)if(inv().getItem(i).is(EternalDefense.SUPPORT_PLATFORM_ITEM.get())){var s=inv().getItem(i);inv().setItem(i,net.minecraft.world.item.ItemStack.EMPTY);inv().setItem(0,s);}face(sx+10.5,sy,sz-3+.5,0,0);});
         },"verify pickup");
         step(10,()->{placeHeld(at(10,-1,0));},"place it again, elsewhere");
         step(15,()->{var st=srvGet(()->sl().getBlockState(at(10,0,0)));var be=platform();
-            check("the platform re-placed elsewhere keeps Mk-4",st.is(ArsenalBeacon.SUPPORT_PLATFORM.get())&&st.getValue(SupportPlatform.MK)==4,String.valueOf(st));
+            check("the platform re-placed elsewhere keeps Mk-4",st.is(EternalDefense.SUPPORT_PLATFORM.get())&&st.getValue(SupportPlatform.MK)==4,String.valueOf(st));
             check("and its contents (9 emeralds)",be!=null&&be.grid.items[4].getCount()==9,"");
             shot("r2_relocated");
             var c=srvGet(()->BaseZone.relocate(sp(),sl(),at(8,1,6)));check("the cannon can be picked up from any of its cells",c&&srvGet(()->sl().getBlockState(at(8,0,6)).isAir())&&parts(at(8,0,6))==0,"parts="+parts(at(8,0,6)));
         },"verify relocation");
         step(5,()->beacon(false),"remove the beacon");
         step(10,()->{
-            srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.SUPPLY_FLARE.get(),1));inv().selected=0;});
+            srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.SUPPLY_FLARE.get(),1));inv().selected=0;});
         },"flare, no beacon");
         step(5,()->throwHeld(),"throw without a beacon");
-        step(20,()->{check("without a beacon the flare is refused and kept",count(sp(),"arsenal_beacon:support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,80)).isEmpty(),"");
+        step(20,()->{check("without a beacon the flare is refused and kept",count(sp(),"eternal_defense:support_flare")==1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(0,0,80)).isEmpty(),"");
             strangerMenu=false;srv(()->{sl().getBlockState(at(10,0,0)).use(sl(),sp(),net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at(10,0,0)),net.minecraft.core.Direction.NORTH,at(10,0,0),false));strangerMenu=!(sp().containerMenu instanceof SupportPlatform.PlatformMenu);});},"no beacon refused");
         step(10,()->check("without a beacon the platform will not open",strangerMenu,""),"disabled platform");
     }
@@ -892,10 +892,10 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     static void freeZombies(){for(var e:sl().getEntities(null,SupportFlares.blastBox(fireAt2,8)))if(e instanceof net.minecraft.world.entity.monster.Zombie z){z.setNoAi(false);}sp().setGameMode(GameType.CREATIVE);}
     static void scriptR7(){
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
         step(20,()->{srv(()->inv().clearContent());},"settle");
         if(part7("music")){
@@ -908,7 +908,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(60,()->raidState("normal",true,3),"boss wave");
             step(80,()->{check("the boss wave of a hard raid plays a boss song",RaidMusic.nowPlaying()!=null&&RaidMusic.nowPlaying().pool().equals("boss"),playing());shot("r7_music_boss");},"boss song");
             step(60,()->{mc().options.hideGui=false;srv(()->sp().teleportTo(sl(),sx+.5,sy,sz+150.5,180,0));},"walk far from the beacon");
-            step(80,()->{boolean near=srvGet(()->ArsenalBeacon.near(sp(),CampaignData.get(sl())));check("far from the beacon the card hides but the song and its player stay",!near&&RaidMusic.nowPlaying()!=null,"near="+near+" "+playing());shot("r7_music_far");},"far");
+            step(80,()->{boolean near=srvGet(()->EternalDefense.near(sp(),CampaignData.get(sl())));check("far from the beacon the card hides but the song and its player stay",!near&&RaidMusic.nowPlaying()!=null,"near="+near+" "+playing());shot("r7_music_far");},"far");
             step(10,()->RaidMusic.setPlayerShown(false),"player off");
             step(20,()->{check("the music player can be hidden while the song keeps playing",!RaidMusic.playerShown()&&RaidMusic.nowPlaying()!=null,playing());shot("r7_music_player_hidden");RaidMusic.setPlayerShown(true);},"hidden");
             step(60,()->{face(sx+.5,sy,sz-4+.5,180,0);raidState("siege",false,1);},"a special raid");
@@ -957,7 +957,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             // a shell and the Bunker Buster bomb falling, seen from the side (thrown far from the beacon zone, which the Bunker Buster refuses)
             for(int type:new int[]{0,3}){String name=type==0?"r7_shell_falling":"r7_bomb_falling";
                 step(3,()->{clearFlares();near();act(CannonControl.SELECT,type);},name+": choose");
-                step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);sp().setHealth(20);});cmd("time set 6000");},name+": go");
+                step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);sp().setHealth(20);});cmd("time set 6000");},name+": go");
                 step(25,()->{mc().setScreen(null);shellShot=false;SAMPLERS.clear();SAMPLERS.add(()->{if(shellShot||mc().level==null)return;for(var e:mc().level.entitiesForRendering())if(e instanceof Ordnance o&&o.style()!=Ordnance.STAR&&o.tickCount>=12&&o.tickCount<=16){shellShot=true;mc().options.hideGui=true;
                     var p=o.position();srv(()->sp().teleportTo(sl(),p.x+14,p.y-24,p.z+14,135,-33));}});throwHeld();},name+": throw");
                 until(name+": falling",900,()->shellShot,()->{});
@@ -1023,7 +1023,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     static void fire8(int idx,String label,int expectShots,boolean ai,Runnable extra,Runnable verify,java.util.function.BooleanSupplier ready,String pic){
         step(3,()->{clearFlares();near();mc().setScreen(null);srv(()->{clearMonsters();});},label+": near");
         step(8,()->{act(CannonControl.SELECT,idx);},label+": select");
-        step(10,()->{mc().setScreen(null);fireAt2=null;srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+50.5,0,-10);sp().setHealth(20);sp().setGameMode(net.minecraft.world.level.GameType.CREATIVE);});cmd("time set 18000");},label+": setup");
+        step(10,()->{mc().setScreen(null);fireAt2=null;srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+50.5,0,-10);sp().setHealth(20);sp().setGameMode(net.minecraft.world.level.GameType.CREATIVE);});cmd("time set 18000");},label+": setup");
         step(25,()->{shots0=cannon().shots;watch8();throwHeld();},label+": throw");
         until(label+": landed",300,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80));return !f.isEmpty()&&f.get(0).landed();},()->{});
         step(1,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(14,60,80)).get(0);fireAt2=f.position();zombies8(fireAt2,ai,6);extra.run();},label+": zombies");
@@ -1040,7 +1040,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     static void flareAt(BlockPos ground){srv(()->{
         var base=SupportData.get(sl()).of(sp().getUUID());
         var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],CannonUpgrades.FireType.EXPLOSION);
-        var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),cfg);
+        var f=new SupportFlares.FlareEntity(EternalDefense.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),cfg);
         f.setPos(ground.getX()+.5,ground.getY()+1.6,ground.getZ()+.5);f.setDeltaMovement(0,-.3,0);sl().addFreshEntity(f);});}
     static int r8flares;static boolean coverPit,coverRoof1,coverRoof3;
     /** Removes every monster (no /kill: a killed slime splits, and the flat world's slimes then attacked the beacon through the whole first run). */
@@ -1050,16 +1050,16 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     static void scriptR8(){
         r8Run=true;
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("gamerule doFireTick false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
         step(20,()->{srv(()->{inv().clearContent();clearMonsters();});},"settle");
         if(part8("cannon")){
             // the turret turns (looping sound), locks on (the lock sound) and fires DONE_TICKS later: measured on the server, tick by tick
             step(3,()->{clearFlares();near();act(CannonControl.SELECT,0);},"cannon: explosion barrage");
-            step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);});},"cannon: setup");
+            step(10,()->{mc().setScreen(null);srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.FIRE_FLARE.get(),1));inv().selected=0;sp().teleportTo(sl(),sx+14.5,sy,sz+30.5,0,-10);});},"cannon: setup");
             step(25,()->{r8Settled=-1;r8Shot=-1;r8Tick=0;var g=clientGun();r8Grinds0=g==null?0:g.grinds;r8Shots0=cannon().shots;SAMPLERS.clear();
                 r8Calling=false;
                 SAMPLERS.add(()->{r8Tick++;int st=srvGet(()->gunSrv().settled),sh=srvGet(()->gunSrv().shots);boolean calling=srvGet(()->gunSrv().calling);
@@ -1080,20 +1080,20 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
                 for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++){sl().setBlock(at(-50+x,3,40+z),s,3);for(int y=3;y<6;y++)sl().setBlock(at(-60+x,y,40+z),s,3);}   // roofs
                 coverPit=SupportRules.underground(SupportFlares.cover(sl(),at(-40,0,40)));coverRoof1=SupportRules.underground(SupportFlares.cover(sl(),at(-50,0,40)));coverRoof3=SupportRules.underground(SupportFlares.cover(sl(),at(-60,0,40)));}),"build the well and the roofs");
             step(5,()->{check("cover: an open well 5 blocks deep is not underground",!coverPit,"");check("cover: under a 1-block roof is not underground",!coverRoof1,"");check("cover: under a 3-block roof is underground",coverRoof3,"");
-                r8flares=count(sp(),"arsenal_beacon:fire_support_flare");flareAt(at(-60,-1,40));},"spot checks, flare under the thick roof");
-            step(40,()->{check("cover: a flare under the 3-block roof is handed back",count(sp(),"arsenal_beacon:fire_support_flare")==r8flares+1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-60,40,6)).isEmpty(),"flares="+count(sp(),"arsenal_beacon:fire_support_flare"));
+                r8flares=count(sp(),"eternal_defense:fire_support_flare");flareAt(at(-60,-1,40));},"spot checks, flare under the thick roof");
+            step(40,()->{check("cover: a flare under the 3-block roof is handed back",count(sp(),"eternal_defense:fire_support_flare")==r8flares+1&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-60,40,6)).isEmpty(),"flares="+count(sp(),"eternal_defense:fire_support_flare"));
                 flareAt(at(-40,-1,40));},"flare in the open well");
             step(40,()->{var f=sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,around(-40,40,4));check("cover: a flare at the bottom of the open well is kept (the cannon will fire on it)",!f.isEmpty()&&f.get(0).landed(),"flares here="+f.size());clearFlares();},"well kept");
         }
         if(part8("beacon")){
             step(5,()->{srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.vertical=0;d.defense=0;d.reconnaissance=0;d.setDirty();sp().teleportTo(sl(),sx+.5,sy,sz-6+.5,180,0);sp().setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
-                inv().clearContent();for(var id:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix"))inv().add(stack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(ArsenalBeacon.ID,id)),64));});if(false)energy(200);},"parts for the upgrades");
-            step(5,()->srv(()->ArsenalBeacon.upgrade(sp(),"vertical")),"buy vertical");
-            step(5,()->{boolean pack=!false;int p=count(sp(),"arsenal_beacon:reinforced_plating"),l=count(sp(),"arsenal_beacon:logistics_module"),c=count(sp(),"arsenal_beacon:resonance_coil"),m=count(sp(),"arsenal_beacon:restoration_matrix");
+                inv().clearContent();for(var id:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix"))inv().add(stack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(EternalDefense.ID,id)),64));});if(false)energy(200);},"parts for the upgrades");
+            step(5,()->srv(()->EternalDefense.upgrade(sp(),"vertical")),"buy vertical");
+            step(5,()->{boolean pack=!false;int p=count(sp(),"eternal_defense:reinforced_plating"),l=count(sp(),"eternal_defense:logistics_module"),c=count(sp(),"eternal_defense:resonance_coil"),m=count(sp(),"eternal_defense:restoration_matrix");
                 if(pack)check("beacon: the Vertical zone took 2 of each of the four parts",p==62&&l==62&&c==62&&m==62&&srvGet(()->CampaignData.get(sl()).vertical)==1,p+"/"+l+"/"+c+"/"+m);
-                srv(()->ArsenalBeacon.upgrade(sp(),"defense"));},"buy defense");
-            step(5,()->{if(!false)check("beacon: Defense took 8 reinforced plating and no coil",count(sp(),"arsenal_beacon:reinforced_plating")==54&&count(sp(),"arsenal_beacon:resonance_coil")==62,"plating="+count(sp(),"arsenal_beacon:reinforced_plating"));
-                srv(()->{for(int i=0;i<4;i++)ArsenalBeacon.upgrade(sp(),"reconnaissance");});},"buy reconnaissance 4 times");
+                srv(()->EternalDefense.upgrade(sp(),"defense"));},"buy defense");
+            step(5,()->{if(!false)check("beacon: Defense took 8 reinforced plating and no coil",count(sp(),"eternal_defense:reinforced_plating")==54&&count(sp(),"eternal_defense:resonance_coil")==62,"plating="+count(sp(),"eternal_defense:reinforced_plating"));
+                srv(()->{for(int i=0;i<4;i++)EternalDefense.upgrade(sp(),"reconnaissance");});},"buy reconnaissance 4 times");
             step(5,()->{int r=srvGet(()->CampaignData.get(sl()).reconnaissance);check("beacon: Reconnaissance stops at level 3 (attackers glow at once)",r==3&&Rules.revealTicks(r)==0,"level "+r);
                 srv(()->{var d=CampaignData.get(sl());d.reconnaissance=1;d.setDirty();BeaconNetwork.syncNearby(sl(),d);});},"recon back to 1 for the picture");
             step(30,()->{var s=new BeaconClient.ControlScreen();s.tab=1;mc().setScreen(s);},"open upgrades");
@@ -1133,7 +1133,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         if(listening9)return;listening9=true;
         mc().getSoundManager().addListener((sound,events)->{
             var id=sound.getLocation();
-            if(!id.getNamespace().equals(ArsenalBeacon.ID)&&!id.getPath().contains("firework_rocket.blast")&&!id.getPath().equals("entity.generic.explode"))return;
+            if(!id.getNamespace().equals(EternalDefense.ID)&&!id.getPath().contains("firework_rocket.blast")&&!id.getPath().equals("entity.generic.explode"))return;
             HEARD.add(new Heard(now9(),System.nanoTime(),id.toString(),sound.getPitch(),sound.getX(),sound.getY(),sound.getZ()));
             com.mojang.logging.LogUtils.getLogger().info("QA_SOUND {} {} pitch {}",now9(),id,String.format("%.3f",sound.getPitch()));
             if(id.getPath().endsWith("whistle")&&mc().level!=null)
@@ -1157,14 +1157,14 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     static void flare9(BlockPos ground,SupportCalls.Kind kind,CannonUpgrades.FireType type){srv(()->{
         var base=SupportData.get(sl()).of(sp().getUUID());
         var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],type);
-        var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(kind,new net.minecraft.nbt.ListTag(),cfg);
+        var f=new SupportFlares.FlareEntity(EternalDefense.FLARE.get(),sl());f.setOwner(sp());f.configure(kind,new net.minecraft.nbt.ListTag(),cfg);
         f.setPos(ground.getX()+.5,ground.getY()+1.6,ground.getZ()+.5);f.setDeltaMovement(0,-.3,0);sl().addFreshEntity(f);});}
     static void scriptR9(){
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("gamerule doFireTick false");cmd("weather clear");beacon(true);listen9();},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();}),"beacon parts");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
         step(10,()->placeHeld(at(0,-1,0)),"place platform");
-        step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
+        step(5,()->{hold(stack(EternalDefense.SUPPORT_CANNON_ITEM.get(),1));face(sx+8.5,sy,sz+.5,0,0);},"hold cannon");
         step(10,()->placeHeld(at(8,-1,6)),"place cannon");
         step(20,()->{srv(()->{inv().clearContent();clearMonsters();});},"settle");
         if(part9("music")){
@@ -1223,9 +1223,9 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
                 flare9(at(14,-1,56),SupportCalls.Kind.RETURN,CannonUpgrades.FireType.EXPLOSION);},"return flare");
             step(100,()->{check("chatter: a return flare gets no radio line",chatterSince(heard0).isEmpty(),"lines="+chatterSince(heard0).size());clearFlares();heard0=HEARD.size();
                 srv(()->{var st=net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)for(int y=3;y<6;y++)sl().setBlock(at(30+x,y,48+z),st,3);});
-                flares9=count(sp(),"arsenal_beacon:fire_support_flare");},"build a thick roof");
+                flares9=count(sp(),"eternal_defense:fire_support_flare");},"build a thick roof");
             step(5,()->flare9(at(30,-1,48),SupportCalls.Kind.FIRE,CannonUpgrades.FireType.EXPLOSION),"fire flare under the roof");
-            step(100,()->{check("chatter: a refused call (under cover, no Quantum) gets no radio line",chatterSince(heard0).isEmpty()&&count(sp(),"arsenal_beacon:fire_support_flare")==flares9+1,"lines="+chatterSince(heard0).size()+" flares="+count(sp(),"arsenal_beacon:fire_support_flare"));clearFlares();},"refused, silent");
+            step(100,()->{check("chatter: a refused call (under cover, no Quantum) gets no radio line",chatterSince(heard0).isEmpty()&&count(sp(),"eternal_defense:fire_support_flare")==flares9+1,"lines="+chatterSince(heard0).size()+" flares="+count(sp(),"eternal_defense:fire_support_flare"));clearFlares();},"refused, silent");
         }
         if(part9("whistle")){
             // an Explosion Barrage: six whistles, each ending the tick its shell lands; then a Bunker Buster's bomb whistle
@@ -1286,13 +1286,13 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
     // ======================= MESS HALL V3 QA (flag file /tmp/claude-0/qa-r6.flag; parts: sign halls ui effects raids air march siege sun) =======================
     static boolean part6(String name){try{String t=java.nio.file.Files.readString(java.nio.file.Path.of("/tmp/claude-0/qa-r6.flag")).trim();return t.isEmpty()||t.equals("all")||java.util.Arrays.asList(t.split("[ ,\\n]+")).contains(name);}catch(Exception e){return true;}}
     static final net.minecraft.world.level.block.Block[] HALLS=new net.minecraft.world.level.block.Block[4];
-    static net.minecraft.world.level.block.Block hallBlock(int mk){return switch(mk){case 2->ArsenalBeacon.MESS_HALL_II.get();case 3->ArsenalBeacon.MESS_HALL_III.get();case 4->ArsenalBeacon.MESS_HALL_IV.get();default->ArsenalBeacon.MESS_HALL_I.get();};}
+    static net.minecraft.world.level.block.Block hallBlock(int mk){return switch(mk){case 2->EternalDefense.MESS_HALL_II.get();case 3->EternalDefense.MESS_HALL_III.get();case 4->EternalDefense.MESS_HALL_IV.get();default->EternalDefense.MESS_HALL_I.get();};}
     static int distToBeacon(net.minecraft.world.entity.Entity e){var b=B();return (int)Math.sqrt(e.distanceToSqr(b.getX()+.5,b.getY(),b.getZ()+.5));}
     static void scriptR6(){
         step(10,()->{cmd("gamemode survival");cmd("time set 6000");cmd("gamerule doMobSpawning false");cmd("gamerule doDaylightCycle false");cmd("weather clear");cmd("kill @e[type=!player]");beacon(true);},"setup");
-        step(20,()->srv(()->{ArsenalStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();CampaignData.get(sl()).core=3;}),"beacon parts");
+        step(20,()->srv(()->{DefenseStructures.install(sl(),B(),sl().getBlockState(B()));inv().clearContent();CampaignData.get(sl()).core=3;}),"beacon parts");
         if(part6("sign")){
-            step(5,()->{hold(stack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
+            step(5,()->{hold(stack(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));face(sx+.5,sy,sz-3+.5,0,0);},"hold platform");
             step(10,()->placeHeld(at(0,-1,0)),"place platform");
             step(20,()->srv(()->{var be=sl().getBlockEntity(at(0,0,0));if(be instanceof SupportPlatform.PlatformEntity pe){pe.owner=sp().getUUID();pe.ownerName="Izacarl";pe.setChanged();sl().sendBlockUpdated(at(0,0,0),pe.getBlockState(),pe.getBlockState(),3);}}),"own it");
             int[][] views={{-4,3,-4},{4,3,-4},{5,2,4},{-5,5,3},{0,6,-2},{0,2,6}};
@@ -1302,20 +1302,20 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(part6("halls")){
             step(5,()->srv(()->{
-                for(int mk=1;mk<=4;mk++){var root=at(-12+(mk-1)*4,0,4);sl().setBlock(root,hallBlock(mk).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);}
-                sl().setBlock(at(5,0,4),ArsenalBeacon.COOK_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
-                sl().setBlock(at(7,0,4),ArsenalBeacon.COOK_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                for(int mk=1;mk<=4;mk++){var root=at(-12+(mk-1)*4,0,4);sl().setBlock(root,hallBlock(mk).defaultBlockState().setValue(DefenseStructures.FACING,net.minecraft.core.Direction.NORTH),3);}
+                sl().setBlock(at(5,0,4),EternalDefense.COOK_POT.get().defaultBlockState().setValue(DefenseStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                sl().setBlock(at(7,0,4),EternalDefense.COOK_POT.get().defaultBlockState().setValue(DefenseStructures.FACING,net.minecraft.core.Direction.NORTH),3);
             }),"place halls and pots");
             step(15,()->{
                 for(int mk=1;mk<=4;mk++){final int m=mk;var root=at(-12+(mk-1)*4,0,4);
-                    var cells=srvGet(()->ArsenalStructures.cells(root,sl().getBlockState(root)));
+                    var cells=srvGet(()->DefenseStructures.cells(root,sl().getBlockState(root)));
                     var expect=java.util.Set.of(root.east(),root.above(),root.east().above());
                     check("hall Mk "+m+" is 2 wide, 2 tall and 1 deep: cells "+cells,new java.util.HashSet<>(cells).equals(expect),String.valueOf(cells));
-                    check("hall Mk "+m+" cells are owned by its anchor and nothing sits behind it",srvGet(()->cells.stream().allMatch(c->sl().getBlockState(c).is(ArsenalBeacon.STRUCTURE_PART.get())&&ArsenalStructures.anchor(sl(),c).equals(root))&&sl().getBlockState(root.south()).isAir()&&sl().getBlockState(root.south().east()).isAir()),"");
-                    check("hall Mk "+m+" collision box is 2 x 2 x 1",srvGet(()->{var box=sl().getBlockState(root).getCollisionShape(sl(),root).bounds();var all=ArsenalStructures.full(sl().getBlockState(root)).bounds();return Math.abs(all.getXsize()-2)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
+                    check("hall Mk "+m+" cells are owned by its anchor and nothing sits behind it",srvGet(()->cells.stream().allMatch(c->sl().getBlockState(c).is(EternalDefense.STRUCTURE_PART.get())&&DefenseStructures.anchor(sl(),c).equals(root))&&sl().getBlockState(root.south()).isAir()&&sl().getBlockState(root.south().east()).isAir()),"");
+                    check("hall Mk "+m+" collision box is 2 x 2 x 1",srvGet(()->{var box=sl().getBlockState(root).getCollisionShape(sl(),root).bounds();var all=DefenseStructures.full(sl().getBlockState(root)).bounds();return Math.abs(all.getXsize()-2)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
                 }
-                var pot=at(5,0,4);check("cook pot cells: one above, nothing beside",srvGet(()->new java.util.HashSet<>(ArsenalStructures.cells(pot,sl().getBlockState(pot))).equals(java.util.Set.of(pot.above()))),"");
-                check("cook pot box is 1 x 2 x 1",srvGet(()->{var all=ArsenalStructures.full(sl().getBlockState(pot)).bounds();return Math.abs(all.getXsize()-1)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
+                var pot=at(5,0,4);check("cook pot cells: one above, nothing beside",srvGet(()->new java.util.HashSet<>(DefenseStructures.cells(pot,sl().getBlockState(pot))).equals(java.util.Set.of(pot.above()))),"");
+                check("cook pot box is 1 x 2 x 1",srvGet(()->{var all=DefenseStructures.full(sl().getBlockState(pot)).bounds();return Math.abs(all.getXsize()-1)<1e-6&&Math.abs(all.getYsize()-2)<1e-6&&Math.abs(all.getZsize()-1)<1e-6;}),"");
                 srv(()->{var p=(CookPot.PotEntity)sl().getBlockEntity(at(5,0,4));var meal=new MealData(true,java.util.List.of(new MealData.Bonus(MealRules.Effect.VITALITY,2,true),new MealData.Bonus(MealRules.Effect.FIREPOWER,1),new MealData.Bonus(MealRules.Effect.HARDY,3)),MealRules.FIELD_TICKS);p.stew=meal;p.servings=11;p.changed();});
             },"check footprints and fill a pot");
             step(5,()->{mc().options.hideGui=true;camera(-4,2,-6,-4,1.2,4);},"look at the halls");
@@ -1329,7 +1329,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         }
         if(part6("ui")){
             step(5,()->srv(()->{
-                var root=at(-12,0,4);sl().setBlock(root,hallBlock(4).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+                var root=at(-12,0,4);sl().setBlock(root,hallBlock(4).defaultBlockState().setValue(DefenseStructures.FACING,net.minecraft.core.Direction.NORTH),3);
                 var hall=(MessHall.HallEntity)sl().getBlockEntity(root);hall.ingredients.clearContent();
                 hall.ingredients.setItem(0,stack(net.minecraft.world.item.Items.COOKED_CHICKEN,16));hall.ingredients.setItem(1,stack(net.minecraft.world.item.Items.COOKED_MUTTON,16));hall.ingredients.setItem(2,stack(net.minecraft.world.item.Items.COOKED_BEEF,16));hall.ingredients.setItem(3,stack(net.minecraft.world.item.Items.HONEY_BOTTLE,16));hall.ingredients.setItem(4,stack(net.minecraft.world.item.Items.GOLDEN_APPLE,4));
                 hall.discover();sp().teleportTo(sl(),sx-11.5,sy,sz+1.5,0,0);
@@ -1345,7 +1345,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(3,()->srv(()->{if(sp().containerMenu instanceof MessHallMenu m){m.clickMenuButton(sp(),2);}}),"prepare the stew");
             step(40,()->{shot("r6_ui_stew_done");},"after preparing");
             step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
-            step(5,()->srv(()->{var root=at(-8,0,4);sl().setBlock(root,hallBlock(1).defaultBlockState().setValue(ArsenalStructures.FACING,net.minecraft.core.Direction.NORTH),3);
+            step(5,()->srv(()->{var root=at(-8,0,4);sl().setBlock(root,hallBlock(1).defaultBlockState().setValue(DefenseStructures.FACING,net.minecraft.core.Direction.NORTH),3);
                 var hall=(MessHall.HallEntity)sl().getBlockEntity(root);hall.ingredients.setItem(0,stack(net.minecraft.world.item.Items.BREAD,8));hall.ingredients.setItem(1,stack(net.minecraft.world.item.Items.COOKED_BEEF,8));
                 sp().teleportTo(sl(),sx-7.5,sy,sz+1.5,0,0);net.minecraftforge.network.NetworkHooks.openScreen(sp(),hall,b->{b.writeBlockPos(root);b.writeVarInt(1);});}),"open a Mk I hall");
             step(40,()->shot("r6_ui_mk1"),"Mk I ui shot");
@@ -1379,15 +1379,15 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"clear mobs");
             step(260,()->{var ok=spawnRaider("paratroopers",3);check("a paratrooper spawn succeeded",ok,"");},"start a paratrooper raid");
             step(12,()->{
-                int total=0,withChute=0,marked=0;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalRaider")){total++;if(!m.onGround()||m.getPersistentData().getBoolean("arsenalChute")){}}
-                java.util.List<Integer> ids=srvGet(()->{var out=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalRaider")&&m.getPersistentData().getBoolean("arsenalChute"))out.add(m.getId());return out;});
-                int all=srvGet(()->(int)sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)).stream().filter(m->m.getPersistentData().getBoolean("arsenalRaider")&&!m.onGround()).count());
+                int total=0,withChute=0,marked=0;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("eternalRaider")){total++;if(!m.onGround()||m.getPersistentData().getBoolean("eternalChute")){}}
+                java.util.List<Integer> ids=srvGet(()->{var out=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("eternalRaider")&&m.getPersistentData().getBoolean("eternalChute"))out.add(m.getId());return out;});
+                int all=srvGet(()->(int)sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)).stream().filter(m->m.getPersistentData().getBoolean("eternalRaider")&&!m.onGround()).count());
                 for(int id:ids)if(RaidTypes.CHUTED.contains(id))withChute++;for(int id:ids)if(RaidTypes.RAIDERS.contains(id))marked++;
                 check("several paratroopers are in the air ("+all+") and every one of them wears a parachute on the client",all>=3&&ids.size()==all&&withChute==ids.size(),ids.size()+" chuted, "+withChute+" known to the client, in air "+all);
                 check("every raider is marked on the client (red exclamation mark)",marked==ids.size()&&marked>0,marked+"/"+ids.size());
-                mc().options.hideGui=true;srv(()->{for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalChute")){sp().teleportTo(sl(),m.getX()-14,sy+10,m.getZ(),270,12);break;}});},"count the parachutes");
+                mc().options.hideGui=true;srv(()->{for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("eternalChute")){sp().teleportTo(sl(),m.getX()-14,sy+10,m.getZ(),270,12);break;}});},"count the parachutes");
             step(5,()->shot("r6_paratroopers_marks"),"paratrooper marks shot");
-            step(5,()->srv(()->{net.minecraft.world.entity.Mob best=null;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("arsenalChute")&&(best==null||m.getY()<best.getY()))best=m;
+            step(5,()->srv(()->{net.minecraft.world.entity.Mob best=null;for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(m.getPersistentData().getBoolean("eternalChute")&&(best==null||m.getY()<best.getY()))best=m;
                 if(best!=null){sp().teleportTo(sl(),best.getX()-7,best.getY()-1,best.getZ(),270,-20);}}),"go close to a paratrooper");
             step(10,()->shot("r6_paratrooper_close"),"close shot");
             step(60,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.spawnRemaining=0;d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end the raid");
@@ -1397,7 +1397,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();
                 var d=CampaignData.get(sl());d.phase="raid";d.raidType="normal";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
                 int i=0;for(var type:new net.minecraft.world.entity.EntityType<?>[]{net.minecraft.world.entity.EntityType.SKELETON,net.minecraft.world.entity.EntityType.ZOMBIE,net.minecraft.world.entity.EntityType.RAVAGER}){
-                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+i*3.5-1.5+.5,sy,sz-4+.5,0,0);m.setNoAi(true);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());i++;}
+                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+i*3.5-1.5+.5,sy,sz-4+.5,0,0);m.setNoAi(true);m.setPersistenceRequired();m.getPersistentData().putBoolean("eternalRaider",true);m.getPersistentData().putString("eternalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());i++;}
                 d.setDirty();RaidTypes.broadcast(sl(),d);}),"three raiders to look at");
             step(30,()->{mc().options.hideGui=true;camera(2,1.8,-10,2,2.2,-4);},"look at them");
             step(30,()->{check("the raiders carry a mark on the client",RaidTypes.RAIDERS.size()==3,String.valueOf(RaidTypes.RAIDERS.size()));shot("r6_marks");},"marks shot");
@@ -1413,8 +1413,8 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.spawnRemaining=0;d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();}),"end");
         }
         if(part6("items")){
-            step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(ArsenalBeacon.MESS_HALL_I.get().asItem(),1));inv().setItem(1,stack(ArsenalBeacon.MESS_HALL_II.get().asItem(),1));inv().setItem(2,stack(ArsenalBeacon.MESS_HALL_III.get().asItem(),1));inv().setItem(3,stack(ArsenalBeacon.MESS_HALL_IV.get().asItem(),1));inv().setItem(4,stack(ArsenalBeacon.COOK_POT.get().asItem(),1));
-                inv().setItem(9,stack(ArsenalBeacon.MESS_HALL_I.get().asItem(),1));inv().setItem(10,stack(ArsenalBeacon.COOK_POT.get().asItem(),1));}),"give the kitchen items");
+            step(5,()->srv(()->{inv().clearContent();inv().setItem(0,stack(EternalDefense.MESS_HALL_I.get().asItem(),1));inv().setItem(1,stack(EternalDefense.MESS_HALL_II.get().asItem(),1));inv().setItem(2,stack(EternalDefense.MESS_HALL_III.get().asItem(),1));inv().setItem(3,stack(EternalDefense.MESS_HALL_IV.get().asItem(),1));inv().setItem(4,stack(EternalDefense.COOK_POT.get().asItem(),1));
+                inv().setItem(9,stack(EternalDefense.MESS_HALL_I.get().asItem(),1));inv().setItem(10,stack(EternalDefense.COOK_POT.get().asItem(),1));}),"give the kitchen items");
             step(20,()->{mc().options.hideGui=false;mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"open the inventory");
             step(20,()->shot("r6_items"),"item icons");
             step(5,()->{mc().setScreen(null);},"close");
@@ -1422,7 +1422,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         if(part6("air")){
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="air";d.raidTier=3;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
                 for(var type:new net.minecraft.world.entity.EntityType<?>[]{net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.PHANTOM,net.minecraft.world.entity.EntityType.VEX}){
-                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+40.5+d.raiders.size()*3,sy+2,sz-12+.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);RaidTypes.prepare(m,"air");d.raiders.add(m.getUUID());}
+                    var m=(net.minecraft.world.entity.Mob)type.create(sl());m.moveTo(sx+40.5+d.raiders.size()*3,sy+2,sz-12+.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("eternalRaider",true);m.getPersistentData().putString("eternalRole","grunt");sl().addFreshEntity(m);RaidTypes.prepare(m,"air");d.raiders.add(m.getUUID());}
                 d.setDirty();}),"three flyers 40 blocks east of the beacon");
             step(5,()->{r5Mob=null;srv(()->{});},"note distances");
             step(240,()->{airStart=srvGet(()->{var list=new java.util.ArrayList<Integer>();for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,around(0,-12,300)))if(RaidTypes.glider(m))list.add(distToBeacon(m));return list;});},"read");
@@ -1435,7 +1435,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="swarm";d.raidTier=1;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
                 // a stone wall, outside the protected zone, across the way from the east
                 for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(36,y,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);
-                for(int i=0;i<3;i++){var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+56.5,sy,sz-12+i*2,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);m.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());}
+                for(int i=0;i<3;i++){var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+56.5,sy,sz-12+i*2,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("eternalRaider",true);m.getPersistentData().putString("eternalRole","grunt");sl().addFreshEntity(m);d.raiders.add(m.getUUID());}
                 d.setDirty();}),"three zombies behind a stone wall");
             step(900,()->{marchStart=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,around(0,-12,300)).stream().mapToInt(z->distToBeacon(z)).min().orElse(0));},"start distance");
             step(5,()->{int near=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,around(0,-12,300)).stream().mapToInt(z->distToBeacon(z)).min().orElse(99));
@@ -1446,9 +1446,9 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
         if(part6("siege")){
             step(700,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var d=CampaignData.get(sl());d.phase="raid";d.raidType="siege";d.raidTier=2;d.introRaid=false;d.hardRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=0;d.raiders.clear();
                 for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(30,y,z),net.minecraft.world.level.block.Blocks.COBBLESTONE.defaultBlockState(),3);
-                var c=net.minecraft.world.entity.EntityType.CREEPER.create(sl());c.moveTo(sx+36.5,sy,sz-12+.5,0,0);c.setPersistenceRequired();c.getPersistentData().putBoolean("arsenalRaider",true);c.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(c);d.raiders.add(c.getUUID());
+                var c=net.minecraft.world.entity.EntityType.CREEPER.create(sl());c.moveTo(sx+36.5,sy,sz-12+.5,0,0);c.setPersistenceRequired();c.getPersistentData().putBoolean("eternalRaider",true);c.getPersistentData().putString("eternalRole","grunt");sl().addFreshEntity(c);d.raiders.add(c.getUUID());
                 // a creeper standing far from the base must not blow up there
-                var far=net.minecraft.world.entity.EntityType.CREEPER.create(sl());far.moveTo(sx+150.5,sy,sz-12+.5,0,0);far.setPersistenceRequired();far.getPersistentData().putBoolean("arsenalRaider",true);far.getPersistentData().putString("arsenalRole","grunt");sl().addFreshEntity(far);d.raiders.add(far.getUUID());farCreeper=far.getUUID();
+                var far=net.minecraft.world.entity.EntityType.CREEPER.create(sl());far.moveTo(sx+150.5,sy,sz-12+.5,0,0);far.setPersistenceRequired();far.getPersistentData().putBoolean("eternalRaider",true);far.getPersistentData().putString("eternalRole","grunt");sl().addFreshEntity(far);d.raiders.add(far.getUUID());farCreeper=far.getUUID();
                 d.setDirty();}),"a siege creeper behind a cobblestone wall, and one far away");
             step(5,()->{int gone=srvGet(()->{int n=0;for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)if(sl().getBlockState(at(30,y,z)).isAir())n++;return n;});
                 check("the siege creeper blew a hole in the wall at the base",gone>0,"blocks gone: "+gone);
@@ -1456,7 +1456,7 @@ step(3,()->srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instan
             step(5,()->srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.raiders.clear();for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();for(int y=0;y<3;y++)for(int z=-30;z<=6;z++)sl().setBlock(at(30,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);}),"end");
         }
         if(part6("sun")){
-            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+8.5,sy,sz+8.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("arsenalRaider",true);sl().addFreshEntity(m);m.setSecondsOnFire(8);r5Mob=m;}),"set a raider zombie on fire in daylight");
+            step(5,()->srv(()->{sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+8.5,sy,sz+8.5,0,0);m.setPersistenceRequired();m.getPersistentData().putBoolean("eternalRaider",true);sl().addFreshEntity(m);m.setSecondsOnFire(8);r5Mob=m;}),"set a raider zombie on fire in daylight");
             step(5,()->{check("a raider does not burn in the sun",r5Mob!=null&&!srvGet(()->r5Mob.isOnFire()),"");},"check");
             step(5,()->srv(()->{var m=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());m.moveTo(sx+10.5,sy,sz+8.5,0,0);m.setPersistenceRequired();sl().addFreshEntity(m);m.setSecondsOnFire(8);r5Mob=m;}),"a normal zombie, on fire");
             step(5,()->{check("an ordinary zombie keeps burning",r5Mob!=null&&srvGet(()->r5Mob.isOnFire()),"");srv(()->{for(var e:sl().getEntities(null,around(0,0,300)))if(e instanceof net.minecraft.world.entity.Mob&&!(e instanceof BeaconCombat.Objective))e.discard();});},"check");

@@ -27,7 +27,7 @@ QA_CHECK PASS it is PLANTED with a generated name PLANTED FOB FROST SHIELD
 QA_CHECK PASS planting started a vanilla raid raid=22, villagers at its start=4
 QA_CHECK PASS everyone reads the announcement 
 QA_CHECK PASS the block stands two tall 
-QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@54724e71
+QA_CHECK PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@54724e71
 QA_CHECK PASS the status card has the FOB line with the shovel in hand FOB FROST SHIELD | PLANTED | RAID | 4 villagers
 QA_CHECK PASS the FOB is ACTIVE ACTIVE
 QA_CHECK PASS everyone reads that it is ACTIVE 
@@ -35,7 +35,7 @@ QA_CHECK PASS the FOB screen opens again
 QA_CHECK PASS the shop hands over a Supply Flare 
 QA_CHECK PASS the screen says so in place 
 QA_CHECK PASS the client shows the FOB Zone effect 
-QA_CHECK PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+QA_CHECK PASS the meal does not run down there effect.eternal_defense.meal_might, Duration: infinite
 QA_CHECK PASS the FOB is renamed North Gate
 QA_CHECK PASS everyone reads the new name 
 QA_CHECK PASS the Field Guide has the FOB page 
@@ -44,7 +44,7 @@ QA_CHECK PASS a spot for a gate in the village BlockPos{x=-1089, y=65, z=718}
 QA_CHECK PASS the Delivery Gate stands over the rail 
 QA_CHECK PASS and links to the FOB by itself BlockPos{x=-1089, y=66, z=718}
 QA_CHECK PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@4d35f066
+QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.eternaldefense.beacon.GateClient$GateScreen@4d35f066
 QA_CHECK PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=292, z=2}
 QA_CHECK PASS the route is open and its round trip delivered true ride 40
 QA_CHECK PASS the light at home turns green 
@@ -71,7 +71,7 @@ QA_CHECK PASS repaired: ACTIVE again ACTIVE
 QA_CHECK PASS the lost villager is back 
 QA_CHECK PASS everyone reads the repair 
 QA_CHECK PASS the table stands in the zone, its parts with it 
-QA_CHECK PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@32241504
+QA_CHECK PASS the enchanting screen opens dev.eternaldefense.beacon.EnchantClient$EnchantScreen@32241504
 QA_CHECK PASS Sharpness I applied 
 QA_CHECK PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 QA_CHECK PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -79,7 +79,7 @@ QA_CHECK PASS Mending unlocked for the team
 QA_CHECK PASS Mending applied 
 QA_CHECK PASS the table is Mk I 
 QA_CHECK PASS the sword comes back enchanted 
-QA_CHECK PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@3b43a957
+QA_CHECK PASS the shovel asks first dev.eternaldefense.beacon.BeaconClient$ConfirmScreen@3b43a957
 QA_CHECK PASS nothing is removed yet 
 QA_CHECK PASS the FOB is deleted 
 QA_CHECK PASS its block is gone 

@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -43,7 +43,7 @@ import java.util.function.Supplier;
  * holding a gun, watched with the stand-in fix off (the fade chain grows) and on (it stays short).
  * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound42 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -69,7 +69,7 @@ public final class QaRound42 {
     /** Every sound of the mod the client actually starts. */
     static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
-        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(EternalDefense.ID))return;
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
@@ -86,7 +86,7 @@ public final class QaRound42 {
                 ResourceLocation id=null;
                 if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
                 else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
-                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                if(id!=null&&id.getNamespace().equals(EternalDefense.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
                 super.channelRead(ctx,msg);
             }
         });
@@ -196,20 +196,20 @@ public final class QaRound42 {
         until("the base site is loaded",200,()->loaded(B),()->{});
         step(20,()->srv(()->{
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
-            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
             sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();}),"plant the beacon; survival");
         step(5,()->sync(),"sync");
 
         // ---- the FOB Beacon in a hole one block high: red, refused on the client, the item stays ------------------------------------------------
         step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(FOBH.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
-            sl().setBlock(FOBH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);});hold(st(ArsenalBeacon.FOB_BEACON_ITEM.get(),2));tp(FOBH.getX()+.5,sy,FOBH.getZ()-2.5,0,30);},"a hole one block high (stone on top); two FOB Beacons in hand");
+            sl().setBlock(FOBH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);});hold(st(EternalDefense.FOB_BEACON_ITEM.get(),2));tp(FOBH.getX()+.5,sy,FOBH.getZ()-2.5,0,30);},"a hole one block high (stone on top); two FOB Beacons in hand");
         until("the hole is loaded",200,()->loaded(FOBH),()->{});
         step(20,()->aimAt(FOBH),"aim at the floor of the hole");
         step(20,()->{var at=FobOutlineClient.target();boolean red=at!=null&&FobOutlineClient.colour(at)==PlacementGuard.RED;var line=FobOutlineClient.line();
             check("FOB Beacon in a hole: the ghost is red and the line says something is in the way",red&&line!=null&&line.getString().startsWith("Something is in the way"),"target="+(at==null?"none":at.toShortString())+" red="+red+" line="+(line==null?"none":line.getString()));
             shot("r42_01_fob_hole_red");},"the FOB preview");
         step(5,()->{note=clientHand()+"";click(FOBH.below(),Direction.UP);note+=" "+clientHand();},"use it on the floor of the hole (a real click)");
-        step(10,()->{boolean placed=blockAt(FOBH,ArsenalBeacon.FOB_BEACON.get());int c=clientHand(),s=serverHand();
+        step(10,()->{boolean placed=blockAt(FOBH,EternalDefense.FOB_BEACON.get());int c=clientHand(),s=serverHand();
             check("FOB Beacon in a hole: refused, it never left the hand (client and server)",!placed&&note.equals("2 2")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"refused in the hole");
 
         // ---- a FOB Beacon where only the server can say no (no village): the client guesses, the server refuses, the hand comes back ----------------
@@ -219,33 +219,33 @@ public final class QaRound42 {
         step(40,()->{var at=FobOutlineClient.target();check("open ground: not red (nothing in the way); the server's verdict says why not",at!=null&&FobOutlineClient.colour(at)!=PlacementGuard.RED&&FobOutlineClient.preview!=null&&!FobOutlineClient.preview.getString("problem").isEmpty(),
             "preview="+(FobOutlineClient.preview==null?"none":FobOutlineClient.preview.getString("problem")));shot("r42_02_fob_no_village");},"the FOB preview on open ground");
         step(5,()->{FobOutlineClient.preview=null;note=clientHand()+"";click(FOBO.below(),Direction.UP);note+=" "+clientHand();},"use it before the client has the server's verdict (the client guesses it will stand)");
-        step(10,()->{boolean placed=blockAt(FOBO,ArsenalBeacon.FOB_BEACON.get());int c=clientHand(),s=serverHand();
+        step(10,()->{boolean placed=blockAt(FOBO,EternalDefense.FOB_BEACON.get());int c=clientHand(),s=serverHand();
             check("no village: the client had taken the item (its guess), the server refused and sent the hand back: 2 on both sides, no FOB",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after the click "+note+", now client "+c+" server "+s);},"the hand comes back");
 
         // ---- the Exchange outside the Home Zone (a rule only the server knows): the same ----------------------------------------------------------
-        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges in hand, outside the Home Zone");
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges in hand, outside the Home Zone");
         until("the spot is loaded",200,()->loaded(EXO),()->{});
         step(20,()->aimAt(EXO),"aim at it");
         step(5,()->{note=clientHand()+"";click(EXO.below(),Direction.UP);note+=" "+clientHand();},"use it there");
-        step(10,()->{boolean placed=blockAt(EXO,ArsenalBeacon.EXCHANGE_SHOP.get());int c=clientHand(),s=serverHand();
+        step(10,()->{boolean placed=blockAt(EXO,EternalDefense.EXCHANGE_SHOP.get());int c=clientHand(),s=serverHand();
             check("Exchange outside the zone: the client guessed, the server refused and sent the hand back",!placed&&note.equals("2 1")&&c==2&&s==2,"placed="+placed+" hand before/after "+note+", now client "+c+" server "+s);},"the hand comes back");
 
         // ---- red previews in the Home Zone, each refused with the item kept ------------------------------------------------------------------------
         step(5,()->tp(B.getX()+.5,sy,B.getZ()-6.5,0,10),"back in the base");
-        refusedHere("Exchange in a hole one block high",EXH,()->st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2),ArsenalBeacon.EXCHANGE_SHOP.get(),()->sl().setBlock(EXH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_03_exchange_hole_red");
-        refusedHere("Mess Hall with a block on its second column",HALL,()->st(ArsenalBeacon.MESS_HALL_I.get().asItem(),2),ArsenalBeacon.MESS_HALL_I.get(),()->{sl().setBlock(HALL.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(HALL.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_04_mess_hall_red");
-        refusedHere("Support Cannon with a block in its 3 x 3 x 2",CAN,()->st(ArsenalBeacon.SUPPORT_CANNON_ITEM.get(),2),ArsenalBeacon.SUPPORT_CANNON.get(),()->sl().setBlock(CAN.offset(1,1,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_05_cannon_red");
-        refusedHere("Logistics Hub with a block in its 3 x 3 x 3",HUB,()->st(ArsenalBeacon.LOGISTICS_HUB_ITEM.get(),1),ArsenalBeacon.LOGISTICS_HUB.get(),()->sl().setBlock(HUB.offset(1,2,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_06_hub_red");
-        refusedHere("Weapon table with a block on its second cell",TAB,()->st(ArsenalBeacon.GUN_PLATFORM.get().asItem(),2),ArsenalBeacon.GUN_PLATFORM.get(),()->{sl().setBlock(TAB.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(TAB.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_07_weapon_table_red");
+        refusedHere("Exchange in a hole one block high",EXH,()->st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2),EternalDefense.EXCHANGE_SHOP.get(),()->sl().setBlock(EXH.above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_03_exchange_hole_red");
+        refusedHere("Mess Hall with a block on its second column",HALL,()->st(EternalDefense.MESS_HALL_I.get().asItem(),2),EternalDefense.MESS_HALL_I.get(),()->{sl().setBlock(HALL.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(HALL.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_04_mess_hall_red");
+        refusedHere("Support Cannon with a block in its 3 x 3 x 2",CAN,()->st(EternalDefense.SUPPORT_CANNON_ITEM.get(),2),EternalDefense.SUPPORT_CANNON.get(),()->sl().setBlock(CAN.offset(1,1,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_05_cannon_red");
+        refusedHere("Logistics Hub with a block in its 3 x 3 x 3",HUB,()->st(EternalDefense.LOGISTICS_HUB_ITEM.get(),1),EternalDefense.LOGISTICS_HUB.get(),()->sl().setBlock(HUB.offset(1,2,1),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3),"r42_06_hub_red");
+        refusedHere("Weapon table with a block on its second cell",TAB,()->st(EternalDefense.GUN_PLATFORM.get().asItem(),2),EternalDefense.GUN_PLATFORM.get(),()->{sl().setBlock(TAB.east().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);sl().setBlock(TAB.west().above(),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);},"r42_07_weapon_table_red");
         // and a free spot: cyan, placed, one item spent
-        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXF.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges, a free spot");
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(EXF.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.EXCHANGE_SHOP_ITEM.get(),2));},"two Exchanges, a free spot");
         step(10,()->aimAt(EXF),"aim at it");
         step(10,()->{var g=ghost();check("free spot: the preview is not red",g!=null&&!g.blocked(),g==null?"no ghost":"blocked="+g.blocked());shot("r42_08_exchange_free");},"cyan");
         step(5,()->click(EXF.below(),Direction.UP),"use it");
-        step(15,()->check("free spot: placed, one Exchange spent on both sides",blockAt(EXF,ArsenalBeacon.EXCHANGE_SHOP.get())&&clientHand()==1&&serverHand()==1,"client "+clientHand()+" server "+serverHand()),"placed");
+        step(15,()->check("free spot: placed, one Exchange spent on both sides",blockAt(EXF,EternalDefense.EXCHANGE_SHOP.get())&&clientHand()==1&&serverHand()==1,"client "+clientHand()+" server "+serverHand()),"placed");
 
         // ---- the return zone: sand and gravel dropped into it are broken out; outside it they stay ---------------------------------------------------
-        step(5,()->{srv(()->{for(int x=-3;x<=3;x++)for(int y=0;y<=6;y++)for(int z=-4;z<=2;z++)sl().setBlock(PLAT.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get(),1));},"a Support Platform in hand");
+        step(5,()->{srv(()->{for(int x=-3;x<=3;x++)for(int y=0;y<=6;y++)for(int z=-4;z<=2;z++)sl().setBlock(PLAT.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);});hold(st(EternalDefense.SUPPORT_PLATFORM_ITEM.get(),1));},"a Support Platform in hand");
         step(10,()->aimAt(PLAT),"aim at its spot (facing it from the north)");
         step(5,()->click(PLAT.below(),Direction.UP),"place it");
         step(20,()->{note=srvGet(()->{var b=SupportData.get(sl()).of(sp().getUUID());if(b==null||b.platform==null)return "none";var s=sl().getBlockState(b.platform);return b.platform.asLong()+" "+s.getValue(SupportPlatform.FACING).getName();});
@@ -275,9 +275,9 @@ public final class QaRound42 {
         // ---- the ammo table's magazines for a held AK-47 (TaCZ Magazines 0.2.5-Beta) ----------------------------------------------------------------
         for(int age:new int[]{1,3,5}){
             step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<=3;y++)for(int z=-2;z<=2;z++)sl().setBlock(AMMO.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
-                var s=ArsenalBeacon.AMMO_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,age).setValue(ArsenalStructures.FACING,Direction.NORTH).setValue(ArsenalStructures.WIDE,true).setValue(ArsenalStructures.TALL,true);
+                var s=EternalDefense.AMMO_PLATFORM.get().defaultBlockState().setValue(WeaponPlatform.AGE,age).setValue(DefenseStructures.FACING,Direction.NORTH).setValue(DefenseStructures.WIDE,true).setValue(DefenseStructures.TALL,true);
                 sl().setBlock(AMMO,s,3);PlatformRegistry.get(sl()).track(AMMO,s);
-                sp().getInventory().clearContent();MessHallV4GameTests.gun(sp(),"tacz:ak47");sp().getInventory().setItem(8,st(ArsenalBeacon.AMMO_COIN.get(),64));
+                sp().getInventory().clearContent();MessHallV4GameTests.gun(sp(),"tacz:ak47");sp().getInventory().setItem(8,st(EternalDefense.AMMO_COIN.get(),64));
                 note=String.valueOf(net.minecraftforge.fml.ModList.get().isLoaded("taczmagazines"));});
                 tp(AMMO.getX()+.5,sy,AMMO.getZ()-2.5,0,20);},"an Age "+age+" ammo table; an AK-47 in hand; Ammo Coins");
             step(10,()->{log("QA_NOTE taczmagazines loaded: {}",note);look(AMMO.offset(0,0,-2),AMMO.getX()+.5,AMMO.getY()+.5,AMMO.getZ()+.1);},"face it");
@@ -305,7 +305,7 @@ public final class QaRound42 {
         step(20,()->srv(()->sp().kill()),"die (Corpse lays out the body with the gun)");
         step(5,()->{var corpse=srvGet(()->{for(var e:sl().getAllEntities())if(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString().equals("corpse:corpse"))return e.blockPosition();return null;});
             check("a corpse lies where the player died",corpse!=null,String.valueOf(corpse));note=corpse==null?"":""+corpse.asLong();
-            if(corpse!=null){var c=corpse;srv(()->sl().setBlock(c.offset(3,0,0),ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),3));}},"find the corpse (before respawning: the world spawn is far away); a Satellite Beacon beside it (idle animations on)");
+            if(corpse!=null){var c=corpse;srv(()->sl().setBlock(c.offset(3,0,0),EternalDefense.SATELLITE_BEACON.get().defaultBlockState(),3));}},"find the corpse (before respawning: the world spawn is far away); a Satellite Beacon beside it (idle animations on)");
         step(40,()->{if(mc().player!=null)mc().player.respawn();},"respawn");
         step(5,()->{if(note.isEmpty())return;var c=BlockPos.of(Long.parseLong(note));srv(()->sp().getInventory().clearContent());look(c.offset(1,0,-4),c.getX()+1.5,c.getY()+.3,c.getZ()+.5);},"stand by it and look at it and the satellite");
         until("the corpse is loaded",200,()->!note.isEmpty()&&loaded(BlockPos.of(Long.parseLong(note))),()->{});

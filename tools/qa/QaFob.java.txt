@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -41,7 +41,7 @@ import net.minecraft.nbt.CompoundTag;
  * the enchanting table's buttons through the mod's own packet, and the storage handed over when the FOB is taken back.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_CHAT, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaFob {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,started,testsDone;
@@ -301,7 +301,7 @@ public final class QaFob {
             if(spot!=null){stand=surface(spot.relative(Direction.SOUTH,3));look(stand,spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);}
         });
         // ---- plant it with a real right-click --------------------------------------------------------------------------------------------
-        step(10,()->{if(spot!=null){hold(new ItemStack(ArsenalBeacon.FOB_BEACON_ITEM.get()));look(stand,spot.getX()+.5,spot.getY()+.01,spot.getZ()+.5);}},"hold the FOB Beacon, look at the spot");
+        step(10,()->{if(spot!=null){hold(new ItemStack(EternalDefense.FOB_BEACON_ITEM.get()));look(stand,spot.getX()+.5,spot.getY()+.01,spot.getZ()+.5);}},"hold the FOB Beacon, look at the spot");
         // 0.0.30: where it would stand and what it would take, before it is planted (the server looks every 10 ticks)
         step(40,()->{},"wait for the preview");
         step(20,()->{
@@ -322,7 +322,7 @@ public final class QaFob {
             check("planting started a vanilla raid",f.raidRunning()&&srvGet(()->sl().getRaids().get(f.raidId)!=null),"raid="+f.raidId+", villagers at its start="+f.raidVillagers);
             check("everyone reads the announcement",chatHas("[FOB]")&&chatHas(f.name),"");
             check("0.0.34: the war horn sounds once for the planting and its raid together",heardCount("fob.war_horn")==1,heardCount("fob.war_horn")+" horns");
-            check("the block stands two tall",srvGet(()->sl().getBlockState(spot).is(ArsenalBeacon.FOB_BEACON.get())&&sl().getBlockState(spot.above()).is(ArsenalBeacon.STRUCTURE_PART.get())),"");
+            check("the block stands two tall",srvGet(()->sl().getBlockState(spot).is(EternalDefense.FOB_BEACON.get())&&sl().getBlockState(spot.above()).is(EternalDefense.STRUCTURE_PART.get())),"");
             hold(ItemStack.EMPTY);mc().options.hideGui=true;
         },"planted");
         step(60,()->{var f=fob();check("the planted FOB's zone outline reaches the client",f!=null&&FobOutlineClient.zones.stream().anyMatch(z->z.id()==f.id&&!z.sections().isEmpty()),FobOutlineClient.zones.toString());shot("f1_fob_model_front");},"the model, from the front");
@@ -335,16 +335,16 @@ public final class QaFob {
         // ---- the FOB screen ---------------------------------------------------------------------------------------------------------------
         step(10,()->{if(spot!=null)click(spot,Direction.SOUTH);},"right-click the FOB Beacon");
         step(30,()->{check("the FOB screen opens",mc().screen instanceof FobClient.FobScreen,String.valueOf(mc().screen));shot("f4_fob_screen_planted");},"FOB screen, PLANTED, raid running");
-        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));},"hold the shovel");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(new ItemStack(EternalDefense.CONTROLLER.get()));},"hold the shovel");
         step(50,()->{var line=BeaconClient.fobLine();var f=fob();check("the status card has the FOB line with the shovel in hand",line!=null&&f!=null&&line.getString().contains(f.name),line==null?"none":line.getString());shot("f5_status_card");},"status card");
         // ---- the raid is won (operator command), the shop opens ----------------------------------------------------------------------------
-        step(10,()->{hold(ItemStack.EMPTY);cmd("arsenal fob complete");},"/arsenal fob complete");
+        step(10,()->{hold(ItemStack.EMPTY);cmd("eternaldefense fob complete");},"/eternaldefense fob complete");
         step(10,()->{var f=fob();check("the FOB is ACTIVE",f!=null&&f.state==FobRules.State.ACTIVE&&f.activated,f==null?"":f.state.toString());check("everyone reads that it is ACTIVE",chatHas("is ACTIVE"),"");},"active");
         step(10,()->{if(spot!=null)click(spot,Direction.SOUTH);},"open it again");
         step(30,()->{check("the FOB screen opens again",mc().screen instanceof FobClient.FobScreen,"");shot("f6_fob_screen_active");},"FOB screen, ACTIVE");
         step(20,()->press("Buy"),"buy the first flare (Supply)");
         step(5,()->{
-            boolean bought=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.SUPPLY_FLARE.get()))return true;return false;});
+            boolean bought=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.SUPPLY_FLARE.get()))return true;return false;});
             check("the shop hands over a Supply Flare",bought,"");
             check("the screen says so in place",mc().screen instanceof FobClient.FobScreen,"");shot("f7_fob_screen_bought");
         },"bought");
@@ -371,14 +371,14 @@ public final class QaFob {
         // ---- slice 2 (0.0.24): the supply rail ---------------------------------------------------------------------------------------------
         step(5,()->{mc().setScreen(null);if(spot!=null)click(spot,Direction.SOUTH);},"open the FOB screen for the gate");
         step(20,()->{srv(()->Fobs.button(sp(),spot,Fobs.BUY_GATE));},"buy the Supply Delivery Gate");
-        step(10,()->{check("the FOB shop sells its Supply Delivery Gate",srvGet(()->{for(var st:sp().getInventory().items)if(st.is(ArsenalBeacon.DELIVERY_GATE_ITEM.get()))return true;return false;}),"");mc().setScreen(null);srv(()->sp().closeContainer());
+        step(10,()->{check("the FOB shop sells its Supply Delivery Gate",srvGet(()->{for(var st:sp().getInventory().items)if(st.is(EternalDefense.DELIVERY_GATE_ITEM.get()))return true;return false;}),"");mc().setScreen(null);srv(()->sp().closeContainer());
             fobGate=srvGet(()->gateSpot(spot,14,true));check("a spot for a gate in the village",fobGate!=null,String.valueOf(fobGate));
             if(fobGate!=null){srv(()->layLanes(fobGate,4));
-                look(fobGate.relative(Direction.SOUTH,4),fobGate.getX()+.5,fobGate.getY()+.5,fobGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.DELIVERY_GATE_ITEM.get()));}},"lay two rails side by side in the village");
+                look(fobGate.relative(Direction.SOUTH,4),fobGate.getX()+.5,fobGate.getY()+.5,fobGate.getZ()+.5);hold(new ItemStack(EternalDefense.DELIVERY_GATE_ITEM.get()));}},"lay two rails side by side in the village");
         step(20,()->{if(fobGate!=null){srv(()->clearFrame(fobGate));click(fobGate,Direction.UP);}},"use the gate on one of the rails (a villager in its cells is moved out first)");
         step(10,()->{
             var anchor=fobGate==null?null:anchorAt(fobGate);
-            boolean placed=anchor!=null&&srvGet(()->sl().getBlockState(anchor).is(ArsenalBeacon.DELIVERY_GATE.get())&&sl().getBlockState(fobGate.south(2)).is(ArsenalBeacon.DELIVERY_GATE_LEFT.get()));
+            boolean placed=anchor!=null&&srvGet(()->sl().getBlockState(anchor).is(EternalDefense.DELIVERY_GATE.get())&&sl().getBlockState(fobGate.south(2)).is(EternalDefense.DELIVERY_GATE_LEFT.get()));
             check("the Delivery Gate stands across both rails, a column either side",placed,"");
             check("the rails stay in its two lanes",anchor!=null&&srvGet(()->sl().getBlockState(fobGate).is(net.minecraft.world.level.block.Blocks.RAIL)&&sl().getBlockState(fobGate.south()).is(net.minecraft.world.level.block.Blocks.RAIL)),"");
             var f=fob();check("and links to the FOB by itself",f!=null&&anchor!=null&&anchor.equals(f.deliveryGate),f==null?"":String.valueOf(f.deliveryGate));
@@ -387,7 +387,7 @@ public final class QaFob {
                 var l=sl();for(int a=-9;a<=9;a++)for(int side=-3;side<=4;side++)for(int up=0;up<=12;up++){
                     if(a==0&&side>=-1&&side<=2&&up<=1)continue;var c=fobGate.offset(a,up,side);var st=l.getBlockState(c);
                     // never the FOB Beacon, a structure, a block entity, or a bed, workstation or bell (the village itself)
-                    if(st.isAir()||st.hasBlockEntity()||st.is(ArsenalBeacon.FOB_BEACON.get())||st.is(ArsenalBeacon.STRUCTURE_PART.get())||st.getBlock() instanceof RailGates.Part||st.getBlock() instanceof RailGates.GateBlock||st.getBlock() instanceof RailGates.Column||st.getBlock() instanceof net.minecraft.world.level.block.BaseRailBlock
+                    if(st.isAir()||st.hasBlockEntity()||st.is(EternalDefense.FOB_BEACON.get())||st.is(EternalDefense.STRUCTURE_PART.get())||st.getBlock() instanceof RailGates.Part||st.getBlock() instanceof RailGates.GateBlock||st.getBlock() instanceof RailGates.Column||st.getBlock() instanceof net.minecraft.world.level.block.BaseRailBlock
                         ||net.minecraft.world.entity.ai.village.poi.PoiTypes.forState(st).isPresent()||st.getBlock() instanceof net.minecraft.world.level.block.BedBlock)continue;
                     if(up<=6||st.is(net.minecraft.tags.BlockTags.LEAVES)||st.is(net.minecraft.tags.BlockTags.LOGS))l.setBlock(c,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);}
                 sp().getAbilities().flying=true;sp().onUpdateAbilities();});
@@ -413,7 +413,7 @@ public final class QaFob {
         step(60,()->{
             homeGate=srvGet(()->gateSpot(HuntGameTests.BEACON,14,false));check("a spot for a gate in the base zone",homeGate!=null,String.valueOf(homeGate));
             if(homeGate!=null){srv(()->layLanes(homeGate,2));
-                look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+.5,homeGate.getZ()+.5);hold(new ItemStack(ArsenalBeacon.RECEIVING_GATE_ITEM.get()));mc().options.hideGui=false;}
+                look(homeGate.relative(Direction.SOUTH,4),homeGate.getX()+.5,homeGate.getY()+.5,homeGate.getZ()+.5);hold(new ItemStack(EternalDefense.RECEIVING_GATE_ITEM.get()));mc().options.hideGui=false;}
         },"lay two rails at home");
         step(20,()->{if(homeGate!=null){srv(()->clearFrame(homeGate));click(homeGate,Direction.UP);}},"use the Receiving Gate on it");
         step(20,()->{check("the Receiving Gate asks which FOB it serves",mc().screen instanceof GateClient.GateScreen,String.valueOf(mc().screen));shot("f14_receiving_gate_link");},"the link screen");
@@ -526,7 +526,7 @@ public final class QaFob {
         step(10,()->{var s=gate();check("its list: every fish and every meat and leather",s!=null&&s.pickButtons.size()==RouteRules.FISHING_HUSBANDRY_LOOT.size(),s==null?"":String.valueOf(s.pickButtons.size()));recordFrame=true;},"its grid");
         step(3,()->{layout("the Receiving Gate, the fishing and husbandry grid",true);shot("f17n_gate_fishing_husbandry_grid");press("Back");},"the grid");
         // ---- slice 3 (0.0.25): an SOS answered and won, an SOS left alone (DOWN), the repair --------------------------------------------------------
-        step(45,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(ItemStack.EMPTY);cmd("arsenal fob sos");},"/arsenal fob sos (at home); the status card syncs once a second");
+        step(45,()->{mc().setScreen(null);srv(()->sp().closeContainer());hold(ItemStack.EMPTY);cmd("eternaldefense fob sos");},"/eternaldefense fob sos (at home); the status card syncs once a second");
         step(30,()->{
             var d=srvGet(()->FobData.get(sl()));var f=fob();
             check("the SOS calls the FOB",f!=null&&d.sosFob==f.id&&d.sosLeft>0,"sos="+d.sosFob+" left="+d.sosLeft);
@@ -540,7 +540,7 @@ public final class QaFob {
         step(40,()->shot("f20_sos_map"),"the SOS map in hand");
         // ---- 0.0.31: the Command Table's FOBs tab during the SOS, the SOS map reprinted, the FOBs on its map -----------------------------------------
         step(5,()->{hold(ItemStack.EMPTY);TacticalClient.view=2;srv(()->{var l=sl();var t=HuntGameTests.TABLE;
-            if(!l.getBlockState(t).is(ArsenalBeacon.COMMAND_TABLE.get()))l.setBlock(t,ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState().setValue(TacticalBlocks.FACING,Direction.NORTH),3);
+            if(!l.getBlockState(t).is(EternalDefense.COMMAND_TABLE.get()))l.setBlock(t,EternalDefense.COMMAND_TABLE.get().defaultBlockState().setValue(TacticalBlocks.FACING,Direction.NORTH),3);
             Hunts.open(sp(),t);});},"the SOS map is lost (it was in the first slot); open the Command Table on its FOBs tab");
         step(30,()->{var t=table();var f=fob();
             check("the Command Table opens on its FOBs tab",t!=null&&TacticalClient.view==2,String.valueOf(mc().screen));
@@ -584,14 +584,14 @@ public final class QaFob {
                     v.hurt(sl().damageSources().playerAttack(sp()),1000f);break;}});
         });
         step(10,()->{var f=fob();check("a villager lost in the raid is recorded",f!=null&&f.deadVillagers.size()==1&&f.deadVillagers.getCompound(0).getString("name").equals("Ottilie"),f==null?"":f.deadVillagers.toString().substring(0,Math.min(80,f.deadVillagers.toString().length())));
-            cmd("arsenal fob complete");},"the SOS raid is won");
+            cmd("eternaldefense fob complete");},"the SOS raid is won");
         step(30,()->{var d=srvGet(()->FobData.get(sl()));var f=fob();
             check("won: the SOS is over and the FOB stays ACTIVE",d.sosFob==0&&f!=null&&f.state==FobRules.State.ACTIVE,"");
             check("the SOS clock starts again",d.sosClock>=SosRules.SOS_MIN&&d.sosClock<=SosRules.SOS_MAX,String.valueOf(d.sosClock));
             check("its map burnt",!srvGet(()->FobSos.carries(sp(),d.sosSerial)),"");check("everyone reads that it held",chatHas("held!"),"");},"SOS won");
         // a second SOS nobody answers
         step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+3.5,180,10);},"home again");
-        step(40,()->{cmd("arsenal fob sos");cmd("arsenal fob sos expire");},"an SOS left alone");
+        step(40,()->{cmd("eternaldefense fob sos");cmd("eternaldefense fob sos expire");},"an SOS left alone");
         until("nobody answered: DOWN",100,()->{var f=fob();return f!=null&&f.state==FobRules.State.DOWN;},()->{
             check("the unanswered SOS puts the FOB DOWN",fob()!=null&&fob().state==FobRules.State.DOWN,"");check("everyone reads it",chatHas("Nobody answered"),"");});
         step(30,()->{check("the gate at home is red",homeGate!=null&&srvGet(()->sl().getBlockState(anchorAt(homeGate)).getValue(RailGates.SIGNAL)==RailGates.Lamp.RED),"");
@@ -648,9 +648,9 @@ public final class QaFob {
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close it");
         // ---- 0.0.33: the Supply Catapult and the specialty seller; the placement preview; the FOB zone's ground line -------------------------------
         step(20,()->{catapult=srvGet(QaFob::findCatapultSpot);check("a free 3 x 3 spot in the FOB's village for the catapult",catapult!=null,String.valueOf(catapult));
-            hold(new ItemStack(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()));},"hold a Supply Catapult");
-        until("the catapult in hand",100,()->mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),()->{
-            check("the catapult is in hand",mc().player.getMainHandItem().is(ArsenalBeacon.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
+            hold(new ItemStack(EternalDefense.SUPPLY_CATAPULT_ITEM.get()));},"hold a Supply Catapult");
+        until("the catapult in hand",100,()->mc().player.getMainHandItem().is(EternalDefense.SUPPLY_CATAPULT_ITEM.get()),()->{
+            check("the catapult is in hand",mc().player.getMainHandItem().is(EternalDefense.SUPPLY_CATAPULT_ITEM.get()),mc().player.getMainHandItem().toString());
             if(catapult!=null){srv(()->{sp().getAbilities().flying=true;sp().onUpdateAbilities();});look(catapult.above(2).south(1),catapult.getX()+.5,catapult.getY(),catapult.getZ()+.5);}});
         step(30,()->{},"hover over the spot (a step's wait comes after it)");
         step(30,()->{var g=PlacementPreviewClient.ghost();
@@ -742,17 +742,17 @@ public final class QaFob {
             if(!parcels.isEmpty()){var at=parcels.get(0).position();look(BlockPos.containing(at.x,b.getY(),at.z+7),at.x,at.y+2,at.z);}},"the parcel");
         step(40,()->shot("f31d_parcel_at_beacon"),"the parcel at the beacon");
         // the placement preview at home: the Defense Beacon shows its base zone, the Command Table its size
-        step(5,()->{var b=HuntGameTests.BEACON;hold(new ItemStack(ArsenalBeacon.BEACON_ITEM.get()));look(b.offset(0,1,14),b.getX()+.5,b.getY()-1,b.getZ()+9.5);},"hold a Defense Beacon");
+        step(5,()->{var b=HuntGameTests.BEACON;hold(new ItemStack(EternalDefense.BEACON_ITEM.get()));look(b.offset(0,1,14),b.getX()+.5,b.getY()-1,b.getZ()+9.5);},"hold a Defense Beacon");
         step(30,()->{var g=PlacementPreviewClient.ghost();check("the Defense Beacon's preview: the beacon and its base zone",g!=null&&g.beacon(),String.valueOf(g));shot("f32_beacon_preview");},"the zone preview");
-        step(5,()->hold(new ItemStack(ArsenalBeacon.COMMAND_TABLE_ITEM.get())),"hold a Command Table");
+        step(5,()->hold(new ItemStack(EternalDefense.COMMAND_TABLE_ITEM.get())),"hold a Command Table");
         step(30,()->{var g=PlacementPreviewClient.ghost();check("the Command Table's preview: 2 x 2 x 2",g!=null&&!g.beacon()&&Math.abs(g.box().getXsize()-2)<1e-6&&Math.abs(g.box().getYsize()-2)<1e-6&&Math.abs(g.box().getZsize()-2)<1e-6,g==null?"none":g.box().toString());
             shot("f32b_table_preview");hold(ItemStack.EMPTY);},"the table's preview");
         // ---- slice 4 (0.0.27): the Tactical Enchanting Table -------------------------------------------------------------------------------------------
         step(5,()->{var b=HuntGameTests.BEACON;srv(()->HuntGameTests.ground(sl()));tp(b.getX()+.5,b.getY(),b.getZ()+.5,0,10);},"home for the enchanting table");
-        step(40,()->{var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()-.5,at.getZ()+.5);hold(new ItemStack(ArsenalBeacon.ENCHANTING_TABLE_ITEM.get()));},"hold the table");
+        step(40,()->{var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()-.5,at.getZ()+.5);hold(new ItemStack(EternalDefense.ENCHANTING_TABLE_ITEM.get()));},"hold the table");
         step(20,()->click(FobGameTests.ENCHANT.below(),Direction.UP),"place it with a right-click");
         step(10,()->{var at=FobGameTests.ENCHANT;
-            check("the table stands in the zone, its parts with it",srvGet(()->sl().getBlockState(at).is(ArsenalBeacon.ENCHANTING_TABLE.get())&&ArsenalStructures.cells(at,sl().getBlockState(at)).stream().allMatch(c->sl().getBlockState(c).is(ArsenalBeacon.STRUCTURE_PART.get()))),"");
+            check("the table stands in the zone, its parts with it",srvGet(()->sl().getBlockState(at).is(EternalDefense.ENCHANTING_TABLE.get())&&DefenseStructures.cells(at,sl().getBlockState(at)).stream().allMatch(c->sl().getBlockState(c).is(EternalDefense.STRUCTURE_PART.get()))),"");
             hold(ItemStack.EMPTY);mc().options.hideGui=true;look(at.south(4).west(1),at.getX(),at.getY()+1,at.getZ()+.5);},"placed");
         step(50,()->shot("f24_enchanting_table"),"the owner's model");
         step(5,()->{mc().options.hideGui=false;var at=FobGameTests.ENCHANT;look(at.south(3),at.getX()+.5,at.getY()+.8,at.getZ()+.5);},"face it");
@@ -771,7 +771,7 @@ public final class QaFob {
             if(mc().screen instanceof EnchantClient.EnchantScreen s){var sw=new ItemStack(Items.DIAMOND_SWORD);int row=(int)TacticalEnchanting.catalogue().stream().filter(e->e.canEnchant(sw)).takeWhile(e->e!=enchant("minecraft:sharpness")).count();
                 hover(s.getGuiLeft()+EnchantClient.EnchantScreen.W-12-5*EnchantClient.EnchantScreen.LEVEL_STEP+1+EnchantClient.EnchantScreen.LEVEL_STEP+11,s.getGuiTop()+50+row*EnchantClient.EnchantScreen.ROW+10);}},"locked by the FOBs");
         step(10,()->shot("f26_enchanting_locked"),"the locked level's tooltip");
-        step(5,()->srv(()->sp().getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()))),"a Warlord Seal");
+        step(5,()->srv(()->sp().getInventory().add(new ItemStack(EternalDefense.WARLORD_SEAL.get()))),"a Warlord Seal");
         step(10,()->BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.UNLOCK+EnchantRules.TREASURE.indexOf("minecraft:mending")),"unlock Mending");
         step(20,()->{check("Mending unlocked for the team",srvGet(()->TacticalEnchanting.EnchantData.get(sl()).seals("minecraft:mending"))==1,"");check("everyone reads it",chatHas("spent a Warlord Seal"),"");
             BeaconNetwork.menuButton(mc().player.containerMenu.containerId,TacticalEnchanting.buyButton(TacticalEnchanting.catalogue().indexOf(enchant("minecraft:mending")),1));},"buy Mending");
@@ -780,7 +780,7 @@ public final class QaFob {
         step(5,()->{mc().player.closeContainer();},"close the screen");
         step(10,()->check("the sword comes back enchanted",srvGet(()->sp().getInventory().items.stream().anyMatch(st->st.is(Items.DIAMOND_SWORD)&&net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(enchant("minecraft:mending"),st)==1)),""),"the gear back");
         // ---- 0.0.28: the Warlord Seal sells at the Exchange Shop --------------------------------------------------------------------------------
-        step(5,()->srv(()->{sl().setBlock(FobGameTests.SHOP,ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState(),3);sp().getInventory().add(new ItemStack(ArsenalBeacon.WARLORD_SEAL.get()));}),"an Exchange Shop at home, a seal in hand");
+        step(5,()->srv(()->{sl().setBlock(FobGameTests.SHOP,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState(),3);sp().getInventory().add(new ItemStack(EternalDefense.WARLORD_SEAL.get()));}),"an Exchange Shop at home, a seal in hand");
         step(10,()->{var at=FobGameTests.SHOP;look(at.south(3),at.getX()+.5,at.getY()+.8,at.getZ()+.5);},"face it");
         step(10,()->click(FobGameTests.SHOP,Direction.SOUTH),"open it");
         step(20,()->{check("the Exchange opens",mc().screen instanceof ExchangeScreen,String.valueOf(mc().screen));
@@ -788,14 +788,14 @@ public final class QaFob {
             if(mc().screen!=null)for(var c:new ArrayList<>(mc().screen.children()))if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(Ui.t("exchange.tab.sell").getString())){b.onPress();break;}},"the Sell tab");
         step(20,()->{int value=-1;
             try{var f=ExchangeScreen.class.getDeclaredField("data");f.setAccessible(true);var data=(net.minecraft.nbt.CompoundTag)f.get(mc().screen);
-                for(var t:data.getList("sell",net.minecraft.nbt.Tag.TAG_COMPOUND)){var row=(net.minecraft.nbt.CompoundTag)t;if(ItemStack.of(row.getCompound("item")).is(ArsenalBeacon.WARLORD_SEAL.get()))value=row.getInt("cost");}}catch(Exception e){log("QA_NOTE {}",e);}
+                for(var t:data.getList("sell",net.minecraft.nbt.Tag.TAG_COMPOUND)){var row=(net.minecraft.nbt.CompoundTag)t;if(ItemStack.of(row.getCompound("item")).is(EternalDefense.WARLORD_SEAL.get()))value=row.getInt("cost");}}catch(Exception e){log("QA_NOTE {}",e);}
             check("the Exchange buys the Warlord Seal for "+(false?8:4)+" Ardent Energy",value==(false?8:4),"value="+value);
             shot("f28_exchange_seal");},"the seal on the sell list");
-        step(5,()->{mc().setScreen(null);srv(()->{sl().setBlock(FobGameTests.SHOP,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);ArsenalStructures.remove(sl(),FobGameTests.SHOP);});},"close it");
+        step(5,()->{mc().setScreen(null);srv(()->{sl().setBlock(FobGameTests.SHOP,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);DefenseStructures.remove(sl(),FobGameTests.SHOP);});},"close it");
         step(5,()->{var s=spot;if(s!=null)tp(s.getX()+.5,s.getY(),s.getZ()+3.5,180,10);},"back to the village");
         step(80,()->{if(spot!=null)look(spot.relative(Direction.SOUTH,3),spot.getX()+.5,spot.getY()-.5,spot.getZ()+.5);},"face the FOB Beacon");
         // ---- take it back with the shovel -----------------------------------------------------------------------------------------------------
-        step(5,()->{mc().setScreen(null);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));
+        step(5,()->{mc().setScreen(null);hold(new ItemStack(EternalDefense.CONTROLLER.get()));
             srv(()->{var f=FobData.get(sl()).fobs.values().iterator().next();for(int i=0;i<f.depot().getContainerSize();i++)f.depot().setItem(i,ItemStack.EMPTY);f.depot().setItem(5,new ItemStack(Items.DIAMOND,3));});
             countdown=inInventory(Items.DIAMOND);},"hold the shovel (the storage holds 3 diamonds)");
         step(20,()->{if(spot!=null)click(spot,Direction.SOUTH);},"use the shovel on the FOB Beacon");
@@ -804,7 +804,7 @@ public final class QaFob {
         step(5,()->{
             check("the FOB is deleted",fob()==null,"");
             check("its block is gone",spot!=null&&srvGet(()->sl().getBlockState(spot).isAir()&&sl().getBlockState(spot.above()).isAir()),"");
-            boolean back=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.FOB_BEACON_ITEM.get()))return true;return false;});
+            boolean back=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.FOB_BEACON_ITEM.get()))return true;return false;});
             check("the FOB Beacon came back",back,"");check("everyone reads who took it back",chatHas("took back North Gate"),"");
             check("what its storage held is handed over (0.0.31)",inInventory(Items.DIAMOND)==countdown+3,countdown+" -> "+inInventory(Items.DIAMOND));
             check("and the player reads so",chatHas("storage put in your inventory: 1."),"");

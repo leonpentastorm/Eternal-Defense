@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** `fob_01` to `fob_17` on the real client of each edition (`tools/qa/QaFob.java.txt`), among them the new `fob_17`: a player with a Support Platform and no cannon in the hunt tests' base zone.
 * **Real client** of each edition: the whole `QaFob` script (slices 1 to 3) on a fresh NORMAL world, to show nothing else changed.
 

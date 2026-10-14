@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 
 N = 128
-OUT = os.path.join(os.path.dirname(__file__), "../../custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon/textures/entity/gravity_well.png")
+OUT = os.path.join(os.path.dirname(__file__), "../../custom-mods/eternal-defense/src/main/resources/assets/eternal_defense/textures/entity/gravity_well.png")
 
 
 def draw():

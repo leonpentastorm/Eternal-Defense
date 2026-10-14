@@ -27,7 +27,7 @@ def expand(items,values):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--runtime',type=Path,required=True);args=parser.parse_args();root=args.runtime.resolve();repo=Path(__file__).resolve().parents[2]
     instance=Path(tempfile.mkdtemp(prefix='messhall-v4-client-',dir=root/'test-runs'));(instance/'mods').mkdir();(instance/'config').mkdir();(instance/'screenshots').mkdir()
-    for jar in [repo/'custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:shutil.copy2(jar,instance/'mods'/jar.name)
+    for jar in [repo/'custom-mods/eternal-defense/build/libs/eternal-defense-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:shutil.copy2(jar,instance/'mods'/jar.name)
     (instance/'options.txt').write_text('onboardAccessibility:false\ntutorialStep:none\nskipMultiplayerWarning:true\nguiScale:2\nrenderDistance:3\nsimulationDistance:5\nmaxFps:40\ngamma:1.0\n')
     (instance/'config/fml.toml').write_text('earlyWindowControl = false\nmaxThreads = 2\n')
     server_log=(instance/'server-runner.log').open('w');server=subprocess.Popen([sys.executable,str(repo/'tools/qa/run-v4-server.py'),'--runtime',str(root),'--client-smoke','--cases'],stdout=server_log,stderr=subprocess.STDOUT)
@@ -41,9 +41,9 @@ def main():
         number=display.stdout.readline().strip()
         if not number.isdigit():raise RuntimeError('Xvfb failed')
         env=dict(os.environ,DISPLAY=':'+number,LIBGL_ALWAYS_SOFTWARE='1',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(root/'cache/mesa'),ALSOFT_DRIVERS='null')
-        launch=json.loads((root/'runtime/client-launch.json').read_text());player='ArsenalDev'
-        values={'auth_player_name':player,'auth_uuid':uuid.UUID(bytes=hashlib.md5(('OfflinePlayer:'+player).encode()).digest(),version=3).hex,'auth_access_token':'0','auth_xuid':'','clientid':'','user_type':'legacy','version_name':'1.20.1-forge-47.4.20','version_type':'release','game_directory':str(instance),'assets_root':str(root/'runtime/assets'),'assets_index_name':launch['assetIndex'],'natives_directory':str(root/'runtime/natives'),'library_directory':str(root/'runtime/libraries'),'classpath_separator':os.pathsep,'classpath':os.pathsep.join(launch['classpath']),'launcher_name':'ArsenalLocalTest','launcher_version':'1','resolution_width':'1280','resolution_height':'720'}
-        command=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx4G','-XX:-CreateCoredumpOnCrash','-Darsenal.v4ClientTests=true',*expand(launch['jvm'],values),launch['mainClass'],*expand(launch['game'],values),'--quickPlayMultiplayer','127.0.0.1:25577']
+        launch=json.loads((root/'runtime/client-launch.json').read_text());player='DevPlayer'
+        values={'auth_player_name':player,'auth_uuid':uuid.UUID(bytes=hashlib.md5(('OfflinePlayer:'+player).encode()).digest(),version=3).hex,'auth_access_token':'0','auth_xuid':'','clientid':'','user_type':'legacy','version_name':'1.20.1-forge-47.4.20','version_type':'release','game_directory':str(instance),'assets_root':str(root/'runtime/assets'),'assets_index_name':launch['assetIndex'],'natives_directory':str(root/'runtime/natives'),'library_directory':str(root/'runtime/libraries'),'classpath_separator':os.pathsep,'classpath':os.pathsep.join(launch['classpath']),'launcher_name':'LocalTest','launcher_version':'1','resolution_width':'1280','resolution_height':'720'}
+        command=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx4G','-XX:-CreateCoredumpOnCrash','-Deternaldefense.v4ClientTests=true',*expand(launch['jvm'],values),launch['mainClass'],*expand(launch['game'],values),'--quickPlayMultiplayer','127.0.0.1:25577']
         log_path=instance/'client-console.log';client=subprocess.Popen(command,cwd=instance,env=env,stdout=log_path.open('w'),stderr=subprocess.STDOUT)
         print('CLIENT_INSTANCE '+str(instance),flush=True);print('DISPLAY '+env['DISPLAY'],flush=True);deadline=time.monotonic()+420;captured=False
         while time.monotonic()<deadline:

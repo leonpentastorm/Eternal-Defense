@@ -11,7 +11,7 @@ QA_CHECK PASS planting started a vanilla raid raid=23, villagers at its start=4
 QA_CHECK PASS everyone reads the announcement 
 QA_CHECK PASS the block stands two tall 
 QA_CHECK PASS the planted FOB's zone outline reaches the client [Zone[id=32, name=FOB BLACK LANCE, state=planted, sections=[-307863210688508, -303465164177404, -299067117666300, -307863210688507, -303465164177403, -299067117666299, -307863210688509, -303465164177405, -299067117666301, -307863211737084, -307863207542780, -303465165225980, -303465161031676, -299067118714876, -299067114520572, -307863211737083, -307863207542779, -303465165225979, -303465161031675, -299067118714875, -299067114520571, -307863211737085, -307863207542781, -303465165225981, -303465161031677, -299067118714877, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725]]]
-QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@48771b1a
+QA_CHECK PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@48771b1a
 QA_CHECK PASS the status card has the FOB line with the shovel in hand FOB BLACK LANCE | PLANTED | RAID | 4 villagers
 QA_CHECK PASS the FOB is ACTIVE ACTIVE
 QA_CHECK PASS everyone reads that it is ACTIVE 
@@ -22,7 +22,7 @@ QA_CHECK PASS the outline is off for the FOB
 QA_CHECK PASS and gone from the client []
 QA_CHECK FAIL the outline is back 
 QA_CHECK PASS the client shows the FOB Zone effect 
-QA_CHECK PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+QA_CHECK PASS the meal does not run down there effect.eternal_defense.meal_might, Duration: infinite
 QA_CHECK PASS the FOB is renamed North Gate
 QA_CHECK PASS everyone reads the new name 
 QA_CHECK PASS the Field Guide has the FOB page 
@@ -33,7 +33,7 @@ QA_CHECK PASS the rails stay in its two lanes
 QA_CHECK PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
 QA_CHECK FAIL the cart rolled on through the gate with its rider seated x=-1084.700390625 gate x=-1082
 QA_CHECK PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@43cb630d
+QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.eternaldefense.beacon.GateClient$GateScreen@43cb630d
 QA_CHECK PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=291, z=1}
 QA_CHECK PASS the route is open and its round trip delivered true ride 40
 QA_CHECK PASS the light at home turns green, on both columns 
@@ -60,7 +60,7 @@ QA_CHECK PASS repaired: ACTIVE again ACTIVE
 QA_CHECK PASS the lost villager is back 
 QA_CHECK PASS everyone reads the repair 
 QA_CHECK PASS the table stands in the zone, its parts with it 
-QA_CHECK PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@168af28a
+QA_CHECK PASS the enchanting screen opens dev.eternaldefense.beacon.EnchantClient$EnchantScreen@168af28a
 QA_CHECK PASS Sharpness I applied 
 QA_CHECK PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 QA_CHECK PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -69,9 +69,9 @@ QA_CHECK PASS everyone reads it
 QA_CHECK PASS Mending applied 
 QA_CHECK PASS the table is Mk I 
 QA_CHECK PASS the sword comes back enchanted 
-QA_CHECK PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@3495fc12
+QA_CHECK PASS the Exchange opens dev.eternaldefense.beacon.ExchangeScreen@3495fc12
 QA_CHECK PASS the Exchange buys the Warlord Seal for 8 Ardent Energy value=8
-QA_CHECK PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@52333498
+QA_CHECK PASS the shovel asks first dev.eternaldefense.beacon.BeaconClient$ConfirmScreen@52333498
 QA_CHECK PASS nothing is removed yet 
 QA_CHECK PASS the FOB is deleted 
 QA_CHECK PASS its block is gone 

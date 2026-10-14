@@ -1,18 +1,18 @@
-# Create Arsenal — artist and UI brief
+# Eternal Defense — artist and UI brief
 
 ## The pitch
 
 **Build a home worth defending. Build a factory that keeps it alive. Fill an armory with weapons worth displaying.**
 
-Create Arsenal turns Minecraft into a shared campaign of building, industry and base defense. Players settle around a defense beacon, automate their supplies, collect weapons and face increasingly ambitious attacks. The three custom mods below form its identity. Each also has a standalone release.
+Eternal Defense turns Minecraft into a shared campaign of building, industry and base defense. Players settle around a defense beacon, automate their supplies, collect weapons and face increasingly ambitious attacks. The three custom mods below form its identity. Each also has a standalone release.
 
 The audience includes someone opening the pack for the first time. The interface should teach that player through clear choices, readable item icons and short explanations. Assume no knowledge of this project's development history.
 
-## 1. Create Arsenal: Defense Beacon
+## 1. Eternal Defense: Defense Beacon
 
 ### Player-facing description
 
-**Your base is the objective. Your workshop is the progression system.** Plant a beacon and survive an introductory raid to earn your first weapon workbench. From there, turn a small camp into a fortified home, a Create factory and a fully equipped arsenal.
+**Your base is the objective. Your workshop is the progression system.** Plant a beacon and survive an introductory raid to earn your first weapon workbench. From there, turn a small camp into a fortified home, a Create factory and a fully equipped armory.
 
 Better construction and beacon upgrades improve rewards. Richer rewards bring more frequent attacks, eventually reaching one raid every two active Minecraft days. Every third raid is a harder encounter with a boss. Enemy numbers scale for the participating players. Players can choose a lower raid level, start a raid immediately or spend resources to buy an increasingly expensive break from scheduled raids.
 
@@ -54,7 +54,7 @@ The stations use two-block-wide, two-block-tall models. Upgraded stations inside
 
 Special-category buttons should visibly select the current category. The large filter becomes **Back to normal category** while browsing a special category. Locked recipes explain **How to unlock:** in plain language. Long weapon names and large material counts must remain readable.
 
-## 2. Arsenal Gun Guide
+## 2. Eternal Defense Gun Guide
 
 ### Player-facing description
 
@@ -66,7 +66,7 @@ The guide expands for five seconds when a gun is first drawn, then collapses to 
 
 Design an expanded control card, a collapsed shortcut badge, clear open/closed states and a highly legible jam alert. The expanded card should feel like a polished game's contextual controls. The collapsed badge should remain useful without distracting from aiming. Every key label comes from the current bindings; never paint a fixed “H,” “R,” “U” or guide shortcut into an image.
 
-## 3. Arsenal Gun Displays
+## 3. Eternal Defense Gun Displays
 
 ### Player-facing description
 
@@ -102,7 +102,7 @@ Deliver designs rather than baked screenshots of text. Key labels, item names, c
 
 ## Release flavors
 
-**Pack edition:** uses Create Arsenal's curated factory progression, materials, quests and integration recipes.
+**Pack edition:** uses Eternal Defense's curated factory progression, materials, quests and integration recipes.
 
 **Standalone edition:** Defense Beacon requires TaCZ and Forge, while Create, KubeJS, JEI and Gun Displays are optional. It supplies vanilla-based recipes and imports loaded TaCZ weapons into a generic progression catalogue. Automatic Age and price estimates can be overridden in its configuration; they are a starting balance, not a promise that every third-party pack has identical power. Gun Guide and Gun Displays can also run independently with TaCZ.
 

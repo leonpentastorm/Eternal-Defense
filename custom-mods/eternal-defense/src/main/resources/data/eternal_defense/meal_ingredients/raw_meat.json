@@ -1,0 +1,10 @@
+{
+  "ingredient": {
+    "tag": "eternal_defense:meal/raw_meat"
+  },
+  "staple": false,
+  "effects": {
+    "might": 1
+  },
+  "family": "protein"
+}

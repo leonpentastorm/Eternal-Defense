@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -42,7 +42,7 @@ import java.util.function.Supplier;
  * delivered by the route into the gate's storage.
  * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaRound43 {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -68,7 +68,7 @@ public final class QaRound43 {
     /** Every sound of the mod the client actually starts. */
     static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
-        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(EternalDefense.ID))return;
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
@@ -85,7 +85,7 @@ public final class QaRound43 {
                 ResourceLocation id=null;
                 if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
                 else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
-                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                if(id!=null&&id.getNamespace().equals(EternalDefense.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
                 super.channelRead(ctx,msg);
             }
         });
@@ -197,15 +197,15 @@ public final class QaRound43 {
         until("the base site is loaded",200,()->loaded(B),()->{});
         step(20,()->srv(()->{
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
-            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
             sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();
-            sp().getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),20));}),"plant the beacon; survival; 20 Ardent Energy");
+            sp().getInventory().add(new ItemStack(EternalDefense.ARDENT_ENERGY.get(),20));}),"plant the beacon; survival; 20 Ardent Energy");
         step(5,()->sync(),"sync");
         step(5,()->check("Create runs in this client (andesite alloy and the Create stones exist)",BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:andesite_alloy"))&&BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:asurine")),""),"Create");
 
         // ---- the Exchange: an untouched 0.0.42 file moves on; the new prices; three buys --------------------------------------------------------------
         step(5,()->{try{java.nio.file.Files.writeString(OFFERS,ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0041);}catch(Exception x){log("QA_NOTE {}",x);}
-            srv(()->sl().setBlock(EX,ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"the offers file as 0.0.41 and 0.0.42 wrote it; an Exchange in the zone");
+            srv(()->sl().setBlock(EX,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"the offers file as 0.0.41 and 0.0.42 wrote it; an Exchange in the zone");
         step(20,()->look(EX.south(3),EX.getX()+.5,EX.getY()+.8,EX.getZ()+.5),"face it");
         step(10,()->click(EX,Direction.SOUTH),"open it (a real click)");
         until("the Exchange opens",100,()->mc().screen instanceof ExchangeScreen,()->{});
@@ -227,12 +227,12 @@ public final class QaRound43 {
             step(5,()->{var rows=exchangeRows();int row=-1;
                 for(int i=0;i<rows.size();i++){int at=(int)field(mc().screen,"scroll")+i;var list=exchangeData().getList("buy",10);
                     if(at<list.size()&&BuiltInRegistries.ITEM.getKey(ItemStack.of(list.getCompound(at).getCompound("item")).getItem()).toString().equals(b[0]))row=i;}
-                note=count(item(b[0]))+" "+count(ArsenalBeacon.ARDENT_ENERGY.get());
+                note=count(item(b[0]))+" "+count(EternalDefense.ARDENT_ENERGY.get());
                 if(row>=0){press(rows.get(row));press((Ui.UiButton)field(mc().screen,"buy"));}else log("QA_NOTE no row for {}",b[0]);},"select "+b[0]+" and press Buy (real clicks)");
-            step(20,()->{int got=count(item(b[0]))-Integer.parseInt(note.split(" ")[0]),paid=Integer.parseInt(note.split(" ")[1])-count(ArsenalBeacon.ARDENT_ENERGY.get());spent[0]+=paid;
+            step(20,()->{int got=count(item(b[0]))-Integer.parseInt(note.split(" ")[0]),paid=Integer.parseInt(note.split(" ")[1])-count(EternalDefense.ARDENT_ENERGY.get());spent[0]+=paid;
                 check("bought "+b[1]+" x "+b[0]+" for "+b[2]+" Ardent Energy",got==Integer.parseInt(b[1])&&paid==Integer.parseInt(b[2]),"got "+got+", paid "+paid+"; message: "+(mc().screen instanceof ExchangeScreen s?String.valueOf(field(s,"message")):""));},"bought");
         }
-        step(5,()->{check("20 Ardent Energy in, 11 spent, 9 left",count(ArsenalBeacon.ARDENT_ENERGY.get())==9&&spent[0]==11,"left "+count(ArsenalBeacon.ARDENT_ENERGY.get()));shot("r43_02_exchange_bought");},"after the buys");
+        step(5,()->{check("20 Ardent Energy in, 11 spent, 9 left",count(EternalDefense.ARDENT_ENERGY.get())==9&&spent[0]==11,"left "+count(EternalDefense.ARDENT_ENERGY.get()));shot("r43_02_exchange_bought");},"after the buys");
         step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
 
         // ---- a FOB in a test village, both gates linked ---------------------------------------------------------------------------------------------
@@ -250,9 +250,9 @@ public final class QaRound43 {
             for(var at:List.of(V,V.offset(-5,0,-5),V.offset(5,0,-5),V.offset(-5,0,5),V.offset(3,0,5),V.offset(5,0,5)))if(poi.take(h->true,(h,p)->p.equals(at),at,1).isPresent())n++;
             log("QA_NOTE claimed {} points of interest",n);}),"its points of interest claimed (as villagers would)");
         step(10,()->{var r=srvGet(()->FobGameTests.plant(new FobGameTests.Fixture(sl(),sp(),List.of()),PLANT));check("the FOB Beacon is planted",r.consumesAction()&&fob()!=null,String.valueOf(r));},"plant the FOB Beacon");
-        step(20,()->command("arsenal fob complete"),"/arsenal fob complete");
+        step(20,()->command("eternaldefense fob complete"),"/eternaldefense fob complete");
         step(20,()->srv(()->{var l=sl();var d=FobData.get(l);var f=d.fobs.values().iterator().next();
-            for(var kind:RailGates.Kind.values()){var at=kind==RailGates.Kind.DELIVERY?DELIV:RECV;var block=(kind==RailGates.Kind.DELIVERY?ArsenalBeacon.DELIVERY_GATE:ArsenalBeacon.RECEIVING_GATE).get();
+            for(var kind:RailGates.Kind.values()){var at=kind==RailGates.Kind.DELIVERY?DELIV:RECV;var block=(kind==RailGates.Kind.DELIVERY?EternalDefense.DELIVERY_GATE:EternalDefense.RECEIVING_GATE).get();
                 l.setBlock(at,block.defaultBlockState().setValue(RailGates.FACING,Direction.EAST),3);Routes.link(l,d,f,kind,at,(RailGates.GateEntity)l.getBlockEntity(at));}
             f.commissioned=true;f.baseline=60;f.clock=RouteRules.CLOCK;f.nextPassive=0;
             f.slotOn[0]=false;f.slotOn[2]=false;f.slotOn[3]=false;   // the mine alone: the whole trip is its (more items to count)

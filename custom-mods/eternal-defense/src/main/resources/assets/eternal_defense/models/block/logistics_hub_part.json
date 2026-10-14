@@ -1,0 +1,6 @@
+{
+  "credit": "0.0.40: the Logistics Center Hub's invisible parts (the anchor draws the owner's model); only its particle texture is used",
+  "textures": {
+    "particle": "eternal_defense:block/logistics_hub"
+  }
+}

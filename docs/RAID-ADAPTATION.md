@@ -52,11 +52,11 @@ Custom turrets sometimes discard all attacker information and use an ownerless v
 
 ## Datapack and addon integration
 
-Extend damage tags at `data/arsenal_beacon/tags/damage_type/trap/<class>.json` with a mod's actual damage IDs. Existing vanilla entries are included in the source. If tags overlap, classification order is fire, spikes, fall, drowning, suffocation, crushing, freezing, explosion, projectile, magic, lightning. Spikes precedes vanilla fall because pointed dripstone belongs to both tags; prefer one class per custom damage ID.
+Extend damage tags at `data/eternal_defense/tags/damage_type/trap/<class>.json` with a mod's actual damage IDs. Existing vanilla entries are included in the source. If tags overlap, classification order is fire, spikes, fall, drowning, suffocation, crushing, freezing, explosion, projectile, magic, lightning. Spikes precedes vanilla fall because pointed dripstone belongs to both tags; prefer one class per custom damage ID.
 
-Exempt a defensive weapon's entity type using `data/arsenal_beacon/tags/entity_types/adaptation_exempt_sources.json`, or its exclusive damage type using `data/arsenal_beacon/tags/damage_type/adaptation_exempt.json`. Entity tags already include the support flare plus optional `tacz:bullet` and `lrtactical:grenade_entity`. Do not globally exempt a shared vanilla arrow/fire/explosion damage type; that would also exempt traps.
+Exempt a defensive weapon's entity type using `data/eternal_defense/tags/entity_types/adaptation_exempt_sources.json`, or its exclusive damage type using `data/eternal_defense/tags/damage_type/adaptation_exempt.json`. Entity tags already include the support flare plus optional `tacz:bullet` and `lrtactical:grenade_entity`. Do not globally exempt a shared vanilla arrow/fire/explosion damage type; that would also exempt traps.
 
-Java integrations may set persistent boolean `arsenalDefensiveWeapon` on an ownerless weapon projectile/source, use `RaidAdaptation.weaponDamage(target, source, amount)` around a direct ownerless hit, and call `RaidAdaptation.weaponFire(target, ticks)` before applying weapon ignition. These boundaries affect attribution only, not the original weapon damage amount. Effect attribution uses Forge's effect source where available.
+Java integrations may set persistent boolean `eternalDefensiveWeapon` on an ownerless weapon projectile/source, use `RaidAdaptation.weaponDamage(target, source, amount)` around a direct ownerless hit, and call `RaidAdaptation.weaponFire(target, ticks)` before applying weapon ignition. These boundaries affect attribution only, not the original weapon damage amount. Effect attribution uses Forge's effect source where available.
 
 ## Verification scope
 

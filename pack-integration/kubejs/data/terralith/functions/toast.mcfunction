@@ -1,1 +1,1 @@
-# Create Arsenal provides the welcome message.
+# Eternal Defense provides the welcome message.

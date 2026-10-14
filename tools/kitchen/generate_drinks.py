@@ -9,10 +9,10 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RES = ROOT / 'custom-mods/arsenal-beacon/src/main/resources'
-ASSETS = RES / 'assets/arsenal_beacon'
-DATA = RES / 'data/arsenal_beacon'
-STANDALONE = ROOT / 'custom-mods/arsenal-beacon/src/standalone/resources/data/arsenal_beacon'
+RES = ROOT / 'custom-mods/eternal-defense/src/main/resources'
+ASSETS = RES / 'assets/eternal_defense'
+DATA = RES / 'data/eternal_defense'
+STANDALONE = ROOT / 'custom-mods/eternal-defense/src/standalone/resources/data/eternal_defense'
 
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -20,16 +20,16 @@ def write(path, value):
 
 BLOCKS = [f'drink_mixer_mk{i}' for i in range(1, 5)] + ['drink_pot', 'cup_dispenser']
 for name in BLOCKS:
-    write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'arsenal_beacon:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
-    write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'arsenal_beacon:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
+    write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'eternal_defense:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
+    write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'eternal_defense:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
 
 recipes = {
     # the station is built around a vanilla brewing stand, over a cauldron, in a plank and iron frame with glass bottles on top
-    'drink_mixer_mk1': {'type': 'minecraft:crafting_shaped', 'pattern': ['PGP', 'IBI', 'PCP'], 'key': {'P': {'tag': 'minecraft:planks'}, 'G': {'item': 'minecraft:glass_bottle'}, 'I': {'item': 'minecraft:iron_ingot'}, 'B': {'item': 'minecraft:brewing_stand'}, 'C': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'arsenal_beacon:drink_mixer_mk1'}},
+    'drink_mixer_mk1': {'type': 'minecraft:crafting_shaped', 'pattern': ['PGP', 'IBI', 'PCP'], 'key': {'P': {'tag': 'minecraft:planks'}, 'G': {'item': 'minecraft:glass_bottle'}, 'I': {'item': 'minecraft:iron_ingot'}, 'B': {'item': 'minecraft:brewing_stand'}, 'C': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'eternal_defense:drink_mixer_mk1'}},
     # the copper kettle: the Cook Pot's recipe in copper
-    'drink_pot': {'type': 'minecraft:crafting_shaped', 'pattern': ['CSC', 'CKC', 'CCC'], 'key': {'C': {'item': 'minecraft:copper_ingot'}, 'S': {'item': 'minecraft:oak_sign'}, 'K': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'arsenal_beacon:drink_pot'}},
+    'drink_pot': {'type': 'minecraft:crafting_shaped', 'pattern': ['CSC', 'CKC', 'CCC'], 'key': {'C': {'item': 'minecraft:copper_ingot'}, 'S': {'item': 'minecraft:oak_sign'}, 'K': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'eternal_defense:drink_pot'}},
     # three paper in a bowl's shape make four Paper Cups (three planks make four bowls)
-    'drink_cup_empty': {'type': 'minecraft:crafting_shaped', 'pattern': ['P P', ' P '], 'key': {'P': {'item': 'minecraft:paper'}}, 'result': {'item': 'arsenal_beacon:drink_cup_empty', 'count': 4}},
+    'drink_cup_empty': {'type': 'minecraft:crafting_shaped', 'pattern': ['P P', ' P '], 'key': {'P': {'item': 'minecraft:paper'}}, 'result': {'item': 'eternal_defense:drink_cup_empty', 'count': 4}},
 }
 for name, recipe in recipes.items():
     write(DATA / f'recipes/{name}.json', recipe)
@@ -38,6 +38,6 @@ for name, recipe in recipes.items():
 path = RES / 'data/minecraft/tags/blocks/mineable/pickaxe.json'
 value = json.loads(path.read_text())
 for name in BLOCKS:
-    if 'arsenal_beacon:' + name not in value['values']:
-        value['values'].append('arsenal_beacon:' + name)
+    if 'eternal_defense:' + name not in value['values']:
+        value['values'].append('eternal_defense:' + name)
 write(path, value)

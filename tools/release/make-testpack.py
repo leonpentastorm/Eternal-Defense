@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""Builds the test pack (0.0.41): the owner's Create Arsenal modpack with this build's mods and pack scripts in it.
+"""Builds the test pack (0.0.41): the owner's Eternal Defense modpack with this build's mods and pack scripts in it.
 
-  python3 -I tools/release/make-testpack.py --base <the owner's exported Create-Arsenal .mrpack>
+  python3 -I tools/release/make-testpack.py --base <the owner's exported Eternal-Defense .mrpack>
 
 The base pack is the owner's own Modrinth App profile, exported as a .mrpack: every mod the pack edition needs is in it,
 listed by its author's download link (so the launcher fetches each one from its author's host and checks its hash) or
 carried in its overrides. This script only reads it (nothing in it is executed) and writes a new .mrpack that
-  * drops the old Create Arsenal jars (arsenal_beacon, arsenal_gun_guide, arsenal_displays), wherever the base had them;
+  * drops the old Eternal Defense jars (eternal_defense, eternal_defense_gun_guide, eternal_defense_displays), wherever the base had them;
   * adds this build's three jars (custom-mods/*/build/libs, run `build releaseJars` first) to overrides/mods;
   * copies the repository's pack scripts (pack-integration/kubejs) over the pack's own (a copy that differs only in line endings stays);
   * moves the client-only jars the base carries in overrides/mods to client-overrides/mods (see CLIENT_ONLY), so a dedicated
     server installed from the pack starts;
   * checks that every mod the pack edition requires is listed (see REQUIRED), and fails if one is missing;
   * keeps everything else of the base exactly as it was.
-Writes dist/Create-Arsenal-<project version>-test.mrpack and its .sha512, and prints the mod list.
+Writes dist/Eternal-Defense-<project version>-test.mrpack and its .sha512, and prints the mod list.
 """
 import argparse, hashlib, io, json, re, zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-OURS = [('arsenal-beacon', '0.21.0'), ('arsenal-gun-guide', '0.21.0'), ('arsenal-displays', '1.1.0')]
-OUR_IDS = ('arsenal_beacon', 'arsenal_gun_guide', 'arsenal_displays')
+OURS = [('eternal-defense', '0.21.0'), ('eternal-defense-gun-guide', '0.21.0'), ('eternal-defense-displays', '1.1.0')]
+OUR_IDS = ('eternal_defense', 'eternal_defense_gun_guide', 'eternal_defense_displays')
 # What the pack edition needs to run, by a pattern its jar's file name matches (checked in files[] paths and overrides).
 REQUIRED = {
     'Create': r'(^|/)create-1\.20\.1-6\.',
@@ -55,7 +55,7 @@ def main() -> None:
     parser.add_argument('--out', type=Path)
     args = parser.parse_args()
     version = (REPO / 'VERSION').read_text().strip()
-    out = args.out or REPO / 'dist' / f'Create-Arsenal-{version}-test.mrpack'
+    out = args.out or REPO / 'dist' / f'Eternal-Defense-{version}-test.mrpack'
     entries = {}
     with zipfile.ZipFile(args.base) as base:
         index = json.loads(base.read('modrinth.index.json'))
@@ -93,7 +93,7 @@ def main() -> None:
     if missing:
         raise SystemExit('The base pack lacks required mods: ' + ', '.join(missing))
     index['versionId'] = f"{index.get('versionId', '')}+ed{version}".lstrip('+')
-    index['summary'] = f'Create Arsenal test pack with Eternal Defense {version} (pack edition)'
+    index['summary'] = f'Eternal Defense test pack with Eternal Defense {version} (pack edition)'
     out.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as pack:
         pack.writestr('modrinth.index.json', json.dumps(index, indent=1))

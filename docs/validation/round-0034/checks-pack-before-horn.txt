@@ -11,7 +11,7 @@ PASS planting started a vanilla raid raid=25, villagers at its start=4
 PASS everyone reads the announcement 
 PASS the block stands two tall 
 PASS the planted FOB's zone outline reaches the client [Zone[id=34, name=FOB SILENT MANTIS, state=planted, sections=[-307863210688508, -303465164177404, -299067117666300, -307863210688507, -303465164177403, -299067117666299, -307863210688509, -303465164177405, -299067117666301, -307863211737084, -307863207542780, -303465165225980, -303465161031676, -299067118714876, -299067114520572, -307863211737083, -307863207542779, -303465165225979, -303465161031675, -299067118714875, -299067114520571, -307863211737085, -307863207542781, -303465165225981, -303465161031677, -299067118714877, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725], ground=66]]
-PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@51952ba0
+PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@51952ba0
 PASS the status card has the FOB line with the shovel in hand FOB SILENT MANTIS | PLANTED | RAID | 4 villagers
 PASS the FOB is ACTIVE ACTIVE
 PASS everyone reads that it is ACTIVE 
@@ -22,7 +22,7 @@ PASS the outline is off for the FOB
 PASS and gone from the client []
 PASS the outline is back 
 PASS the client shows the FOB Zone effect 
-PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+PASS the meal does not run down there effect.eternal_defense.meal_might, Duration: infinite
 PASS the FOB is renamed North Gate
 PASS everyone reads the new name 
 PASS the Field Guide has the FOB page 
@@ -34,7 +34,7 @@ PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
 PASS the cart rolls on the rail 
 PASS the cart rolled on through the gate with its rider seated x=-1079.2892348566984 gate x=-1082
 PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@42b35632
+PASS the Receiving Gate asks which FOB it serves dev.eternaldefense.beacon.GateClient$GateScreen@42b35632
 PASS the Receiving Gate serves the FOB BlockPos{x=20008, y=291, z=1}
 PASS the route is open and its round trip delivered true ride 481
 PASS the light at home turns green, on both columns 
@@ -132,7 +132,7 @@ PASS the SOS calls the FOB sos=34 left=167940
 PASS everyone reads the SOS 
 PASS the SOS map is handed out 
 PASS the status card leads with the SOS SOS North Gate | 6 d 23 h left | go there
-PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@61bfee77
+PASS the Command Table opens on its FOBs tab dev.eternaldefense.beacon.TacticalClient$TableScreen@61bfee77
 PASS it lists the FOB: its name, its distance from the base, its state {bearing:268.0644445255384d,catapult:0b,distance:21110,id:34L,index:0,level:2,name:"North Gate",queue:0,route:1b,seller:"research",signal:"green",sos:1b,sosLeft
 PASS and the time left to answer its SOS left=167880
 PASS the table knows the map is not carried 
@@ -222,7 +222,7 @@ PASS the FOB screen, the catapult online at 640x360: 42 texts, none over another
 PASS the FOB screen, the catapult online at 640x360: no text cut short 
 PASS it reads ONLINE 
 PASS bought from the village: the box waits at the catapult tactical.seller.bought
-PASS the seller's radio answers the purchase (one of the owner's four order lines) [minecraft:block.wood.step, minecraft:block.grass.step, minecraft:block.grass.step, arsenal_beacon:seller.order_chatter_1, minecraft:block.grass.step, minecraft:item.crossbow.loading_start, minecraft:block.grass.step, minecraft:entity.villager.ambient]
+PASS the seller's radio answers the purchase (one of the owner's four order lines) [minecraft:block.wood.step, minecraft:block.grass.step, minecraft:block.grass.step, eternal_defense:seller.order_chatter_1, minecraft:block.grass.step, minecraft:item.crossbow.loading_start, minecraft:block.grass.step, minecraft:entity.villager.ambient]
 PASS the client sees the arm throw 
 PASS the catapult turned to the beacon and threw the box; it lands 12 s later throws 1, lands in 197 ticks
 PASS the buyer reads the throw and the supply drop's countdown 
@@ -249,7 +249,7 @@ PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
 PASS the Command Table, the specialty seller at 427x240: 5 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the specialty seller at 427x240: no text cut short 
 PASS bought: the box waits at the catapult tactical.seller.bought
-PASS the radio answers again [arsenal_beacon:seller.order_chatter_4]
+PASS the radio answers again [eternal_defense:seller.order_chatter_4]
 PASS the seller shows the catapult loading and turning to the base [-5.279993, -1.0, 1.0, 1.0, 0.0, -1.0]
 PASS the Command Table, the catapult turning at 640x360: 6 texts, none over another or over a button, all in the panel 0 
 PASS the Command Table, the catapult turning at 640x360: no text cut short 
@@ -265,10 +265,10 @@ PASS its line: the box lands in so many seconds
 PASS the parcel appears high over its spot and comes down by parachute y 318.5 over 291
 PASS a parcel comes down beside the beacon with what was bought 1 parcels
 PASS the chat counted both boxes down, as for a supply drop 28
-PASS the Defense Beacon's preview: the beacon and its base zone Ghost[cells=[BlockPos{x=20008, y=291, z=19}], states=[Block{arsenal_beacon:defense_beacon}[facing=south,mk=1]], box=AABB[20008.0, 291.0, 19.0] -> [20009.0, 292.0, 20.0], beacon=true]
+PASS the Defense Beacon's preview: the beacon and its base zone Ghost[cells=[BlockPos{x=20008, y=291, z=19}], states=[Block{eternal_defense:defense_beacon}[facing=south,mk=1]], box=AABB[20008.0, 291.0, 19.0] -> [20009.0, 292.0, 20.0], beacon=true]
 PASS the Command Table's preview: 2 x 2 x 2 AABB[20007.0, 291.0, 19.0] -> [20009.0, 293.0, 21.0]
 PASS the table stands in the zone, its parts with it 
-PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@1c097e3
+PASS the enchanting screen opens dev.eternaldefense.beacon.EnchantClient$EnchantScreen@1c097e3
 PASS Sharpness I applied 
 PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -277,9 +277,9 @@ PASS everyone reads it
 PASS Mending applied 
 PASS the table is Mk I 
 PASS the sword comes back enchanted 
-PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@67b5a089
+PASS the Exchange opens dev.eternaldefense.beacon.ExchangeScreen@67b5a089
 PASS the Exchange buys the Warlord Seal for 4 Ardent Energy value=4
-PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@6cd7d43f
+PASS the shovel asks first dev.eternaldefense.beacon.BeaconClient$ConfirmScreen@6cd7d43f
 PASS nothing is removed yet 
 PASS the FOB is deleted 
 PASS its block is gone 

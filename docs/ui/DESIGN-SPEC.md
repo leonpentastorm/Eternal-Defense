@@ -1,7 +1,7 @@
-# Create Arsenal UI design spec
+# Eternal Defense UI design spec
 
 How the redesigned screens are built, so an artist or developer can extend them without guessing.
-Everything below is implemented in `custom-mods/arsenal-beacon/src/main/java/dev/createarsenal/beacon/Ui.java`
+Everything below is implemented in `custom-mods/eternal-defense/src/main/java/dev/eternaldefense/beacon/Ui.java`
 (shared kit), `RichText.java` (guide and confirmation copy) and the Gun Guide's `GuideClient.java`.
 
 ## Principles

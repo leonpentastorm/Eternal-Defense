@@ -17,13 +17,13 @@ does not cover the new blocks yet.
 
 Hostile mobs killed by a player (or raid attackers) have a **6.67 %** chance (about one kill in fifteen) to drop one Ardent Energy, +1 % per Looting level;
 mobs with 60+ max health drop two when they do; a boss always drops one. The standalone edition multiplies the chance by 1.3 (about one in twelve) because it has no factory.
-Tune these in `config/arsenal-beacon-common.toml` (`baseDropChance`, `lootingBonusPerLevel`, `bossDrop`; renamed in round 5, so old values are not carried over). Deaths without a credited player (fire, `/kill`, falling) drop nothing.
+Tune these in `config/eternal-defense-common.toml` (`baseDropChance`, `lootingBonusPerLevel`, `bossDrop`; renamed in round 5, so old values are not carried over). Deaths without a credited player (fire, `/kill`, falling) drop nothing.
 
 ### Exchange Shop
 
 A placeable trader's booth (3D model, right-click to open), sold in the beacon's Workshop Fabrication tab. It only works **inside the zone of a standing Defense Beacon**. Its menu has two tabs:
 **Sell** (hand in materials, receive Ardent Energy) and **Buy** (pay Ardent Energy, receive supplies). Buying always costs more than selling, so trading in circles never pays (a unit test checks the defaults).
-Offers come from **`config/arsenal-beacon-exchange.txt`** (`[sell]` and `[buy]` sections, `item_id [x count] = energy`), created on first use and re-read every time a shop opens.
+Offers come from **`config/eternal-defense-exchange.txt`** (`[sell]` and `[buy]` sections, `item_id [x count] = energy`), created on first use and re-read every time a shop opens.
 An older single-list file is kept as `.old.txt` and replaced. Bad lines are skipped and logged.
 
 | | Sell (you get) | Buy (you pay) |
@@ -128,9 +128,9 @@ A won special raid adds **3 + 2 x tier** Ardent Energy to the reward.
 
 ### Testing special raids (operators)
 
-* `/arsenal next-raid <normal|air|paratroopers|siege|swarm>` sets what the next raid will be (shown in the Overview).
-* `/arsenal test-raid <type>` sets that type and starts the raid right away (during preparation only). `/arsenal test-raid` alone starts the raid that is already scheduled.
-* The introduction raid is always ordinary, whatever is set; finish it (or `/arsenal test-raid` through it) first.
+* `/eternaldefense next-raid <normal|air|paratroopers|siege|swarm>` sets what the next raid will be (shown in the Overview).
+* `/eternaldefense test-raid <type>` sets that type and starts the raid right away (during preparation only). `/eternaldefense test-raid` alone starts the raid that is already scheduled.
+* The introduction raid is always ordinary, whatever is set; finish it (or `/eternaldefense test-raid` through it) first.
 
 ## Other round 5 changes
 
@@ -152,7 +152,7 @@ A won special raid adds **3 + 2 x tier** Ardent Energy to the reward.
 Items use 64 x 64 painted sprites in the style of `industrial_atlas.png` (the three flares each have their own: cyan, purple and red canisters, drawn in flight and on the ground
 with the same sprite). The Return Flare portal is a 4-frame 16 x 32 sheet (`textures/entity/return_portal.png`) drawn as a 1 x 2 block billboard that always faces the viewer.
 
-The 3D models are hand-made (source in `docs/art/Create-Arsenal-Support-Gear/`, Blockbench files with their textures embedded) and installed with
+The 3D models are hand-made (source in `docs/art/Eternal-Defense-Support-Gear/`, Blockbench files with their textures embedded) and installed with
 `python3 tools/ui-assets/import_support_gear.py`: Exchange Shop and Support Platform Mk-1 to Mk-4 (both two blocks tall, the upper block is an invisible structure part,
 like the benches), the Support Cannon (base, turret and barrel), and the supply parcel. The script also paints the Ardent Energy crystal onto the shop's credit display,
 builds the cannon's inventory model, and splits the shop into a body and a glass pane (below). Sprites, loot, recipes and blockstates come from `tools/ui-assets/make_sprites.py`.
@@ -200,7 +200,7 @@ the turret motor, saving of the choice and levels, and the field guide quoting r
 Unit tests (58 in the module) cover the Economy tables (every level dearer than the last, sums inside the bounds above), the ardent drop chance, the special-raid roll and mixes, the new lang keys, and the field guide quoting real values.
 
 Not tested in round 5: the zone outline flicker itself (I could not make it happen, so the fix is a best guess, see above); a ground spawn of Air, Siege and They are thousands raids in a running world (the spawn finder found no valid spot in the small test arena, so those three were checked through their mob mixes, not through a full raid);
-the pack prices with the real Create and KubeJS items (the test world has only this mod's parts, so the tests exercised those); migration of an old `arsenal-beacon-exchange.txt` from before round 5 (reasoned through, not run on a real old file); and every price and drop number is a design estimate that has not been played through over many raids.
+the pack prices with the real Create and KubeJS items (the test world has only this mod's parts, so the tests exercised those); migration of an old `eternal-defense-exchange.txt` from before round 5 (reasoned through, not run on a real old file); and every price and drop number is a design estimate that has not been played through over many raids.
 
 Not tested: real multiplayer (ownership and the "your flare, your choice" rule are exercised with a single player), the End and modded dimensions, TaCZ weapons inside a grid on a dedicated run
 (tested by hand by the pack author in an earlier round), the grinding sound itself (the client's sound calls are counted, but audio cannot be heard here), and chunk-unload edge cases.

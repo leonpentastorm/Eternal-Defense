@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "eternal_defense:block/drink_pot_static",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "eternal_defense:block/drink_pot_static",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "eternal_defense:block/drink_pot_static",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "eternal_defense:block/drink_pot_static",
+      "y": 270
+    }
+  }
+}

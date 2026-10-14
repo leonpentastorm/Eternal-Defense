@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""0.0.30: installs the owner's 4-wide supply gates (docs/art/Create-Arsenal-Supply-Rail-Gates-4wide) and writes what is ours around them.
+"""0.0.30: installs the owner's 4-wide supply gates (docs/art/Eternal-Defense-Supply-Rail-Gates-4wide) and writes what is ours around them.
 
 The owner's block models, item models and textures are copied byte for byte. Ours: the blockstates, a 16 x 16 lamp texture
 (supply_gate_lamps.png: three lit and three dark lamps) and, for each gate, half and light, an overlay model that covers the three lamps of
@@ -9,8 +9,8 @@ as the owner's README asks.
 """
 import json, os, shutil, struct, sys, zlib
 R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ART = os.path.join(R, 'docs/art/Create-Arsenal-Supply-Rail-Gates-4wide')
-A = os.path.join(R, 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon')
+ART = os.path.join(R, 'docs/art/Eternal-Defense-Supply-Rail-Gates-4wide')
+A = os.path.join(R, 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense')
 KINDS = ['supply_delivery_gate', 'supply_receiving_gate']
 HALVES = {'right': '0', 'left': '1'}
 LIGHTS = ['red', 'amber', 'green']
@@ -50,13 +50,13 @@ def overlay(kind, half, light):
         if on: e["forge_data"] = {"block_light": 15, "sky_light": 15}
         out.append(e)
     return {"credit": "Eternal Defense: the gate's live light, drawn over the owner's three lamps of this half (front face); the owner's files are unchanged",
-            "ambientocclusion": False, "textures": {"lamps": "arsenal_beacon:block/supply_gate_lamps", "particle": "arsenal_beacon:block/supply_gate_lamps"}, "elements": out}
+            "ambientocclusion": False, "textures": {"lamps": "eternal_defense:block/supply_gate_lamps", "particle": "eternal_defense:block/supply_gate_lamps"}, "elements": out}
 
 def blockstate(model_base):
-    parts = [{"when": {"facing": f}, "apply": {"model": f"arsenal_beacon:block/{model_base}", "y": y}} for f, y in FACINGS]
+    parts = [{"when": {"facing": f}, "apply": {"model": f"eternal_defense:block/{model_base}", "y": y}} for f, y in FACINGS]
     for light in LIGHTS:
         for f, y in FACINGS:
-            parts.append({"when": {"facing": f, "signal": light}, "apply": {"model": f"arsenal_beacon:block/{model_base}_signal_{light}", "y": y}})
+            parts.append({"when": {"facing": f, "signal": light}, "apply": {"model": f"eternal_defense:block/{model_base}_signal_{light}", "y": y}})
     return {"multipart": parts}
 
 def main():

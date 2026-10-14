@@ -1,6 +1,6 @@
 # Audio sources (Eternal Defense)
 
-The sounds the beacon mod ships under `assets/arsenal_beacon/sounds/` come from here. Since 0.0.19 all the music (the raid songs and the
+The sounds the beacon mod ships under `assets/eternal_defense/sounds/` come from here. Since 0.0.19 all the music (the raid songs and the
 victory fanfare) is the owner's, converted by `import_songs.py`; the owner's effects and radio lines are converted by `import_sfx.py` and
 `import_chatter.py`. The rest (the shell and bomb whistles, napalm, frost, the gravity hum, the starshell pop) is synthesised from scratch
 by `sfx.py` (no samples, no third-party recordings).
@@ -13,5 +13,5 @@ by `sfx.py` (no samples, no third-party recordings).
 * `find_sfx.py`: `python3 find_sfx.py <capture.wav> name=file.ogg[@pitch,...] ... [--threshold] [--head] [--skip] [--from] [--to]` finds when each sound effect plays in a recording of the game's audio output (OpenAL Soft's `wave` backend), by normalised cross-correlation at every pitch the code can give it. Used for `docs/HAND-TUNED-ROUND-TESTING.md`. Needs numpy and ffmpeg.
 * `sfx.py`: the 0.0.16 effects. Four are shipped: cryo_burst, napalm_whoosh, gravity_hum, starshell_pop (shell_whistle and bomb_whistle were shipped in 0.0.19 only: 0.0.20 brought back the owner's 0.0.18 incoming sound, `sfx/ordnance_incoming.ogg`, restored from git). The others were replaced by the owner's sounds or the game's own explosion sound in 0.0.18, and flare_signal (the flare siren) by the owner's radio lines in 0.0.19. `python3 sfx.py <out_dir>` still writes all 17.
 
-Needs Python 3 with `numpy` and `scipy`, and `ffmpeg` with `libvorbis`. Copy the results into `custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon/sounds/music/` and `sounds/sfx/`; the events are declared in `sounds.json` and registered in `ArsenalSounds`.
+Needs Python 3 with `numpy` and `scipy`, and `ffmpeg` with `libvorbis`. Copy the results into `custom-mods/eternal-defense/src/main/resources/assets/eternal_defense/sounds/music/` and `sounds/sfx/`; the events are declared in `sounds.json` and registered in `DefenseSounds`.
 * `tactical.py` (0.0.20): the Command Table's sounds, original synthesis, mono: tactical_accept (confirm), tactical_refused (denied), tactical_scan (satellite sweep), tactical_scan_done, tactical_contact (a warband is out). Peaks set so each sits near -17 dB mean, level with the owner's radio lines. `python3 tactical.py <out_dir>` (needs numpy and scipy, like `sfx.py`).

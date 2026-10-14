@@ -1,6 +1,6 @@
 All server gameplay classes/data match the 36-case passing JAR.
 Only final client-rendering differences:
-assets/arsenal_beacon/lang/en_us.json
-assets/arsenal_beacon/textures/gui/bread_base.png
-dev/createarsenal/beacon/MessHallScreen.class
+assets/eternal_defense/lang/en_us.json
+assets/eternal_defense/textures/gui/bread_base.png
+dev/eternaldefense/beacon/MessHallScreen.class
 Final live client and restart use exact delivery JAR.

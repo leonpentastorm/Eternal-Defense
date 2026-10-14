@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** `fob_01` to `fob_21` on the real client of each edition (`tools/qa/QaFob.java.txt`), among them the new `fob_21`: the wood label on a dark oak log cost and on the logs tag, a Warlord Seal sold at an Exchange Shop in survival, a Patrol cleared and its pay counted in the reward chest.
 * **Real client** of each edition: the whole `QaFob` script (slices 1 to 4) on a fresh NORMAL world, plus the Exchange Shop's Sell tab with a seal in hand (`f28`).
 

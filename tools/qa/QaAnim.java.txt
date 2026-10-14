@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.CloudStatus;
@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * animations on they must differ, with the Settings switch off they must be identical to the pixel. Also checks every part and static
  * model loads, each block has its renderer, the Settings switch and its layout, and the placement ghost. Copied in by setup-qa.sh.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaAnim {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -124,20 +124,20 @@ public final class QaAnim {
             sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
             sp().getInventory().clearContent();// the starting kit's Defense Beacon would draw its placement ghost and zone lines in every frame
             var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.showBeam=false;d.showBoundary=false;d.setDirty();
-            sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);});
+            sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
             mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"a still world");
-        subject("fob_beacon",0,()->ArsenalBeacon.FOB_BEACON.get().defaultBlockState(),3.2,1.1f+0f,-8,.15);
-        subject("satellite_beacon",6,()->ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),3.2,1.2,-6);
-        subject("command_table",12,()->ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState(),4.2,1.6,8,.5);
-        for(int mk=1;mk<=4;mk++){int level=mk;subject("defense_beacon_mk"+mk,20+mk*6,()->ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,level),level==4?5.5:2.6,level==4?1.6:.9,level==4?6:16,level==4?.5:0);}
-        subject("support_platform_mk1",50,()->ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,1),1.4,2.6,20);
-        subject("support_platform_mk4",54,()->ArsenalBeacon.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,4),1.4,2.6,20);
-        subject("enchanting_table",58,()->ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState(),2.8,1.4,18,.5);
-        subject("mess_hall_mk1",64,()->ArsenalBeacon.MESS_HALL_I.get().defaultBlockState(),3,1.1,16,.5);
-        subject("cook_pot",70,()->ArsenalBeacon.COOK_POT.get().defaultBlockState(),2.4,1.2,24);
-        subject("brew_pot",74,()->ArsenalBeacon.BREW_POT.get().defaultBlockState(),2.4,1.4,28);
-        subject("mre_station",78,()->ArsenalBeacon.MRE_STATION.get().defaultBlockState(),2.2,1.3,22);
-        subject("support_cannon",84,()->ArsenalBeacon.SUPPORT_CANNON.get().defaultBlockState(),-1.6,1.9,4,-.3);
+        subject("fob_beacon",0,()->EternalDefense.FOB_BEACON.get().defaultBlockState(),3.2,1.1f+0f,-8,.15);
+        subject("satellite_beacon",6,()->EternalDefense.SATELLITE_BEACON.get().defaultBlockState(),3.2,1.2,-6);
+        subject("command_table",12,()->EternalDefense.COMMAND_TABLE.get().defaultBlockState(),4.2,1.6,8,.5);
+        for(int mk=1;mk<=4;mk++){int level=mk;subject("defense_beacon_mk"+mk,20+mk*6,()->EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,level),level==4?5.5:2.6,level==4?1.6:.9,level==4?6:16,level==4?.5:0);}
+        subject("support_platform_mk1",50,()->EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,1),1.4,2.6,20);
+        subject("support_platform_mk4",54,()->EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState().setValue(SupportPlatform.MK,4),1.4,2.6,20);
+        subject("enchanting_table",58,()->EternalDefense.ENCHANTING_TABLE.get().defaultBlockState(),2.8,1.4,18,.5);
+        subject("mess_hall_mk1",64,()->EternalDefense.MESS_HALL_I.get().defaultBlockState(),3,1.1,16,.5);
+        subject("cook_pot",70,()->EternalDefense.COOK_POT.get().defaultBlockState(),2.4,1.2,24);
+        subject("brew_pot",74,()->EternalDefense.BREW_POT.get().defaultBlockState(),2.4,1.4,28);
+        subject("mre_station",78,()->EternalDefense.MRE_STATION.get().defaultBlockState(),2.2,1.3,22);
+        subject("support_cannon",84,()->EternalDefense.SUPPORT_CANNON.get().defaultBlockState(),-1.6,1.9,4,-.3);
         step(10,()->srv(()->{for(var s:SUBJECTS)sl().setBlock(s.pos(),s.state().get(),3);}),"every animated block, in a row (each facing north, toward the camera)");
         step(40,()->{},"the client gets them");
         // the models load and every block draws through its renderer
@@ -182,7 +182,7 @@ public final class QaAnim {
         for(int f=0;f<4;f++){int frame=f;step(2,()->shot("film_satellite_side_"+frame),"frame");step(60,()->{},"3 s");}
         step(2,()->mc().options.hideGui=false,"HUD back");
         // the placement ghost shows the whole model (its moving parts at rest)
-        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();sp().getInventory().setItem(0,new ItemStack(ArsenalBeacon.SATELLITE_BEACON_ITEM.get()));sp().getInventory().selected=0;
+        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();sp().getInventory().setItem(0,new ItemStack(EternalDefense.SATELLITE_BEACON_ITEM.get()));sp().getInventory().selected=0;
             sp().teleportTo(sl(),sx+.5,sy+.1,sz-6.5,0,25);});mc().player.getInventory().selected=0;mc().player.setYRot(0);mc().player.setXRot(25);},"hold a Satellite Beacon over empty ground");
         step(30,()->shot("ghost_satellite"),"the ghost (the dish and whip are drawn at rest)");
         step(5,()->srv(()->{sp().getInventory().clearContent();}),"empty hands");
@@ -198,7 +198,7 @@ public final class QaAnim {
             check("its note is shown",lastFrame.stream().anyMatch(d->d.text()!=null&&d.text().contains("Flags wave")),"");
             layout("the Settings tab");shot("settings_switch_pressed_off");// taken a few frames later, after the press below
             if(toggle!=null)toggle.onPress();},"press it");
-        step(6,()->{check("pressing it turns the animations off (saved for this player)",!Animations.enabled()&&!ArsenalClientConfig.get(ArsenalClientConfig.IDLE_ANIMATIONS),"");
+        step(6,()->{check("pressing it turns the animations off (saved for this player)",!Animations.enabled()&&!DefenseClientConfig.get(DefenseClientConfig.IDLE_ANIMATIONS),"");
             var s=mc().screen;if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.getMessage().getString().equals("Idle animations"))b.onPress();},"press it again");
         step(6,()->check("and on again",Animations.enabled(),""),"on");
         for(var size:new int[][]{{960,540,2},{1280,720,3}}){
@@ -215,8 +215,8 @@ public final class QaAnim {
         // them their block entity back and the client receives it with the chunk.
         int cx=(sx+3000)>>4,cz=sz>>4;
         List<BlockPos> old=List.of(new BlockPos(cx*16+1,sy,cz*16+4),new BlockPos(cx*16+4,sy,cz*16+4),new BlockPos(cx*16+8,sy,cz*16+4),new BlockPos(cx*16+13,sy,cz*16+4));
-        List<Supplier<BlockState>> oldStates=List.of(()->ArsenalBeacon.FOB_BEACON.get().defaultBlockState(),()->ArsenalBeacon.SATELLITE_BEACON.get().defaultBlockState(),
-            ()->ArsenalBeacon.COMMAND_TABLE.get().defaultBlockState(),()->ArsenalBeacon.ENCHANTING_TABLE.get().defaultBlockState());
+        List<Supplier<BlockState>> oldStates=List.of(()->EternalDefense.FOB_BEACON.get().defaultBlockState(),()->EternalDefense.SATELLITE_BEACON.get().defaultBlockState(),
+            ()->EternalDefense.COMMAND_TABLE.get().defaultBlockState(),()->EternalDefense.ENCHANTING_TABLE.get().defaultBlockState());
         step(10,()->srv(()->{sl().setChunkForced(cx,cz,true);var chunk=sl().getChunk(cx,cz);int left=0;
             for(int i=0;i<old.size();i++){sl().setBlock(old.get(i),oldStates.get(i).get(),3);chunk.removeBlockEntity(old.get(i));}
             for(var p:old)if(chunk.getBlockEntity(p,net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK)!=null)left++;
@@ -224,7 +224,7 @@ public final class QaAnim {
             check("old world: the four blocks stand in a far chunk without their block entity, as a world from before 0.0.39 saved them",left==0,left+" left");}),"build the old blocks far away");
         until("the far chunk is saved and unloaded",400,()->{srv(()->farLoaded=sl().getChunkSource().getChunkNow(cx,cz)!=null);return !farLoaded;},()->{check("old world: the far chunk was saved and unloaded",!farLoaded,"");
             srv(()->{try{var tag=sl().getChunkSource().chunkMap.read(new net.minecraft.world.level.ChunkPos(cx,cz)).join();int n=-1;
-                if(tag.isPresent()){n=0;for(var e:tag.get().getList("block_entities",10))if(e instanceof net.minecraft.nbt.CompoundTag c&&c.getString("id").equals(ArsenalBeacon.ID+":animated_parts"))n++;}savedParts=n;}catch(Throwable t){savedParts=-2;}});});
+                if(tag.isPresent()){n=0;for(var e:tag.get().getList("block_entities",10))if(e instanceof net.minecraft.nbt.CompoundTag c&&c.getString("id").equals(EternalDefense.ID+":animated_parts"))n++;}savedParts=n;}catch(Throwable t){savedParts=-2;}});});
         until("the saved chunk is read on the server",100,()->savedParts!=-3,()->check("old world: the chunk saved on disk holds no block entity for the four blocks",savedParts==0,savedParts+" saved"));
         step(5,()->{srv(()->sp().teleportTo(sl(),cx*16+1.5,sy+.1,cz*16+.8,0,-8));mc().player.setYRot(0);mc().player.setXRot(-8);},"visit them");
         step(100,()->{},"the chunk loads and reaches the client");

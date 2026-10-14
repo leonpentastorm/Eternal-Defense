@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -42,7 +42,7 @@ import java.util.*;
  * TaCZ bullet among them), checks water, rain, a wooden wall, death, and that a raid never learns any of it as a trap. Copied in by
  * tools/qa/setup-qa.sh.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaFire {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -104,7 +104,7 @@ public final class QaFire {
     }
     static void flare(CannonUpgrades.FireType type,BlockPos at,int damageLevel){srv(()->{
         int[] up=new int[CannonUpgrades.Upgrade.values().length];up[CannonUpgrades.Upgrade.DAMAGE.ordinal()]=damageLevel;
-        var f=new SupportFlares.FlareEntity(ArsenalBeacon.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),CannonUpgrades.Config.of(up,type));
+        var f=new SupportFlares.FlareEntity(EternalDefense.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.FIRE,new net.minecraft.nbt.ListTag(),CannonUpgrades.Config.of(up,type));
         f.setPos(at.getX()+.5,at.getY(),at.getZ()+.5);f.setNoGravity(true);f.getEntityData().set(SupportFlares.FlareEntity.LANDED,true);sl().addFreshEntity(f);});}
     static boolean flareAt(BlockPos at){return srvGet(()->!sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(at).inflate(3)).isEmpty());}
     static void look(BlockPos from,double fy,double tx,double ty,double tz){srv(()->{
@@ -166,7 +166,7 @@ public final class QaFire {
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
             for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(at(0,0,0)).inflate(160)))e.discard();sp().getInventory().clearContent();
             sl().setDayTime(18000);sl().setWeatherParameters(6000,0,false,false);
-            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=BEACON();d.core=3;d.setDirty();sl().setBlock(BEACON(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=BEACON();d.core=3;d.setDirty();sl().setBlock(BEACON(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);
         }),"night, clear sky, no natural mobs, empty hands, a beacon 56 blocks away");
         step(2,()->mc().options.hideGui=true,"no HUD in the world shots");
 
@@ -194,7 +194,7 @@ public final class QaFire {
             check("vanilla's own burn (1 a second) is replaced, never added",hurtsSince(husk,"minecraft:on_fire",t0).stream().noneMatch(h->h.pre()==1f),"");
             check("it still burns (server)",srvGet(()->husk.isOnFire()),"");
             check("the client shows it on fire",client(husk)!=null&&client(husk).isOnFire(),"");
-            check("every burn counts as the weapon's fire (its fire mark is refreshed)",srvGet(()->husk.getPersistentData().getLong("arsenalWeaponFireUntil")>sl().getGameTime()),"");
+            check("every burn counts as the weapon's fire (its fire mark is refreshed)",srvGet(()->husk.getPersistentData().getLong("eternalWeaponFireUntil")>sl().getGameTime()),"");
             check("a blaze in the carpet takes nothing from Ablaze",hurts(blaze,"minecraft:on_fire").isEmpty(),"");
             var carpet=hurts(husk,"minecraft:in_fire");
             check("in the carpet Ablaze came on top: every carpet hit was its full 5",carpet.size()>=8&&carpet.stream().allMatch(h->h.pre()==5f),carpet.size()+": "+show(carpet));
@@ -259,7 +259,7 @@ public final class QaFire {
             SPOTTED.clear();var r=new Random(5);
             for(int i=0;i<12;i++)SPOTTED.add(mob(EntityType.HUSK,ARROWS(),r.nextDouble()*6-3,r.nextDouble()*6-3,300,false));
             for(int i=0;i<2;i++)SPOTTED.add(mob(EntityType.VINDICATOR,ARROWS(),r.nextDouble()*6-3,r.nextDouble()*6-3,300,false));
-            boss=mob(EntityType.HUSK,ARROWS(),0,0,300,false);boss.getPersistentData().putBoolean("arsenalBoss",true);SPOTTED.add(boss);
+            boss=mob(EntityType.HUSK,ARROWS(),0,0,300,false);boss.getPersistentData().putBoolean("eternalBoss",true);SPOTTED.add(boss);
             KNOCKS.clear();}),"15 hostile mobs in the box (more than the old cap of 10), one a raid boss");
         step(5,()->look(ARROWS().offset(0,0,-11),3,ARROWS().getX()+.5,ARROWS().getY()+1,ARROWS().getZ()+.5),"watch");
         step(5,()->flare(CannonUpgrades.FireType.ARROW,ARROWS(),0),"a Spotter Arrows flare");
@@ -344,7 +344,7 @@ public final class QaFire {
         step(5,()->srv(()->{
             raid[0]=mob(EntityType.HUSK,RAID(),-12,0,200,false);
             raid[1]=mob(EntityType.HUSK,RAID(),0,0,200,false);raid[2]=mob(EntityType.VINDICATOR,RAID(),0,10,200,false);raid[3]=mob(EntityType.HUSK,RAID(),8,-5,200,false);raid[4]=mob(EntityType.HUSK,RAID(),20,0,200,false);
-            for(var m:raid)m.getPersistentData().putString("arsenalRole","heavy");
+            for(var m:raid)m.getPersistentData().putString("eternalRole","heavy");
             var d=CampaignData.get(sl());d.phase="raid";d.raidType="normal";d.hardRaid=false;d.raidTier=10;d.introRaid=false;d.introCompleted=true;d.wave=1;d.waveTicks=0;d.raidTicks=0;d.raidsStarted=7;
             d.spawnRemaining=0;d.spawnCooldown=1_000_000;d.raiders.clear();for(var m:raid)d.raiders.add(m.getUUID());RaidAdaptation.begin(d);d.setDirty();}),"a raid: three husks and a vindicator are its raiders");
         step(5,()->{flare(CannonUpgrades.FireType.NAPALM,RAID().offset(-12,0,0),0);flare(CannonUpgrades.FireType.ARROW,RAID(),0);flare(CannonUpgrades.FireType.CURSE,RAID().offset(0,0,10),0);},"a napalm, Spotter Arrows and a curse on the raiders");

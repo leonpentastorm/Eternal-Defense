@@ -6,7 +6,7 @@
   "date": "2026-10-07",
   "network_protocol": 24,
   "build": "JDK 17 offline build releaseJars passed, both editions",
-  "unit_tests": { "arsenal-beacon": { "tests": 70, "failures": 0 }, "arsenal-gun-guide": { "tests": 7, "failures": 0 } },
+  "unit_tests": { "eternal-defense": { "tests": 70, "failures": 0 }, "eternal-defense-gun-guide": { "tests": 7, "failures": 0 } },
   "real_client_qa": {
     "harness": "tools/qa (QaWorld scriptR6), software GL, pack flavor",
     "checks": "41 passed, 0 failed (plus screenshot-only checks of the sign post from six angles)",

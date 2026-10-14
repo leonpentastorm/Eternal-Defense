@@ -4,7 +4,7 @@ Branch `feature/animation-pass`, made from `feature/drink-station` at 0.0.38.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime with TaCZ, `xvfb`, 1280 x 720 at GUI scale 2), the new harness `tools/qa/QaAnim.java.txt`. On a fresh flat world with the day cycle, weather, clouds, mob spawning, the beacon's beam and its zone outline off, it builds every animated block in a row (the FOB Beacon, the Satellite Beacon, the Command Table, the Defense Beacon Mk I to IV, the Support Platform Mk I and Mk IV, the Tactical Enchanting Table, the Mess Hall Mk I, the Cook Pot, the Brew Pot, the MRE Station, the Support Cannon). It hides the HUD and makes the camera a spectator, so it stays where it is put. For each block it takes two frames 0.8 s apart with the animations on, and two with the Settings switch off. It also films the flag and the dish, takes the placement ghost, and checks the Settings tab. It then rebuilds an old world's blocks: the four blocks without their block entity, their chunk saved and unloaded, then visited again.
 
 ## Results

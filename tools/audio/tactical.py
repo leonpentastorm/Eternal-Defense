@@ -2,7 +2,7 @@
 
 Radio and console sounds, short and dry, so they read as an interface and never as a weapon. Peaks are set so each sits near
 -17 dB mean, level with the owner's radio chatter. Run:
-  python tools/audio/tactical.py <assets/arsenal_beacon/sounds/sfx> [name ...]
+  python tools/audio/tactical.py <assets/eternal_defense/sounds/sfx> [name ...]
 """
 import os
 import sys

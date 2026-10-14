@@ -20,14 +20,14 @@ def main():
     instance=args.instance or Path(tempfile.mkdtemp(prefix='messhall-v4-',dir=root/'test-runs'))
     if not args.instance:
         (instance/'libraries').symlink_to(root/'runtime/libraries',target_is_directory=True);(instance/'mods').mkdir()
-        for jar in [repo/'custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:
+        for jar in [repo/'custom-mods/eternal-defense/build/libs/eternal-defense-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:
             shutil.copy2(jar,instance/'mods'/jar.name)
         if args.optional_grenades:shutil.copy2(root/'downloads/lrtactical-1.20.1-0.4.3.jar',instance/'mods')
         (instance/'eula.txt').write_text('eula=true\n')
         (instance/'server.properties').write_text('server-ip=127.0.0.1\nserver-port='+('25577' if args.client_smoke else '25578')+'\nonline-mode=false\nlevel-name=world\nlevel-type=minecraft:flat\ngenerator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains"}\ngenerate-structures=false\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=120000\n')
     manifest={p.name:hashlib.sha512(p.read_bytes()).hexdigest() for p in (instance/'mods').glob('*.jar')}
     (instance/'artifact-sha512.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    cmd=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx3G','-Darsenal.messHallTests=true',*(['-Darsenal.v4ClientTests=true'] if args.client_smoke else []),'@'+str(root/'runtime/libraries/net/minecraftforge/forge/1.20.1-47.4.20/unix_args.txt'),'nogui']
+    cmd=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx3G','-Deternaldefense.messHallTests=true',*(['-Deternaldefense.v4ClientTests=true'] if args.client_smoke else []),'@'+str(root/'runtime/libraries/net/minecraftforge/forge/1.20.1-47.4.20/unix_args.txt'),'nogui']
     proc=subprocess.Popen(cmd,cwd=instance,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
     lines=[];condition=threading.Condition();log_path=instance/('restart-console.log' if args.restart_check else 'server-console.log')
     def reader():

@@ -1,12 +1,12 @@
-# Eternal Defense / Create Arsenal
+# Eternal Defense / Eternal Defense
 
-Editable Java, assets, recipes and Gradle projects for the three Create Arsenal mods. This is the **0.21.0 source handoff** for the UI redesign, rather than a decompiled release archive.
+Editable Java, assets, recipes and Gradle projects for the three Eternal Defense mods. This is the **0.21.0 source handoff** for the UI redesign, rather than a decompiled release archive.
 
 | Project | Version | Purpose |
 | --- | --- | --- |
-| `custom-mods/arsenal-beacon` | 0.21.0 | Shared defense beacon, raid campaign, progression and Universal Weapon Platform |
-| `custom-mods/arsenal-gun-guide` | 0.21.0 | Client weapon controls guide and supported gun-jam warning |
-| `custom-mods/arsenal-displays` | 1.1.0 | Eleven weapon stands, racks and glass cases |
+| `custom-mods/eternal-defense` | 0.21.0 | Shared defense beacon, raid campaign, progression and Universal Weapon Platform |
+| `custom-mods/eternal-defense-gun-guide` | 0.21.0 | Client weapon controls guide and supported gun-jam warning |
+| `custom-mods/eternal-defense-displays` | 1.1.0 | Eleven weapon stands, racks and glass cases |
 
 Read [ARTIST-BRIEF.md](ARTIST-BRIEF.md) for the player-facing pitch and visual direction, then [the UI development handoff](docs/UI-DEVELOPMENT.md) for code locations and constraints. The redesign is described in [docs/UI-REDESIGN-NOTES.md](docs/UI-REDESIGN-NOTES.md) and the Ardent Energy / base support systems in [docs/ENERGY-AND-SUPPORT.md](docs/ENERGY-AND-SUPPORT.md). Since 0.0.41 only the curated modpack (pack) edition is built.
 
@@ -36,7 +36,7 @@ For a cloud environment's first build, see [NETWORK-ALLOWLIST.txt](docs/NETWORK-
 
 ## Playtest
 
-Use the test pack of the round (the owner's Create Arsenal profile with this build's jars), or install the three jars into a copy of that profile. The required mods are listed in [PACK-EDITION.md](docs/PACK-EDITION.md); Forge names any that is missing. A headless build does not confirm that a screen looks correct in Minecraft.
+Use the test pack of the round (the owner's Eternal Defense profile with this build's jars), or install the three jars into a copy of that profile. The required mods are listed in [PACK-EDITION.md](docs/PACK-EDITION.md); Forge names any that is missing. A headless build does not confirm that a screen looks correct in Minecraft.
 
 The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989) and TaCZ Attributes project 1113285 / file 8470731. Download third-party mods from their authors; they are not vendored into the source projects.
 
@@ -48,7 +48,7 @@ The build pins TaCZ [file 9037989](https://www.curseforge.com/minecraft/mc-mods/
 - `pack-integration`: authored KubeJS recipes and FTB Quests for reference.
 - `docs/RELEASE-VALIDATION-0.21.0.json`: prior release validation, with its scope and limits. It is a historical baseline, not a claim that future UI changes have been tested.
 
-The original `Arsenal-Standalone-Mods-0.21.0.zip` remains as the initial release artifact. Edit the source projects for the redesign. Do not unpack release JARs over them.
+The original `Eternal-Defense-Standalone-Mods-0.21.0.zip` remains as the initial release artifact. Edit the source projects for the redesign. Do not unpack release JARs over them.
 
 Licensing remains as declared by each mod. Gun Displays code is MIT; its supplied artwork is reserved, as detailed in its `LICENSE.txt`. Including art in this repository for the owner's UI collaboration does not change its license.
 

@@ -1,0 +1,89 @@
+{
+  "credit": "Eternal Defense: the gate's live light, drawn over the owner's three lamps of this half (front face); the owner's files are unchanged",
+  "ambientocclusion": false,
+  "textures": {
+    "lamps": "eternal_defense:block/supply_gate_lamps",
+    "particle": "eternal_defense:block/supply_gate_lamps"
+  },
+  "elements": [
+    {
+      "name": "Lamp_red_lit",
+      "from": [
+        12.75,
+        19.0,
+        0.38
+      ],
+      "to": [
+        14.75,
+        21.0,
+        0.46
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#lamps"
+        }
+      },
+      "forge_data": {
+        "block_light": 15,
+        "sky_light": 15
+      }
+    },
+    {
+      "name": "Lamp_amber_dark",
+      "from": [
+        12.75,
+        16.25,
+        0.38
+      ],
+      "to": [
+        14.75,
+        18.25,
+        0.46
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            8,
+            8
+          ],
+          "texture": "#lamps"
+        }
+      }
+    },
+    {
+      "name": "Lamp_green_dark",
+      "from": [
+        12.75,
+        13.5,
+        0.38
+      ],
+      "to": [
+        14.75,
+        15.5,
+        0.46
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "uv": [
+            8,
+            4,
+            12,
+            8
+          ],
+          "texture": "#lamps"
+        }
+      }
+    }
+  ]
+}

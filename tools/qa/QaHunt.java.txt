@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -39,7 +39,7 @@ import java.util.*;
  * and the alarm's rhythm (a start every 22 client ticks). 0.0.22: a supply and a return flare answer with the owner's own radio lines.
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_SOUND, QA_CHAT, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaHunt {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail,ctick;static boolean created,started,testsDone;
@@ -89,7 +89,7 @@ public final class QaHunt {
     /** Client ticks at which the alarm started. */
     static final List<Integer> ALARMS=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
-        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(EternalDefense.ID))return;
         SOUNDS.add(s.getLocation().getPath());if(s.getLocation().getPath().equals("beacon.attacked"))ALARMS.add(ctick);log("QA_SOUND {} at {} {} {}",s.getLocation(),Math.round(s.getX()),Math.round(s.getY()),Math.round(s.getZ()));
     }
     @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){String t=e.getMessage().getString();CHAT.add(t);log("QA_CHAT {}",t);}
@@ -167,7 +167,7 @@ public final class QaHunt {
         step(20,()->shot("h5_table_card"),"card shot");
         step(2,()->press("Accept"),"press Accept");
         step(30,()->{check("the mission runs after Accept",srvGet(()->h().board.running()),"");check("the player got the mission map",srvGet(()->Hunts.carriesMap(sp(),h().board.mission.offer.id)),"");
-            check("and a Return Flare",srvGet(()->sp().getInventory().items.stream().anyMatch(s->s.is(ArsenalBeacon.RETURN_FLARE.get()))),"");
+            check("and a Return Flare",srvGet(()->sp().getInventory().items.stream().anyMatch(s->s.is(EternalDefense.RETURN_FLARE.get()))),"");
             check("the screen refreshed in place (no reopen)",table()!=null,"");shot("h6_table_accepted");},"accepted shot");
         step(2,()->press("Abandon"),"Abandon once (arms the confirm)");
         step(10,()->{check("Abandon asks to confirm first",srvGet(()->h().board.running()),"");shot("h7_table_abandon_confirm");},"confirm shot");
@@ -178,12 +178,12 @@ public final class QaHunt {
         step(20,()->mapToSlot(0),"take the mission map in hand");
         step(5,()->{check("with the mission map in hand it shows",TacticalClient.holdingMissionItem(),"hand="+mc().player.getMainHandItem().getItem());shot("h8_hud_mission_away");},"away shot");
         // the beacon state is synced once a second: give it two before the shot (a step's wait comes after its action)
-        step(45,()->{mapToSlot(1);hold(new ItemStack(ArsenalBeacon.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
+        step(45,()->{mapToSlot(1);hold(new ItemStack(EternalDefense.CONTROLLER.get()));tp(B.getX()+.5,B.getY(),B.getZ()+3.5,180,20);},"back at the beacon with the shovel");
         step(5,()->{shot("h9_hud_status_card");check("the beacon card shows next to the mission line (near, holding the shovel)",BeaconClientState.near(),"");check("the shovel shows the mission line too",TacticalClient.holdingMissionItem(),"");
-            log("QA_NOTE beacon card server: player={} beacon={} radius={} near={} sent={}",srvGet(()->sp().blockPosition().toShortString()),srvGet(()->d().beacon.toShortString()),srvGet(()->d().radius()),srvGet(()->ArsenalBeacon.near(sp(),d())),srvGet(()->BeaconNetwork.state(sp(),d()).getBoolean("near")));
+            log("QA_NOTE beacon card server: player={} beacon={} radius={} near={} sent={}",srvGet(()->sp().blockPosition().toShortString()),srvGet(()->d().beacon.toShortString()),srvGet(()->d().radius()),srvGet(()->EternalDefense.near(sp(),d())),srvGet(()->BeaconNetwork.state(sp(),d()).getBoolean("near")));
             try{var f=BeaconClient.class.getDeclaredField("state");f.setAccessible(true);var st=(net.minecraft.nbt.CompoundTag)f.get(null);var r=BeaconClient.class.getDeclaredField("receivedAt");r.setAccessible(true);
                 log("QA_NOTE beacon card state: phase={} near={} installed={} receivedAt={} now={} holding={}",st.getString("phase"),st.getBoolean("near"),st.getBoolean("installed"),r.get(null),mc().level.getGameTime(),mc().player.getMainHandItem().getItem());}catch(Exception ex){log("QA_NOTE no state: {}",ex.toString());}},"status card shot");
-        step(40,()->srv(()->{var inv=sp().getInventory();long id=h().board.mission.offer.id;for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(Items.FILLED_MAP)&&inv.items.get(i).hasTag()&&inv.items.get(i).getTag().getLong("arsenalMission")==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(0));inv.items.set(0,map);inv.selected=0;break;}sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+3.5,180,40);}),"hold the map (the hand comes up while the step waits)");
+        step(40,()->srv(()->{var inv=sp().getInventory();long id=h().board.mission.offer.id;for(int i=0;i<inv.items.size();i++)if(inv.items.get(i).is(Items.FILLED_MAP)&&inv.items.get(i).hasTag()&&inv.items.get(i).getTag().getLong("eternalMission")==id){var map=inv.items.get(i);inv.items.set(i,inv.items.get(0));inv.items.set(0,map);inv.selected=0;break;}sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+3.5,180,40);}),"hold the map (the hand comes up while the step waits)");
         step(5,()->{shot("h10_mission_map");
             var map=srvGet(()->{var st=sp().getMainHandItem();var o=h().board.mission.offer;if(!st.is(Items.FILLED_MAP)||!st.hasTag())return "not holding the map";
                 boolean x=false;for(var t:st.getTag().getList("Decorations",10)){var c=(net.minecraft.nbt.CompoundTag)t;if(c.getByte("type")==net.minecraft.world.level.saveddata.maps.MapDecoration.Type.RED_X.getIcon()&&Math.abs(c.getDouble("x")-o.x)<1&&Math.abs(c.getDouble("z")-o.z)<1)x=true;}
@@ -229,18 +229,18 @@ public final class QaHunt {
         step(30,()->shot("h12_warlord_captain"),"captain shot");
         final long[] warlord={0};final int[] chest={0,0,0};
         step(5,()->{mc().options.hideGui=false;warlord[0]=srvGet(()->h().board.mission.offer.id);
-            chest[0]=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.ARDENT_ENERGY.get()));chest[1]=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.AMMO_COIN.get()));chest[2]=srvGet(()->Hunts.tier(sl(),d()));check("the player carries the Warlord's map",srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");
+            chest[0]=srvGet(()->HuntGameTests.rewards(d(),EternalDefense.ARDENT_ENERGY.get()));chest[1]=srvGet(()->HuntGameTests.rewards(d(),EternalDefense.AMMO_COIN.get()));chest[2]=srvGet(()->Hunts.tier(sl(),d()));check("the player carries the Warlord's map",srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");
             srv(()->{for(var mob:HuntGameTests.mobs(sl(),h().board.mission.offer.id))mob.kill();});},"kill the warband");
         step(30,()->{check("the mission is cleared and paid",srvGet(()->h().board.mission==null),"");
-            int gotArdent=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.ARDENT_ENERGY.get()))-chest[0],gotCoins=srvGet(()->HuntGameTests.rewards(d(),ArsenalBeacon.AMMO_COIN.get()))-chest[1];
+            int gotArdent=srvGet(()->HuntGameTests.rewards(d(),EternalDefense.ARDENT_ENERGY.get()))-chest[0],gotCoins=srvGet(()->HuntGameTests.rewards(d(),EternalDefense.AMMO_COIN.get()))-chest[1];
             var expected=Economy.hunt(TacticalRules.Kind.WARLORD,chest[2]);int shown=srvGet(()->BeaconNetwork.state(sp(),d()).getInt("prospectiveTier")),paid=srvGet(()->d().rewardTier);
             log("QA_NOTE warlord pay: {} Ardent Energy and {} coins at hunt tier {} (beacon Next payout tier {}, last paid tier {})",gotArdent,gotCoins,chest[2],shown,paid);
             check("the Warlord pays at the beacon's Next payout tier (0.0.22)",chest[2]==shown&&gotArdent==expected.ardent()&&gotCoins==expected.coins(),"paid "+gotArdent+"+"+gotCoins+", expected "+expected+" at tier "+shown);check("its map burned (0.0.21)",!srvGet(()->Hunts.carriesMap(sp(),warlord[0])),"");check("chat tells everyone",CHAT.stream().anyMatch(c->c.contains("cleared!")),"");
             check("the mission-cleared jingle plays",SOUNDS.contains("music.mission_cleared"),"");shot("h13_cleared_chat");},"cleared shot");
         // ---- the cannon menu's card and a real Starshell ---------------------------------------------------------------------------------
-        step(5,()->{mc().options.hideGui=true;hold(new ItemStack(ArsenalBeacon.SUPPORT_PLATFORM_ITEM.get()));tp(B.getX()-8.5,B.getY(),B.getZ()-3.5,180,60);},"hold a platform");
+        step(5,()->{mc().options.hideGui=true;hold(new ItemStack(EternalDefense.SUPPORT_PLATFORM_ITEM.get()));tp(B.getX()-8.5,B.getY(),B.getZ()-3.5,180,60);},"hold a platform");
         step(10,()->srv(()->sp().gameMode.useItemOn(sp(),sl(),sp().getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(B.offset(-8,-1,-8)).add(0,.5,0),Direction.UP,B.offset(-8,-1,-8),false))),"place the platform");
-        step(5,()->{hold(new ItemStack(ArsenalBeacon.SUPPORT_CANNON_ITEM.get()));tp(B.getX()-14.5,B.getY(),B.getZ()+10.5,180,60);},"hold a cannon");
+        step(5,()->{hold(new ItemStack(EternalDefense.SUPPORT_CANNON_ITEM.get()));tp(B.getX()-14.5,B.getY(),B.getZ()+10.5,180,60);},"hold a cannon");
         step(10,()->srv(()->sp().gameMode.useItemOn(sp(),sl(),sp().getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(B.offset(-14,-1,6)).add(0,.5,0),Direction.UP,B.offset(-14,-1,6),false))),"place the cannon");
         step(10,()->{var c=srvGet(()->SupportCalls.cannon(sl(),sp().getUUID()));check("the cannon is placed and ours",c!=null,"");
             srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());if(cannon!=null){CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.STARSHELL.ordinal());}});},"choose the Starshell");
@@ -253,7 +253,7 @@ public final class QaHunt {
             check("scrolling moves the card",s.cardScroll>0,"scroll="+s.cardScroll);}},"scroll the card");
         step(10,()->{if(mc().screen instanceof CannonScreen s){log("QA_NOTE card scroll after a frame: {} of {}",s.cardScroll,s.cardMax);shot("h16_cannon_card_bunker_scrolled");}},"scrolled shot");
         step(2,()->srv(()->{var cannon=SupportCalls.cannon(sl(),sp().getUUID());CannonControl.act(sp(),cannon.getBlockPos(),CannonControl.SELECT,CannonUpgrades.FireType.STARSHELL.ordinal());}),"back to the Starshell");
-        step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(ArsenalBeacon.FIRE_FLARE.get()));inv.selected=0;for(var ef:List.copyOf(sp().getActiveEffects()))sp().removeEffect(ef.getEffect());
+        step(5,()->{mc().setScreen(null);srv(()->{sp().closeContainer();var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.FIRE_FLARE.get()));inv.selected=0;for(var ef:List.copyOf(sp().getActiveEffects()))sp().removeEffect(ef.getEffect());
             sp().teleportTo(sl(),B.getX()-11.5,B.getY(),B.getZ()+24.5,180,-15);});SOUNDS.clear();},"take a fire support flare");
         step(10,()->srv(()->sp().getMainHandItem().getItem().use(sl(),sp(),InteractionHand.MAIN_HAND)),"throw it");
         until("the flare lands",300,()->srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(SupportFlares.FlareEntity::landed)),()->{});
@@ -279,7 +279,7 @@ public final class QaHunt {
             var inLight=srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(60)).stream().anyMatch(f->f.distanceTo(sp())<=CannonUpgrades.STAR_RADIUS+8));
             check("10 s after leaving the light the Haste is still on (0.0.21)",left>0&&!inLight,"ticks left="+left+" inLight="+inLight);},"haste after leaving");
         // ---- 0.0.22: the supply and the return flare answer with the owner's own radio lines ---------------------------------------------------
-        for(var flare:List.of(new Object[]{"supply",ArsenalBeacon.SUPPLY_FLARE,"flare.supply_chatter_"},new Object[]{"return",ArsenalBeacon.RETURN_FLARE,"flare.recall_chatter_"})){
+        for(var flare:List.of(new Object[]{"supply",EternalDefense.SUPPLY_FLARE,"flare.supply_chatter_"},new Object[]{"return",EternalDefense.RETURN_FLARE,"flare.recall_chatter_"})){
             String what=(String)flare[0],prefix=(String)flare[2];@SuppressWarnings("unchecked") var item=(net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item>)flare[1];
             step(5,()->{SOUNDS.clear();srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
                 var inv=sp().getInventory();inv.setItem(0,new ItemStack(item.get()));inv.selected=0;
@@ -304,7 +304,7 @@ public final class QaHunt {
                 chunk.setUnsaved(true);sl().setChunkForced(cx,cz,false);
             }}),"take the objective platform away");
         step(5,()->{CHAT.clear();mc().options.hideGui=true;srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new net.minecraft.world.phys.AABB(B).inflate(80)))f.discard();
-            var d=d();d.phase="preparation";d.rewardTier=3;d.setDirty();sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+2.5,0,0);ArsenalBeacon.begin(sl(),d);});},"start a raid");
+            var d=d();d.phase="preparation";d.rewardTier=3;d.setDirty();sp().teleportTo(sl(),B.getX()+.5,B.getY(),B.getZ()+2.5,0,0);EternalDefense.begin(sl(),d);});},"start a raid");
         until("the first reinforcement",1600,()->srvGet(()->!d().raiders.isEmpty()),()->{});
         step(10,()->{var info=srvGet(()->{var out=new ArrayList<String>();for(var id:d().raiders){var e=sl().getEntity(id);if(e instanceof net.minecraft.world.entity.Mob m){
                     boolean gate=!sl().getEntitiesOfClass(RaiderGate.class,m.getBoundingBox().inflate(4)).isEmpty();
@@ -322,11 +322,11 @@ public final class QaHunt {
         step(20,()->shot("h19_raid_chat"),"chat shot");
         step(5,()->{mc().options.hideGui=true;srv(()->{for(var id:new ArrayList<>(d().raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d().raiders.clear();d().phase="preparation";d().setDirty();});
             tp(B.getX()+.5,B.getY(),B.getZ()-30.5,180,5);},"end the raid, stand outside the zone");
-        step(10,()->cmd("arsenal test-gate"),"/arsenal test-gate");
+        step(10,()->cmd("eternaldefense test-gate"),"/eternaldefense test-gate");
         step(25,()->{},"the gate opens");
         step(5,()->{shot("h20_test_gate");var gates=srvGet(()->sl().getEntitiesOfClass(RaiderGate.class,sp().getBoundingBox().inflate(10)).stream().map(g->g.position()).toList());
             var me=srvGet(()->sp().position());var zombie=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)).stream().map(z->z.position()).findFirst().orElse(null));
-            check("/arsenal test-gate opens a gate with a zombie in front of it",!gates.isEmpty()&&zombie!=null&&gates.get(0).distanceTo(me)>zombie.distanceTo(me),"gates="+gates+" zombie="+zombie);
+            check("/eternaldefense test-gate opens a gate with a zombie in front of it",!gates.isEmpty()&&zombie!=null&&gates.get(0).distanceTo(me)>zombie.distanceTo(me),"gates="+gates+" zombie="+zombie);
             srv(()->{for(var z:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class,sp().getBoundingBox().inflate(10)))z.discard();});mc().options.hideGui=false;},"test gate shot");
         // ---- 0.0.21: a due raid waits for the night; Start raid by day books it; the raid itself ------------------------------------------
         step(5,()->{cmd("time set 6000");CHAT.clear();srv(()->{var d=d();d.phase="preparation";d.introCompleted=true;d.respiteTicks=0;d.damage.clear();d.destroyedTurrets.clear();d.raidRequested=false;
@@ -347,8 +347,8 @@ public final class QaHunt {
         until("the raid phase",1600,()->srvGet(()->d().phase.equals("raid")),()->{});
         // armed raiders at a real raid: one skeleton and one pillager made the way a wave makes them, 30 blocks west of the beacon
         final java.util.UUID[] armed=new java.util.UUID[2];final double[] startDist={0,0};
-        step(5,()->srv(()->{var d=d();var a=ArsenalBeacon.raider(sl(),d,net.minecraft.world.entity.EntityType.SKELETON,"grunt","normal",B.offset(-30,0,2));
-            var b=ArsenalBeacon.raider(sl(),d,net.minecraft.world.entity.EntityType.PILLAGER,"specialist","normal",B.offset(-30,0,-2));
+        step(5,()->srv(()->{var d=d();var a=EternalDefense.raider(sl(),d,net.minecraft.world.entity.EntityType.SKELETON,"grunt","normal",B.offset(-30,0,2));
+            var b=EternalDefense.raider(sl(),d,net.minecraft.world.entity.EntityType.PILLAGER,"specialist","normal",B.offset(-30,0,-2));
             if(a!=null){armed[0]=a.getUUID();startDist[0]=Math.sqrt(a.distanceToSqr(Vec3.atCenterOf(B)));}if(b!=null)armed[1]=b.getUUID();
             sp().teleportTo(sl(),B.getX()-14.5,B.getY()+3,B.getZ()+12.5,-130,15);}),"a raid skeleton and pillager");
         step(30,()->{var hands=srvGet(()->{var out=new ArrayList<String>();for(var id:d().raiders)if(sl().getEntity(id) instanceof net.minecraft.world.entity.Mob m

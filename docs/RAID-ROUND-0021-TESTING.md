@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), driven by `tools/qa/QaHunt.java.txt` (`tools/qa/setup-qa.sh <dir> <pack|standalone> QaHunt`, then `runClient`), on a fresh **normal** world (seed 20201010). It first runs the hunt GameTests (`HuntGameTests`, 13 now) in the client's integrated server, then walks through the round like a player: the board, the table, Accept, the status card with an empty hand, the map and the shovel, a Warlord's arrival (timed), the clear, a Starshell, a raid with gate spawns, a due raid by day, Start raid by day, nightfall, armed raiders, an ordinary zombie during the raid, the alarm, Garrison lookups. The QA teleports the player and kills by command; nobody walked or fought.
 * **Sound.** The client ran with OpenAL Soft's `wave` backend, so the game's mixed output was written to a WAV file; `tools/audio/find_sfx.py` finds each start of the alarm in it. **Nobody listened.**
 * **Regression:** the 0.0.14 stuck-raider GameTests (`tools/qa/QaStuck.java.txt`, pack edition, flat world), because raid skeletons and pillagers now get a different attack goal.
@@ -46,7 +46,7 @@ Both editions, the same checks:
 * **Armed raiders** during that raid: the skeleton held a bow and the pillager a crossbow; the skeleton walked from 30 to 11 blocks from the beacon in about 10 s and opened no gate (`*-raid_skeleton.jpg`).
 * **An ordinary zombie** (no raider) on a stone bridge 64 blocks from the beacon (40 past the zone's edge) walked to 33 blocks in 10 s during the raid. The first run placed it beyond the edge of the test platform and it fell; the check passed once the QA laid the bridge.
 * **Alarm:** with the beacon hit, the alarm started at client ticks 22 apart in every run (`[5057, 5079, 5101, 5123]` in the final standalone run). In the recorded audio (`audio-pack.txt`, `audio-standalone.txt`) the alarm's starts are 1.06 to 1.14 s apart (once 1.34 s in the standalone run: client ticks run late on this machine, and the period is counted in client ticks); `*-raid_alarm.jpg` shows the banner during the night raid.
-* The 0.0.20 checks all pass again (board, table, scan, Accept, Abandon, the map's red X and scale, the Warlord's captain, the clear and its jingle, the cannon card, the Starshell flare and incoming sound, gate spawns, the speed burst, the chat line once, `/arsenal test-gate`, Garrison lookups: 5 of 10 areas, each confirmed, no chunk loaded, slowest 32 to 35 ms; 63 ms in the first run).
+* The 0.0.20 checks all pass again (board, table, scan, Accept, Abandon, the map's red X and scale, the Warlord's captain, the clear and its jingle, the cannon card, the Starshell flare and incoming sound, gate spawns, the speed burst, the chat line once, `/eternaldefense test-gate`, Garrison lookups: 5 of 10 areas, each confirmed, no chunk loaded, slowest 32 to 35 ms; 63 ms in the first run).
 
 ### Regression: the stuck-raider GameTests (`stuck-raider-regression.txt`): 11 pass, 0 fail
 

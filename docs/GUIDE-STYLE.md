@@ -36,7 +36,7 @@ Every page has an item icon in the Field Guide's side menu (`BeaconClient.GuideS
 ## What the tests enforce
 
 * `LangKeysTest.everyGuideCardFollowsTheSameFormat`: a card that starts with `What it is` has `You get`, `How it works` and `How to unlock`, in that order.
-* `LangKeysTest.everyRegisteredFeatureHasAGuideCard`: every block and item registered in `ArsenalBeacon` has a card (or is listed as an ingredient). Add a block or an item and this test fails until the guide explains it.
+* `LangKeysTest.everyRegisteredFeatureHasAGuideCard`: every block and item registered in `EternalDefense` has a card (or is listed as an ingredient). Add a block or an item and this test fails until the guide explains it.
 * `LangKeysTest.guideSentencesStayShortAndPlain` and `SupportTest.theFieldGuideQuotesTheRealNumbers` (numbers in the guide must equal the code).
 * `GuideTextTest`: a card is its key's text; no edition markers or suffixes; key hints for absent mods are left out.
 

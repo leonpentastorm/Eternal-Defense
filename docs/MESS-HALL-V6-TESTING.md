@@ -32,9 +32,9 @@ python3 tools/qa/run-v6-client.py --runtime /path/to/runtime --gui-scale 3 --foo
 python3 tools/release/package-messhall-v6.py --backend-jar /path/to/tacz-attributes-1.4.jar
 ```
 
-Runtime prerequisites follow v5’s retained official Forge/launcher/assets/natives/Xvfb setup. In this workspace source `/workspace/.eternal-defense/activate.sh` first; offline Gradle still needs localhost access. V6 server commands require `-Darsenal.messHallTests=true`; live UI also requires `-Darsenal.v6ClientTests=true` on both ends. These opt-in flags are off in normal gameplay. Use disposable worlds. Historical v5 UI scripts are not the current v6 UI target.
+Runtime prerequisites follow v5’s retained official Forge/launcher/assets/natives/Xvfb setup. In this workspace source `/workspace/.eternal-defense/activate.sh` first; offline Gradle still needs localhost access. V6 server commands require `-Deternaldefense.messHallTests=true`; live UI also requires `-Deternaldefense.v6ClientTests=true` on both ends. These opt-in flags are off in normal gameplay. Use disposable worlds. Historical v5 UI scripts are not the current v6 UI target.
 
-The test ZIP contains **eight JARs**: all three Arsenal mods plus separate unmodified **TaCZ Attributes 1.4** in each edition. Choose one edition; install its four JARs on both client/server, alongside existing TaCZ. SHA-512 manifests, required backend author/license details and actual QA evidence are included. Apocalypse and AppleSkin are QA-only and are not redistributed.
+The test ZIP contains **eight JARs**: all three Eternal Defense mods plus separate unmodified **TaCZ Attributes 1.4** in each edition. Choose one edition; install its four JARs on both client/server, alongside existing TaCZ. SHA-512 manifests, required backend author/license details and actual QA evidence are included. Apocalypse and AppleSkin are QA-only and are not redistributed.
 
 ## Remaining playtests
 

@@ -4,7 +4,7 @@ Branch `feature/supply-catapult`.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_24`; `fob_24` changed for the 12-second drop from above and the rest heading), on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720 at GUI scale 2; the size checks at 640 x 360, 480 x 270 and 427 x 240), `QaFob` on a fresh NORMAL world. The sound engine ran on OpenAL Soft's wave backend (`ALSOFT_CONF`, output to a file), so the sounds the client played are counted by the game's own sound listener.
 
@@ -25,10 +25,10 @@ Branch `feature/supply-catapult`.
 ### Real client: 297 pass, 0 fail in each edition on the final code (`checks-standalone.txt`, `checks-pack.txt`)
 
 New in 0.0.34:
-* The war horn: planting the FOB (which calls its raid at once) sounds it once; the SOS raid starting sounds it again (the client's sound listener counted `arsenal_beacon:fob.war_horn`, 1 then 2).
+* The war horn: planting the FOB (which calls its raid at once) sounds it once; the SOS raid starting sounds it again (the client's sound listener counted `eternal_defense:fob.war_horn`, 1 then 2).
 * FOB Beacon, Research tab, the top level: level 5 reads "Supply Catapult + Specialty Shop" with the catapult beside it; one gift from level 2 to 5 announces the S tier and the Supply Catapult and Specialty Shop, each (`f23d`). The FOB tab: "Supply Catapult: OFFLINE, none placed" (`f23f`), and with the catapult placed, "ONLINE" (`f29d`); the overlap check on both.
 * Receiving Gate: the village made Fishing & Animal Husbandry with beef chosen (a husbandry index moved up by the fisher's five): the card shows both names and both icons (`f17m`), the grid every fish, meat and leather, 12 (`f17n`). The specialty's rate on this 21 km line, faster than a vanilla cart, is 64.0 value an hour: the cap (the first run found 87 before the fix below).
-* In the village: bought with the server's own call (as the table's button sends it): one of the owner's order lines played (the client's sound listener counted `arsenal_beacon:seller.order_chatter_N`); the arm throws on the client (`f31`, `f31b`); the box flies, landing 12 s after the throw, the chat says it was thrown and counts down ("Supplies arriving in ..."). Home: the base's land had not been loaded during the flight; the parcel came down after its fall, beside the beacon.
+* In the village: bought with the server's own call (as the table's button sends it): one of the owner's order lines played (the client's sound listener counted `eternal_defense:seller.order_chatter_N`); the arm throws on the client (`f31`, `f31b`); the box flies, landing 12 s after the throw, the chat says it was thrown and counts down ("Supplies arriving in ..."). Home: the base's land had not been loaded during the flight; the parcel came down after its fall, beside the beacon.
 * Command Table: Contact Specialty Seller carries the radio icon (`f30`); pressing it played the owner's radio static (`seller.radio_static`); the seller shows the live catapult (the server's state reaches the client), "Ready" (`f30b`), the overlap check at the three sizes (`f30c`). Buy 1 lot: another order line; the view shows it loaded and "Turning to base" (`f30e`), then "Throwing!" with the arm up (`f30f`), the box flying out (`f30g`), "In the air: 9 s" (`f30h`).
 * At home looking up: the parcel appears 27 blocks over its spot and comes down by parachute (`f31e`, `f31f`), lands beside the beacon with what was bought (`f31d`); the chat counted both boxes down (28 lines).
 

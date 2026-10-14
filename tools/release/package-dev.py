@@ -3,7 +3,7 @@
 
   python3 -I tools/release/package-dev.py --base <the owner's exported .mrpack> [--backend-jar tacz-attributes-1.4.jar]
 
-Writes dist/Arsenal-Dev-<project version>-pack-update.zip and its .sha512: this build's three jars, the repository's KubeJS scripts,
+Writes dist/Eternal-Defense-Dev-<project version>-pack-update.zip and its .sha512: this build's three jars, the repository's KubeJS scripts,
 the round's docs and text evidence, a README with what changed and how to install it, and REQUIRED-MODS.txt: every mod the pack
 edition requires, with the version the owner's pack carries, its author's download link (Modrinth) and SHA-512, read from the base
 pack's index (nothing in the base is executed). The mods that became required in 0.0.41 (NEW_REQUIRED: JEI, KubeJS Create,
@@ -16,7 +16,7 @@ import argparse, hashlib, io, json, re, zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-OURS = [('arsenal-beacon', '0.21.0'), ('arsenal-gun-guide', '0.21.0'), ('arsenal-displays', '1.1.0')]
+OURS = [('eternal-defense', '0.21.0'), ('eternal-defense-gun-guide', '0.21.0'), ('eternal-defense-displays', '1.1.0')]
 REQUIRED = [  # label, mod id, pattern of the jar's file name in the pack
     ('TaCZ', 'tacz', r'(^|/)tacz-1\.20\.1-1\.1\.'),
     ('TaCZ Attributes', 'tacz_attributes', r'(^|/)tacz[-_]attributes'),
@@ -58,7 +58,7 @@ def new_required_jars(base: Path, cache: Path) -> dict:
 
 
 def required_list(base: Path) -> str:
-    lines = ['Mods the pack edition requires (0.0.41), as the owner\'s Create Arsenal profile carries them.',
+    lines = ['Mods the pack edition requires (0.0.41), as the owner\'s Eternal Defense profile carries them.',
              'Download each from its author\'s page (the link below); the SHA-512 lets you check the file.', '']
     with zipfile.ZipFile(base) as pack:
         index = json.loads(pack.read('modrinth.index.json'))
@@ -78,18 +78,18 @@ def required_list(base: Path) -> str:
     return '\n'.join(lines) + '\n'
 
 
-README = '''Eternal Defense - project VERSION - update bundle for the Create Arsenal pack (local test build)
+README = '''Eternal Defense - project VERSION - update bundle for the Eternal Defense pack (local test build)
 Minecraft 1.20.1 / Forge 47.4.20 / Java 17. NETWORK PROTOCOL 41: install this build on the client AND the server.
 Start a FRESH world for this round (until 1.0 every feature round wants one).
 
 THE STANDALONE EDITION IS DISCONTINUED (0.0.41). There is one edition, the pack, and Forge now refuses to start without the mods it
 needs: TaCZ, TaCZ Attributes 1.4, Create 6, KubeJS and KubeJS Create, LesRaisins Tactical Equipments 0.4.3+, JEI (client). Your
-Create Arsenal profile has all of them; REQUIRED-MODS.txt lists them with their download links and checksums. The three that became
+Eternal Defense profile has all of them; REQUIRED-MODS.txt lists them with their download links and checksums. The three that became
 required in 0.0.41 (JEI, KubeJS Create, LesRaisins Tactical Equipments) are also in required-mods/, unchanged, each with its license
 notice and source link (MIT, LGPL-3.0, GPL-3.0). SHA512SUMS.txt covers every jar in this bundle.
 
-HOW TO INSTALL INTO YOUR PROFILE (the full test pack, Create-Arsenal-VERSION-test.mrpack, does this for you)
-1. In the profile's mods folder delete the old arsenal-beacon, arsenal-gun-guide and arsenal-displays jars; copy the three jars of
+HOW TO INSTALL INTO YOUR PROFILE (the full test pack, Eternal-Defense-VERSION-test.mrpack, does this for you)
+1. In the profile's mods folder delete the old eternal-defense, eternal-defense-gun-guide and eternal-defense-displays jars; copy the three jars of
    mods/ in their place.
 2. Copy kubejs/ over the profile's kubejs folder (it replaces our scripts; nothing else of yours is touched).
 3. A dedicated server: Tactical Movement 1.0.0 (tacticalmovement-1.0.0.jar) is client-only and stops a server from starting; keep it
@@ -97,7 +97,7 @@ HOW TO INSTALL INTO YOUR PROFILE (the full test pack, Create-Arsenal-VERSION-tes
 
 WHAT IS NEW IN 0.0.43 (no packet changed; protocol still 41)
 * Exchange: 16 Iron Ore for 2 Ardent Energy (instead of 16 iron ingots for 1: smelt it, or crush it with Create for more), 8 iron
-  blocks for 8 (instead of 16 for 8), 16 andesite alloy for 1 (instead of 2). If your world's config/arsenal-beacon-exchange.txt
+  blocks for 8 (instead of 16 for 8), 16 andesite alloy for 1 (instead of 2). If your world's config/eternal-defense-exchange.txt
   was never edited, it gets the new prices by itself the next time the shop opens; an edited one keeps yours.
 * The FOB's mine can send clay, and stones for building: calcite, dripstone, red sandstone, blackstone, and Create's asurine,
   crimsite, ochrum, veridium, limestone, scoria and scorchia. A stone block counts half, so twice as many come as clay.
@@ -149,7 +149,7 @@ def main() -> None:
     files['README.txt'] = README.replace('VERSIONCOMPACT', compact).replace('VERSION', version).encode()
     sums = ''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name, data in sorted(files.items()) if name.endswith('.jar'))
     files['SHA512SUMS.txt'] = sums.encode()
-    out = REPO / 'dist' / f'Arsenal-Dev-{version}-pack-update.zip'
+    out = REPO / 'dist' / f'Eternal-Defense-Dev-{version}-pack-update.zip'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as bundle:
         for name in sorted(files):
             bundle.writestr(name, files[name])

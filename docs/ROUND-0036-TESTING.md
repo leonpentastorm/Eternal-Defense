@@ -4,7 +4,7 @@ Branch `feature/drink-station`, after 0.0.35.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime with TaCZ 1.1.8-hotfix2 and its default gun pack, `xvfb`, 1280 x 720 at GUI scale 2), the new harness `tools/qa/QaFire.java.txt` on a fresh flat NORMAL world at night. It spawns flares of the three types the way the cannon's call does (the thrower's upgrades, landed, no cannon placed: the call fires after a 90-degree turn's wait), puts real mobs in their boxes, records every hit before and after the mod's handlers (Forge's `LivingHurtEvent` at the highest and the lowest priority), every knockback (with its cancelled flag) and every extinguish hiss, fires a real TaCZ AK-47 through TaCZ's own `IGunOperator.shoot`, checks the server and the client, and takes screenshots.
 
 ## Results

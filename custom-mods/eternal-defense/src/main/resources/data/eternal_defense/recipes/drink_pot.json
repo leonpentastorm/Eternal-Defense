@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CSC",
+    "CKC",
+    "CCC"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "S": {
+      "item": "minecraft:oak_sign"
+    },
+    "K": {
+      "item": "minecraft:cauldron"
+    }
+  },
+  "result": {
+    "item": "eternal_defense:drink_pot"
+  }
+}

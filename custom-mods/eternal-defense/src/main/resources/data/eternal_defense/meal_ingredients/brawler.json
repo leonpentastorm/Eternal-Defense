@@ -1,0 +1,10 @@
+{
+  "ingredient": {
+    "tag": "eternal_defense:meal/brawler"
+  },
+  "staple": false,
+  "effects": {
+    "vitality": 1
+  },
+  "family": "protein"
+}

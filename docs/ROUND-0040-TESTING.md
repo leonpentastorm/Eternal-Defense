@@ -4,7 +4,7 @@ Branch `feature/logistics-hub`, made from `feature/animation-pass` at 0.0.39 (`4
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client of each edition** (Forge 47.4.20 development runtime with TaCZ, `xvfb`, 1280 x 720 at GUI scale 2), the new harness `tools/qa/QaHub.java.txt` (`tools/qa/setup-qa.sh <dir> <standalone|pack> QaHub`). It works on a fresh flat world with a Defense Beacon planted 2000 blocks out, so that Hub A's anchor sits on a chunk corner (its 27 blocks span four chunks). It drives the game the way a player does where it can (right-clicks, screen clicks, page buttons, shift-clicks, mining) and calls the server's own handlers where a click would only reach them (the stations' buy, upgrade and Gather actions). After every action it waits on the server until the Hub line has been sent, then checks the pack, the Hub, the station and the chat.
 * **Real client of the pack edition with Create 6.0.8 loaded** (Ponder 1.0.91, Flywheel 1.0.6, Registrate MC1.20-1.3.3, from maven.createmod.net and maven.ithundxr.dev), the harness `tools/qa/QaHubCreate.java.txt` (`QA_CREATE=1 tools/qa/setup-qa.sh <dir> pack QaHubCreate`). It builds real Create machines next to a Hub and lets them run. The pack's KubeJS is not in the development runtime, so the pack's Resonance Coil recipe (`kubejs:beacon/defense`, heated mixing) is mirrored as a datapack recipe (`tools/qa/qa_resonance_coil_mixing.json`) with the same inputs and output.
 
@@ -112,7 +112,7 @@ Pack edition, Create 6.0.8 running in the same client, on a fresh flat world wit
 
 **The Hub's blocks**
 * With Create loaded, the 26 parts are the Create-aware kind (`CreateHubPart`).
-* The mechanical arm's `arsenal_beacon:logistics_hub` interaction point type is registered.
+* The mechanical arm's `eternal_defense:logistics_hub` interaction point type is registered.
 
 **A line that makes one of our materials: Resonance Coils**
 * A mechanical mixer over a basin on a blaze burner (lit with a block of coal: "kindled"). The basin spills onto a belt that ends at the Hub's west face, with no funnel.

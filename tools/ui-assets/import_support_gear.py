@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Installs the hand-made support gear models (docs/art/Create-Arsenal-Support-Gear) into the mod.
+"""Installs the hand-made support gear models (docs/art/Eternal-Defense-Support-Gear) into the mod.
 
 Reads the Blockbench files (textures are embedded in them), copies the Minecraft JSON models, puts the Ardent Energy crystal on the green
 credit square of the Exchange Shop, builds the shop's split model and the inventory model of the cannon. Re-run after editing the art:
@@ -10,8 +10,8 @@ import base64, copy, io, json, pathlib
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = ROOT / 'docs/art/Create-Arsenal-Support-Gear'
-ASSETS = ROOT / 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon'
+SRC = ROOT / 'docs/art/Eternal-Defense-Support-Gear'
+ASSETS = ROOT / 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense'
 MODELS = ['exchange_shop', 'support_cannon', 'support_cannon_turret', 'support_cannon_barrel', 'support_parcel',
           'support_platform_mk1', 'support_platform_mk2', 'support_platform_mk3', 'support_platform_mk4']
 
@@ -49,17 +49,17 @@ def split_shop(model):
     textures = model['textures']
     root = {k: v for k, v in model.items() if k not in ('elements', 'render_type')}
     root.update({'loader': 'forge:composite',
-                 'children': {'body': {'parent': 'arsenal_beacon:block/exchange_shop_body'}, 'glass': {'parent': 'arsenal_beacon:block/exchange_shop_glass'}},
+                 'children': {'body': {'parent': 'eternal_defense:block/exchange_shop_body'}, 'glass': {'parent': 'eternal_defense:block/exchange_shop_glass'}},
                  'item_render_order': ['body', 'glass']})
-    child = lambda els, rt: {'credit': 'Create Arsenal - remodel', 'ambientocclusion': False, 'render_type': rt, 'textures': textures, 'elements': els}
+    child = lambda els, rt: {'credit': 'Eternal Defense - remodel', 'ambientocclusion': False, 'render_type': rt, 'textures': textures, 'elements': els}
     return root, child(body, 'minecraft:cutout'), child(glass, 'minecraft:translucent')
 
 def cannon_item():
     """Inventory model: base + turret + a shortened barrel tilted 45 degrees at the trunnion (a model may only reach -16..32)."""
     parts = [('support_cannon', '0'), ('support_cannon_turret', '1'), ('support_cannon_barrel', '2')]
     base = json.loads((ASSETS / 'models/block/support_cannon.json').read_text())
-    out = {'textures': {'0': 'arsenal_beacon:block/support_cannon', '1': 'arsenal_beacon:block/support_cannon_turret', '2': 'arsenal_beacon:block/support_cannon_barrel',
-                        'particle': 'arsenal_beacon:block/support_cannon'}, 'elements': [], 'display': base.get('display', {})}
+    out = {'textures': {'0': 'eternal_defense:block/support_cannon', '1': 'eternal_defense:block/support_cannon_turret', '2': 'eternal_defense:block/support_cannon_barrel',
+                        'particle': 'eternal_defense:block/support_cannon'}, 'elements': [], 'display': base.get('display', {})}
     for name, slot in parts:
         m = json.loads((ASSETS / f'models/block/{name}.json').read_text())
         for e in m['elements']:
@@ -89,8 +89,8 @@ def main():
     for stale in ('textures/block/support_parcel_chute.png', 'models/block/support_parcel_chute.json'):   # the parachute is drawn from vertices now
         if (ASSETS / stale).exists(): (ASSETS / stale).unlink()
     dump(ASSETS / 'models/item/support_cannon.json', cannon_item())
-    dump(ASSETS / 'models/item/exchange_shop.json', {'parent': 'arsenal_beacon:block/exchange_shop'})
-    dump(ASSETS / 'models/item/support_platform.json', {'parent': 'arsenal_beacon:block/support_platform_mk1'})
+    dump(ASSETS / 'models/item/exchange_shop.json', {'parent': 'eternal_defense:block/exchange_shop'})
+    dump(ASSETS / 'models/item/support_platform.json', {'parent': 'eternal_defense:block/support_platform_mk1'})
     old = ASSETS / 'textures/block/support_kit.png'
     if old.exists(): old.unlink()
 

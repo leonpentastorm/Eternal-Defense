@@ -15,8 +15,8 @@ from fire_icons import ICONS
 import models
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-MOD = ROOT / 'custom-mods/arsenal-beacon/src'
-ASSETS = MOD / 'main/resources/assets/arsenal_beacon'
+MOD = ROOT / 'custom-mods/eternal-defense/src'
+ASSETS = MOD / 'main/resources/assets/eternal_defense'
 PREVIEWS = ROOT / 'docs/ui/sprites'
 
 def write(path, data):
@@ -28,7 +28,7 @@ def main():
     for name, make in SPRITES.items():
         im = make(); im.save(ASSETS / 'textures/item' / f'{name}.png')
         im.resize((256, 256), Image.NEAREST).save(PREVIEWS / f'{name}_256.png')
-        write(ASSETS / 'models/item' / f'{name}.json', {'parent': 'minecraft:item/generated', 'textures': {'layer0': f'arsenal_beacon:item/{name}'}})
+        write(ASSETS / 'models/item' / f'{name}.json', {'parent': 'minecraft:item/generated', 'textures': {'layer0': f'eternal_defense:item/{name}'}})
         print('sprite', name)
     icons = ASSETS / 'textures/gui/fire_support'; icons.mkdir(parents=True, exist_ok=True)
     for name, make in ICONS.items():

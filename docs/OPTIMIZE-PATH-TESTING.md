@@ -11,7 +11,7 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 
 ## Real server (GameTests in a real client's integrated server)
 
-`tools/qa/QaOptimize.java.txt` boots a flat world and runs `OptimizePathGameTests` (opt-in: `-Darsenal.optimizeTests=true`, or `/optimize-path-test`). Each test runs the new code next to a verbatim copy of the code it replaced. Final run: **5 of 5 pass**.
+`tools/qa/QaOptimize.java.txt` boots a flat world and runs `OptimizePathGameTests` (opt-in: `-Deternaldefense.optimizeTests=true`, or `/optimize-path-test`). Each test runs the new code next to a verbatim copy of the code it replaced. Final run: **5 of 5 pass**.
 
 1. **Same base score.** 72 synthetic bases (6 seeds x the 4 zone sizes x 3 sets of player-placed blocks, all heights, the beacon at positive and negative coordinates) plus one two-storey hall over a whole Mk-1 zone, which really reaches the floor cap (at least 72 floors) so the cap's stop is compared too: **the old and the new scoring give the identical score record on all 73.** The bases have layered ground with ores and water pockets, houses of 1 to 3 storeys (floors, walls, glass, doors, slab/stair/plank roofs, lamps, chests, barrels, bookshelves, beds, carpets, flower pots), lamp posts, fences, walls, leaves, sand, gravel, a lit and an unlit furnace, fire, lava, weapon stations of random age, a structure part and the beacon.
 2. **Faster base score.** On the biggest zone (Mk-4 core, full height, 49,221 blocks, score 3,252), median of 7 timed runs after 3 warm-ups, old and new alternating on the same map: **63.9 ms to 21.2 ms (3.0x)** in the first run, **66.4 ms to 25.7 ms (2.6x)** in the final run (that run also has the allocation-free pre-checks; the two runs differ by the noise of a software-rendered client on the same machine). This is the hitch a base has about every 20 seconds between raids and once at every raid start.
@@ -21,9 +21,9 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 
 The first run of the new test file had **two failing tests whose setups were wrong**, not the code under test: the "floor cap" base was too small to reach the cap (61 floors; replaced by the hall above) and the bus benchmark posted one event object twice, which Forge refuses (now a fresh event per post). In that same run the score equivalence had already passed on all 72 ordinary bases and on that smaller base.
 
-**Regression:** the 11 Raider Gates GameTests (`tools/qa/QaStuck.java.txt`, which drive `RaidRescue`, `BeaconCombat`'s goals and the real `ArsenalBeacon.raid` loop) pass **11 of 11** on the final code.
+**Regression:** the 11 Raider Gates GameTests (`tools/qa/QaStuck.java.txt`, which drive `RaidRescue`, `BeaconCombat`'s goals and the real `EternalDefense.raid` loop) pass **11 of 11** on the final code.
 
-How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa-opt pack QaOptimize`, then `xvfb-run ./gradlew --no-daemon --offline :arsenal-beacon:runClient` in that copy, and wait for `QA_SUMMARY`.
+How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa-opt pack QaOptimize`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`.
 
 ## Not tested
 

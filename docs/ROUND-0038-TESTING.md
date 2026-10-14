@@ -4,7 +4,7 @@ Branch `feature/drink-station`, after 0.0.37.
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime with TaCZ, `xvfb`, 1280 x 720 at GUI scale 2), the new harness `tools/qa/QaMre.java.txt` on a fresh flat world with a Defense Beacon (the station stands in its Home Zone). It places the station with its item, fills it with real slot clicks (one item at a time, as a player right-clicks), presses the screen's real buttons, sends a cheating click packet and Make requests the screen would not allow, compares every MRE with vanilla's own `FoodData` fed each food alone (the real items, Forge's `FoodData.eat(item, stack, player)`), eats MREs in survival by holding the use key and reads the food bar at the moment the server finishes the eating, crafts Marines Fuel through the edition's recipe data, buys the station at Workshop Fabrication, opens the Field Guide, breaks the station, checks the screen's layout at three window sizes and takes screenshots.
 
 ## Results

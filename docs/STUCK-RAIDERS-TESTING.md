@@ -20,7 +20,7 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 
 1. a raider sealed in a stone cell (normal AI) is moved to the staging ring after about 25 s (window 480 to 660 ticks), outside the zone plus clearance, in another sector than the one it was stuck in, with one rescue counted on the mob, no leftover fall or path;
 2. a raider on an isolated 6-block pillar is moved off it in the same time window, onto the ground of the ring;
-3. through the real `ArsenalBeacon.raid` loop (reflection, as the older campaign tests do): three rescues, then the fourth stall withdraws the raider, the first wave of several completes (its supply reward is paid) about 2,000 ticks after it started, far below the 24,000-tick timeout, with no beacon damage, one withdrawal counted and announced, nothing left in the trackers;
+3. through the real `EternalDefense.raid` loop (reflection, as the older campaign tests do): three rescues, then the fourth stall withdraws the raider, the first wave of several completes (its supply reward is paid) about 2,000 ticks after it started, far below the 24,000-tick timeout, with no beacon damage, one withdrawal counted and announced, nothing left in the trackers;
 4. a boss is moved on every stall (at least five times, past the point where an ordinary raider is withdrawn) and is never withdrawn;
 5. a vex (glider) and a husk under a parachute are left alone for 1,100 ticks: not moved, not tracked, no rescue counted;
 6. one of twelve sectors has a lake across its centre ray: its corridor score has violations and the other eleven are clean; 60 calls of `RaidSpawns.find` never return a spawn in the lake sector; at most 12 probes were made;
@@ -28,7 +28,7 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 
 Found and fixed with these runs: the first runs crashed the server because the harness ticked the test framework a second time (a development run already ticks it; the runner now asks Forge); tests were registered twice and the two copies pruned each other's trackers (in production there is one campaign, so this only affected the test harness).
 
-How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa pack QaStuck`, then `xvfb-run ./gradlew --no-daemon --offline :arsenal-beacon:runClient` in that copy, and wait for `QA_SUMMARY`. On a server, `-Darsenal.stuckTests=true` registers the tests and `/stuck-raider-test` (permission level 2) starts them.
+How to run: `tools/qa/setup-qa.sh /tmp/claude-0/qa pack QaStuck`, then `xvfb-run ./gradlew --no-daemon --offline :eternal-defense:runClient` in that copy, and wait for `QA_SUMMARY`. On a server, `-Deternaldefense.stuckTests=true` registers the tests and `/stuck-raider-test` (permission level 2) starts them.
 
 ## Not tested
 

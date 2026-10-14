@@ -1,6 +1,6 @@
 plugins { id 'base' }
 tasks.named('build') {
-    dependsOn ':arsenal-beacon:build', ':arsenal-gun-guide:build', ':arsenal-displays:build'
+    dependsOn ':eternal-defense:build', ':eternal-defense-gun-guide:build', ':eternal-defense-displays:build'
 }
 tasks.register('releaseJars') {
     group = 'build'

@@ -4,7 +4,7 @@ Feature branch `feature/messhall-ver-5`, based on v4 `73dbebf`. The owner author
 
 ## Installation
 
-Use `dist/Arsenal-MessHall-v5-0.0.6-test.zip` with a **fresh world**. Choose one edition folder and install its four JARs on both client and server, replacing older copies. Never combine both editions. Beacon/Guide stay 0.21.0 and Displays 1.1.0; use the project version and SHA-512 checksums to identify this build.
+Use `dist/Eternal-Defense-MessHall-v5-0.0.6-test.zip` with a **fresh world**. Choose one edition folder and install its four JARs on both client and server, replacing older copies. Never combine both editions. Beacon/Guide stay 0.21.0 and Displays 1.1.0; use the project version and SHA-512 checksums to identify this build.
 
 The required **TaCZ Attributes 1.4** JAR is included separately in each folder, with source, MIT terms and checksums. Keep TaCZ **1.1.8-hotfix2** installed ([author download](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989)); it is an existing dependency and is not bundled. Pack edition also requires the matching full Create/KubeJS pack and scripts. The Apocalypse gunpack, AppleSkin and optional LesRaisins addon are not bundled. This is an update/test bundle, not a complete modpack.
 
@@ -36,7 +36,7 @@ python3 tools/release/package-messhall-v5.py --backend-jar /path/to/tacz-attribu
 
 The runtime must already contain Forge 1.20.1 / 47.4.20 under `runtime/libraries`, pinned dependency JARs plus the author's Apocalypse ZIP under `downloads`, and a `test-runs` directory. Client checks also need the official launcher manifest/assets/natives and Xvfb, following the existing retained-runtime setup. These scripts do not install the runtime. In this workspace source `/workspace/.eternal-defense/activate.sh` first; localhost networking is required even offline.
 
-Server fixtures use `-Darsenal.messHallTests=true`, `/mess-hall-v5-test <lowercase-case>`. V3/v4 regressions use `/mess-hall-v4-test <case>`. The UI observer additionally requires `-Darsenal.v5ClientTests=true` on both ends. These flags are off in normal launches. Use only disposable worlds: fixtures replace arena/campaign state. Every run retains console output, installed-JAR hashes, saves and successful-case JSON outside the repository.
+Server fixtures use `-Deternaldefense.messHallTests=true`, `/mess-hall-v5-test <lowercase-case>`. V3/v4 regressions use `/mess-hall-v4-test <case>`. The UI observer additionally requires `-Deternaldefense.v5ClientTests=true` on both ends. These flags are off in normal launches. Use only disposable worlds: fixtures replace arena/campaign state. Every run retains console output, installed-JAR hashes, saves and successful-case JSON outside the repository.
 
 ## Remaining owner playtests
 

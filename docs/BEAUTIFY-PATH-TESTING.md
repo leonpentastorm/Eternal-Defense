@@ -2,8 +2,8 @@
 
 ## Run in this round
 
-* Build: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew --no-daemon --offline build releaseJars` succeeds; both editions (`arsenal-beacon-0.21.0.jar`, `arsenal-beacon-0.21.0-standalone.jar`) are produced.
-* Unit tests: 154 pass, 0 fail (`:arsenal-beacon:test`). New `BeautifyPathTest`: raid music choice (`RaidMusic.cue`), the fall of a round (`Ordnance.Fall.drop`: lands exactly at the flight time, a bomb bores on and stops), screen shake falloff, the scrolling type list (`CannonScreen.visibleRows`, `scrollTo`), the upgrade order (three-level upgrades and Area of effect first), shell counts, damage shares and radii of the six new types, the pull and push helpers (never past the centre, bosses and knockback resistance), and that the Field Guide quotes the new numbers. `LangKeysTest` covers the new names, descriptions and subtitles and the guide's card rules; `SupportTest` now expects an out-of-range fire type to clamp to the Starshell.
+* Build: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew --no-daemon --offline build releaseJars` succeeds; both editions (`eternal-defense-0.21.0.jar`, `eternal-defense-0.21.0-standalone.jar`) are produced.
+* Unit tests: 154 pass, 0 fail (`:eternal-defense:test`). New `BeautifyPathTest`: raid music choice (`RaidMusic.cue`), the fall of a round (`Ordnance.Fall.drop`: lands exactly at the flight time, a bomb bores on and stops), screen shake falloff, the scrolling type list (`CannonScreen.visibleRows`, `scrollTo`), the upgrade order (three-level upgrades and Area of effect first), shell counts, damage shares and radii of the six new types, the pull and push helpers (never past the centre, bosses and knockback resistance), and that the Field Guide quotes the new numbers. `LangKeysTest` covers the new names, descriptions and subtitles and the guide's card rules; `SupportTest` now expects an out-of-range fire type to clamp to the Starshell.
 * Audio was checked by analysis only (levels per band, loudness, spectrograms, that loops have no gap or click at the seam), not by listening: the author of these files cannot hear them.
 
 ## Run in the next round (0.0.17)

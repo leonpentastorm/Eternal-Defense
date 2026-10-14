@@ -12,7 +12,7 @@ QA_CHECK PASS and it comes back
 QA_CHECK FAIL milk does not list the zone effect as cleared, and it is back a moment later []
 QA_CHECK FAIL the beacon reports 1 Hub 2
 QA_CHECK FAIL the Overview says: This base has 1 active Logistics Hub [Mk-4, Preparing, HP 2000 / 2000, Next raid in 10.0 active days, Next: Raid #1 - normal raid, Next payout: Tier 0 / 10, Last paid: Tier 0, Score 71 / 500 | Need 429 for Tier 1, Building 0/5 + Logistics 0/5 + Break 0 | Cap 10 = Tier 0, Base score, Live base preview; the raid snapshot fixes the payout, Build, 27, Palette, 40, Details, 0, Lighting, 4, Furnishings, 0, Layout, 0, Factory, 0, Platforms, 0, This base has 2 active Logistics Hubs, Cover your beacon from hostile mobs]
-QA_CHECK PASS the Mess Hall screen is open dev.createarsenal.beacon.MessHallScreen@68862632
+QA_CHECK PASS the Mess Hall screen is open dev.eternaldefense.beacon.MessHallScreen@68862632
 QA_CHECK PASS no food anywhere: the main button is off 
 QA_CHECK FAIL food only in the Hub: the main button turns on and says Gather ingredients  active=true
 QA_CHECK PASS Gather laid the food out from the Hub: on the table, out of the Hub, nothing through the pack table hub pack bread: 6 246 0 2 (hub before 252)
@@ -32,6 +32,6 @@ QA_CHECK PASS attachment table, 1 locked: the list says how many wait in later A
 QA_CHECK PASS ammo table, 3 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, Age 1 | Frontier, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing ammo | Coins: 0, 0 matches, Upgrade your ammo table, Materials (from your inventory), 3 items need a later Age or milestone, There are 3 more ammo types for this weapon in later Ages. Upgrade, your table (Upgrade tab) to unlock them.]
 QA_CHECK PASS ammo table, 1 locked: the list says how many wait in later Ages, not Hold a gun [WEAPONS, No nearby table, AMMO, Age 1 | Frontier, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing ammo | Coins: 0, 0 matches, Upgrade your ammo table, Materials (from your inventory), 1 items need a later Age or milestone, There is 1 more ammo type for this weapon in a later Age. Upgrade, your table (Upgrade tab) to unlock it.]
 QA_CHECK PASS no gun in hand: the old line, Hold a gun [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing attachments, 0 matches, Equip a gun, Materials (from your inventory), 0 items need a later Age or milestone, Hold a gun and press [H] at this table. It lists what fits that gun.]
-QA_CHECK PASS the satellite stands Block{arsenal_beacon:satellite_beacon}[facing=north,mk=1]
+QA_CHECK PASS the satellite stands Block{eternal_defense:satellite_beacon}[facing=north,mk=1]
 QA_CHECK PASS goggles on the MRE Station, the satellite (a minute), the Hub and the Mess Hall: no ClassCastException in the log, the game runs new ClassCastException lines: 0, goggles=goggles
 QA_DONE pass=26 fail=10

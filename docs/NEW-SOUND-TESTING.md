@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), driven by the `r9` scenario of `tools/qa/QaWorld.java.txt` (`echo all > /tmp/claude-0/qa-r9.flag`, then `tools/qa/setup-qa.sh <dir> <pack|standalone> QaWorld` and `runClient`; parts: `music chatter whistle`). The scenario sets raid states on the integrated server (a hard raid of eight waves, a special raid of four, then a real victory in the standalone edition) and reads the song the client plays; it drops real flares (fire, supply, return, one under a thick roof) and a real Explosion Barrage and Bunker Buster. A listener on the client's sound manager logs every sound of the mod the client really starts (`QA_SOUND`: tick, event, pitch), so the checks see which song, which radio line and which whistle actually played.
 * **Sound.** The client ran with OpenAL Soft's `wave` backend, so the game's real mixed output was written to a WAV file. `tools/audio/which_song.py` names the song in every 2-second window; `tools/audio/find_sfx.py` finds when each effect starts (and at which pitch). **Nobody listened to it.**
 

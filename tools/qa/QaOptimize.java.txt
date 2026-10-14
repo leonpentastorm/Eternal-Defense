@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
  * integrated server: the faster code next to a copy of the code it replaced, same answers required, both timed (OPT_BENCH lines).
  * Copied into a throwaway tree by tools/qa/setup-qa.sh. Results: OPT_TEST_* lines, OPT_BENCH lines and QA_SUMMARY.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaOptimize {
     static int tick;static boolean created,started,done;
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){

@@ -1,4 +1,4 @@
 # The five new radio lines in the standalone client's recorded output, first run (the supply flare was refused: empty grid). tools/audio/find_sfx.py, threshold 0.6
-# client log: 08:44:52 QA_SOUND arsenal_beacon:flare.recall_chatter_2
+# client log: 08:44:52 QA_SOUND eternal_defense:flare.recall_chatter_2
 # capture 370.4 s from 0.0 s; threshold 0.6; first 1.5 s of each sound matched
   292.80 s  recall_2               r=0.81  pitch 1.000

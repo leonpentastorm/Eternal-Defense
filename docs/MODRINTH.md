@@ -1,4 +1,4 @@
-# Create Arsenal
+# Eternal Defense
 
 > Publication copy; the current Mess Hall v4 test build (0.0.5) has [recorded validation](MESS-HALL-V4-TESTING.md) and has not been published on Modrinth. A future beacon v4 release requires TaCZ 1.1.8-hotfix2 and leopoko TaCZ Attributes 1.4 on clients/server. [Dependency and compatibility details](MESS-HALL.md).
 
@@ -8,7 +8,7 @@
 
 Night falls. Somewhere past the edge of your base, something is gathering. Your turrets are loaded, your walls are patched, and the beacon in the middle of it all is humming. You have one day left to get ready.
 
-**Create Arsenal turns Minecraft into a shared campaign of building, industry and base defense.** Plant a Defense Beacon, survive your first raid, and grow a ramshackle camp into a fortified home, a humming factory and a fully equipped armory.
+**Eternal Defense turns Minecraft into a shared campaign of building, industry and base defense.** Plant a Defense Beacon, survive your first raid, and grow a ramshackle camp into a fortified home, a humming factory and a fully equipped armory.
 
 ![Screenshot: a fortified base under a raid](REPLACE_ME)
 
@@ -144,7 +144,7 @@ You do not need to read a wiki. New players get a starter weapon with matching a
 
 **Do I need Create?** Not for the standalone edition. The modpack edition builds its progression on Create.
 
-**Can I change the exchange offers?** Yes. They live in `config/arsenal-beacon-exchange.txt`, with a `[sell]` and a `[buy]` section and one `item = energy` per line. Drop chances live in `arsenal-beacon-common.toml`.
+**Can I change the exchange offers?** Yes. They live in `config/eternal-defense-exchange.txt`, with a `[sell]` and a `[buy]` section and one `item = energy` per line. Drop chances live in `eternal-defense-common.toml`.
 
 **Where are my raid rewards?** The beacon itself is the reward chest: press the reward button in its menu. Nothing is placed in the world, so it cannot clip into your build.
 

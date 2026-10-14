@@ -2,8 +2,8 @@ First real-client run of 0.0.23 (standalone, before the fix). Transcribed from r
 (the throwaway QA tree was rebuilt afterwards, so the file itself is gone).
 
 Description: Ticking entity
-java.lang.ClassCastException: class dev.createarsenal.beacon.Fobs$Events cannot be cast to class dev.createarsenal.beacon.RaidAdaptation$Events
-	at dev.createarsenal.beacon.__Events_attack_LivingAttackEvent.invoke(.dynamic)
+java.lang.ClassCastException: class dev.eternaldefense.beacon.Fobs$Events cannot be cast to class dev.eternaldefense.beacon.RaidAdaptation$Events
+	at dev.eternaldefense.beacon.__Events_attack_LivingAttackEvent.invoke(.dynamic)
 	at net.minecraftforge.eventbus.ASMEventHandler.invoke(ASMEventHandler.java:55)
 	at net.minecraftforge.eventbus.EventBus.post(EventBus.java:312)
 	at net.minecraftforge.common.ForgeHooks.onLivingAttack(ForgeHooks.java:270)

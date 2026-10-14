@@ -11,7 +11,7 @@ QA_CHECK PASS planting started a vanilla raid raid=23, villagers at its start=4
 QA_CHECK PASS everyone reads the announcement 
 QA_CHECK PASS the block stands two tall 
 QA_CHECK PASS the planted FOB's zone outline reaches the client [Zone[id=32, name=FOB BLACK LANCE, state=planted, sections=[-307863207542780, -303465161031676, -299067114520572, -307863207542779, -303465161031675, -299067114520571, -307863207542781, -303465161031677, -299067114520573, -307863208591356, -303465162080252, -299067115569148, -307863208591355, -303465162080251, -299067115569147, -307863208591357, -303465162080253, -299067115569149, -307863209639932, -303465163128828, -299067116617724, -307863209639931, -303465163128827, -299067116617723, -307863209639933, -303465163128829, -299067116617725, -307863210688508, -303465164177404, -299067117666300, -294669071155196, -307863210688507, -303465164177403, -299067117666299, -294669071155195, -307863210688509, -303465164177405, -299067117666301, -294669071155197, -307863211737084, -303465165225980, -299067118714876, -294669072203772, -307863211737083, -303465165225979, -299067118714875, -294669072203771, -307863211737085, -303465165225981, -299067118714877, -294669072203773, -303465166274556, -299067119763452, -294669073252348, -303465166274555, -299067119763451, -294669073252347, -303465166274557, -299067119763453, -294669073252349]]]
-QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@3ecd0cf9
+QA_CHECK PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@3ecd0cf9
 QA_CHECK PASS the status card has the FOB line with the shovel in hand FOB BLACK LANCE | PLANTED | RAID | 4 villagers
 QA_CHECK PASS the FOB is ACTIVE ACTIVE
 QA_CHECK PASS everyone reads that it is ACTIVE 
@@ -22,7 +22,7 @@ QA_CHECK PASS the outline is off for the FOB
 QA_CHECK PASS and gone from the client []
 QA_CHECK PASS the outline is back 
 QA_CHECK PASS the client shows the FOB Zone effect 
-QA_CHECK PASS the meal does not run down there effect.arsenal_beacon.meal_might, Duration: infinite
+QA_CHECK PASS the meal does not run down there effect.eternal_defense.meal_might, Duration: infinite
 QA_CHECK PASS the FOB is renamed North Gate
 QA_CHECK PASS everyone reads the new name 
 QA_CHECK PASS the Field Guide has the FOB page 
@@ -34,7 +34,7 @@ QA_CHECK PASS and links to the FOB by itself BlockPos{x=-1082, y=63, z=718}
 QA_CHECK PASS the cart rolls on the rail 
 QA_CHECK PASS the cart rolled on through the gate with its rider seated x=-1079.8776157733116 gate x=-1082
 QA_CHECK PASS a spot for a gate in the base zone BlockPos{x=20008, y=291, z=2}
-QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.createarsenal.beacon.GateClient$GateScreen@7993ec00
+QA_CHECK PASS the Receiving Gate asks which FOB it serves dev.eternaldefense.beacon.GateClient$GateScreen@7993ec00
 QA_CHECK FAIL the Receiving Gate serves the FOB null
 QA_CHECK FAIL the route is open and its round trip delivered true  0
 QA_CHECK PASS the light at home turns green, on both columns 
@@ -111,7 +111,7 @@ QA_CHECK PASS the SOS calls the FOB sos=32 left=167960
 QA_CHECK PASS everyone reads the SOS 
 QA_CHECK PASS the SOS map is handed out 
 QA_CHECK PASS the status card leads with the SOS SOS North Gate | 6 d 23 h left | go there
-QA_CHECK PASS the Command Table opens on its FOBs tab dev.createarsenal.beacon.TacticalClient$TableScreen@73153938
+QA_CHECK PASS the Command Table opens on its FOBs tab dev.eternaldefense.beacon.TacticalClient$TableScreen@73153938
 QA_CHECK PASS it lists the FOB: its name, its distance from the base, its state {bearing:268.0644445255384d,distance:21110,id:32L,name:"North Gate",route:1b,signal:"green",sos:1b,sosLeft:167880L,state:"active",villagers:4,x:-1090,z:721,zone
 QA_CHECK PASS and the time left to answer its SOS left=167880
 QA_CHECK PASS the table knows the map is not carried 
@@ -157,7 +157,7 @@ QA_CHECK PASS the FOB screen with its tribute column at 480x270: 43 texts, none 
 QA_CHECK PASS the window is 1280 x 720 at GUI scale 3 1280x720 scale 3.0
 QA_CHECK FAIL the FOB screen with its tribute column at 427x240: 40 texts, none over another or over a button, all in the window 1 '4' over the button 'Placed'
 QA_CHECK PASS the table stands in the zone, its parts with it 
-QA_CHECK PASS the enchanting screen opens dev.createarsenal.beacon.EnchantClient$EnchantScreen@1acfd193
+QA_CHECK PASS the enchanting screen opens dev.eternaldefense.beacon.EnchantClient$EnchantScreen@1acfd193
 QA_CHECK PASS Sharpness I applied 
 QA_CHECK PASS Sharpness II stays locked with 1 ACTIVE FOB (it needs 2) 
 QA_CHECK PASS the screen says which level and why Sharpness II needs 2 ACTIVE FOBs (you have 1).
@@ -166,9 +166,9 @@ QA_CHECK PASS everyone reads it
 QA_CHECK PASS Mending applied 
 QA_CHECK PASS the table is Mk I 
 QA_CHECK PASS the sword comes back enchanted 
-QA_CHECK PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@4ff43de
+QA_CHECK PASS the Exchange opens dev.eternaldefense.beacon.ExchangeScreen@4ff43de
 QA_CHECK PASS the Exchange buys the Warlord Seal for 8 Ardent Energy value=8
-QA_CHECK PASS the shovel asks first dev.createarsenal.beacon.BeaconClient$ConfirmScreen@2294d35c
+QA_CHECK PASS the shovel asks first dev.eternaldefense.beacon.BeaconClient$ConfirmScreen@2294d35c
 QA_CHECK PASS nothing is removed yet 
 QA_CHECK PASS the FOB is deleted 
 QA_CHECK PASS its block is gone 

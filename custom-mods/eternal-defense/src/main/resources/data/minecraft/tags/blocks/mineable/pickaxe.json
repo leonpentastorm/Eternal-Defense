@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    "eternal_defense:armor_platform",
+    "eternal_defense:exchange_shop",
+    "eternal_defense:support_platform",
+    "eternal_defense:support_cannon",
+    "eternal_defense:cook_pot",
+    "eternal_defense:mess_hall_mk1",
+    "eternal_defense:mess_hall_mk2",
+    "eternal_defense:mess_hall_mk3",
+    "eternal_defense:mess_hall_mk4",
+    "eternal_defense:bowl_dispenser",
+    "eternal_defense:milk_dispenser",
+    "eternal_defense:drink_mixer_mk1",
+    "eternal_defense:drink_mixer_mk2",
+    "eternal_defense:drink_mixer_mk3",
+    "eternal_defense:drink_mixer_mk4",
+    "eternal_defense:drink_pot",
+    "eternal_defense:cup_dispenser",
+    "eternal_defense:mre_maker",
+    "eternal_defense:logistics_hub",
+    "eternal_defense:logistics_hub_part"
+  ]
+}

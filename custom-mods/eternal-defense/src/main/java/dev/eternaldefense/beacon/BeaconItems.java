@@ -1,0 +1,63 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.*;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.*;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import java.util.List;
+
+final class BeaconItems {
+    static final class Placement extends BlockItem {
+        Placement(Block block){super(block,new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));}
+        @Override public InteractionResult useOn(UseOnContext context) {
+            if(context.getLevel().isClientSide)net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->BeaconStartup.begin(context));
+            if(context.getPlayer() instanceof ServerPlayer p)BeaconActions.requestPlacement(p,context);
+            return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        }
+        InteractionResult confirmedPlace(UseOnContext context){return super.useOn(context);}
+        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Plant to start a shared defense campaign. Confirmation required."));text.add(Component.literal("Choose the spot with care: only the Recovery Shovel removes it, and that resets the campaign.").withStyle(net.minecraft.ChatFormatting.RED));}
+    }
+    static final class Controller extends ShovelItem {
+        Controller(){super(Tiers.IRON,-3f,-3f,new Properties().stacksTo(1).rarity(Rarity.UNCOMMON));}
+        @Override public InteractionResult useOn(UseOnContext context) {
+            if(context.getPlayer() instanceof ServerPlayer p){
+                if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&server.getBlockState(DefenseStructures.anchor(server,context.getClickedPos())).is(EternalDefense.FOB_BEACON.get())){Fobs.requestRemoval(p,context.getClickedPos());return InteractionResult.CONSUME;}
+                if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&RailGates.anchor(server,context.getClickedPos())!=null){Routes.pickUp(p,RailGates.anchor(server,context.getClickedPos()));return InteractionResult.CONSUME;}
+                if(context.getLevel() instanceof net.minecraft.server.level.ServerLevel server&&BaseZone.relocate(p,server,context.getClickedPos()))return InteractionResult.CONSUME;
+                if(DefenseStructures.beacon(context.getLevel(),context.getClickedPos()))BeaconActions.requestRemoval(p);
+                else return super.useOn(context);
+            }
+            return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        }
+        @Override public InteractionResultHolder<ItemStack> use(Level level,Player player,InteractionHand hand){
+            if(player instanceof ServerPlayer p)BeaconNetwork.open(p,"menu","");
+            return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand),level.isClientSide);
+        }
+        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){
+            text.add(Component.literal("Hold: beacon HUD. Right-click: control panel."));text.add(Component.literal("Use on beacon: remove and reset. Confirmation required."));text.add(Component.translatable("tooltip.eternal_defense.shovel_relocate"));text.add(Component.translatable("tooltip.eternal_defense.shovel_knockback"));
+        }
+    }
+    static final class RecoveryCombat {
+        @net.minecraftforge.eventbus.api.SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+        public void repel(net.minecraftforge.event.entity.player.AttackEntityEvent event){
+            var player=event.getEntity();if(!player.getMainHandItem().is(EternalDefense.CONTROLLER.get()))return;
+            event.setCanceled(true);
+            if(!player.level().isClientSide&&event.getTarget() instanceof net.minecraft.world.entity.LivingEntity target){
+                double yaw=player.getYRot()*Math.PI/180;target.knockback(1.0,Math.sin(yaw),-Math.cos(yaw));target.hurtMarked=true;
+                player.level().playSound(null,player.blockPosition(),net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_KNOCKBACK,net.minecraft.sounds.SoundSource.PLAYERS,1,1);
+            }
+        }
+    }
+    static final class Guide extends Item {
+        Guide(){super(new Properties().stacksTo(1));}
+        @Override public InteractionResultHolder<ItemStack> use(Level level,Player player,InteractionHand hand){
+            if(player instanceof ServerPlayer p)BeaconNetwork.open(p,"guide","");
+            return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand),level.isClientSide);
+        }
+        @Override public void appendHoverText(ItemStack stack,Level level,List<Component> text,TooltipFlag flag){text.add(Component.literal("Right-click to read what everything is and how to use it."));}
+    }
+}

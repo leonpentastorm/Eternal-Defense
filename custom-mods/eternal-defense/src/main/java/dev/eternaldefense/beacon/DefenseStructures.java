@@ -1,0 +1,108 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.core.*;
+import net.minecraft.server.level.*;
+import net.minecraft.world.*;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.*;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.*;
+import net.minecraft.world.level.block.state.properties.*;
+import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.phys.*;
+import net.minecraft.world.phys.shapes.*;
+import java.util.*;
+
+/** Owned footprint cells forward interaction; expansions never replace another structure. */
+final class DefenseStructures {
+    static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
+    static final BooleanProperty WIDE=BooleanProperty.create("wide");
+    static final BooleanProperty TALL=BooleanProperty.create("tall");
+    static final IntegerProperty MK=IntegerProperty.create("mk",1,4);
+    // Vanilla integer state properties are nonnegative: X/Z store delta+1.
+    static final IntegerProperty X=IntegerProperty.create("offset_x",0,2),Y=IntegerProperty.create("offset_y",0,1),Z=IntegerProperty.create("offset_z",0,2);
+    static final Map<String,VoxelShape> shapes=new java.util.concurrent.ConcurrentHashMap<>();
+    static final Map<String,VoxelShape> clippedShapes=new java.util.concurrent.ConcurrentHashMap<>();
+    static int mark(int core){return 1+Math.max(0,Math.min(3,core));}
+    static int angle(Direction facing){return switch(facing){case EAST->90;case SOUTH->180;case WEST->270;default->0;};}
+    static BlockPos second(BlockPos pos,BlockState state){return pos.relative(state.getValue(FACING).getClockWise());}
+    static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(EternalDefense.STRUCTURE_PART.get())?pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z)):pos;}
+    static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(EternalDefense.BEACON.get());}
+    /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
+    static boolean big(BlockState state){return state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())||state.is(EternalDefense.BEACON.get())&&state.getValue(MK)==4;}
+    /** The Support Platform, the Exchange Shop, the Satellite Beacon and the FOB Beacon (0.0.23) are two blocks tall: the upper cell is a structure part. */
+    static boolean tallSupport(BlockState state){return state.is(EternalDefense.SUPPORT_PLATFORM.get())||state.is(EternalDefense.EXCHANGE_SHOP.get())||state.is(EternalDefense.SATELLITE_BEACON.get())||state.is(EternalDefense.FOB_BEACON.get());}
+    /** The Command Table (0.0.20): 2 wide (clockwise of its facing) x 2 tall x 2 deep (behind), its anchor the front right block. */
+    static boolean table(BlockState state){return state.is(EternalDefense.COMMAND_TABLE.get());}
+    /** The Tactical Enchanting Table (0.0.27): 2 wide (clockwise of its facing) x 2 tall x 1 deep, like the weapon benches. */
+    static boolean enchanting(BlockState state){return state.is(EternalDefense.ENCHANTING_TABLE.get());}
+    /** Blocks that are broken as one piece and rebuild a damaged footprint. */
+    static boolean selfHealing(BlockState s){return s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(EternalDefense.SUPPORT_CANNON.get())||s.is(EternalDefense.SUPPLY_CATAPULT.get())||tallSupport(s)||table(s)||enchanting(s);}
+    static boolean owns(BlockState owner){return owner.is(EternalDefense.BEACON.get())||selfHealing(owner);}
+    static List<BlockPos> cells(BlockPos root,BlockState state){
+        List<BlockPos> cells=new ArrayList<>();
+        if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.cells(root,state);
+        if(big(state)){for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)cells.add(root.offset(x,y,z));}
+        else if(tallSupport(state))cells.add(root.above());
+        else if(enchanting(state)){var side=second(root,state);cells.add(side);cells.add(root.above());cells.add(side.above());}
+        else if(table(state)){Direction f=state.getValue(FACING),side=f.getClockWise(),back=f.getOpposite();for(int y=0;y<TacticalBlocks.TABLE_TALL;y++)for(int w=0;w<TacticalBlocks.TABLE_WIDE;w++)for(int d=0;d<TacticalBlocks.TABLE_DEEP;d++)if(w!=0||d!=0||y!=0)cells.add(root.relative(side,w).relative(back,d).above(y));}
+        else if(state.getBlock() instanceof WeaponPlatform.Station){if(state.getValue(WIDE))cells.add(second(root,state));if(state.getValue(TALL)){cells.add(root.above());if(state.getValue(WIDE))cells.add(second(root,state).above());}}return cells;
+    }
+    static boolean available(Level level,BlockPos root,BlockState wanted){
+        for(var p:cells(root,wanted)){
+            if(!level.isInWorldBounds(p)||!level.getWorldBorder().isWithinBounds(p)||!level.hasChunkAt(p))return false;
+            var s=level.getBlockState(p);
+            if(s.is(EternalDefense.STRUCTURE_PART.get())&&anchor(level,p).equals(root))continue;
+            if(!s.canBeReplaced()||level.getBlockEntity(p)!=null)return false;
+            if(!level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,new AABB(p),e->!e.isSpectator()).isEmpty())return false;
+        }return true;
+    }
+    static boolean install(Level level,BlockPos root,BlockState state){
+        if(level.isClientSide||!available(level,root,state))return false;
+        for(var p:cells(root,state)){var s=EternalDefense.STRUCTURE_PART.get().defaultBlockState().setValue(X,1+p.getX()-root.getX()).setValue(Y,p.getY()-root.getY()).setValue(Z,1+p.getZ()-root.getZ());if(level.getBlockState(p)!=s)level.setBlock(p,s,3);}return true;
+    }
+    static void remove(Level level,BlockPos root){
+        if(level.isClientSide)return;
+        for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++){var p=root.offset(x,y,z);if(!p.equals(root)&&level.hasChunkAt(p)&&level.getBlockState(p).is(EternalDefense.STRUCTURE_PART.get())&&anchor(level,p).equals(root))level.setBlock(p,Blocks.AIR.defaultBlockState(),3);}
+    }
+    static boolean syncBeacon(ServerLevel level,CampaignData d){
+        if(!d.installed()||!level.hasChunkAt(d.beacon))return false;var current=level.getBlockState(d.beacon);if(!current.is(EternalDefense.BEACON.get()))return false;
+        var wanted=current.setValue(MK,mark(d.core));
+        if(!available(level,d.beacon,wanted))return false;
+        if(current!=wanted)level.setBlock(d.beacon,wanted,3);install(level,d.beacon,wanted);return true;
+    }
+    static AABB hurtbox(BlockPos root,int mark){return mark==4?new AABB(root.getX()-1,root.getY(),root.getZ()-1,root.getX()+2,root.getY()+2,root.getZ()+2):new AABB(root);}
+    static int actualMark(BlockGetter level,BlockPos pos){var state=level.getBlockState(pos);return state.is(EternalDefense.BEACON.get())?state.getValue(MK):1;}
+    static VoxelShape full(BlockState state){
+        if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.full(state);
+        // Collision is a simple installation envelope, independent of decorative mesh detail.
+        // Exact unions of dozens of fractional cuboids create enormous voxel grids on every raycast.
+        if(state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get()))return Shapes.create(-1,0,-1,2,2,2);
+        if(tallSupport(state))return Shapes.create(0,0,0,1,2,1);
+        if(table(state))return shapes.computeIfAbsent("table:"+state.getValue(FACING),k->{
+            Direction f=state.getValue(FACING),side=f.getClockWise(),back=f.getOpposite();
+            int x0=Math.min(0,side.getStepX()+back.getStepX()),x1=Math.max(0,side.getStepX()+back.getStepX()),z0=Math.min(0,side.getStepZ()+back.getStepZ()),z1=Math.max(0,side.getStepZ()+back.getStepZ());
+            return Shapes.create(x0,0,z0,x1+1,TacticalBlocks.TABLE_TALL,z1+1);});
+        if(state.is(EternalDefense.BEACON.get()))return state.getValue(MK)==4?Shapes.create(-1,0,-1,2,2,2):Shapes.block();
+        if(enchanting(state))return shapes.computeIfAbsent("enchanting:"+state.getValue(FACING),k->switch(state.getValue(FACING)){case EAST->Shapes.create(0,0,0,1,2,2);case SOUTH->Shapes.create(-1,0,0,1,2,1);case WEST->Shapes.create(0,0,-1,1,2,1);default->Shapes.create(0,0,0,2,2,1);});
+        boolean wide=state.getValue(WIDE),tall=state.getValue(TALL);Direction facing=state.getValue(FACING);String key=wide+":"+tall+":"+facing;
+        return shapes.computeIfAbsent(key,k->{double height=tall?2:1;if(!wide)return Shapes.create(0,0,0,1,height,1);return switch(facing){case EAST->Shapes.create(0,0,0,1,height,2);case SOUTH->Shapes.create(-1,0,0,1,height,1);case WEST->Shapes.create(0,0,-1,1,height,1);default->Shapes.create(0,0,0,2,height,1);};});
+    }
+    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.getBlock() instanceof KitchenBlock kitchen?"kitchen:"+kitchen.hall+":"+state.getValue(FACING):state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())?"cannon":tallSupport(state)?"tall":table(state)?"table:"+state.getValue(FACING):enchanting(state)?"enchanting:"+state.getValue(FACING):state.is(EternalDefense.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
+    public static final class Part extends Block {
+        Part(){super(Properties.of().strength(3,6).noOcclusion().dynamicShape());registerDefaultState(stateDefinition.any().setValue(X,1).setValue(Y,0).setValue(Z,1));}
+        @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}
+        @Override public RenderShape getRenderShape(BlockState state){return RenderShape.INVISIBLE;}
+        @Override public PushReaction getPistonPushReaction(BlockState state){return PushReaction.BLOCK;}
+        /** The upper cell of a FOB Beacon cannot be mined (breaking it would take the beacon with it) or broken by withers. */
+        @Override public float getDestroyProgress(BlockState state,Player p,BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(EternalDefense.FOB_BEACON.get())?0:super.getDestroyProgress(state,p,level,pos);}
+        @Override public boolean canEntityDestroy(BlockState state,BlockGetter level,BlockPos pos,net.minecraft.world.entity.Entity e){return !level.getBlockState(anchor(level,pos)).is(EternalDefense.FOB_BEACON.get())&&super.canEntityDestroy(state,level,pos,e);}
+        @Override public VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){var root=anchor(level,pos);var owner=level.getBlockState(root);if(!owns(owner))return Shapes.empty();return cell(owner,state.getValue(X)-1,state.getValue(Y),state.getValue(Z)-1);}
+        @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){var root=anchor(level,pos);var owner=level.getBlockState(root);return owner.use(level,p,hand,new BlockHitResult(hit.getLocation(),hit.getDirection(),root,hit.isInside()));}
+        @Override public void playerWillDestroy(Level level,BlockPos pos,BlockState state,Player p){var root=anchor(level,pos);if(!level.isClientSide&&selfHealing(level.getBlockState(root)))level.destroyBlock(root,!p.isCreative(),p);super.playerWillDestroy(level,pos,state,p);}
+        @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){if(!l.isClientSide&&!next.is(this)){var root=pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z));if(selfHealing(l.getBlockState(root)))l.scheduleTick(root,l.getBlockState(root).getBlock(),1);}super.onRemove(s,l,pos,next,moving);}
+        @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){var root=anchor(l,pos);if(!l.hasChunkAt(root)){l.scheduleTick(pos,this,20);return;}var owner=l.getBlockState(root);if(!owns(owner)||!cells(root,owner).contains(pos))l.setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
+        @Override public void neighborChanged(BlockState s,Level l,BlockPos pos,Block block,BlockPos from,boolean moving){if(!l.isClientSide)l.scheduleTick(pos,this,1);}
+    }
+}

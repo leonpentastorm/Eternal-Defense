@@ -1,6 +1,6 @@
 # Optimize Path (project 0.0.15)
 
-A pass over the code that runs while the game is played (server ticks, events, entity and block-entity ticks, client ticks) in all three mods: Defense Beacon (`arsenal-beacon`), Gun Guide (`arsenal-gun-guide`) and Gun Displays (`arsenal-displays`). The rule of this round: **no feature changes**. Every change gives exactly the same result as the code it replaces; only the work done to get there is smaller. Rendering, culling and HUD drawing were left alone on purpose (they are hard to verify here; see *Not touched*).
+A pass over the code that runs while the game is played (server ticks, events, entity and block-entity ticks, client ticks) in all three mods: Defense Beacon (`eternal-defense`), Gun Guide (`eternal-defense-gun-guide`) and Gun Displays (`eternal-defense-displays`). The rule of this round: **no feature changes**. Every change gives exactly the same result as the code it replaces; only the work done to get there is smaller. Rendering, culling and HUD drawing were left alone on purpose (they are hard to verify here; see *Not touched*).
 
 What was tested, and the measured numbers: `docs/OPTIMIZE-PATH-TESTING.md`.
 
@@ -8,7 +8,7 @@ What was tested, and the measured numbers: `docs/OPTIMIZE-PATH-TESTING.md`.
 
 | Code | How often | Notes |
 | --- | --- | --- |
-| `ArsenalBeacon.tick` (server tick) | every tick | Campaign state machine; per-raider loop once a second during a raid. |
+| `EternalDefense.tick` (server tick) | every tick | Campaign state machine; per-raider loop once a second during a raid. |
 | `BaseSurvey.tick` | every tick between raids while players are online | Reads up to 4,096 blocks a tick until the zone is covered (at most 49 x 49 x 65 = 156,065 positions), then scores the base and waits 400 ticks. |
 | `BaseScoring.analyze` | every finished survey (about every 20 s between raids) and once at every raid start | Scores tens of thousands of blocks in one go: the biggest single piece of work the mod does. |
 | `BeaconCombat.tick` | every tick | Keeps the beacon's objective; once a second attaches goals to hostile mobs near the base. |
@@ -30,10 +30,10 @@ What was tested, and the measured numbers: `docs/OPTIMIZE-PATH-TESTING.md`.
    The blocks are visited in the same order as before, so even the floor cap (the scan stops after 72 + 180 x core floors) stops on the same floor. Measured on a 49,221-block Mk-4 base: **about 64 to 66 ms before, 21 to 26 ms after** (2.6 to 3x), identical scores on 73 test bases.
 3. **Resource path check without a regular expression.** `SoundResourcePaths` (called by ModernFix's resource cache for every pack file while resources load, and for every gun sound) used `String.matches("[a-z0-9/._-]+")`, which compiles a pattern on every call. It is now a plain character loop with the same answer.
 4. **Special Forces corpse sweep.** Once a second the raid code walked every entity of the Overworld looking for defeated Special Forces soldiers. Without the optional Special Forces mod (`taczsf`) no soldier can exist, so the sweep is skipped; with the mod installed it runs as before. `SpecialForcesRaids.soldier` also answers "no" without a string comparison when the mod is absent.
-5. **Deaths.** `ArsenalBeacon.died` looked up and stringified the entity type id of every mob that died in the Overworld before checking whether a raid was running. The id is now only looked up for deaths inside the zone during a raid (same test: namespace `tacz_turrets`).
+5. **Deaths.** `EternalDefense.died` looked up and stringified the entity type id of every mob that died in the Overworld before checking whether a raid was running. The id is now only looked up for deaths inside the zone during a raid (same test: namespace `tacz_turrets`).
 6. **Zone size lookups.** `Rules.radius`, `below`, `above`, `maximumHealth`, `bossHealth` and `platformScore` built a new array on every call; `radius`, `below` and `above` are asked by every "is this inside the zone?" test (block events, mob griefing checks, the raid loop, the base score). The tables are now built once. `CampaignData.inside(x,y,z)` answers the zone test without a position object (`inside(BlockPos)` uses it).
 
-The new code paths are covered by `OptimizePathTest` (unit), `SoundResourcePathsTest` (unit) and `OptimizePathGameTests` (real server, opt-in `-Darsenal.optimizeTests=true`, command `/optimize-path-test`), which runs each faster path next to a verbatim copy of the old code and requires the same answer.
+The new code paths are covered by `OptimizePathTest` (unit), `SoundResourcePathsTest` (unit) and `OptimizePathGameTests` (real server, opt-in `-Deternaldefense.optimizeTests=true`, command `/optimize-path-test`), which runs each faster path next to a verbatim copy of the old code and requires the same answer.
 
 ## Looked at and left as it is
 

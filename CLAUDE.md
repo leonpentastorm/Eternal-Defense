@@ -11,7 +11,7 @@ The Mess Hall v6 work (`feature/messhall-ver-6`, project 0.0.7 to 0.0.11) was me
 * The active development branch is **`dev`**: work and push there only (see *Branches and versions* below). Open no pull request unless the owner asks.
 * End every commit message with these two lines (and no model identifier anywhere in the repo, in code comments or in docs):
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and `Claude-Session: <the session link of that session>`.
-* Build with JDK 17: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew --no-daemon --offline build releaseJars` (unit tests: `:arsenal-beacon:test`).
+* Build with JDK 17: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew --no-daemon --offline build releaseJars` (unit tests: `:eternal-defense:test`).
 * Write down only what was actually tested; list what was not. Display artwork is All Rights Reserved by its creator.
 * Test bundles must include separate JARs for newly added required mods, with versions, source links, checksums and applicable license notices. For Mess Hall v5 this includes leopoko's TaCZ Attributes 1.4. Do not shade the addon into the beacon JAR. If redistribution is unavailable, state that before packaging and provide the author's download instead.
 * Since 0.0.41 there is one edition, the **pack** (Create, KubeJS, KubeJS Create, JEI, TaCZ, TaCZ Attributes, LesRaisins Tactical Equipments are required in `mods.toml`); the standalone edition is discontinued (owner, 0.0.41). Every price lives in `Economy`. The test pack is the owner's exported Modrinth profile rebuilt with `tools/release/make-testpack.py`.

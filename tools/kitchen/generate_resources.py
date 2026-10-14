@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RES = ROOT / 'custom-mods/arsenal-beacon/src/main/resources'
-ASSETS = RES / 'assets/arsenal_beacon'
-DATA = RES / 'data/arsenal_beacon'
+RES = ROOT / 'custom-mods/eternal-defense/src/main/resources'
+ASSETS = RES / 'assets/eternal_defense'
+DATA = RES / 'data/eternal_defense'
 
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -19,10 +19,10 @@ def model(name, textures, elements):
     write(ASSETS / f'models/block/{name}.json', {'textures': dict(particle=textures['frame'], **textures), 'elements': elements})
 
 def block(name):
-    write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'arsenal_beacon:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
+    write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'eternal_defense:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
     if name not in ('bowl_dispenser', 'milk_dispenser'):
-        write(ASSETS / f'models/item/{name}.json', {'parent': f'arsenal_beacon:block/{name}', 'display': {'gui': {'rotation': [30, 225, 0], 'translation': [2 if name != 'cook_pot' else 0, -2.5 if name != 'cook_pot' else -3, 0], 'scale': [.34, .34, .34] if name != 'cook_pot' else [.5, .5, .5]}, 'fixed': {'scale': [.35, .35, .35]}, 'ground': {'scale': [.3, .3, .3]}, 'thirdperson_righthand': {'scale': [.25, .25, .25]}}})
-    write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'arsenal_beacon:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
+        write(ASSETS / f'models/item/{name}.json', {'parent': f'eternal_defense:block/{name}', 'display': {'gui': {'rotation': [30, 225, 0], 'translation': [2 if name != 'cook_pot' else 0, -2.5 if name != 'cook_pot' else -3, 0], 'scale': [.34, .34, .34] if name != 'cook_pot' else [.5, .5, .5]}, 'fixed': {'scale': [.35, .35, .35]}, 'ground': {'scale': [.3, .3, .3]}, 'thirdperson_righthand': {'scale': [.25, .25, .25]}}})
+    write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'eternal_defense:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
 
 for mk in range(1, 5):
     name = f'mess_hall_mk{mk}'
@@ -71,29 +71,29 @@ groups = {
 }
 for name, (items, staple, effects) in families.items():
     write(DATA / f'tags/items/meal/{name}.json', {'replace': False, 'values': ['minecraft:' + i for i in items]})
-    write(DATA / f'meal_ingredients/{name}.json', {'ingredient': {'tag': 'arsenal_beacon:meal/' + name}, 'staple': staple, 'effects': effects, 'family': groups[name]})
+    write(DATA / f'meal_ingredients/{name}.json', {'ingredient': {'tag': 'eternal_defense:meal/' + name}, 'staple': staple, 'effects': effects, 'family': groups[name]})
 
 recipes = {
-    'mess_hall_mk1': {'type': 'minecraft:crafting_shaped', 'pattern': ['PFP', 'IBI', 'PPP'], 'key': {'P': {'tag': 'minecraft:planks'}, 'F': {'item': 'minecraft:furnace'}, 'I': {'item': 'minecraft:iron_ingot'}, 'B': {'item': 'minecraft:barrel'}}, 'result': {'item': 'arsenal_beacon:mess_hall_mk1'}},
-    'cook_pot': {'type': 'minecraft:crafting_shaped', 'pattern': ['ISI', 'ICI', 'III'], 'key': {'I': {'item': 'minecraft:iron_ingot'}, 'S': {'item': 'minecraft:oak_sign'}, 'C': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'arsenal_beacon:cook_pot'}},
+    'mess_hall_mk1': {'type': 'minecraft:crafting_shaped', 'pattern': ['PFP', 'IBI', 'PPP'], 'key': {'P': {'tag': 'minecraft:planks'}, 'F': {'item': 'minecraft:furnace'}, 'I': {'item': 'minecraft:iron_ingot'}, 'B': {'item': 'minecraft:barrel'}}, 'result': {'item': 'eternal_defense:mess_hall_mk1'}},
+    'cook_pot': {'type': 'minecraft:crafting_shaped', 'pattern': ['ISI', 'ICI', 'III'], 'key': {'I': {'item': 'minecraft:iron_ingot'}, 'S': {'item': 'minecraft:oak_sign'}, 'C': {'item': 'minecraft:cauldron'}}, 'result': {'item': 'eternal_defense:cook_pot'}},
 }
 for name, recipe in recipes.items():
     write(DATA / f'recipes/{name}.json', recipe)
-    write(ROOT / f'custom-mods/arsenal-beacon/src/standalone/resources/data/arsenal_beacon/recipes/{name}.json', recipe)
+    write(ROOT / f'custom-mods/eternal-defense/src/standalone/resources/data/eternal_defense/recipes/{name}.json', recipe)
 
 for name in ('mineable/pickaxe',):
     path = RES / f'data/minecraft/tags/blocks/{name}.json'
     value = json.loads(path.read_text())
     for block_name in ['cook_pot', 'bowl_dispenser', 'milk_dispenser', *[f'mess_hall_mk{i}' for i in range(1, 5)]]:
-        entry = 'arsenal_beacon:' + block_name
+        entry = 'eternal_defense:' + block_name
         if entry not in value['values']:
             value['values'].append(entry)
     write(path, value)
 
 lang_path = ASSETS / 'lang/en_us.json'
 lang = json.loads(lang_path.read_text())
-lang.update({f'block.arsenal_beacon.mess_hall_mk{i}': f'Mess Hall Mk {roman}' for i, roman in enumerate(['I', 'II', 'III', 'IV'], 1)})
-lang.update({'block.arsenal_beacon.cook_pot': 'Cook Pot', 'item.arsenal_beacon.prepared_sandwich': 'Prepared Sandwich'})
+lang.update({f'block.eternal_defense.mess_hall_mk{i}': f'Mess Hall Mk {roman}' for i, roman in enumerate(['I', 'II', 'III', 'IV'], 1)})
+lang.update({'block.eternal_defense.cook_pot': 'Cook Pot', 'item.eternal_defense.prepared_sandwich': 'Prepared Sandwich'})
 strings = {
     'kitchen.sandwich': 'Sandwich', 'kitchen.stew': 'Stew', 'kitchen.prepare': 'Prepare',
     'kitchen.ingredients': 'Ingredients', 'kitchen.output': 'Output',
@@ -130,5 +130,5 @@ strings = {
     'meal.timer': 'Field time: %s', 'meal.home': 'HOME ENHANCEMENT | 2× | FROZEN', 'meal.field': 'FIELD | Normal strength',
 
 }
-lang.update({'gui.arsenal_beacon.' + key: text for key, text in strings.items()})
+lang.update({'gui.eternal_defense.' + key: text for key, text in strings.items()})
 write(lang_path, lang)

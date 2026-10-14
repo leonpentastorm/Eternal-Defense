@@ -6,7 +6,7 @@
   victory       "Laurels"          C major fanfare, about 8 seconds: timpani roll, a trumpet hook, full chord with bells.
 
 The three raid tracks loop without a seam (their reverb tails are folded onto their beginnings). Run:
-  python tools/audio/compose.py <assets/arsenal_beacon/sounds/music>
+  python tools/audio/compose.py <assets/eternal_defense/sounds/music>
 """
 import os
 import sys

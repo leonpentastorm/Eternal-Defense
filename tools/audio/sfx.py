@@ -2,7 +2,7 @@
 
 Each function returns a mono numpy array at 44.1 kHz. The loud ones carry their own outdoor echo (delayed, darker copies)
 and a reverb tail, so a blast keeps rolling around the base. Run:
-  python tools/audio/sfx.py <assets/arsenal_beacon/sounds/sfx> [name ...]
+  python tools/audio/sfx.py <assets/eternal_defense/sounds/sfx> [name ...]
 """
 import os
 import sys

@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "mk=1,facing=north": {
+      "model": "eternal_defense:block/defense_beacon_level1_static",
+      "y": 0
+    },
+    "mk=1,facing=east": {
+      "model": "eternal_defense:block/defense_beacon_level1_static",
+      "y": 90
+    },
+    "mk=1,facing=south": {
+      "model": "eternal_defense:block/defense_beacon_level1_static",
+      "y": 180
+    },
+    "mk=1,facing=west": {
+      "model": "eternal_defense:block/defense_beacon_level1_static",
+      "y": 270
+    },
+    "mk=2,facing=north": {
+      "model": "eternal_defense:block/defense_beacon_level2_static",
+      "y": 0
+    },
+    "mk=2,facing=east": {
+      "model": "eternal_defense:block/defense_beacon_level2_static",
+      "y": 90
+    },
+    "mk=2,facing=south": {
+      "model": "eternal_defense:block/defense_beacon_level2_static",
+      "y": 180
+    },
+    "mk=2,facing=west": {
+      "model": "eternal_defense:block/defense_beacon_level2_static",
+      "y": 270
+    },
+    "mk=3,facing=north": {
+      "model": "eternal_defense:block/defense_beacon_level3_static",
+      "y": 0
+    },
+    "mk=3,facing=east": {
+      "model": "eternal_defense:block/defense_beacon_level3_static",
+      "y": 90
+    },
+    "mk=3,facing=south": {
+      "model": "eternal_defense:block/defense_beacon_level3_static",
+      "y": 180
+    },
+    "mk=3,facing=west": {
+      "model": "eternal_defense:block/defense_beacon_level3_static",
+      "y": 270
+    },
+    "mk=4,facing=north": {
+      "model": "eternal_defense:block/defense_beacon_level4_static",
+      "y": 0
+    },
+    "mk=4,facing=east": {
+      "model": "eternal_defense:block/defense_beacon_level4_static",
+      "y": 90
+    },
+    "mk=4,facing=south": {
+      "model": "eternal_defense:block/defense_beacon_level4_static",
+      "y": 180
+    },
+    "mk=4,facing=west": {
+      "model": "eternal_defense:block/defense_beacon_level4_static",
+      "y": 270
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_22`), on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720 at GUI scale 2, and for the size checks 960 x 540 at GUI scale 2 and 1280 x 720 at GUI scale 3), `QaFob` on a fresh NORMAL world in a generated village and at home. The editions ran one after the other.
 * **The overlap check (new).** While a check runs, `Ui` records every text its helpers draw (`Ui.drawn`: the box and the words; null in play). The harness records one frame and checks that no text lies over another text or over a button, that every text and every button is inside the screen's panel, and (on the gate screen and the Command Table's FOBs tab) that no text or button label was cut short with "…" (elsewhere cut texts are listed, not failed). It runs at 640 x 360, 480 x 270 (what 1920 x 1080 at GUI scale 4 gives) and 427 x 240 (1280 x 720 at GUI scale 3), and checks that the window really has that size.

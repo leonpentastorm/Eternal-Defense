@@ -1,8 +1,8 @@
 QA_CHECK PASS its item says it is a 1 x 1 x 2 kitchen block 
-QA_CHECK PASS the MRE Station stands there, its front to the player (north) Block{arsenal_beacon:mre_maker}[facing=north]
-QA_CHECK PASS its upper cell is the invisible filler (1 x 1 x 2) Block{arsenal_beacon:structure_part}[offset_x=1,offset_y=1,offset_z=1]
+QA_CHECK PASS the MRE Station stands there, its front to the player (north) Block{eternal_defense:mre_maker}[facing=north]
+QA_CHECK PASS its upper cell is the invisible filler (1 x 1 x 2) Block{eternal_defense:structure_part}[offset_x=1,offset_y=1,offset_z=1]
 QA_CHECK PASS the item was used up (survival) 
-QA_CHECK PASS the MRE Station screen opens dev.createarsenal.beacon.MreStationScreen@4f401aac
+QA_CHECK PASS the MRE Station screen opens dev.eternaldefense.beacon.MreStationScreen@4f401aac
 QA_CHECK PASS an empty station says what to do: put food in Food | Seal | MRE | Nutrition | 0 / 20 | Saturation | 0 | Put food in the food slots. | 
 QA_CHECK PASS Make is off and Take back is off 
 QA_CHECK PASS its title, the slots' labels and the totals at 0 Food | Seal | MRE | Nutrition | 0 / 20 | Saturation | 0 | Put food in the food slots. | 

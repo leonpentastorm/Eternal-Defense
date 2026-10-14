@@ -1,0 +1,750 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.blockentity.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.*;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Client presentation only. Every purchase and confirmation is validated on the server. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class BeaconClient {
+    private static CompoundTag state=new CompoundTag();
+    private static long receivedAt;
+    private static int n(String key){return state.getInt(key);}
+    private static boolean on(String key){return state.getBoolean(key);}
+    static void receive(BeaconNetwork.State packet){
+        state=packet.data();Minecraft mc=Minecraft.getInstance();receivedAt=mc.level==null?0:mc.level.getGameTime();
+        BeaconAlerts.receive(state.getBoolean("underAttack"));
+        if(BeaconStartup.defer(packet))return;
+        if(mc.screen instanceof PanelScreen screen&&!packet.message().isEmpty()&&!packet.screen().equals("fob_remove"))screen.message=packet.message();
+        switch(packet.screen()){
+            case "menu" -> mc.setScreen(new ControlScreen());
+            case "rewards" -> mc.setScreen(new RaidRewardScreen(mc.screen,state));
+            case "guide" -> mc.setScreen(new GuideScreen(mc.screen instanceof ControlScreen?mc.screen:null));
+            case "place","remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),""));
+            case "fob_remove" -> mc.setScreen(new ConfirmScreen(packet.screen(),packet.token(),packet.message()));   // 0.0.23: the message is the FOB's name
+            case "close" -> {if(mc.screen instanceof PanelScreen)mc.setScreen(null);}
+        }
+    }
+    /** The campaign state is refreshed every second; only a long silence (a lost connection) hides the outlines. A few seconds of server lag, as when the cannon fires, must not. */
+    static final int STALE_TICKS=600;
+    /** Own buffer for the zone and hurtbox lines, so nothing else drawing lines in the same frame can end or reuse their batch. */
+    private static final net.minecraft.client.renderer.MultiBufferSource.BufferSource ZONE_BUFFER=net.minecraft.client.renderer.MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<20));
+    /** The base zone's radius, depth and height as the server last sent them (a beacon picked up keeps its upgrades), else a new beacon's (0.0.33: the placement preview). */
+    static int[] zoneSize(){return state.contains("radius")?new int[]{state.getInt("radius"),state.getInt("below"),state.getInt("above")}:new int[]{Rules.radius(0),Rules.below(0),Rules.above(0)};}
+    private static boolean current(){var mc=Minecraft.getInstance();return mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&mc.level.getGameTime()-receivedAt<STALE_TICKS&&state.getBoolean("installed");}
+    /** The raid song this wave plays (see {@link RaidPlaylist}), or null when no raid is running. */
+    static RaidPlaylist.Song raidSong(){
+        String cue=RaidPlaylist.cue(current(),state.getString("phase"),state.getBoolean("hardRaid"),n("wave"),n("waves"),state.getString("raidType"));
+        return RaidPlaylist.song(cue,RaidPlaylist.seed(state.getLong("beacon"),n("raidsStarted")),n("wave"));
+    }
+    private static boolean holding(){var p=Minecraft.getInstance().player;return p!=null&&(p.getMainHandItem().is(EternalDefense.CONTROLLER.get())||p.getOffhandItem().is(EternalDefense.CONTROLLER.get()));}
+    @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}
+    @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
+    public static final class Registration {
+        @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(EternalDefense.BEACON_ENTITY.get(),Beam::new);e.registerEntityRenderer(EternalDefense.OBJECTIVE.get(),net.minecraft.client.renderer.entity.NoopRenderer::new);}
+        @SubscribeEvent public static void overlays(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_status",(gui,g,partial,w,h)->hud(g,w,h));}
+    }
+    /**
+     * Status card shown near a planted beacon, during raids and while holding the recovery shovel.
+     * It sits at the left edge, vertically centred, clear of chat and the hotbar (bottom), the Gun Guide
+     * (right edge), the TaCZ weapon HUD (bottom right) and block-information overlays (top centre).
+     * The raid music player sits right under it and stays for the whole raid, even where the card is hidden.
+     */
+    private static void hud(GuiGraphics g,int w,int h){
+        var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null)return;
+        if(!current()){if(mission()||fobLine()!=null)drawMission(g,w,h);return;}
+        var card=card(w,h);
+        if(Rules.showHud(state.getString("phase"),holding(),state.getBoolean("near")))drawHud(g,card);
+        else if(mission()||fobLine()!=null)drawMission(g,w,h);   // away from the base: only the mission and FOB lines
+        RaidMusic.drawPlayer(g,mc.font,card.x(),card.y()+card.height()+4,card.width());
+    }
+    /** A hunting mission is running (0.0.20) and this player holds its map or the shovel (0.0.21): the card gets its line, in the Overworld. */
+    private static boolean mission(){var mc=Minecraft.getInstance();return TacticalClient.missionActive()&&mc.level!=null&&mc.level.dimension()==Level.OVERWORLD&&TacticalClient.holdingMissionItem();}
+    /**
+     * The FOB line (0.0.23): the FOB this player stands in (its state, villagers, a raid), else while holding the shovel how many FOBs are
+     * placed and active; null when neither. Overworld only, from the last state the server sent.
+     */
+    static Component fobLine(){
+        var mc=Minecraft.getInstance();
+        if(mc.level==null||mc.level.dimension()!=Level.OVERWORLD||mc.level.getGameTime()-receivedAt>=STALE_TICKS)return null;
+        if(state.contains("fobSos")){var sos=state.getCompound("fobSos");   // an open SOS comes first, on every card (0.0.25)
+            return sos.getBoolean("raid")?Ui.t("hud.fob.sos.raid",sos.getString("name")):Ui.t("hud.fob.sos",sos.getString("name"),FobClient.sosTime(sos.getLong("left")));}
+        if(state.contains("fobHere")){var f=state.getCompound("fobHere");
+            return Ui.t(f.getBoolean("raid")?"hud.fob.here.raid":"hud.fob.here",f.getString("name"),Ui.t("fob.state."+f.getString("state")),f.getInt("villagers"));}
+        if(holding()&&n("fobPlaced")>0)return Ui.t("hud.fob.count",n("fobPlaced"),FobRules.MAX_FOBS,n("fobActive"));
+        return null;
+    }
+    private static int fobColor(){return state.contains("fobSos")||state.contains("fobHere")&&state.getCompound("fobHere").getBoolean("raid")?Ui.RED:FobClient.OLIVE;}
+    /** The mission and FOB lines alone, where the status card would be, when the card itself is hidden. */
+    private static void drawMission(GuiGraphics g,int w,int h){
+        var font=Minecraft.getInstance().font;
+        var parts=new ArrayList<Component[]>();var colors=new ArrayList<Integer>();
+        if(mission()){parts.add(new Component[]{Ui.t("hud.mission.title"),TacticalClient.missionLine()});colors.add(Ui.BRASS);}
+        var fob=fobLine();if(fob!=null){parts.add(new Component[]{Ui.t("hud.fob.title"),fob});colors.add(fobColor());}
+        if(parts.isEmpty())return;
+        int widest=0;for(var p:parts)widest=Math.max(widest,Math.max(font.width(p[0]),font.width(p[1])));
+        int width=Math.min(Math.max(140,widest+18),Math.max(96,w/3));
+        int height=4;for(var p:parts)height+=16+Math.min(2,Ui.lines(font,p[1],width-14))*10;
+        int x=6,y=Math.max(8,(h-height)/2);
+        g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
+        g.fill(x,y,x+3,y+height,colors.get(0));g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
+        int cy=y+5;
+        for(int i=0;i<parts.size();i++){
+            Ui.text(g,font,parts.get(i)[0],x+9,cy,colors.get(i),width-14);
+            int lines=Math.min(2,Ui.lines(font,parts.get(i)[1],width-14));Ui.wrap(g,font,parts.get(i)[1],x+9,cy+12,width-14,Ui.INK,2);
+            cy+=16+lines*10;
+        }
+    }
+    /** Lines the FOB line takes on the status card. */
+    private static int fobLines(int width){var line=fobLine();return line==null?0:Math.min(2,Ui.lines(Minecraft.getInstance().font,line,width-14));}
+    /** Lines the mission takes on the status card (it wraps to a second line on a narrow card). */
+    private static int missionLines(int width){return mission()?Math.min(2,Ui.lines(Minecraft.getInstance().font,TacticalClient.missionLine(),width-14)):0;}
+    record Card(int x,int y,int width,int height){}
+    /** Where the status card goes on a {@code w} by {@code h} screen (also when it is hidden, so the music player does not jump). */
+    static Card card(int w,int h){
+        var font=Minecraft.getInstance().font;boolean raid=state.getString("phase").equals("raid");
+        Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
+        int missionWidth=Math.max(mission()?font.width(TacticalClient.missionLine()):0,fobLine()==null?0:font.width(fobLine()));
+        int width=Math.min(Math.max(Math.max(140,RaidMusic.playerWidth(font)),Math.max(Math.max(font.width(title),missionWidth),Math.max(font.width(hp),font.width(line)))+24),Math.max(96,w/3));
+        int height=48+(raid&&on("hardRaid")?14:0)+missionLines(width)*11+fobLines(width)*11;
+        return new Card(6,Math.max(8,(h-height-(raid?RaidMusic.PLAYER_HEIGHT+4:0))/2),width,height);
+    }
+    static void drawHud(GuiGraphics g,int w,int h){drawHud(g,card(w,h));}
+    static void drawHud(GuiGraphics g,Card card){
+        var mc=Minecraft.getInstance();var font=mc.font;boolean raid=state.getString("phase").equals("raid"),dead=n("health")<=0;
+        Component title=Ui.t("hud.title"),hp=Ui.t("hud.hp",n("health"),n("maximum")),line=raid?Ui.t("hud.raid",n("wave"),n("waves"),n("attackers")):phase(state.getString("phase"));
+        int width=card.width(),height=card.height(),x=card.x(),y=card.y();
+        float fraction=Math.max(0,Math.min(1,n("health")/(float)Math.max(1,n("maximum"))));
+        g.fill(x-1,y-1,x+width+1,y+height+1,Ui.SHADOW);g.fill(x,y,x+width,y+height,0xe6111e28);
+        g.fill(x,y,x+3,y+height,dead?Ui.RED:Ui.CYAN);g.fill(x+3,y,x+width,y+1,Ui.SLATE_HI);
+        Ui.text(g,font,title,x+9,y+6,dead?Ui.RED:Ui.CYAN,width-14);
+        int livesWidth=raid?lives(g,font,x+width-8,y+17):0;
+        Ui.text(g,font,hp,x+9,y+18,Ui.INK,width-14-livesWidth);
+        Ui.bar(g,x+9,y+30,width-18,5,fraction,dead||fraction<=.25f?Ui.RED:Ui.CYAN);
+        Ui.text(g,font,line,x+9,y+39,Ui.MUTED,width-14);
+        if(raid&&on("hardRaid"))Ui.text(g,font,Ui.t("hud.boss"),x+9,y+50,Ui.BRASS,width-14);
+        int ml=missionLines(width),fl=fobLines(width);
+        if(ml>0)Ui.wrap(g,font,TacticalClient.missionLine(),x+9,y+height-(ml+fl)*11-1,width-14,Ui.BRASS,ml);
+        if(fl>0)Ui.wrap(g,font,fobLine(),x+9,y+height-fl*11-1,width-14,fobColor(),fl);
+    }
+    /** 0.0.41 (owner): the raid skull, drawn right-aligned at {@code right}. */
+    static final ResourceLocation SKULL=new ResourceLocation(EternalDefense.ID,"textures/gui/skull.png");
+    /**
+     * The skull and the number of defender deaths left before the next one costs the beacon a tenth of its health (3, 2, 1; red at 1).
+     * Returns the width it took, its gap included.
+     */
+    static int lives(GuiGraphics g,net.minecraft.client.gui.Font font,int right,int y){
+        int left=n("livesLeft");String text=Integer.toString(left);int w=font.width(text);
+        g.drawString(font,text,right-w,y+1,left<=1?Ui.RED:Ui.INK,false);
+        g.blit(SKULL,right-w-11,y,0,0,9,9,9,9);
+        return w+15;
+    }
+    static Component phase(String phase){
+        return Ui.t("phase."+switch(phase){case "preparation","raid","disabled","restore","snapshot","decommissioning"->phase;default->"unplaced";});
+    }
+    public static final class Beam implements BlockEntityRenderer<EternalDefense.DefenseEntity> {
+        public Beam(BlockEntityRendererProvider.Context context){}
+        @Override public void render(EternalDefense.DefenseEntity entity,float partial,PoseStack pose,MultiBufferSource buffer,int light,int overlay){
+            Animations.draw(entity,partial,pose,buffer,light);   // 0.0.39: the rings and the emitter ring
+            if(!current()||!state.getBoolean("beam")||!entity.getBlockPos().equals(BlockPos.of(state.getLong("beacon"))))return;
+            float[] color=state.getInt("health")>0?new float[]{.22f,1f,.88f}:new float[]{1f,.35f,.18f};
+            pose.pushPose();pose.translate(0,state.getInt("mk")==4?2:1,0);BeaconRenderer.renderBeaconBeam(pose,buffer,BeaconRenderer.BEAM_LOCATION,partial,1f,entity.getLevel().getGameTime(),0,512,color,.2f,.28f);pose.popPose();
+        }
+        @Override public boolean shouldRenderOffScreen(EternalDefense.DefenseEntity entity){return true;}
+        @Override public int getViewDistance(){return 256;}
+    }
+    @SubscribeEvent public static void damageOutline(RenderLevelStageEvent event){
+        if(event.getStage()!=RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS||!current()||!state.getBoolean("near")||!state.getBoolean("hurtbox"))return;
+        var box=DefenseStructures.hurtbox(BlockPos.of(state.getLong("beacon")),state.getInt("mk"));var camera=event.getCamera().getPosition();var pose=event.getPoseStack();pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);var buffers=ZONE_BUFFER;LevelRenderer.renderLineBox(pose,buffers.getBuffer(RenderType.lines()),box.inflate(.003),1f,.12f,.16f,.9f);buffers.endBatch(RenderType.lines());pose.popPose();
+    }
+    @SubscribeEvent public static void outline(RenderLevelStageEvent e){
+        if(e.getStage()!=RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS||!current()||!state.getBoolean("near")||!state.getBoolean("outline"))return;
+        var mc=Minecraft.getInstance();BlockPos pos=BlockPos.of(state.getLong("beacon"));var camera=e.getCamera().getPosition();
+        PoseStack pose=e.getPoseStack();pose.pushPose();pose.translate(pos.getX()-camera.x,pos.getY()-camera.y,pos.getZ()-camera.z);
+        var buffers=ZONE_BUFFER;VertexConsumer lines=buffers.getBuffer(RenderType.lines());var transform=pose.last();double r=state.getInt("radius");
+        // Exact outer block faces: [-radius, radius+1), with an inclusive 65-block height.
+        double lo=-r,hi=r+1;int bottom=-state.getInt("below"),ceiling=state.getInt("above")+1;
+        for(int y:new int[]{bottom,0,ceiling}){
+            line(lines,transform,lo,y,lo,hi,y,lo);line(lines,transform,hi,y,lo,hi,y,hi);
+            line(lines,transform,hi,y,hi,lo,y,hi);line(lines,transform,lo,y,hi,lo,y,lo);
+        }
+        for(double x:new double[]{lo,hi})for(double z:new double[]{lo,hi})line(lines,transform,x,bottom,z,x,ceiling,z);
+        // One-block ticks on the base plane; vertical guides every eight blocks.
+        for(int i=(int)lo;i<=hi;i++){
+            line(lines,transform,i,0,lo,i,0,lo+.35);line(lines,transform,i,0,hi,i,0,hi-.35);
+            line(lines,transform,lo,0,i,lo+.35,0,i);line(lines,transform,hi,0,i,hi-.35,0,i);
+            if((i+(int)r)%8==0)for(double side:new double[]{lo,hi}){line(lines,transform,i,bottom,side,i,ceiling,side);line(lines,transform,side,bottom,i,side,ceiling,i);}
+        }
+        // Moving interior grid lines stay clipped to the six exact faces; edges never drift.
+        double shift=((mc.level.getGameTime()+e.getPartialTick())*.025)%4;
+        for(double i=lo+shift;i<hi;i+=4)for(double side:new double[]{lo,hi}){
+            line(lines,transform,i,bottom,side,i,ceiling,side,80);
+            line(lines,transform,side,bottom,i,side,ceiling,i,80);
+        }
+        for(double y=bottom+shift;y<ceiling;y+=4)for(double side:new double[]{lo,hi}){
+            line(lines,transform,lo,y,side,hi,y,side,80);
+            line(lines,transform,side,y,lo,side,y,hi,80);
+        }
+        for(double y:new double[]{bottom,ceiling})for(double i=lo+shift;i<hi;i+=4){
+            line(lines,transform,i,y,lo,i,y,hi,120);
+            line(lines,transform,lo,y,i,hi,y,i,120);
+        }
+        double scan=bottom+((mc.level.getGameTime()+e.getPartialTick())*.12)%(ceiling-bottom);
+        for(double side:new double[]{lo,hi}){line(lines,transform,lo,scan,side,hi,scan,side,235);line(lines,transform,side,scan,lo,side,scan,hi,235);}
+        buffers.endBatch(RenderType.lines());pose.popPose();
+    }
+    private static void line(VertexConsumer v,PoseStack.Pose p,double x,double y,double z,double xx,double yy,double zz){
+        line(v,p,x,y,z,xx,yy,zz,180);
+    }
+    private static void line(VertexConsumer v,PoseStack.Pose p,double x,double y,double z,double xx,double yy,double zz,int alpha){
+        float dx=(float)(xx-x),dy=(float)(yy-y),dz=(float)(zz-z),length=(float)Math.sqrt(dx*dx+dy*dy+dz*dz);if(length==0)return;
+        v.vertex(p.pose(),(float)x,(float)y,(float)z).color(70,235,221,alpha).normal(p.normal(),dx/length,dy/length,dz/length).endVertex();
+        v.vertex(p.pose(),(float)xx,(float)yy,(float)zz).color(70,235,221,alpha).normal(p.normal(),dx/length,dy/length,dz/length).endVertex();
+    }
+    abstract static class PanelScreen extends Screen {
+        int left,top,pw,ph;String message="";
+        private String shownMessage="";private long shownAt;
+        PanelScreen(Component title){super(title);}
+        @Override protected void init(){pw=Math.min(520,width-16);ph=Math.min(290,height-16);left=(width-pw)/2;top=(height-ph)/2;}
+        @Override public boolean isPauseScreen(){return false;}
+        Component subtitle(){return null;}
+        void panel(GuiGraphics g){renderBackground(g);Ui.panel(g,left,top,pw,ph);Ui.header(g,font,left,top,pw,title,subtitle());}
+        Ui.UiButton button(Component label,int x,int y,int w,Ui.Look look,java.util.function.Consumer<Button> click){return button(label,x,y,w,20,look,click);}
+        Ui.UiButton button(Component label,int x,int y,int w,int h,Ui.Look look,java.util.function.Consumer<Button> click){return addRenderableWidget(new Ui.UiButton(x,y,w,h,label,look,click::accept));}
+        void closeButton(){button(Component.literal("X"),left+pw-30,top+4,22,18,Ui.Look.NORMAL,b->onClose());}
+        /** Server feedback sits in one stable strip and disappears by itself. Returns whether it was drawn. */
+        boolean footer(GuiGraphics g){
+            if(!messageVisible())return false;
+            int y=top+ph-19;Ui.inset(g,left+10,y,pw-20,13);Ui.text(g,font,Component.literal(message),left+15,y+3,Ui.CYAN,pw-30);return true;
+        }
+        /** Same feedback as one plain line, for screens whose bottom edge is already occupied. */
+        boolean footerLine(GuiGraphics g,int y){
+            if(!messageVisible())return false;
+            Ui.text(g,font,Component.literal(message),left+14,y,Ui.CYAN,pw-28);return true;
+        }
+        private boolean messageVisible(){
+            long now=net.minecraft.Util.getMillis();
+            if(!message.equals(shownMessage)){shownMessage=message;shownAt=now;}
+            return !message.isEmpty()&&now-shownAt<=7000;
+        }
+        void hint(GuiGraphics g,Component text){hint(g,text,Ui.MUTED);}
+        void hint(GuiGraphics g,Component text,int color){int y=top+ph-17;Ui.text(g,font,text,left+14,y,color,pw-28);}
+        Hover itemAt(double x,double y){return null;}
+    }
+    record Hover(ItemStack item,int x,int y){}
+
+    static final class ControlScreen extends PanelScreen {
+        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,animations,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
+        private final List<Hover> icons=new ArrayList<>();
+        static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
+        private static ItemStack item(String id){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,id)));}
+        static final String[] TABS={"overview","upgrades","fabrication","raid"};
+        ControlScreen(){super(Ui.t("title"));}
+        @Override Component subtitle(){return Ui.t("subtitle");}
+        private int contentTop(){return top+54;}
+        private boolean ready(){return on("installed")&&on("near")&&!on("active");}
+        @Override protected void init(){
+            super.init();ph=Math.min(340,height-16);top=(height-ph)/2;upgrades.clear();fabricationButtons.clear();claim=repair=outline=beam=hurtbox=music=player=animations=remove=respite=startRaid=lowerTier=higherTier=null;
+            int total=0;for(String key:TABS)total+=font.width(Ui.t("tab."+key))+14;int tx=left+14,space=pw-28;
+            for(int i=0;i<TABS.length;i++){int page=i,tw=(font.width(Ui.t("tab."+TABS[i]))+14)*space/total;var b=button(Ui.t("tab."+TABS[i]),tx,top+31,tw-2,18,Ui.Look.TAB,x->{tab=page;rebuildWidgets();});b.selected=i==tab;tx+=tw;}
+            closeButton();
+            button(Ui.t("guide"),left+pw-92,top+4,56,18,Ui.Look.NORMAL,b->BeaconNetwork.action("guide",""));
+            button(Ui.t("tab.settings"),left+pw-157,top+4,61,18,Ui.Look.NORMAL,b->{tab=4;rebuildWidgets();});
+            int x=left+14,w=pw-28;
+            if(tab==0){
+                int bw=(w-8)/3,y=top+ph-48;
+                claim=button(Ui.t("overview.chest"),x,y,bw,Ui.Look.PRIMARY,b->BeaconNetwork.action("claim",""));
+                repair=button(Ui.t("overview.repair"),x+bw+4,y,bw,Ui.Look.NORMAL,b->BeaconNetwork.action("repair",""));
+                button(Ui.t("overview.tiers"),x+(bw+4)*2,y,w-(bw+4)*2,Ui.Look.NORMAL,b->BeaconNetwork.action("rewards",""));
+            }else if(tab==1){
+                int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;
+                for(int i=0;i<BRANCHES.length;i++){String branch=BRANCHES[i];int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
+                    upgrades.add(button(Component.empty(),cx+cw-88,cy+ch-21,82,18,Ui.Look.NORMAL,b->BeaconNetwork.action("upgrade:"+branch,"")));
+                }
+            }else if(tab==3){
+                var lay=raidLayout();
+                lowerTier=button(Ui.t("raid.lower"),x+10,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.max(0,n("raidLimit")-1),""));
+                higherTier=button(Ui.t("raid.raise"),x+w-106,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.min(10,n("raidLimit")+1),""));
+                int half=(w-4)/2,y=top+ph-48;
+                respite=button(Ui.t("raid.buy"),x,y,half,Ui.Look.PRIMARY,b->BeaconNetwork.action("respite",""));
+                startRaid=button(Ui.t("raid.start"),x+half+4,y,w-half-4,Ui.Look.NORMAL,b->BeaconNetwork.action("start-raid",""));
+                startRaid.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.start.tip")));
+                respite.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.buy.tip")));
+            }else if(tab==2){
+                for(int i=0;i<WorkshopFabrication.ITEMS.size();i++){
+                    int index=i;var cell=fabricationCell(i,x,w);
+                    fabricationButtons.add(button(Ui.t("fabrication.make"),cell.x+cell.w-41,cell.y+(cell.h-18)/2,37,18,Ui.Look.PRIMARY,b->{var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);if(index<rows.size())BeaconNetwork.action("fabricate:"+rows.getCompound(index).getString("id"),"");}));
+                }
+            }else{
+                // left: what the base shows (saved with the beacon); right: this player's own music choices (saved on this computer)
+                int gap=settingsGap(),col=settingsColumn(w),x2=x+col+10;
+                outline=button(Component.empty(),x,contentTop()+2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("outline",""));
+                beam=button(Component.empty(),x,contentTop()+2+gap,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("beam",""));
+                hurtbox=button(Component.empty(),x,contentTop()+2+gap*2,col,22,Ui.Look.TOGGLE,b->BeaconNetwork.action("hurtbox",""));
+                music=button(Component.empty(),x2,contentTop()+2,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setEnabled(!RaidMusic.enabled()));
+                player=button(Component.empty(),x2,contentTop()+2+gap,w-col-10,22,Ui.Look.TOGGLE,b->RaidMusic.setPlayerShown(!RaidMusic.playerShown()));
+                animations=button(Component.empty(),x2,contentTop()+2+gap*2,w-col-10,22,Ui.Look.TOGGLE,b->Animations.setEnabled(!Animations.enabled()));
+                remove=button(Ui.t("settings.remove"),x,contentTop()+2+gap*3,w,22,Ui.Look.DANGER,b->BeaconNetwork.action("remove",""));
+            }
+        }
+        private int settingsGap(){return Math.min(48,Math.max(33,(ph-54-28)/4));}
+        private static int settingsColumn(int w){return (w-10)/2;}
+        private record RaidLayout(int levelY,int cardH,int breakY,boolean roomy){}
+        private RaidLayout raidLayout(){boolean roomy=ph>=270;int cardH=roomy?72:60;return new RaidLayout(contentTop()+20,cardH,contentTop()+cardH+4,roomy);}
+        @Override public void render(GuiGraphics g,int mx,int my,float partial){
+            panel(g);icons.clear();upgradeHoverCosts=null;List<Component> tooltip=null;
+            int x=left+14,w=pw-28;
+            if(tab==0)overview(g,x,w);
+            else if(tab==1)tooltip=upgradeCards(g,mx,my,x,w);
+            else if(tab==3)raidTab(g,x,w);
+            else if(tab==2)fabricationTab(g,mx,my,x,w);
+            else settingsTab(g,x,w);
+            super.render(g,mx,my,partial);
+            boolean notice=footer(g);
+            if(!notice&&tab==1&&!ready())hint(g,Ui.t("upgrades.near"));
+            Hover hovered=itemAt(mx,my);
+            if(hovered!=null)g.renderComponentTooltip(font,List.of(hovered.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
+            else if(tooltip!=null){if(upgradeHoverCosts!=null)Ui.materialTooltip(g,font,tooltip,upgradeHoverCosts,mx,my);else g.renderComponentTooltip(font,tooltip,mx,my);}
+            if(tab==2&&upgradeHoverCosts!=null){
+                var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);var fabItem=ItemStack.EMPTY;String id="";
+                for(int i=0;i<fabricationButtons.size()&&i<rows.size();i++){var cell=fabricationCell(i,left+14,pw-28);if(Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h)){fabItem=ItemStack.of(rows.getCompound(i).getCompound("item"));id=rows.getCompound(i).getString("id");}}
+                Ui.materialTooltip(g,font,fabItem.isEmpty()?List.of(Ui.t("tab.fabrication")):List.of(fabItem.getHoverName(),Ui.t("fabrication.desc."+id)),upgradeHoverCosts,mx,my);
+            }
+        }
+        /** Starter installations in three groups: the four tables, the kitchen, and support and trade. */
+        private static final int[] FAB_GROUP_START={0,4,12};
+        private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
+        private static final String[] FAB_GROUP={"tables","kitchen","support"};
+        private record FabCell(int x,int y,int w,int h){}
+        /** Rows a group takes (two cells a row): the groups grow with their items. */
+        private static int groupRows(int group){int end=group==2?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
+        /** 0.0.30: the list scrolls (the mouse wheel, or dragging its bar) instead of squeezing its rows, so more installations fit later. */
+        static final int FAB_ROW=28,FAB_HEADER=12,FAB_BAR=6;
+        int fabScroll;private boolean fabDragging;
+        private int fabricationRowHeight(){return FAB_ROW;}
+        private int fabViewTop(){return contentTop();}
+        private int fabViewBottom(){return top+ph-22;}
+        private int fabContentHeight(){int h=0;for(int g=0;g<3;g++)h+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return h;}
+        int fabMaxScroll(){return Math.max(0,fabContentHeight()-(fabViewBottom()-fabViewTop()));}
+        private void scrollFabrication(int to){fabScroll=Math.max(0,Math.min(fabMaxScroll(),to));}
+        /** The list's width: the scroll bar takes the right edge when the list is longer than the panel. */
+        private int fabListWidth(int w){return fabMaxScroll()>0?w-FAB_BAR-4:w;}
+        private int groupTop(int group){int y=contentTop()-fabScroll;for(int g=0;g<group;g++)y+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return y;}
+        private FabCell fabricationCell(int index,int x,int w){
+            int group=index>=FAB_GROUP_START[2]?2:index>=FAB_GROUP_START[1]?1:0,inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
+            int lw=fabListWidth(w),cw=(lw-6)/2,y=groupTop(group)+FAB_HEADER+(inGroup/2)*(rowH+2);
+            return new FabCell(x+(inGroup%2)*(cw+6),y,cw,rowH);
+        }
+        /** Whether a cell is wholly inside the list's window (its Make button shows only then). */
+        private boolean fabShown(FabCell cell){return cell.y>=fabViewTop()&&cell.y+cell.h<=fabViewBottom();}
+        private void fabricationTab(GuiGraphics g,int mx,int my,int x,int w){
+            var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);boolean here=on("installed")&&on("near");
+            scrollFabrication(fabScroll);int lw=fabListWidth(w),viewTop=fabViewTop(),viewBottom=fabViewBottom();
+            boolean inView=my>=viewTop&&my<viewBottom;
+            g.enableScissor(x-2,viewTop,x+lw+2,viewBottom);
+            for(int group=0;group<3;group++){
+                int y=groupTop(group);var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
+                Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],lw/2);Ui.rule(g,x+font.width(label)+6,y+5,lw-font.width(label)-6);
+            }
+            for(int i=0;i<fabricationButtons.size();i++){
+                var button=fabricationButtons.get(i);var cell=fabricationCell(i,x,w);
+                button.setX(cell.x+cell.w-41);button.setY(cell.y+(cell.h-18)/2);
+                button.visible=i<rows.size()&&fabShown(cell);if(i>=rows.size())continue;
+                var row=rows.getCompound(i);var id=row.getString("id");var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
+                boolean enough=on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count"));
+                int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;
+                if(cell.y+cell.h<viewTop||cell.y>viewBottom)continue;
+                Ui.card(g,cell.x,cell.y,cell.w,cell.h,enough&&here?FAB_ACCENT[group]:Ui.EDGE);
+                g.renderItem(item,cell.x+7,cell.y+(cell.h-16)/2);
+                Ui.text(g,font,Ui.t("fabrication.name."+id),cell.x+27,cell.y+4,enough&&here?Ui.INK:Ui.MUTED,cell.w-27-44);
+                int costX=cell.x+27,costY=cell.y+cell.h-12;
+                for(var entry:costs){var cost=(net.minecraft.nbt.CompoundTag)entry;var icon=ItemStack.of(cost.getCompound("item"));int need=cost.getInt("count"),have=cost.getInt("have");boolean short_=!on("creative")&&have<need;
+                    g.pose().pushPose();g.pose().translate(costX,costY-1,0);g.pose().scale(.5f,.5f,1);g.renderItem(icon,0,0);g.pose().popPose();
+                    var count=Component.literal(Integer.toString(need));g.drawString(font,count,costX+9,costY,short_?Ui.ORANGE:Ui.MUTED,false);costX+=12+font.width(count);
+                }
+                button.active=here&&enough;button.warning=!enough&&here;
+                if(inView&&Ui.inside(mx,my,cell.x,cell.y,cell.w-44,cell.h))upgradeHoverCosts=costs;
+            }
+            g.disableScissor();
+            int max=fabMaxScroll();
+            if(max>0){
+                // the scroll bar, and a fade at the edge that hides more rows
+                int barX=x+w-FAB_BAR,trackH=viewBottom-viewTop,thumbH=Math.max(18,trackH*trackH/fabContentHeight()),thumbY=viewTop+(trackH-thumbH)*fabScroll/max;
+                g.fill(barX,viewTop,barX+FAB_BAR,viewBottom,0x40000000);
+                g.fill(barX+1,thumbY,barX+FAB_BAR-1,thumbY+thumbH,fabDragging||Ui.inside(mx,my,barX,viewTop,FAB_BAR,trackH)?Ui.CYAN:Ui.MUTED);
+                if(fabScroll<max)g.fillGradient(x,viewBottom-10,x+lw,viewBottom,0x00000000,0x80000000);
+                if(fabScroll>0)g.fillGradient(x,viewTop,x+lw,viewTop+10,0x80000000,0x00000000);
+            }
+            if(!here)hint(g,Ui.t(on("installed")?"fabrication.near":"fabrication.plant"),Ui.ORANGE);
+            else if(max>0&&fabScroll==0)hint(g,Ui.t("fabrication.scroll"));
+        }
+        @Override public boolean mouseScrolled(double mx,double my,double amount){
+            if(tab==2&&fabMaxScroll()>0){scrollFabrication(fabScroll-(int)(amount*(FAB_ROW+2)));return true;}
+            return super.mouseScrolled(mx,my,amount);
+        }
+        @Override public boolean mouseClicked(double mx,double my,int button){
+            int barX=left+14+(pw-28)-FAB_BAR;
+            if(tab==2&&button==0&&fabMaxScroll()>0&&mx>=barX&&mx<barX+FAB_BAR&&my>=fabViewTop()&&my<fabViewBottom()){fabDragging=true;dragFabrication(my);return true;}
+            return super.mouseClicked(mx,my,button);
+        }
+        @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){
+            if(fabDragging){dragFabrication(my);return true;}
+            return super.mouseDragged(mx,my,button,dx,dy);
+        }
+        @Override public boolean mouseReleased(double mx,double my,int button){fabDragging=false;return super.mouseReleased(mx,my,button);}
+        private void dragFabrication(double my){
+            int trackH=fabViewBottom()-fabViewTop(),thumbH=Math.max(18,trackH*trackH/fabContentHeight());
+            scrollFabrication((int)Math.round((my-fabViewTop()-thumbH/2.0)*fabMaxScroll()/Math.max(1,trackH-thumbH)));
+        }
+        // ---- Overview: "How is my base doing?" ------------------------------------------------
+        private void overview(GuiGraphics g,int x,int w){
+            int y=contentTop();boolean roomy=ph>=270,dead=n("health")<=0,active=on("active");
+            int statusH=roomy?58:46;
+            Ui.card(g,x,y,w,statusH,dead?Ui.RED:Ui.CYAN);
+            int mk=Ui.chip(g,font,Ui.t("overview.mk",n("mk")),x+10,y+4,Ui.BRASS,72);
+            Ui.text(g,font,phase(state.getString("phase")),x+16+mk,y+6,dead?Ui.RED:Ui.INK,Math.max(20,w-mk-130));
+            Component hpLine=Ui.t("overview.hp",n("health"),n("maximum"));
+            Ui.right(g,font,hpLine,x+w-8,y+6,dead?Ui.RED:Ui.CYAN);
+            if(active)lives(g,font,x+w-14-font.width(hpLine),y+5);
+            float hp=Math.max(0,Math.min(1,n("health")/(float)Math.max(1,n("maximum"))));
+            Ui.bar(g,x+10,y+19,w-20,6,hp,dead||hp<=.25f?Ui.RED:Ui.CYAN);
+            Component due=active?Ui.t("overview.wave",n("wave"),n("waves"),n("attackers"),n("defenders")):Ui.t("overview.next",String.format(java.util.Locale.ROOT,"%.1f",state.getLong("untilRaid")/24000.0));
+            Ui.text(g,font,due,x+10,y+31,Ui.INK,w-20);
+            if(roomy){
+                boolean hard=on("nextHard")||on("hardRaid");
+                Component kind=active?(on("hardRaid")?Ui.t("overview.hard_active"):Ui.t("overview.normal_active",n("veteranPercent"))):Ui.t("overview.upcoming",n("raidsStarted")+1,hard?Ui.t("overview.kind_hard"):Ui.t("overview.kind_normal"));
+                String shown=active?state.getString("raidType"):state.getString("nextRaidType");
+                if(RaidTypes.special(shown))kind=kind.copy().append(" | ").append(Ui.t("raidtype."+shown));
+                Ui.text(g,font,kind,x+10,y+44,RaidTypes.special(shown)?Ui.ORANGE:hard?Ui.BRASS:Ui.MUTED,w-20);
+            }
+            y+=statusH+4;
+            int live=n("liveScore"),tier=n("prospectiveTier"),goal=n("nextScore"),previous=Math.max(0,goal-500);
+            Ui.card(g,x,y,w,58,Ui.CYAN);
+            Ui.text(g,font,Ui.t("overview.payout",tier),x+10,y+5,Ui.CYAN,w-130);
+            Ui.right(g,font,Ui.t("overview.paid",n("tier")),x+w-8,y+5,Ui.MUTED);
+            float progress=goal==0?1:Math.max(0,Math.min(1,(live-previous)/(float)Math.max(1,goal-previous)));
+            Ui.bar(g,x+10,y+18,w-20,8,progress,Ui.CYAN);
+            Component score=goal==0?(tier==10?Ui.t("overview.score_max",live):Ui.t("overview.score_full",live)):Ui.t("overview.score",live,goal,Math.max(0,goal-live),tier+1);
+            Ui.text(g,font,score,x+10,y+30,Ui.INK,w-20);
+            Ui.text(g,font,Ui.t("overview.formula",n("buildingTier"),n("logistics"),n("nextRaidBonus"),n("raidLimit"),tier),x+10,y+43,Ui.MUTED,w-20);
+            y+=62;
+            int bottom=top+ph-52;
+            if(bottom-y>=68){
+                var parts=state.getCompound("scoreBreakdown");
+                Component status=on("surveyBusy")?Ui.t("overview.survey",n("surveyPercent")):on("surveyIncomplete")?Ui.t("overview.partial"):Ui.t("overview.live");
+                Ui.text(g,font,Ui.t("overview.breakdown"),x+2,y+2,Ui.MUTED,w/3);
+                Ui.right(g,font,status,x+w-2,y+2,Ui.MUTED);
+                // 0.0.41: a fifth column for the mod's installations (points and how many of the set stand) and the total
+                String[] keys={"structure","palette","details","lighting","installations","furnishings","layout","factory","platforms","total"};
+                int cell=w/5,of=BaseScoring.INSTALLATIONS.size();
+                for(int i=0;i<keys.length;i++){
+                    int cx=x+(i%5)*cell,cy=y+15+(i/5)*24;boolean total=keys[i].equals("total");
+                    g.fill(cx,cy,cx+cell-3,cy+22,Ui.DEEP);g.fill(cx,cy,cx+2,cy+22,total?Ui.CYAN:Ui.CYAN_DIM);
+                    Ui.text(g,font,Ui.t("score."+keys[i]),cx+7,cy+3,Ui.MUTED,cell-14);
+                    String value=keys[i].equals("installations")?Ui.t("score.installations.value",parts.getInt(keys[i]),parts.getInt("installationCount"),of).getString():Integer.toString(parts.getInt(keys[i]));
+                    Ui.text(g,font,Component.literal(value),cx+7,cy+13,total?Ui.CYAN:Ui.INK,cell-14);
+                }
+                y+=15+48+3;
+            }
+            // 0.0.41 (owner): how many Logistics Hubs work for this base
+            Component hubs=n("hubs")==0?Ui.t("overview.hubs.none"):n("hubs")==1?Ui.t("overview.hubs.one",1):Ui.t("overview.hubs",n("hubs"));
+            if(bottom-y>=10){Ui.text(g,font,hubs,x+2,y+1,n("hubs")>0?Ui.CYAN:Ui.MUTED,w-4);y+=12;}
+            if(bottom-y>=10)Ui.text(g,font,on("expansionBlocked")?Ui.t("overview.blocked"):Ui.t("overview.cover"),x+2,y+1,on("expansionBlocked")?Ui.ORANGE:Ui.MUTED,w-4);
+            claim.active=on("installed")&&on("near")&&(n("rewards")>0||on("rewardChest"));
+            repair.active=ready()&&n("health")<n("maximum");
+        }
+        // ---- Upgrades: "What should I improve next?" -----------------------------------------
+        private List<Component> upgradeCards(GuiGraphics g,int mx,int my,int x,int w){
+            int cw=(w-6)/2,stride=(ph-54-26)/3,ch=stride-4;List<Component> tooltip=null;boolean creative=on("creative");
+            for(int i=0;i<BRANCHES.length;i++){
+                String branch=BRANCHES[i];int cx=x+(i%2)*(cw+6),cy=contentTop()+(i/2)*stride;
+                int grade=n(branch),max=Rules.branchMaximum(branch);var prices=Economy.beaconCost(branch,Math.min(grade,max-1));
+                boolean complete=grade>=max,short_=!complete&&!creative&&prices.stream().anyMatch(pr->n("stock_"+pr.id())<pr.amount());
+                int cost=prices.get(0).amount(),have=n("stock_"+prices.get(0).id());
+                Ui.card(g,cx,cy,cw,ch,complete?Ui.BRASS:Ui.CYAN);
+                Ui.text(g,font,Ui.t("upgrade."+branch+".name"),cx+9,cy+3,Ui.INK,cw-24-Ui.pipsWidth(max));
+                Ui.pips(g,cx+cw-8-Ui.pipsWidth(max),cy+4,grade,max,complete?Ui.BRASS:Ui.CYAN);
+                int rowY=cy+ch-21;
+                Component effect=complete?completeText(i,grade):nextText(i,grade,max);
+                int lines=Math.max(1,(rowY-(cy+14)-1)/11),textY=cy+14;
+                if(lines>=3&&!complete){Ui.text(g,font,nowText(i,grade),cx+9,textY,Ui.MUTED,cw-16);textY+=13;lines--;}
+                Ui.wrap(g,font,effect,cx+9,textY,cw-16,complete?Ui.MUTED:Ui.INK,lines);
+                var icon=item(prices.get(0).id());var costs=new net.minecraft.nbt.ListTag();
+                if(prices.size()==1){
+                    g.renderItem(icon,cx+8,rowY+1);icons.add(new Hover(icon,cx+8,rowY+1));
+                    Ui.text(g,font,complete?Ui.t("upgrade.stock",have):Ui.t("upgrade.have",have,cost),cx+28,rowY+6,complete?Ui.MUTED:short_?Ui.ORANGE:Ui.INK,cw-28-92);
+                    costs=Ui.singleCost(icon,cost,have);
+                }else{
+                    // several parts (the Vertical zone in the pack): each icon with the number needed, orange when there are not enough
+                    int px=cx+8,step=Math.max(24,(cw-100)/prices.size());
+                    for(var pr:prices){
+                        var stack=item(pr.id());int owned=n("stock_"+pr.id());
+                        g.renderItem(stack,px,rowY+1);icons.add(new Hover(stack,px,rowY+1));
+                        if(!complete)Ui.text(g,font,Component.literal("x"+pr.amount()),px+16,rowY+9,owned<pr.amount()&&!creative?Ui.ORANGE:Ui.INK,step-16);
+                        costs.addAll(Ui.singleCost(stack,pr.amount(),owned));px+=step;
+                    }
+                }
+                Ui.UiButton b=(Ui.UiButton)upgrades.get(i);
+                b.setPosition(cx+cw-88,rowY);b.setWidth(82);
+                b.setMessage(complete?Ui.t("upgrade.complete"):creative?Ui.t("upgrade.free"):prices.size()>1?Ui.t(short_?"upgrade.short_parts":"upgrade.buy_parts"):short_?Ui.t("upgrade.short",cost-have):Ui.t("upgrade.buy",cost));
+                b.warning=short_;b.look=complete?Ui.Look.NORMAL:Ui.Look.PRIMARY;b.active=ready()&&!complete;
+                if(Ui.inside(mx,my,cx,cy,cw,ch)&&!Ui.inside(mx,my,cx+8,rowY+1,16,16)&&tooltip==null){
+                    tooltip=new ArrayList<>(List.of(Ui.t("upgrade."+branch+".name"),effect));
+                    if(complete)tooltip.add(Ui.t("upgrade.branch_complete"));
+                    else{upgradeHoverCosts=costs;tooltip.add(Ui.t("upgrade.craft"));}
+                }
+            }
+            return tooltip;
+        }
+        private static Component nextText(int branch,int grade,int max){
+            int next=Math.min(max,grade+1);
+            return switch(BRANCHES[branch]){
+                case "core" -> Ui.t("upgrade.core.next",next+1,Rules.radius(next),Rules.maximumHealth(next));
+                case "defense" -> Ui.t("upgrade.defense.next",Rules.defensePercent(next));
+                case "restoration" -> Ui.t("upgrade.restoration.next",Rules.healingPercent(next));
+                case "vertical" -> Ui.t("upgrade.vertical.next",Rules.below(next),Rules.above(next));
+                case "reconnaissance" -> Ui.t("upgrade.reconnaissance.next",reveal(next));
+                default -> Ui.t("upgrade."+BRANCHES[branch]+".next");
+            };
+        }
+        private static Component nowText(int branch,int grade){
+            return switch(BRANCHES[branch]){
+                case "core" -> Ui.t("upgrade.core.now",grade+1,Rules.radius(grade),Rules.maximumHealth(grade));
+                case "logistics" -> Ui.t("upgrade.logistics.now",grade);
+                case "defense" -> Ui.t("upgrade.defense.now",Rules.defensePercent(grade));
+                case "restoration" -> Ui.t("upgrade.restoration.now",Rules.healingPercent(grade));
+                case "vertical" -> Ui.t("upgrade.vertical.now",Rules.below(grade),Rules.above(grade));
+                default -> Ui.t("upgrade.reconnaissance.now",reveal(grade));
+            };
+        }
+        /** "after 3 minutes", "after 1 minute" or "the moment a wave starts": when raiders start to glow at Reconnaissance {@code level}. */
+        static Component reveal(int level){int minutes=Rules.revealTicks(level)/1200;return minutes<=0?Ui.t("upgrade.reconnaissance.at_once"):minutes==1?Ui.t("upgrade.reconnaissance.after_one"):Ui.t("upgrade.reconnaissance.after",minutes);}
+        private static Component completeText(int branch,int grade){
+            return switch(BRANCHES[branch]){
+                case "core" -> Ui.t("upgrade.core.done",grade+1,Rules.radius(grade),Rules.maximumHealth(grade));
+                case "defense" -> Ui.t("upgrade.defense.done",Rules.defensePercent(grade));
+                case "restoration" -> Ui.t("upgrade.restoration.done",Rules.healingPercent(grade));
+                case "vertical" -> Ui.t("upgrade.vertical.done",Rules.below(grade),Rules.above(grade));
+                default -> Ui.t("upgrade."+BRANCHES[branch]+".done");
+            };
+        }
+        // ---- Raid break: "Can I take a break or fight now?" ----------------------------------
+        private void raidTab(GuiGraphics g,int x,int w){
+            var lay=raidLayout();int y=contentTop();
+            Ui.card(g,x,y,w,lay.cardH,Ui.CYAN);
+            Ui.text(g,font,Ui.t("raid.level_title"),x+10,y+5,Ui.CYAN,w-20);
+            Component level=Ui.t("raid.level",n("raidLimit"));
+            g.pose().pushPose();g.pose().translate(x+w/2f,lay.levelY+4,0);g.pose().scale(1.5f,1.5f,1);
+            g.drawString(font,level.getVisualOrderText(),-font.width(level)/2,0,Ui.INK,false);g.pose().popPose();
+            Ui.text(g,font,Ui.t("raid.payout",n("prospectiveTier")),x+10,lay.levelY+26,Ui.INK,w-20);
+            if(lay.roomy())Ui.wrap(g,font,Ui.t("raid.level_note"),x+10,lay.levelY+38,w-20,Ui.MUTED,2);
+            int by=lay.breakY;int breakH=Math.min(top+ph-52-by,lay.roomy()?84:58);
+            Ui.card(g,x,by,w,breakH,Ui.BRASS);
+            int pauseDays=(int)Math.ceil(state.getLong("respiteTicks")/24000.0);
+            Ui.text(g,font,Ui.t("raid.break_title"),x+10,by+5,Ui.BRASS,w-20);
+            Ui.text(g,font,Ui.t("raid.break",pauseDays,n("nextRaidBonus")),x+10,by+17,Ui.INK,w-20);
+            var costs=state.getList("respiteCosts",net.minecraft.nbt.Tag.TAG_COMPOUND);
+            Component priceLabel=Ui.t("raid.price");
+            int labelWidth=Math.min(70,font.width(priceLabel)+8);
+            Ui.text(g,font,priceLabel,x+10,by+32,Ui.MUTED,labelWidth);
+            int slot=(w-20-labelWidth)/Math.max(3,costs.size());
+            for(int i=0;i<costs.size();i++){
+                var row=costs.getCompound(i);var item=ItemStack.of(row.getCompound("item"));int cx=x+10+labelWidth+i*slot,cy=by+28;
+                g.renderItem(item,cx,cy);icons.add(new Hover(item,cx,cy));
+                Ui.text(g,font,Ui.t("raid.cost",row.getInt("have"),row.getInt("count")),cx+19,cy+4,row.getInt("have")>=row.getInt("count")?Ui.INK:Ui.ORANGE,slot-22);
+            }
+            if(lay.roomy()&&breakH>=76)Ui.wrap(g,font,Ui.t("raid.note"),x+10,by+50,w-20,Ui.MUTED,2);
+            boolean controls=ready()&&state.getString("phase").equals("preparation")&&on("introCompleted");
+            respite.active=startRaid.active=controls;
+            startRaid.setMessage(Ui.t(on("raidRequested")?"raid.start.booked":"raid.start"));if(on("raidRequested"))startRaid.active=false;lowerTier.active=controls&&n("raidLimit")>0;higherTier.active=controls&&n("raidLimit")<10;
+        }
+        // ---- Settings: "What is protected?" ---------------------------------------------------
+        private void settingsTab(GuiGraphics g,int x,int w){
+            int gap=settingsGap(),y=contentTop()+2,col=settingsColumn(w),x2=x+col+10,lines=Math.max(1,(gap-25)/10);boolean here=on("installed")&&on("near");
+            String[] keys={"outline","beam","hurtbox"};Button[] toggles={outline,beam,hurtbox};
+            for(int i=0;i<3;i++){
+                var b=(Ui.UiButton)toggles[i];b.on=on(keys[i]);b.setMessage(Ui.t("settings."+keys[i]));b.active=here;
+                Component note=i==0?Ui.t("settings.outline.note",n("radius"),n("below"),n("above")):Ui.t("settings."+keys[i]+".note");
+                Ui.wrap(g,font,note,x+4,y+gap*i+25,col-8,Ui.MUTED,lines);
+            }
+            var m=(Ui.UiButton)music;m.on=RaidMusic.enabled();m.setMessage(Ui.t("settings.music"));
+            var p=(Ui.UiButton)player;p.on=RaidMusic.playerShown();p.setMessage(Ui.t("settings.player"));p.active=m.on;
+            // 0.0.39: the row under the music switches is the idle animations' own; the game's Music volume is told under the music switch when it is off
+            int volume=Math.round(Minecraft.getInstance().options.getSoundSourceVolume(net.minecraft.sounds.SoundSource.MUSIC)*100);
+            Ui.wrap(g,font,volume<=0?Ui.t("settings.music.volume",volume):Ui.t("settings.music.note"),x2+4,y+25,w-col-18,volume<=0?Ui.ORANGE:Ui.MUTED,lines);
+            Ui.wrap(g,font,Ui.t("settings.player.note"),x2+4,y+gap+25,w-col-18,Ui.MUTED,lines);
+            var a=(Ui.UiButton)animations;a.on=Animations.enabled();a.setMessage(Ui.t("settings.animations"));
+            Ui.wrap(g,font,Ui.t("settings.animations.note"),x2+4,y+gap*2+25,w-col-18,Ui.MUTED,lines);
+            remove.active=on("installed")&&on("controller")&&on("canRemove");
+            Ui.wrap(g,font,ph>=300?Ui.t("settings.remove.note"):Ui.t("settings.remove.short"),x+4,y+gap*3+25,w-8,Ui.MUTED,ph>=300?2:1);
+        }
+        @Override Hover itemAt(double mx,double my){for(var icon:icons)if(Ui.inside(mx,my,icon.x(),icon.y(),16,16))return icon;return null;}
+        static String capitalize(String s){return Character.toUpperCase(s.charAt(0))+s.substring(1);}
+    }
+
+    static final class ConfirmScreen extends PanelScreen {
+        final String kind,token,fob;
+        private RichText text;
+        ConfirmScreen(String kind,String token,String fob){super(Ui.t("confirm.title"));this.kind=kind;this.token=token;this.fob=fob;}
+        private boolean place(){return kind.equals("place");}
+        /** Taking a FOB Beacon back (0.0.23): its own warning, with the FOB's name. */
+        private boolean fob(){return kind.equals("fob_remove");}
+        @Override Component subtitle(){return Ui.t("confirm.subtitle");}
+        @Override protected void init(){
+            super.init();pw=Math.min(460,width-16);
+            String raw=place()?Ui.plain("confirm.place.body",state.getBoolean("introCompleted")?Ui.plain("confirm.place.intro_done"):Ui.plain("confirm.place.intro_new")):fob()?Ui.plain("confirm.fob_remove.body",fob):Ui.plain("confirm.remove.body");
+            text=RichText.layout(font,ControlHints.guide(raw),pw-28-10,place()?Ui.CYAN:Ui.RED);
+            // Sized to its copy: a short warning should not float in a tall empty panel.
+            ph=Math.min(height-16,Math.max(150,34+22+8+text.height+10+44));left=(width-pw)/2;top=(height-ph)/2;
+            int half=(pw-36)/2;
+            // Cancel comes first and is the default focus so Enter never destroys a campaign.
+            var cancel=button(Ui.t("confirm.cancel"),left+14,top+ph-34,half,Ui.Look.PRIMARY,b->onClose());
+            button(place()?Ui.t("confirm.place.go"):fob()?Ui.t("confirm.fob_remove.go"):Ui.t("confirm.remove.go"),left+22+half,top+ph-34,half,place()?Ui.Look.NORMAL:Ui.Look.DANGER,b->BeaconNetwork.action("confirm",token));
+            setInitialFocus(cancel);
+        }
+        @Override public void onClose(){BeaconNetwork.action("cancel",token);super.onClose();}
+        @Override public void render(GuiGraphics g,int mx,int my,float partial){
+            panel(g);int x=left+14,w=pw-28,y=top+34;
+            if(place()){g.fill(x,y,x+w,y+22,Ui.CYAN_FILL);g.fill(x,y+21,x+w,y+22,Ui.CYAN);}
+            else Ui.hazard(g,x,y,w,22,0xff2b1214,0xff5c2226);
+            Ui.text(g,font,place()?Ui.t("confirm.place.head"):fob()?Ui.t("confirm.fob_remove.head",fob):Ui.t("confirm.remove.head"),x+8,y+7,place()?Ui.CYAN:Ui.RED,w-16);
+            int top0=y+30,bottom=top+ph-42;
+            g.enableScissor(x,top0,x+w,bottom);text.draw(g,font,x+4,top0,0,top0,bottom);g.disableScissor();
+            super.render(g,mx,my,partial);footer(g);
+        }
+    }
+
+    static final class GuideScreen extends PanelScreen {
+        static final String[] IDS=GuideText.IDS;
+        final Screen parent;int page,scroll;
+        private RichText cached;private int cachedPage=-1,cachedWidth;private String cachedLanguage="";
+        private int navX,navTop,navWidth,navHeight,textX,textWidth,textTop,textBottom;
+        /** True: icon and title on every row. False: a two-column rail of icons whose names show on hover. */
+        boolean fullList;
+        final List<Ui.UiButton> nav=new ArrayList<>();
+        GuideScreen(Screen parent){super(Ui.t("guide.title"));this.parent=parent;}
+        @Override Component subtitle(){return Ui.t("guide.subtitle");}
+        static String raw(String id,String part){return GuideText.raw(id,part,key->Ui.has(key)?Ui.plain(key):null);}
+        private String pageText(){return ControlHints.guide(GuideText.page(IDS[page],key->Ui.has(key)?Ui.plain(key):null));}
+        /** The item that stands for each page in the side menu. */
+        static ItemStack icon(String id){
+            return new ItemStack(switch(id){
+                case "start"->EternalDefense.GUIDE.get();
+                case "zone"->EternalDefense.BEACON_ITEM.get();
+                case "raids"->net.minecraft.world.item.Items.ZOMBIE_HEAD;
+                case "control"->EternalDefense.CONTROLLER.get();
+                case "upgrades"->EternalDefense.PLATING.get();
+                case "repair"->EternalDefense.REPAIR.get();
+                case "stations"->EternalDefense.GUN_PLATFORM.get().asItem();
+                case "energy"->EternalDefense.ARDENT_ENERGY.get();
+                case "support"->EternalDefense.SUPPORT_CANNON_ITEM.get();
+                case "tactical"->EternalDefense.COMMAND_TABLE_ITEM.get();
+                case "fob"->EternalDefense.FOB_BEACON_ITEM.get();
+                case "kitchen"->EternalDefense.MESS_HALL_I.get().asItem();
+                case "mixes"->EternalDefense.SANDWICH.get();
+                case "drinks"->EternalDefense.DRINK_STATION_I.get().asItem();
+                case "mre"->EternalDefense.MRE_STATION_ITEM.get();
+                case "hub"->EternalDefense.LOGISTICS_HUB_ITEM.get();
+                case "gear"->EternalDefense.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:EternalDefense.RACKS.get(0).get().asItem();
+                case "coop"->net.minecraft.world.item.Items.PLAYER_HEAD;
+                default->net.minecraft.world.item.Items.WRITABLE_BOOK;
+            });
+        }
+        private RichText text(){
+            String language=Minecraft.getInstance().getLanguageManager().getSelected();
+            if(cached==null||cachedPage!=page||cachedWidth!=textWidth||!cachedLanguage.equals(language)){cached=RichText.layout(font,pageText(),textWidth-10,Ui.BRASS);cachedPage=page;cachedWidth=textWidth;cachedLanguage=language;}
+            return cached;
+        }
+        /** Back/Next, arrow keys and the side menu all end up here, and the menu highlight follows in render(). */
+        private void go(int target){page=Math.max(0,Math.min(IDS.length-1,target));scroll=0;cached=null;}
+        @Override protected void init(){
+            super.init();nav.clear();
+            // The guide may be taller than the other panels: 15 rows with full-size icons need the room.
+            ph=Math.min(330,height-16);top=(height-ph)/2;
+            int rows=IDS.length;
+            // The menu is a full-height strip beside the page. It never goes away: when 15 icon-and-title rows do not fit,
+            // it becomes a two-column rail of icons and the names move to a tooltip.
+            navX=left+10;navTop=top+32;navHeight=ph-40;
+            int step=(navHeight-4)/rows;
+            fullList=pw>=430&&step>=17;
+            navWidth=fullList?142:54;
+            textX=navX+navWidth+10;textWidth=left+pw-14-textX;textTop=top+56;textBottom=top+ph-40;
+            closeButton();
+            for(int i=0;i<rows;i++){
+                int index=i;String id=IDS[i];ItemStack icon=icon(id);
+                Ui.UiButton b;
+                if(fullList)b=new Ui.UiButton(navX+3,navTop+2+i*step,navWidth-6,step-1,Ui.t("guide."+id+".title"),Ui.Look.ROW,x->go(index));
+                else{
+                    int rowsPerColumn=(rows+1)/2,cell=Math.min(22,(navHeight-4)/rowsPerColumn-2);
+                    b=new Ui.UiButton(navX+4+(i/rowsPerColumn)*(cell+2),navTop+3+(i%rowsPerColumn)*(cell+3),cell,cell,Ui.t("guide."+id+".title"),Ui.Look.ROW,x->go(index));
+                }
+                b.noLabel().painter((g,self,hover)->paintNav(g,self,icon));
+                nav.add(addRenderableWidget(b));
+            }
+            int w=textWidth,side=Math.min(80,(w-82)/2),y=top+ph-30;
+            button(Ui.t("back"),textX,y,side,Ui.Look.NORMAL,b->go(page-1));
+            button(Ui.t("done"),textX+w/2-35,y,70,Ui.Look.PRIMARY,b->onClose());
+            button(Ui.t("next"),textX+w-side,y,side,Ui.Look.NORMAL,b->go(page+1));
+        }
+        private void paintNav(GuiGraphics g,Ui.UiButton self,ItemStack icon){
+            int x=self.getX(),y=self.getY(),w=self.getWidth(),h=self.getHeight();
+            if(fullList){
+                // Full-size icon when the row is tall enough, otherwise the item at three quarters. A lighter tile keeps dark items readable.
+                boolean big=h>=19;int size=big?16:12,ix=x+4,iy=y+(h-size)/2;
+                g.fill(ix,iy,ix+size,iy+size,Ui.EDGE);
+                g.pose().pushPose();g.pose().translate(ix,iy,0);if(!big)g.pose().scale(0.75f,0.75f,1f);g.renderItem(icon,0,0);g.pose().popPose();
+                g.drawString(font,Ui.fit(font,self.getMessage(),w-size-14),ix+size+6,y+(h-8)/2,self.selected?Ui.INK:Ui.MUTED,false);
+            }else{
+                int ix=x+(w-16)/2,iy=y+(h-16)/2;
+                g.fill(ix,iy,ix+16,iy+16,Ui.EDGE);g.renderItem(icon,ix,iy);
+            }
+        }
+        private int maxScroll(){return Math.max(0,text().height-(textBottom-textTop));}
+        @Override public boolean mouseScrolled(double x,double y,double amount){scroll=Math.max(0,Math.min(maxScroll(),scroll-(int)(amount*22)));return true;}
+        @Override public boolean keyPressed(int key,int scan,int modifiers){
+            switch(key){
+                case 264 -> {scroll=Math.min(maxScroll(),scroll+22);return true;}
+                case 265 -> {scroll=Math.max(0,scroll-22);return true;}
+                case 267 -> {scroll=Math.min(maxScroll(),scroll+textBottom-textTop-11);return true;}
+                case 266 -> {scroll=Math.max(0,scroll-(textBottom-textTop-11));return true;}
+                case 262 -> {if(!(getFocused() instanceof Button)){go(page+1);return true;}}
+                case 263 -> {if(!(getFocused() instanceof Button)){go(page-1);return true;}}
+            }
+            return super.keyPressed(key,scan,modifiers);
+        }
+        @Override public void onClose(){minecraft.setScreen(parent);}
+        @Override public void render(GuiGraphics g,int mx,int my,float partial){
+            panel(g);
+            scroll=Math.min(scroll,maxScroll());
+            for(int i=0;i<nav.size();i++)nav.get(i).selected=i==page;
+            Ui.inset(g,navX,navTop,navWidth,navHeight);
+            boolean more=text().height>textBottom-textTop&&scroll<maxScroll();
+            Ui.text(g,font,more?Ui.t("guide.page_more",page+1,IDS.length):Ui.t("guide.page",page+1,IDS.length),textX,top+34,Ui.CYAN,textWidth-12);
+            Ui.text(g,font,Ui.t("guide."+IDS[page]+".title"),textX,top+44,Ui.INK,textWidth-12);
+            var text=text();
+            g.enableScissor(textX,textTop,textX+textWidth,textBottom);text.draw(g,font,textX+2,textTop+2,scroll,textTop,textBottom);g.disableScissor();
+            if(text.height>textBottom-textTop){
+                int track=textBottom-textTop,thumb=Math.max(12,track*track/text.height),ty=textTop+(maxScroll()==0?0:(track-thumb)*scroll/maxScroll());
+                g.fill(textX+textWidth-3,textTop,textX+textWidth,textBottom,Ui.TRACK);g.fill(textX+textWidth-3,ty,textX+textWidth,ty+thumb,Ui.CYAN);
+            }
+            super.render(g,mx,my,partial);
+            if(!fullList)for(var b:nav)if(b.isHovered()){g.renderTooltip(font,b.getMessage(),mx,my);break;}
+        }
+    }
+}

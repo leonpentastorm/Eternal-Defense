@@ -1,0 +1,634 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.brigadier.arguments.StringArgumentType;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.*;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.*;
+import net.minecraft.nbt.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.*;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.*;
+import net.minecraft.world.level.*;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.*;
+import net.minecraft.commands.Commands;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.*;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.EntityMobGriefingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.SleepingTimeCheckEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.*;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.*;
+import java.util.*;
+
+@Mod(EternalDefense.ID)
+public final class EternalDefense {
+    public static final String ID="eternal_defense";
+    private static final DeferredRegister<Block> BLOCKS=DeferredRegister.create(ForgeRegistries.BLOCKS,ID);
+    private static final DeferredRegister<Item> ITEMS=DeferredRegister.create(ForgeRegistries.ITEMS,ID);
+    private static final DeferredRegister<CreativeModeTab> TABS=DeferredRegister.create(Registries.CREATIVE_MODE_TAB,ID);
+    public static final RegistryObject<CreativeModeTab> DEFENSE_TAB=TABS.register("main",()->CreativeModeTab.builder().title(Component.literal("Eternal Defense")).icon(()->new ItemStack(EternalDefense.BEACON_ITEM.get())).displayItems((parameters,output)->CreativeCatalog.display(output)).build());
+    private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> ENTITIES=DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES,ID);
+    public static final RegistryObject<Block> STRUCTURE_PART=BLOCKS.register("structure_part",DefenseStructures.Part::new);
+    public static final RegistryObject<Block> BEACON=BLOCKS.register("defense_beacon",()->new DefenseBlock());
+    public static final RegistryObject<Item> BEACON_ITEM=ITEMS.register("defense_beacon",()->new BeaconItems.Placement(BEACON.get()));
+    public static final RegistryObject<Item> CONTROLLER=ITEMS.register("beacon_controller",()->new BeaconItems.Controller());
+    public static final RegistryObject<Item> GUIDE=ITEMS.register("field_guide",()->new BeaconItems.Guide());
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<DefenseEntity>> BEACON_ENTITY=ENTITIES.register("defense_beacon",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(DefenseEntity::new,BEACON.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<WeaponPlatform.StationEntity>> STATION_ENTITY=ENTITIES.register("station",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(WeaponPlatform.StationEntity::new,EternalDefense.GUN_PLATFORM.get(),EternalDefense.AMMO_PLATFORM.get(),EternalDefense.ATTACHMENT_PLATFORM.get(),EternalDefense.ARMOR_PLATFORM.get()).build(null));
+    public static final RegistryObject<Item> ARDENT_ENERGY=ITEMS.register("ardent_energy",()->new Item(new Item.Properties().rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
+    public static final RegistryObject<Block> EXCHANGE_SHOP=BLOCKS.register("exchange_shop",ExchangeShop.ShopBlock::new);
+    public static final RegistryObject<Item> EXCHANGE_SHOP_ITEM=ITEMS.register("exchange_shop",()->new BaseZone.ZoneItem(EXCHANGE_SHOP.get()));
+    // ---- base support system -------------------------------------------------------------------------
+    static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(ForgeRegistries.MENU_TYPES,ID);
+    public static final RegistryObject<Block> MESS_HALL_I=kitchen("mess_hall_mk1",1),MESS_HALL_II=kitchen("mess_hall_mk2",2),MESS_HALL_III=kitchen("mess_hall_mk3",3),MESS_HALL_IV=kitchen("mess_hall_mk4",4);
+    private static RegistryObject<Block> kitchen(String id,int tier){RegistryObject<Block> block=BLOCKS.register(id,()->new MessHall.HallBlock(tier));ITEMS.register(id,()->new KitchenBlock.KitchenItem(block.get()));return block;}
+    public static final RegistryObject<Block> COOK_POT=BLOCKS.register("cook_pot",CookPot.PotBlock::new);
+    public static final RegistryObject<Item> COOK_POT_ITEM=ITEMS.register("cook_pot",()->new KitchenBlock.KitchenItem(COOK_POT.get()));
+    public static final RegistryObject<Block> BOWL_DISPENSER=BLOCKS.register("bowl_dispenser",BowlDispenser.DispenserBlock::new);
+    public static final RegistryObject<Item> BOWL_DISPENSER_ITEM=ITEMS.register("bowl_dispenser",()->new KitchenBlock.KitchenItem(BOWL_DISPENSER.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<BowlDispenser.DispenserEntity>> BOWL_DISPENSER_ENTITY=ENTITIES.register("bowl_dispenser",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(BowlDispenser.DispenserEntity::new,BOWL_DISPENSER.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<BowlDispenser.DispenserMenu>> BOWL_DISPENSER_MENU=MENUS.register("bowl_dispenser",()->net.minecraftforge.common.extensions.IForgeMenuType.create(BowlDispenser.DispenserMenu::client));
+    public static final RegistryObject<Item> SANDWICH=ITEMS.register("prepared_sandwich",PreparedSandwich::new);
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MessHall.HallEntity>> MESS_HALL_ENTITY=ENTITIES.register("mess_hall",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MessHall.HallEntity::new,MESS_HALL_I.get(),MESS_HALL_II.get(),MESS_HALL_III.get(),MESS_HALL_IV.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<CookPot.PotEntity>> COOK_POT_ENTITY=ENTITIES.register("cook_pot",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(CookPot.PotEntity::new,COOK_POT.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<MessHallMenu>> MESS_HALL_MENU=MENUS.register("mess_hall",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MessHallMenu::client));
+    // 0.0.35 (owner): the Drink Station (the owner's drink_mixer models), the Brew Pot, the Cup Dispenser, the Paper Cup and the Latte
+    public static final RegistryObject<Block> DRINK_STATION_I=drinks("drink_mixer_mk1",1),DRINK_STATION_II=drinks("drink_mixer_mk2",2),DRINK_STATION_III=drinks("drink_mixer_mk3",3),DRINK_STATION_IV=drinks("drink_mixer_mk4",4);
+    private static RegistryObject<Block> drinks(String id,int tier){RegistryObject<Block> block=BLOCKS.register(id,()->new DrinkStation.StationBlock(tier));ITEMS.register(id,()->new KitchenBlock.KitchenItem(block.get()));return block;}
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<DrinkStation.StationEntity>> DRINK_STATION_ENTITY=ENTITIES.register("drink_station",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(DrinkStation.StationEntity::new,DRINK_STATION_I.get(),DRINK_STATION_II.get(),DRINK_STATION_III.get(),DRINK_STATION_IV.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<DrinkStationMenu>> DRINK_STATION_MENU=MENUS.register("drink_station",()->net.minecraftforge.common.extensions.IForgeMenuType.create(DrinkStationMenu::client));
+    public static final RegistryObject<Block> BREW_POT=BLOCKS.register("drink_pot",BrewPot.PotBlock::new);
+    public static final RegistryObject<Item> BREW_POT_ITEM=ITEMS.register("drink_pot",()->new KitchenBlock.KitchenItem(BREW_POT.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<BrewPot.PotEntity>> BREW_POT_ENTITY=ENTITIES.register("drink_pot",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(BrewPot.PotEntity::new,BREW_POT.get()).build(null));
+    public static final RegistryObject<Block> CUP_DISPENSER=BLOCKS.register("cup_dispenser",CupDispenser.DispenserBlock::new);
+    public static final RegistryObject<Item> CUP_DISPENSER_ITEM=ITEMS.register("cup_dispenser",()->new KitchenBlock.KitchenItem(CUP_DISPENSER.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<CupDispenser.DispenserEntity>> CUP_DISPENSER_ENTITY=ENTITIES.register("cup_dispenser",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(CupDispenser.DispenserEntity::new,CUP_DISPENSER.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<CupDispenser.DispenserMenu>> CUP_DISPENSER_MENU=MENUS.register("cup_dispenser",()->net.minecraftforge.common.extensions.IForgeMenuType.create(CupDispenser.DispenserMenu::client));
+    public static final RegistryObject<Item> PAPER_CUP=ITEMS.register("drink_cup_empty",CupDispenser.PaperCup::new);
+    public static final RegistryObject<Item> LATTE=ITEMS.register("drink_cup",Latte::new);
+    public static final RegistryObject<Block> MILK_DISPENSER=BLOCKS.register("milk_dispenser",MilkDispenser.DispenserBlock::new);
+    public static final RegistryObject<Item> MILK_DISPENSER_ITEM=ITEMS.register("milk_dispenser",()->new KitchenBlock.KitchenItem(MILK_DISPENSER.get()));
+    public static final RegistryObject<Item> MILK_BOTTLE=ITEMS.register("milk_bottle",MilkDispenser.MilkBottle::new);
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MilkDispenser.DispenserEntity>> MILK_DISPENSER_ENTITY=ENTITIES.register("milk_dispenser",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MilkDispenser.DispenserEntity::new,MILK_DISPENSER.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<MilkDispenser.DispenserMenu>> MILK_DISPENSER_MENU=MENUS.register("milk_dispenser",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MilkDispenser.DispenserMenu::client));
+    // 0.0.38 (owner): the MRE Station (registered as mre_maker, the owner's model name, shown as "MRE Station"), the MRE and Marines Fuel
+    public static final RegistryObject<Block> MRE_STATION=BLOCKS.register("mre_maker",MreStation.StationBlock::new);
+    public static final RegistryObject<Item> MRE_STATION_ITEM=ITEMS.register("mre_maker",()->new KitchenBlock.KitchenItem(MRE_STATION.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MreStation.StationEntity>> MRE_STATION_ENTITY=ENTITIES.register("mre_maker",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(MreStation.StationEntity::new,MRE_STATION.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<MreStation.StationMenu>> MRE_STATION_MENU=MENUS.register("mre_maker",()->net.minecraftforge.common.extensions.IForgeMenuType.create(MreStation.StationMenu::client));
+    // 0.0.40 (owner): the Logistics Center Hub, a 3 x 3 x 3 depot of 270 slots in the Home Zone (the owner's model); its inventory lives in HubData
+    public static final RegistryObject<Block> LOGISTICS_HUB=BLOCKS.register("logistics_hub",LogisticsHub.HubBlock::new);
+    public static final RegistryObject<Block> LOGISTICS_HUB_PART=BLOCKS.register("logistics_hub_part",LogisticsHub.PartBlock::new);
+    public static final RegistryObject<Item> LOGISTICS_HUB_ITEM=ITEMS.register("logistics_hub",()->new LogisticsHub.HubItem(LOGISTICS_HUB.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LogisticsHub.HubEntity>> LOGISTICS_HUB_ENTITY=ENTITIES.register("logistics_hub",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(LogisticsHub.HubEntity::new,LOGISTICS_HUB.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<net.minecraft.world.level.block.entity.BlockEntity>> LOGISTICS_HUB_PART_ENTITY=ENTITIES.register("logistics_hub_part",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of((pos,state)->LogisticsHub.partFactory.create(pos,state),LOGISTICS_HUB_PART.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<HubMenu>> LOGISTICS_HUB_MENU=MENUS.register("logistics_hub",()->net.minecraftforge.common.extensions.IForgeMenuType.create(HubMenu::client));
+    public static final RegistryObject<Item> MRE=ITEMS.register("mre",Mre::new);
+    public static final RegistryObject<Item> MARINES_FUEL=ITEMS.register("marines_fuel",Mre.MarinesFuel::new);
+    public static final RegistryObject<Block> SUPPORT_PLATFORM=BLOCKS.register("support_platform",SupportPlatform.PlatformBlock::new);
+    public static final RegistryObject<Item> SUPPORT_PLATFORM_ITEM=ITEMS.register("support_platform",()->new SupportPlatform.PlatformItem(SUPPORT_PLATFORM.get()));
+    public static final RegistryObject<Block> SUPPORT_CANNON=BLOCKS.register("support_cannon",SupportCannon.CannonBlock::new);
+    public static final RegistryObject<Item> SUPPORT_CANNON_ITEM=ITEMS.register("support_cannon",()->new SupportCannon.CannonItem(SUPPORT_CANNON.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportPlatform.PlatformEntity>> SUPPORT_PLATFORM_ENTITY=ENTITIES.register("support_platform",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportPlatform.PlatformEntity::new,SUPPORT_PLATFORM.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupportCannon.CannonEntity>> CANNON_ENTITY=ENTITIES.register("support_cannon",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupportCannon.CannonEntity::new,SUPPORT_CANNON.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<SupportPlatform.PlatformMenu>> SUPPORT_MENU=MENUS.register("support_platform",()->net.minecraftforge.common.extensions.IForgeMenuType.create(SupportPlatform.PlatformMenu::client));
+    // ---- Tactical Operations (0.0.20) -----------------------------------------------------------------------
+    public static final RegistryObject<Block> COMMAND_TABLE=BLOCKS.register("command_table",TacticalBlocks.TableBlock::new);
+    public static final RegistryObject<Item> COMMAND_TABLE_ITEM=ITEMS.register("command_table",()->new TacticalBlocks.TableItem(COMMAND_TABLE.get()));
+    public static final RegistryObject<Block> SATELLITE_BEACON=BLOCKS.register("satellite_beacon",TacticalBlocks.SatelliteBlock::new);
+    public static final RegistryObject<Item> SATELLITE_BEACON_ITEM=ITEMS.register("satellite_beacon",()->new TacticalBlocks.SatelliteItem(SATELLITE_BEACON.get()));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<TacticalBlocks.TableMenu>> TABLE_MENU=MENUS.register("command_table",()->net.minecraftforge.common.extensions.IForgeMenuType.create(TacticalBlocks.TableMenu::client));
+    // ---- Forward Operating Bases (0.0.23) -------------------------------------------------------------------
+    public static final RegistryObject<Block> FOB_BEACON=BLOCKS.register("fob_beacon",FobBlocks.FobBlock::new);
+    public static final RegistryObject<Item> FOB_BEACON_ITEM=ITEMS.register("fob_beacon",()->new FobBlocks.FobItem(FOB_BEACON.get()));
+    // ---- the supply rail (0.0.24, FOB slice 2) -----------------------------------------------------------------
+    public static final RegistryObject<Block> DELIVERY_GATE=BLOCKS.register("supply_delivery_gate",()->new RailGates.GateBlock(RailGates.Kind.DELIVERY));
+    public static final RegistryObject<Block> RECEIVING_GATE=BLOCKS.register("supply_receiving_gate",()->new RailGates.GateBlock(RailGates.Kind.RECEIVING));
+    public static final RegistryObject<Block> GATE_PART=BLOCKS.register("gate_part",RailGates.Part::new);
+    /** The left column of each gate (0.0.30): it draws the owner's left half; no item. */
+    public static final RegistryObject<Block> DELIVERY_GATE_LEFT=BLOCKS.register("supply_delivery_gate_left",()->new RailGates.Column(RailGates.Kind.DELIVERY));
+    public static final RegistryObject<Block> RECEIVING_GATE_LEFT=BLOCKS.register("supply_receiving_gate_left",()->new RailGates.Column(RailGates.Kind.RECEIVING));
+    public static final RegistryObject<Item> DELIVERY_GATE_ITEM=ITEMS.register("supply_delivery_gate",()->new RailGates.GateItem(DELIVERY_GATE.get(),RailGates.Kind.DELIVERY));
+    public static final RegistryObject<Item> RECEIVING_GATE_ITEM=ITEMS.register("supply_receiving_gate",()->new RailGates.GateItem(RECEIVING_GATE.get(),RailGates.Kind.RECEIVING));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<RailGates.GateEntity>> GATE_ENTITY=ENTITIES.register("supply_gate",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(RailGates.GateEntity::new,DELIVERY_GATE.get(),RECEIVING_GATE.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<RailGates.GateMenu>> GATE_MENU=MENUS.register("supply_gate",()->net.minecraftforge.common.extensions.IForgeMenuType.create(RailGates.GateMenu::client));
+    // ---- the Tactical Enchanting Table and the Warlord Seal (0.0.27, FOB slice 4) ------------------------------------------------------------------
+    public static final RegistryObject<Block> ENCHANTING_TABLE=BLOCKS.register("tactical_enchanting_table",TacticalEnchanting.TableBlock::new);
+    public static final RegistryObject<Item> ENCHANTING_TABLE_ITEM=ITEMS.register("tactical_enchanting_table",()->new TacticalEnchanting.TableItem(ENCHANTING_TABLE.get()));
+    /** 0.0.39: the moving parts of the blocks that had no block entity (see AnimatedParts and Animations). */
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<AnimatedParts.PartsEntity>> ANIMATED_PARTS_ENTITY=ENTITIES.register("animated_parts",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(AnimatedParts.PartsEntity::new,
+        EternalDefense.FOB_BEACON.get(),EternalDefense.SATELLITE_BEACON.get(),EternalDefense.COMMAND_TABLE.get(),EternalDefense.ENCHANTING_TABLE.get()).build(null));
+    public static final RegistryObject<Item> WARLORD_SEAL=ITEMS.register("warlord_seal",TacticalEnchanting.SealItem::new);
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<TacticalEnchanting.EnchantMenu>> ENCHANT_MENU=MENUS.register("tactical_enchanting_table",()->net.minecraftforge.common.extensions.IForgeMenuType.create(TacticalEnchanting.EnchantMenu::client));
+    // ---- the Supply Catapult (0.0.33): the owner's onager, in a FOB's village; the specialty seller's deliveries ----------------------------------
+    public static final RegistryObject<Block> SUPPLY_CATAPULT=BLOCKS.register("supply_catapult",SupplyCatapult.CatapultBlock::new);
+    public static final RegistryObject<Item> SUPPLY_CATAPULT_ITEM=ITEMS.register("supply_catapult",()->new SupplyCatapult.CatapultItem(SUPPLY_CATAPULT.get()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SupplyCatapult.CatapultEntity>> CATAPULT_ENTITY=ENTITIES.register("supply_catapult",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(SupplyCatapult.CatapultEntity::new,SUPPLY_CATAPULT.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<FobBlocks.FobMenu>> FOB_MENU=MENUS.register("fob_beacon",()->net.minecraftforge.common.extensions.IForgeMenuType.create(FobBlocks.FobMenu::client));
+    public static final RegistryObject<Item> SUPPLY_FLARE=ITEMS.register("support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.SUPPLY)),RETURN_FLARE=ITEMS.register("return_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.RETURN)),FIRE_FLARE=ITEMS.register("fire_support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.FIRE));
+    public static final RegistryObject<Item> PLATING=part("reinforced_plating"),LOGISTICS=part("logistics_module"),COIL=part("resonance_coil"),REPAIR=part("restoration_matrix"),AMMO_COIN=part("universal_ammo_coin");
+    public static final RegistryObject<Block> GUN_PLATFORM=platform("gun"),AMMO_PLATFORM=platform("ammo"),ATTACHMENT_PLATFORM=platform("attachment"),ARMOR_PLATFORM=platform("armor");
+    private static RegistryObject<Block> platform(String kind){
+        RegistryObject<Block> block=BLOCKS.register(kind+"_platform",()->new WeaponPlatform.Station(kind));
+        ITEMS.register(kind+"_platform",()->new WeaponPlatform.StationItem(block.get()));return block;
+    }
+    public static final List<RegistryObject<Block>> RACKS=net.minecraftforge.fml.ModList.get().isLoaded("eternal_defense_displays")?dev.eternaldefense.displays.GunDisplays.RACKS:List.of();
+    private static RegistryObject<Item> part(String id){return ITEMS.register(id,()->new Item(new Item.Properties()));}
+    private static final DeferredRegister<EntityType<?>> OBJECTIVES=DeferredRegister.create(ForgeRegistries.ENTITY_TYPES,ID);
+    static final RegistryObject<EntityType<BeaconCombat.Objective>> OBJECTIVE=OBJECTIVES.register("beacon_objective",()->EntityType.Builder.<BeaconCombat.Objective>of(BeaconCombat.Objective::new,MobCategory.MISC).sized(1f,1f).clientTrackingRange(64).build(ID+":beacon_objective"));
+    public static final RegistryObject<EntityType<SupportFlares.FlareEntity>> FLARE=OBJECTIVES.register("support_flare",()->EntityType.Builder.<SupportFlares.FlareEntity>of(SupportFlares.FlareEntity::new,MobCategory.MISC).sized(.25f,.25f).clientTrackingRange(10).updateInterval(5).build(ID+":support_flare"));
+    public static final RegistryObject<EntityType<SupportCrate.ParcelEntity>> PARCEL=OBJECTIVES.register("support_parcel",()->EntityType.Builder.<SupportCrate.ParcelEntity>of(SupportCrate.ParcelEntity::new,MobCategory.MISC).sized(.9f,.9f).clientTrackingRange(8).updateInterval(3).build(ID+":support_parcel"));
+    /** The red gate a stuck raider channels beside (see RaiderGates): never saved, cannot be hit, entered or targeted. */
+    static final RegistryObject<EntityType<RaiderGate>> RAIDER_GATE=OBJECTIVES.register("raider_gate",()->EntityType.Builder.<RaiderGate>of(RaiderGate::new,MobCategory.MISC).sized(1.2f,2.2f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":raider_gate"));
+    /** A shell, bomb or starshell falling onto a fire support flare (see Ordnance): only to be seen and heard, never saved. */
+    static final RegistryObject<EntityType<Ordnance>> ORDNANCE=OBJECTIVES.register("ordnance",()->EntityType.Builder.<Ordnance>of(Ordnance::new,MobCategory.MISC).sized(.5f,1f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":ordnance"));
+    /** The box a Supply Catapult throws (0.0.33): only to be seen, never saved. */
+    static final RegistryObject<EntityType<SupplyCatapult.ThrownSupply>> THROWN_SUPPLY=OBJECTIVES.register("thrown_supply",()->EntityType.Builder.<SupplyCatapult.ThrownSupply>of(SupplyCatapult.ThrownSupply::new,MobCategory.MISC).sized(.5f,.5f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(1).build(ID+":thrown_supply"));
+    private static int clock;
+    public EternalDefense() {
+        net.minecraftforge.common.ForgeMod.enableMilkFluid();
+        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);DefenseSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();
+        if(Boolean.getBoolean("eternaldefense.integrationTests")&&!net.minecraftforge.fml.ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(bus);
+        // 0.0.40: with Create: mechanical arms may use the Logistics Center Hub (the class is compiled against Create, loaded by name)
+        if(net.minecraftforge.fml.ModList.get().isLoaded("create"))
+            try{Class.forName("dev.eternaldefense.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
+            catch(ReflectiveOperationException|LinkageError e){com.mojang.logging.LogUtils.getLogger().warn("[Logistics Hub] mechanical arms cannot use the Hub: {}",e.toString());}
+        bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
+        MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());MinecraftForge.EVENT_BUS.register(new EndlessEffects.EndlessEvents());MinecraftForge.EVENT_BUS.register(new ReturnZone());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,DefenseConfig.SPEC,"eternal-defense-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,DefenseClientConfig.SPEC,"eternal-defense-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
+        MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new AnimatedParts.Upgrade());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
+        MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new PlayerDrinks.DrinkEvents());MinecraftForge.EVENT_BUS.register(new DrinkStation.GuardEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());MinecraftForge.EVENT_BUS.register(new Routes.RouteEvents());
+        bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
+        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallGameTests.KitchenTestRunner());
+        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV2GameTests.KitchenV2TestRunner());
+        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV4GameTests.Runner());
+        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV5GameTests.KitchenV5Verification());
+        if(Boolean.getBoolean("eternaldefense.messHallTests"))MinecraftForge.EVENT_BUS.register(new MessHallV6GameTests.KitchenV6Verification());
+        if(Boolean.getBoolean("eternaldefense.stuckTests"))MinecraftForge.EVENT_BUS.register(new RaiderGateGameTests.Runner());
+        if(Boolean.getBoolean("eternaldefense.optimizeTests"))MinecraftForge.EVENT_BUS.register(new OptimizePathGameTests.Runner());
+        if(Boolean.getBoolean("eternaldefense.huntTests"))MinecraftForge.EVENT_BUS.register(new HuntGameTests.Runner());
+        if(Boolean.getBoolean("eternaldefense.fobTests"))MinecraftForge.EVENT_BUS.register(new FobGameTests.Runner());
+        if(Boolean.getBoolean("eternaldefense.v5ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV5ClientSmoke());
+        if(Boolean.getBoolean("eternaldefense.v6ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV6ClientSmoke());
+        if(Boolean.getBoolean("eternaldefense.v4ClientTests"))MinecraftForge.EVENT_BUS.register(new MealV4ClientSmoke());
+        if(Boolean.getBoolean("eternaldefense.kitchenSmoke"))MinecraftForge.EVENT_BUS.register(new MessHallSmoke());
+    }
+    public static final class DefenseEntity extends BlockEntity {
+        public DefenseEntity(BlockPos pos,BlockState state){super(BEACON_ENTITY.get(),pos,state);}
+        @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(){return new net.minecraft.world.phys.AABB(worldPosition.getX()-1,worldPosition.getY(),worldPosition.getZ()-1,worldPosition.getX()+2,worldPosition.getY()+512,worldPosition.getZ()+2);}
+    }
+    public static final class DefenseBlock extends Block implements EntityBlock {
+        public DefenseBlock(){super(Properties.of().strength(-1f,3600000f).lightLevel(s->15).noOcclusion());registerDefaultState(stateDefinition.any().setValue(DefenseStructures.MK,1).setValue(DefenseStructures.FACING,Direction.NORTH));}
+        @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block,BlockState> b){b.add(DefenseStructures.MK,DefenseStructures.FACING);}
+        @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext c){return defaultBlockState().setValue(DefenseStructures.FACING,c.getHorizontalDirection().getOpposite());}
+        @Override public net.minecraft.world.level.material.PushReaction getPistonPushReaction(BlockState s){return net.minecraft.world.level.material.PushReaction.BLOCK;}
+        @Override public void onRemove(BlockState s,Level l,BlockPos p,BlockState next,boolean moving){if(!next.is(this))DefenseStructures.remove(l,p);super.onRemove(s,l,p,next,moving);}
+        @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,BlockGetter level,BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){return DefenseStructures.cell(state,0,0,0);}
+        @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new DefenseEntity(pos,state);}
+        @Override public void setPlacedBy(Level level,BlockPos pos,BlockState state,net.minecraft.world.entity.LivingEntity placer,ItemStack stack) {
+            if(!(level instanceof ServerLevel server)||!(placer instanceof ServerPlayer player))return;
+            CampaignData d=CampaignData.get(server);
+            if(level.dimension()!=Level.OVERWORLD||!d.phase.equals("unplaced")) {
+                server.setBlock(pos,Blocks.AIR.defaultBlockState(),3);
+                player.sendSystemMessage(Component.literal("One shared beacon per world, placed in the Overworld."));return;
+            }
+            d.beacon=pos.immutable();d.phase="preparation";d.campaignSerial++;d.participants.add(player.getUUID());d.health=d.maximumHealth();d.setDirty();
+            if(!d.introCompleted){announce(server,"INTRODUCTORY RAID: starts now at reward tier 0. Survive to earn your Weapon Platform.");begin(server,d);}else announce(server,"Beacon planted. Scheduled raids resume after ten active days, at night. Right-click for the control panel.");BeaconNetwork.syncNearby(server,d);
+        }
+        @Override public InteractionResult use(BlockState state,Level level,BlockPos pos,Player player,net.minecraft.world.InteractionHand hand,BlockHitResult hit) {
+            if(player.getItemInHand(hand).getItem() instanceof BlockItem)return InteractionResult.PASS;
+            if(level instanceof ServerLevel server&&player instanceof ServerPlayer p) {
+                CampaignData d=CampaignData.get(server);d.participants.add(p.getUUID());
+                if(player.getItemInHand(hand).is(CONTROLLER.get()))BeaconActions.requestRemoval(p);
+                else BeaconNetwork.open(p,"menu","");d.setDirty();
+            }
+            return InteractionResult.SUCCESS;
+        }
+    }
+    @SubscribeEvent public void login(PlayerEvent.PlayerLoggedInEvent event) {
+        if(!(event.getEntity() instanceof ServerPlayer p))return;
+        CampaignData d=CampaignData.get(p.server.overworld());
+        if(d.phase.equals("unplaced")&&!p.getPersistentData().getBoolean("eternalDefenseGranted")) {
+            if(p.getInventory().add(new ItemStack(BEACON_ITEM.get())))p.getPersistentData().putBoolean("eternalDefenseGranted",true);
+        }
+        if(!d.phase.equals("unplaced"))d.participants.add(p.getUUID());d.setDirty();
+        grantSupport(p);BeaconNetwork.sendState(p,"","","");
+        grantStarter(p);
+        Hunts.login(p);   // a mission running: its map and Return Flare if missing, and the mission line
+    }
+    static void grantSupport(ServerPlayer p) {
+        if(p.getPersistentData().getBoolean("eternalSupportGranted03"))return;
+        give(p,new ItemStack(GUIDE.get()));give(p,new ItemStack(CONTROLLER.get()));p.getPersistentData().putBoolean("eternalSupportGranted03",true);
+    }
+    static void give(ServerPlayer p,ItemStack stack){if(!p.getInventory().add(stack)&&!stack.isEmpty())p.drop(stack,false);}
+    static void grantStarter(ServerPlayer p) {
+        if(p.getPersistentData().getBoolean("eternalStarterGranted"))return;
+        Item gunItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:modern_kinetic_gun"));
+        Item ammoItem=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:ammo"));
+        if(gunItem==Items.AIR||ammoItem==Items.AIR)return;
+        try {
+            ItemStack gun=new ItemStack(gunItem),ammo=new ItemStack(ammoItem,64);
+            gunItem.getClass().getMethod("setGunId",ItemStack.class,ResourceLocation.class).invoke(gunItem,gun,new ResourceLocation("qkl:fk15p"));
+            gunItem.getClass().getMethod("setCurrentAmmoCount",ItemStack.class,int.class).invoke(gunItem,gun,0);
+            gun.getOrCreateTag().putString("GunFireMode","SEMI");
+            ammoItem.getClass().getMethod("setAmmoId",ItemStack.class,ResourceLocation.class).invoke(ammoItem,ammo,new ResourceLocation("qkl:16mm"));
+            if(!p.getInventory().add(gun)&&!gun.isEmpty())p.drop(gun,false);
+            if(!p.getInventory().add(ammo)&&!ammo.isEmpty())p.drop(ammo,false);
+            p.getPersistentData().putBoolean("eternalStarterGranted",true);
+            feedback(p,"[Eternal Defense] Starter kit: one FK15P flintlock and 64 round balls. Reload with R; it holds one round and reloads slowly.");
+        } catch(ReflectiveOperationException ex) {
+            com.mojang.logging.LogUtils.getLogger().error("Eternal Defense starter kit could not access the installed TaCZ item API",ex);
+        }
+    }
+    @SubscribeEvent public void clonePlayer(PlayerEvent.Clone e) {
+        if(e.getOriginal().getPersistentData().getBoolean("eternalDefenseGranted"))e.getEntity().getPersistentData().putBoolean("eternalDefenseGranted",true);
+        if(e.getOriginal().getPersistentData().getBoolean("eternalStarterGranted"))e.getEntity().getPersistentData().putBoolean("eternalStarterGranted",true);
+        if(e.getOriginal().getPersistentData().getBoolean("eternalSupportGranted03"))e.getEntity().getPersistentData().putBoolean("eternalSupportGranted03",true);
+    }
+    @SubscribeEvent public void serverStopped(net.minecraftforge.event.server.ServerStoppedEvent e){clock=0;RaidRescue.reset();BeaconActions.clear();}
+    private static final com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack> RAID_TYPE_SUGGEST=(c,b)->{b.suggest("normal");for(String t:RaidTypes.SPECIAL)b.suggest(t);return b.buildFuture();};
+    private static boolean raidTypeOk(String t){return t.equals("normal")||RaidTypes.special(t);}
+    @SubscribeEvent public void commands(RegisterCommandsEvent event) {
+        // Explicit opt-in for our isolated integration server; normal packs expose no test commands.
+        if(Boolean.getBoolean("eternaldefense.integrationTests")) {
+            if(net.minecraft.gametest.framework.GameTestRegistry.getAllTestFunctions().isEmpty())
+                net.minecraft.gametest.framework.GameTestRegistry.register(BeaconGameTests.class);
+                net.minecraft.gametest.framework.GameTestRegistry.register(PlatformGameTests.class);
+                net.minecraft.gametest.framework.GameTestRegistry.register(CompatibilityGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(UpgradeGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseSevenGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(CampaignEightGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseNineGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(RemodelGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseElevenGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseTwelveGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ReleaseThirteenGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(SoundResourceGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(GunPackSyncGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(BrowserGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(DisplayRackGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(SpawnSixteenGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(ArmorGameTests.class);
+            net.minecraft.gametest.framework.GameTestRegistry.register(AmmoCatalogueGameTests.class);
+            net.minecraft.gametest.framework.TestCommand.register(event.getDispatcher());
+            event.getDispatcher().register(Commands.literal("eternaldefense-integration").requires(s->s.hasPermission(2)).executes(c->{IntegrationTests.start(c.getSource().getLevel());return 1;}));
+        }
+        event.getDispatcher().register(Commands.literal("eternaldefense")
+            .executes(c->{BeaconNetwork.open(c.getSource().getPlayerOrException(),"menu","");return 1;})
+            .then(Commands.literal("boundary").executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());d.showBoundary=!d.showBoundary;d.setDirty();return 1;}))
+            .then(Commands.literal("claim").executes(c->{claim(c.getSource().getPlayerOrException(),CampaignData.get(c.getSource().getServer().overworld()));return 1;}))
+            .then(Commands.literal("upgrade").then(Commands.argument("branch",StringArgumentType.word()).suggests((c,b)->{for(String s:List.of("core","logistics","defense","restoration","reconnaissance","vertical"))b.suggest(s);return b.buildFuture();}).executes(c->upgrade(c.getSource().getPlayerOrException(),StringArgumentType.getString(c,"branch")))))
+            .then(Commands.literal("repair").executes(c->repair(c.getSource().getPlayerOrException())))
+            .then(Hunts.command())
+            .then(Fobs.command())
+            .then(Commands.literal("test-gate").requires(s->s.hasPermission(2)).executes(c->{testGate(c.getSource().getPlayerOrException());return 1;}))
+            .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})
+                .then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}if(!d.phase.equals("preparation")){c.getSource().sendFailure(Component.literal("A raid can only be started during preparation."));return 0;}d.nextRaidType=t;d.setDirty();begin(l,d);if(d.introRaid)c.getSource().sendSuccess(()->Component.literal("The introduction raid is always an ordinary raid; finish it first, then run this again."),false);return 1;})))
+            .then(Commands.literal("next-raid").requires(s->s.hasPermission(2)).then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}d.nextRaidType=t;d.setDirty();c.getSource().sendSuccess(()->Component.literal("Next raid: "+RaidTypes.name(t).getString()),true);return 1;}))));
+    }
+    /**
+     * {@code /eternaldefense test-gate} (operators): opens a red gate five blocks in front of the player and sends an ordinary zombie (not a raider)
+     * through it, the way a raid reinforcement or a hunt warband arrives, so the gate can be looked at any time.
+     */
+    static void testGate(ServerPlayer p){
+        var l=p.serverLevel();var look=p.getLookAngle();var at=BlockPos.containing(p.getX()+look.x*5,p.getY(),p.getZ()+look.z*5);
+        at=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,at);
+        RaiderGates.spawnGate(l,at,p.position());
+        var zombie=EntityType.ZOMBIE.create(l);
+        if(zombie!=null){zombie.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,p.getYRot()+180,0);l.addFreshEntity(zombie);}
+        p.sendSystemMessage(Component.translatable("gui.eternal_defense.raid.test_gate"));
+    }
+    static int feedback(ServerPlayer p,String text){
+        if(BeaconActions.inAction())BeaconNetwork.sendState(p,"","",text);else p.sendSystemMessage(Component.literal(text));return 1;
+    }
+    private static void status(ServerPlayer p,CampaignData d) {
+        int days=Rules.intervalDays(d.rewardTier);
+        p.sendSystemMessage(Component.literal("Beacon: "+d.phase+" | HP "+d.health+"/"+d.maximumHealth()+" | last reward tier "+d.rewardTier+" | raids every "+days+" days | next due in "+Math.max(0,days*24000L-d.preparationTicks)/24000.0+" days"));
+        p.sendSystemMessage(Component.literal("Radius "+d.radius()+"; height -"+d.below()+"/+"+d.above()+" | base score "+d.score+" | victories "+d.victories+" | core/logistics/defense/restoration: "+d.core+"/"+d.logistics+"/"+d.defense+"/"+d.restoration));
+        p.sendSystemMessage(Component.literal("/eternaldefense upgrade <core|logistics|defense|restoration|reconnaissance> | /eternaldefense claim | /eternaldefense repair | /eternaldefense boundary"));
+        String[] branches={"core","logistics","defense","restoration","reconnaissance","vertical"};int[] grades={d.core,d.logistics,d.defense,d.restoration,d.reconnaissance,d.vertical};
+        for(int i=0;i<branches.length;i++) {
+            String branch=branches[i];int grade=grades[i],limit=Rules.branchMaximum(branch);
+            p.sendSystemMessage(Component.literal("["+branch+" "+grade+"/"+limit+(grade<limit?" - upgrade: "+Economy.beaconCost(branch,grade).stream().mapToInt(Economy.Part::amount).sum()+" components":" - complete")+"]")
+                .withStyle(style->style.withColor(ChatFormatting.AQUA).withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,"/eternaldefense upgrade "+branch))));
+        }
+    }
+    static boolean near(ServerPlayer p,CampaignData d){return p.level().dimension()==Level.OVERWORLD&&p.blockPosition().distSqr(d.beacon)<(d.radius()+64.0)*(d.radius()+64.0);}
+    static int upgrade(ServerPlayer p,String branch) {
+        var d=CampaignData.get(p.server.overworld());if(!near(p,d)||d.active()||!d.installed())return feedback(p,"Upgrades require being near a planted beacon between raids.");
+        int grade;
+        switch(branch){case "core"->grade=d.core;case "logistics"->grade=d.logistics;case "defense"->grade=d.defense;case "restoration"->grade=d.restoration;case "reconnaissance"->grade=d.reconnaissance;case "vertical"->grade=d.vertical;default->{return feedback(p,"Branches: core, logistics, defense, restoration, reconnaissance, vertical.");}}
+        if(grade>=Rules.branchMaximum(branch))return feedback(p,"That branch is fully upgraded.");
+        if(branch.equals("core")){var wanted=p.server.overworld().getBlockState(d.beacon).setValue(DefenseStructures.MK,DefenseStructures.mark(d.core+1));if(!DefenseStructures.available(p.server.overworld(),d.beacon,wanted))return feedback(p,"Clear a 3 x 3 area, two blocks tall, centered on the beacon before upgrading to Mk-4. Nothing consumed.");}
+        // every part of the price must be there before anything is taken (the Vertical zone takes all four factory parts)
+        // 0.0.40: paid from the pack first, then the Home Zone's Logistics Center Hubs (Supply), all or nothing
+        var cost=Economy.beaconCost(branch,grade);var missing=new java.util.ArrayList<String>();var w=Supply.at(p,d.beacon);var costs=new java.util.ArrayList<WeaponPlatform.Cost>();
+        for(var part:cost)costs.add(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()))),part.amount()));
+        var plan=InventoryPayment.plan(w,costs);
+        for(int i=0;i<cost.size();i++){var part=cost.get(i);Item item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(ID,part.id()));if(!p.isCreative()&&plan.allocated()[i]<part.amount())missing.add(part.amount()+" "+item.getDescription().getString());}
+        if(!missing.isEmpty())return feedback(p,"Upgrade needs "+String.join(", ",missing)+". See its factory recipe in JEI, or buy parts at the Exchange Shop with Ardent Energy.");
+        if(!InventoryPayment.commit(w,costs,ItemStack.EMPTY))return feedback(p,"Upgrade materials changed. Nothing consumed.");
+        switch(branch){case "core"->{int oldMaximum=d.maximumHealth();d.core++;d.health=Math.min(d.maximumHealth(),d.health+d.maximumHealth()-oldMaximum);DefenseStructures.syncBeacon(p.server.overworld(),d);}case "logistics"->d.logistics++;case "defense"->d.defense++;case "restoration"->d.restoration++;case "reconnaissance"->d.reconnaissance++;case "vertical"->d.vertical++;}
+        d.setDirty();BaseSurvey.request(p.server.overworld());
+        if(branch.equals("reconnaissance"))return feedback(p,Rules.revealTicks(d.reconnaissance)==0?"Reconnaissance complete: every raid attacker is highlighted from the moment it spawns.":"Reconnaissance upgraded: raid attackers are highlighted "+Rules.revealTicks(d.reconnaissance)/1200+" minute(s) into each wave.");
+        return feedback(p,switch(branch){case "core"->"Core upgraded: Mk-"+(d.core+1)+", radius "+d.radius()+", "+d.maximumHealth()+" maximum HP.";case "vertical"->"Vertical zone upgraded: "+d.below()+" below / "+d.above()+" above. Beacon model and HP unchanged.";case "defense"->"Defense upgraded: "+Rules.defensePercent(d.defense)+"% less beacon damage.";case "restoration"->"Restoration upgraded: heal "+Rules.healingPercent(d.restoration)+"% of maximum HP after victory; repair "+(32+d.restoration*32)+" blocks per tick.";default->"Logistics upgraded: +"+d.logistics+" payout tiers. Better paid tiers shorten the following interval.";});
+    }
+    static int repair(ServerPlayer p) {
+        var d=CampaignData.get(p.server.overworld());if(!d.installed()||!near(p,d)||d.active())return feedback(p,"Repair between raids, near the beacon.");
+        if(d.health>=d.maximumHealth())return feedback(p,"Already at full health.");
+        if(!consume(Supply.at(p,d.beacon),PLATING.get(),Economy.repairAmount()))return feedback(p,"Needs "+Economy.repairAmount()+" reinforced plating. JEI shows the recipe.");
+        d.health=Math.min(d.maximumHealth(),d.health+250);d.phase="preparation";d.setDirty();return feedback(p,"Repaired +250 HP. Campaign resumed.");
+    }
+    /** Takes {@code cost} of {@code item}: the pack first, then the Home Zone's Hubs (0.0.40); creative players pay nothing. False, nothing taken, if short. */
+    static boolean consume(Supply.Where w,Item item,int cost){return InventoryPayment.commit(w,java.util.List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(item),cost)),ItemStack.EMPTY);}
+    static void claim(ServerPlayer p,CampaignData d) {
+        if(!near(p,d))return;
+        feedback(p,RewardCache.claim(p,d));
+    }
+    static void decommission(ServerLevel l,CampaignData d,ServerPlayer p) {
+        Hunts.cancel(l);   // the running hunting mission ends and its warband leaves
+        RaidRescue.reset(l);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}
+        net.minecraft.world.Containers.dropContents(l,d.beacon,d.rewardBox);   // the chest goes with the beacon: its contents spill out
+        if(l.hasChunkAt(d.beacon)&&l.getBlockState(d.beacon).is(BEACON.get()))l.setBlock(d.beacon,Blocks.AIR.defaultBlockState(),3);
+        d.campaignSerial++;d.resetProgress();d.phase="decommissioning";d.setDirty();
+        if(p!=null)give(p,new ItemStack(BEACON_ITEM.get()));
+        if(d.damage.isEmpty()&&d.destroyedTurrets.isEmpty())d.finishDecommission();
+        BeaconNetwork.syncNearby(l,d);
+    }
+    static boolean reconcileMissing(ServerLevel l,CampaignData d) {
+        if(d.installed()&&l.hasChunkAt(d.beacon)&&!l.getBlockState(d.beacon).is(BEACON.get())) {decommission(l,d,null);return true;}return false;
+    }
+    static void announce(ServerLevel l,String s){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Eternal Defense] "+s).withStyle(ChatFormatting.GOLD),false);}
+    @SubscribeEvent public void tick(TickEvent.ServerTickEvent event) {
+        if(event.phase!=TickEvent.Phase.END)return;
+        if(Boolean.getBoolean("eternaldefense.integrationTests"))IntegrationTests.tick();
+        ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
+        Hunts.tick(l,d,clock);
+        Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);SupplyCatapult.tick(l,clock);
+        if(clock%20==0){
+            if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
+            BeaconNetwork.syncNearby(l,d);
+        }
+        if(d.phase.equals("decommissioning")){restore(l,d);return;}
+        if(d.phase.equals("unplaced"))return;
+        // No offline escalation. Timer uses active ticks rather than absolute day count.
+        if(l.getServer().getPlayerList().getPlayers().isEmpty())return;
+        switch(d.phase) {
+            case "preparation" -> {
+                if(!d.raidRequested&&RaidRespite.waitTick(d))break;   // a raid booked for nightfall ends purchased break time, as starting one did
+                d.preparationTicks++;RaidWarnings.tick(l,d);
+                // a raid that is due (or was asked for by day) starts only at night, with a defender near the beacon
+                if((d.preparationTicks>=Rules.intervalDays(d.rewardTier)*24000L||d.raidRequested)&&Rules.raidHour(l.getDayTime())&&l.players().stream().anyMatch(p->near(p,d)))begin(l,d);
+                if(clock%1200==0)d.setDirty();
+            }
+            case "snapshot" -> scan(l,d);
+            case "raid" -> raid(l,d);
+            case "restore" -> restore(l,d);
+            default -> {}
+        }
+    }
+    private static void boundary(ServerLevel l,CampaignData d) {
+        int step=d.active()?8:20;
+        for(int a=0;a<360;a+=step){double t=Math.toRadians(a);l.sendParticles(ParticleTypes.END_ROD,d.beacon.getX()+0.5+Math.cos(t)*d.radius(),d.beacon.getY()+0.2,d.beacon.getZ()+0.5+Math.sin(t)*d.radius(),1,0,0,0,0);}
+        if(d.active())for(int y=1;y<32;y+=2)l.sendParticles(ParticleTypes.END_ROD,d.beacon.getX()+0.5,d.beacon.getY()+y,d.beacon.getZ()+0.5,1,0,0,0,0);
+    }
+    static void begin(ServerLevel l,CampaignData d) {
+        if(!d.damage.isEmpty()||!d.destroyedTurrets.isEmpty()){announce(l,"Complete pending restoration before starting another raid.");return;}
+        RaidAdaptation.begin(d);RaidRescue.reset(l);RaidSpawns.forgetGates();
+        RaidWarnings.reset();d.raidRequested=false;d.introRaid=!d.introCompleted;d.victoryRestoration=false;d.phase="snapshot";d.scanCursor=0;d.snapshot.clear();d.baseCounts.clear();d.wave=0;d.deaths=0;d.raidTicks=0;d.raiders.clear();d.setDirty();
+        announce(l,"Raid warning! Saving the marked base area in small batches. Building is locked until the raid ends.");
+    }
+    private static void scan(ServerLevel l,CampaignData d) {
+        int width=d.radius()*2+1,total=width*width*d.height(),budget=4096;
+        for(int k=0;k<budget&&d.scanCursor<total;k++,d.scanCursor++){
+            int i=d.scanCursor;int x=i%width-d.radius();int z=(i/width)%width-d.radius();int y=i/(width*width)-d.below();
+            BlockPos pos=d.beacon.offset(x,y,z);if(!d.inside(pos)||pos.getY()<l.getMinBuildHeight()||pos.getY()>=l.getMaxBuildHeight())continue;
+            if(!l.hasChunkAt(pos)){fail(l,d,"Protected area unloaded during snapshot; no raid started.");return;}
+            BlockState s=l.getBlockState(pos);if(s.isAir())continue;d.snapshot.put(pos.asLong(),s);
+            auditBlock(d,pos,s);
+        }
+        if(d.scanCursor>=total){d.score=BaseScoring.analyze(d,d.snapshot,BaseScoring.Ledger.get(l).placed).total();d.raidTier=d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,d.score));RaidRespite.started(d);d.phase="raid";HardRaids.start(d);if(d.introRaid)d.hardRaid=false;d.raidType=d.introRaid?"normal":d.nextRaidType;BeaconNetwork.announce(l,"raid_start",d.raidsStarted,d.hardRaid?1:0,d.raidType,"");if(RaidTypes.special(d.raidType)){announce(l,RaidTypes.name(d.raidType).getString()+"! "+Component.translatable("gui.eternal_defense.raidtype.tip."+d.raidType).getString());}if(d.hardRaid)announce(l,"HARD RAID #"+d.raidsStarted+"! A boss leads the final wave. Survive for a 50% larger resource cache and bonus medical kits/grenades.");nextWave(l,d);d.setDirty();announce(l,"Base saved. Score "+d.score+", payout tier "+d.raidTier+". Defend the beacon!");}
+    }
+    private static void nextWave(ServerLevel l,CampaignData d) {
+        d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=RaidTypes.count(d.raidType,Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid));d.spawnCooldown=0;
+        RaidAdaptation.nextWave(l,d);
+        BeaconNetwork.announce(l,"wave",d.wave,Rules.waves(d.raidTier),Integer.toString(d.spawnRemaining),"");
+        announce(l,"Wave "+d.wave+" / "+Rules.waves(d.raidTier)+" incoming. "+d.wavePlayers+" defender(s), "+d.spawnRemaining+" attackers"+(d.waveVeteran>0?", veteran reinforcements +"+(d.waveVeteran*10)+"%":"")+".");d.setDirty();
+    }
+    static void auditBlock(CampaignData d,BlockPos pos,BlockState s){
+        if(!d.inside(pos))return;
+        String id=BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();
+        if(s.getBlock() instanceof WeaponPlatform.Station)d.baseCounts.merge(id+"#platform",s.getValue(WeaponPlatform.AGE),Math::max);
+        else d.baseCounts.merge(id,1,Integer::sum);
+    }
+    private static void raid(ServerLevel l,CampaignData d) {
+        d.raidTicks++;d.waveTicks++;
+        int reveal=Rules.revealTicks(d.reconnaissance);
+        if(reveal>0&&d.waveTicks==reveal)announce(l,reveal/1200+(reveal==1200?" minute":" minutes")+" elapsed: remaining attackers are now highlighted through walls.");
+        if(d.raidTicks>24000L){fail(l,d,"Raid timed out. Beacon loses 20% health; damaged structures stay damaged.");return;}
+        if(d.health<=0){fail(l,d,"Beacon disabled. Repair it between raids; your base remains in the world.");return;}
+        if(!l.hasChunkAt(d.beacon)){fail(l,d,"Beacon area unloaded. Retreat counts as a lost defense.");return;}
+        if(d.spawnRemaining>0&&--d.spawnCooldown<=0&&RaidBalance.canSpawn(l,d)){if(spawn(l,d))d.spawnRemaining--;d.spawnCooldown=RaidTypes.cooldown(d.raidType);d.setDirty();}
+        if(clock%20!=0)return;
+        for(var it=d.raiders.iterator();it.hasNext();) {
+            Entity e=l.getEntity(it.next());if(e==null||!e.isAlive()){it.remove();continue;}
+            if(SpecialForcesRaids.defeated(e)){SpecialForcesRaids.retire(e,l);it.remove();d.setDirty();continue;}
+            if(!(e instanceof Mob mob))continue;
+            if(mob.getPersistentData().getBoolean("eternalBoss"))HardRaids.balance(mob,d.raidTier);else if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);
+            else if(mob.getPersistentData().getBoolean("eternalSpecialForces"))SpecialForcesRaids.balance(mob,d.raidTier);
+            else RaidBalance.balance(mob,d.raidTier);
+            mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
+            // Real attack goals target the objective; contact alone never damages it.
+            BeaconCombat.attach(mob);
+            if(RaidRescue.tick(l,d,mob,it))continue; // stuck for good: withdrawn (a rescue only moves it)
+            boolean idle=RaidMarch.idle(mob);
+            if(d.raidType.equals("siege")&&mob instanceof net.minecraft.world.entity.monster.Creeper creeper){
+                // siege creepers dig: stuck at a wall near the base, they blow a hole for the shooters behind them (never far from it)
+                if(idle&&creeper.getTarget()!=null&&Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5))<=d.radius()+RaidMarch.DIG_RANGE&&RaidBreaching.choose(l,d,mob)!=null)creeper.ignite();
+                continue;
+            }
+            // Raiders march straight on; only one that stopped making progress digs (vexes pass through walls)
+            if(idle&&!(mob instanceof net.minecraft.world.entity.monster.Vex)&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
+            // All hostile breach attempts run through BeaconCombat and the same damage journal.
+        }
+        RaidMarch.prune(d.raiders);RaiderGates.cleanup(l,d);
+        if(d.spawnRemaining==0&&d.raiders.isEmpty()){
+            RaidRescue.announceWithdrawn(l);
+            reward(d,Items.IRON_INGOT,RaidRewards.waveIron(d.raidTier)); // Each cleared wave has a claimable supply reward.
+            if(d.wave>=Rules.waves(d.raidTier)){
+                if(d.hardRaid&&(!d.bossSpawned||!d.bossKilled)){fail(l,d,"Boss was not defeated. No completion cache awarded; surviving wave rewards remain.");return;}
+                d.victories++;d.rewardTier=d.raidTier;
+                RaidRewards.queue(d,RaidRewards.completion(l,d.rewardTier,d.hardRaid&&d.bossKilled));
+                if(RaidTypes.special(d.raidType)){int bonus=RaidTypes.bonusEnergy(d.rewardTier);RaidRewards.queue(d,java.util.List.of(new ItemStack(ARDENT_ENERGY.get(),bonus)));announce(l,RaidTypes.name(d.raidType).getString()+" survived: +"+bonus+" Ardent Energy in the reward.");}
+                if(d.introRaid&&!d.introCompleted){RaidRewards.queue(d,java.util.List.of(new ItemStack(GUN_PLATFORM.get())));d.introCompleted=true;d.introRaid=false;announce(l,"Introduction complete! Claim your Weapon Platform at the beacon.");}
+                BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";RaidTypes.finish(l,d);RaidRescue.reset(l);announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
+            }
+            else nextWave(l,d);
+            d.setDirty();
+        } else d.setDirty();
+    }
+    private static boolean spawn(ServerLevel l,CampaignData d) {
+        String raidType=d.introRaid?"normal":d.raidType;boolean bossNow=d.hardRaid&&d.wave==Rules.waves(d.raidTier)&&!d.bossSpawned;
+        BlockPos spawnPos;
+        if(raidType.equals("paratroopers")&&!bossNow)spawnPos=RaidTypes.dropPoint(l,d);
+        else{
+            // natural ground far out first; with none for a while, the reinforcement comes through a red gate closer in (0.0.20)
+            var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();
+            if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos,net.minecraft.world.phys.Vec3.atCenterOf(d.beacon));   // the gate stands behind it, seen from the base
+        }
+        if(spawnPos==null)return false;
+        if(bossNow)return HardRaids.spawn(l,d,spawnPos);
+        int soldiers=SpecialForcesRaids.count(d.raidTier,d.wavePlayers);
+        if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&net.minecraftforge.fml.ModList.get().isLoaded("taczsf"))return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
+        String role=d.introRaid?"grunt":RaidTypes.role(raidType,d.raidTier,l.random.nextInt(100));
+        EntityType<?> type=d.introRaid?EntityType.HUSK:RaidTypes.type(raidType,d.raidTier,role,l);
+        if(raider(l,d,type,role,raidType,spawnPos)==null)return false;
+        RaidTypes.broadcast(l,d);
+        return true;
+    }
+    /** One ordinary raider of this wave at {@code at}: armed, tagged, balanced for the raid tier, with the speed burst; null if it did not fit. */
+    static Mob raider(ServerLevel l,CampaignData d,EntityType<?> type,String role,String raidType,BlockPos at){
+        Entity entity=type.create(l);if(!(entity instanceof Mob mob))return null;
+        mob.moveTo(at.getX()+0.5,at.getY(),at.getZ()+0.5,l.random.nextFloat()*360,0);mob.setPersistenceRequired();mob.getPersistentData().putBoolean("eternalRaider",true);
+        mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));RaidBalance.arm(mob);   // armed before it joins: its beacon goal depends on the weapon
+        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return null; // Let pack spawn handlers run first.
+        mob.getPersistentData().putString("eternalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
+        if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
+        mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);
+        d.raiders.add(mob.getUUID());
+        return mob;
+    }
+    static void balanceEarly(Mob mob,int tier,int wave) {
+        for(EquipmentSlot slot:EquipmentSlot.values()){
+            if(slot.getType()==EquipmentSlot.Type.ARMOR||slot==EquipmentSlot.OFFHAND||slot==EquipmentSlot.MAINHAND&&!(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton))mob.setItemSlot(slot,ItemStack.EMPTY);
+        }
+        if(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton&&(!mob.getMainHandItem().is(Items.BOW)||mob.getMainHandItem().isEnchanted()))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.BOW));
+        for(var attr:List.of(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR,net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS,net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)){
+            var value=mob.getAttribute(attr);if(value!=null){value.removeModifiers();value.setBaseValue(0);}
+        }
+        var health=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        if(health!=null){float current=mob.getHealth();health.removeModifiers();health.setBaseValue(20+Math.min(3,wave)*2+tier*8);mob.setHealth(Math.min(current,mob.getMaxHealth()));}
+        var damage=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);if(damage!=null){damage.removeModifiers();damage.setBaseValue(2+tier);}
+        mob.setCanPickUpLoot(false);RaidBalance.arm(mob);if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
+    }
+    private static void breach(ServerLevel l,CampaignData d,Mob mob) {
+        Vec3 dir=Vec3.atCenterOf(d.beacon).subtract(mob.position()).normalize();BlockPos ahead=BlockPos.containing(mob.getX()+dir.x*1.4,mob.getY(),mob.getZ()+dir.z*1.4);
+        for(int dy=0;dy<2;dy++){BlockPos p=ahead.above(dy);if(d.inside(p)&&!p.equals(d.beacon)&&!l.getBlockState(p).isAir()&&l.getBlockState(p).getDestroySpeed(l,p)>=0)damageBlock(l,d,p);}
+    }
+    static void damageBlock(ServerLevel l,CampaignData d,BlockPos p) {
+        p=DefenseStructures.anchor(l,p);
+        if(net.minecraftforge.fml.ModList.get().isLoaded("eternal_defense_displays"))p=dev.eternaldefense.displays.DisplayRacks.anchor(l,p);
+        if(p.equals(d.beacon)||!d.inside(p)||!d.snapshot.containsKey(p.asLong()))return;
+        BlockState current=l.getBlockState(p);if(current.isAir()||current.getDestroySpeed(l,p)<0)return;
+        if(current.getBlock() instanceof DoorBlock){
+            var partner=current.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER?p.above():p.below();
+            var other=l.getBlockState(partner);if(d.inside(partner)&&other.getBlock()==current.getBlock()&&d.snapshot.containsKey(partner.asLong())){d.damage.putIfAbsent(partner.asLong(),new CampaignData.Damage(d.snapshot.get(partner.asLong()),null));l.setBlock(partner,Blocks.AIR.defaultBlockState(),2);}
+        }
+        BlockEntity be=l.getBlockEntity(p);CompoundTag live=be==null?null:be.saveWithFullMetadata();
+        d.damage.putIfAbsent(p.asLong(),new CampaignData.Damage(d.snapshot.get(p.asLong()),live));d.setDirty();
+        // Remove the entity before the block: inventories and fuel are held in the journal, not dropped.
+        // Repairs use the latest state at destruction, never the pre-raid inventory snapshot.
+        l.removeBlockEntity(p);l.setBlock(p,Blocks.AIR.defaultBlockState(),3);
+    }
+    static void restore(ServerLevel l,CampaignData d) {
+        int budget=32+d.restoration*32;
+        for(var it=d.damage.entrySet().iterator();it.hasNext()&&budget-->0;) {
+            var entry=it.next();BlockPos p=BlockPos.of(entry.getKey());if(!l.hasChunkAt(p))continue;
+            BlockState now=l.getBlockState(p);if(!now.isAir()&&now.getFluidState().isEmpty()) {it.remove();continue;}
+            var saved=entry.getValue();boolean door=saved.before().getBlock() instanceof DoorBlock;l.setBlock(p,saved.before(),door?2:3);
+            if(door){var partner=saved.before().getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER?p.above():p.below();if(l.getBlockState(partner).getBlock()==saved.before().getBlock())l.updateNeighborsAt(p,saved.before().getBlock());}
+            if(saved.entity()!=null){BlockEntity be=l.getBlockEntity(p);if(be!=null){be.load(saved.entity());be.setChanged();l.sendBlockUpdated(p,saved.before(),saved.before(),3);}}
+            it.remove();
+        }
+        if(d.damage.isEmpty()) {
+            for(var it=d.destroyedTurrets.iterator();it.hasNext();) {
+                CompoundTag n=it.next();ListTag pos=n.getList("Pos",Tag.TAG_DOUBLE);if(pos.size()<3){it.remove();continue;}
+                BlockPos p=BlockPos.containing(pos.getDouble(0),pos.getDouble(1),pos.getDouble(2));if(!l.hasChunkAt(p))continue;
+                if(n.hasUUID("UUID")&&l.getEntity(n.getUUID("UUID"))!=null){it.remove();continue;}
+                Entity e=EntityType.loadEntityRecursive(n,l,entity->entity);
+                if(e instanceof LivingEntity living){living.setHealth(living.getMaxHealth());living.deathTime=0;}
+                if(e!=null&&l.addFreshEntity(e))it.remove();
+            }
+        }
+        d.setDirty();if(d.damage.isEmpty()&&d.destroyedTurrets.isEmpty()){
+            if(d.phase.equals("decommissioning")){d.finishDecommission();BeaconNetwork.syncNearby(l,d);return;}
+            d.snapshot.clear();d.phase=d.health>0?"preparation":"disabled";d.preparationTicks=0;
+            if(d.victoryRestoration)d.health=Math.min(d.maximumHealth(),d.health+(int)Math.ceil(d.maximumHealth()*Rules.healingPercent(d.restoration)/100.0));
+            announce(l,(d.victoryRestoration?"Victory repairs complete.":"Machine and turret contents recovered; defeated wall damage remains.")+" Next interval: "+Rules.intervalDays(d.rewardTier)+" active days.");
+        }
+    }
+    private static void fail(ServerLevel l,CampaignData d,String reason) {
+        d.health=Math.max(0,d.health-d.maximumHealth()/5);d.victoryRestoration=false;d.phase="restore";d.preparationTicks=0;d.spawnRemaining=0;
+        BeaconNetwork.announce(l,"defeat",0,0,"","");RaidTypes.finish(l,d);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();RaidRescue.announceWithdrawn(l);RaidRescue.reset(l);
+        // Keep all machine journals until restoration succeeds, even if a chunk is unloaded.
+        // Empty wall entries are deliberately not repaired after a failed defense.
+        d.damage.entrySet().removeIf(e->e.getValue().entity()==null);d.setDirty();announce(l,reason);
+    }
+    private static void reward(CampaignData d,Item item,int count){while(count>0){int n=Math.min(64,count);d.rewards.add(new ItemStack(item,n).save(new CompoundTag()));count-=n;}}
+    private static void rewardModItem(CampaignData d,String id,int count){Item item=BuiltInRegistries.ITEM.get(new ResourceLocation(id));if(item!=Items.AIR)reward(d,item,count);}
+    @SubscribeEvent public void died(LivingDeathEvent event) {
+        if(event.getEntity().level() instanceof ServerLevel bossLevel)HardRaids.killed(bossLevel,event.getEntity());
+        if(event.getEntity().level() instanceof ServerLevel l&&l.dimension()==Level.OVERWORLD) {
+            CampaignData d=CampaignData.get(l);
+            // The type id is looked up only for deaths inside the zone during a raid (this runs for every death in the Overworld).
+            if(d.phase.equals("raid")&&d.inside(event.getEntity().blockPosition())&&BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).getNamespace().equals("tacz_turrets")) {
+                CompoundTag n=new CompoundTag();event.getEntity().save(n);n.putShort("DeathTime",(short)0);n.putShort("HurtTime",(short)0);
+                d.destroyedTurrets.add(n);d.setDirty();event.setCanceled(true);event.getEntity().discard();return;
+            }
+        }
+        if(!(event.getEntity() instanceof ServerPlayer p)||p.level().dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(p.server.overworld());if(!d.phase.equals("raid")||!near(p,d))return;
+        d.deaths++;int penalty=Rules.deathPenalty(d.deaths,Rules.DEATHS_PER_PENALTY,d.maximumHealth());if(penalty>0){d.health-=penalty;announce(p.server.overworld(),"Three defender deaths: beacon loses 10% health.");}d.setDirty();
+    }
+    @SubscribeEvent public void explosion(ExplosionEvent.Detonate event) {
+        if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(l);if(!d.phase.equals("raid"))return;
+        LivingEntity cause=event.getExplosion().getIndirectSourceEntity();
+        if(cause==null||!cause.getPersistentData().getBoolean("eternalRaider"))return;
+        for(var it=event.getAffectedBlocks().iterator();it.hasNext();) {BlockPos p=it.next();if(d.inside(p)){damageBlock(l,d,p);it.remove();}}
+    }
+    @SubscribeEvent public void mobGrief(EntityMobGriefingEvent event) {
+        if(!(event.getEntity().level() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(l);
+        // Raid attackers use our journaled breaching. Ambient mob grief is suppressed inside the locked area.
+        if(d.active()&&d.inside(event.getEntity().blockPosition()))event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+    }
+    @SubscribeEvent public void loadedRaider(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if(!event.loadedFromDisk()||!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD||!event.getEntity().getPersistentData().getBoolean("eternalRaider"))return;
+        var d=CampaignData.get(l);
+        if(!d.phase.equals("raid")||!d.raiders.contains(event.getEntity().getUUID())){event.setCanceled(true);event.getEntity().discard();}
+    }
+    @SubscribeEvent public void breakBlock(BlockEvent.BreakEvent event) {
+        if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(l);
+        if(DefenseStructures.beacon(l,event.getPos())){event.setCanceled(true);if(event.getPlayer() instanceof ServerPlayer p)feedback(p,"Use the Beacon Recovery Shovel to remove it. Confirmation required.");return;}
+        if(d.active()&&d.inside(event.getPos())){event.setCanceled(true);if(event.getPlayer() instanceof ServerPlayer p)feedback(p,"The beacon area is locked until the raid and repairs end.");}
+    }
+    @SubscribeEvent public void placeBlock(BlockEvent.EntityPlaceEvent event) {
+        if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(l);if(d.active()&&d.inside(event.getPos())&&event.getEntity() instanceof Player){event.setCanceled(true);PlacementGuard.resyncLater(event.getEntity());}
+    }
+    @SubscribeEvent public void sleep(SleepingTimeCheckEvent event) {
+        if(!(event.getEntity().level() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        if(CampaignData.get(l).active())event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+    }
+    @SubscribeEvent public void wrench(PlayerInteractEvent.RightClickBlock event) {
+        if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
+        CampaignData d=CampaignData.get(l);ResourceLocation item=BuiltInRegistries.ITEM.getKey(event.getItemStack().getItem());
+        if(d.active()&&d.inside(event.getPos())&&item.getPath().contains("wrench")){event.setCanceled(true);if(event.getEntity() instanceof ServerPlayer p)feedback(p,"Keep Create contraptions assembled as static defenses during the raid.");}
+    }
+}

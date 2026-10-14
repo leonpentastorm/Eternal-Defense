@@ -11,7 +11,7 @@ Also covers the real-client checks of the Beautify Path (0.0.16), which were not
 
 ### Unit tests
 
-158 pass, 0 fail (`:arsenal-beacon:test`). New `MusicPlayerTest`: the pool of every raid moment (ordinary, special, boss wave of a hard raid, none outside a raid or with stale state), that no wave repeats the song of the wave before (600 seeds x 12 waves), that the same raid and wave always give the same song, that any song can open a raid, the clock format, that both switches default to on, and for every song: a `sounds.json` entry that streams, a name in the lang file, and an OGG whose length (read from the file's last Ogg page) matches the length the player shows, within 1 second.
+158 pass, 0 fail (`:eternal-defense:test`). New `MusicPlayerTest`: the pool of every raid moment (ordinary, special, boss wave of a hard raid, none outside a raid or with stale state), that no wave repeats the song of the wave before (600 seeds x 12 waves), that the same raid and wave always give the same song, that any song can open a raid, the clock format, that both switches default to on, and for every song: a `sounds.json` entry that streams, a name in the lang file, and an OGG whose length (read from the file's last Ogg page) matches the length the player shows, within 1 second.
 
 ### Standalone edition, real client (`docs/validation/music-player/checks-standalone.txt`): 46 pass, 2 fail
 

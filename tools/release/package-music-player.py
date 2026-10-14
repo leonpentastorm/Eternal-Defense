@@ -16,7 +16,7 @@ with zipfile.ZipFile(args.backend_jar) as jar:
 files={}
 for edition in ('pack','standalone'):
     suffix='-standalone' if edition=='standalone' else ''
-    for mod,version in [('arsenal-beacon','0.21.0'),('arsenal-gun-guide','0.21.0'),('arsenal-displays','1.1.0')]:
+    for mod,version in [('eternal-defense','0.21.0'),('eternal-defense-gun-guide','0.21.0'),('eternal-defense-displays','1.1.0')]:
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
@@ -56,7 +56,7 @@ This is the latest build: 0.0.14 Raider Gates, 0.0.15 Optimize Path, 0.0.16 Beau
 WHAT TO LOOK FOR
 Listen: is the change between waves smooth (a 3-second fade), do the songs loop cleanly, is the volume right next to the
 game's own music? Turn Raid music off in Settings during a raid: the song fades and the game's music comes back.
-The new client file config/arsenal-beacon-client.toml stores the two switches.
+The new client file config/eternal-defense-client.toml stores the two switches.
 
 LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
 Apocalypse gunpack and AppleSkin were not used in this round and are not redistributed.
@@ -70,7 +70,7 @@ files['THIRD-PARTY.md']=b'''# Included required addon
 
 TaCZ Attributes 1.4 by leopoko, mod ID `tacz_attributes`, MIT.
 The unmodified published JAR is supplied separately in each edition folder;
-it is not shaded into any Arsenal JAR. Install only one copy.
+it is not shaded into any Eternal Defense JAR. Install only one copy.
 
 Author download: https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731
 Source: https://github.com/leopoko/TaCZ_Attributes/tree/91612b5b505a87e2ddcd48b1b1ae1f9c95f482a1
@@ -79,7 +79,7 @@ The published JAR contains no standalone LICENSE/NOTICE file; its metadata is
 preserved unchanged. Standard MIT terms accompany this attribution in licenses/.
 
 TaCZ and optional LesRaisins are not redistributed in this archive.
-Arsenal display artwork remains All Rights Reserved by its creator.
+Eternal Defense display artwork remains All Rights Reserved by its creator.
 The six raid songs (Barren Gap, Line Holder, Phase One Assault, Silent Trigger, Boss Battle, Anomaly Protocol) are by
 leonpentastorm, made with Suno, supplied by the project owner; All Rights Reserved by their creator. The three raid themes
 and the victory fanfare of 0.0.16 and every sound effect are original to this project (tools/audio).
@@ -106,7 +106,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 files['SHA512SUMS']=(''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name,data in sorted(files.items()))).encode()
-out=repo/('dist/Arsenal-MusicPlayer-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
+out=repo/('dist/Eternal-Defense-MusicPlayer-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
     for name,data in sorted(files.items()):archive.writestr(name,data)
 with zipfile.ZipFile(out) as archive:

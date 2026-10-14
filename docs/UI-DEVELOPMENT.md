@@ -4,11 +4,11 @@
 
 Redesign the interface for an unfamiliar player. Keep the tested gameplay and both build editions. The artist brief describes the intended player experience; this document identifies the implementation.
 
-Both flavors belong in this repository. Share screen layouts and common guide pages. Keep pack-specific instructions conditional: Create factories, FTB Teams and Essential should not be presented as standalone requirements. Standalone pages explain vanilla recipes and `arsenal-beacon-standalone.json` instead. Move player-facing text into language keys during the redesign, including the hardcoded guide pages; neither flavor should lose its relevant instructions.
+Both flavors belong in this repository. Share screen layouts and common guide pages. Keep pack-specific instructions conditional: Create factories, FTB Teams and Essential should not be presented as standalone requirements. Standalone pages explain vanilla recipes and `eternal-defense-standalone.json` instead. Move player-facing text into language keys during the redesign, including the hardcoded guide pages; neither flavor should lose its relevant instructions.
 
 ## Screens and renderers
 
-Paths below are relative to the repository root. Beacon Java classes are under `custom-mods/arsenal-beacon/src/main/java/dev/createarsenal/beacon/`.
+Paths below are relative to the repository root. Beacon Java classes are under `custom-mods/eternal-defense/src/main/java/dev/eternaldefense/beacon/`.
 
 | File / class | Responsibility |
 | --- | --- |
@@ -22,11 +22,11 @@ Paths below are relative to the repository root. Beacon Java classes are under `
 | `MessHallScreen.java`, `MessHallMenu.java` | Server-authoritative Sandwich/Stew tabs, shared ingredients/output, pot selection and paid tier upgrades |
 | `MealClient.java`, `KitchenRenderer.java`, `MealEffects.java`, `MealEffectClient.java` | Kitchen registration, live Cook Pot menu board / stew surface, and the vanilla potion effects (icons in `textures/mob_effect/`, custom inventory text) that show a meal |
 | `ControlHints.java`, `PlatformKeys.java` | Live key labels and table interaction binding |
-| `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideClient.java` | Expanded control card, collapsed shortcut and JAM indicator |
-| `custom-mods/arsenal-gun-guide/src/main/java/dev/createarsenal/gunguide/GuideState.java` | Guide visibility and five-second collapse state |
-| `custom-mods/arsenal-displays/src/main/java/dev/createarsenal/displays/DisplayRackClient.java` | Displayed weapon rendering |
+| `custom-mods/eternal-defense-gun-guide/src/main/java/dev/eternaldefense/gunguide/GuideClient.java` | Expanded control card, collapsed shortcut and JAM indicator |
+| `custom-mods/eternal-defense-gun-guide/src/main/java/dev/eternaldefense/gunguide/GuideState.java` | Guide visibility and five-second collapse state |
+| `custom-mods/eternal-defense-displays/src/main/java/dev/eternaldefense/displays/DisplayRackClient.java` | Displayed weapon rendering |
 
-These screens are drawn with `GuiGraphics` and widgets. There is no existing GUI texture sheet to reskin. New UI textures can be added under the corresponding `src/main/resources/assets/<namespace>/textures/gui/` directory. Models, blockstates, textures and language files are already in the assets directories. Some display art deliberately retains the `arsenal_beacon` namespace for compatibility.
+These screens are drawn with `GuiGraphics` and widgets. There is no existing GUI texture sheet to reskin. New UI textures can be added under the corresponding `src/main/resources/assets/<namespace>/textures/gui/` directory. Models, blockstates, textures and language files are already in the assets directories. Some display art deliberately retains the `eternal_defense` namespace for compatibility.
 
 ## Keep these behaviors intact
 
@@ -46,7 +46,7 @@ Keep registry IDs, item NBT, saved campaign fields, display inventory persistenc
 
 `AmmoCatalogue.java` deduplicates identical output item and NBT independently of recipe batch size. Preserve magazine family, capacity and meaningful tags; a cosmetic change must not merge different magazines. `InventoryPayment.java` handles complete inventory payment rather than slot-by-slot partial spending.
 
-`BuildFlavor.java` selects the edition through `arsenal-build.properties`. `standaloneJar` replaces metadata and beacon recipe resources. Standalone generic pricing and administrator overrides live in `StandaloneBalance.java`; pack recipes retain the curated Create progression. Display recipes are conditional on the beacon being absent. Do not flatten these into one recipe set.
+`BuildFlavor.java` selects the edition through `eternal-defense-build.properties`. `standaloneJar` replaces metadata and beacon recipe resources. Standalone generic pricing and administrator overrides live in `StandaloneBalance.java`; pack recipes retain the curated Create progression. Display recipes are conditional on the beacon being absent. Do not flatten these into one recipe set.
 
 Base repair journals must never restore spent ammunition, fuel or durability, duplicate drops, or erase unprocessed repairs. The UI redesign does not require changes to raid balance, enemy spawning or this journal.
 

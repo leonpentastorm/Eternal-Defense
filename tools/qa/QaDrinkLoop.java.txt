@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -45,7 +45,7 @@ import java.util.*;
  * added, removed or runs out on the player, alone, with a meal, next to a vanilla beacon giving Haste I and then Haste II, and across the
  * zone's edge. Copied in by tools/qa/setup-qa.sh.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaDrinkLoop {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -66,7 +66,7 @@ public final class QaDrinkLoop {
     static void record(String kind,MobEffectInstance i){
         if(i==null||i.getEffect()!=MobEffects.DIG_SPEED)return;
         EVENTS.add(kind+" "+i.getAmplifier()+"/"+(i.isInfiniteDuration()?"inf":String.valueOf(i.getDuration()))+(i.isAmbient()?"/ambient":""));
-        if(!kind.equals("added")&&traced++<6){var st=new StringBuilder();for(var f:Thread.currentThread().getStackTrace()){var c=f.getClassName();if(c.startsWith("dev.createarsenal")&&!c.contains("QaDrinkLoop")||c.contains("BeaconBlockEntity")||c.contains("LivingEntity"))st.append(f.getClassName().replaceAll(".*\\.","")).append('.').append(f.getMethodName()).append(':').append(f.getLineNumber()).append(" < ");}log("QA_NOTE {} by {}",kind,st);}
+        if(!kind.equals("added")&&traced++<6){var st=new StringBuilder();for(var f:Thread.currentThread().getStackTrace()){var c=f.getClassName();if(c.startsWith("dev.eternaldefense")&&!c.contains("QaDrinkLoop")||c.contains("BeaconBlockEntity")||c.contains("LivingEntity"))st.append(f.getClassName().replaceAll(".*\\.","")).append('.').append(f.getMethodName()).append(':').append(f.getLineNumber()).append(" < ");}log("QA_NOTE {} by {}",kind,st);}
     }
     @SubscribeEvent public static void added(MobEffectEvent.Added e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer)record("added",e.getEffectInstance());}
     @SubscribeEvent public static void removed(MobEffectEvent.Remove e){if(e.getEntity() instanceof net.minecraft.server.level.ServerPlayer)record("removed",e.getEffectInstance());}
@@ -116,7 +116,7 @@ public final class QaDrinkLoop {
     static void script(){
         step(5,()->srv(()->{
             sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
-            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);
             sp().teleportTo(sl(),sx+.5,sy,sz+.5,0,0);}),"a Defense Beacon: the player stands in its Home Zone");
         step(20,()->check("the player is at home",srvGet(()->MealZone.at(sp()).home()),""),"home");
         step(5,()->srv(()->PlayerDrinks.drink(sp(),new DrinkData(List.of(new DrinkData.Part(new ResourceLocation("minecraft:haste"),0)),12000,false))),"drink Haste I at home");
@@ -158,8 +158,8 @@ public final class QaDrinkLoop {
 
         // ---- 0.0.37 (owner): eating at a Cook Pot uses up the bowl, drinking at a Brew Pot uses up the Paper Cup (creative keeps them, as vanilla) --
         step(5,()->srv(()->{
-            sl().setBlock(at(-8,0,6),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(-4,0,6),ArsenalBeacon.COOK_POT.get().defaultBlockState(),3);
-            sl().setBlock(at(8,0,6),ArsenalBeacon.DRINK_STATION_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,6),ArsenalBeacon.BREW_POT.get().defaultBlockState(),3);
+            sl().setBlock(at(-8,0,6),EternalDefense.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(at(-4,0,6),EternalDefense.COOK_POT.get().defaultBlockState(),3);
+            sl().setBlock(at(8,0,6),EternalDefense.DRINK_STATION_IV.get().defaultBlockState(),3);sl().setBlock(at(4,0,6),EternalDefense.BREW_POT.get().defaultBlockState(),3);
             sp().teleportTo(sl(),sx+.5,sy,sz+4.5,0,0);}),"a Mess Hall with a Cook Pot, a Drink Station with a Brew Pot");
         step(10,()->srv(()->{
             var pot=(CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6));var hall=pot.connect();
@@ -169,7 +169,7 @@ public final class QaDrinkLoop {
         step(5,()->check("the pots are linked and full",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==3&&!((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).empty()),""),"full");
         step(5,()->srv(()->{sp().setGameMode(GameType.SURVIVAL);sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.BOWL,3));((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: eat from the Cook Pot with 3 bowls");
         step(5,()->check("survival: the serving is eaten and the bowl used up (3 -> 2)",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==2&&sp().getMainHandItem().is(net.minecraft.world.item.Items.BOWL)&&sp().getMainHandItem().getCount()==2),srvGet(()->sp().getMainHandItem().toString())),"bowl used");
-        step(5,()->srv(()->{sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),3));((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: drink from the Brew Pot with 3 cups");
+        step(5,()->srv(()->{sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(EternalDefense.PAPER_CUP.get(),3));((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: drink from the Brew Pot with 3 cups");
         step(5,()->check("survival: the drink is drunk and the Paper Cup used up (3 -> 2)",srvGet(()->((BrewPot.PotEntity)sl().getBlockEntity(at(4,0,6))).empty()&&PlayerDrinks.of(sp())!=null&&sp().getMainHandItem().getCount()==2),srvGet(()->sp().getMainHandItem().toString())),"cup used");
         step(5,()->srv(()->{sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.BOWL,1));((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).use(sp(),InteractionHand.MAIN_HAND);}),"survival: the last bowl");
         step(5,()->check("survival: the last bowl is used up too (the hand is empty)",srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(at(-4,0,6))).servings==1&&sp().getMainHandItem().isEmpty()),srvGet(()->sp().getMainHandItem().toString())),"last bowl");

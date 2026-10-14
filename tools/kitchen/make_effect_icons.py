@@ -3,7 +3,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-OUT = Path(__file__).resolve().parents[2] / 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon/textures/mob_effect'
+OUT = Path(__file__).resolve().parents[2] / 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense/textures/mob_effect'
 OUT.mkdir(parents=True, exist_ok=True)
 
 def hexc(c, a=255):

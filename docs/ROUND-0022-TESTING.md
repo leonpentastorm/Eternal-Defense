@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), `tools/qa/QaHunt.java.txt` on a fresh normal world, as in 0.0.21, with three additions: after the Starshell the player throws a supply flare (with something in the platform's grid) and then a return flare, and the client's sounds are checked for the flare's own line; the Warlord's pay is checked against the beacon's Next payout tier; the GameTests include `hunt_14`. The game's audio output was recorded (OpenAL Soft's `wave` backend) and searched with `tools/audio/find_sfx.py`. **Nobody listened.**
 * **Not runnable here:** the KubeJS recipe script (the development runtime has no KubeJS and no TaCZ gunpacks).
 

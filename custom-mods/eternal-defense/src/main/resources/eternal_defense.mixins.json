@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.eternaldefense.beacon.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "SoundResourceCacheMixin",
+    "GunPackSyncMixin",
+    "MealBashMixin",
+    "MealExplosionMixin",
+    "MealReloadContinuityMixin",
+    "RaiderSunlightMixin",
+    "MealGrenadeMixin"
+  ],
+  "client": [
+    "RaidMusicMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "eternal_defense.refmap.json",
+  "plugin": "dev.eternaldefense.beacon.mixin.MealMixinPlugin"
+}

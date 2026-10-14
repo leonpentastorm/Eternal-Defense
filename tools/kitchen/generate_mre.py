@@ -9,10 +9,10 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RES = ROOT / 'custom-mods/arsenal-beacon/src/main/resources'
-ASSETS = RES / 'assets/arsenal_beacon'
-DATA = RES / 'data/arsenal_beacon'
-STANDALONE = ROOT / 'custom-mods/arsenal-beacon/src/standalone/resources/data/arsenal_beacon'
+RES = ROOT / 'custom-mods/eternal-defense/src/main/resources'
+ASSETS = RES / 'assets/eternal_defense'
+DATA = RES / 'data/eternal_defense'
+STANDALONE = ROOT / 'custom-mods/eternal-defense/src/standalone/resources/data/eternal_defense'
 
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -20,13 +20,13 @@ def write(path, value):
 
 # the MRE Station is registered as mre_maker, the owner's model name; it faces the player like the other kitchen blocks
 name = 'mre_maker'
-write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'arsenal_beacon:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
-write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'arsenal_beacon:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
-write(ASSETS / 'models/item/marines_fuel.json', {'parent': 'minecraft:item/generated', 'textures': {'layer0': 'arsenal_beacon:item/marines_fuel'}})
+write(ASSETS / f'blockstates/{name}.json', {'variants': {f'facing={f}': dict(model=f'eternal_defense:block/{name}', y=angle) for f, angle in [('north', 0), ('east', 90), ('south', 180), ('west', 270)]}})
+write(DATA / f'loot_tables/blocks/{name}.json', {'type': 'minecraft:block', 'pools': [{'rolls': 1, 'entries': [{'type': 'minecraft:item', 'name': 'eternal_defense:' + name}], 'conditions': [{'condition': 'minecraft:survives_explosion'}]}]})
+write(ASSETS / 'models/item/marines_fuel.json', {'parent': 'minecraft:item/generated', 'textures': {'layer0': 'eternal_defense:item/marines_fuel'}})
 
 recipes = {
     # a clay ball and any dye make two crayons (the forge:dyes tag holds every dye, modded ones too)
-    'marines_fuel': {'type': 'minecraft:crafting_shapeless', 'ingredients': [{'item': 'minecraft:clay_ball'}, {'tag': 'forge:dyes'}], 'result': {'item': 'arsenal_beacon:marines_fuel', 'count': 2}},
+    'marines_fuel': {'type': 'minecraft:crafting_shapeless', 'ingredients': [{'item': 'minecraft:clay_ball'}, {'tag': 'forge:dyes'}], 'result': {'item': 'eternal_defense:marines_fuel', 'count': 2}},
 }
 for rid, recipe in recipes.items():
     write(DATA / f'recipes/{rid}.json', recipe)
@@ -34,6 +34,6 @@ for rid, recipe in recipes.items():
 
 path = RES / 'data/minecraft/tags/blocks/mineable/pickaxe.json'
 value = json.loads(path.read_text())
-if 'arsenal_beacon:' + name not in value['values']:
-    value['values'].append('arsenal_beacon:' + name)
+if 'eternal_defense:' + name not in value['values']:
+    value['values'].append('eternal_defense:' + name)
 write(path, value)

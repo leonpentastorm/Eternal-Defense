@@ -6,7 +6,7 @@ The owner authorized committing and pushing to the v4 feature branch. No merge, 
 
 ## Install the test bundle
 
-Use `dist/Arsenal-MessHall-v4-0.0.5-test.zip` and a fresh world. Choose either `pack/` or `standalone/`; copy its four JARs to both client and server, replacing previous versions. Never install both editions together.
+Use `dist/Eternal-Defense-MessHall-v4-0.0.5-test.zip` and a fresh world. Choose either `pack/` or `standalone/`; copy its four JARs to both client and server, replacing previous versions. Never install both editions together.
 
 The bundle includes the newly required **TaCZ Attributes 1.4** JAR separately, with attribution, MIT terms and SHA-512 checksums. It is not embedded in the beacon JAR. Keep **TaCZ 1.1.8-hotfix2** installed ([author download](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989)). The pack edition also needs the matching full Create/KubeJS pack and scripts. Optional LesRaisins 0.4.3 is not bundled.
 
@@ -45,7 +45,7 @@ python tools/release/package-messhall-v4.py --backend-jar /path/to/tacz-attribut
 
 The runtime must already contain Forge 1.20.1-47.4.20 under `runtime/libraries`, the exact downloaded dependency JARs under `downloads`, and a `test-runs` directory. Client smoke additionally uses the retained official launcher manifest/assets/natives and Xvfb described in the cloud setup. These runners do not install that runtime. In this workspace, source `/workspace/.eternal-defense/activate.sh` first. Forge/Gradle need localhost networking even for offline runs.
 
-Server fixtures are opt-in with `-Darsenal.messHallTests=true`. Run `/mess-hall-v4-test <lowercase-method-name>` one case at a time, since campaign state is shared. The live reload fixture additionally requires `-Darsenal.v4ClientTests=true` on its isolated server/client. Never enable destructive QA fixtures in a play world. Ordinary launches leave them inactive.
+Server fixtures are opt-in with `-Deternaldefense.messHallTests=true`. Run `/mess-hall-v4-test <lowercase-method-name>` one case at a time, since campaign state is shared. The live reload fixture additionally requires `-Deternaldefense.v4ClientTests=true` on its isolated server/client. Never enable destructive QA fixtures in a play world. Ordinary launches leave them inactive.
 
 Each run retains console logs, world saves, installed-JAR checksums and `run-results.json` outside the repository. The checked-in validation JSON records successful cases and artifact identity. A failed or interrupted attempt is not a passing result.
 

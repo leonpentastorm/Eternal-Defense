@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Installs a Modrinth modpack (.mrpack) into a folder: a server, a client instance or a test copy (0.0.41).
 
-  python3 -I tools/release/install-mrpack.py dist/Create-Arsenal-0.0.41-test.mrpack /path/to/server --side server
+  python3 -I tools/release/install-mrpack.py dist/Eternal-Defense-0.0.41-test.mrpack /path/to/server --side server
 
 Every file the pack lists is downloaded from its own URL and checked against the pack's SHA-1 and SHA-512 before it is
 written; files the pack marks unsupported on that side are skipped; then the overrides (and server- or client-overrides)

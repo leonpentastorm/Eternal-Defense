@@ -1,0 +1,35 @@
+{
+ "credit": "Eternal Defense - remodel",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "eternal_defense:block/cook_pot_stew",
+  "particle": "eternal_defense:block/cook_pot_stew"
+ },
+ "elements": [
+  {
+   "name": "Stew_surface",
+   "from": [
+    3.5,
+    12.5,
+    3.5
+   ],
+   "to": [
+    12.5,
+    13.0,
+    12.5
+   ],
+   "faces": {
+    "up": {
+     "uv": [
+      0.25,
+      0.25,
+      9.25,
+      9.25
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ]
+}

@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -40,7 +40,7 @@ import java.util.function.Supplier;
  * gun a magazine family at all. Copy the owner's gun packs into run-client/tacz and the owner's taczmagazines-*.toml into run-client/config
  * before the run (setup-qa.sh with QA_MODS holding TaCZ Magazines). Results: QA_MAG lines, a QA_MAG_SUMMARY, QA_DONE.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaMagazines {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -66,7 +66,7 @@ public final class QaMagazines {
     /** Every sound of the mod the client actually starts. */
     static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
     @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
-        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(EternalDefense.ID))return;
         SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
     }
     static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
@@ -83,7 +83,7 @@ public final class QaMagazines {
                 ResourceLocation id=null;
                 if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
                 else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
-                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                if(id!=null&&id.getNamespace().equals(EternalDefense.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
                 super.channelRead(ctx,msg);
             }
         });

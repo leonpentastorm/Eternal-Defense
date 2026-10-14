@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "eternal_defense:attachment_platform",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "eternal_defense:attachment_platform",
+              "properties": [
+                "age"
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

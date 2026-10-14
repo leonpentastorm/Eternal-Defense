@@ -10,36 +10,36 @@ DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
 if [ "$FLAVOR" != "pack" ]; then echo "Only the pack edition exists since 0.0.41 (got: $FLAVOR)." >&2; exit 2; fi
 rm -rf "$DST"; mkdir -p "$DST"
 (cd "$SRC" && tar --exclude=.git --exclude=build --exclude=.gradle --exclude=run-client --exclude=./dist -cf - .) | (cd "$DST" && tar -xf -)
-B="$DST/custom-mods/arsenal-beacon/src/main"
+B="$DST/custom-mods/eternal-defense/src/main"
 SCENARIO="${3:-QaWorld}"
 if [ "${QA_CREATE:-0}" = "1" ]; then
   # 0.0.40: a pack copy with Create itself running (Create, Ponder, Flywheel, Registrate from their own mavens, fetched online once): the
   # scenario goes into the Create compat source set (it uses Create's classes); the pack's KubeJS coil recipe is mirrored as a datapack recipe
-  mkdir -p "$DST/custom-mods/arsenal-beacon/src/create/java/dev/createarsenal/beacon"
-  cp "$SRC/tools/qa/$SCENARIO.java.txt" "$DST/custom-mods/arsenal-beacon/src/create/java/dev/createarsenal/beacon/$SCENARIO.java"
-  mkdir -p "$B/resources/data/arsenal_beacon/recipes"
-  cp "$SRC/tools/qa/qa_resonance_coil_mixing.json" "$B/resources/data/arsenal_beacon/recipes/qa_resonance_coil_mixing.json"
+  mkdir -p "$DST/custom-mods/eternal-defense/src/create/java/dev/eternaldefense/beacon"
+  cp "$SRC/tools/qa/$SCENARIO.java.txt" "$DST/custom-mods/eternal-defense/src/create/java/dev/eternaldefense/beacon/$SCENARIO.java"
+  mkdir -p "$B/resources/data/eternal_defense/recipes"
+  cp "$SRC/tools/qa/qa_resonance_coil_mixing.json" "$B/resources/data/eternal_defense/recipes/qa_resonance_coil_mixing.json"
 else
-  cp "$SRC/tools/qa/$SCENARIO.java.txt" "$B/java/dev/createarsenal/beacon/$SCENARIO.java"
+  cp "$SRC/tools/qa/$SCENARIO.java.txt" "$B/java/dev/eternaldefense/beacon/$SCENARIO.java"
 fi
 # TaCZ, Create, KubeJS, KubeJS Create, LesRaisins Tactical Equipments and JEI are not all in the dev runtime: make them optional (the test pack has them all)
 sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/; /modId="create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs"/,/side=/ s/mandatory=true/mandatory=false/; /modId="jei"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs_create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="lrtactical"/,/side=/ s/mandatory=true/mandatory=false/' "$B/resources/META-INF/mods.toml"
 # Gun Displays also needs TaCZ: optional here
-sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/' "$DST/custom-mods/arsenal-displays/src/main/resources/META-INF/mods.toml"
+sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/' "$DST/custom-mods/eternal-defense-displays/src/main/resources/META-INF/mods.toml"
 # TaCZ and TaCZ Attributes are normal dependencies of the beacon since Mess Hall v4. Their production mixins use SRG names, so the client run
 # remaps every refmap to the development names (see make_srg_to_official.py); the beacon's own mixins are configured explicitly.
 FG_VERSIONS="${FG_VERSIONS:-/root/.gradle/caches/forge_gradle/minecraft_repo/versions/1.20.1}"
 python3 "$SRC/tools/qa/make_srg_to_official.py" "$FG_VERSIONS" "$DST/srg2off.srg"
-python3 - "$DST/custom-mods/arsenal-beacon/build.gradle" <<'PY'
+python3 - "$DST/custom-mods/eternal-defense/build.gradle" <<'PY'
 import sys,os
 path=sys.argv[1]
 s=open(path).read()
-s=s.replace("minecraft {\n","evaluationDependsOn(':arsenal-displays')\nminecraft {\n",1)
-s=s.replace('implementation project(":arsenal-displays")','implementation project(":arsenal-displays").sourceSets.main.output',1)
-displays="                   arsenal_displays { source project(':arsenal-displays').sourceSets.main } }\n"
-client=("        client {\n            workingDirectory project.file('run-client')\n            args '--width','"+os.environ.get('QA_WIDTH','1280')+"','--height','"+os.environ.get('QA_HEIGHT','720')+"','-mixin.config=arsenal_beacon.mixins.json'\n"
+s=s.replace("minecraft {\n","evaluationDependsOn(':eternal-defense-displays')\nminecraft {\n",1)
+s=s.replace('implementation project(":eternal-defense-displays")','implementation project(":eternal-defense-displays").sourceSets.main.output',1)
+displays="                   eternal_defense_displays { source project(':eternal-defense-displays').sourceSets.main } }\n"
+client=("        client {\n            workingDirectory project.file('run-client')\n            args '--width','"+os.environ.get('QA_WIDTH','1280')+"','--height','"+os.environ.get('QA_HEIGHT','720')+"','-mixin.config=eternal_defense.mixins.json'\n"
        "            property 'mixin.env.remapRefMap','true'\n            property 'mixin.env.refMapRemappingFile',new File(rootProject.projectDir,'srg2off.srg').absolutePath\n"
-       "            mods { arsenal_beacon { source sourceSets.main"+("; source sourceSets.create" if os.environ.get('QA_CREATE')=='1' else "")+" }\n"+displays+"        }\n")
+       "            mods { eternal_defense { source sourceSets.main"+("; source sourceSets.create" if os.environ.get('QA_CREATE')=='1' else "")+" }\n"+displays+"        }\n")
 s=s.replace("    runs {\n","    runs {\n"+client,1)
 if os.environ.get('QA_CREATE')=='1':
     s+=("\nrepositories {\n    maven { url = 'https://maven.createmod.net'; content { includeGroup 'dev.engine-room.flywheel'; includeGroup 'net.createmod.ponder' } }\n"
@@ -56,12 +56,12 @@ PY
 if [ -n "${QA_MODS:-}" ]; then
   mkdir -p "$DST/qa-mods"; n=0; deps=""
   for jar in "$QA_MODS"/*.jar; do n=$((n+1)); cp "$jar" "$DST/qa-mods/qamod$n-1.jar"; deps="$deps    runtimeOnly(fg.deobf('blank:qamod$n:1')){ transitive = false }\n"; echo "QA mod $n: $(basename "$jar")"; done
-  printf "\nrepositories { flatDir { dirs rootProject.file('qa-mods') } }\ndependencies {\n$deps}\n" >> "$DST/custom-mods/arsenal-beacon/build.gradle"
+  printf "\nrepositories { flatDir { dirs rootProject.file('qa-mods') } }\ndependencies {\n$deps}\n" >> "$DST/custom-mods/eternal-defense/build.gradle"
 fi
 # first launch would stop at the narrator screen: start with known client options
-mkdir -p "$DST/custom-mods/arsenal-beacon/run-client" && cp "$SRC/tools/qa/qa-options.txt" "$DST/custom-mods/arsenal-beacon/run-client/options.txt"
+mkdir -p "$DST/custom-mods/eternal-defense/run-client" && cp "$SRC/tools/qa/qa-options.txt" "$DST/custom-mods/eternal-defense/run-client/options.txt"
 echo "QA copy ready in $DST (pack edition)."
 echo "1. echo all > /tmp/claude-0/qa-r5.flag   (parts: sign reward exchange upgrade hard raids dbg all)"
-echo "2. cd $DST && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 xvfb-run -a ./gradlew --no-daemon --offline :arsenal-beacon:runClient > /tmp/claude-0/qa.log 2>&1"
-echo "3. grep QA_CHECK /tmp/claude-0/qa.log ; screenshots land in $DST/custom-mods/arsenal-beacon/run-client/shots/screenshots (look for run-client under the module)"
+echo "2. cd $DST && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 xvfb-run -a ./gradlew --no-daemon --offline :eternal-defense:runClient > /tmp/claude-0/qa.log 2>&1"
+echo "3. grep QA_CHECK /tmp/claude-0/qa.log ; screenshots land in $DST/custom-mods/eternal-defense/run-client/shots/screenshots (look for run-client under the module)"
 echo "Kill leftover client JVMs by PID afterwards (pkill -x java misses them)."

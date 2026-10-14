@@ -4,8 +4,8 @@ Branch `feature/logistics-hub`, after 0.0.41. Only what is listed under *Results
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
-* **A real client** (Forge 47.4.20 development runtime with TaCZ 1.1.8 and its default gun pack; `xvfb`, 1280 x 720, GUI scale 2) with three mods from the owner's pack added at run time (`QA_MODS`, new in `tools/qa/setup-qa.sh`): **TaCZ Magazines 0.2.5-Beta**, **Corpse 1.20.1-1.0.23** and **Player Animator 1.0.2-rc1+1.20**, the jars from the owner's Create Arsenal 0.22.1 profile. Harness `tools/qa/QaRound42.java.txt` (`QA_MODS=<dir> tools/qa/setup-qa.sh <dir> pack QaRound42`): a fresh flat world, a beacon 2000 blocks out, survival; every placement made with a real right-click (`useItemOn`, so the client's own prediction runs and the server answers over the connection), the hand counted on both sides.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
+* **A real client** (Forge 47.4.20 development runtime with TaCZ 1.1.8 and its default gun pack; `xvfb`, 1280 x 720, GUI scale 2) with three mods from the owner's pack added at run time (`QA_MODS`, new in `tools/qa/setup-qa.sh`): **TaCZ Magazines 0.2.5-Beta**, **Corpse 1.20.1-1.0.23** and **Player Animator 1.0.2-rc1+1.20**, the jars from the owner's Eternal Defense 0.22.1 profile. Harness `tools/qa/QaRound42.java.txt` (`QA_MODS=<dir> tools/qa/setup-qa.sh <dir> pack QaRound42`): a fresh flat world, a beacon 2000 blocks out, survival; every placement made with a real right-click (`useItemOn`, so the client's own prediction runs and the server answers over the connection), the hand counted on both sides.
 * **The magazine scan**, `tools/qa/QaMagazines.java.txt`: the same client with the owner's 11 gun packs and the `lradd`/`daffas` packs copied into `run-client/tacz` and the owner's `taczmagazines-*.toml` into `run-client/config`. For each of the 540 guns that can be crafted: the gun held, the ammo table's list worked out at Ages 1 to 5, the first Age at which a round that fits is listed and the first at which a magazine is, and whether TaCZ Magazines gives the gun a magazine family.
 
 ## Results

@@ -1,0 +1,320 @@
+{
+  "music.barren_gap": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/barren_gap",
+        "stream": true
+      }
+    ]
+  },
+  "music.line_holder": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/line_holder",
+        "stream": true
+      }
+    ]
+  },
+  "music.phase_one_assault": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/phase_one_assault",
+        "stream": true
+      }
+    ]
+  },
+  "music.silent_trigger": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/silent_trigger",
+        "stream": true
+      }
+    ]
+  },
+  "music.acid_redeemer": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/acid_redeemer",
+        "stream": true
+      }
+    ]
+  },
+  "music.assault_loop": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/assault_loop",
+        "stream": true
+      }
+    ]
+  },
+  "music.breach_core": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/breach_core",
+        "stream": true
+      }
+    ]
+  },
+  "music.rolling_wave": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/rolling_wave",
+        "stream": true
+      }
+    ]
+  },
+  "music.boss_battle": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/boss_battle",
+        "stream": true
+      }
+    ]
+  },
+  "music.anomaly_protocol": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/anomaly_protocol",
+        "stream": true
+      }
+    ]
+  },
+  "music.victory": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/victory",
+        "stream": true,
+        "volume": 0.85
+      }
+    ]
+  },
+  "cannon.fire": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/cannon_fire"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.cannon.fire"
+  },
+  "fire.cryo": {
+    "sounds": [
+      "eternal_defense:sfx/cryo_burst"
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.cryo"
+  },
+  "fire.napalm": {
+    "sounds": [
+      "eternal_defense:sfx/napalm_whoosh"
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.napalm"
+  },
+  "fire.gravity_hum": {
+    "sounds": [
+      "eternal_defense:sfx/gravity_hum"
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.gravity_hum"
+  },
+  "fire.starshell": {
+    "sounds": [
+      "eternal_defense:sfx/starshell_pop"
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.starshell"
+  },
+  "cannon.turning": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/cannon_turning"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.cannon.turning"
+  },
+  "cannon.turning_done": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/cannon_turning_done"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.cannon.turning_done"
+  },
+  "bunker.buster": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/bunker_buster"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.bunker.buster"
+  },
+  "fire.cluster_strike": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/cluster_strike"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.cluster_strike"
+  },
+  "fire.shockwave": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/shockwave"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.fire.shockwave"
+  },
+  "beacon.attacked": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/beacon_attacked"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.beacon.attacked"
+  },
+  "ordnance.incoming": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/ordnance_incoming"
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.ordnance.incoming"
+  },
+  "flare.chatter_1": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_1"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.chatter_2": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_2"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.chatter_3": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_3"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.chatter_4": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_4"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.chatter_5": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_5"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.chatter_6": {
+    "sounds": [
+      "eternal_defense:sfx/chatter_6"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.chatter"
+  },
+  "flare.supply_chatter_1": {
+    "sounds": [
+      "eternal_defense:sfx/supply_chatter_1"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.supply_chatter"
+  },
+  "flare.supply_chatter_2": {
+    "sounds": [
+      "eternal_defense:sfx/supply_chatter_2"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.supply_chatter"
+  },
+  "flare.recall_chatter_1": {
+    "sounds": [
+      "eternal_defense:sfx/recall_chatter_1"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.recall_chatter"
+  },
+  "flare.recall_chatter_2": {
+    "sounds": [
+      "eternal_defense:sfx/recall_chatter_2"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.recall_chatter"
+  },
+  "flare.recall_chatter_3": {
+    "sounds": [
+      "eternal_defense:sfx/recall_chatter_3"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.recall_chatter"
+  },
+  "music.mission_cleared": {
+    "sounds": [
+      {
+        "name": "eternal_defense:music/victory",
+        "stream": true,
+        "volume": 0.85
+      }
+    ]
+  },
+  "tactical.accept": {
+    "sounds": [
+      "eternal_defense:sfx/tactical_accept"
+    ],
+    "subtitle": "subtitles.eternal_defense.tactical.accept"
+  },
+  "tactical.refused": {
+    "sounds": [
+      "eternal_defense:sfx/tactical_refused"
+    ],
+    "subtitle": "subtitles.eternal_defense.tactical.refused"
+  },
+  "tactical.scan": {
+    "sounds": [
+      "eternal_defense:sfx/tactical_scan"
+    ],
+    "subtitle": "subtitles.eternal_defense.tactical.scan"
+  },
+  "tactical.scan_done": {
+    "sounds": [
+      "eternal_defense:sfx/tactical_scan_done"
+    ],
+    "subtitle": "subtitles.eternal_defense.tactical.scan_done"
+  },
+  "tactical.contact": {
+    "sounds": [
+      "eternal_defense:sfx/tactical_contact"
+    ],
+    "subtitle": "subtitles.eternal_defense.tactical.contact"
+  },
+  "seller.order_chatter_1": {
+    "sounds": [
+      "eternal_defense:sfx/order_chatter_1"
+    ],
+    "subtitle": "subtitles.eternal_defense.seller.order_chatter"
+  },
+  "seller.order_chatter_2": {
+    "sounds": [
+      "eternal_defense:sfx/order_chatter_2"
+    ],
+    "subtitle": "subtitles.eternal_defense.seller.order_chatter"
+  },
+  "seller.order_chatter_3": {
+    "sounds": [
+      "eternal_defense:sfx/order_chatter_3"
+    ],
+    "subtitle": "subtitles.eternal_defense.seller.order_chatter"
+  },
+  "seller.order_chatter_4": {
+    "sounds": [
+      "eternal_defense:sfx/order_chatter_4"
+    ],
+    "subtitle": "subtitles.eternal_defense.seller.order_chatter"
+  },
+  "seller.radio_static": {
+    "sounds": [
+      "eternal_defense:sfx/radio_static"
+    ],
+    "subtitle": "subtitles.eternal_defense.seller.radio_static"
+  },
+  "fob.war_horn": {
+    "sounds": [
+      "eternal_defense:sfx/war_horn"
+    ],
+    "subtitle": "subtitles.eternal_defense.fob.war_horn"
+  }
+}

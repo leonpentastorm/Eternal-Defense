@@ -276,7 +276,7 @@ ICONS = {'explosion': explosion, 'arrow': arrow, 'narukami': narukami, 'bunker':
 if __name__ == '__main__':
     # Writes only the icons named on the command line (all twelve without names): make_sprites.py rewrites much more than icons.
     import sys, pathlib
-    out = pathlib.Path(__file__).resolve().parents[2] / 'custom-mods/arsenal-beacon/src/main/resources/assets/arsenal_beacon/textures/gui/fire_support'
+    out = pathlib.Path(__file__).resolve().parents[2] / 'custom-mods/eternal-defense/src/main/resources/assets/eternal_defense/textures/gui/fire_support'
     for name in sys.argv[1:] or list(ICONS):
         im = ICONS[name](); im.save(out / f'{name}.png')
         for px in (32, 16): im.resize((px, px), Image.BOX).save(out / f'{name}_{px}.png')

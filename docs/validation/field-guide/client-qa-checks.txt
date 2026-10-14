@@ -2,7 +2,7 @@
 # Scenario tools/qa/QaGuide.java.txt. Every run: 21 checks, 21 pass. Window size and GUI scale are in the check lines.
 
 ## pack 1280x720
-QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS the guide opens dev.eternaldefense.beacon.GuideScreen
 QA_CHECK PASS scale 3: the side menu has one entry per page n=14
 QA_CHECK PASS scale 3: the side menu is inside the panel, does not overlap and clears the page column inside=true overlap=false right=68 back=82 mode=rail gui=427x240
 QA_CHECK PASS g page 1 is start page=0
@@ -26,7 +26,7 @@ QA_CHECK PASS the list jumps to the Gun Guide page page=11
 QA_DONE pass=21 fail=0
 
 ## pack 1600x900
-QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS the guide opens dev.eternaldefense.beacon.GuideScreen
 QA_CHECK PASS scale 3: the side menu has one entry per page n=14
 QA_CHECK PASS scale 3: the side menu is inside the panel, does not overlap and clears the page column inside=true overlap=false right=157 back=170 mode=list gui=534x300
 QA_CHECK PASS g page 1 is start page=0
@@ -51,7 +51,7 @@ QA_DONE pass=21 fail=0
 QA_DONE pass=21 fail=0
 
 ## pack 1920x1080
-QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS the guide opens dev.eternaldefense.beacon.GuideScreen
 QA_CHECK PASS scale 3: the side menu has one entry per page n=14
 QA_CHECK PASS scale 3: the side menu is inside the panel, does not overlap and clears the page column inside=true overlap=false right=209 back=222 mode=list gui=640x360
 QA_CHECK PASS g page 1 is start page=0
@@ -76,7 +76,7 @@ QA_DONE pass=21 fail=0
 QA_DONE pass=21 fail=0
 
 ## standalone 1280x720
-QA_CHECK PASS the guide opens dev.createarsenal.beacon.GuideScreen
+QA_CHECK PASS the guide opens dev.eternaldefense.beacon.GuideScreen
 QA_CHECK PASS scale 3: the side menu has one entry per page n=14
 QA_CHECK PASS scale 3: the side menu is inside the panel, does not overlap and clears the page column inside=true overlap=false right=68 back=82 mode=rail gui=427x240
 QA_CHECK PASS g page 1 is start page=0

@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -34,7 +34,7 @@ import java.util.*;
  * Drink Station's brewing stand, storage, mixing menu, sweetener, Brew Pots, Latte, Cup Dispenser, the active drink) and the three new meal
  * effects, checking server state, the screen's texts at three window sizes and taking screenshots. Copied in by tools/qa/setup-qa.sh.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaDrinks {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -142,8 +142,8 @@ public final class QaDrinks {
         inv.setItem(9,potion(Potions.STRONG_SWIFTNESS));inv.setItem(10,potion(Potions.STRONG_SWIFTNESS));inv.setItem(11,potion(Potions.STRENGTH));inv.setItem(12,potion(Potions.STRENGTH));
         inv.setItem(13,potion(Potions.STRONG_REGENERATION));inv.setItem(14,potion(Potions.REGENERATION));inv.setItem(15,potion(Potions.LONG_REGENERATION));inv.setItem(16,splash(Potions.POISON));
         inv.setItem(17,potion(Potions.TURTLE_MASTER));inv.setItem(18,potion(Potions.HEALING));inv.setItem(19,potion(Potions.POISON));inv.setItem(20,potion(Potions.NIGHT_VISION));inv.setItem(21,potion(Potions.NIGHT_VISION));
-        inv.setItem(22,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),8));inv.setItem(23,potion(Potions.SWIFTNESS));inv.setItem(24,potion(Potions.SWIFTNESS));
-        inv.setItem(30,new ItemStack(ArsenalBeacon.PLATING.get(),64));inv.setItem(31,new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),40));});}
+        inv.setItem(22,new ItemStack(EternalDefense.PAPER_CUP.get(),8));inv.setItem(23,potion(Potions.SWIFTNESS));inv.setItem(24,potion(Potions.SWIFTNESS));
+        inv.setItem(30,new ItemStack(EternalDefense.PLATING.get(),64));inv.setItem(31,new ItemStack(EternalDefense.ARDENT_ENERGY.get(),40));});}
 
     @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
@@ -170,14 +170,14 @@ public final class QaDrinks {
         // ---- the corner: a planted beacon (the Home Zone), a Mk I station, three Brew Pots, a Cup Dispenser ---------------------------------
         step(5,()->srv(()->{
             sp().teleportTo(sl(),sx+.5,sy,sz+4.5,180,10);
-            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);
             // facing south: their fronts look at the player standing south of them
-            sl().setBlock(S(),ArsenalBeacon.DRINK_STATION_I.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
-            for(int i=0;i<3;i++)sl().setBlock(pot(i),ArsenalBeacon.BREW_POT.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
-            sl().setBlock(CUPS(),ArsenalBeacon.CUP_DISPENSER.get().defaultBlockState().setValue(ArsenalStructures.FACING,Direction.SOUTH),3);
+            sl().setBlock(S(),EternalDefense.DRINK_STATION_I.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
+            for(int i=0;i<3;i++)sl().setBlock(pot(i),EternalDefense.BREW_POT.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
+            sl().setBlock(CUPS(),EternalDefense.CUP_DISPENSER.get().defaultBlockState().setValue(DefenseStructures.FACING,Direction.SOUTH),3);
         }),"build the corner");
         step(20,QaDrinks::pack,"a pack of potions");
-        step(10,()->check("the station is 2 wide and 2 tall: its three other cells are parts",srvGet(()->sl().getBlockState(S().west()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().above()).is(ArsenalBeacon.STRUCTURE_PART.get())&&sl().getBlockState(S().west().above()).is(ArsenalBeacon.STRUCTURE_PART.get())),""),"footprint");
+        step(10,()->check("the station is 2 wide and 2 tall: its three other cells are parts",srvGet(()->sl().getBlockState(S().west()).is(EternalDefense.STRUCTURE_PART.get())&&sl().getBlockState(S().above()).is(EternalDefense.STRUCTURE_PART.get())&&sl().getBlockState(S().west().above()).is(EternalDefense.STRUCTURE_PART.get())),""),"footprint");
         step(5,()->shot("d00_corner"),"the corner in the world");
 
         // ---- Mk I: a brewing stand with storage ------------------------------------------------------------------------------------------
@@ -221,7 +221,7 @@ public final class QaDrinks {
         step(3,()->hover(0,0),"pointer away");
 
         // ---- the break guard: over 256 bottles it refuses to be broken by hand -------------------------------------------------------------
-        step(5,()->{close();srv(()->sl().setBlock(GUARD(),ArsenalBeacon.DRINK_STATION_I.get().defaultBlockState(),3));},"a second station");
+        step(5,()->{close();srv(()->sl().setBlock(GUARD(),EternalDefense.DRINK_STATION_I.get().defaultBlockState(),3));},"a second station");
         step(10,()->srv(()->{var g=(DrinkStation.StationEntity)sl().getBlockEntity(GUARD());g.insert(potion(Potions.WATER),300);}),"300 water bottles in it");
         step(5,()->srv(()->sp().gameMode.destroyBlock(GUARD().above())),"break its upper cell by hand");
         step(10,()->{check("it refuses with 300 bottles inside",srvGet(()->sl().getBlockEntity(GUARD()) instanceof DrinkStation.StationEntity),"");check("and says to empty the storage first",barHas("holds 300 bottles"),String.join(" / ",BAR));},"guarded");
@@ -237,10 +237,10 @@ public final class QaDrinks {
         until("the station screen",60,()->ds()!=null&&ds().upgrade.visible,()->{});
         step(5,()->click(ds().upgrade),"Upgrade to Mk II");
         until("Mk II",80,()->ds()!=null&&ds().getMenu().mk==2,()->{});
-        step(15,()->{check("the station is Mk II and kept its storage",srvGet(()->sl().getBlockState(S()).is(ArsenalBeacon.DRINK_STATION_II.get())&&st().total()==8),"");
+        step(15,()->{check("the station is Mk II and kept its storage",srvGet(()->sl().getBlockState(S()).is(EternalDefense.DRINK_STATION_II.get())&&st().total()==8),"");
             check("Mk II links one Brew Pot",srvGet(()->st().links.size()==1),srvGet(()->""+st().links.size()));
             check("the effect tiles are there (vanilla: Speed, Strength, Night Vision...)",tile("minecraft:speed")!=null&&tile("minecraft:strength")!=null&&tile("minecraft:night_vision")!=null&&tile("minecraft:regeneration")==null,""+ds().tiles.size());
-            check("a creative upgrade is free (as the Mess Hall's)",count(ArsenalBeacon.PLATING.get())==64&&count(ArsenalBeacon.ARDENT_ENERGY.get())==40,count(ArsenalBeacon.PLATING.get())+" plating, "+count(ArsenalBeacon.ARDENT_ENERGY.get())+" ardent");},"upgraded");
+            check("a creative upgrade is free (as the Mess Hall's)",count(EternalDefense.PLATING.get())==64&&count(EternalDefense.ARDENT_ENERGY.get())==40,count(EternalDefense.PLATING.get())+" plating, "+count(EternalDefense.ARDENT_ENERGY.get())+" ardent");},"upgraded");
         step(5,()->recordFrame=true,"record");
         step(3,()->{check("the hint says what to do",drawnHas("Choose effects or put potions in"),"");shot("d04_mk2");},"Mk II");
 
@@ -304,14 +304,14 @@ public final class QaDrinks {
             check("no sweetener for the Latte: its slot, bar and button are gone, the output in their place",!ds().getMenu().slots.get(DrinkStationMenu.SLOT_SWEET).isActive()&&!ds().steps.visible&&ds().getMenu().slots.get(DrinkStationMenu.SLOT_OUT).isActive(),"");
             check("the pots give way to the Latte's hint",ds().pots.stream().noneMatch(b->b.visible),"");},"latte");
         step(5,()->click(ds().primary),"Gather potions");
-        step(10,()->check("Gather also took a Paper Cup from the pack",srvGet(()->CupDispenser.cup(st().mix.getItem(3))&&!st().mix.getItem(0).isEmpty())&&count(ArsenalBeacon.PAPER_CUP.get())==7,""+count(ArsenalBeacon.PAPER_CUP.get())),"cup");
+        step(10,()->check("Gather also took a Paper Cup from the pack",srvGet(()->CupDispenser.cup(st().mix.getItem(3))&&!st().mix.getItem(0).isEmpty())&&count(EternalDefense.PAPER_CUP.get())==7,""+count(EternalDefense.PAPER_CUP.get())),"cup");
         step(5,()->click(ds().primary),"Make Latte");
         step(10,()->{check("a Speed Latte came out, 10 minutes",srvGet(()->{var out=st().mix.getItem(4);var d=Latte.drink(out);return d!=null&&d.latte()&&d.duration()==12000&&out.getHoverName().getString().equals("Speed Latte");}),srvGet(()->st().mix.getItem(4).getHoverName().getString()));
             check("the cup was used up",srvGet(()->st().mix.getItem(3).isEmpty()),"");},"latte made");
         step(5,()->{var s=ds();var slot=s.getMenu().slots.get(DrinkStationMenu.SLOT_OUT);hover(s.getGuiLeft()+slot.x+8,s.getGuiTop()+slot.y+8);},"hover the Latte");
         step(6,()->shot("d10_latte"),"latte shot");
         step(3,()->{hover(0,0);slotClick(DrinkStationMenu.SLOT_OUT,ClickType.QUICK_MOVE);},"take it");
-        step(8,()->check("Lattes stack to 16",srvGet(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.LATTE.get()))return s.getMaxStackSize()==16;return false;}),""),"taken");
+        step(8,()->check("Lattes stack to 16",srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.LATTE.get()))return s.getMaxStackSize()==16;return false;}),""),"taken");
 
         // ---- the size checks: the station at three window sizes, both tabs ----------------------------------------------------------------
         atSizes("the Drink Station, Latte tab","d11_latte_tab",true);
@@ -326,7 +326,7 @@ public final class QaDrinks {
             check("every notice fits the one-line strip ("+notices.length+" notices, three-effect drinks shortened)",too.isEmpty(),String.join(" | ",too));},"notices fit");
 
         // ---- drinking: from the pot with a Paper Cup, at home ------------------------------------------------------------------------------
-        step(5,()->{close();srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),3)));},"a Paper Cup in hand");
+        step(5,()->{close();srv(()->sp().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(EternalDefense.PAPER_CUP.get(),3)));},"a Paper Cup in hand");
         step(5,()->useBlock(pot(0)),"right-click the Brew Pot");
         step(10,()->{check("the drink is the active drink, its pot empty",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&!s.drink.latte()&&potAt(0).drink==null;}),"");
             check("in creative the cup is kept (as vanilla keeps items in creative; survival uses it up, see QaDrinkLoop)",srvGet(()->sp().getMainHandItem().getCount()==3),"");
@@ -362,15 +362,15 @@ public final class QaDrinks {
         step(10,()->{var fx=srvGet(()->sp().getEffect(MobEffects.MOVEMENT_SPEED));check("the vanilla Speed I is back with its own time, not removed, not extended",fx!=null&&fx.getAmplifier()==0&&!fx.isInfiniteDuration()&&fx.getDuration()<6000&&fx.getDuration()>5900,String.valueOf(fx));
             check("the new drink is on",srvGet(()->sp().hasEffect(MobEffects.NIGHT_VISION)&&sp().getEffect(MobEffects.NIGHT_VISION).isInfiniteDuration()),"");},"replaced");
         // a Latte is drunk at any time and leaves nothing
-        step(3,()->srv(()->{for(var s:sp().getInventory().items)if(s.is(ArsenalBeacon.LATTE.get())){s.finishUsingItem(sl(),sp());break;}}),"drink the Latte");
+        step(3,()->srv(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.LATTE.get())){s.finishUsingItem(sl(),sp());break;}}),"drink the Latte");
         step(10,()->{check("the Latte is the active drink now (it replaced the old one)",srvGet(()->{var s=PlayerDrinks.of(sp());return s!=null&&s.drink.latte()&&!sp().hasEffect(MobEffects.NIGHT_VISION);}),"");
             check("it left nothing behind (creative keeps the stack)",true,"");},"latte drunk");
         // milk from the dispenser's bottle ends it
-        step(3,()->srv(()->new ItemStack(ArsenalBeacon.MILK_BOTTLE.get()).finishUsingItem(sl(),sp())),"drink a Milk Bottle");
+        step(3,()->srv(()->new ItemStack(EternalDefense.MILK_BOTTLE.get()).finishUsingItem(sl(),sp())),"drink a Milk Bottle");
         step(10,()->check("the Milk Bottle ends the drink",srvGet(()->PlayerDrinks.of(sp())==null&&!sp().hasEffect(MobEffects.MOVEMENT_SPEED)),""),"milk");
 
         // ---- the Cup Dispenser ------------------------------------------------------------------------------------------------------
-        step(3,()->srv(()->{((CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS())).stock.setItem(0,new ItemStack(ArsenalBeacon.PAPER_CUP.get(),10));sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);}),"ten cups in the dispenser");
+        step(3,()->srv(()->{((CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS())).stock.setItem(0,new ItemStack(EternalDefense.PAPER_CUP.get(),10));sp().setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);}),"ten cups in the dispenser");
         step(3,()->useBlock(CUPS()),"right-click it");
         step(10,()->{check("it hands out a cup",srvGet(()->((CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS())).stock.getItem(0).getCount()==9),"");check("and says how many are left",barHas("Took a Paper Cup")&&barHas("9 left"),String.join(" / ",BAR));},"cup");
         step(3,()->srv(()->net.minecraftforge.network.NetworkHooks.openScreen(sp(),(CupDispenser.DispenserEntity)sl().getBlockEntity(CUPS()),b->b.writeBlockPos(CUPS()))),"open its stock");
@@ -385,7 +385,7 @@ public final class QaDrinks {
         step(10,()->click(ds().upgrade),"Upgrade to Mk III");
         until("Mk III",80,()->ds()!=null&&ds().getMenu().mk==3,()->{});
         step(10,()->{check("Mk III links two Brew Pots",srvGet(()->st().links.size()==2),srvGet(()->""+st().links.size()));
-            boolean standalone=false;int plating=count(ArsenalBeacon.PLATING.get()),ardent=count(ArsenalBeacon.ARDENT_ENERGY.get());
+            boolean standalone=false;int plating=count(EternalDefense.PLATING.get()),ardent=count(EternalDefense.ARDENT_ENERGY.get());
             check("Mk III cost "+(standalone?"8 Ardent Energy":"16 Reinforced Beacon Plating"),standalone?ardent==32&&plating==64:plating==48&&ardent==40,plating+" plating, "+ardent+" ardent");
             srv(()->sp().setGameMode(GameType.CREATIVE));},"mk3");
         step(3,()->srv(()->{var inv=sp().getInventory();inv.setItem(23,potion(Potions.SWIFTNESS));inv.setItem(24,potion(Potions.SWIFTNESS));}),"two Speed potions");
@@ -434,7 +434,7 @@ public final class QaDrinks {
         step(5,()->mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player)),"the inventory");
         step(10,()->shot("d18_meal_effects"),"meal effects shot");
         step(3,()->mc().setScreen(null),"close");
-        step(5,()->srv(()->{sl().setBlock(HALL(),ArsenalBeacon.MESS_HALL_IV.get().defaultBlockState(),3);sp().teleportTo(sl(),sx-9.5,sy,sz+3.5,180,10);}),"a Mess Hall Mk IV, and stand in front of it");
+        step(5,()->srv(()->{sl().setBlock(HALL(),EternalDefense.MESS_HALL_IV.get().defaultBlockState(),3);sp().teleportTo(sl(),sx-9.5,sy,sz+3.5,180,10);}),"a Mess Hall Mk IV, and stand in front of it");
         step(10,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(HALL());net.minecraftforge.network.NetworkHooks.openScreen(sp(),h,b->{b.writeBlockPos(HALL());b.writeVarInt(h.mk());});}),"open it");
         until("the hall",60,()->mc().screen instanceof MessHallScreen,()->{});
         step(10,()->{var s=(MessHallScreen)mc().screen;var c=s.cells.stream().filter(x->x.effect==MealRules.Effect.HARDY).findFirst().orElseThrow();hover(c.getX()+10,c.getY()+10);},"hover Hardy");

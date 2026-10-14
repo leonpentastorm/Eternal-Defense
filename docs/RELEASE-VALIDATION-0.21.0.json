@@ -3,16 +3,16 @@
   "minecraft": "1.20.1",
   "forge": "47.4.20",
   "customModVersions": {
-    "arsenal_beacon": "0.21.0",
-    "arsenal_gun_guide": "0.21.0",
-    "arsenal_displays": "1.1.0"
+    "eternal_defense": "0.21.0",
+    "eternal_defense_gun_guide": "0.21.0",
+    "eternal_defense_displays": "1.1.0"
   },
   "modJarCount": 320,
   "dependencyAuditProblems": 0,
   "unitTestsPassed": {
-    "arsenal-beacon": 21,
-    "arsenal-gun-guide": 7,
-    "arsenal-displays": 0
+    "eternal-defense": 21,
+    "eternal-defense-gun-guide": 7,
+    "eternal-defense-displays": 0
   },
   "productionGameplayTestsPassed": 82,
   "standaloneBeaconRequiredDependencyTestsPassed": 6,

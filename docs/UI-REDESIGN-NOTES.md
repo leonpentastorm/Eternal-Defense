@@ -23,7 +23,7 @@ every state in the brief (normal, hover, pressed, selected, disabled, locked, wa
 | Gun Guide | `GuideClient` | Key-cap control card, conflict marks, collapsed key-cap badge, JAM alert with triangle and `[key] Clear jam` |
 | Displays | `DisplayRacks.RackItem`, lang | Consistent names (`Gun Stand`, `Wide Wall Gun Rack`, `Glass Gun Case`...), short interaction tooltips from language keys |
 
-**Text.** All client-originated text is in `assets/arsenal_beacon/lang/en_us.json` (Gun Guide and Displays have their own).
+**Text.** All client-originated text is in `assets/eternal_defense/lang/en_us.json` (Gun Guide and Displays have their own).
 Edition-specific copy uses `.pack` / `.standalone` key suffixes, e.g. `guide.stations.detail.pack`. The guide shows
 `<id>.body`, then `<id>.body.<edition>`; hidden extras live in `.detail`. `LangKeysTest` fails the build if a key used by
 the code is missing, a `%` could break formatting, the standalone guide mentions FTB, Essential, Create machines, brass or

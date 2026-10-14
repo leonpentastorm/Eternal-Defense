@@ -19,7 +19,7 @@ Environment: Linux container, JDK 17, Forge 47.4.20 development runtime with TaC
 4. damage delays the channel (hurt every second while channeling: it takes longer than 8 s) and the delay is capped (at most 18 s in all);
 5. killing a channeler cancels its channel and the empty gate goes away; the raider never went through;
 6. nine stuck raiders in a cluster share **one** gate, eight channel at once and the ninth waits; the ninth comes out a whole channel after the first; the gate goes away with the last raider;
-7. through the real `ArsenalBeacon.raid` loop: three gates, then the fourth trigger withdraws the raider; the first wave of several completes (its supply reward is paid) about 2,500 ticks after it started, far below the 24,000-tick timeout, with no beacon damage, one withdrawal counted and announced, and no channel or gate left;
+7. through the real `EternalDefense.raid` loop: three gates, then the fourth trigger withdraws the raider; the first wave of several completes (its supply reward is paid) about 2,500 ticks after it started, far below the 24,000-tick timeout, with no beacon damage, one withdrawal counted and announced, and no channel or gate left;
 8. a boss goes through gate after gate (at least four, past the point where an ordinary raider is withdrawn) and is never withdrawn;
 9. a vex and a husk under a parachute are left alone for 1,100 ticks: not moved, not tracked, no gate opened, none counted;
 10. and 11. the spawn-sector tests of 0.0.13 (a lake sector is never chosen while clean sectors exist; when every sector has water the one with the fewest violations is used).

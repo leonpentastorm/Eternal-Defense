@@ -16,7 +16,7 @@ with zipfile.ZipFile(args.backend_jar) as jar:
 files={}
 for edition in ('pack','standalone'):
     suffix='-standalone' if edition=='standalone' else ''
-    for mod,version in [('arsenal-beacon','0.21.0'),('arsenal-gun-guide','0.21.0'),('arsenal-displays','1.1.0')]:
+    for mod,version in [('eternal-defense','0.21.0'),('eternal-defense-gun-guide','0.21.0'),('eternal-defense-displays','1.1.0')]:
         name=f'{mod}-{version}{suffix}.jar'
         files[f'{edition}/{name}']=(repo/'custom-mods'/mod/'build/libs'/name).read_bytes()
     files[f'{edition}/tacz-attributes-1.4.jar']=backend
@@ -52,7 +52,7 @@ the code that runs during play do less work for the same result (see docs/OPTIMI
 WHAT TO LOOK FOR
 Everything should play exactly as 0.0.14. Worth a look: a bullet from a hostile gunner hitting the beacon still damages
 it; the Score / building tier shown in the beacon panel is the same as before for the same base; raids start as before.
--Darsenal.optimizeTests=true registers the opt-in /optimize-path-test command (permission level 2). It borrows the
+-Deternaldefense.optimizeTests=true registers the opt-in /optimize-path-test command (permission level 2). It borrows the
 campaign of a world WITHOUT a beacon: use a THROWAWAY world only.
 
 LesRaisins Tactical Equipements 0.4.3 is OPTIONAL and not included.
@@ -66,7 +66,7 @@ files['THIRD-PARTY.md']=b'''# Included required addon
 
 TaCZ Attributes 1.4 by leopoko, mod ID `tacz_attributes`, MIT.
 The unmodified published JAR is supplied separately in each edition folder;
-it is not shaded into any Arsenal JAR. Install only one copy.
+it is not shaded into any Eternal Defense JAR. Install only one copy.
 
 Author download: https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731
 Source: https://github.com/leopoko/TaCZ_Attributes/tree/91612b5b505a87e2ddcd48b1b1ae1f9c95f482a1
@@ -75,7 +75,7 @@ The published JAR contains no standalone LICENSE/NOTICE file; its metadata is
 preserved unchanged. Standard MIT terms accompany this attribution in licenses/.
 
 TaCZ and optional LesRaisins are not redistributed in this archive.
-Arsenal display artwork remains All Rights Reserved by its creator.
+Eternal Defense display artwork remains All Rights Reserved by its creator.
 '''
 files['licenses/tacz-attributes-MIT.txt']=b'''TaCZ Attributes by leopoko - MIT License
 Attribution supplied from the upstream project; no copyright year is asserted.
@@ -99,7 +99,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 files['SHA512SUMS']=(''.join(f'{hashlib.sha512(data).hexdigest()}  {name}\n' for name,data in sorted(files.items()))).encode()
-out=repo/('dist/Arsenal-OptimizePath-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
+out=repo/('dist/Eternal-Defense-OptimizePath-'+project_version+'-test.zip');out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
     for name,data in sorted(files.items()):archive.writestr(name,data)
 with zipfile.ZipFile(out) as archive:

@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "wide=false,tall=false,facing=north": {
+      "model": "eternal_defense:block/armor_platform_00",
+      "y": 0
+    },
+    "wide=false,tall=false,facing=east": {
+      "model": "eternal_defense:block/armor_platform_00",
+      "y": 90
+    },
+    "wide=false,tall=false,facing=south": {
+      "model": "eternal_defense:block/armor_platform_00",
+      "y": 180
+    },
+    "wide=false,tall=false,facing=west": {
+      "model": "eternal_defense:block/armor_platform_00",
+      "y": 270
+    },
+    "wide=false,tall=true,facing=north": {
+      "model": "eternal_defense:block/armor_platform_01",
+      "y": 0
+    },
+    "wide=false,tall=true,facing=east": {
+      "model": "eternal_defense:block/armor_platform_01",
+      "y": 90
+    },
+    "wide=false,tall=true,facing=south": {
+      "model": "eternal_defense:block/armor_platform_01",
+      "y": 180
+    },
+    "wide=false,tall=true,facing=west": {
+      "model": "eternal_defense:block/armor_platform_01",
+      "y": 270
+    },
+    "wide=true,tall=false,facing=north": {
+      "model": "eternal_defense:block/armor_platform_10",
+      "y": 0
+    },
+    "wide=true,tall=false,facing=east": {
+      "model": "eternal_defense:block/armor_platform_10",
+      "y": 90
+    },
+    "wide=true,tall=false,facing=south": {
+      "model": "eternal_defense:block/armor_platform_10",
+      "y": 180
+    },
+    "wide=true,tall=false,facing=west": {
+      "model": "eternal_defense:block/armor_platform_10",
+      "y": 270
+    },
+    "wide=true,tall=true,facing=north": {
+      "model": "eternal_defense:block/armor_platform_11",
+      "y": 0
+    },
+    "wide=true,tall=true,facing=east": {
+      "model": "eternal_defense:block/armor_platform_11",
+      "y": 90
+    },
+    "wide=true,tall=true,facing=south": {
+      "model": "eternal_defense:block/armor_platform_11",
+      "y": 180
+    },
+    "wide=true,tall=true,facing=west": {
+      "model": "eternal_defense:block/armor_platform_11",
+      "y": 270
+    }
+  }
+}

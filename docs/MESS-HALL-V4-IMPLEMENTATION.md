@@ -32,7 +32,7 @@ The addon metadata declares MIT and its published requirements are Forge, Minecr
 | Heavy Hand | Same mixin, knockback argument hook | Bash impulse; does not change bullet knockback |
 | Demolition | Native explosion radius argument, or gated grenade detonation radius argument | Actual explosive projectile behavior / shared grenade implementation; no global explosion hook |
 
-Both global gun attributes have neutral value 1. Modifier amount is the meal **bonus `b`**, with `MULTIPLY_TOTAL`, yielding `(existing value) × (1+b)`. Meal-only UUIDs are derived from `arsenal_beacon:meal/<effect>`. Replacement/removal touches only those UUIDs, not other mods' values or category modifiers. Unknown categories retain the global contribution when they use native paths.
+Both global gun attributes have neutral value 1. Modifier amount is the meal **bonus `b`**, with `MULTIPLY_TOTAL`, yielding `(existing value) × (1+b)`. Meal-only UUIDs are derived from `eternal_defense:meal/<effect>`. Replacement/removal touches only those UUIDs, not other mods' values or category modifiers. Unknown categories retain the global contribution when they use native paths.
 
 ## Reload continuity and presentation
 

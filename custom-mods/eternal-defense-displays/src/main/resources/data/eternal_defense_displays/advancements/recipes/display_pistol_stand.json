@@ -1,0 +1,49 @@
+{
+  "advancements": [
+    {
+      "conditions": [
+        {
+          "type": "forge:not",
+          "value": {
+            "type": "forge:mod_loaded",
+            "modid": "eternal_defense"
+          }
+        }
+      ],
+      "advancement": {
+        "parent": "minecraft:recipes/root",
+        "criteria": {
+          "has_iron": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+              "items": [
+                {
+                  "items": [
+                    "minecraft:iron_ingot"
+                  ]
+                }
+              ]
+            }
+          },
+          "has_recipe": {
+            "trigger": "minecraft:recipe_unlocked",
+            "conditions": {
+              "recipe": "eternal_defense_displays:display_pistol_stand"
+            }
+          }
+        },
+        "requirements": [
+          [
+            "has_iron",
+            "has_recipe"
+          ]
+        ],
+        "rewards": {
+          "recipes": [
+            "eternal_defense_displays:display_pistol_stand"
+          ]
+        }
+      }
+    }
+  ]
+}

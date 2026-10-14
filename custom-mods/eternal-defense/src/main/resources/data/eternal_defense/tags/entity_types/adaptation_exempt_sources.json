@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "eternal_defense:support_flare",
+    {
+      "id": "tacz:bullet",
+      "required": false
+    },
+    {
+      "id": "lrtactical:grenade_entity",
+      "required": false
+    }
+  ]
+}

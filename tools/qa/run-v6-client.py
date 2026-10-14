@@ -27,7 +27,7 @@ def expand(items,values):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--runtime',type=Path,required=True);parser.add_argument('--food-tooltip-jar',type=Path);parser.add_argument('--gui-scale',type=int,default=3);args=parser.parse_args();root=args.runtime.resolve();repo=Path(__file__).resolve().parents[2]
     instance=Path(tempfile.mkdtemp(prefix='messhall-v6-client-',dir=root/'test-runs'));(instance/'mods').mkdir();(instance/'config').mkdir();(instance/'screenshots').mkdir()
-    for jar in [repo/'custom-mods/arsenal-beacon/build/libs/arsenal-beacon-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:shutil.copy2(jar,instance/'mods'/jar.name)
+    for jar in [repo/'custom-mods/eternal-defense/build/libs/eternal-defense-0.21.0-standalone.jar',root/'downloads/tacz-1.20.1-1.1.8-hotfix2.jar',root/'downloads/tacz-attributes-1.4.jar']:shutil.copy2(jar,instance/'mods'/jar.name)
     if args.food_tooltip_jar:shutil.copy2(args.food_tooltip_jar,instance/'mods')
     (instance/'artifact-sha512.json').write_text(json.dumps({p.name:hashlib.sha512(p.read_bytes()).hexdigest() for p in (instance/'mods').glob('*.jar')},indent=2)+'\n')
     (instance/'tacz').mkdir();shutil.copy2(root/'downloads/Apocalypse_v1.1.4_F.zip',instance/'tacz')
@@ -44,9 +44,9 @@ def main():
         number=display.stdout.readline().strip()
         if not number.isdigit():raise RuntimeError('Xvfb failed')
         env=dict(os.environ,DISPLAY=':'+number,LIBGL_ALWAYS_SOFTWARE='1',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(root/'cache/mesa'),ALSOFT_DRIVERS='null')
-        launch=json.loads((root/'runtime/client-launch.json').read_text());player='ArsenalDev'
-        values={'auth_player_name':player,'auth_uuid':uuid.UUID(bytes=hashlib.md5(('OfflinePlayer:'+player).encode()).digest(),version=3).hex,'auth_access_token':'0','auth_xuid':'','clientid':'','user_type':'legacy','version_name':'1.20.1-forge-47.4.20','version_type':'release','game_directory':str(instance),'assets_root':str(root/'runtime/assets'),'assets_index_name':launch['assetIndex'],'natives_directory':str(root/'runtime/natives'),'library_directory':str(root/'runtime/libraries'),'classpath_separator':os.pathsep,'classpath':os.pathsep.join(launch['classpath']),'launcher_name':'ArsenalLocalTest','launcher_version':'1','resolution_width':'1280','resolution_height':'720'}
-        command=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx4G','-XX:-CreateCoredumpOnCrash','-Darsenal.v6ClientTests=true',*expand(launch['jvm'],values),launch['mainClass'],*expand(launch['game'],values),'--quickPlayMultiplayer','127.0.0.1:25577']
+        launch=json.loads((root/'runtime/client-launch.json').read_text());player='DevPlayer'
+        values={'auth_player_name':player,'auth_uuid':uuid.UUID(bytes=hashlib.md5(('OfflinePlayer:'+player).encode()).digest(),version=3).hex,'auth_access_token':'0','auth_xuid':'','clientid':'','user_type':'legacy','version_name':'1.20.1-forge-47.4.20','version_type':'release','game_directory':str(instance),'assets_root':str(root/'runtime/assets'),'assets_index_name':launch['assetIndex'],'natives_directory':str(root/'runtime/natives'),'library_directory':str(root/'runtime/libraries'),'classpath_separator':os.pathsep,'classpath':os.pathsep.join(launch['classpath']),'launcher_name':'LocalTest','launcher_version':'1','resolution_width':'1280','resolution_height':'720'}
+        command=[str(Path(os.environ['JAVA_HOME'])/'bin/java'),*shlex.split(os.environ.get('GRADLE_OPTS','')),'-Xmx4G','-XX:-CreateCoredumpOnCrash','-Deternaldefense.v6ClientTests=true',*expand(launch['jvm'],values),launch['mainClass'],*expand(launch['game'],values),'--quickPlayMultiplayer','127.0.0.1:25577']
         xlib=ctypes.CDLL('libX11.so.6');xlib.XOpenDisplay.argtypes=[ctypes.c_char_p];xlib.XOpenDisplay.restype=ctypes.c_void_p
         xlib.XDefaultRootWindow.argtypes=[ctypes.c_void_p];xlib.XDefaultRootWindow.restype=ctypes.c_ulong
         xlib.XWarpPointer.argtypes=[ctypes.c_void_p,ctypes.c_ulong,ctypes.c_ulong,ctypes.c_int,ctypes.c_int,ctypes.c_uint,ctypes.c_uint,ctypes.c_int,ctypes.c_int];xlib.XFlush.argtypes=[ctypes.c_void_p]

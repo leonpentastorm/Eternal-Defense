@@ -1,0 +1,7 @@
+pluginManagement {
+    repositories { gradlePluginPortal(); maven { url = 'https://maven.minecraftforge.net/' } }
+}
+rootProject.name = 'eternal-defense'
+
+include ":eternal-defense-displays"
+project(":eternal-defense-displays").projectDir = file("../eternal-defense-displays")

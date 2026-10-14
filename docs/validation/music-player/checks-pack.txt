@@ -15,7 +15,7 @@
 05:44:19 QA_CHECK PASS Raid music on again: the wave's song comes back line_holder/normal
 05:44:21 QA_CHECK PASS Music player off is saved 
 05:44:21 QA_CHECK PASS Music player on again 
-05:44:23 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@48b4fecb
+05:44:23 QA_CHECK PASS the cannon menu opens dev.eternaldefense.beacon.CannonScreen@48b4fecb
 05:44:23 QA_CHECK PASS Area of effect is listed with the three-level upgrades index 4
 05:44:24 QA_CHECK PASS a maxed upgrade is still hovered (inactive but hovered) active=false hovered=true
 05:44:25 QA_CHECK PASS the list scrolls to its end and shows the Starshell scroll=5 visible=7

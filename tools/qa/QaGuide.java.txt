@@ -1,4 +1,4 @@
-package dev.createarsenal.beacon;
+package dev.eternaldefense.beacon;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -31,7 +31,7 @@ import java.util.*;
  * page (scrolling each one to its end) and takes a screenshot per screen, then repeats a few pages at a larger GUI scale and opens the plant
  * confirmation. Copied into a throwaway tree by tools/qa/setup-qa.sh.
  */
-@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class QaGuide {
     static final Deque<Object[]> STEPS=new ArrayDeque<>();
     static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
@@ -67,7 +67,7 @@ public final class QaGuide {
     static String lastBar(){return BAR.isEmpty()?"":BAR.get(BAR.size()-1);}
     static boolean barHas(String s){return BAR.stream().anyMatch(b->b.contains(s));}
 
-    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,4),3);});}
+    static void beacon(){srv(()->{var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B();d.core=3;d.setDirty();sl().setBlock(B(),EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,4),3);});}
     static MessHallScreen ui(){return mc().screen instanceof MessHallScreen s?s:null;}
     /** Call only inside srv/srvGet lambdas (the server thread): a nested srvGet would wait on itself. */
     static MessHall.HallEntity hall(){return (MessHall.HallEntity)sl().getBlockEntity(at(0,0,0));}

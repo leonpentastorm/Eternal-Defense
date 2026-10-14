@@ -10,7 +10,7 @@ QA_CHECK PASS every face of all 27 blocks (and no face) hands out the one Hub in
 QA_CHECK PASS 270 slots fill with normal stacks and the rest is handed back; unstackables take a slot each; 16-stacks stay 16; same kind first true true true true true
 QA_CHECK PASS 4000 random inserts, pulls, per-slot moves and in-place changes: the count cache always equals a full scan 0 true
 QA_CHECK PASS per-slot calls copy and scan nothing: getStackInSlot, a simulated insert and a count each take well under a microsecond ns per call: get 13.8, simulated insert 33.1, count 25.8
-QA_CHECK PASS the Hub's screen opens from a part block dev.createarsenal.beacon.HubScreen@4ac2d69c
+QA_CHECK PASS the Hub's screen opens from a part block dev.eternaldefense.beacon.HubScreen@4ac2d69c
 QA_CHECK PASS page 1 of 5 shows the Hub's first 54 slots 10 diamond 64 emerald
 QA_CHECK PASS the slots in use are counted 4
 QA_CHECK PASS the Hub screen, page 1 at 640x360: 4 texts, none over another or under a button 0 
@@ -41,9 +41,9 @@ QA_CHECK PASS a buy after the 2 seconds starts a new line Dev just pulled 28 Iro
 QA_CHECK PASS one line: three kinds named in the recipe's order, then 'and N more' Dev just pulled 16 Iron Ingot, 16 Copper Ingot, 8 Redstone Dust and 3 more from the Hub / wanted Dev just pulled 16 Iron Ingot, 16 Copper Ingot, 8 Redstone Dust and 3 more from the Hub
 QA_CHECK PASS the FOB Beacon was made Fabricated FOB Beacon. Plant it in a village with at least 3 villagers, outside your base.
 QA_CHECK PASS the nearer Hub is emptied first, the farther pays the rest; one line for both 0 / 60 [Dev just pulled 14 Iron Ingot, 1 Oak Sign from the Hub]
-QA_CHECK PASS bought: the Hub paid the Ardent Energy arsenal_beacon:universal_ammo_coin for 3
+QA_CHECK PASS bought: the Hub paid the Ardent Energy eternal_defense:universal_ammo_coin for 3
 QA_CHECK PASS the line says the energy was spent from the Hub Dev just spent 3 Ardent Energy from the Hub
-QA_CHECK PASS sold: the item came from the Hub, the energy went to the pack arsenal_beacon:warlord_seal
+QA_CHECK PASS sold: the item came from the Hub, the energy went to the pack eternal_defense:warlord_seal
 QA_CHECK PASS the line names the item Dev just pulled 1 Warlord Seal from the Hub
 QA_CHECK PASS repaired (+250 HP), paid by the Hub 
 QA_CHECK PASS the line Dev just pulled 8 Reinforced Beacon Plating from the Hub
@@ -74,7 +74,7 @@ QA_CHECK PASS no handler while there is no beacon
 QA_CHECK PASS stations draw nothing from it 
 QA_CHECK PASS its items wait in it 
 QA_CHECK PASS the beacon back: the handler and the supply come back 
-QA_CHECK PASS the FOB screen opens dev.createarsenal.beacon.FobClient$FobScreen@73344756
+QA_CHECK PASS the FOB screen opens dev.eternaldefense.beacon.FobClient$FobScreen@73344756
 QA_CHECK PASS the Supply Catapult row is there; its Buy is off (the pack is short: the Hub does not count at a FOB) false
 QA_CHECK PASS refused, nothing taken from the pack or the Hub 16 dark_oak_log, 8 iron_ingot, 16 string, 2 logistics_module, 
 QA_CHECK PASS now its Buy is on true

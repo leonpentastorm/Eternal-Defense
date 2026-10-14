@@ -1,20 +1,20 @@
-# Arsenal standalone mods — 0.21.0 (discontinued)
+# Eternal Defense standalone mods — 0.21.0 (discontinued)
 
 > **Discontinued in 0.0.41** (owner, 2026-10-13): from 0.0.41 on there is only the pack edition. No standalone jar is built or tested any more; this page is kept as the record of what the standalone edition was. See [PACK-EDITION.md](PACK-EDITION.md) for what the pack needs.
 
-Three independent mods for **Minecraft Java 1.20.1 / Forge 47.4.x**. The older 0.21.0 baseline used Forge 47.4.20 and TaCZ 1.1.8-hotfix2. The current **0.0.5 / Mess Hall v4 test build** is on `feature/messhall-ver-4`; use `Arsenal-MessHall-v4-0.0.5-test.zip` and its [validation notes](MESS-HALL-V4-TESTING.md). Until final 1.0, use a fresh world for each feature.
+Three independent mods for **Minecraft Java 1.20.1 / Forge 47.4.x**. The older 0.21.0 baseline used Forge 47.4.20 and TaCZ 1.1.8-hotfix2. The current **0.0.5 / Mess Hall v4 test build** is on `feature/messhall-ver-4`; use `Eternal-Defense-MessHall-v4-0.0.5-test.zip` and its [validation notes](MESS-HALL-V4-TESTING.md). Until final 1.0, use a fresh world for each feature.
 
 | Included file | Purpose | Install location |
 | --- | --- | --- |
-| `arsenal-beacon-0.21.0-standalone.jar` | Defense campaign, station progression, generic recipes and automatic TaCZ catalogue | Clients and server |
-| `arsenal-gun-guide-0.21.0-standalone.jar` | Live weapon controls, collapsing guide and supported gun-jam warning | Client; server installation unnecessary |
-| `arsenal-displays-1.1.0-standalone.jar` | Eleven weapon stands, racks and cases | Clients and server |
+| `eternal-defense-0.21.0-standalone.jar` | Defense campaign, station progression, generic recipes and automatic TaCZ catalogue | Clients and server |
+| `eternal-defense-gun-guide-0.21.0-standalone.jar` | Live weapon controls, collapsing guide and supported gun-jam warning | Client; server installation unnecessary |
+| `eternal-defense-displays-1.1.0-standalone.jar` | Eleven weapon stands, racks and cases | Clients and server |
 
 For v4, install **TaCZ 1.1.8-hotfix2** ([project 1028108/file 9037989](https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero/files/9037989)) and **leopoko TaCZ Attributes 1.4** (`tacz_attributes`, [project 1113285/file 8470731](https://www.curseforge.com/minecraft/mc-mods/tacz-attributes/files/8470731)) on **both clients and server** with the beacon. Both are required; the v4 test ZIP includes TaCZ Attributes separately, while TaCZ remains an author download. Gun Guide/Displays used without the beacon do not acquire the backend requirement. LesRaisins Tactical Equipements (`lrtactical`) is optional; 0.4.3 enables the scoped grenade adapter. TAA, GunsmithLib, Apotheosis, Apothic Attributes and TaCZ:Accel are not required. See [Mess Hall compatibility](MESS-HALL.md) and [v4 integration and validation](MESS-HALL-V4-IMPLEMENTATION.md).
 
 ## How the standalone beacon differs
 
-Create, KubeJS, JEI and Arsenal Gun Displays are optional. The beacon, shovel, guide, weapon station and upgrade components have vanilla-material recipes. Ammo, attachment and armor stations are purchased and upgraded in the weapon station's Workshop. Raid coins remain raid rewards, with no crafting recipe.
+Create, KubeJS, JEI and Eternal Defense Gun Displays are optional. The beacon, shovel, guide, weapon station and upgrade components have vanilla-material recipes. Ammo, attachment and armor stations are purchased and upgraded in the weapon station's Workshop. Raid coins remain raid rewards, with no crafting recipe.
 
 The catalogue imports valid loaded TaCZ gun, ammo and attachment indexes, including weapons without a native gunsmith recipe. It preserves native IDs and item tags. Native magazine and consumable entries retain their tagged recipe outputs when the relevant addon supplies those recipes. Gun compatibility is checked through TaCZ and the installed magazine addon.
 
@@ -28,7 +28,7 @@ The standalone edition leaves other mods' welcome messages and your existing key
 
 ## Configure the generic catalogue
 
-After starting a server or opening a world, edit `config/arsenal-beacon-standalone.json`, then restart. In multiplayer, edit the server's file. `BALANCE-EXAMPLE.json` is an example; it is not installed automatically.
+After starting a server or opening a world, edit `config/eternal-defense-standalone.json`, then restart. In multiplayer, edit the server's file. `BALANCE-EXAMPLE.json` is an example; it is not installed automatically.
 
 Keys use `kind/namespace:id`, for example `gun/tacz:ak47`, `ammo/tacz:762x39` or `attachment/tacz:extended_mag_1`. Check the actual IDs of installed packs before adding entries. `ages` accepts integers 1–5. `costs` overrides an entry's materials with real item IDs and counts 1–4096. These overrides apply to indexed weapon/ammo/attachment and generic native-supply entries. Native armor fabrication uses its separate generic material formula. Invalid configuration fails with a clear error rather than installing an Air ingredient.
 
@@ -44,6 +44,6 @@ Gun Displays alone has eleven vanilla crafting recipes with general wood tags. W
 
 Pack and standalone JARs have the **same mod IDs**. Install only one flavor of each. Do not put both JARs in `mods`. All players and the server must use the same beacon flavor/version. Pack and standalone beacon networking deliberately reject a mismatched flavor.
 
-Use a separate instance/world for standalone play. Switching an existing campaign between editions changes recipe and progression assumptions; this is not an automatic world-conversion release. Copying this ZIP onto an existing full Create Arsenal pack is not the pack update.
+Use a separate instance/world for standalone play. Switching an existing campaign between editions changes recipe and progression assumptions; this is not an automatic world-conversion release. Copying this ZIP onto an existing full Eternal Defense pack is not the pack update.
 
 See `ARTIST-BRIEF.md` for player-facing descriptions and the UI redesign brief, and `VALIDATION.json` for checks and their limits. Internet co-op through Essential has not been retested in this release.

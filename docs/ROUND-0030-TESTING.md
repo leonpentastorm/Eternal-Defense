@@ -2,7 +2,7 @@
 
 ## How it was run
 
-* **Unit tests** (`:arsenal-beacon:test`), JDK 17.
+* **Unit tests** (`:eternal-defense:test`), JDK 17.
 * **FOB GameTests** (`FobGameTests`, batches `fob_01` to `fob_22`), on the real client of each edition at the start of `tools/qa/QaFob.java.txt`.
 * **Real client** of each edition (Forge 47.4.20 development runtime, `xvfb`, 1280 x 720), `QaFob` on a fresh NORMAL world in a generated village and at home: slices 1 to 4 as before, with the 0.0.30 steps added (below). Editions run one after the other.
 
@@ -15,7 +15,7 @@
   * the frame: four beam parts on the top row, the left column the fourth cell, the lanes the two middle cells; the beam's collision starts 1.59 blocks above the rail (a seated rider's head is at about 1.51);
   * the lane choice (`Frame.laneOrder`): a rail beside the clicked one decides the side, a lone rail goes by the half clicked;
   * a pass through either lane counts, a cart in the anchor's or the column's cell does not;
-  * the owner's files unchanged (checksums of the four half models, their textures, both item models and item textures against `docs/art/Create-Arsenal-Supply-Rail-Gates-4wide`), the blockstates draw each half with its three lamp overlays, the owner's lamp elements are where the overlays draw, the 3 x 3 model is gone;
+  * the owner's files unchanged (checksums of the four half models, their textures, both item models and item textures against `docs/art/Eternal-Defense-Supply-Rail-Gates-4wide`), the blockstates draw each half with its three lamp overlays, the owner's lamp elements are where the overlays draw, the 3 x 3 model is gone;
   * the Delivery Gate is sold at Workshop Fabrication.
 * New `Round0030Test` (5 tests): the zone outline switch is saved and starts on (a FOB saved before 0.0.30 shows it); every refusal the FOB Beacon can give has a preview line; every band of the enchanting screen's left column ends before the next begins, the inventory inside the panel, the screen bigger than 0.0.29's and within 480 x 270; the Workshop sells both gates side by side and scrolls (mouse wheel, clipping, a Make button only on a whole row); a loaded rider's way back through the Delivery Gate is quiet for 10 s.
 * `FobTest` and `RaidRoundTest` check protocol 35. `LangKeysTest` ignores the two left-column blocks (no item; their gate has the card).

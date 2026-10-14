@@ -28,7 +28,7 @@
 09:08:58 QA_CHECK PASS offers lie between the zone + 150 and 1024 blocks 
 09:08:59 QA_NOTE scan start: tactical.result.scan_started
 09:09:11 [hunts] satellite scan 2 finished
-09:09:12 QA_CHECK PASS the Command Table screen opens dev.createarsenal.beacon.TacticalClient$TableScreen@51d84d7f
+09:09:12 QA_CHECK PASS the Command Table screen opens dev.eternaldefense.beacon.TacticalClient$TableScreen@51d84d7f
 09:09:12 QA_CHECK PASS the client has the scan image version=2
 09:09:15 QA_NOTE pressed SCAN MAP
 09:09:28 [hunts] satellite scan 3 finished
@@ -75,7 +75,7 @@
 09:09:58 QA_CHECK PASS chat tells everyone 
 09:09:58 QA_CHECK PASS the mission-cleared jingle plays 
 09:10:02 QA_CHECK PASS the cannon is placed and ours 
-09:10:03 QA_CHECK PASS the cannon menu opens dev.createarsenal.beacon.CannonScreen@67dd1ef
+09:10:03 QA_CHECK PASS the cannon menu opens dev.eternaldefense.beacon.CannonScreen@67dd1ef
 09:10:05 QA_CHECK PASS the long card can scroll max=101
 09:10:05 QA_CHECK PASS scrolling moves the card scroll=22
 09:10:06 QA_NOTE card scroll after a frame: 22 of 101
@@ -98,7 +98,7 @@
 09:10:58 QA_CHECK PASS raid enemies get the speed burst 
 09:11:19 QA_CHECK PASS the gate line is said once in the wave times=1
 09:11:19 QA_CHECK PASS the old repeating line is gone 
-09:11:23 QA_CHECK PASS /arsenal test-gate opens a gate with a zombie in front of it gates=[(20008.5, 291.0, -28.7)] zombie=(20008.5, 291.0, -27.5)
+09:11:23 QA_CHECK PASS /eternaldefense test-gate opens a gate with a zombie in front of it gates=[(20008.5, 291.0, -28.7)] zombie=(20008.5, 291.0, -27.5)
 09:11:29 QA_CHECK PASS a due raid waits while it is day (0.0.21) phase=preparation
 09:11:30 QA_NOTE pressed Start raid
 09:11:30 QA_CHECK PASS Start raid by day books the raid for nightfall requested=true phase=preparation
