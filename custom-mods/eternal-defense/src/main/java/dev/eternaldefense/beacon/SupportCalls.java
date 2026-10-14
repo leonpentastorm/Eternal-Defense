@@ -22,8 +22,6 @@ final class SupportCalls {
     enum Kind{
         SUPPLY("supply"),RETURN("return"),FIRE("fire"),LOADOUT("loadout");
         final String id;Kind(String id){this.id=id;}
-        /** The radio lines a call of this kind plays: a Loadout call answers like a supply call. */
-        Kind voice(){return this==LOADOUT?SUPPLY:this;}
         static Kind of(int ordinal){var v=values();return v[Math.max(0,Math.min(v.length-1,ordinal))];}
     }
 

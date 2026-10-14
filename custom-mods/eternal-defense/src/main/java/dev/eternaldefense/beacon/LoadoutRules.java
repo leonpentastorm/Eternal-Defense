@@ -47,6 +47,12 @@ final class LoadoutRules {
     static final int CAPSULE_DOOR_TICKS=10,CAPSULE_FOLD_TICKS=10;
     /** A capsule lands on the nearest free two-block cell within this many blocks, or becomes a parcel. */
     static final int CAPSULE_SEARCH=3;
+    /** No parachute: the capsule falls from this high above its cell at this speed (blocks a tick), so the fall takes CAPSULE_FALL_TICKS. */
+    static final int CAPSULE_DROP_HEIGHT=96;static final double CAPSULE_FALL_SPEED=4.0;static final int CAPSULE_FALL_TICKS=24;
+    /** Ticks from the impact until the door opens by itself. */
+    static final int CAPSULE_OPEN_DELAY=8;
+    /** When (ticks after the cannon fired) the capsule starts its fall, so it hits at the countdown's end. */
+    static int capsuleFallStart(int fireTick,boolean outside){return fireTick+SupportRules.supplyTicks(outside)-CAPSULE_FALL_TICKS;}
 
     /** The phases of a print. */
     enum Phase{ENTRY,CYCLE,EXIT,CLOSING,DONE}

@@ -22,8 +22,9 @@ import java.util.ArrayList;
 
 /** The Loadout Station's menu: the kit to pack, Make coin, the 9 shared coin slots, Set active and Print; a second page shows the locker. */
 final class LoadoutMenu extends AbstractContainerMenu {
-    /** 238 tall: it fits a 720p window at GUI scale 3. */
-    static final int W=384,H=240,INV_X=182,INV_Y=158,ROW_A=40,ROW_B=60,COIN_Y=104,LOCKER_Y=44,OFFHAND_X=264,MAKE_X=290;
+    /** 240 tall: it fits a 720p window at GUI scale 3. The coin slots stand in a column (the wardrobe), the kit in rows. */
+    static final int W=408,H=240,INV_X=238,INV_Y=148,ROW_A=42,ROW_B=62,LOCKER_Y=42,OFFHAND_X=316,MAKE_X=340;
+    static final int WARD_X=150,WARD_W=80,COIN_X=WARD_X+15,COIN_Y=44,COIN_ROW=20;
     static final int MAKE=0,SET_ACTIVE=1,PRINT=2,FORGET=3,PAGE=4,SELECT=10;
     /** Slot indices: the kit, the coin slots, the locker, the remembered kinds (never shown as slots), the player's inventory. */
     static final int PACK=0,COINS=PACK+LoadoutRules.KIT_SLOTS,LOCKER=COINS+LoadoutRules.COIN_SLOTS,KINDS=LOCKER+LoadoutRules.LOCKER_SLOTS,INV=KINDS+LoadoutRules.COIN_SLOTS;
@@ -45,8 +46,7 @@ final class LoadoutMenu extends AbstractContainerMenu {
         });}
         addSlot(new PackSlot(pack,LoadoutRules.OFFHAND_SLOT,OFFHAND_X,ROW_A));
         for(int i=0;i<LoadoutRules.HOTBAR;i++)addSlot(new PackSlot(pack,LoadoutRules.HOTBAR_FIRST+i,INV_X+i*18,ROW_B));
-        for(int i=0;i<LoadoutRules.COIN_SLOTS;i++)addSlot(new Slot(coins,i,INV_X+i*18,COIN_Y){
-            @Override public boolean isActive(){return page()==0;}
+        for(int i=0;i<LoadoutRules.COIN_SLOTS;i++)addSlot(new Slot(coins,i,COIN_X,COIN_Y+i*COIN_ROW){
             @Override public boolean mayPlace(ItemStack s){return acceptsCoin(getContainerSlot(),s);}
             @Override public int getMaxStackSize(){return LoadoutRules.COIN_STACK;}
         });
@@ -137,9 +137,9 @@ final class LoadoutMenu extends AbstractContainerMenu {
         var stack=slot.getItem();var copy=stack.copy();
         if(index<INV){if(!moveItemStackTo(stack,INV,INV+36,true))return ItemStack.EMPTY;}
         else{
-            if(page()!=0)return ItemStack.EMPTY;
             boolean moved;
             if(stack.is(EternalDefense.LOADOUT_COIN.get()))moved=moveItemStackTo(stack,COINS+selected(),COINS+selected()+1,false)||moveItemStackTo(stack,COINS,COINS+LoadoutRules.COIN_SLOTS,false);
+            else if(page()!=0)return ItemStack.EMPTY;
             else moved=moveItemStackTo(stack,PACK,PACK+LoadoutRules.ARMOR,false)||moveItemStackTo(stack,PACK+LoadoutRules.ARMOR+1,PACK+LoadoutRules.KIT_SLOTS,false)||moveItemStackTo(stack,PACK+LoadoutRules.ARMOR,PACK+LoadoutRules.ARMOR+1,false);
             if(!moved)return ItemStack.EMPTY;
         }

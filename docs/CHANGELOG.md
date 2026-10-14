@@ -1,5 +1,20 @@
 # Change log
 
+## 1.1.1 — The owner's list after 1.1.0 (2026-10-14, branch `feature/loadout-station`, in progress: no release jars yet)
+
+After 1.1.0 on the same branch; `dev` and `main` unchanged. No packet added or changed: network protocol stays **41**. Rules: GDD 1.1.1; tests: `docs/ROUND-1.1.1-TESTING.md`.
+
+* **Loadout Station clicks reversed** (owner): a right-click anywhere on the station opens its screen; **sneak and right-click** prints the active coin at once, even with an item in hand. The sneak still held from that click does not skip the camera shots; a fresh press does.
+* **The wardrobe** (owner): the 9 coin slots stand in a column between the closet and the pack area, numbered on a brass rail, the selected row lit and the active slot tagged **Active** (the slot numbers no longer overlap the coin counts); a click on a row shows that slot in the closet. The pack area stays a row. The screen is 408 pixels wide.
+* **The capsule plunges** (owner): no parachute; it falls from 96 blocks above at 4 blocks a tick through anything on the way, trailing smoke, and hits as the countdown ends with an explosion's sound, smoke, the ground thrown up and a short view shake nearby (no block broken, no one hurt); its door then **opens by itself**. With the kit still inside, closing the menu leaves it open; emptied, it folds away.
+* **The owner's Loadout radio lines**: four lines answer a Loadout call (`tools/audio/import_chatter.py`, group "Loadout chatter"); the no-voice build keeps the supply call's game sound.
+* **Exchange**: a scroll bar beside the offers (drag it or use the wheel); the "offers N to M of T" line sits under the list instead of behind the tabs; a long offer name reads in full on hover.
+* **Support Platform Shop**: hovering a product shows its whole note and the item's own description.
+* **Attachment table**: a type button like the armor table's: sights and scopes, muzzles, stocks, grips, lasers, extended mags, other, each with its count (TaCZ's own attachment type).
+* **MRE Station**: each of the six food slots takes a different food, so one stack can no longer be spread over the slots for a full 20 (the slots refuse it and the server checks again).
+* **Workshop Fabrication** (owner's report): the Loadout Station's card showed its raw text key; its name and description are added, and a test now checks every card.
+* **Mess Hall**: the sandwich hint moved up so its second line clears the Make button. **Cook pot**: eating stew from it with a bowl plays the game's eating sound.
+
 ## 1.1.0 — The Loadout Station (2026-10-14, branch `feature/loadout-station`)
 
 From 1.0.1 on its own branch (owner: "New feature new git branch, 1.1.0"); `dev` and `main` unchanged. No packet added or changed: network protocol stays **41**. Rules: GDD 1.1.0 (Part L, section 5.13); tests: `docs/ROUND-1.1.0-TESTING.md`.

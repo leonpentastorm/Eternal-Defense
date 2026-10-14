@@ -49,14 +49,17 @@ public final class OrdnanceClient {
     static float shakeAt(float strongest,double reach,double distance){return distance>=reach?0f:(float)(strongest*(1-distance/reach)*(1-distance/reach));}
     private static void landed(Ordnance o){
         if(!LANDED.add(o.getId()))return;
-        var mc=Minecraft.getInstance();var p=mc.player;if(p==null||mc.level==null)return;
         boolean bomb=o.style()==Ordnance.BOMB;
-        var at=o.target()!=null?o.target():o.position();
-        float s=shakeAt(bomb?BOMB_SHAKE:SHELL_SHAKE,bomb?BOMB_REACH:SHELL_REACH,Math.sqrt(p.distanceToSqr(at.x,at.y,at.z)))*mc.options.screenEffectScale().get().floatValue();
+        shake(o.target()!=null?o.target():o.position(),bomb?BOMB_SHAKE:SHELL_SHAKE,bomb?BOMB_REACH:SHELL_REACH,bomb?BOMB_SHAKE_TICKS:SHELL_SHAKE_TICKS);
+    }
+    /** Shakes the view for a landing at at, fading with distance (a stronger shake still running wins). */
+    static void shake(net.minecraft.world.phys.Vec3 at,float strongest,double reach,int ticks){
+        var mc=Minecraft.getInstance();var p=mc.player;if(p==null||mc.level==null)return;
+        float s=shakeAt(strongest,reach,Math.sqrt(p.distanceToSqr(at.x,at.y,at.z)))*mc.options.screenEffectScale().get().floatValue();
         if(s<=0.05f)return;
         long now=mc.level.getGameTime();
         if(startedAt>=0&&now-startedAt<length&&current(now,0)>s)return;   // A stronger shake is still running
-        strength=s;startedAt=now;length=bomb?BOMB_SHAKE_TICKS:SHELL_SHAKE_TICKS;
+        strength=s;startedAt=now;length=ticks;
     }
     private static float current(long now,float partial){
         if(startedAt<0)return 0;float t=(now-startedAt+partial)/length;if(t>=1){startedAt=-1;return 0;}

@@ -30,6 +30,8 @@ final class MreRules {
         for(var f:foods){n+=f.nutrition();s+=f.saturation();}
         return new Totals(n,(float)Math.min(s,MAX_SATURATION));
     }
+    /** True when no two foods are the same kind: each food slot takes a different food. */
+    static boolean allDifferent(List<?> kinds){return new java.util.HashSet<>(kinds).size()==kinds.size();}
     /** May a food of adding nutrition join foods that already give current? */
     static boolean fits(int current,int adding){return adding>=0&&current+adding<=MAX_NUTRITION;}
     /** The saturation modifier to hand vanilla's FoodData.eat(nutrition, modifier) so it adds saturation */

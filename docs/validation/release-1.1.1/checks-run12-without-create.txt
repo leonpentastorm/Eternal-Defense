@@ -1,0 +1,156 @@
+QA_CHECK PASS the station's spot is inside the Home Zone B=-13, -60, -15 S=-13, -59, -5
+QA_CHECK PASS outside the Home Zone: refused, the item kept Place it inside the zone of your Defense Beacon.
+QA_CHECK PASS 27 cells, all pointing at the anchor, facing north 27 ffb29fba-bc99-4c06-a702-7b526e0dafa5
+QA_CHECK PASS the machine record exists 
+QA_CHECK PASS the item was used up (survival) 
+QA_CHECK PASS the bottom-centre cell is the clicked spot 
+QA_CHECK PASS collision: anchor none, floor top 2.5 px, top-centre from 5.5 px, closed door solid true 2.5 5.5 true
+QA_CHECK PASS every facing: 27 cells and a free standing point north:27 free (0.500 -0.844 0.313) east:27 free (0.688 -0.844 0.500) south:27 free (0.500 -0.844 0.688) west:27 free (0.313 -0.844 0.500) 
+QA_CHECK PASS removing an anchor removes its 26 cells and its record 
+QA_CHECK PASS blast resistant and fireproof 
+QA_NOTE attachment tacz:sight_pk06_rifle (SCOPE)
+QA_NOTE attachment tacz:stock_ak12 (STOCK)
+QA_NOTE attachment tacz:extended_mag_3 (EXTENDED_MAG)
+QA_NOTE attachment tacz:muzzle_brake_pioneer (MUZZLE)
+QA_NOTE gun attachments 4 tag {AttachmentEXTENDED_MAG:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:extended_mag_3"}},AttachmentMUZZLE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:muzzle_brake_pioneer"}},AttachmentSCOPE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:sight_pk06_rifle"}},AttachmentSTOCK:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:stock_ak12"}},GunCurrentAmmoCount:30,GunId:"tacz:ak47",HasBulletInBarrel:1b,display:{Name:'{"text":"Personal AK"}'}}
+QA_CHECK PASS a plain right-click on the doors opens the menu and starts no print dev.eternaldefense.beacon.LoadoutScreen@1af0dc3c
+QA_CHECK PASS the station's menu: 9 texts, none cut off or over another 
+QA_CHECK PASS shift-click puts armor in its slot, the rest in the hotbar row, the shield in the off hand 
+QA_CHECK PASS the closet figure wears the kit being packed (diamond armor, the AK in hand, the shield) diamond_helmet diamond_chestplate modern_kinetic_gun shield
+QA_CHECK PASS a coin is made and lands in the pack 1 loadout_coin
+QA_CHECK PASS the fee is paid: 4 plating and 1 Ardent gone 
+QA_CHECK PASS the pack area is empty 
+QA_CHECK PASS the coin holds all 14 stacks exactly (NBT round trip, TaCZ gun with attachments and ammo) 
+QA_CHECK PASS the gun keeps its attachments and its 30 rounds 4 attachments
+QA_NOTE FULL COIN NBT 1560 bytes (1.52 KB); limit 64 KB
+QA_CHECK PASS a full coin is under the size limit 1560 bytes
+QA_CHECK PASS the action bar says the coin is made Coin made: 14 items packed.
+QA_CHECK PASS a filled shulker box: refused, nothing taken Empty shulker boxes, bundles and backpacks before packing them.
+QA_CHECK PASS a coin inside a coin: refused, nothing taken A Loadout Coin cannot hold another coin.
+QA_CHECK PASS over the size limit: refused, nothing taken This kit is too big for one coin (more than 64 KB of item data).
+QA_CHECK PASS slot 1 holds the coin and remembers its kind 1
+QA_CHECK PASS identical coins stack in slot 1 2
+QA_CHECK PASS slot 1 refuses a different kind 2
+QA_CHECK PASS kit B's coin goes to the next slot that takes it 2 1
+QA_CHECK PASS the station's menu with coins and the active slot: 9 texts, none cut off or over another 
+QA_CHECK PASS the active slot is stored for this player 
+QA_CHECK PASS another player's active slot is their own (default slot 1) 
+QA_CHECK PASS the closet shows slot 1's coin: kit A on the figure diamond_helmet diamond_chestplate modern_kinetic_gun shield
+QA_CHECK PASS the active slot carries an Active tag beside it 
+QA_CHECK PASS > browses to slot 2: kit B on the figure (chainmail, crossbow) chainmail_helmet chainmail_chestplate crossbow air
+QA_CHECK PASS the closet on slot 2: 9 texts, none cut off or over another 
+QA_CHECK PASS < browses back to slot 1 
+QA_CHECK PASS a click on a wardrobe row shows that slot in the closet chainmail_helmet chainmail_chestplate crossbow air
+QA_CHECK PASS and back to row 1 
+QA_CHECK PASS Set active moves to slot 2 
+QA_CHECK PASS the print starts: the station is busy with this player 
+QA_NOTE TIMELINE entry 20 cycle 20..100 swap 60 exit 100..115 close 115..127 total 127 ticks
+QA_CHECK PASS the sneak still held from the quick print does not skip the shots detached=true type=FIRST_PERSON cinematic=true hideGui=false camera=LocalPlayer['Dev'/1, l='ClientLevel', x=-12.50, y=-59.93, z=-6.78] screen=null
+QA_CHECK PASS the camera shot is on during the walk in 
+QA_CHECK PASS tick 40: the kit is on, exactly 
+QA_CHECK PASS the coin left slot 1 (2 -> 1) 1
+QA_CHECK PASS the old gear is in the locker (no Hub) 
+QA_CHECK PASS the 27 main slots were not touched 
+QA_NOTE JITTER samples 114 max distance from the synced path 0.000 blocks (from tick 10; catching up before: 0.382), max step 0.450 blocks, jumps over 0.5: 0, server corrections 0
+QA_NOTE HUD during the print: hotbar drawn 13 frames, hidden 63 frames; cinematic ticks 112, detached ticks 112
+QA_CHECK PASS the walk follows the path (within 0.3 blocks of the synced position from tick 10, no step over 0.5 blocks, no server correction) 0.000 0 114 0
+QA_CHECK PASS the HUD was hidden during the shots 13 drawn 63 hidden
+QA_CHECK PASS back in first person, HUD shown, FOV restored 
+QA_CHECK PASS the player stands at the exit cell, two blocks out 0.51
+QA_CHECK PASS the cooldown runs (30 s) 
+QA_CHECK PASS the action bar says where the old gear went Kit on. What you wore went to the station?s Locker.
+QA_CHECK PASS refused during the cooldown; nothing starts The station needs 30 more seconds before it prints you again.
+QA_CHECK PASS too far: refused 
+QA_CHECK PASS blocked path: refused path
+QA_CHECK PASS aside: refused aside
+QA_CHECK PASS the Hub stands 
+QA_CHECK PASS the fee came from the Hub with a chat line Dev just pulled 4 Reinforced Beacon Plating and spent 1 Ardent Energy from the Hub
+QA_CHECK PASS coin B is in the pack 
+QA_CHECK PASS no camera shots with the option off 
+QA_CHECK PASS a second player asking now is refused: busy, the print stays this player's busy Dev
+QA_CHECK PASS held: no damage, item use cancelled false true
+QA_NOTE JITTER (camera shots off) samples 112 max distance 0.000 blocks (from tick 10; catching up before: 0.382), max step 0.450, jumps 0
+QA_CHECK PASS print 2 (camera off): no step over 0.5 blocks 0.45000000000000034
+QA_CHECK PASS stowed into the Hub: kit A's gun with its 4 attachments is in the Hub 4 {AttachmentEXTENDED_MAG:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:extended_mag_3"}},AttachmentMUZZLE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:muzzle_brake_pioneer"}},AttachmentSCOPE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:sight_pk06_rifle"}},AttachmentSTOCK:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:stock_ak12"}},GunCurrentAmmoCount:30,GunId:"tacz:ak47",HasBulletInBarrel:1b,display:{Name:'{"text":"Personal AK"}'}}
+QA_CHECK PASS the action bar says the Hub Kit on. What you wore went to the Logistics Hub.
+QA_CHECK PASS now wearing kit A again? no: the coin of slot 1 was kit A, so kit A again 
+QA_CHECK PASS no room in the Hub or the locker: refused, nothing changes No room to stow what you wear. Free some slots in a Logistics Hub or in the station?s Locker.
+QA_NOTE death inventory before: 0=stone_swordx1 3=applex5 9=loadout_coinx1 35=redstonex7 36=iron_bootsx1 37=iron_leggingsx1 38=iron_chestplatex1 39=iron_helmetx1 40=torchx12 
+QA_CHECK PASS death: the camera shot is on before the stop 
+QA_NOTE death inventory after: 0=stone_swordx1 3=applex5 9=loadout_coinx1 35=redstonex7 36=iron_bootsx1 37=iron_leggingsx1 38=iron_chestplatex1 39=iron_helmetx1 40=torchx12 
+QA_CHECK PASS death before tick 40: the print stops, the coin stays, the gear is unchanged 3 
+QA_CHECK PASS death: the camera is back in first person, HUD on detached=false type=FIRST_PERSON cinematic=false hideGui=false camera=LocalPlayer['Dev'/1, l='ClientLevel', x=10.50, y=-60.00, z=-0.50] screen=null
+QA_CHECK PASS death: doors close (or the station is idle) 
+QA_NOTE dimension inventory before: 0=stone_swordx1 3=applex5 9=loadout_coinx1 35=redstonex7 36=iron_bootsx1 37=iron_leggingsx1 38=iron_chestplatex1 39=iron_helmetx1 40=torchx12 
+QA_CHECK PASS dimension: the camera shot is on before the stop 
+QA_NOTE dimension inventory after: 0=stone_swordx1 3=applex5 9=loadout_coinx1 35=redstonex7 36=iron_bootsx1 37=iron_leggingsx1 38=iron_chestplatex1 39=iron_helmetx1 40=torchx12 
+QA_CHECK PASS dimension before tick 40: the print stops, the coin stays, the gear is unchanged 3 
+QA_CHECK PASS dimension: the camera is back in first person, HUD on detached=false type=FIRST_PERSON cinematic=false hideGui=false camera=LocalPlayer['Dev'/1, l='ClientLevel', x=0.50, y=100.00, z=0.50] screen=null
+QA_CHECK PASS dimension: doors close (or the station is idle) 
+QA_NOTE logout case: 3 true
+QA_CHECK PASS logout before tick 40: the print stops, the coin stays 3
+QA_CHECK PASS Esc: the pause menu does not open, the shots stop, the print goes on null
+QA_CHECK PASS after an Esc skip: first person, the kit printed 
+QA_CHECK PASS sneak still held from the quick print: the shots stay on detached=true type=FIRST_PERSON cinematic=true hideGui=false camera=LocalPlayer['Dev'/1, l='ClientLevel', x=-12.50, y=-59.97, z=-7.74] screen=null
+QA_CHECK PASS a fresh sneak: the shots stop, the print goes on 
+QA_CHECK PASS after a sneak skip: first person, standing (not sneaking) 
+QA_CHECK PASS a client joining now gets the print from the update tag (occupant, start, timeline, door) true true true 10.00
+QA_CHECK PASS three Loadout Flares for 5 Ardent each 3 flares 0 energy
+QA_CHECK PASS no coin in slot 1 or the Hub: refused, the flare kept Your active Loadout slot has no coin, and no Logistics Hub holds one of its kind. Your flare was not used. / Your active Loadout slot has no coin, and no Logistics Hub holds one of its kind. Your flare was not used.
+QA_CHECK PASS a second call while one is on its way: refused Your last Loadout Flare is still on its way. Your flare was not used. / Your last Loadout Flare is still on its way. Your flare was not used.
+QA_CHECK PASS the coin is still in the slot after the throw 2
+QA_CHECK PASS the coin is taken when the cannon fires 
+QA_CHECK PASS the radio answers with one of the owner's Loadout lines minecraft:entity.firework_rocket.launch@-25, -60, -29 | minecraft:entity.firework_rocket.blast@-25, -60, -31 | eternal_defense:flare.loadout_chatter_3@-25, -60, -29 | eternal_defense:cannon.turning_done@-1, -60, -23 | eternal_defense:cannon.fire@-3, -57, -24
+QA_NOTE CAPSULE spawned at height 96.0 over the ground
+QA_NOTE CAPSULE fell for 27 ticks, fastest 12.00 blocks a tick
+QA_CHECK PASS no parachute: it plunges at 3 or more blocks a tick and lands within 2 seconds of appearing 12.00 blocks/tick, 27 ticks
+QA_CHECK PASS the impact sounds like an explosion minecraft:entity.firework_rocket.launch@-25, -60, -29 | minecraft:entity.firework_rocket.blast@-25, -60, -31 | eternal_defense:flare.loadout_chatter_3@-25, -60, -29 | eternal_defense:cannon.turning_done@-1, -60, -23 | eternal_defense:cannon.fire@-3, -57, -24 | minecraft:item.trident.riptide_3@-25, 36, -31 | minecraft:entity.generic.explode@-25, -60, -31 | minecraft:block.anvil.land@-25, -60, -31 | minecraft:block.piston.extend@-25, -60, -31 | minecraft:block.fire.extinguish@-25, -60, -31
+QA_CHECK FAIL the impact shakes the view nearby -1
+QA_CHECK PASS the door opens by itself after the impact, before anyone touches it 
+QA_CHECK PASS a capsule stands where the flare landed, two blocks high BlockPos{x=-25, y=-60, z=-31}
+QA_CHECK PASS it faces its owner south vs south
+QA_CHECK PASS another player cannot open it false
+QA_CHECK PASS the capsule's menu opens dev.eternaldefense.beacon.CapsuleScreen@6d425496
+QA_CHECK PASS the capsule's menu: 5 texts, none cut off or over another 
+QA_CHECK PASS the capsule's figure wears the kit inside diamond_helmet diamond_chestplate modern_kinetic_gun shield
+QA_CHECK PASS Equip fills only empty slots; the helmet and the hotbar 1 item stay in the capsule true true true 2 true true
+QA_CHECK PASS the gun in the capsule is the exact gun {AttachmentEXTENDED_MAG:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:extended_mag_3"}},AttachmentMUZZLE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:muzzle_brake_pioneer"}},AttachmentSCOPE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:sight_pk06_rifle"}},AttachmentSTOCK:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:stock_ak12"}},GunCurrentAmmoCount:30,GunId:"tacz:ak47",HasBulletInBarrel:1b,display:{Name:'{"text":"Personal AK"}'}}
+QA_CHECK PASS the door state is in the update tag 
+QA_CHECK PASS closed with the kit still inside: the door stays open and the capsule stays 
+QA_CHECK PASS emptied: the door shuts and the capsule folds away 
+QA_CHECK PASS underground without Quantum tunneling: the flare comes back, the coin stays Dev just called in LOADOUT DROP | The cannon cannot reach a flare under 3 or more blocks of cover without Quantum Tunneling. Your flare was returned.
+QA_CHECK PASS with Quantum tunneling: a capsule plunges through the roof and stands up inside the bunker 
+QA_CHECK PASS its coin was used 0
+QA_CHECK PASS no two-high cell within 3 blocks: the old parcel (beside the caller, as an underground supply parcel) and a chat line 1 -43, -60, 6 player -43, -60, 5 | Cannon preparing... | You heard cannon fire roaring | Supplies arriving in 7 s | Supplies arriving in 6 s | Supplies arriving in 5 s | Supplies arriving in 4 s | Supplies arriving in 3 s | Supplies arriving in 2 s | No room for a capsule there: your kit came in a supply parcel.
+QA_CHECK PASS the nearest two-high cell within 3 blocks gets the capsule BlockPos{x=-58, y=-60, z=-37}
+QA_CHECK PASS the Nether without the Dimensional Link: refused, the flare kept Support only reaches the Overworld. Fire support and Loadout Flares work elsewhere with the Dimensional Link upgrade. Your flare was not used. / Support only reaches the Overworld. Fire support and Loadout Flares work elsewhere with the Dimensional Link upgrade. Your flare was not used.
+QA_CHECK PASS with the Dimensional Link: a capsule stands up in the Nether 
+QA_CHECK PASS its coin was used 0
+QA_CHECK PASS with coins inside it cannot be mined: still standing Empty the machine first: take the coins out of its slots.
+QA_CHECK PASS broken before tick 40: the print stops, nothing consumed (coins dropped as items), gear unchanged stock 3, session false, coins dropped 3, gear  | Print stopped: the station was broken. Nothing was used.
+QA_CHECK PASS the camera is back after the machine broke detached=false type=FIRST_PERSON cinematic=false hideGui=false camera=LocalPlayer['Dev'/1, l='ClientLevel', x=-12.50, y=-60.00, z=-7.50] screen=null
+QA_CHECK PASS the cells are gone 
+QA_NOTE EXCHANGE offers 13 rows 7
+QA_CHECK PASS the Exchange has more offers than rows, so it scrolls 13 offers, 7 rows
+QA_CHECK PASS the Exchange with its scroll bar: 17 texts, none cut off or over another 
+QA_CHECK PASS dragging the bar to the bottom shows the last offers 6 of 6
+QA_CHECK PASS the Exchange scrolled to the end: 17 texts, none cut off or over another 
+QA_CHECK PASS the mouse wheel scrolls back to the top 
+QA_CHECK PASS hovering a product shows its whole note and the item's own description Loadout Flare Calls your active Loadout Coin?s kit in a capsule Throw it down. The cannon fires your active Loadout Coin?s kit to you in a capsule. Throwing is free. You paid when you bought it. 
+QA_NOTE ATTACHMENT DIAG held gun true (1 modern_kinetic_gun {AttachmentEXTENDED_MAG:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:extended_mag_3"}},AttachmentMUZZLE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:muzzle_brake_pioneer"}},AttachmentSCOPE:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:sight_pk06_rifle"}},AttachmentSTOCK:{Count:1b,id:"tacz:attachment",tag:{AttachmentId:"tacz:stock_ak12"}},GunCurrentAmmoCount:30,GunId:"tacz:ak47",HasBulletInBarrel:1b,display:{Name:'{"text":"Personal AK"}'}}), attachment recipes 1, fit the AK 0, first tacz:misc/blood_strike_1 
+QA_NOTE ATTACHMENT TYPES {all:1,other:1}
+QA_CHECK PASS the attachment table offers a type filter {all:1,other:1}
+QA_CHECK PASS every attachment falls in exactly one type 1 vs 1
+QA_CHECK FAIL the attachment table with its type button: 21 texts, none cut off or over another cut: 'TaCZ x BloodStrike Collab?'
+QA_CHECK PASS the attachment type picker: 1 texts, none cut off or over another 
+QA_CHECK FAIL Sights & scopes: only sights are listed 0 listed
+QA_CHECK PASS the attachment table filtered to sights: 15 texts, none cut off or over another 
+QA_CHECK PASS a second slot refuses a food another slot already holds 1 true true
+QA_CHECK PASS shift-click stacks bread on its own slot and puts the apples in another: no food spreads over two slots 1 true 10
+QA_CHECK PASS a pack with the same food twice is refused by the server too same_food
+QA_CHECK PASS the MRE Station: 8 texts, none cut off or over another 
+QA_CHECK PASS eating from the pot plays the game's eating sound and serves one portion minecraft:entity.generic.eat@1, -60, -14
+QA_CHECK PASS the Mess Hall's sandwich page: 19 texts, none cut off or over another 
+QA_CHECK PASS the sandwich hint ends above the Make button hint ends 161, button at 164
+QA_DONE pass=131 fail=3
+QA_DONE pass=131 fail=3

@@ -34,6 +34,22 @@
   "flare.recall_chatter_3": {
     "name": "minecraft:block.beacon.activate"
   },
+  "flare.loadout_chatter_1": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
+  "flare.loadout_chatter_2": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
+  "flare.loadout_chatter_3": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
+  "flare.loadout_chatter_4": {
+    "name": "minecraft:block.note_block.bit",
+    "pitch": 1.2
+  },
   "seller.order_chatter_1": {
     "name": "minecraft:entity.villager.yes"
   },

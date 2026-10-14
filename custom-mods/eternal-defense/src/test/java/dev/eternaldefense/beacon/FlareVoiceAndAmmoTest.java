@@ -17,6 +17,9 @@ final class FlareVoiceAndAmmoTest {
         assertEquals("flare.recall_chatter_1",SupportChatter.event(SupportCalls.Kind.RETURN,1));
         assertArrayEquals(new int[]{1,2},SupportChatter.lines(SupportCalls.Kind.SUPPLY));
         assertArrayEquals(new int[]{1,2,3},SupportChatter.lines(SupportCalls.Kind.RETURN));
+        assertEquals("flare.loadout_chatter_4",SupportChatter.event(SupportCalls.Kind.LOADOUT,4),"a Loadout call has its own four lines");
+        assertArrayEquals(new int[]{1,2,3,4},SupportChatter.lines(SupportCalls.Kind.LOADOUT));
+        for(var kind:SupportCalls.Kind.values())for(int line:SupportChatter.lines(kind))assertTrue(SupportChatter.ticks(kind,line)<=SupportChatter.LONGEST,"no line outlasts LONGEST: "+kind+" "+line);
     }
     @Test void aPlayersLastLineIsKeptPerFlareKind() throws Exception{
         String chatter=source("SupportChatter.java");
@@ -27,6 +30,7 @@ final class FlareVoiceAndAmmoTest {
     @Test void theImportScriptKnowsTheNewGroups() throws Exception{
         String script=Files.readString(Path.of("../../tools/audio/import_chatter.py"));
         assertTrue(script.contains("(\"Supplies flare chatter\", \"supply_chatter\", 2)")&&script.contains("(\"Recall flare chatter\", \"recall_chatter\", 3)"));
+        assertTrue(script.contains("(\"Loadout chatter\", \"loadout_chatter\", 4)"));
     }
 
     // Ammo: twice the propellant, 20 percent more cartridge cases (rounded up)

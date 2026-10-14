@@ -5,6 +5,8 @@ import net.minecraft.nbt.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.*;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.*;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -55,6 +57,7 @@ final class CookPot {
             if(empty()){p.displayClientMessage(Component.translatable("gui.eternal_defense.kitchen.pot_empty"),true);return;}
             // Direct serving consumes the stew immediately; the bowl is used up.
             PlayerMeals.eat(p,stew);p.getFoodData().eat(10,.8f);servings--;if(servings==0)stew=null;changed();
+            level.playSound(null,p.getX(),p.getY(),p.getZ(),SoundEvents.GENERIC_EAT,SoundSource.PLAYERS,.8f,.9f+level.random.nextFloat()*.2f);
             if(!p.getAbilities().instabuild)p.getItemInHand(hand).shrink(1);
             p.displayClientMessage(Component.translatable("gui.eternal_defense.kitchen.served",servings),true);
         }

@@ -89,6 +89,12 @@ public final class QaLoadout {
     static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
     @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
     @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    /** Like layout, but a list row may shorten a long name with an ellipsis (its tooltip has the whole name). */
+    static void layoutRows(String name){
+        var texts=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();int cut=0;
+        for(var a:texts){if(a.cut())cut++;for(var b:texts)if(a!=b&&a.w()>0&&b.w()>0&&a.x()<b.x()+b.w()&&b.x()<a.x()+a.w()&&a.y()<b.y()+b.h()&&b.y()<a.y()+a.h()&&texts.indexOf(a)<texts.indexOf(b))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+        check(name+": "+texts.size()+" texts, none over another ("+cut+" long names shortened)",bad.isEmpty()&&!texts.isEmpty(),String.join(" | ",bad));
+    }
     static void layout(String name){
         var texts=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();
         for(var a:texts){if(a.cut())bad.add("cut: '"+a.text()+"'");for(var b:texts)if(a!=b&&a.w()>0&&b.w()>0&&a.x()<b.x()+b.w()&&b.x()<a.x()+a.w()&&a.y()<b.y()+b.h()&&b.y()<a.y()+a.h()&&texts.indexOf(a)<texts.indexOf(b))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
@@ -153,6 +159,27 @@ public final class QaLoadout {
         var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
         mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
     }
+    /** Holds or lets go of the sneak key, as a player would. */
+    static void sneak(boolean down){net.minecraft.client.KeyMapping.set(mc().options.keyShift.getKey(),down);}
+    /** Sneak and right-click the doors in one go: the client tells the server it sneaks, clicks, then stands up. */
+    static void quickPrint(){var p=mc().player;p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY));
+        p.input.shiftKeyDown=true;click(S.offset(0,-1,-1),Direction.NORTH);p.input.shiftKeyDown=false;
+        p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.RELEASE_SHIFT_KEY));}
+    // The sounds the server plays (impact, radio, pot): id at block
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void soundAt(net.minecraftforge.event.PlayLevelSoundEvent.AtPosition e){if(!e.getLevel().isClientSide()&&e.getSound()!=null)SOUNDS.add(e.getSound().get().getLocation()+"@"+BlockPos.containing(e.getPosition()).toShortString());}
+    @SubscribeEvent public static void soundOn(net.minecraftforge.event.PlayLevelSoundEvent.AtEntity e){if(!e.getLevel().isClientSide()&&e.getSound()!=null)SOUNDS.add(e.getSound().get().getLocation()+"@"+e.getEntity().blockPosition().toShortString());}
+    static boolean heard(String id){synchronized(SOUNDS){return SOUNDS.stream().anyMatch(x->x.startsWith(id));}}
+    static String sounds(){synchronized(SOUNDS){return String.join(" | ",SOUNDS);}}
+    /** A field of o (or of its superclasses), by reflection. */
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static String plain(net.minecraft.util.FormattedCharSequence l){var b=new StringBuilder();l.accept((i,st,c)->{b.appendCodePoint(c);return true;});return b.toString();}
     /** The menu slot of inventory slot i (main 9..35 first, then the hotbar). */
     static int menuSlot(int i){return i<9?LoadoutMenu.INV+27+i:LoadoutMenu.INV+i-9;}
     static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
@@ -305,9 +332,10 @@ public final class QaLoadout {
             for(int i=0;i<4;i++)inv.setItem(9+i,kit.get(3-i).copy());for(int i=0;i<9;i++)inv.setItem(13+i,kit.get(5+i).copy());inv.setItem(22,kit.get(4).copy());
             inv.setItem(30,st(EternalDefense.PLATING,4));inv.setItem(31,st(EternalDefense.ARDENT_ENERGY,1));inv.setChanged();});
             note("gun attachments {} tag {}",attachments(kit.get(5)),kit.get(5).getTag());face();},"kit A and the fee in the pack");
-        step(10,()->click(S.offset(1,-1,-1),Direction.NORTH),"open the menu from a side cell");
-        step(15,()->check("the station's menu opens",mc().screen instanceof LoadoutScreen&&mc().player.containerMenu instanceof LoadoutMenu,String.valueOf(mc().screen)),"menu");
+        step(10,()->click(S.offset(0,-1,-1),Direction.NORTH),"a plain right-click on the doors");
+        step(15,()->check("a plain right-click on the doors opens the menu and starts no print",mc().screen instanceof LoadoutScreen&&mc().player.containerMenu instanceof LoadoutMenu&&srvGet(()->LoadoutPrint.of(sp().getUUID())==null),String.valueOf(mc().screen)),"menu");
         step(3,()->recordFrame=true,"record a frame of the menu");
+        until("frame drawn",60,()->!recordFrame,()->{});
         step(3,()->{layout("the station's menu");shot("lo10_menu_empty");},"picture: the menu");
         step(10,()->{for(int k=0;k<14;k++)slotClick(LoadoutMenu.INV+k,0,ClickType.QUICK_MOVE);},"shift-click the 14 items into the pack area");
         step(10,()->{
@@ -360,13 +388,19 @@ public final class QaLoadout {
         step(10,()->check("kit B's coin goes to the next slot that takes it",stock(1)==1&&stock(0)==2,stock(0)+" "+stock(1)),"slot 2");
         step(5,()->{button(LoadoutMenu.SELECT);button(LoadoutMenu.SET_ACTIVE);},"select slot 1, Set active");
         step(3,()->recordFrame=true,"record a frame with coins");
+        until("frame drawn",60,()->!recordFrame,()->{});
         step(10,()->{layout("the station's menu with coins and the active slot");check("the active slot is stored for this player",srvGet(()->LoadoutData.get(sl()).players.active(sp().getUUID()))==0,"");check("another player's active slot is their own (default slot 1)",srvGet(()->LoadoutData.get(sl()).players.active(rival().getUUID()))==0,"");shot("lo12_menu_coins");},"active slot");
-        step(3,()->check("the closet shows slot 1's coin: kit A on the figure",wears().startsWith("diamond_helmet diamond_chestplate modern_kinetic_gun shield"),wears()),"closet: slot 1");
+        step(3,()->{check("the closet shows slot 1's coin: kit A on the figure",wears().startsWith("diamond_helmet diamond_chestplate modern_kinetic_gun shield"),wears());
+            check("the active slot carries an Active tag beside it",lastFrame.stream().anyMatch(d->d.text().equals(Ui.plain("loadout.active_tag"))),"");},"closet: slot 1");
         step(3,()->{var b=mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().equals(">")).findFirst().orElse(null);if(b!=null)press((Ui.UiButton)b);},"browse: the next hanger");
         step(10,()->{check("> browses to slot 2: kit B on the figure (chainmail, crossbow)",wears().startsWith("chainmail_helmet chainmail_chestplate crossbow air")&&srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==1,wears());recordFrame=true;},"closet: slot 2");
         step(3,()->{layout("the closet on slot 2");shot("lo13_closet_browse");},"picture: browsing the closet");
         step(5,()->{var b=mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().equals("<")).findFirst().orElse(null);if(b!=null)press((Ui.UiButton)b);},"browse back");
         step(10,()->check("< browses back to slot 1",srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==0,""),"closet: back");
+        step(3,()->{var s=(LoadoutScreen)mc().screen;double x=s.getGuiLeft()+LoadoutMenu.WARD_X+LoadoutMenu.WARD_W-6,y=s.getGuiTop()+LoadoutMenu.COIN_Y+LoadoutMenu.COIN_ROW+8;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);},"click the label side of wardrobe row 2");
+        step(10,()->check("a click on a wardrobe row shows that slot in the closet",srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==1&&wears().startsWith("chainmail_helmet"),wears()),"row click");
+        step(3,()->{var s=(LoadoutScreen)mc().screen;double x=s.getGuiLeft()+LoadoutMenu.WARD_X+LoadoutMenu.WARD_W-6,y=s.getGuiTop()+LoadoutMenu.COIN_Y+8;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);},"click row 1");
+        step(10,()->check("and back to row 1",srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==0,""),"row 1");
         step(5,()->{button(LoadoutMenu.SELECT+1);button(LoadoutMenu.SET_ACTIVE);},"Set active: slot 2");
         step(10,()->{check("Set active moves to slot 2",srvGet(()->LoadoutData.get(sl()).players.active(sp().getUUID()))==1,"");button(LoadoutMenu.SELECT);button(LoadoutMenu.SET_ACTIVE);},"back to slot 1");
         step(10,()->closeAll(),"close the menu");
@@ -375,11 +409,13 @@ public final class QaLoadout {
         List<ItemStack> before=new ArrayList<>();List<ItemStack> main=new ArrayList<>();
         step(5,()->{srv(QaLoadout::clearMobs);dressPlain();srv(()->{sp().getInventory().setItem(9,st(Items.DIRT,64));sp().getInventory().setItem(20,st(Items.COBBLESTONE,40));sp().getInventory().setItem(35,st(Items.REDSTONE,7));});face();},"plain gear; things in the main inventory");
         step(10,()->{before.clear();before.addAll(worn());main.clear();main.addAll(main27());resetWalk();watchWalk=true;countHud=true;clearMessages();},"remember what is worn");
-        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door");
+        step(3,()->sneak(true),"hold sneak");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"sneak + right-click the doors: a quick print");
         step(3,()->{
             check("the print starts: the station is busy with this player",srvGet(()->LoadoutPrint.of(sp().getUUID())!=null&&LoadoutPrint.at(LoadoutStation.machine(sl(),S).id)!=null),bars());
             var tl=clientTimeline();if(tl!=null)note("TIMELINE entry {} cycle {}..{} swap {} exit {}..{} close {}..{} total {} ticks",tl.entry(),tl.cycleStart(),tl.cycleStart()+LoadoutModel.CYCLE_TICKS,tl.swapTick(),tl.exitStart(),tl.closeStart(),tl.closeStart(),tl.end(),tl.end());
         },"started");
+        step(3,()->{check("the sneak still held from the quick print does not skip the shots",LoadoutCinematic.running(),cameraState());sneak(false);},"let go of sneak");
         until("entry shot",100,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.entry()/2f;},()->{check("the camera shot is on during the walk in",LoadoutCinematic.running(),"");shot("lo20_cine_entry");});
         until("print shot",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.cycleStart()+24;},()->shot("lo21_cine_print"));
         until("flash",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.swapTick()-6;},()->shot("lo22_cine_flash"));
@@ -411,10 +447,10 @@ public final class QaLoadout {
         },"after the print");
         // Cooldown and a refusal that changes nothing
         step(5,()->{clearMessages();face();},"in front again");
-        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door during the cooldown");
+        step(5,()->quickPrint(),"sneak + right-click during the cooldown");
         step(10,()->check("refused during the cooldown; nothing starts",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&barHas("more seconds")&&stock(0)==1,bars()),"cooldown refused");
         step(5,()->{clearMessages();readyNow();tp(S.getX()+.5,sy,S.getZ()-8.5,0,10);},"cooldown cleared; stand 7 blocks out");
-        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door from too far");
+        step(5,()->quickPrint(),"sneak + right-click from too far");
         step(10,()->check("too far: refused",srvGet(()->LoadoutPrint.of(sp().getUUID())==null&&"far".equals(LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0))),bars()),"far refused");
         step(5,()->{srv(()->sl().setBlock(S.offset(0,-1,-3),Blocks.STONE.defaultBlockState(),3));tp(S.getX()+.5,sy,S.getZ()-4.5,0,10);},"a stone between the player and the door");
         step(5,()->check("blocked path: refused","path".equals(srvGet(()->LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0))),srvGet(()->String.valueOf(LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0)))),"path refused");
@@ -439,7 +475,7 @@ public final class QaLoadout {
         // Print 2 watched from outside: the camera shots off, a still camera
         int[] stand={-1};
         step(5,()->{DefenseClientConfig.set(DefenseClientConfig.LOADOUT_CINEMATIC,false);readyNow();face();before.clear();before.addAll(worn());clearMessages();resetWalk();watchWalk=true;},"camera shots off (client config)");
-        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door");
+        step(2,()->quickPrint(),"sneak + right-click the doors");
         step(2,()->{var st=new ArmorStand(EntityType.ARMOR_STAND,mc().level);st.setInvisible(true);st.setNoGravity(true);
             double x=S.getX()-3.5,y=sy+.8,z=S.getZ()-5.5;st.moveTo(x,y,z,(float)Math.toDegrees(Math.atan2(-(S.getX()+.5-x),(S.getZ()+.5-z))),12);st.yHeadRot=st.getYRot();
             mc().level.putNonPlayerEntity(-4242,st);stand[0]=-4242;mc().setCameraEntity(st);mc().options.hideGui=true;},"a still camera outside");
@@ -473,8 +509,8 @@ public final class QaLoadout {
             var m=LoadoutStation.machine(sl(),S);for(int i=0;i<27;i++)if(m.locker.getItem(i).isEmpty())m.locker.setItem(i,st(Items.DIRT,64));
             var slot=m.coins[0];if(slot.getCount()<3){var c=slot.isEmpty()?LoadoutCoin.create(A):slot.copy();c.setCount(3);m.shelf.setItem(0,c);}}),"fill the Hub and the locker; three coins in slot 1");
         step(5,()->{readyNow();face();clearMessages();},"in front, cooldown cleared");
-        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door with no room to stow");
-        step(10,()->check("no room in the Hub or the locker: refused, nothing changes",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&stock(0)==3&&barHas("room"),bars()),"no room refused");
+        step(5,()->quickPrint(),"sneak + right-click with no room to stow");
+        step(10,()->check("no room in the Hub or the locker: refused, nothing changes",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&stock(0)==3&&barHas("room"),"print "+srvGet(()->LoadoutPrint.of(sp().getUUID())!=null)+", slot 1 holds "+stock(0)+" | "+bars()),"no room refused");
         step(5,()->srv(()->{var m=LoadoutStation.machine(sl(),S);for(int i=0;i<27;i++)m.locker.setItem(i,ItemStack.EMPTY);var h=hub();for(int i=0;h!=null&&i<HubStorage.SLOTS;i++){var s=h.storage.get(i);if(s.is(Items.COBBLESTONE))h.storage.extract(HubStorage.Key.of(s),s.getCount(),false);}}),"empty the locker and the Hub's cobblestone");
 
         // 7. Stops before tick 40: nothing is consumed and the camera comes back
@@ -484,22 +520,25 @@ public final class QaLoadout {
         stopCase("logout",null,false);
         // Esc and sneak skip the shots; the print goes on
         step(5,()->{readyNow();face();resetWalk();watchWalk=true;},"skip: in front");
-        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        step(2,()->quickPrint(),"start a print");
         until("shot on",60,()->LoadoutCinematic.running(),()->{});
         step(2,()->mc().setScreen(new net.minecraft.client.gui.screens.PauseScreen(true)),"press Esc");
         step(3,()->check("Esc: the pause menu does not open, the shots stop, the print goes on",mc().screen==null&&!LoadoutCinematic.running()&&srvGet(()->LoadoutPrint.of(sp().getUUID())!=null),String.valueOf(mc().screen)),"Esc skip");
         until("print 3 over",300,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
         step(5,()->{watchWalk=false;check("after an Esc skip: first person, the kit printed",firstPerson()&&same(worn(),A),"");},"after Esc");
         step(5,()->{readyNow();face();},"sneak: in front");
-        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        step(3,()->sneak(true),"hold sneak");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"sneak + right-click: a quick print");
         until("shot on (2)",60,()->LoadoutCinematic.running(),()->{});
-        step(2,()->net.minecraft.client.KeyMapping.set(mc().options.keyShift.getKey(),true),"hold sneak");
-        step(2,()->{net.minecraft.client.KeyMapping.set(mc().options.keyShift.getKey(),false);check("sneak: the shots stop, the print goes on",!LoadoutCinematic.running()&&srvGet(()->LoadoutPrint.of(sp().getUUID())!=null),"");},"release sneak");
+        step(6,()->check("sneak still held from the quick print: the shots stay on",LoadoutCinematic.running(),cameraState()),"sneak still held");
+        step(3,()->sneak(false),"let go of sneak");
+        step(2,()->sneak(true),"press sneak again");
+        step(2,()->{sneak(false);check("a fresh sneak: the shots stop, the print goes on",!LoadoutCinematic.running()&&srvGet(()->LoadoutPrint.of(sp().getUUID())!=null),"");},"release sneak");
         until("print 4 over",300,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
         step(5,()->check("after a sneak skip: first person, standing (not sneaking)",firstPerson()&&!mc().player.isShiftKeyDown(),""),"after sneak");
         // Late joiners: the update tag carries the print
         step(5,()->{readyNow();face();},"update tag: in front");
-        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        step(2,()->quickPrint(),"start a print");
         step(10,()->{
             String r=srvGet(()->{var be=(LoadoutStation.StationEntity)sl().getBlockEntity(S);var tag=be.getUpdateTag();var copy=new LoadoutStation.StationEntity(S,sl().getBlockState(S));copy.handleUpdateTag(tag);
                 return tag.hasUUID("Occupant")+" "+(copy.start==be.start)+" "+(copy.timeline().end()==be.timeline().end())+" "+String.format("%.2f",copy.door(sl().getGameTime(),0));});
@@ -534,28 +573,41 @@ public final class QaLoadout {
         step(10,()->check("no coin in slot 1 or the Hub: refused, the flare kept",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==3&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(FIELD).inflate(40)).isEmpty())&&!(CHAT.isEmpty()&&BAR.isEmpty()),chats()+" / "+bars()),"no coin refused");
         int[] coins={0};
         step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(2);m.shelf.setItem(0,c);});coins[0]=2;dressPlain();srv(()->flares(1,3));mc().player.getInventory().selected=1;},"two coins in slot 1");
-        step(5,()->throwHeld(),"throw a Loadout Flare outdoors");
+        step(5,()->{SOUNDS.clear();throwHeld();},"throw a Loadout Flare outdoors");
         step(5,()->{clearMessages();throwHeld();},"throw another at once");
         step(10,()->{
             check("a second call while one is on its way: refused",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==2),chats()+" / "+bars());
             check("the coin is still in the slot after the throw",stock(0)==2,""+stock(0));},"one at a time");
-        until("the cannon fires",900,()->stock(0)==1,()->check("the coin is taken when the cannon fires",stock(0)==1,""));
-        until("the capsule falls",600,()->srvGet(()->!sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30)).isEmpty()),()->{
-            var d=srvGet(()->sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30)).get(0).position());
-            mc().options.hideGui=true;look(d.x+5,sy,d.z+7,d.x,Math.max(sy+2,d.y-6),d.z);});
-        until("the capsule is low enough for a picture",400,()->{var d=srvGet(()->{var l=sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30));return l.isEmpty()?null:l.get(0).position();});return d==null||d.y<sy+14;},()->shot("lo51_capsule_falling"));
+        until("the cannon fires",900,()->stock(0)==1,()->{check("the coin is taken when the cannon fires",stock(0)==1,"");
+            check("the radio answers with one of the owner's Loadout lines",heard("eternal_defense:flare.loadout_chatter_"),sounds());});
+        double[] fall={Double.NaN,0,0};long[] spawned={0};
+        until("the capsule falls",600,()->srvGet(()->!sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,140,30)).isEmpty()),()->{
+            var d=srvGet(()->sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,140,30)).get(0).position());spawned[0]=srvGet(()->sl().getGameTime());
+            note("CAPSULE spawned at height {} over the ground",String.format("%.1f",d.y-sy));fall[0]=d.y;
+            mc().options.hideGui=true;look(d.x+12,sy,d.z+16,d.x,sy+15,d.z);});
+        until("the capsule is low enough for a picture",400,()->{var d=srvGet(()->{var l=sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,140,30));return l.isEmpty()?null:l.get(0).position();});
+                if(d!=null&&!Double.isNaN(fall[0])){fall[1]=Math.max(fall[1],fall[0]-d.y);fall[2]++;fall[0]=d.y;}
+                var c=mc().level.getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,140,30));if(!c.isEmpty())note("CLIENT DROP y {} target {}",String.format("%.1f",c.get(0).getY()-sy),c.get(0).target()-sy);
+                return d==null||d.y<sy+45;},()->shot("lo51_capsule_falling"));
         BlockPos[] cap={null};
-        until("the capsule lands",600,()->(cap[0]=capsuleNear(FIELD,12))!=null,()->{});
+        until("the capsule lands",600,()->{var c=mc().level.getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,140,30));if(!c.isEmpty())note("CLIENT DROP y {} target {} shake {}",String.format("%.1f",c.get(0).getY()-sy),c.get(0).target()-sy,staticField(OrdnanceClient.class,"startedAt"));return (cap[0]=capsuleNear(FIELD,12))!=null;},()->{shot("lo51b_capsule_impact");long t=srvGet(()->sl().getGameTime())-spawned[0];
+            note("CAPSULE fell for {} ticks, fastest {} blocks a tick",t,String.format("%.2f",fall[1]));
+            check("no parachute: it plunges at 3 or more blocks a tick and lands within 2 seconds of appearing",fall[1]>=3&&t<=40,String.format("%.2f",fall[1])+" blocks/tick, "+t+" ticks");});
+        step(2,()->{check("the impact sounds like an explosion",heard("minecraft:entity.generic.explode@"),sounds());
+            long started=(long)staticField(OrdnanceClient.class,"startedAt");check("the impact shakes the view nearby",started>=0,""+started);},"impact");
+        step(LoadoutRules.CAPSULE_OPEN_DELAY+4,()->{},"wait for the door");
+        step(1,()->check("the door opens by itself after the impact, before anyone touches it",srvGet(()->{var be=(LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0]);return be!=null&&be.doorOpen();}),""),"opened by itself");
         step(30,()->{
             check("a capsule stands where the flare landed, two blocks high",cap[0]!=null&&srvGet(()->sl().getBlockState(cap[0].above()).is(EternalDefense.LOADOUT_CAPSULE_PART.get())),String.valueOf(cap[0]));
             if(cap[0]!=null){var f=srvGet(()->sl().getBlockState(cap[0]).getValue(DefenseStructures.FACING));var to=srvGet(()->Direction.getNearest(sp().getX()-(cap[0].getX()+.5),0,sp().getZ()-(cap[0].getZ()+.5)));check("it faces its owner",f==to,f+" vs "+to);
                 capCam(cap[0]);}
         },"landed");
-        step(20,()->shot("lo52_capsule_closed"),"picture: the capsule");
+        step(20,()->shot("lo52_capsule_landed_open"),"picture: the capsule, open by itself");
         step(5,()->{if(cap[0]==null)return;var rv=rival();String r=srvGet(()->{rv.moveTo(cap[0].getX()+.5,sy,cap[0].getZ()-1.5,0,0);LoadoutCapsule.use(sl(),cap[0],rv);return String.valueOf(rv.containerMenu instanceof LoadoutCapsule.CapsuleMenu);});check("another player cannot open it",r.equals("false"),r);},"owner only");
         step(5,()->{if(cap[0]==null)return;srv(()->{var inv=sp().getInventory();for(int i=0;i<4;i++)inv.armor.set(i,ItemStack.EMPTY);for(int i=0;i<9;i++)inv.items.set(i,ItemStack.EMPTY);inv.offhand.set(0,ItemStack.EMPTY);
             inv.armor.set(3,st(Items.LEATHER_HELMET,1));inv.items.set(0,st(Items.STICK,1));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;click(cap[0],Direction.NORTH);},"wear only a leather helmet and hold a stick; open the capsule");
         step(12,()->recordFrame=true,"record a frame of the capsule menu");
+        until("frame drawn",60,()->!recordFrame,()->{});
         step(3,()->{check("the capsule's menu opens",mc().player.containerMenu instanceof LoadoutCapsule.CapsuleMenu,String.valueOf(mc().screen));layout("the capsule's menu");
             check("the capsule's figure wears the kit inside",wears().startsWith("diamond_helmet diamond_chestplate modern_kinetic_gun shield"),wears());shot("lo53_capsule_menu");},"capsule menu");
         step(5,()->{mc().setScreen(null);capCam(cap[0]);},"hide the screen (the menu stays open on the server); camera in front of the door");
@@ -569,11 +621,14 @@ public final class QaLoadout {
             check("the gun in the capsule is the exact gun",ItemStack.matches(gun,A.get(5)),String.valueOf(gun.getTag()));
             check("the door state is in the update tag",srvGet(()->((LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0])).getUpdateTag().getLong("OpenAt")>0),"");
         },"Equip");
+        step(5,()->closeAll(),"close the capsule with two items still inside");
+        step(10,()->check("closed with the kit still inside: the door stays open and the capsule stays",srvGet(()->{var be=(LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0]);return be!=null&&be.doorOpen()&&!be.folding();}),""),"stays open");
+        step(5,()->click(cap[0],Direction.NORTH),"open it again");
         step(5,()->{slotClick(0,0,ClickType.QUICK_MOVE);slotClick(5,0,ClickType.QUICK_MOVE);},"take the last two");
         step(5,()->closeAll(),"close the capsule");
         step(3,()->capCam(cap[0]),"camera");
         step(10,()->shot("lo55_capsule_folding"),"picture: folding away");
-        step(30,()->check("empty and closed: the capsule folds away",srvGet(()->!sl().getBlockState(cap[0]).is(EternalDefense.LOADOUT_CAPSULE.get())&&!sl().getBlockState(cap[0].above()).is(EternalDefense.LOADOUT_CAPSULE_PART.get())),""),"folded");
+        step(30,()->check("emptied: the door shuts and the capsule folds away",srvGet(()->!sl().getBlockState(cap[0]).is(EternalDefense.LOADOUT_CAPSULE.get())&&!sl().getBlockState(cap[0].above()).is(EternalDefense.LOADOUT_CAPSULE_PART.get())),""),"folded");
         // Underground: without Quantum tunneling the flare comes back, with it the capsule stands up inside
         step(5,()->{mc().options.hideGui=false;clearMessages();srv(()->{buildBunker();var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=0;SupportData.get(sl()).setDirty();
             flares(1,2);sp().teleportTo(sl(),BUNKER.getX()+.5,sy,BUNKER.getZ()+.5,0,60);});mc().player.getInventory().selected=1;},"inside a bunker under 3 blocks of stone");
@@ -581,7 +636,7 @@ public final class QaLoadout {
         until("the flare comes back",300,()->srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==2),()->check("underground without Quantum tunneling: the flare comes back, the coin stays",stock(0)==1,chats()));
         step(5,()->{clearMessages();srv(()->{var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=1;SupportData.get(sl()).setDirty();});},"Quantum tunneling bought");
         step(5,()->throwHeld(),"throw again");
-        until("a capsule stands up inside",900,()->capsuleNear(BUNKER,4)!=null,()->{check("with Quantum tunneling: a capsule stands up inside the bunker",capsuleNear(BUNKER,4)!=null,"");check("its coin was used",stock(0)==0,""+stock(0));});
+        until("a capsule stands up inside",900,()->capsuleNear(BUNKER,4)!=null,()->{check("with Quantum tunneling: a capsule plunges through the roof and stands up inside the bunker",capsuleNear(BUNKER,4)!=null&&srvGet(()->sl().getBlockState(BUNKER.above(3)).is(Blocks.STONE)),"");check("its coin was used",stock(0)==0,""+stock(0));});
         // No room for a capsule: the old parcel
         step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(2);m.shelf.setItem(0,c);lowCeiling(LOW,4,3);lowCeiling(LOW2,1,1);});},"two coins; a 9 x 9 low ceiling and a 3 x 3 one");
         step(5,()->srv(()->landedFlare(LOW)),"a Loadout Flare under the wide low ceiling");
@@ -611,7 +666,7 @@ public final class QaLoadout {
         step(10,()->check("with coins inside it cannot be mined: still standing",srvGet(()->LoadoutStation.isStation(sl().getBlockState(S))&&LoadoutStation.isStation(sl().getBlockState(S.offset(1,0,-1)))),bars()),"break guard");
         step(5,()->{readyNow();face();dressPlain();before.clear();clearMessages();},"in front for a print that will be broken");
         int[] stocked={0};
-        step(2,()->{before.addAll(worn());stocked[0]=srvGet(()->{int n=0;for(var c:LoadoutStation.machine(sl(),S).coins)n+=c.getCount();return n;});srv(()->{for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(S).inflate(10)))e.discard();});click(S.offset(0,-1,-1),Direction.NORTH);},"start a print");
+        step(2,()->{before.addAll(worn());stocked[0]=srvGet(()->{int n=0;for(var c:LoadoutStation.machine(sl(),S).coins)n+=c.getCount();return n;});srv(()->{for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(S).inflate(10)))e.discard();});quickPrint();},"start a print");
         until("tick 20",100,()->clientElapsed()>=20,()->srv(()->sl().destroyBlock(S,true)));
         step(10,()->{},"the break reaches the client");
         step(10,()->{
@@ -620,6 +675,96 @@ public final class QaLoadout {
             check("the camera is back after the machine broke",firstPerson(),cameraState());
             check("the cells are gone",srvGet(()->{for(var p:LoadoutStation.cells(S))if(LoadoutStation.isStation(sl().getBlockState(p)))return false;return true;}),"");
             shot("lo60_broken");},"after the break");
+
+        // 11. The owner's 1.1.1 list beyond the station
+        BlockPos EXCH=B.offset(-6,0,-4),ATT=B.offset(-12,0,-4),MRE=B.offset(4,0,4),HALL=B.offset(10,0,4),POT=B.offset(14,0,4);
+        // The Exchange: a scroll bar beside the offers
+        step(5,()->{closeAll();mc().options.hideGui=false;srv(()->{sl().setBlock(EXCH,EternalDefense.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3);
+            var inv=sp().getInventory();inv.clearContent();inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;},"an Exchange in the zone");
+        step(10,()->look(EXCH.getX()+.5,sy,EXCH.getZ()+3.5,EXCH.getX()+.5,EXCH.getY()+.8,EXCH.getZ()+.5),"face it");
+        step(10,()->click(EXCH,Direction.SOUTH),"open the Exchange (a real click)");
+        until("the Exchange opens",100,()->mc().screen instanceof ExchangeScreen,()->{});
+        step(5,()->{var sc=mc().screen;int total=((CompoundTag)field(sc,"data")).getList("buy",10).size(),rows=((List<?>)field(sc,"rows")).size();note("EXCHANGE offers {} rows {}",total,rows);
+            check("the Exchange has more offers than rows, so it scrolls",total>rows,total+" offers, "+rows+" rows");recordFrame=true;},"offers");
+        step(3,()->{layout("the Exchange with its scroll bar");shot("lo70_exchange_scrollbar");},"picture: the scroll bar");
+        step(3,()->{var sc=mc().screen;int x=(int)field(sc,"left")+(int)field(sc,"pw")-14-3,y=(int)field(sc,"top")+56;sc.mouseClicked(x,y+3,0);sc.mouseDragged(x,y+400,0,0,397);sc.mouseReleased(x,y+400,0);},"drag the thumb to the bottom");
+        step(3,()->{var sc=mc().screen;int scroll=(int)field(sc,"scroll"),total=((CompoundTag)field(sc,"data")).getList("buy",10).size(),rows=((List<?>)field(sc,"rows")).size();
+            check("dragging the bar to the bottom shows the last offers",scroll==total-rows,scroll+" of "+(total-rows));recordFrame=true;},"dragged");
+        step(3,()->{layout("the Exchange scrolled to the end");shot("lo71_exchange_scrolled");},"picture: scrolled to the end");
+        step(3,()->{var sc=mc().screen;for(int i=0;i<60;i++)sc.mouseScrolled(sc.width/2.0,sc.height/2.0,1);check("the mouse wheel scrolls back to the top",(int)field(sc,"scroll")==0,"");},"wheel up");
+        step(3,()->closeAll(),"close the Exchange");
+        // The Support Platform's shop: the whole text of a product on hover
+        step(5,()->{look(PLAT.getX()+.5,sy,PLAT.getZ()-2.5,PLAT.getX()+.5,PLAT.getY()+.8,PLAT.getZ()+.5);srv(()->{var st=sl().getBlockState(PLAT);st.use(sl(),sp(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(PLAT),Direction.NORTH,PLAT,false));});},"open the Support Platform");
+        until("the platform screen",100,()->mc().screen instanceof SupportScreen,()->{});
+        step(3,()->((SupportScreen)mc().screen).showTab(1),"Shop tab");
+        step(3,()->{var rows=mc().screen.children().stream().filter(c->c instanceof Ui.UiButton b&&b.look==Ui.Look.ROW).map(c->(Ui.UiButton)c).toList();var r=rows.get(rows.size()-1);hover(r.getX()+r.getWidth()/2.0,r.getY()+r.getHeight()/2.0);},"hover the Loadout Flare");
+        step(6,()->{try{var m=SupportScreen.class.getDeclaredMethod("productTip",int.class);m.setAccessible(true);var lines=(List<?>)m.invoke(mc().screen,SupportShop.PRODUCTS.size()-1);
+                var all=new StringBuilder();for(var l:lines)all.append(plain((net.minecraft.util.FormattedCharSequence)l)).append(' ');
+                check("hovering a product shows its whole note and the item's own description",all.toString().contains(Ui.plain("support.product.loadout.note"))&&all.toString().contains("Throw it down"),all.toString());}
+            catch(ReflectiveOperationException e){check("product tooltip",false,e.toString());}
+            shot("lo72_support_hover");},"picture: the full text");
+        step(3,()->{hover(0,0);closeAll();},"close the platform");
+        // The attachment table: its type filter
+        step(5,()->{srv(()->{sl().setBlock(ATT,EternalDefense.ATTACHMENT_PLATFORM.get().defaultBlockState(),3);sp().setGameMode(GameType.CREATIVE);var inv=sp().getInventory();inv.clearContent();inv.setItem(0,A.get(5).copy());inv.selected=0;inv.setChanged();});
+            mc().player.getInventory().selected=0;},"an attachment table; creative (every Age open); the AK in hand");
+        step(5,()->note("ATTACHMENT DIAG {}",srvGet(()->{var all=WeaponPlatform.entries(sp(),"attachment","");long ok=all.stream().filter(e->WeaponPlatform.compatible(sp(),e)).count();
+            var first=new StringBuilder();for(int i=0;i<Math.min(5,all.size());i++)first.append(all.get(i).recipeId()).append(' ');
+            return "held gun "+WeaponPlatform.heldGun(sp())+" ("+sp().getMainHandItem()+" "+sp().getMainHandItem().getTag()+"), attachment recipes "+all.size()+", fit the AK "+ok+", first "+first;})),"diagnostics: what fits the AK");
+        step(5,()->{srv(()->{sp().getInventory().setItem(0,ItemStack.EMPTY);sp().getInventory().setChanged();});},"an empty hand: in creative the table lists every attachment");
+        step(10,()->look(ATT.getX()+.5,sy,ATT.getZ()+3.5,ATT.getX()+.5,ATT.getY()+.6,ATT.getZ()+.5),"face it");
+        step(10,()->click(ATT,Direction.SOUTH),"open the attachment table");
+        until("the table screen",100,()->mc().screen instanceof PlatformScreen&&((CompoundTag)staticField(PlatformScreen.class,"data")).getString("kind").equals("attachment"),()->{});
+        step(10,()->{var d=(CompoundTag)staticField(PlatformScreen.class,"data");var counts=d.getCompound("typeCounts");note("ATTACHMENT TYPES {}",counts);
+            check("the attachment table offers a type filter",d.getBoolean("typeFilterAvailable")&&counts.getInt("all")>0,counts.toString());
+            int sum=0;for(String t:AttachmentTypes.TYPES)if(!t.equals("all"))sum+=counts.getInt(t);check("every attachment falls in exactly one type",sum==counts.getInt("all"),sum+" vs "+counts.getInt("all"));
+            recordFrame=true;},"type counts");
+        step(3,()->{layoutRows("the attachment table with its type button");shot("lo73_attachment_table");},"picture: the table");
+        step(3,()->mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().startsWith(Ui.plain("platform.type.button","").trim())).findFirst().ifPresent(x->press((Ui.UiButton)x)),"open the type picker");
+        step(5,()->recordFrame=true,"record the picker");
+        until("frame drawn",60,()->!recordFrame,()->{});
+        step(3,()->{layout("the attachment type picker");shot("lo74_attachment_types");
+            mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().startsWith(Ui.plain("type.attachment.sight"))).findFirst().ifPresent(x->press((Ui.UiButton)x));},"choose Sights");
+        until("filtered to sights",100,()->mc().screen instanceof PlatformScreen&&((CompoundTag)staticField(PlatformScreen.class,"data")).getString("weaponType").equals("sight"),()->{});
+        step(5,()->{var d=(CompoundTag)staticField(PlatformScreen.class,"data");var rec=d.getList("recipes",10);boolean only=true;for(var t:rec)only&=AttachmentTypes.of(ItemStack.of(((CompoundTag)t).getCompound("output"))).equals("sight");
+            check("Sights & scopes: only sights are listed",d.getInt("total")==d.getCompound("typeCounts").getInt("sight")&&only&&rec.size()>0,d.getInt("total")+" listed");recordFrame=true;},"only sights");
+        step(3,()->{layoutRows("the attachment table filtered to sights");shot("lo75_attachment_sights");},"picture: sights only");
+        step(3,()->{closeAll();srv(()->{sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();});},"close; survival");
+        // The MRE Station: a different food in each slot
+        step(5,()->srv(()->{sl().setBlock(MRE,EternalDefense.MRE_STATION.get().defaultBlockState(),3);var inv=sp().getInventory();inv.clearContent();inv.setItem(9,st(Items.BREAD,10));inv.setItem(10,st(Items.APPLE,5));inv.setChanged();}),"an MRE Station; bread and apples");
+        step(10,()->look(MRE.getX()+.5,sy,MRE.getZ()-2.5,MRE.getX()+.5,MRE.getY()+.6,MRE.getZ()+.5),"face it");
+        step(10,()->click(MRE,Direction.NORTH),"open it");
+        until("the MRE menu",100,()->mc().player.containerMenu instanceof MreStation.StationMenu,()->{});
+        step(3,()->{slotClick(9,0,ClickType.PICKUP);slotClick(0,1,ClickType.PICKUP);slotClick(1,1,ClickType.PICKUP);slotClick(9,0,ClickType.PICKUP);},"one bread into slot 1, then try another into slot 2");
+        step(5,()->{String r=srvGet(()->{var m=sp().containerMenu;return m.getSlot(0).getItem().getCount()+" "+m.getSlot(1).getItem().isEmpty()+" "+m.getCarried().isEmpty();});
+            check("a second slot refuses a food another slot already holds",r.equals("1 true true"),r);},"refused");
+        step(3,()->{slotClick(10,0,ClickType.QUICK_MOVE);slotClick(9,0,ClickType.QUICK_MOVE);},"shift-click the apples, then the rest of the bread");
+        step(5,()->{String r=srvGet(()->{var m=sp().containerMenu;int breadSlots=0;for(int i=0;i<MreRules.FOOD_SLOTS;i++)if(m.getSlot(i).getItem().is(Items.BREAD))breadSlots++;
+                return breadSlots+" "+m.getSlot(1).getItem().is(Items.APPLE)+" "+m.getSlot(0).getItem().getCount();});
+            check("shift-click stacks bread on its own slot and puts the apples in another: no food spreads over two slots",r.equals("1 true 10"),r);
+            String forced=srvGet(()->{var m=(MreStation.StationMenu)sp().containerMenu;var c=m.getSlot(2).container;c.setItem(2,st(Items.BREAD,1));var ch=MreStation.check(c,sp());c.setItem(2,ItemStack.EMPTY);return String.valueOf(ch.problem());});
+            check("a pack with the same food twice is refused by the server too",forced.equals("same_food"),forced);recordFrame=true;},"unique foods");
+        step(3,()->{layout("the MRE Station");shot("lo76_mre_unique");},"picture: the MRE Station");
+        step(3,()->closeAll(),"close the MRE Station");
+        // The cook pot: eating from it sounds like eating
+        step(5,()->srv(()->{sl().setBlock(HALL,EternalDefense.MESS_HALL_IV.get().defaultBlockState(),3);sl().setBlock(POT,EternalDefense.COOK_POT.get().defaultBlockState(),3);}),"a Mess Hall Mk IV and a cook pot");
+        step(20,()->srv(()->{var h=(MessHall.HallEntity)sl().getBlockEntity(HALL);h.discover();var pot=(CookPot.PotEntity)sl().getBlockEntity(POT);
+            pot.stew=new MealData(true,List.of(new MealData.Bonus(MealRules.Effect.VITALITY,1)),1200);pot.servings=3;pot.changed();
+            var inv=sp().getInventory();inv.clearContent();inv.setItem(0,st(Items.BOWL,2));inv.selected=0;inv.setChanged();}),"link the pot; a stew of 3 servings; bowls in hand");
+        step(10,()->{mc().player.getInventory().selected=0;look(POT.getX()+.5,sy,POT.getZ()-2.5,POT.getX()+.5,POT.getY()+.5,POT.getZ()+.5);SOUNDS.clear();},"face the pot");
+        step(5,()->click(POT,Direction.NORTH),"right-click the pot with a bowl");
+        step(10,()->check("eating from the pot plays the game's eating sound and serves one portion",heard("minecraft:entity.generic.eat")&&srvGet(()->((CookPot.PotEntity)sl().getBlockEntity(POT)).servings)==2,sounds()),"the eating sound");
+        // The Mess Hall's sandwich hint clears the Make button
+        step(5,()->{SOUNDS.clear();srv(()->sp().getInventory().selected=1);mc().player.getInventory().selected=1;look(HALL.getX()+.5,sy,HALL.getZ()-2.5,HALL.getX()+.5,HALL.getY()+.6,HALL.getZ()+.5);},"face the hall, an empty hand");
+        step(10,()->click(HALL,Direction.NORTH),"open the Mess Hall");
+        until("the Mess Hall screen",100,()->mc().screen instanceof MessHallScreen,()->{});
+        step(10,()->recordFrame=true,"record the sandwich page");
+        until("frame drawn",60,()->!recordFrame,()->{});
+        step(3,()->{layout("the Mess Hall's sandwich page");
+            var hint=lastFrame.stream().filter(d->d.text().replace("…","").trim().length()>=8&&Ui.plain("kitchen.sandwich_hint").contains(d.text().replace("…","").trim())).mapToInt(d->d.y()+d.h()).max().orElse(-1);
+            var ms=(MessHallScreen)mc().screen;int buttonTop=ms.getGuiTop()+MessHallScreen.PRIMARY_Y;
+            check("the sandwich hint ends above the Make button",hint>0&&hint<=buttonTop,"hint ends "+hint+", button at "+buttonTop);
+            shot("lo77_mess_hall_sandwich");},"picture: the sandwich page");
+        step(3,()->closeAll(),"close the Mess Hall");
     }
 
     static ItemStack srvCoinCopy(){var m=LoadoutStation.machine(sl(),S);if(m!=null&&!m.coins[0].isEmpty())return m.coins[0].copyWithCount(1);for(var s:sp().getInventory().items)if(s.is(EternalDefense.LOADOUT_COIN.get()))return s.copyWithCount(1);return ItemStack.EMPTY;}
@@ -653,7 +798,7 @@ public final class QaLoadout {
             step(5,()->check("logout before tick 40: the print stops, the coin stays",srvGet(()->LoadoutPrint.of(rival().getUUID())==null&&LoadoutPrint.at(LoadoutStation.machine(sl(),S).id)==null)&&stock(0)==coins[0],""+stock(0)),"logout");
             return;
         }
-        step(2,()->{coins[0]=stock(0);before.clear();before.addAll(worn());note("{} inventory before: {}",how,inventory());click(S.offset(0,-1,-1),Direction.NORTH);},how+": start a print");
+        step(2,()->{coins[0]=stock(0);before.clear();before.addAll(worn());note("{} inventory before: {}",how,inventory());quickPrint();},how+": start a print");
         until(how+": tick 20",100,()->clientElapsed()>=20,()->{check(how+": the camera shot is on before the stop",LoadoutCinematic.running(),"");stop.run();});
         step(20,()->{
             if(respawn&&mc().player.isDeadOrDying())mc().player.respawn();

@@ -194,7 +194,7 @@ final class MessHallScreen extends AbstractContainerScreen<MessHallMenu> {
             if(menu.ingredients.getItem(7).isEmpty())g.blit(BREAD_BASE,leftPos+baseX,frameY+1,0,0,16,16,16,16);
             Ui.text(g,font,Component.literal("→"),leftPos+baseX+19,frameY+5,Ui.MUTED);
             Ui.text(g,font,Ui.t("kitchen.base"),leftPos+baseX-4,topPos+FX_Y,Ui.MUTED,26);Ui.text(g,font,Ui.t("kitchen.output_short"),leftPos+outX+1,topPos+FX_Y,Ui.MUTED,20);
-            Ui.wrap(g,font,Ui.t("kitchen.sandwich_hint"),leftPos+LX,topPos+ZONE_Y+2,LW,Ui.MUTED,2);
+            Ui.wrap(g,font,Ui.t("kitchen.sandwich_hint"),leftPos+LX,topPos+ZONE_Y-1,LW,Ui.MUTED,2);
             if(!menu.ingredients.getItem(6).isEmpty())for(int i=0;i<3;i++){double p=((t*.0009+i*.33)%1.0);g.fill(leftPos+outX+2+i*5,frameY-2-(int)(p*10),leftPos+outX+4+i*5,frameY-(int)(p*10),((int)((1-p)*200)<<24)|0xffe36b);}
         }
         var list=view().getList("Pots",Tag.TAG_COMPOUND);

@@ -242,6 +242,30 @@
     ],
     "subtitle": "subtitles.eternal_defense.flare.recall_chatter"
   },
+  "flare.loadout_chatter_1": {
+    "sounds": [
+      "eternal_defense:sfx/loadout_chatter_1"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.loadout_chatter"
+  },
+  "flare.loadout_chatter_2": {
+    "sounds": [
+      "eternal_defense:sfx/loadout_chatter_2"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.loadout_chatter"
+  },
+  "flare.loadout_chatter_3": {
+    "sounds": [
+      "eternal_defense:sfx/loadout_chatter_3"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.loadout_chatter"
+  },
+  "flare.loadout_chatter_4": {
+    "sounds": [
+      "eternal_defense:sfx/loadout_chatter_4"
+    ],
+    "subtitle": "subtitles.eternal_defense.flare.loadout_chatter"
+  },
   "music.mission_cleared": {
     "sounds": [
       {

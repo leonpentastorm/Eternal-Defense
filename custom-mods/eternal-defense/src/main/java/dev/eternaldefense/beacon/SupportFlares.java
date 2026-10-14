@@ -321,7 +321,7 @@ final class SupportFlares {
                     server.sendParticles(ParticleTypes.POOF,getX(),getY()+.3,getZ(),10,.2,.2,.2,.02);discard();return;
                 }
                 cargo=kit[0];fireTick=t;shot(server,owner,live,true);releaseGun(server);
-                total=fireTick+SupportRules.supplyTicks(outside);spawnAt=fireTick+(outside?SupportRules.parcelSpawnTick(clear):SupportRules.supplyTicks(false));
+                total=fireTick+SupportRules.supplyTicks(outside);spawnAt=LoadoutRules.capsuleFallStart(fireTick,outside);
             }
             if(owner!=null&&(t-fireTick)%20==0&&t<total){
                 int seconds=(total-t+19)/20;

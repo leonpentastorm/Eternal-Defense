@@ -90,7 +90,17 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
         super.render(g,mx,my,partial);
         if(!feedback.getString().isEmpty()&&net.minecraft.Util.getMillis()-shownAt<4000)Ui.text(g,font,feedback,leftPos+14,topPos+H-12,Ui.CYAN,W-28);
         renderTooltip(g,mx,my);
+        if(tab==1&&menu.getCarried().isEmpty())for(int i=0;i<rows.size();i++)if(rows.get(i).isHovered()){g.renderTooltip(font,productTip(i),mx,my);break;}
         if(upgradeButton.visible&&upgradeButton.isHovered()&&SupportRules.upgradeCost(menu.mk)>=0)Ui.materialTooltip(g,font,List.of(Ui.t("support.tab.upgrade")),Ui.singleCost(new ItemStack(EternalDefense.PLATING.get()),SupportRules.upgradeCost(menu.mk),menu.plating.get()),mx,my);
+    }
+    /** A product's full text: its name, the shop's note in full, then the item's own description. */
+    private List<net.minecraft.util.FormattedCharSequence> productTip(int index){
+        var product=SupportShop.PRODUCTS.get(index);var stack=new ItemStack(product.item().get());
+        var item=net.minecraft.client.gui.screens.Screen.getTooltipFromItem(minecraft,stack);var lines=new ArrayList<net.minecraft.util.FormattedCharSequence>();
+        lines.add(item.get(0).getVisualOrderText());
+        lines.addAll(font.split(Ui.t("support.product."+product.id()+".note").copy().withStyle(net.minecraft.ChatFormatting.AQUA),220));
+        for(int k=1;k<item.size();k++)lines.addAll(font.split(item.get(k),220));
+        return lines;
     }
     @Override public boolean mouseClicked(double mx,double my,int button){
         if(tab==1&&buyButton.isMouseOver(mx,my)&&buyButton.active&&button==0){BeaconNetwork.CHANNEL.sendToServer(new SupportShop.Buy(selected));return true;}

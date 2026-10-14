@@ -267,6 +267,8 @@ final class LoadoutPrint {
         @SubscribeEvent public void printHurt(LivingAttackEvent e){if(e.getEntity() instanceof Player p&&!p.level().isClientSide&&holding(p)&&!e.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY))e.setCanceled(true);}
         @SubscribeEvent public void printAttack(AttackEntityEvent e){if(holding(e.getEntity()))e.setCanceled(true);}
         @SubscribeEvent public void printUseBlock(PlayerInteractEvent.RightClickBlock e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}
+        // Sneak and right-click reaches the station even with an item in hand
+        @SubscribeEvent public void quickPrint(PlayerInteractEvent.RightClickBlock e){if(e.getEntity().isSecondaryUseActive()&&LoadoutStation.cell(e.getLevel(),e.getPos()))e.setUseBlock(net.minecraftforge.eventbus.api.Event.Result.ALLOW);}
         @SubscribeEvent public void printUseItem(PlayerInteractEvent.RightClickItem e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}
         @SubscribeEvent public void printHit(PlayerInteractEvent.LeftClickBlock e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}
         @SubscribeEvent public void printTouch(PlayerInteractEvent.EntityInteract e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}

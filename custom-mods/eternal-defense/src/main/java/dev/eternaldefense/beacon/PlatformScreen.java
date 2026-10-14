@@ -26,17 +26,20 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         data=packet.data();var mc=Minecraft.getInstance();
         if(packet.open()){mc.setScreen(new PlatformScreen());return;}
         PlatformScreen screen=mc.screen instanceof PlatformScreen s?s:mc.screen instanceof TypeScreen s?s.parent:null;
-        if(screen!=null){screen.message=packet.message();screen.ageFilter=data.getInt("ageFilter");screen.weaponType=armor()?ArmorPlatform.normalize(data.getString("weaponType")):WeaponBrowser.normalize(data.getString("weaponType"));screen.navigating=false;screen.selected=Math.min(screen.selected,Math.max(0,screen.shown().size()-1));}
+        if(screen!=null){screen.message=packet.message();screen.ageFilter=data.getInt("ageFilter");screen.weaponType=normalize(data.getString("weaponType"));screen.navigating=false;screen.selected=Math.min(screen.selected,Math.max(0,screen.shown().size()-1));}
     }
-    private static Component typeLabel(String type){return Ui.t("type."+(armor()?"armor.":"gun.")+type);}
+    private static Component typeLabel(String type){return Ui.t("type."+(armor()?"armor.":attachments()?"attachment.":"gun.")+type);}
+    /** The table's own type names: gear, attachments or guns. */
+    private static List<String> types(){return armor()?ArmorPlatform.TYPES:attachments()?AttachmentTypes.TYPES:WeaponBrowser.TYPES;}
+    private static String normalize(String type){return armor()?ArmorPlatform.normalize(type):attachments()?AttachmentTypes.normalize(type):WeaponBrowser.normalize(type);}
     private static Component ageName(int age){return Ui.t("age."+Math.max(0,Math.min(5,age)));}
 
     private static final class TypeScreen extends BeaconClient.PanelScreen {
         private final PlatformScreen parent;
-        TypeScreen(PlatformScreen parent){super(armor()?Ui.t("platform.type.armor"):Ui.t("platform.type.weapon"));this.parent=parent;}
+        TypeScreen(PlatformScreen parent){super(armor()?Ui.t("platform.type.armor"):attachments()?Ui.t("platform.type.attachment"):Ui.t("platform.type.weapon"));this.parent=parent;}
         @Override protected void init(){
             super.init();pw=Math.min(490,width-16);ph=Math.min(250,height-16);left=(width-pw)/2;top=(height-ph)/2;int cw=(pw-34)/3;var counts=data.getCompound("typeCounts");
-            var types=armor()?ArmorPlatform.TYPES:WeaponBrowser.TYPES;
+            var types=types();
             for(int i=0;i<types.size();i++){
                 String type=types.get(i);
                 var b=button(Ui.t("platform.type.entry",typeLabel(type),counts.getInt(type)),left+14+(i%3)*(cw+3),top+54+(i/3)*30,cw,Ui.Look.NORMAL,key->{parent.weaponType=type;Minecraft.getInstance().setScreen(parent);parent.browse(0);});
@@ -49,13 +52,13 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         @Override public void render(GuiGraphics g,int mx,int my,float partial){panel(g);Ui.text(g,font,Ui.t("platform.type.note"),left+14,top+36,Ui.MUTED,pw-28);super.render(g,mx,my,partial);}
     }
     @Override protected void init(){
-        String query=search==null?data.getString("query"):search.getValue();super.init();layout=WeaponBrowser.layout(width,height,weapons()||armor(),armor());pw=layout.width();ph=layout.height();left=(width-pw)/2;top=(height-ph)/2;clearWidgets();rows.clear();int leftWidth=layout.listWidth();ageFilter=data.getInt("ageFilter");if(search==null)weaponType=armor()?ArmorPlatform.normalize(data.getString("weaponType")):WeaponBrowser.normalize(data.getString("weaponType"));
+        String query=search==null?data.getString("query"):search.getValue();super.init();layout=WeaponBrowser.layout(width,height,weapons()||typedGear(),typedGear());pw=layout.width();ph=layout.height();left=(width-pw)/2;top=(height-ph)/2;clearWidgets();rows.clear();int leftWidth=layout.listWidth();ageFilter=data.getInt("ageFilter");if(search==null)weaponType=normalize(data.getString("weaponType"));
         search=addRenderableWidget(new EditBox(font,left+19,top+70,leftWidth-68,10,Ui.t("platform.search")));
         search.setBordered(false);search.setMaxLength(80);search.setValue(query);search.setHint(Ui.t("platform.search.hint").copy().withStyle(s->s.withColor(0x74888f)));
         find=button(Ui.t("platform.find"),left+leftWidth-40,top+64,54,Ui.Look.PRIMARY,b->browse(0));
         closeButton();
         boolean compact=layout.compact();int half=(leftWidth-4)/2;
-        ageButton=button(Component.empty(),left+14,top+86,compact&&(weapons()||armor())?half:leftWidth,Ui.Look.NORMAL,b->{ageFilter=data.getString("kind").equals("ammo")?(ageFilter==5?10:ageFilter==10?11:ageFilter>=11?0:ageFilter+1):(ageFilter>=5?0:ageFilter+1);browse(0);});
+        ageButton=button(Component.empty(),left+14,top+86,compact&&(weapons()||typedGear())?half:leftWidth,Ui.Look.NORMAL,b->{ageFilter=data.getString("kind").equals("ammo")?(ageFilter==5?10:ageFilter==10?11:ageFilter>=11?0:ageFilter+1):(ageFilter>=5?0:ageFilter+1);browse(0);});
         if(weapons()){
             int cw=(leftWidth-6)/3;
             armoryButton=button(Ui.t("platform.cat.armory"),left+14,top+108,cw,Ui.Look.NORMAL,b->{upgrades=false;ageFilter=7;browse(0);});
@@ -63,7 +66,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
             suppliesButton=button(Ui.t("platform.cat.supplies"),left+20+cw*2,top+108,cw,Ui.Look.NORMAL,b->{upgrades=false;ageFilter=9;browse(0);});
             typeButton=button(Component.empty(),compact?left+18+half:left+14,compact?top+86:top+130,compact?leftWidth-half-4:leftWidth,Ui.Look.NORMAL,b->Minecraft.getInstance().setScreen(new TypeScreen(this)));
         }
-        if(armor())typeButton=button(Component.empty(),compact?left+18+half:left+14,compact?top+86:top+108,compact?leftWidth-half-4:leftWidth,Ui.Look.NORMAL,b->Minecraft.getInstance().setScreen(new TypeScreen(this)));
+        if(typedGear())typeButton=button(Component.empty(),compact?left+18+half:left+14,compact?top+86:top+108,compact?leftWidth-half-4:leftWidth,Ui.Look.NORMAL,b->Minecraft.getInstance().setScreen(new TypeScreen(this)));
         for(int i=0;i<layout.capacity();i++){
             int index=i;
             var row=new Ui.UiButton(left+14+(i%layout.columns())*(layout.cellWidth()+4),top+layout.listTop()+(i/layout.columns())*rowHeight(),layout.cellWidth(),rowHeight()-1,Component.empty(),Ui.Look.ROW,b->{selected=index;costScroll=0;});
@@ -91,6 +94,9 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
     private void navigate(int page){int target=WeaponBrowser.page(page,total(),layout.capacity());if(upgrades){upgradePage=target;selected=costScroll=0;}else if(!navigating&&target!=data.getInt("page"))browse(target);}
     private void jump(){try{navigate(Integer.parseInt(pageJump.getValue())-1);}catch(NumberFormatException ignored){}pageJump.setFocused(false);}
     private static boolean armor(){return data.getString("kind").equals("armor");}
+    private static boolean attachments(){return data.getString("kind").equals("attachment");}
+    /** Gear and attachment tables sort by type under the Age row, without the gun table's category row. */
+    private static boolean typedGear(){return armor()||attachments();}
     /** Why an ammo or attachment table shows nothing: no gun in hand */
     private Component emptyHint(){
         if(data.getString("notice").equals("Equip a gun"))return Ui.t("platform.hold_gun",ControlHints.interact());
@@ -148,7 +154,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         if(upgrades){renderUpgrade(g,mx,my,partial);return;}
         boolean special=ageFilter>=7&&ageFilter<=9;
         Component browsing=special?Ui.t("platform.create_progress",CreateUnlocks.stage(data.getInt("createLevel"))):Ui.t("platform.browsing."+data.getString("kind"),data.getInt("ammoCoins"));
-        if(!layout.compact())Ui.text(g,font,browsing,left+14,top+(weapons()?154:armor()?132:114),Ui.CYAN,lw);
+        if(!layout.compact())Ui.text(g,font,browsing,left+14,top+(weapons()?154:typedGear()?132:114),Ui.CYAN,lw);
         ageButton.visible=!upgrades;
         ageButton.setMessage(ageFilter==10?Ui.t("platform.filter.loose"):ageFilter==11?Ui.t("platform.filter.magazines"):ageFilter==0?Ui.t("platform.filter.all"):ageFilter==6?Ui.t("platform.cat.supplies"):ageFilter>=7?Ui.t("platform.filter.back"):Ui.t("platform.age_line",ageFilter,ageName(ageFilter)).copy().withStyle(s->s.withColor(AGE_COLORS[ageFilter]&0xffffff)));
         ageButton.selected=ageFilter>0&&ageFilter<=5;ageButton.accent=AGE_COLORS[Math.max(0,Math.min(AGE_COLORS.length-1,ageFilter))];

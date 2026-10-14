@@ -9,41 +9,36 @@ import net.minecraft.world.item.Items;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The Loadout Station's screen: a closet with the selected kit worn by the player's own figure, the kit to pack, the shared coin slots, and the locker. */
+/** The Loadout Station's screen: a closet with the selected kit worn by the player's own figure, the wardrobe of shared coin slots, the kit to pack, and the locker. */
 final class LoadoutScreen extends AbstractContainerScreen<LoadoutMenu> {
-    static final int W=LoadoutMenu.W,H=LoadoutMenu.H,TAB_Y=LoadoutMenu.COIN_Y+18,BUTTON_Y=134;
-    /** The closet display on the left, and the right-hand column. */
-    static final int CLOSET_X=8,CLOSET_Y=28,CLOSET_W=136,CLOSET_H=150,RIGHT_X=148,RIGHT_W=W-8-RIGHT_X,TEXT_X=LoadoutMenu.INV_X-1,TEXT_W=W-8-TEXT_X;
-    private Ui.UiButton make,setActive,print,forget,page,previous,next;private final List<Ui.UiButton> tabs=new ArrayList<>();
+    static final int W=LoadoutMenu.W,H=LoadoutMenu.H,BUTTON_Y=104,BUTTON_GAP=20;
+    /** The closet display on the left, the wardrobe column, and the right-hand column. */
+    static final int CLOSET_X=8,CLOSET_Y=28,CLOSET_W=136,CLOSET_H=150,WARD_X=LoadoutMenu.WARD_X,WARD_W=LoadoutMenu.WARD_W,TEXT_X=LoadoutMenu.INV_X-1,TEXT_W=W-8-TEXT_X;
+    private Ui.UiButton make,setActive,print,forget,page,previous,next;
     private final KitMannequin mannequin=new KitMannequin();
     private static final ItemStack[] ARMOR_GHOSTS={new ItemStack(Items.IRON_HELMET),new ItemStack(Items.IRON_CHESTPLATE),new ItemStack(Items.IRON_LEGGINGS),new ItemStack(Items.IRON_BOOTS)};
     LoadoutScreen(LoadoutMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=W;imageHeight=H;}
     private void action(int id){BeaconNetwork.menuButton(menu.containerId,id);}
     @Override protected void init(){
-        super.init();tabs.clear();
-        make=addRenderableWidget(new Ui.UiButton(leftPos+LoadoutMenu.MAKE_X,topPos+LoadoutMenu.ROW_A-1,72,18,Ui.t("loadout.make"),Ui.Look.PRIMARY,b->action(LoadoutMenu.MAKE)));
-        for(int i=0;i<LoadoutRules.COIN_SLOTS;i++){int slot=i;
-            var tab=new Ui.UiButton(leftPos+LoadoutMenu.INV_X-1+i*18,topPos+TAB_Y,18,9,Component.literal(String.valueOf(i+1)),Ui.Look.TAB,b->action(LoadoutMenu.SELECT+slot));
-            tab.noLabel().painter((g,self,hover)->paintTab(g,self,slot));tabs.add(addRenderableWidget(tab));}
-        // Four buttons across the right column, each as wide as its label needs plus an even share of the rest
-        Component[] labels={Ui.t("loadout.set_active"),Ui.t("loadout.print"),Ui.t("loadout.forget"),Ui.t("loadout.locker")};
-        int[] w=new int[4];int used=0;for(int i=0;i<4;i++){w[i]=font.width(labels[i])+14;used+=w[i];}
-        int extra=Math.max(0,(RIGHT_W-12-used)/4),x=leftPos+RIGHT_X;for(int i=0;i<4;i++)w[i]+=extra;
-        setActive=addRenderableWidget(new Ui.UiButton(x,topPos+BUTTON_Y,w[0],16,labels[0],Ui.Look.NORMAL,b->action(LoadoutMenu.SET_ACTIVE)));x+=w[0]+4;
-        print=addRenderableWidget(new Ui.UiButton(x,topPos+BUTTON_Y,w[1],16,labels[1],Ui.Look.PRIMARY,b->action(LoadoutMenu.PRINT)));x+=w[1]+4;
-        forget=addRenderableWidget(new Ui.UiButton(x,topPos+BUTTON_Y,w[2],16,labels[2],Ui.Look.NORMAL,b->action(LoadoutMenu.FORGET)));x+=w[2]+4;
-        page=addRenderableWidget(new Ui.UiButton(x,topPos+BUTTON_Y,w[3],16,labels[3],Ui.Look.NORMAL,b->action(LoadoutMenu.PAGE)));
+        super.init();
+        make=addRenderableWidget(new Ui.UiButton(leftPos+LoadoutMenu.MAKE_X,topPos+LoadoutMenu.ROW_A-1,W-8-LoadoutMenu.MAKE_X,18,Ui.t("loadout.make"),Ui.Look.PRIMARY,b->action(LoadoutMenu.MAKE)));
+        // Two rows of two buttons under the kit: what to do with the selected slot, and the locker
+        int bw=(TEXT_W-4)/2,bx=leftPos+TEXT_X,by=topPos+BUTTON_Y;
+        print=addRenderableWidget(new Ui.UiButton(bx,by,bw,16,Ui.t("loadout.print"),Ui.Look.PRIMARY,b->action(LoadoutMenu.PRINT)));
+        setActive=addRenderableWidget(new Ui.UiButton(bx+bw+4,by,bw,16,Ui.t("loadout.set_active"),Ui.Look.NORMAL,b->action(LoadoutMenu.SET_ACTIVE)));
+        forget=addRenderableWidget(new Ui.UiButton(bx,by+BUTTON_GAP,bw,16,Ui.t("loadout.forget"),Ui.Look.NORMAL,b->action(LoadoutMenu.FORGET)));
+        page=addRenderableWidget(new Ui.UiButton(bx+bw+4,by+BUTTON_GAP,bw,16,Ui.t("loadout.locker"),Ui.Look.NORMAL,b->action(LoadoutMenu.PAGE)));
         // Browsing the closet: the coin slot before and after the selected one
         int cy=topPos+CLOSET_Y+CLOSET_H+4;
         previous=addRenderableWidget(new Ui.UiButton(leftPos+CLOSET_X,cy,16,14,Component.literal("<"),Ui.Look.NORMAL,b->action(LoadoutMenu.SELECT+(menu.selected()+LoadoutRules.COIN_SLOTS-1)%LoadoutRules.COIN_SLOTS)));
         next=addRenderableWidget(new Ui.UiButton(leftPos+CLOSET_X+CLOSET_W-16,cy,16,14,Component.literal(">"),Ui.Look.NORMAL,b->action(LoadoutMenu.SELECT+(menu.selected()+1)%LoadoutRules.COIN_SLOTS)));
         update();
     }
-    private void paintTab(GuiGraphics g,Ui.UiButton self,int slot){
-        int x=self.getX(),y=self.getY();boolean sel=menu.selected()==slot,active=menu.active()==slot;
-        g.fill(x+1,y,x+17,y+9,sel?Ui.CYAN_FILL:Ui.DEEP);if(sel)g.fill(x+1,y,x+17,y+1,Ui.CYAN);
-        var n=Component.literal(String.valueOf(slot+1));g.drawString(font,n,x+(active?5:9)-font.width(n)/2,y+1,sel?Ui.INK:Ui.MUTED,false);
-        if(active)Ui.check(g,x+10,y+2,Ui.BRASS);
+    /** The wardrobe row under the mouse (0-based), or -1. */
+    private int row(double mx,double my){
+        double ry=my-(topPos+LoadoutMenu.COIN_Y-2);
+        if(mx<leftPos+WARD_X||mx>=leftPos+WARD_X+WARD_W||ry<0)return -1;
+        int r=(int)(ry/LoadoutMenu.COIN_ROW);return r<LoadoutRules.COIN_SLOTS?r:-1;
     }
     @Override protected void containerTick(){super.containerTick();update();}
     private boolean busy(){return menu.busy();}
@@ -53,7 +48,6 @@ final class LoadoutScreen extends AbstractContainerScreen<LoadoutMenu> {
     private void update(){
         boolean kitPage=menu.page()==0;int sel=menu.selected();boolean any=packing();
         make.visible=kitPage;make.active=any;make.warning=any&&!feeOk();
-        for(var t:tabs)t.visible=kitPage;
         setActive.visible=kitPage;setActive.active=sel!=menu.active();
         print.visible=kitPage;print.active=!busy()&&menu.cooldown()==0;
         forget.visible=kitPage;forget.active=menu.coins.getItem(sel).isEmpty()&&!menu.kind(sel).isEmpty();
@@ -71,30 +65,38 @@ final class LoadoutScreen extends AbstractContainerScreen<LoadoutMenu> {
     @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
         int x=leftPos,y=topPos;Ui.panel(g,x,y,W,H);Ui.header(g,font,x,y,W,title,Ui.t("loadout.subtitle"));
         closet(g,x,y);
+        wardrobe(g,x,y,mx,my);
         int rx=x+TEXT_X;
         if(menu.page()==0){
-            Ui.text(g,font,Ui.t("loadout.kit"),rx,y+30,Ui.MUTED,100);
+            Ui.text(g,font,Ui.t("loadout.kit"),rx,y+30,Ui.MUTED,TEXT_W);
             for(int i=0;i<LoadoutRules.ARMOR;i++){int sx=x+LoadoutMenu.INV_X+i*18;Ui.slot(g,sx-1,y+LoadoutMenu.ROW_A-1,Ui.BRASS_DK);if(menu.pack.getItem(LoadoutRules.ARMOR-1-i).isEmpty())Ui.ghost(g,ARMOR_GHOSTS[i],sx,y+LoadoutMenu.ROW_A);}
             Ui.slot(g,x+LoadoutMenu.OFFHAND_X-1,y+LoadoutMenu.ROW_A-1,Ui.BRASS_DK);if(menu.pack.getItem(LoadoutRules.OFFHAND_SLOT).isEmpty())Ui.ghost(g,new ItemStack(Items.SHIELD),x+LoadoutMenu.OFFHAND_X,y+LoadoutMenu.ROW_A);
             for(int i=0;i<LoadoutRules.HOTBAR;i++)Ui.slot(g,x+LoadoutMenu.INV_X-1+i*18,y+LoadoutMenu.ROW_B-1,Ui.EDGE);
             // The fee, read from the pack and the Home Zone's Hubs
             int plating=menu.data.get(LoadoutMenu.D_PLATING),ardent=menu.data.get(LoadoutMenu.D_ARDENT);
-            Ui.text(g,font,Ui.t("loadout.fee",Economy.COIN_FEE_PLATING,plating,Economy.COIN_FEE_ARDENT,ardent),rx,y+81,feeOk()?Ui.MUTED:Ui.ORANGE,TEXT_W);
-            Ui.text(g,font,Ui.t("loadout.shelf"),rx,y+LoadoutMenu.COIN_Y-14,Ui.MUTED,TEXT_W);
-            // The wardrobe rail the coins hang from
-            int railL=x+LoadoutMenu.INV_X-3,railR=x+LoadoutMenu.INV_X+LoadoutRules.COIN_SLOTS*18+1;
-            g.fill(railL,y+LoadoutMenu.COIN_Y-5,railR,y+LoadoutMenu.COIN_Y-3,Ui.BRASS_DK);g.fill(railL,y+LoadoutMenu.COIN_Y-5,railR,y+LoadoutMenu.COIN_Y-4,Ui.BRASS);
-            for(int i=0;i<LoadoutRules.COIN_SLOTS;i++){
-                int sx=x+LoadoutMenu.INV_X+i*18;g.fill(sx+7,y+LoadoutMenu.COIN_Y-3,sx+9,y+LoadoutMenu.COIN_Y-1,i==menu.selected()?Ui.CYAN:Ui.BRASS_DK);
-                Ui.slot(g,sx-1,y+LoadoutMenu.COIN_Y-1,i==menu.selected()?Ui.CYAN:i==menu.active()?Ui.BRASS:Ui.EDGE);
-                if(menu.coins.getItem(i).isEmpty()&&!menu.kind(i).isEmpty())Ui.ghost(g,menu.kind(i),sx,y+LoadoutMenu.COIN_Y);
-            }
+            Ui.wrap(g,font,Ui.t("loadout.fee",Economy.COIN_FEE_PLATING,plating,Economy.COIN_FEE_ARDENT,ardent),rx,y+83,TEXT_W,feeOk()?Ui.MUTED:Ui.ORANGE,2);
         }else{
             Ui.text(g,font,Ui.t("loadout.locker_title"),rx,y+30,Ui.MUTED,TEXT_W);
             for(int i=0;i<LoadoutRules.LOCKER_SLOTS;i++)Ui.slot(g,x+LoadoutMenu.INV_X-1+i%9*18,y+LoadoutMenu.LOCKER_Y-1+i/9*18,Ui.EDGE);
             Ui.wrap(g,font,Ui.t("loadout.locker_note"),rx,y+LoadoutMenu.LOCKER_Y+58,TEXT_W,Ui.MUTED,2);
         }
         Ui.inventory(g,x+LoadoutMenu.INV_X-1,y+LoadoutMenu.INV_Y-1);
+    }
+    /** The wardrobe: the 9 coin slots hanging from a rail, numbered, the selected one lit, the active one tagged. */
+    private void wardrobe(GuiGraphics g,int x,int y,int mx,int my){
+        int wx=x+WARD_X,top=y+LoadoutMenu.COIN_Y,railX=wx+10,hover=row(mx,my);
+        Ui.text(g,font,Ui.t("loadout.shelf"),wx,y+30,Ui.MUTED,WARD_W);
+        g.fill(railX,top-3,railX+2,top+(LoadoutRules.COIN_SLOTS-1)*LoadoutMenu.COIN_ROW+12,Ui.BRASS_DK);g.fill(railX,top-3,railX+1,top+(LoadoutRules.COIN_SLOTS-1)*LoadoutMenu.COIN_ROW+12,Ui.BRASS);
+        for(int i=0;i<LoadoutRules.COIN_SLOTS;i++){
+            int ry=top+i*LoadoutMenu.COIN_ROW;boolean sel=i==menu.selected(),active=i==menu.active();
+            if(sel)g.fill(wx,ry-2,wx+WARD_W,ry+18,Ui.CYAN_FILL);else if(i==hover)g.fill(wx,ry-2,wx+WARD_W,ry+18,Ui.SLATE);
+            if(sel)g.fill(wx,ry-2,wx+1,ry+18,Ui.CYAN);
+            var n=Component.literal(String.valueOf(i+1));g.drawString(font,n,wx+5-font.width(n)/2,ry+5,sel?Ui.INK:active?Ui.BRASS:Ui.MUTED,false);
+            g.fill(railX+2,ry+7,LoadoutMenu.COIN_X+x-1,ry+9,sel?Ui.CYAN:Ui.BRASS_DK);
+            Ui.slot(g,x+LoadoutMenu.COIN_X-1,ry-1,sel?Ui.CYAN:active?Ui.BRASS:Ui.EDGE);
+            if(menu.coins.getItem(i).isEmpty()&&!menu.kind(i).isEmpty())Ui.ghost(g,menu.kind(i),x+LoadoutMenu.COIN_X,ry);
+            if(active)Ui.chip(g,font,Ui.t("loadout.active_tag"),x+LoadoutMenu.COIN_X+21,ry+3,Ui.BRASS,wx+WARD_W-(x+LoadoutMenu.COIN_X+21));
+        }
     }
     /** The closet: the figure in the shown kit, which kit it is, what it holds, and whether the station is free. */
     private void closet(GuiGraphics g,int x,int y){
@@ -124,6 +126,8 @@ final class LoadoutScreen extends AbstractContainerScreen<LoadoutMenu> {
     @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
     @Override public boolean mouseClicked(double mx,double my,int button){
         if(button==0&&mannequin.press(mx,my,leftPos+CLOSET_X,topPos+CLOSET_Y,CLOSET_W,CLOSET_H))return true;
+        // A click anywhere on a wardrobe row shows that slot in the closet; on the slot itself it also takes or puts the coin
+        int r=row(mx,my);if(r>=0&&r!=menu.selected())action(LoadoutMenu.SELECT+r);
         return super.mouseClicked(mx,my,button);
     }
     @Override public boolean mouseDragged(double mx,double my,int button,double dx,double dy){return mannequin.drag(mx)||super.mouseDragged(mx,my,button,dx,dy);}
@@ -133,12 +137,13 @@ final class LoadoutScreen extends AbstractContainerScreen<LoadoutMenu> {
         boolean overCloset=mx>=leftPos+CLOSET_X&&mx<leftPos+CLOSET_X+CLOSET_W&&my>=topPos+CLOSET_Y&&my<topPos+CLOSET_Y+CLOSET_H;
         if(overCloset&&!mannequin.dragging()&&menu.getCarried().isEmpty()){g.renderTooltip(font,font.split(Ui.t("loadout.closet.tip"),190),mx,my);return;}
         if(previous.isHovered()||next.isHovered()){g.renderTooltip(font,font.split(Ui.t("loadout.closet.browse_tip"),190),mx,my);return;}
-        if(menu.page()!=0)return;
         if(hoveredSlot!=null&&hoveredSlot.container==menu.coins&&!hoveredSlot.hasItem()&&menu.getCarried().isEmpty()){
             var kind=menu.kind(hoveredSlot.getContainerSlot());
-            g.renderTooltip(font,font.split(kind.isEmpty()?Ui.t("loadout.slot.free"):Ui.t("loadout.slot.kind",hoveredSlot.getContainerSlot()+1),190),mx,my);
+            g.renderTooltip(font,font.split(kind.isEmpty()?Ui.t("loadout.slot.free"):Ui.t("loadout.slot.kind",hoveredSlot.getContainerSlot()+1),190),mx,my);return;
         }
-        else if(make.visible&&make.isHovered())Ui.materialTooltip(g,font,List.of(Ui.t("loadout.make_tip")),feeRows(),mx,my);
+        if(menu.getCarried().isEmpty()&&hoveredSlot==null&&(row(mx,my)>=0||Ui.inside(mx,my,leftPos+WARD_X,topPos+28,WARD_W,12))){g.renderTooltip(font,font.split(Ui.t("loadout.shelf_tip"),190),mx,my);return;}
+        if(menu.page()!=0)return;
+        if(make.visible&&make.isHovered())Ui.materialTooltip(g,font,List.of(Ui.t("loadout.make_tip")),feeRows(),mx,my);
         else if(print.visible&&print.isHovered())g.renderTooltip(font,font.split(Ui.t("loadout.print_tip",menu.selected()+1),190),mx,my);
         else if(setActive.visible&&setActive.isHovered())g.renderTooltip(font,font.split(Ui.t("loadout.set_active_tip",menu.selected()+1),190),mx,my);
         else if(forget.visible&&forget.isHovered())g.renderTooltip(font,font.split(Ui.t("loadout.forget_tip"),190),mx,my);

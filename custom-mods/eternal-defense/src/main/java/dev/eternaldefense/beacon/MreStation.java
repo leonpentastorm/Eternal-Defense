@@ -42,16 +42,19 @@ final class MreStation {
     static int nutritionExcept(Container c,int skip,LivingEntity who){
         int n=0;for(int i=0;i<MreRules.FOOD_SLOTS;i++){if(i==skip)continue;var f=food(c.getItem(i),who);if(f!=null)n+=f.nutrition();}return n;
     }
+    /** True when another food slot already holds this food: each slot takes a different food. */
+    static boolean taken(Container c,int slot,ItemStack stack){for(int i=0;i<MreRules.FOOD_SLOTS;i++)if(i!=slot&&ItemStack.isSameItem(c.getItem(i),stack))return true;return false;}
     /** Whether this food may go into the given food slot. */
     static boolean accepts(Container c,int slot,ItemStack stack,LivingEntity who){
-        var f=food(stack,who);return f!=null&&MreRules.fits(nutritionExcept(c,slot,who),f.nutrition());
+        var f=food(stack,who);return f!=null&&!taken(c,slot,stack)&&MreRules.fits(nutritionExcept(c,slot,who),f.nutrition());
     }
     /** What one MRE from these slots would be, or why there is none: problem is a language key under mre.problem.. */
     record Check(String problem,MreRules.Totals totals){boolean ready(){return problem==null;}}
     static Check check(Container c,LivingEntity who){
-        var foods=new ArrayList<MreRules.Food>();
-        for(int i=0;i<MreRules.FOOD_SLOTS;i++){var s=c.getItem(i);if(s.isEmpty())continue;var f=food(s,who);if(f==null)return new Check("not_food",null);foods.add(f);}
+        var foods=new ArrayList<MreRules.Food>();var kinds=new ArrayList<net.minecraft.world.item.Item>();
+        for(int i=0;i<MreRules.FOOD_SLOTS;i++){var s=c.getItem(i);if(s.isEmpty())continue;var f=food(s,who);if(f==null)return new Check("not_food",null);foods.add(f);kinds.add(s.getItem());}
         if(foods.isEmpty())return new Check("no_food",null);
+        if(!MreRules.allDifferent(kinds))return new Check("same_food",null);
         var totals=MreRules.sum(foods);
         if(totals.nutrition()>MreRules.MAX_NUTRITION)return new Check("over",totals);
         if(totals.nutrition()<1)return new Check("no_nutrition",totals);

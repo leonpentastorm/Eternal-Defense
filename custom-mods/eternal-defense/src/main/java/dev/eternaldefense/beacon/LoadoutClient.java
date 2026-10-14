@@ -3,6 +3,7 @@ package dev.eternaldefense.beacon;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -155,17 +156,27 @@ public final class LoadoutClient {
         }
     }
 
-    /** The capsule falling: its item model under the supply parachute, hung from the lifting eye (README l.152). */
+    /** The capsule plunging: its model, lit as if glowing hot, spinning slowly about its axis. */
     static final class DropRenderer extends EntityRenderer<LoadoutCapsule.Drop> {
-        DropRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=.4f;}
+        DropRenderer(EntityRendererProvider.Context ctx){super(ctx);shadowRadius=.5f;}
         @Override public void render(LoadoutCapsule.Drop e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
-            float age=e.tickCount+partial;float sway=(float)Math.sin(age*.12)*3f;
-            pose.pushPose();pose.mulPose(Axis.ZP.rotationDegrees(sway));
-            pose.pushPose();pose.translate(-.5,0,-.5);SupportClient.draw(pose,buffer,RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS),CAPSULE_ITEM,light,OverlayTexture.NO_OVERLAY);pose.popPose();
-            pose.translate((LoadoutModel.CHUTE_X-LoadoutModel.CENTRE)/LoadoutModel.PX,LoadoutModel.CHUTE_Y/LoadoutModel.PX,(LoadoutModel.CHUTE_Z-LoadoutModel.CENTRE)/LoadoutModel.PX);
-            SupportClient.ParcelRenderer.canopy(pose,buffer,light,age,SupportClient.ParcelRenderer.CHUTE,.06f);
+            pose.pushPose();pose.mulPose(Axis.YP.rotationDegrees((e.tickCount+partial)*9f));
+            pose.translate(-.5,0,-.5);SupportClient.draw(pose,buffer,RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS),CAPSULE_ITEM,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         @Override public ResourceLocation getTextureLocation(LoadoutCapsule.Drop e){return TextureAtlas.LOCATION_BLOCKS;}
     }
+    /** Shake strength (degrees), reach (blocks) and length (ticks) of a capsule's impact. */
+    static final float IMPACT_SHAKE=3.2f;static final double IMPACT_REACH=40;static final int IMPACT_TICKS=26;
+    /** Each client tick of a falling capsule: a burning nose and a smoke trail along the stretch it just fell. */
+    static void dropTick(LoadoutCapsule.Drop d){
+        var level=d.level();var r=level.random;double x=d.getX(),y=d.getY(),z=d.getZ();
+        for(int i=0;i<4;i++){double t=y+2+r.nextDouble()*LoadoutRules.CAPSULE_FALL_SPEED;
+            level.addParticle(ParticleTypes.LARGE_SMOKE,x+(r.nextDouble()-.5)*.5,t,z+(r.nextDouble()-.5)*.5,0,.02,0);
+            level.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE,x+(r.nextDouble()-.5)*.3,t,z+(r.nextDouble()-.5)*.3,0,.01,0);}
+        for(int i=0;i<3;i++)level.addParticle(ParticleTypes.FLAME,x+(r.nextDouble()-.5)*.7,y+r.nextDouble()*.4,z+(r.nextDouble()-.5)*.7,0,.1,0);
+        if(d.target()!=Integer.MIN_VALUE&&y<=d.target())dropLanded(d);
+    }
+    /** The capsule hit the ground: the view shakes once, harder the closer the player stands. */
+    static void dropLanded(LoadoutCapsule.Drop d){if(d.shake())OrdnanceClient.shake(new Vec3(d.getX(),d.target(),d.getZ()),IMPACT_SHAKE,IMPACT_REACH,IMPACT_TICKS);}
 }

@@ -175,4 +175,23 @@ class LoadoutRulesTest {
             for(int dy=0;dy<2;dy++)for(var b:LoadoutModel.capsuleBoxes(dy,f))assertTrue(b[0]>=0&&b[2]>=0&&b[3]<=16&&b[5]<=16&&b[1]>=0&&b[4]<=16);
         }
     }
+
+    @Test void theCapsulePlungesAndHitsAsTheCountdownEnds(){
+        assertEquals(LoadoutRules.CAPSULE_DROP_HEIGHT,LoadoutRules.CAPSULE_FALL_TICKS*LoadoutRules.CAPSULE_FALL_SPEED,1e-9,"it falls the whole height in CAPSULE_FALL_TICKS");
+        assertTrue(LoadoutRules.CAPSULE_FALL_SPEED>=3,"no parachute: at least 3 blocks a tick");
+        for(boolean outside:new boolean[]{true,false}){
+            int start=LoadoutRules.capsuleFallStart(1000,outside);
+            assertEquals(1000+SupportRules.supplyTicks(outside),start+LoadoutRules.CAPSULE_FALL_TICKS,"it hits as the countdown ends");
+            assertTrue(start>1000,"it starts falling after the cannon fired");
+        }
+        assertTrue(LoadoutRules.CAPSULE_OPEN_DELAY>0&&LoadoutRules.CAPSULE_OPEN_DELAY<20,"the door opens by itself within a second of the impact");
+    }
+    @Test void rightClickOpensSneakRightClickPrints() throws Exception{
+        String station=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutStation.java"));
+        assertTrue(station.contains("if(sp.isSecondaryUseActive()){LoadoutPrint.request("),"sneak and right-click prints; anything else opens the menu");
+        String print=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutPrint.java"));
+        assertTrue(print.contains("isSecondaryUseActive()&&LoadoutStation.cell(e.getLevel(),e.getPos()))e.setUseBlock(net.minecraftforge.eventbus.api.Event.Result.ALLOW)"),"an item in hand does not stop a sneak click");
+        String cinematic=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/dev/eternaldefense/beacon/LoadoutCinematic.java"));
+        assertTrue(cinematic.contains("if(!mc.options.keyShift.isDown())sneakFreeFor=be.start;else if(sneakFreeFor==be.start){skip(be);return;}"),"the sneak held for a quick print does not skip the shots");
+    }
 }

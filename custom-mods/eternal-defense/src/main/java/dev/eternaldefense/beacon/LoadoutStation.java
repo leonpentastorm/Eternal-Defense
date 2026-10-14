@@ -56,6 +56,8 @@ final class LoadoutStation {
     static final IntegerProperty DX=IntegerProperty.create("dx",0,2),DY=IntegerProperty.create("dy",0,2),DZ=IntegerProperty.create("dz",0,2);
 
     static boolean isStation(BlockState s){return s.is(EternalDefense.LOADOUT_STATION.get())||s.is(EternalDefense.LOADOUT_STATION_PART.get());}
+    /** True for any of the station's 27 cells. */
+    static boolean cell(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(EternalDefense.LOADOUT_STATION.get())||s.is(EternalDefense.LOADOUT_STATION_PART.get());}
     static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(EternalDefense.LOADOUT_STATION_PART.get())?pos.offset(1-s.getValue(DX),1-s.getValue(DY),1-s.getValue(DZ)):pos;}
     /** All 27 blocks, the anchor first. */
     static List<BlockPos> cells(BlockPos anchor){var out=new ArrayList<BlockPos>();out.add(anchor);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)out.add(anchor.offset(x,y,z));return out;}
@@ -71,12 +73,6 @@ final class LoadoutStation {
         for(int i=0;i<(4-LoadoutModel.quarters(facing))%4;i++){int t=dx;dx=-dz;dz=t;}
         return new int[]{dx,dz};
     }
-    /** True for the two door cells: the middle of the front column, bottom and middle row. */
-    static boolean door(BlockGetter level,BlockPos pos){
-        var s=level.getBlockState(pos);if(!s.is(EternalDefense.LOADOUT_STATION_PART.get()))return false;
-        int[] l=local(s.getValue(DX)-1,s.getValue(DZ)-1,s.getValue(DefenseStructures.FACING));
-        return l[0]==0&&l[1]==-1&&s.getValue(DY)<=1;
-    }
     /** True while coins wait in the station's slots: then it cannot be mined. */
     static boolean holdsCoins(BlockGetter level,BlockPos pos){
         if(level instanceof ServerLevel server){var m=machine(server,pos);return m!=null&&m.hasCoins();}
@@ -84,7 +80,7 @@ final class LoadoutStation {
     }
     static boolean guarded(BlockGetter level,BlockPos pos,Player p){return p!=null&&!p.isCreative()&&holdsCoins(level,pos);}
 
-    // Right-click: the door prints the active coin, the rest of the machine opens its menu
+    // Right-click opens the menu; sneak and right-click prints the active coin
     static InteractionResult use(Level level,BlockPos pos,Player player,InteractionHand hand){
         if(player.getItemInHand(hand).is(EternalDefense.CONTROLLER.get()))return InteractionResult.PASS;
         if(!(player instanceof ServerPlayer sp))return InteractionResult.SUCCESS;
@@ -94,7 +90,7 @@ final class LoadoutStation {
         if(machine==null)return InteractionResult.CONSUME;
         String zone=BaseZone.problem(level,anchor);
         if(zone!=null){say(sp,"outside");return InteractionResult.CONSUME;}
-        if(door(level,pos)&&!sp.isShiftKeyDown()){LoadoutPrint.request(sp,machine,LoadoutData.get(sp.serverLevel()).players.active(sp.getUUID()));return InteractionResult.CONSUME;}
+        if(sp.isSecondaryUseActive()){LoadoutPrint.request(sp,machine,LoadoutData.get(sp.serverLevel()).players.active(sp.getUUID()));return InteractionResult.CONSUME;}
         open(sp,machine);
         return InteractionResult.CONSUME;
     }

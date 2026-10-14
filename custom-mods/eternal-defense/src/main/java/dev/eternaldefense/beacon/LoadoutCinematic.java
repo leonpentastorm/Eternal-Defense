@@ -36,6 +36,8 @@ public final class LoadoutCinematic {
     static final float WIDE=100f,PRINT_FOV=110f;static final int SETTLE=10,FLASH=8;
     /** The print skipped or stopped by a fault (its start time), so it does not come back. */
     private static long skipped=Long.MIN_VALUE;private static boolean faulted;private static long cueFor=Long.MIN_VALUE;
+    /** The print during which sneak has been up once: only a fresh sneak skips (a quick print starts with sneak held). */
+    private static long sneakFreeFor=Long.MIN_VALUE;
     private static Shot current;
 
     /** True while a shot is on screen. */
@@ -121,7 +123,7 @@ public final class LoadoutCinematic {
         var mc=Minecraft.getInstance();var be=LoadoutClient.held();
         if(be==null||mc.player==null||mc.level==null){current=null;return;}
         if(station()==null){current=null;return;}
-        if(mc.options.keyShift.isDown()){skip(be);return;}
+        if(!mc.options.keyShift.isDown())sneakFreeFor=be.start;else if(sneakFreeFor==be.start){skip(be);return;}
         float c=be.timeline().cycleTick(be.elapsed(mc.level.getGameTime(),0));
         if(c>=LoadoutRules.SWAP_AT&&cueFor!=be.start){
             cueFor=be.start;
@@ -137,6 +139,6 @@ public final class LoadoutCinematic {
     @SubscribeEvent public static void cinematicEscape(ScreenEvent.Opening e){
         var be=LoadoutClient.held();if(current!=null&&be!=null&&e.getNewScreen() instanceof PauseScreen){skip(be);e.setCanceled(true);}
     }
-    @SubscribeEvent public static void cinematicLeave(ClientPlayerNetworkEvent.LoggingOut e){current=null;faulted=false;skipped=Long.MIN_VALUE;}
+    @SubscribeEvent public static void cinematicLeave(ClientPlayerNetworkEvent.LoggingOut e){current=null;faulted=false;skipped=Long.MIN_VALUE;sneakFreeFor=Long.MIN_VALUE;}
     @SubscribeEvent public static void cinematicRespawn(ClientPlayerNetworkEvent.Clone e){current=null;}
 }

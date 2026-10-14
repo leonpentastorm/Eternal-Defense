@@ -9,6 +9,7 @@ Three groups, each converted when its files are in the folder (so a folder with 
   "Recall flare chatter (1..3).mp3"   -> recall_chatter_1.ogg ... _3.ogg           (0.0.22, return flares)
   "FOB Order Chatter (1..4).mp3"      -> order_chatter_1.ogg ... _4.ogg            (0.0.34, a specialty seller purchase)
   "Radio static coming in.mp3"        -> radio_static.ogg                          (0.0.34, Contact Specialty Seller)
+  "Loadout chatter (1..4).mp3"        -> loadout_chatter_1.ogg ... _4.ogg          (1.1.1, Loadout flares)
 
 Each line is brought to about the same loudness (-18 LUFS, or less where the -1 dBFS peak limit stops it first; one linear gain
 per file, so the radio sound of the recording is untouched), made mono (the line follows the player who threw the flare, a placed sound) and written as
@@ -20,7 +21,7 @@ import json, os, re, subprocess, sys
 TARGET_LUFS = -18.0
 PEAK_DBFS = -1.0
 GROUPS = [("Fire support chatter", "chatter", 6), ("Supplies flare chatter", "supply_chatter", 2), ("Recall flare chatter", "recall_chatter", 3),
-          ("FOB Order Chatter", "order_chatter", 4), ("Radio static coming in", "radio_static", 0)]   # 0: one file, no number
+          ("FOB Order Chatter", "order_chatter", 4), ("Radio static coming in", "radio_static", 0), ("Loadout chatter", "loadout_chatter", 4)]   # 0: one file, no number
 
 
 def measure(src):

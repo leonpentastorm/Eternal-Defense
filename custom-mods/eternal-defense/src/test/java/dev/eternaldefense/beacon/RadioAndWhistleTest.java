@@ -19,7 +19,8 @@ final class RadioAndWhistleTest {
             assertTrue(lang.has(event.get("subtitle").getAsString()),"a subtitle for "+name);
             var file=HandTunedRoundTest.ogg("/assets/eternal_defense/sounds/sfx/"+name.substring("flare.".length())+".ogg");
             assertEquals(1,file.channels(),name+" follows the player, so it is mono");
-            assertTrue(file.seconds()>2.5&&file.seconds()<5,name+" is "+file.seconds()+" s");
+            assertTrue(file.seconds()>2.5&&file.seconds()<(kind==SupportCalls.Kind.LOADOUT?8:5),name+" is "+file.seconds()+" s");
+            if(kind==SupportCalls.Kind.LOADOUT)assertEquals(Math.ceil(file.seconds()*20),SupportChatter.ticks(kind,n),1,name+": the radio stays claimed as long as the line plays");
         }
         assertFalse(sounds.has("flare.signal"),"the siren is gone");
         assertNull(RadioAndWhistleTest.class.getResource("/assets/eternal_defense/sounds/sfx/flare_signal.ogg"));

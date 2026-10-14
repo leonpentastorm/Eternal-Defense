@@ -28,7 +28,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -81,7 +80,7 @@ final class LoadoutCapsule {
         }
         return best;
     }
-    /** The cannon's delivery: a capsule falls under a parachute outdoors or stands up at the spot; without room, the old parcel. */
+    /** The cannon's delivery: a capsule plunges onto the cell from high above (through any roof); without room, the old parcel. */
     static void deliver(ServerLevel level,ServerPlayer caller,UUID owner,Vec3 flare,ListTag kit,boolean outside,int clear){
         var cell=landingCell(level,BlockPos.containing(flare));
         if(cell==null){
@@ -89,15 +88,21 @@ final class LoadoutCapsule {
             if(caller!=null)caller.sendSystemMessage(Component.translatable("gui.eternal_defense.loadout.capsule.no_room").withStyle(ChatFormatting.YELLOW));
             return;
         }
-        if(outside){
-            var drop=new Drop(EternalDefense.CAPSULE_DROP.get(),level);drop.owner=owner;drop.kit=kit.copy();
-            drop.setPos(cell.getX()+.5,flare.y+Math.max(1,clear)-.5,cell.getZ()+.5);drop.setFalling(true);
-            level.sendParticles(ParticleTypes.CLOUD,flare.x,flare.y+1,flare.z,12,.3,.2,.3,.02);level.addFreshEntity(drop);
-        }else{
-            place(level,cell,owner,kit);
-            level.sendParticles(ParticleTypes.END_ROD,cell.getX()+.5,cell.getY()+1,cell.getZ()+.5,18,.3,.6,.3,.05);
-            level.playSound(null,cell,SoundEvents.ENDERMAN_TELEPORT,SoundSource.PLAYERS,.8f,1.4f);
-        }
+        var drop=new Drop(EternalDefense.CAPSULE_DROP.get(),level);drop.owner=owner;drop.kit=kit.copy();drop.setTarget(cell.getY());
+        drop.setPos(cell.getX()+.5,cell.getY()+LoadoutRules.CAPSULE_DROP_HEIGHT,cell.getZ()+.5);level.addFreshEntity(drop);
+        level.playSound(null,drop,SoundEvents.TRIDENT_RIPTIDE_3,SoundSource.BLOCKS,6f,.6f);
+    }
+    /** The impact at cell: a blast that breaks nothing and hurts no one, the floor thrown up, smoke and a shock ring. */
+    static void impact(ServerLevel level,BlockPos cell){
+        var c=Vec3.atBottomCenterOf(cell);
+        level.playSound(null,c.x,c.y,c.z,SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,4f,.8f+level.random.nextFloat()*.1f);
+        level.playSound(null,c.x,c.y,c.z,SoundEvents.ANVIL_LAND,SoundSource.BLOCKS,1.5f,.5f);
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,c.x,c.y+.5,c.z,1,0,0,0,0);
+        level.sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.4,c.z,8,1.2,.3,1.2,0);
+        var floor=level.getBlockState(cell.below());
+        if(!floor.isAir())level.sendParticles(new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK,floor),c.x,c.y+.1,c.z,90,1.3,.1,1.3,.4);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,c.x,c.y+.3,c.z,12,.9,.2,.9,.02);
+        for(int i=0;i<32;i++){double a=i*Math.PI/16;level.sendParticles(ParticleTypes.CLOUD,c.x+Math.cos(a)*.7,c.y+.15,c.z+Math.sin(a)*.7,0,Math.cos(a),.03,Math.sin(a),.45);}
     }
     /** Stands a capsule at cell, turned to its owner, holding the kit. */
     static void place(ServerLevel level,BlockPos cell,UUID owner,ListTag kit){
@@ -106,8 +111,7 @@ final class LoadoutCapsule {
         if(p!=null&&p.level()==level){double dx=p.getX()-(cell.getX()+.5),dz=p.getZ()-(cell.getZ()+.5);if(dx*dx+dz*dz>1e-4)facing=Direction.getNearest(dx,0,dz);}
         level.setBlock(cell,EternalDefense.LOADOUT_CAPSULE.get().defaultBlockState().setValue(DefenseStructures.FACING,facing),3);
         level.setBlock(cell.above(),EternalDefense.LOADOUT_CAPSULE_PART.get().defaultBlockState().setValue(DefenseStructures.FACING,facing),3);
-        if(level.getBlockEntity(cell) instanceof CapsuleEntity be){be.owner=owner;be.ownerName=p==null?"":p.getGameProfile().getName();be.fill(kit);be.sync();}
-        level.playSound(null,cell,SoundEvents.ANVIL_LAND,SoundSource.BLOCKS,.6f,.8f);
+        if(level.getBlockEntity(cell) instanceof CapsuleEntity be){be.owner=owner;be.ownerName=p==null?"":p.getGameProfile().getName();be.fill(kit);be.autoOpenAt=level.getGameTime()+LoadoutRules.CAPSULE_OPEN_DELAY;be.sync();}
         com.mojang.logging.LogUtils.getLogger().info("[Loadout Station] a capsule stands at {} facing {}",cell.toShortString(),facing.getSerializedName());
     }
 
@@ -181,6 +185,8 @@ final class LoadoutCapsule {
         final SimpleContainer items=new SimpleContainer(LoadoutRules.KIT_SLOTS){@Override public void setChanged(){super.setChanged();CapsuleEntity.this.setChanged();}};
         /** Synced game times: door opened, door closed, folding (-1: not). */
         long openAt=-1,closeAt=-1,foldAt=-1;
+        /** Game time the door opens by itself after the impact (-1: done or never). */
+        long autoOpenAt=-1;
         private int age;private boolean viewed;
         CapsuleEntity(BlockPos pos,BlockState state){super(EternalDefense.LOADOUT_CAPSULE_ENTITY.get(),pos,state);}
         Direction facing(){return getBlockState().getValue(DefenseStructures.FACING);}
@@ -193,15 +199,26 @@ final class LoadoutCapsule {
             }
             setChanged();
         }
-        void open(){if(level==null)return;viewed=true;openAt=level.getGameTime();closeAt=-1;sync();level.playSound(null,worldPosition,SoundEvents.PISTON_EXTEND,SoundSource.BLOCKS,.6f,1.4f);}
+        boolean doorOpen(){return openAt>=0&&closeAt<openAt;}
+        /** The owner opens its menu: the door slides open unless it already stands open. */
+        void open(){if(level==null)return;viewed=true;if(!doorOpen())openDoor();}
+        void openDoor(){
+            if(!(level instanceof ServerLevel server))return;autoOpenAt=-1;openAt=server.getGameTime();closeAt=-1;sync();
+            server.playSound(null,worldPosition,SoundEvents.PISTON_EXTEND,SoundSource.BLOCKS,.8f,1.2f);server.playSound(null,worldPosition,SoundEvents.FIRE_EXTINGUISH,SoundSource.BLOCKS,.5f,1.3f);
+            for(var v:LoadoutModel.CAPSULE_VENTS){var p=LoadoutModel.blocks(v.x(),v.y(),v.z(),facing());var d=LoadoutModel.turnVector(v.dx(),v.dy(),v.dz(),facing());
+                for(int i=0;i<4;i++)server.sendParticles(ParticleTypes.CLOUD,worldPosition.getX()+p[0],worldPosition.getY()+p[1],worldPosition.getZ()+p[2],0,d[0],d[1]+.05,d[2],.1);}
+        }
+        /** Its menu closed: emptied, the door shuts and it folds away; with the kit still inside it stays open. */
         void closed(){
-            if(level==null||folding())return;viewed=false;closeAt=level.getGameTime();sync();level.playSound(null,worldPosition,SoundEvents.PISTON_CONTRACT,SoundSource.BLOCKS,.6f,1.4f);
-            if(items.isEmpty())foldAt=closeAt+LoadoutRules.CAPSULE_DOOR_TICKS;
+            if(level==null||folding())return;viewed=false;
+            if(!items.isEmpty())return;
+            closeAt=level.getGameTime();foldAt=closeAt+LoadoutRules.CAPSULE_DOOR_TICKS;sync();level.playSound(null,worldPosition,SoundEvents.PISTON_CONTRACT,SoundSource.BLOCKS,.6f,1.4f);
         }
         void sync(){setChanged();if(level!=null)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         void serverTick(){
             if(!(level instanceof ServerLevel server))return;
             long now=server.getGameTime();
+            if(autoOpenAt>=0&&now>=autoOpenAt&&!folding())openDoor();
             // Left unopened it lasts as long as a supply parcel, then the kit spills out and it folds away
             if(!viewed&&++age>SupportRules.PARCEL_LIFETIME_TICKS&&!folding()){
                 for(int i=0;i<items.getContainerSize();i++)if(!items.getItem(i).isEmpty())Containers.dropItemStack(server,worldPosition.getX()+.5,worldPosition.getY()+.5,worldPosition.getZ()+.5,items.removeItemNoUpdate(i));
@@ -221,12 +238,13 @@ final class LoadoutCapsule {
         @Override protected void saveAdditional(CompoundTag tag){
             super.saveAdditional(tag);if(owner!=null)tag.putUUID("Owner",owner);tag.putString("OwnerName",ownerName);tag.putInt("Age",age);
             var list=new ListTag();for(int i=0;i<items.getContainerSize();i++)if(!items.getItem(i).isEmpty()){var c=items.getItem(i).save(new CompoundTag());c.putByte("Slot",(byte)i);list.add(c);}
-            tag.put("Kit",list);tag.putLong("FoldAt",foldAt);
+            tag.put("Kit",list);tag.putLong("FoldAt",foldAt);tag.putLong("AutoOpenAt",autoOpenAt);tag.putLong("OpenAt",openAt);tag.putLong("CloseAt",closeAt);
         }
         @Override public void load(CompoundTag tag){
             super.load(tag);owner=tag.hasUUID("Owner")?tag.getUUID("Owner"):null;ownerName=tag.getString("OwnerName");age=tag.getInt("Age");
             items.clearContent();for(Tag t:tag.getList("Kit",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;int i=c.getByte("Slot");if(i>=0&&i<LoadoutRules.KIT_SLOTS)items.setItem(i,ItemStack.of(c));}
-            foldAt=tag.contains("FoldAt")?tag.getLong("FoldAt"):-1;
+            foldAt=tag.contains("FoldAt")?tag.getLong("FoldAt"):-1;autoOpenAt=tag.contains("AutoOpenAt")?tag.getLong("AutoOpenAt"):-1;
+            if(tag.contains("OpenAt")){openAt=tag.getLong("OpenAt");closeAt=tag.getLong("CloseAt");}
         }
         @Override public CompoundTag getUpdateTag(){var t=new CompoundTag();t.putLong("OpenAt",openAt);t.putLong("CloseAt",closeAt);t.putLong("FoldAt",foldAt);t.putString("OwnerName",ownerName);return t;}
         @Override public void handleUpdateTag(CompoundTag t){openAt=t.getLong("OpenAt");closeAt=t.getLong("CloseAt");foldAt=t.getLong("FoldAt");ownerName=t.getString("OwnerName");}
@@ -272,36 +290,45 @@ final class LoadoutCapsule {
         }
     }
 
-    /** A capsule falling under the supply parachute; it stands up where it lands (or becomes a parcel without room). */
+    /** A capsule plunging from the sky with no parachute: it passes through anything on the way and lands on its cell with a blast. */
     static final class Drop extends Entity {
-        private static final EntityDataAccessor<Boolean> FALLING=SynchedEntityData.defineId(Drop.class,EntityDataSerializers.BOOLEAN);
-        UUID owner;ListTag kit=new ListTag();private int age;
-        Drop(EntityType<? extends Drop> type,Level level){super(type,level);}
-        void setFalling(boolean falling){entityData.set(FALLING,falling);}
-        boolean falling(){return entityData.get(FALLING);}
-        @Override protected void defineSynchedData(){entityData.define(FALLING,true);}
-        @Override public AABB getBoundingBoxForCulling(){return getBoundingBox().inflate(3,0,3).expandTowards(0,7,0);}
+        private static final EntityDataAccessor<Integer> TARGET=SynchedEntityData.defineId(Drop.class,EntityDataSerializers.INT);
+        private static final int NONE=Integer.MIN_VALUE;
+        UUID owner;ListTag kit=new ListTag();private int age;private boolean shaken;
+        Drop(EntityType<? extends Drop> type,Level level){super(type,level);noPhysics=true;}
+        /** The y of the cell it lands in. */
+        void setTarget(int y){entityData.set(TARGET,y);}
+        int target(){return entityData.get(TARGET);}
+        @Override protected void defineSynchedData(){entityData.define(TARGET,NONE);}
+        @Override public AABB getBoundingBoxForCulling(){return getBoundingBox().expandTowards(0,12,0);}
+        @Override public boolean shouldRenderAtSqrDistance(double d){return d<256*256;}
         @Override public boolean isPickable(){return false;}
         @Override public boolean isPushable(){return false;}
         @Override public void tick(){
             super.tick();age++;
-            setDeltaMovement(0,-SupportRules.PARCEL_FALL_SPEED,0);move(MoverType.SELF,getDeltaMovement());
-            if(level().isClientSide)return;
-            if(onGround()||verticalCollision||age>2400)land((ServerLevel)level());
+            if(!level().isClientSide&&target()==NONE)setTarget(level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,getBlockX(),getBlockZ()));
+            double y=Math.max(target(),getY()-LoadoutRules.CAPSULE_FALL_SPEED);
+            setDeltaMovement(0,y-getY(),0);setPos(getX(),y,getZ());
+            if(level().isClientSide){net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->LoadoutClient.dropTick(this));return;}
+            if(getY()<=target()||age>2400)land((ServerLevel)level());
         }
+        /** The client saw it land (or leave just before): the ground shakes once. */
+        boolean shake(){if(shaken)return false;shaken=true;return true;}
+        @Override public void onClientRemoval(){if(target()!=NONE&&getY()-target()<LoadoutRules.CAPSULE_DROP_HEIGHT/3.0)net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->LoadoutClient.dropLanded(this));}
         private void land(ServerLevel level){
-            var cell=landingCell(level,blockPosition());
+            var at=BlockPos.containing(getX(),target()==NONE?getY():target(),getZ());
+            var cell=landingCell(level,at);
+            impact(level,cell!=null?cell:at);
             if(cell!=null)place(level,cell,owner,kit);
             else{
                 // No two free blocks here: the old one-block parcel with the same items
-                var parcel=new SupportCrate.ParcelEntity(EternalDefense.PARCEL.get(),level);parcel.setContents(kit);parcel.setPos(getX(),getY(),getZ());parcel.setFalling(false);level.addFreshEntity(parcel);
+                var parcel=new SupportCrate.ParcelEntity(EternalDefense.PARCEL.get(),level);parcel.setContents(kit);parcel.setPos(getX(),at.getY(),getZ());parcel.setFalling(false);level.addFreshEntity(parcel);
                 var p=owner==null?null:level.getServer().getPlayerList().getPlayer(owner);if(p!=null)p.sendSystemMessage(Component.translatable("gui.eternal_defense.loadout.capsule.no_room").withStyle(ChatFormatting.YELLOW));
             }
-            level.playSound(null,blockPosition(),SoundEvents.BARREL_CLOSE,SoundSource.NEUTRAL,1.4f,.6f);
             kit=new ListTag();discard();
         }
-        @Override protected void readAdditionalSaveData(CompoundTag n){owner=n.hasUUID("Owner")?n.getUUID("Owner"):null;kit=n.getList("Kit",Tag.TAG_COMPOUND);age=n.getInt("Age");setFalling(n.getBoolean("Falling"));}
-        @Override protected void addAdditionalSaveData(CompoundTag n){if(owner!=null)n.putUUID("Owner",owner);n.put("Kit",kit);n.putInt("Age",age);n.putBoolean("Falling",falling());}
+        @Override protected void readAdditionalSaveData(CompoundTag n){owner=n.hasUUID("Owner")?n.getUUID("Owner"):null;kit=n.getList("Kit",Tag.TAG_COMPOUND);age=n.getInt("Age");setTarget(n.contains("Target")?n.getInt("Target"):NONE);}
+        @Override protected void addAdditionalSaveData(CompoundTag n){if(owner!=null)n.putUUID("Owner",owner);n.put("Kit",kit);n.putInt("Age",age);if(target()!=NONE)n.putInt("Target",target());}
         @Override public Packet<ClientGamePacketListener> getAddEntityPacket(){return NetworkHooks.getEntitySpawningPacket(this);}
     }
 }

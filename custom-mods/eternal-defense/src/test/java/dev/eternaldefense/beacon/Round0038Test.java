@@ -110,6 +110,14 @@ final class Round0038Test {
     }
 
     // Stacking
+    @Test void eachFoodSlotTakesADifferentFood() throws Exception{
+        assertTrue(MreRules.allDifferent(List.of("bread","apple","beef")));
+        assertFalse(MreRules.allDifferent(List.of("bread","apple","bread")),"one stack spread over the slots is refused");
+        assertTrue(MreRules.allDifferent(List.of()));
+        String station=source("MreStation.java");
+        assertTrue(body(station,"static boolean accepts(","\n    }").contains("!taken(c,slot,stack)"),"a slot refuses a food another slot already holds");
+        assertTrue(station.contains("if(!MreRules.allDifferent(kinds))return new Check(\"same_food\",null);"),"the server refuses a pack with a repeat too");
+    }
     @Test void mresWithTheSameTotalsStackToSixtyFour() throws Exception{
         assertEquals(64,MreRules.STACK);
         var mre=source("Mre.java");
@@ -194,14 +202,14 @@ final class Round0038Test {
         var guide=t.apply("gui.eternal_defense.guide.mre.body");var detail=t.apply("gui.eternal_defense.guide.mre.detail");
         for(var h:List.of("# MRE Station","# MRE","# Marines Fuel"))assertTrue(guide.contains(h+"\n"),h);
         assertTrue(guide.contains("at most "+MreRules.MAX_NUTRITION+" nutrition")&&guide.contains("go past "+MreRules.MAX_NUTRITION),"the cap");
-        assertTrue(guide.contains("up to six foods")&&guide.contains("1 Marines Fuel and 1 Paper"),"what one MRE uses");
+        assertTrue(guide.contains("up to six different foods")&&guide.contains("1 Marines Fuel and 1 Paper"),"what one MRE uses");
         assertTrue(guide.contains("Craft 2 from a clay ball and any dye"),"the recipe");
         assertTrue(guide.contains("stack to "+MreRules.STACK)&&guide.contains("only when you are hungry")&&guide.contains("Every effect is lost"));
         assertTrue(detail.contains(MreRules.EAT_TICKS+" ticks")&&detail.contains("at most "+(int)MreRules.MAX_SATURATION)&&detail.contains("nutrition x saturation modifier x 2"));
         assertTrue(detail.contains("- MRE Station: "+Economy.MRE_STATION_KEY+" Reinforced Beacon Plating, "+Economy.MRE_STATION_IRON+" iron ingots and a smoker"));
-        for(var k:List.of("no_food","not_food","over","no_nutrition","no_fuel","no_paper","output_other","output_full"))assertTrue(json.has("gui.eternal_defense.mre.problem."+k),k);
+        for(var k:List.of("no_food","not_food","same_food","over","no_nutrition","no_fuel","no_paper","output_other","output_full"))assertTrue(json.has("gui.eternal_defense.mre.problem."+k),k);
         var station=source("MreStation.java");
-        for(var k:List.of("\"not_food\"","\"no_food\"","\"over\"","\"no_nutrition\"","\"no_fuel\"","\"no_paper\"","\"output_other\"","\"output_full\""))assertTrue(station.contains(k),k);
+        for(var k:List.of("\"not_food\"","\"no_food\"","\"same_food\"","\"over\"","\"no_nutrition\"","\"no_fuel\"","\"no_paper\"","\"output_other\"","\"output_full\""))assertTrue(station.contains(k),k);
     }
     @Test void theNumbersReadTheSameEverywhere(){
         assertEquals("16.8",MreRules.number(16.8f));assertEquals("12",MreRules.number(12.000001f));assertEquals("0.35",MreRules.number(.35f));assertEquals("20",MreRules.number(20f));assertEquals("0",MreRules.number(0f));
