@@ -6,10 +6,8 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /** Development runs only: registers the GameTests and test runners enabled by -Deternaldefense.* switches. */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD)
@@ -19,7 +17,6 @@ public final class GameTestSetup {
     @SubscribeEvent public static void construct(FMLConstructModEvent e){
         var bus=MinecraftForge.EVENT_BUS;
         if(on("integrationTests")){
-            if(!ModList.get().isLoaded("kubejs"))PlatformGameTests.registerParts(FMLJavaModLoadingContext.get().getModEventBus());
             bus.register(Integration.class);
         }
         if(on("messHallTests")){

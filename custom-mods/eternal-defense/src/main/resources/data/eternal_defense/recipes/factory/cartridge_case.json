@@ -1,0 +1,14 @@
+{
+  "type": "create:pressing",
+  "ingredients": [
+    {
+      "item": "create:copper_sheet"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:cartridge_case",
+      "count": 8
+    }
+  ]
+}

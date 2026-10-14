@@ -25,16 +25,19 @@ public final class UniversalWood {
         JsonElement original=JsonParser.parseString(json),updated=original.deepCopy();rewrite(updated);
         return original.equals(updated)?json:updated.toString();
     }
-    private static void rewrite(JsonElement element){
-        if(element.isJsonArray()){for(var entry:element.getAsJsonArray())rewrite(entry);return;}
-        if(!element.isJsonObject())return;var obj=element.getAsJsonObject();
+    /** Rewrites wood inputs in place; true when anything changed. */
+    static boolean rewrite(JsonElement element){
+        boolean changed=false;
+        if(element.isJsonArray()){for(var entry:element.getAsJsonArray())changed|=rewrite(entry);return changed;}
+        if(!element.isJsonObject())return false;var obj=element.getAsJsonObject();
         // An ingredient is an item/tag object.
         if(obj.has("item")&&obj.get("item").isJsonPrimitive()&&!obj.has("nbt")){
             String tag=FORMS.get(obj.get("item").getAsString());
-            if(tag!=null){obj.remove("item");obj.addProperty("tag",tag);}
+            if(tag!=null){obj.remove("item");obj.addProperty("tag",tag);changed=true;}
         }
-        if(obj.has("tag")&&obj.get("tag").isJsonPrimitive()){String form=TAGS.get(obj.get("tag").getAsString());if(form!=null)obj.addProperty("tag",form);}
-        for(var entry:obj.entrySet())if(!OUTPUTS.contains(entry.getKey()))rewrite(entry.getValue());
+        if(obj.has("tag")&&obj.get("tag").isJsonPrimitive()){String form=TAGS.get(obj.get("tag").getAsString());if(form!=null&&!form.equals(obj.get("tag").getAsString())){obj.addProperty("tag",form);changed=true;}}
+        for(var entry:obj.entrySet())if(!OUTPUTS.contains(entry.getKey()))changed|=rewrite(entry.getValue());
+        return changed;
     }
     static Ingredient normalize(Ingredient ingredient){
         ItemStack[] choices=ingredient.getItems();String form=null;

@@ -43,14 +43,12 @@ final class FlareVoiceAndAmmoTest {
         assertEquals(2,AmmoInputs.casings(0),"a batch is at least one round");
     }
     @Test void bothPlacesThatSetAmmoPartsUseTheSameNumbers() throws Exception{
-        String js=Files.readString(Path.of("../../pack-integration/kubejs/server_scripts/20_guns_and_ammo.js"));
-        assertTrue(js.contains("Java.loadClass('dev.eternaldefense.beacon.AmmoInputs')"));
-        assertTrue(js.contains("count:Number(ammoInputs.casings(batch,id))")&&js.contains("count:Number(ammoInputs.propellant(batch,id))"),"the KubeJS recipes (0.0.26: with the ammo id, for the specials)");
-        assertFalse(js.contains("Math.ceil(batch/16)")||js.contains("Math.ceil(batch/8)"),"the old amounts are gone");
+        String rules=source("RecipeRules.java");
+        assertTrue(rules.contains("row(PART+\"cartridge_case\",AmmoInputs.casings(batch,id))")&&rules.contains("row(PART+\"propellant\",AmmoInputs.propellant(batch,id))"),"the gun smith recipes, with the ammo id for the specials");
         String platform=source("WeaponPlatform.java");
-        assertTrue(platform.contains("costs.add(cost(\"kubejs:cartridge_case\",AmmoInputs.casings(e.output.getCount(),ammo)));")&&platform.contains("costs.add(cost(\"kubejs:propellant\",AmmoInputs.propellant(e.output.getCount(),ammo)));"),"the Ammo Platform");
-        assertTrue(platform.contains("costs.removeIf(c->is(c,\"kubejs:cartridge_case\")||is(c,\"kubejs:propellant\"));"),"0.0.26: whatever the recipe (or an older pack script) lists is replaced, so the platform always charges these amounts");
-        assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getModifiers()),"KubeJS can only load a public class");
+        assertTrue(platform.contains("costs.add(cost(\"eternal_defense:cartridge_case\",AmmoInputs.casings(e.output.getCount(),ammo)));")&&platform.contains("costs.add(cost(\"eternal_defense:propellant\",AmmoInputs.propellant(e.output.getCount(),ammo)));"),"the Ammo Platform");
+        assertTrue(platform.contains("costs.removeIf(c->is(c,\"eternal_defense:cartridge_case\")||is(c,\"eternal_defense:propellant\"));"),"0.0.26: whatever the recipe (or an older pack script) lists is replaced, so the platform always charges these amounts");
+        assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getModifiers()),"public for the other packages");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class).getModifiers()),m+" is public");
         for(String m:List.of("casings","propellant"))assertTrue(java.lang.reflect.Modifier.isPublic(AmmoInputs.class.getMethod(m,int.class,String.class).getModifiers()),m+"(batch, id) is public");
     }

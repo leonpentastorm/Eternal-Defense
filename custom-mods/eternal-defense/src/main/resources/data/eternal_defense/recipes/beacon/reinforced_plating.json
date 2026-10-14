@@ -1,0 +1,28 @@
+{
+  "type": "create:compacting",
+  "ingredients": [
+    {
+      "item": "create:iron_sheet"
+    },
+    {
+      "item": "create:iron_sheet"
+    },
+    {
+      "item": "create:golden_sheet"
+    },
+    {
+      "item": "create:golden_sheet"
+    },
+    {
+      "item": "create:copper_sheet"
+    },
+    {
+      "item": "create:copper_sheet"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:reinforced_plating"
+    }
+  ]
+}

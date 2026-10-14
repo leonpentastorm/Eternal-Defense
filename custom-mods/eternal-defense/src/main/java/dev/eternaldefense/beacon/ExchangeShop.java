@@ -59,8 +59,8 @@ final class ExchangeShop {
         create:andesite_alloy x32 = 1
         create:precision_mechanism x2 = 1
         create:electron_tube x8 = 1
-        kubejs:cartridge_case x32 = 1
-        kubejs:propellant x32 = 1
+        eternal_defense:cartridge_case x32 = 1
+        eternal_defense:propellant x32 = 1
 
         [buy]
         eternal_defense:universal_ammo_coin x16 = 3
@@ -71,8 +71,8 @@ final class ExchangeShop {
         create:precision_mechanism = 3
         create:brass_ingot x8 = 3
         create:andesite_alloy x16 = 1
-        kubejs:cartridge_case x16 = 2
-        kubejs:propellant x16 = 2
+        eternal_defense:cartridge_case x16 = 2
+        eternal_defense:propellant x16 = 2
         minecraft:iron_ore x16 = 2
         minecraft:iron_block x8 = 8
         minecraft:gold_ingot x8 = 2

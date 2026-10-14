@@ -1,0 +1,29 @@
+{
+  "type": "create:mechanical_crafting",
+  "acceptMirrored": true,
+  "key": {
+    "H": {
+      "item": "eternal_defense:hardened_receiver"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "S": {
+      "item": "minecraft:netherite_scrap"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    }
+  },
+  "pattern": [
+    " H H ",
+    "HPSPH",
+    " SN S",
+    "HPSPH",
+    " H H "
+  ],
+  "result": {
+    "item": "eternal_defense:exotic_receiver",
+    "count": 4
+  }
+}

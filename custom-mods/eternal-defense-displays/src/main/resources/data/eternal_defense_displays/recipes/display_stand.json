@@ -1,36 +1,20 @@
 {
-  "type": "forge:conditional",
-  "recipes": [
-    {
-      "conditions": [
-        {
-          "type": "forge:not",
-          "value": {
-            "type": "forge:mod_loaded",
-            "modid": "eternal_defense"
-          }
-        }
-      ],
-      "recipe": {
-        "type": "minecraft:crafting_shaped",
-        "pattern": [
-          " I ",
-          " P ",
-          "III"
-        ],
-        "key": {
-          "I": {
-            "item": "minecraft:iron_ingot"
-          },
-          "P": {
-            "tag": "minecraft:planks"
-          }
-        },
-        "result": {
-          "item": "eternal_defense:display_stand",
-          "count": 1
-        }
-      }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " I ",
+    " P ",
+    "III"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "P": {
+      "tag": "minecraft:planks"
     }
-  ]
+  },
+  "result": {
+    "item": "eternal_defense_displays:display_stand",
+    "count": 1
+  }
 }

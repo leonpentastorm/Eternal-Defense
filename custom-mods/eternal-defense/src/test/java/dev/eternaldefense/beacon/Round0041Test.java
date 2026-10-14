@@ -54,11 +54,13 @@ final class Round0041Test {
 
     // Recipes and prices
     @Test void platingIsThreeKindsOfSheetCompactedWithoutHeat() throws Exception{
-        String recipes=Files.readString(Path.of("../../pack-integration/kubejs/server_scripts/15_beacon_recipes.js"));
-        String line=recipes.lines().filter(l->l.contains("'kubejs:beacon/plating'")).findFirst().orElseThrow();
-        assertTrue(line.contains("event.recipes.create.compacting('eternal_defense:reinforced_plating', ['2x create:iron_sheet','2x create:golden_sheet','2x create:copper_sheet'])"),line);
-        assertFalse(line.contains(".heated()"),"no heat");
-        assertFalse(line.contains("hardened_alloy"));
+        String raw=Files.readString(Path.of("src/main/resources/data/eternal_defense/recipes/beacon/reinforced_plating.json"));
+        var recipe=com.google.gson.JsonParser.parseString(raw).getAsJsonObject();
+        assertEquals("create:compacting",recipe.get("type").getAsString());
+        var inputs=new java.util.ArrayList<String>();recipe.getAsJsonArray("ingredients").forEach(i->inputs.add(i.getAsJsonObject().get("item").getAsString()));
+        assertEquals(List.of("create:iron_sheet","create:iron_sheet","create:golden_sheet","create:golden_sheet","create:copper_sheet","create:copper_sheet"),inputs);
+        assertFalse(recipe.has("heatRequirement"),"no heat");
+        assertFalse(raw.contains("hardened_alloy"));
     }
     @Test void aBlazeRodCostsSix(){
         var rod=RaidRoundTest.buys(ExchangeShop.PACK).stream().filter(r->r.id().equals("minecraft:blaze_rod")).findFirst().orElseThrow();

@@ -11,12 +11,11 @@ final class CreativeCatalog {
         "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","milk_bottle","prepared_sandwich","drink_mixer_mk1","drink_pot","cup_dispenser","drink_cup_empty","mre_maker","marines_fuel",
         "support_platform","support_cannon","supply_flare","return_flare","fire_support_flare","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","warlord_seal",
         "ardent_energy","universal_ammo_coin","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
-    static boolean hidden(String id){return id.matches("(mess_hall|drink_mixer)_mk[234]")||id.equals("drink_cup")||id.equals("mre");}
+    static boolean hidden(String id){return id.matches("(mess_hall|drink_mixer)_mk[234]")||id.equals("drink_cup")||id.equals("mre")||id.startsWith("incomplete_");}
     static void display(CreativeModeTab.Output output){
         var seen=new HashSet<Item>();
         for(String id:FIRST){var item=BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(EternalDefense.ID,id));if(item!=Items.AIR&&seen.add(item))output.accept(item);}
-        EternalDefense.RACKS.stream().sorted(Comparator.comparing(b->b.getId().toString())).forEach(b->{if(seen.add(b.get().asItem()))output.accept(b.get());});
-        BuiltInRegistries.ITEM.stream().filter(item->{var id=BuiltInRegistries.ITEM.getKey(item);return (id.getNamespace().equals(EternalDefense.ID)||id.getNamespace().equals("kubejs"))&&!hidden(id.getPath());})
+        BuiltInRegistries.ITEM.stream().filter(item->{var id=BuiltInRegistries.ITEM.getKey(item);return id.getNamespace().equals(EternalDefense.ID)&&!hidden(id.getPath());})
             .sorted(Comparator.comparingInt(CreativeCatalog::category).thenComparing(item->BuiltInRegistries.ITEM.getKey(item).toString())).forEach(item->{if(seen.add(item))output.accept(item);});
     }
     private static int category(Item item){String id=BuiltInRegistries.ITEM.getKey(item).getPath();return id.contains("receiver")||id.contains("mechanism")?0:id.contains("barrel")||id.contains("component")||id.contains("circuit")?1:id.contains("ammo")||id.contains("casing")||id.contains("bullet")||id.contains("shell")?2:3;}

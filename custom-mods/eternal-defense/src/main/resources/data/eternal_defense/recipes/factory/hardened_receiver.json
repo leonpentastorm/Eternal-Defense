@@ -1,0 +1,80 @@
+{
+  "type": "create:sequenced_assembly",
+  "ingredient": {
+    "item": "eternal_defense:brass_receiver"
+  },
+  "loops": 2,
+  "results": [
+    {
+      "item": "eternal_defense:hardened_receiver"
+    }
+  ],
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        },
+        {
+          "item": "eternal_defense:hardened_alloy"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        },
+        {
+          "item": "create:precision_mechanism"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        }
+      ]
+    },
+    {
+      "type": "create:filling",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        },
+        {
+          "amount": 100,
+          "fluid": "minecraft:lava",
+          "nbt": {}
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        }
+      ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_hardened_receiver"
+        }
+      ]
+    }
+  ],
+  "transitionalItem": {
+    "item": "eternal_defense:incomplete_hardened_receiver"
+  }
+}

@@ -1,0 +1,164 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.0.1: the mod's own factory items and recipe rules, creative tabs, the displays as an optional mod. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease101 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    /** A step runs, then the next one waits delay ticks. */
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    /** Waits ticks, then runs the check. */
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+
+    static boolean displays(){return net.minecraftforge.fml.ModList.get().isLoaded("eternal_defense_displays");}
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static net.minecraft.world.item.crafting.Recipe<?> recipe(String id){return srvGet(()->server().getRecipeManager().byKey(new ResourceLocation(id)).orElse(null));}
+    static List<ItemStack> tab(String id){
+        var tab=BuiltInRegistries.CREATIVE_MODE_TAB.get(new ResourceLocation(id));if(tab==null)return List.of();
+        net.minecraft.world.item.CreativeModeTabs.tryRebuildTabContents(mc().player.connection.enabledFeatures(),true,mc().level.registryAccess());
+        return new ArrayList<>(tab.getDisplayItems());
+    }
+    static String ns(ItemStack s){return BuiltInRegistries.ITEM.getKey(s.getItem()).getNamespace();}
+    static String path(ItemStack s){return BuiltInRegistries.ITEM.getKey(s.getItem()).getPath();}
+
+    // The driver
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r101",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r101",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        boolean withDisplays=displays();
+        log("QA_NOTE displays mod loaded: {}",withDisplays);
+        step(20,()->srv(()->{sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().setDayTime(6000);}),"no natural spawns");
+        step(5,()->{
+            for(String id:List.of("factory/pressed_receiver","factory/cartridge_case","factory/propellant","factory/brass_receiver","factory/hardened_alloy","factory/hardened_receiver","factory/exotic_receiver",
+                    "beacon/reinforced_plating","beacon/logistics_module","beacon/resonance_coil","beacon/restoration_matrix")){
+                var r=recipe("eternal_defense:"+id);
+                check("recipe "+id,r!=null&&BuiltInRegistries.RECIPE_TYPE.getKey(r.getType()).getNamespace().equals("create"),r==null?"missing":BuiltInRegistries.RECIPE_TYPE.getKey(r.getType()).toString()+" -> "+r.getResultItem(mc().level.registryAccess()));
+            }
+        },"the factory and beacon part recipes are Create recipes of the mod");
+        step(5,()->{
+            int smith=0,gated=0,ammo=0,stations=0;String sample="";
+            for(var r:srvGet(()->new ArrayList<>(server().getRecipeManager().getRecipes()))){
+                var out=r.getResultItem(mc().level.registryAccess());
+                if(!out.isEmpty()&&RecipePolicy.nativeStation(out.getItem()))stations++;
+                if(!r.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe"))continue;smith++;
+                try{boolean has=false,cases=false;
+                    for(Object in:(List<?>)r.getClass().getMethod("getInputs").invoke(r)){var ing=(net.minecraft.world.item.crafting.Ingredient)in.getClass().getMethod("getIngredient").invoke(in);
+                        for(var st:ing.getItems()){String id=BuiltInRegistries.ITEM.getKey(st.getItem()).toString();if(id.endsWith("_receiver")&&id.startsWith("eternal_defense:"))has=true;if(id.equals("eternal_defense:cartridge_case"))cases=true;}}
+                    if(has){gated++;if(sample.isEmpty())sample=r.getId().toString();}if(cases)ammo++;
+                }catch(ReflectiveOperationException x){log("QA_NOTE {}",x);}
+            }
+            check("gun smith recipes carry the mod's receivers",smith>0&&gated>0,gated+" of "+smith+" with a receiver, "+ammo+" with cartridge cases, e.g. "+sample);
+            check("ammo recipes carry cartridge cases",ammo>0,""+ammo);
+            check("no recipe makes a native gun smith table",stations==0,""+stations);
+        },"recipe rules");
+        step(5,()->{
+            var main=tab("eternal_defense:main");
+            check("the Eternal Defense tab is not empty",main.size()>40,main.size()+" items");
+            check("no display stand in the Eternal Defense tab",main.stream().noneMatch(s->ns(s).equals("eternal_defense_displays")),"");
+            check("only Eternal Defense items in its tab",main.stream().allMatch(s->ns(s).equals("eternal_defense")),main.stream().filter(s->!ns(s).equals("eternal_defense")).map(s->BuiltInRegistries.ITEM.getKey(s.getItem()).toString()).toList().toString());
+            for(String p:List.of("pressed_receiver","brass_receiver","hardened_receiver","exotic_receiver","hardened_alloy","cartridge_case","propellant"))check("tab has "+p,main.stream().anyMatch(s->path(s).equals(p)),"");
+            check("no unfinished parts in the tab",main.stream().noneMatch(s->path(s).startsWith("incomplete_")),"");
+            log("QA_NOTE Eternal Defense tab: {}",main.stream().map(s->path(s)).toList());
+            var stands=tab("eternal_defense_displays:displays");
+            if(withDisplays){check("the displays tab holds the 11 stands",stands.size()==11&&stands.stream().allMatch(s->ns(s).equals("eternal_defense_displays")),stands.size()+"");}
+            else check("no displays tab without the mod",stands.isEmpty(),""+stands.size());
+        },"creative tabs");
+        step(5,()->{
+            var supplies=srvGet(()->WeaponPlatform.weaponEntries(sp(),"",true));
+            long racks=supplies.stream().filter(e->e.gate().kind().equals("display")).count();
+            if(withDisplays)check("Supplies lists the 11 stands with the displays mod",racks==11,racks+" of "+supplies.size());
+            else check("Supplies lists no stand without the displays mod",racks==0,racks+" of "+supplies.size());
+            if(withDisplays){
+                var hand=recipe("eternal_defense_displays:display_stand");
+                check("the stands are also made by hand",hand!=null&&hand.getType()==net.minecraft.world.item.crafting.RecipeType.CRAFTING,String.valueOf(hand));
+            }
+        },"Supplies");
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);sp().getInventory().clearContent();}),"creative");
+        step(5,()->mc().setScreen(new net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen(mc().player,mc().player.connection.enabledFeatures(),true)),"open the creative inventory");
+        step(10,()->{try{var m=net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.class.getDeclaredMethod("selectTab",net.minecraft.world.item.CreativeModeTab.class);m.setAccessible(true);m.invoke(mc().screen,BuiltInRegistries.CREATIVE_MODE_TAB.get(new ResourceLocation("eternal_defense:main")));}catch(Exception x){log("QA_NOTE {}",x);}},"the Eternal Defense tab");
+        step(10,()->shot(withDisplays?"r101_tab_main":"r101_tab_main_nodisplays"),"picture");
+        if(withDisplays){
+            step(10,()->{try{var m=net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.class.getDeclaredMethod("selectTab",net.minecraft.world.item.CreativeModeTab.class);m.setAccessible(true);m.invoke(mc().screen,BuiltInRegistries.CREATIVE_MODE_TAB.get(new ResourceLocation("eternal_defense_displays:displays")));}catch(Exception x){log("QA_NOTE {}",x);}},"the displays tab");
+            step(10,()->shot("r101_tab_displays"),"picture");
+        }
+        step(5,()->mc().setScreen(null),"close");
+        step(5,()->check("the welcome was shown once",srvGet(()->sp().getPersistentData().getBoolean("eternalWelcomed")),""),"welcome");
+        int[] before={0};
+        step(5,()->srv(()->{var z=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());z.moveTo(sp().getX()+3,sp().getY(),sp().getZ(),0,0);sl().addFreshEntity(z);before[0]=(int)z.getMaxHealth();z.discard();}),"a zombie at tier 0");
+        step(5,()->check("tier 0: a zombie has 3 x 20 health",before[0]==60&&FactoryTiers.tier(server())==0,before[0]+" at tier "+FactoryTiers.tier(server())),"tier 0");
+        step(30,()->srv(()->sp().getInventory().add(new ItemStack(item("eternal_defense:brass_receiver")))),"a Brass Receiver in the pack");
+        int[] after={0};
+        step(5,()->srv(()->{var z=net.minecraft.world.entity.EntityType.ZOMBIE.create(sl());z.moveTo(sp().getX()+3,sp().getY(),sp().getZ(),0,0);sl().addFreshEntity(z);after[0]=(int)z.getMaxHealth();z.discard();}),"a zombie at tier 1");
+        step(5,()->check("holding a Brass Receiver raises the factory tier: a zombie has 4 x 20",FactoryTiers.tier(server())==1&&after[0]==80,after[0]+" at tier "+FactoryTiers.tier(server())),"tier 1");
+        step(5,()->{var cow=srvGet(()->{var c=net.minecraft.world.entity.EntityType.COW.create(sl());c.moveTo(sp().getX()-3,sp().getY(),sp().getZ(),0,0);sl().addFreshEntity(c);float h=c.getMaxHealth();c.discard();return h;});check("a cow is not scaled",cow==10f,""+cow);},"passive mobs");
+    }
+}

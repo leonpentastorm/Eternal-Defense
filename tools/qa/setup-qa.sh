@@ -2,7 +2,7 @@
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
 # QA_CREATE=1 (pack only): Create runs too; QA_MODS=<dir>: the jars in it run too (0.0.42); the scenario is compiled in the Create compat source set; the first run needs the network.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice]   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice|QaRelease101]   (QA_NO_DISPLAYS=1: without the displays mod)   (QaWorld scenario by flag file, e.g. echo all > /tmp/claude-0/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 DST="${1:-/tmp/claude-0/qa}"; FLAVOR="${2:-pack}"
@@ -16,14 +16,11 @@ SCENARIO="${3:-QaWorld}"
 mkdir -p "$DST/custom-mods/eternal-defense/src/gametest/java/dev/eternaldefense/beacon"
 cp "$SRC/tools/qa/$SCENARIO.java.txt" "$DST/custom-mods/eternal-defense/src/gametest/java/dev/eternaldefense/beacon/$SCENARIO.java"
 if [ "${QA_CREATE:-0}" = "1" ]; then
-  # 0.0.40: Create itself runs too (Create, Ponder, Flywheel, Registrate from their own mavens, fetched online once); the pack's KubeJS
-  # coil recipe is mirrored as a datapack recipe
+  # Create itself runs too (Create, Ponder, Flywheel, Registrate from their own mavens, fetched online once)
   printf "\nsourceSets.gametest.compileClasspath += sourceSets.create.compileClasspath + sourceSets.create.output\n" >> "$DST/custom-mods/eternal-defense/build.gradle"
-  mkdir -p "$B/resources/data/eternal_defense/recipes"
-  cp "$SRC/tools/qa/qa_resonance_coil_mixing.json" "$B/resources/data/eternal_defense/recipes/qa_resonance_coil_mixing.json"
 fi
-# TaCZ, Create, KubeJS, KubeJS Create, LesRaisins Tactical Equipments and JEI are not all in the dev runtime: make them optional (the test pack has them all)
-sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/; /modId="create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs"/,/side=/ s/mandatory=true/mandatory=false/; /modId="jei"/,/side=/ s/mandatory=true/mandatory=false/; /modId="kubejs_create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="lrtactical"/,/side=/ s/mandatory=true/mandatory=false/' "$B/resources/META-INF/mods.toml"
+# TaCZ, Create, LesRaisins Tactical Equipments and JEI are not all in the dev runtime: make them optional (the test pack has them all)
+sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/; /modId="create"/,/side=/ s/mandatory=true/mandatory=false/; /modId="jei"/,/side=/ s/mandatory=true/mandatory=false/; /modId="lrtactical"/,/side=/ s/mandatory=true/mandatory=false/' "$B/resources/META-INF/mods.toml"
 # Gun Displays also needs TaCZ: optional here
 sed -i '/modId="tacz"/,/side=/ s/mandatory=true/mandatory=false/' "$DST/custom-mods/eternal-defense-displays/src/main/resources/META-INF/mods.toml"
 # TaCZ and TaCZ Attributes are normal dependencies of the beacon since Mess Hall v4. Their production mixins use SRG names, so the client run
@@ -35,8 +32,13 @@ import sys,os
 path=sys.argv[1]
 s=open(path).read()
 s=s.replace("minecraft {\n","evaluationDependsOn(':eternal-defense-displays')\nminecraft {\n",1)
-s=s.replace('implementation project(":eternal-defense-displays")','implementation project(":eternal-defense-displays").sourceSets.main.output',1)
-displays="                   eternal_defense_displays { source project(':eternal-defense-displays').sourceSets.main } }\n"
+# QA_NO_DISPLAYS=1: the displays mod is only compiled against, never loaded
+if os.environ.get('QA_NO_DISPLAYS')=='1':
+    s=s.replace('implementation project(":eternal-defense-displays")','compileOnly project(":eternal-defense-displays").sourceSets.main.output',1)
+    displays="            }\n"
+else:
+    s=s.replace('implementation project(":eternal-defense-displays")','implementation project(":eternal-defense-displays").sourceSets.main.output',1)
+    displays="                   eternal_defense_displays { source project(':eternal-defense-displays').sourceSets.main } }\n"
 client=("        client {\n            workingDirectory project.file('run-client')\n            args '--width','"+os.environ.get('QA_WIDTH','1280')+"','--height','"+os.environ.get('QA_HEIGHT','720')+"','-mixin.config=eternal_defense.mixins.json'\n"
        "            property 'mixin.env.remapRefMap','true'\n            property 'mixin.env.refMapRemappingFile',new File(rootProject.projectDir,'srg2off.srg').absolutePath\n"
        "            mods { eternal_defense { source sourceSets.main; source sourceSets.gametest"+("; source sourceSets.create" if os.environ.get('QA_CREATE')=='1' else "")+" }\n"+displays+"        }\n")

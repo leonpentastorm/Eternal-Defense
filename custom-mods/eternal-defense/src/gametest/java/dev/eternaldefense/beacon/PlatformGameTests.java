@@ -14,11 +14,6 @@ import java.util.*;
 @GameTestHolder(EternalDefense.ID)
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class PlatformGameTests {
-    // Test-only stand-ins, never registered in a released game's ordinary startup.
-    static void registerParts(net.minecraftforge.eventbus.api.IEventBus bus){
-        var parts=DeferredRegister.create(ForgeRegistries.ITEMS,"kubejs");
-        for(String id:List.of("pressed_receiver","hardened_receiver","exotic_receiver","cartridge_case","propellant"))parts.register(id,()->new Item(new Item.Properties()));parts.register(bus);
-    }
     private static ServerPlayer player(GameTestHelper h,String suffix){
         var p=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.nameUUIDFromBytes(("platform-"+suffix).getBytes(java.nio.charset.StandardCharsets.UTF_8)),"PlatformTests"));
         p.getInventory().clearContent();return p;

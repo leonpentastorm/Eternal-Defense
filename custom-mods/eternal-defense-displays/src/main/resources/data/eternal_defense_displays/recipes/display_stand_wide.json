@@ -1,34 +1,18 @@
 {
-  "type": "forge:conditional",
-  "recipes": [
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
     {
-      "conditions": [
-        {
-          "type": "forge:not",
-          "value": {
-            "type": "forge:mod_loaded",
-            "modid": "eternal_defense"
-          }
-        }
-      ],
-      "recipe": {
-        "type": "minecraft:crafting_shapeless",
-        "ingredients": [
-          {
-            "item": "eternal_defense:display_stand"
-          },
-          {
-            "item": "eternal_defense:display_stand"
-          },
-          {
-            "item": "minecraft:iron_ingot"
-          }
-        ],
-        "result": {
-          "item": "eternal_defense:display_stand_wide",
-          "count": 1
-        }
-      }
+      "item": "eternal_defense_displays:display_stand"
+    },
+    {
+      "item": "eternal_defense_displays:display_stand"
+    },
+    {
+      "item": "minecraft:iron_ingot"
     }
-  ]
+  ],
+  "result": {
+    "item": "eternal_defense_displays:display_stand_wide",
+    "count": 1
+  }
 }

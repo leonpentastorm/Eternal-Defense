@@ -1,16 +1,16 @@
 {
   "replace": false,
   "values": [
-    "eternal_defense:display_stand",
-    "eternal_defense:display_rack",
-    "eternal_defense:display_stand_wide",
-    "eternal_defense:display_rack_wide",
-    "eternal_defense:display_pistol_stand",
-    "eternal_defense:display_pistol_rack",
-    "eternal_defense:display_case",
-    "eternal_defense:display_case_wide",
-    "eternal_defense:wall_case",
-    "eternal_defense:wall_case_wide",
-    "eternal_defense:display_heavy"
+    "eternal_defense_displays:display_stand",
+    "eternal_defense_displays:display_rack",
+    "eternal_defense_displays:display_stand_wide",
+    "eternal_defense_displays:display_rack_wide",
+    "eternal_defense_displays:display_pistol_stand",
+    "eternal_defense_displays:display_pistol_rack",
+    "eternal_defense_displays:display_case",
+    "eternal_defense_displays:display_case_wide",
+    "eternal_defense_displays:wall_case",
+    "eternal_defense_displays:wall_case_wide",
+    "eternal_defense_displays:display_heavy"
   ]
 }

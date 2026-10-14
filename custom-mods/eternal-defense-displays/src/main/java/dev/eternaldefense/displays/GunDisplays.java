@@ -11,11 +11,9 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 @Mod(GunDisplays.ID)
 public final class GunDisplays {
     public static final String ID="eternal_defense_displays";
-    // World compatibility: old blocks, items and block entities retain their IDs.
-    private static final String CONTENT_ID="eternal_defense";
-    private static final DeferredRegister<Block> BLOCKS=DeferredRegister.create(ForgeRegistries.BLOCKS,CONTENT_ID);
-    private static final DeferredRegister<Item> ITEMS=DeferredRegister.create(ForgeRegistries.ITEMS,CONTENT_ID);
-    private static final DeferredRegister<BlockEntityType<?>> ENTITIES=DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES,CONTENT_ID);
+    private static final DeferredRegister<Block> BLOCKS=DeferredRegister.create(ForgeRegistries.BLOCKS,ID);
+    private static final DeferredRegister<Item> ITEMS=DeferredRegister.create(ForgeRegistries.ITEMS,ID);
+    private static final DeferredRegister<BlockEntityType<?>> ENTITIES=DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES,ID);
     private static final DeferredRegister<CreativeModeTab> TABS=DeferredRegister.create(Registries.CREATIVE_MODE_TAB,ID);
     public static final List<RegistryObject<Block>> RACKS=List.of(
         rack("display_stand",false,false,false,false,false),rack("display_rack",false,true,false,false,false),

@@ -23,7 +23,7 @@ final class RaidRewards {
         // Raw starter stone tapers off; later caches prioritize compact useful production inputs.
         add(list,"minecraft:andesite",new int[]{64,64,48,32,32,32,16,16,16,16,16}[t]);add(list,"minecraft:iron_ingot",Math.min(96,16+8*t));
         add(list,"minecraft:copper_ingot",16+4*t);add(list,"minecraft:gold_ingot",2+3*t);add(list,"minecraft:cooked_beef",8+2*t);
-        add(list,"create:andesite_alloy",8+4*t);add(list,"kubejs:cartridge_case",32+16*t);add(list,"kubejs:propellant",16+8*t);
+        add(list,"create:andesite_alloy",8+4*t);add(list,"eternal_defense:cartridge_case",32+16*t);add(list,"eternal_defense:propellant",16+8*t);
         if(t>=1){add(list,"create:brass_ingot",8+8*t);add(list,"create:electron_tube",2+2*t);}
         if(t>=2){add(list,"create:precision_mechanism",2+2*(t-2));add(list,"minecraft:diamond",2*(t-1));add(list,"create:brass_sheet",4*t);}
         if(t>=3){add(list,"minecraft:quartz",16+4*t);add(list,"create:sturdy_sheet",2*(t-2));}
@@ -35,7 +35,7 @@ final class RaidRewards {
         add(list,"eternal_defense:ardent_energy",1+t);   // The floor of the Ardent Energy income: farming and exchange sell-offs add to it
         // Bonus resources are 50% of the completion cache, rounded up; wave iron stays unchanged.
         if(hard){for(var s:list)s.setCount(s.getCount()+(s.getCount()+1)/2);if(t>=5)add(list,"minecraft:nether_star",1+extra/3);}
-        add(list,"kubejs:pressed_receiver",1);   // Every won raid gives one Pressed Receiver, a hard raid too (after the bonus)
+        add(list,"eternal_defense:pressed_receiver",1);   // Every won raid gives one Pressed Receiver, a hard raid too (after the bonus)
         supply(list,l,"ConsumableId","carfak",1+t+(hard?2+t:0));
         if(t>=1||hard)supply(list,l,"ThrowableId","m67",2*t+(hard?4+2*t:0));
         if(t>=2||hard)supply(list,l,"ThrowableId","smoke_grenade",t+(hard?2+t:0));

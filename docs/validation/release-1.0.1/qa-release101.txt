@@ -1,0 +1,73 @@
+QaRelease101, development client (xvfb), Create running, 2026-10-14
+
+1. With the displays mod
+QA_CHECK PASS recipe factory/pressed_receiver create:pressing -> 1 pressed_receiver
+QA_CHECK PASS recipe factory/cartridge_case create:pressing -> 8 cartridge_case
+QA_CHECK PASS recipe factory/propellant create:mixing -> 8 propellant
+QA_CHECK PASS recipe factory/brass_receiver create:sequenced_assembly -> 1 brass_receiver
+QA_CHECK PASS recipe factory/hardened_alloy create:mixing -> 4 hardened_alloy
+QA_CHECK PASS recipe factory/hardened_receiver create:sequenced_assembly -> 1 hardened_receiver
+QA_CHECK PASS recipe factory/exotic_receiver create:mechanical_crafting -> 4 exotic_receiver
+QA_CHECK PASS recipe beacon/reinforced_plating create:compacting -> 1 reinforced_plating
+QA_CHECK PASS recipe beacon/logistics_module create:sequenced_assembly -> 4 logistics_module
+QA_CHECK PASS recipe beacon/resonance_coil create:mixing -> 4 resonance_coil
+QA_CHECK PASS recipe beacon/restoration_matrix create:mechanical_crafting -> 8 restoration_matrix
+QA_CHECK PASS gun smith recipes carry the mod's receivers 113 of 285 with a receiver, 33 with cartridge cases, e.g. eternal_defense:platform/gun/lrl/p90_asiimov
+QA_CHECK PASS ammo recipes carry cartridge cases 33
+QA_CHECK PASS no recipe makes a native gun smith table 0
+QA_CHECK PASS the Eternal Defense tab is not empty 47 items
+QA_CHECK PASS no display stand in the Eternal Defense tab 
+QA_CHECK PASS only Eternal Defense items in its tab []
+QA_CHECK PASS tab has pressed_receiver 
+QA_CHECK PASS tab has brass_receiver 
+QA_CHECK PASS tab has hardened_receiver 
+QA_CHECK PASS tab has exotic_receiver 
+QA_CHECK PASS tab has hardened_alloy 
+QA_CHECK PASS tab has cartridge_case 
+QA_CHECK PASS tab has propellant 
+QA_CHECK PASS no unfinished parts in the tab 
+QA_CHECK PASS the displays tab holds the 11 stands 11
+QA_CHECK PASS Supplies lists the 11 stands with the displays mod 11 of 12
+QA_CHECK PASS the stands are also made by hand net.minecraft.world.item.crafting.ShapedRecipe@586b804
+QA_SHOT r101_tab_main
+QA_SHOT r101_tab_displays
+QA_CHECK PASS the welcome was shown once 
+QA_CHECK PASS tier 0: a zombie has 3 x 20 health 60 at tier 0
+QA_CHECK PASS holding a Brass Receiver raises the factory tier: a zombie has 4 x 20 80 at tier 1
+QA_CHECK PASS a cow is not scaled 10.0
+QA_DONE pass=32 fail=0
+
+2. Without the displays mod (QA_NO_DISPLAYS=1)
+QA_CHECK PASS recipe factory/pressed_receiver create:pressing -> 1 pressed_receiver
+QA_CHECK PASS recipe factory/cartridge_case create:pressing -> 8 cartridge_case
+QA_CHECK PASS recipe factory/propellant create:mixing -> 8 propellant
+QA_CHECK PASS recipe factory/brass_receiver create:sequenced_assembly -> 1 brass_receiver
+QA_CHECK PASS recipe factory/hardened_alloy create:mixing -> 4 hardened_alloy
+QA_CHECK PASS recipe factory/hardened_receiver create:sequenced_assembly -> 1 hardened_receiver
+QA_CHECK PASS recipe factory/exotic_receiver create:mechanical_crafting -> 4 exotic_receiver
+QA_CHECK PASS recipe beacon/reinforced_plating create:compacting -> 1 reinforced_plating
+QA_CHECK PASS recipe beacon/logistics_module create:sequenced_assembly -> 4 logistics_module
+QA_CHECK PASS recipe beacon/resonance_coil create:mixing -> 4 resonance_coil
+QA_CHECK PASS recipe beacon/restoration_matrix create:mechanical_crafting -> 8 restoration_matrix
+QA_CHECK PASS gun smith recipes carry the mod's receivers 113 of 285 with a receiver, 33 with cartridge cases, e.g. eternal_defense:platform/gun/mk16/ak12_2016
+QA_CHECK PASS ammo recipes carry cartridge cases 33
+QA_CHECK PASS no recipe makes a native gun smith table 0
+QA_CHECK PASS the Eternal Defense tab is not empty 47 items
+QA_CHECK PASS no display stand in the Eternal Defense tab 
+QA_CHECK PASS only Eternal Defense items in its tab []
+QA_CHECK PASS tab has pressed_receiver 
+QA_CHECK PASS tab has brass_receiver 
+QA_CHECK PASS tab has hardened_receiver 
+QA_CHECK PASS tab has exotic_receiver 
+QA_CHECK PASS tab has hardened_alloy 
+QA_CHECK PASS tab has cartridge_case 
+QA_CHECK PASS tab has propellant 
+QA_CHECK PASS no unfinished parts in the tab 
+QA_CHECK PASS no displays tab without the mod 0
+QA_CHECK PASS Supplies lists no stand without the displays mod 0 of 1
+QA_SHOT r101_tab_main_nodisplays
+QA_CHECK PASS the welcome was shown once 
+QA_CHECK PASS tier 0: a zombie has 3 x 20 health 60 at tier 0
+QA_CHECK PASS holding a Brass Receiver raises the factory tier: a zombie has 4 x 20 80 at tier 1
+QA_CHECK PASS a cow is not scaled 10.0
+QA_DONE pass=31 fail=0

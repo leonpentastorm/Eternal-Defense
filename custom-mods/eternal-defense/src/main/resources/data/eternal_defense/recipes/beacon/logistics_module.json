@@ -1,0 +1,63 @@
+{
+  "type": "create:sequenced_assembly",
+  "ingredient": {
+    "item": "create:electron_tube"
+  },
+  "loops": 2,
+  "results": [
+    {
+      "item": "eternal_defense:logistics_module",
+      "count": 4
+    }
+  ],
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        },
+        {
+          "item": "create:brass_sheet"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        },
+        {
+          "item": "create:precision_mechanism"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        }
+      ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        }
+      ],
+      "results": [
+        {
+          "item": "eternal_defense:incomplete_brass_receiver"
+        }
+      ]
+    }
+  ],
+  "transitionalItem": {
+    "item": "eternal_defense:incomplete_brass_receiver"
+  }
+}

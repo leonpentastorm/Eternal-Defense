@@ -1,0 +1,29 @@
+{
+  "type": "create:mechanical_crafting",
+  "acceptMirrored": true,
+  "key": {
+    "B": {
+      "item": "create:brass_sheet"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "H": {
+      "item": "eternal_defense:brass_receiver"
+    }
+  },
+  "pattern": [
+    " B B ",
+    "BPEPB",
+    " EHE ",
+    "BPEPB",
+    " B B "
+  ],
+  "result": {
+    "item": "eternal_defense:restoration_matrix",
+    "count": 8
+  }
+}

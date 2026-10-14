@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the test pack: the owner's modpack with this build's mods and pack scripts in it.
+"""Builds the test pack: the owner's modpack with this build's mods and pack files in it.
 
   python3 -I tools/release/make-testpack.py --base <the owner's exported .mrpack> [--novoice]
 
@@ -9,9 +9,10 @@ carried in its overrides. This script only reads it (nothing in it is executed) 
   * drops earlier jars of our three mods (by mod id, before and after 1.0.0), wherever the base had them;
   * adds this build's three jars (custom-mods/*/build/libs, run `build releaseJars` first) to overrides/mods; with --novoice the
     no-voice edition of the main mod;
-  * copies the repository's pack scripts (pack-integration/kubejs) over the pack's own (a copy that differs only in line endings stays);
-  * moves the base's own files to the 1.0.0 ids (see LEGACY): pack scripts and configs with the old names are dropped or renamed,
-    item ids, class names and titles in its text files are rewritten, and the exchange file is dropped so the mod writes its default;
+  * copies the repository's pack files (pack-integration/kubejs) over the pack's own (a copy that differs only in line endings stays);
+  * moves the base's own files to the current ids (see LEGACY): the pack scripts the mod replaced since 1.0.1 are dropped, configs
+    with the old names renamed, item ids (also the factory parts, once kubejs:*), class names and titles in its text files rewritten,
+    and the exchange file dropped so the mod writes its default;
   * moves the client-only jars the base carries in overrides/mods to client-overrides/mods (see CLIENT_ONLY), so a dedicated
     server installed from the pack starts;
   * checks that every mod the pack edition requires is listed (see REQUIRED), and fails if one is missing;
@@ -22,7 +23,8 @@ import argparse, hashlib, io, json, re, zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-OURS = [('eternal-defense', '1.0.0'), ('eternal-defense-gun-guide', '1.0.0'), ('eternal-defense-displays', '1.0.0')]
+JAR_VERSION = (REPO / 'VERSION').read_text().strip()
+OURS = [(mod, JAR_VERSION) for mod in ('eternal-defense', 'eternal-defense-gun-guide', 'eternal-defense-displays')]
 OUR_IDS = ('eternal_defense', 'eternal_defense_gun_guide', 'eternal_defense_displays')
 # Mod ids, packages and names used before 1.0.0, for packs exported from earlier builds.
 LEGACY_IDS = ('arsenal_beacon', 'arsenal_gun_guide', 'arsenal_displays')
@@ -52,15 +54,17 @@ BINARY = ('.jar', '.zip', '.png', '.ogg', '.nbt', '.dat', '.mca', '.mrpack')
 # What the pack edition needs to run, by a pattern its jar's file name matches (checked in files[] paths and overrides).
 REQUIRED = {
     'Create': r'(^|/)create-1\.20\.1-6\.',
-    'KubeJS': r'(^|/)kubejs-forge-',
-    'Rhino (for KubeJS)': r'(^|/)rhino-forge-',
-    'Architectury API (for KubeJS)': r'(^|/)architectury-.*forge',
     'TaCZ': r'(^|/)tacz-1\.20\.1-1\.1\.',
     'TaCZ Attributes': r'(^|/)tacz[-_]attributes',
     'JEI': r'(^|/)jei-1\.20\.1-forge-',
-    'KubeJS Create': r'(^|/)kubejs-create-',
     'LesRaisins Tactical Equipments (raid rewards)': r'(^|/)lrtactical',
 }
+# Pack scripts that earlier builds needed; the mod does their work since 1.0.1 (old and 1.0.0 names).
+OBSOLETE_SCRIPTS = re.compile(r'overrides/kubejs/(startup_scripts/00_(arsenal|eternal_defense)_items\.js'
+                              r'|server_scripts/(10_factory_recipes|15_beacon_recipes|20_guns_and_ammo|30_campaign|40_universal_wood|90_(arsenal|eternal_defense)_recipe_policy)\.js'
+                              r'|config/(arsenal|eternal_defense)_(balance|component_ages|gun_types|weapon_ages)\.json)$')
+FACTORY_ITEMS = ('pressed_receiver', 'brass_receiver', 'hardened_receiver', 'exotic_receiver', 'incomplete_brass_receiver',
+                 'incomplete_hardened_receiver', 'incomplete_exotic_receiver', 'hardened_alloy', 'cartridge_case', 'propellant')
 # Jars of the base's overrides that only work on a client: a dedicated server refuses to start with them (by mod id, and why).
 CLIENT_ONLY = {
     'tacticalmovement': 'Tactical Movement 1.0.0 loads LocalPlayer when it is built: "invalid dist DEDICATED_SERVER" (0.0.41 server boot); '
@@ -78,16 +82,13 @@ def jar_mod_ids(data: bytes) -> list:
 
 
 def legacy(entries: dict, index: dict) -> list:
-    """Moves the base's own files to the 1.0.0 ids; returns what changed."""
+    """Moves the base's own files to the current ids; returns what changed."""
     changed = []
-    repo_kubejs = REPO / 'pack-integration' / 'kubejs'
     for name in list(entries):
-        if name.startswith('overrides/kubejs/') and 'arsenal' in name.rsplit('/', 1)[1]:
-            renamed = name.replace('arsenal', 'eternal_defense')
-            if (repo_kubejs / renamed[len('overrides/kubejs/'):]).exists():
-                del entries[name]; changed.append(f'dropped {name}')
+        if OBSOLETE_SCRIPTS.match(name):
+            del entries[name]; changed.append(f'dropped {name}')
         elif name == 'overrides/config/arsenal-beacon-exchange.txt':
-            del entries[name]; changed.append(f'dropped {name} (the mod writes the 1.0.0 offers)')
+            del entries[name]; changed.append(f'dropped {name} (the mod writes its default offers)')
     for name in list(entries):
         for old, new in LEGACY_FILES:
             if name.startswith(old):
@@ -105,6 +106,8 @@ def legacy(entries: dict, index: dict) -> list:
         new = text
         for old, replacement in LEGACY:
             new = new.replace(old, replacement)
+        for item in FACTORY_ITEMS:
+            new = new.replace(f'"kubejs:{item}"', f'"eternal_defense:{item}"')
         if new != text:
             entries[name] = new.encode('utf-8'); changed.append(f'rewrote {name}')
     if index.get('name') == 'Create Arsenal':
@@ -192,7 +195,7 @@ def main() -> None:
     print('added', added)
     print('moved to client-overrides (client only)', moved)
     print('pack scripts replaced or added', len(scripts), scripts[:12])
-    print('moved to the 1.0.0 ids', len(migrated)); [print('  ' + line) for line in migrated]
+    print('moved to the current ids', len(migrated)); [print('  ' + line) for line in migrated]
     print('mods listed', len(index['files']), '+ in overrides', sum(1 for n in entries if re.match(r'(client-|server-)?overrides/mods/', n)))
 
 

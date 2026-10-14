@@ -1,7 +1,8 @@
-# Pack recipe and quest context
+# Pack files
 
-These authored KubeJS recipes and FTB Quests files accompany Eternal Defense 0.21.0.
-They are not needed to compile the mods or to run the standalone edition.
-The original full pack is delivered as an mrpack; third-party mods, gunpacks,
-worlds, launcher settings and accounts are not copied into this source repository.
-UI work should preserve these recipe IDs, material costs and progression gates.
+Files for the Eternal Defense modpack, not needed by the mods themselves.
+
+* `config/ftbquests`: the pack's quest book.
+* `kubejs/assets`, `kubejs/data`: model, tag and world generation fixes for other mods in the pack.
+
+Since 1.0.1 Eternal Defense carries its own factory items, recipes and recipe rules; it needs no KubeJS script.

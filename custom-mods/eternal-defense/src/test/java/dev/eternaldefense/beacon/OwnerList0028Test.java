@@ -21,15 +21,16 @@ final class OwnerList0028Test {
         assertArrayEquals(new int[]{4},Economy.PACK_AMOUNTS.get(CannonUpgrades.Upgrade.AURA),"Healing aura 8 -> 4");
         assertArrayEquals(new int[]{10},Economy.PACK_AMOUNTS.get(CannonUpgrades.Upgrade.DIMENSION),"Dimensional link 20 -> 10");
         assertTrue(SosTest.source("WeaponPlatform.java").contains("cost(\"eternal_defense:restoration_matrix\",8));"),"the platform's last era: 16 -> 8");
-        String recipe=file("../../pack-integration/kubejs/server_scripts/15_beacon_recipes.js");
-        assertTrue(recipe.contains("mechanical_crafting('8x eternal_defense:restoration_matrix'"),"8 per craft (was 4)");
-        assertTrue(recipe.contains("H:'kubejs:brass_receiver'")&&!recipe.contains("hardened_receiver"),"a Brass Receiver in the middle (was a Hardened Receiver)");
+        var recipe=com.google.gson.JsonParser.parseString(file("src/main/resources/data/eternal_defense/recipes/beacon/restoration_matrix.json")).getAsJsonObject();
+        assertEquals("create:mechanical_crafting",recipe.get("type").getAsString());
+        assertEquals(8,recipe.getAsJsonObject("result").get("count").getAsInt(),"8 per craft");
+        assertEquals("eternal_defense:brass_receiver",recipe.getAsJsonObject("key").getAsJsonObject("H").get("item").getAsString(),"a Brass Receiver in the middle");
         String lang=file(EnchantTest.ASSETS+"lang/en_us.json");
         assertTrue(lang.contains("Restoration matrices: Quantum tunneling 6, Healing aura 4, Dimensional link 10."),"the guide's cannon prices");
     }
     @Test void everyWonRaidGivesOnePressedReceiver(){
         String rewards=SosTest.source("RaidRewards.java");
-        int hard=rewards.indexOf("if(hard){for(var s:list)s.setCount(");int receiver=rewards.indexOf("add(list,\"kubejs:pressed_receiver\",1);");
+        int hard=rewards.indexOf("if(hard){for(var s:list)s.setCount(");int receiver=rewards.indexOf("add(list,\"eternal_defense:pressed_receiver\",1);");
         assertTrue(hard>0&&receiver>hard,"one Pressed Receiver, added after the hard raid's bonus so it stays one");
         assertTrue(receiver<rewards.indexOf("static List<ItemStack> total("),"in the pack edition's completion rewards");
     }

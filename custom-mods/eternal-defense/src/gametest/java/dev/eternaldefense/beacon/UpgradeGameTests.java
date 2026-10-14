@@ -37,7 +37,7 @@ public final class UpgradeGameTests {
             h.assertTrue(PlatformRegistry.load(registry.save(new CompoundTag())).createMilestones.equals(registry.createMilestones),"Shared Create unlocks persist across reload");
             var steam=armory.stream().filter(e->e.gate().id().contains("cannon")).findFirst().orElseThrow();h.assertTrue(!CreateUnlocks.unlocked(p,steam,5),"Heavy Create weapons require steam independently of Exotic Age");
             registry.createMilestones.add("steam_engine");h.assertTrue(CreateUnlocks.unlocked(p,steam,1),"Steam production unlocks heavy Create weapon independently of station Age");
-            for(var e:armory)h.assertTrue(WeaponPlatform.costs(e).stream().noneMatch(c->Arrays.stream(c.ingredient().getItems()).anyMatch(s->net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(s.getItem()).getNamespace().equals("kubejs"))),"Create Armory retains authored materials without normal receiver gates");
+            for(var e:armory)h.assertTrue(WeaponPlatform.costs(e).stream().noneMatch(c->Arrays.stream(c.ingredient().getItems()).anyMatch(s->net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(s.getItem()).getPath().endsWith("_receiver"))),"Create Armory retains authored materials without normal receiver gates");
         }finally{registry.createMilestones.clear();registry.createMilestones.addAll(saved);p.getInventory().clearContent();}h.succeed();
     }
     @GameTest(template="empty3x3x3",batch="newplatform",timeoutTicks=100)

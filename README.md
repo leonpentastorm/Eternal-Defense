@@ -2,15 +2,15 @@
 
 Source of the Eternal Defense mods for Minecraft 1.20.1 (Forge 47): defend a beacon base against night raids, build a Create factory, arm it with TaCZ guns, and run forward bases, supply lines and kitchens.
 
-**Version 1.0.0** (file `VERSION`, tag `v1.0.0`).
+**Version 1.0.1** (file `VERSION`; `main` holds 1.0.0, tag `v1.0.0`).
 
 | Project | Jar | Purpose |
 | --- | --- | --- |
-| `custom-mods/eternal-defense` | `eternal-defense-1.0.0.jar`, or `eternal-defense-1.0.0-novoice.jar` | The defense beacon, raids, support gear, Weapon Platform, Exchange, forward bases, kitchens, Logistics Hub |
-| `custom-mods/eternal-defense-gun-guide` | `eternal-defense-gun-guide-1.0.0.jar` | Client HUD with the held gun's controls and a jam alert |
-| `custom-mods/eternal-defense-displays` | `eternal-defense-displays-1.0.0.jar` | Weapon stands, racks and glass cases |
+| `custom-mods/eternal-defense` | `eternal-defense-1.0.1.jar`, or `eternal-defense-1.0.1-novoice.jar` | The defense beacon, raids, support gear, Weapon Platform, Exchange, forward bases, kitchens, Logistics Hub, factory parts |
+| `custom-mods/eternal-defense-gun-guide` | `eternal-defense-gun-guide-1.0.1.jar` | Client HUD with the held gun's controls and a jam alert |
+| `custom-mods/eternal-defense-displays` | `eternal-defense-displays-1.0.1.jar` | Weapon stands, racks and glass cases: a separate mod that needs only TaCZ |
 
-The main mod comes in two builds: with the radio voice lines, and **no-voice**, where each spoken radio line plays a game sound instead. Install one of them. The required mods (TaCZ, TaCZ Attributes, Create, KubeJS, KubeJS Create, LesRaisins Tactical Equipments, JEI) and the test pack are described in [PACK-EDITION.md](docs/PACK-EDITION.md). 1.0.0 renamed every id: start a fresh world.
+The main mod comes in two builds: with the radio voice lines, and **no-voice**, where each spoken radio line plays a game sound instead. Install one of them. The main mod requires TaCZ, TaCZ Attributes, Create, LesRaisins Tactical Equipments and, on the client, JEI; since 1.0.1 it needs no KubeJS script. The displays mod needs only TaCZ; with Eternal Defense installed its stands are also sold in the Weapon Platform's Supplies. Details and the test pack: [PACK-EDITION.md](docs/PACK-EDITION.md). 1.0.0 and 1.0.1 changed ids: start a fresh world.
 
 ## Build
 
@@ -32,7 +32,7 @@ GameTests and their test structures are in the `gametest` source set: developmen
 * [docs/GAME-DESIGN-DOCUMENT.md](docs/GAME-DESIGN-DOCUMENT.md): the rules and numbers.
 * [docs/CHANGELOG.md](docs/CHANGELOG.md): every release.
 * [docs/GUIDE-STYLE.md](docs/GUIDE-STYLE.md): how the in-game guide text is written.
-* `pack-integration`: the pack's KubeJS recipes and FTB Quests.
+* `pack-integration`: the modpack's FTB Quests and KubeJS data fixes for other mods (the mods need neither).
 
 ## Licensing
 

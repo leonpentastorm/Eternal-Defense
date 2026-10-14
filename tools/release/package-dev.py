@@ -1,32 +1,29 @@
 #!/usr/bin/env python3
 """The release bundle: one zip per build of the main mod (voiced, and with --novoice the no-voice build).
 
-  python3 -I tools/release/package-dev.py --base <the owner's exported .mrpack> [--novoice]
+  python3 -I tools/release/package-dev.py --base <the owner's exported .mrpack> [--novoice] [--profile]
 
-Writes dist/Eternal-Defense-<project version>[-novoice].zip and its .sha512: this build's three jars, the repository's KubeJS scripts,
-the owner's profile files moved to the 1.0.0 ids (make-testpack.py's migration: renamed configs, quests and settings with the new item
-ids), DELETE-FROM-YOUR-PROFILE.txt (the old files they replace), REQUIRED-MODS.txt (every mod the pack needs, with the version the
-owner's pack carries, its download link and SHA-512, read from the base pack's index; nothing in the base is executed), INSTALL.txt
-and SHA512SUMS.txt. No tests, notes or documents go in. The full test pack is made by make-testpack.py.
+Writes dist/Eternal-Defense-<project version>[-novoice].zip and its .sha512: this build's three jars, REQUIRED-MODS.txt (every mod
+Eternal Defense needs, with the version the owner's pack carries, its download link and SHA-512, read from the base pack's index;
+nothing in the base is executed), DELETE-FROM-YOUR-PROFILE.txt (jars and pack scripts of earlier builds), INSTALL.txt and
+SHA512SUMS.txt. With --profile also the owner's profile files moved to the current ids (make-testpack.py's migration: configs, quests
+and settings). No tests, notes or documents go in. The full test pack is made by make-testpack.py.
 """
 import argparse, hashlib, importlib.util, json, re, zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-OURS = [('eternal-defense', '1.0.0'), ('eternal-defense-gun-guide', '1.0.0'), ('eternal-defense-displays', '1.0.0')]
+JAR_VERSION = (REPO / 'VERSION').read_text().strip()
+OURS = [(mod, JAR_VERSION) for mod in ('eternal-defense', 'eternal-defense-gun-guide', 'eternal-defense-displays')]
 REQUIRED = [  # label, mod id, pattern of the jar's file name in the pack
     ('TaCZ', 'tacz', r'(^|/)tacz-1\.20\.1-1\.1\.'),
     ('TaCZ Attributes', 'tacz_attributes', r'(^|/)tacz[-_]attributes'),
     ('Create', 'create', r'(^|/)create-1\.20\.1-6\.'),
-    ('KubeJS', 'kubejs', r'(^|/)kubejs-forge-'),
-    ('Rhino (for KubeJS)', 'rhino', r'(^|/)rhino-forge-'),
-    ('Architectury API (for KubeJS)', 'architectury', r'(^|/)architectury-.*forge'),
-    ('KubeJS Create', 'kubejs_create', r'(^|/)kubejs-create-'),
     ('LesRaisins Tactical Equipments', 'lrtactical', r'(^|/)lrtactical'),
     ('JEI (client)', 'jei', r'(^|/)jei-1\.20\.1-forge-'),
 ]
 def required_list(base: Path) -> str:
-    lines = ['Mods Eternal Defense requires, as the Eternal Defense profile carries them.',
+    lines = ['Mods Eternal Defense requires (Forge 47.4 or newer, Minecraft 1.20.1), as the Eternal Defense profile carries them.',
              'Download each from its author\'s page (the link below); the SHA-512 lets you check the file.', '']
     with zipfile.ZipFile(base) as pack:
         index = json.loads(pack.read('modrinth.index.json'))
@@ -49,19 +46,18 @@ def required_list(base: Path) -> str:
 INSTALL = '''Eternal Defense VERSION EDITION
 Minecraft 1.20.1, Forge 47.4.20, Java 17.
 
-mods/                  the three mods: all three on every client; a dedicated server does not need Gun Guide
-kubejs/                the pack's scripts for Eternal Defense
-profile/               your profile's own files, moved to the new ids (configs, quests, sound and JEI settings)
+mods/                  the three mods: Eternal Defense, Gun Guide (client only) and Displays (optional; a separate mod that
+                       needs only TaCZ, its stands are also sold in the Weapon Platform's Supplies when Eternal Defense is installed)
 REQUIRED-MODS.txt      the mods Eternal Defense needs, with download links and checksums
 SHA512SUMS.txt         checksums of the jars
 
 The main mod comes in two builds: eternal-defense-VERSION.jar (radio voice lines) and eternal-defense-VERSION-novoice.jar
 (game sounds instead of the voice lines). Install one of them, never both.
 
-Install into your profile
-1. Delete every file listed in DELETE-FROM-YOUR-PROFILE.txt (the old jars, scripts and configs).
-2. Copy mods/ into the profile's mods folder.
-3. Copy kubejs/ over the profile's kubejs folder, and the contents of profile/ over the profile folder.
+Install
+1. Install the mods in REQUIRED-MODS.txt. Eternal Defense needs no KubeJS script.
+2. Updating a profile: delete every file listed in DELETE-FROM-YOUR-PROFILE.txt (old jars and old pack scripts).
+3. Copy mods/ into the mods folder.
 4. Start a new world: worlds made with earlier builds are not converted.
 A dedicated server: Tactical Movement (tacticalmovement-1.0.0.jar) only works on clients; keep it off the server.
 '''
@@ -80,6 +76,10 @@ def migrated_profile(base: Path) -> tuple:
     testpack.legacy(after, index)
     changed = {name[len('overrides/'):]: data for name, data in after.items() if before.get(name) != data and not name.startswith('overrides/kubejs/')}
     removed = sorted(name[len('overrides/'):] for name in before if name not in after)
+    removed += [f'kubejs/{path}' for path in ('startup_scripts/00_eternal_defense_items.js', 'server_scripts/10_factory_recipes.js',
+                'server_scripts/15_beacon_recipes.js', 'server_scripts/20_guns_and_ammo.js', 'server_scripts/30_campaign.js',
+                'server_scripts/40_universal_wood.js', 'server_scripts/90_eternal_defense_recipe_policy.js', 'config/eternal_defense_*.json')
+                if f'kubejs/{path}' not in removed]
     for jar in ('arsenal-beacon-*.jar', 'arsenal-gun-guide-*.jar', 'arsenal-displays-*.jar', 'eternal-defense-*.jar'):
         removed.append('mods/' + jar)
     return changed, removed
@@ -89,6 +89,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', type=Path, required=True, help="the owner's exported .mrpack (read only)")
     parser.add_argument('--novoice', action='store_true', help='bundle the no-voice build of the main mod')
+    parser.add_argument('--profile', action='store_true', help="also the owner's profile files moved to the current ids")
     args = parser.parse_args()
     version = (REPO / 'VERSION').read_text().strip()
     edition = '-novoice' if args.novoice else ''
@@ -101,12 +102,10 @@ def main() -> None:
         if any(re.search(r'(?i)(gametest|readme|qa_|/qa/|testing|\.md$|\.txt$)', n) and not n.endswith('LICENSE.txt') for n in names):
             raise SystemExit(f'{jar.name} carries test or note files')
         files[f'mods/{jar.name}'] = jar.read_bytes()
-    for path in sorted((REPO / 'pack-integration' / 'kubejs').rglob('*')):
-        if path.is_file():
-            files['kubejs/' + path.relative_to(REPO / 'pack-integration' / 'kubejs').as_posix()] = path.read_bytes()
     changed, removed = migrated_profile(args.base)
-    for name, data in changed.items():
-        files['profile/' + name] = data
+    if args.profile:
+        for name, data in changed.items():
+            files['profile/' + name] = data
     files['DELETE-FROM-YOUR-PROFILE.txt'] = ('Files of earlier builds to delete from your profile folder (* matches any version):\n'
                                              + ''.join(f'{name}\n' for name in removed)).encode()
     files['REQUIRED-MODS.txt'] = required_list(args.base).encode()

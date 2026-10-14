@@ -171,10 +171,10 @@ public final class WeaponPlatform {
         return true; // Native tactical supplies have their own item implementation.
     }
     static List<Cost> upgrades(int age){return switch(age){
-        case 1->List.of(cost("minecraft:iron_ingot",64),cost("create:andesite_alloy",32),cost("create:cogwheel",16),cost("kubejs:pressed_receiver",16));
-        case 2->List.of(cost("kubejs:hardened_receiver",16),cost("create:precision_mechanism",32),cost("minecraft:blaze_rod",8),cost("create:brass_sheet",32));
-        case 3->List.of(cost("kubejs:hardened_receiver",64),cost("create:precision_mechanism",64),cost("minecraft:netherite_scrap",16),cost("eternal_defense:resonance_coil",16));
-        case 4->List.of(cost("kubejs:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("eternal_defense:restoration_matrix",8));   // 16 matrices before (halved with the matrix recipe doubled)
+        case 1->List.of(cost("minecraft:iron_ingot",64),cost("create:andesite_alloy",32),cost("create:cogwheel",16),cost("eternal_defense:pressed_receiver",16));
+        case 2->List.of(cost("eternal_defense:hardened_receiver",16),cost("create:precision_mechanism",32),cost("minecraft:blaze_rod",8),cost("create:brass_sheet",32));
+        case 3->List.of(cost("eternal_defense:hardened_receiver",64),cost("create:precision_mechanism",64),cost("minecraft:netherite_scrap",16),cost("eternal_defense:resonance_coil",16));
+        case 4->List.of(cost("eternal_defense:exotic_receiver",32),cost("minecraft:end_rod",32),cost("minecraft:nether_star",1),cost("eternal_defense:restoration_matrix",8));   // 16 matrices before (halved with the matrix recipe doubled)
         default->List.of();};}
     static Cost cost(String id,int amount){return new Cost(Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id))),amount);}
     static List<Cost> costs(Entry e)throws ReflectiveOperationException{
@@ -190,19 +190,19 @@ public final class WeaponPlatform {
         }
         costs=InventoryPayment.consolidate(costs);
         if(CreateUnlocks.armory(e))return costs;
-        // Also enforce factory inputs on servers without KubeJS (integration tests, future hosts).
-        String id=switch(e.gate.age){case 1,2->"kubejs:pressed_receiver";case 3,4->"kubejs:hardened_receiver";default->"kubejs:exotic_receiver";};
+        // Factory part for the gun's Age
+        String id=switch(e.gate.age){case 1,2->"eternal_defense:pressed_receiver";case 3,4->"eternal_defense:hardened_receiver";default->"eternal_defense:exotic_receiver";};
         if(e.gate.kind.equals("gun"))addUnlessPresent(costs,cost(id,e.gate.age==2?2:1));
         else if(e.gate.kind.equals("ammo")){
             // The platform sets the cases and propellant itself, whatever the recipe (or an older pack script) lists
             String ammo=e.output.hasTag()&&e.output.getTag().contains("AmmoId")?e.output.getTag().getString("AmmoId"):e.gate.id;
-            costs=new ArrayList<>(costs);costs.removeIf(c->is(c,"kubejs:cartridge_case")||is(c,"kubejs:propellant"));
-            costs.add(cost("kubejs:cartridge_case",AmmoInputs.casings(e.output.getCount(),ammo)));
-            costs.add(cost("kubejs:propellant",AmmoInputs.propellant(e.output.getCount(),ammo)));
+            costs=new ArrayList<>(costs);costs.removeIf(c->is(c,"eternal_defense:cartridge_case")||is(c,"eternal_defense:propellant"));
+            costs.add(cost("eternal_defense:cartridge_case",AmmoInputs.casings(e.output.getCount(),ammo)));
+            costs.add(cost("eternal_defense:propellant",AmmoInputs.propellant(e.output.getCount(),ammo)));
         }else addUnlessPresent(costs,cost("create:iron_sheet",2));
         return InventoryPayment.consolidate(costs);
     }
-    /** Does this cost ask for the item id (false when the item does not exist, as in a run without KubeJS)? */
+    /** Whether this cost asks for the item id (false when the item does not exist). */
     private static boolean is(Cost c,String id){var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(id));return item!=net.minecraft.world.item.Items.AIR&&c.ingredient.test(new ItemStack(item));}
     private static void addUnlessPresent(List<Cost> list,Cost cost){if(list.stream().noneMatch(c->Arrays.stream(cost.ingredient.getItems()).anyMatch(c.ingredient::test)))list.add(cost);}
     /** Plan on copies, including output capacity; commit once, never consume partial inputs. */

@@ -1,5 +1,14 @@
 # Change log
 
+## 1.0.1 — A jar that works with its required mods alone; the displays on their own (2026-10-14, `dev`)
+
+On `dev` after 1.0.0; `main` stays at 1.0.0. No packet changed: network protocol stays **41**. Rules: GDD 1.0.1; tests: `docs/ROUND-1.0.1-TESTING.md`.
+
+* **No KubeJS script needed** (owner: a jar that works once its required mods are installed). The factory parts are the mod's own items (`eternal_defense:pressed_receiver`, `brass_receiver`, `hardened_receiver`, `exotic_receiver`, `hardened_alloy`, `cartridge_case`, `propellant`; they were `kubejs:*`), with their Create recipes and the beacon part recipes (plating, logistics module, resonance coil, restoration matrix) in the mod's data, same inputs and outputs as the scripts. The scripts' rules run in the mod while recipes load (`RecipeRules`): factory gates on TaCZ gun smith recipes, universal wood, reduced gun conversions, no native gun smith tables or items the Armor Platform sells. The factory tier (tougher hostile mobs as the world's best receiver improves) and the welcome line moved in (`FactoryTiers`); the welcome now shows once per player, and the tier numbers are in `eternal-defense-common.toml`. Required mods: TaCZ, TaCZ Attributes, Create, LesRaisins Tactical Equipments, JEI (client); **KubeJS and KubeJS Create are no longer required**, and the pack's Eternal Defense scripts and configs must be deleted (`DELETE-FROM-YOUR-PROFILE.txt` lists them).
+* **The displays are a separate mod** (owner): its own ids (`eternal_defense_displays:display_stand` and the rest), its own creative tab, no dependency on Eternal Defense (TaCZ only), every stand made at the crafting table. With Eternal Defense installed the stands are also sold in the Weapon Platform's Supplies; without the displays mod Supplies lists none.
+* **Creative tab** (owner): the Eternal Defense tab lists only Eternal Defense items, the factory parts included; no stands and no unfinished assembly parts.
+* Tools: `make-testpack.py` drops the old Eternal Defense scripts and configs from a profile and rewrites `kubejs:` part ids in its quests; `package-dev.py` bundles no script; QA harness `QaRelease101` (`QA_NO_DISPLAYS=1` runs without the displays mod).
+
 ## 1.0.0 — Release: Eternal Defense (2026-10-14, `dev` merged into `main`)
 
 `dev` merged into `main` at the owner's request; tag `v1.0.0`. No packet changed: network protocol stays **41** (the channel is now `eternal_defense:control`, so a 0.0.x client cannot join). Rules: GDD 1.0.0; tests: `docs/ROUND-1.0.0-TESTING.md`.

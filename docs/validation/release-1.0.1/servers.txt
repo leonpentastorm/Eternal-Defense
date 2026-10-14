@@ -1,0 +1,31 @@
+Dedicated servers, Forge 47.4.20, 1.0.1 jars (2026-10-14)
+
+1. Required mods only, no KubeJS, no displays: create-1.20.1-6.0.8.jar eternal-defense-1.0.1.jar lrtactical-1.20.1-0.4.3.jar tacz-1.20.1-1.1.8-hotfix2.jar tacz-attributes-1.4.jar 
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Factory gates on 281 gun smith recipes, universal wood on 302, conversions reduced in 0.
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Removed 4 native station and armor recipes.
+[Server thread/INFO] [minecraft/DedicatedServer]: Done (2.914s)! For help, type "help"
+ERROR lines other than vanilla's 'No key layers': 0
+
+2. The same with the no-voice jar: create-1.20.1-6.0.8.jar eternal-defense-1.0.1-novoice.jar lrtactical-1.20.1-0.4.3.jar tacz-1.20.1-1.1.8-hotfix2.jar tacz-attributes-1.4.jar 
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Factory gates on 281 gun smith recipes, universal wood on 302, conversions reduced in 0.
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Removed 4 native station and armor recipes.
+[Server thread/INFO] [minecraft/DedicatedServer]: Done (2.998s)! For help, type "help"
+ERROR lines other than vanilla's 'No key layers': 0
+
+3. The displays mod alone: eternal-defense-displays-1.0.1.jar tacz-1.20.1-1.1.8-hotfix2.jar 
+[Server thread/INFO] [minecraft/DedicatedServer]: Done (2.753s)! For help, type "help"
+ERROR lines other than vanilla's 'No key layers': 0
+
+4. Fresh install of Eternal-Defense-1.0.1-test.mrpack (the owner's profile, 282 jars on the server)
+	- eternal_defense 1.0.1
+	- eternal_defense_displays 1.0.1
+	- eternal_defense_gun_guide 1.0.1
+[modloading-worker-0/INFO] [KubeJS Startup/]: Loaded 1/1 KubeJS startup scripts in 0.495 s with 0 errors and 0 warnings
+[main/INFO] [KubeJS Server/]: Loaded 1/1 KubeJS server scripts in 0.011 s with 0 errors and 0 warnings
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Factory gates on 1284 gun smith recipes, universal wood on 12525, conversions reduced in 46.
+[main/INFO] [de.et.be.RecipeRules/]: [Eternal Defense] Removed 476 native station and armor recipes.
+[Server thread/INFO] [minecraft/DedicatedServer]: Done (53.692s)! For help, type "help"
+pack scripts left in kubejs/: example.js example.js 
+lines naming kubejs: ids or a missing eternal_defense item: 0
+
+For comparison, 1.0.0 with the KubeJS scripts on the same pack: gates on 1284 TaCZ recipes, universal wood on 12475, conversions reduced in 44 (docs/validation/release-1.0.0/servers.txt).
