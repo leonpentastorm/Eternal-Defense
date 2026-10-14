@@ -220,10 +220,11 @@ final class LoadoutPrint {
     /** Keeps a held player on the path: still, and put back when they drift. */
     private static void hold(ServerPlayer p,Session s,long now){
         p.setDeltaMovement(Vec3.ZERO);p.fallDistance=0;p.resetLastActionTime();
-        var at=s.expected(now);double dx=p.getX()-at[0],dy=p.getY()-at[1],dz=p.getZ()-at[2];
-        if(dx*dx+dy*dy+dz*dz>LoadoutRules.DRIFT*LoadoutRules.DRIFT){
-            s.corrections++;float yaw=LoadoutRules.yaw(s.timeline,s.elapsed(now),s.from,s.stand,s.standYaw);
+        double drift=LoadoutRules.drift(s.timeline,s.elapsed(now),new double[]{p.getX(),p.getY(),p.getZ()},s.from,s.stand,s.exit);
+        if(drift>LoadoutRules.DRIFT){
+            var at=s.expected(now);s.corrections++;float yaw=LoadoutRules.yaw(s.timeline,s.elapsed(now),s.from,s.stand,s.standYaw);
             p.connection.teleport(at[0],at[1],at[2],yaw,p.getXRot());
+            com.mojang.logging.LogUtils.getLogger().info("[Loadout Station] {} was {} blocks off the path at tick {}: put back",s.name,String.format(Locale.ROOT,"%.2f",drift),s.elapsed(now));
         }
     }
     private static void finish(MinecraftServer server,Session s,LoadoutStation.StationEntity be){
@@ -263,7 +264,7 @@ final class LoadoutPrint {
         }
         @SubscribeEvent public void printDeath(LivingDeathEvent e){var s=BY_PLAYER.get(e.getEntity().getUUID());if(s!=null&&e.getEntity() instanceof ServerPlayer p)interrupt(p.server,s,"death");}
         @SubscribeEvent public void printDimension(PlayerEvent.PlayerChangedDimensionEvent e){var s=BY_PLAYER.get(e.getEntity().getUUID());if(s!=null&&e.getEntity() instanceof ServerPlayer p)interrupt(p.server,s,"dimension");}
-        @SubscribeEvent public void printHurt(LivingAttackEvent e){if(e.getEntity() instanceof Player p&&!p.level().isClientSide&&holding(p))e.setCanceled(true);}
+        @SubscribeEvent public void printHurt(LivingAttackEvent e){if(e.getEntity() instanceof Player p&&!p.level().isClientSide&&holding(p)&&!e.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY))e.setCanceled(true);}
         @SubscribeEvent public void printAttack(AttackEntityEvent e){if(holding(e.getEntity()))e.setCanceled(true);}
         @SubscribeEvent public void printUseBlock(PlayerInteractEvent.RightClickBlock e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}
         @SubscribeEvent public void printUseItem(PlayerInteractEvent.RightClickItem e){if(!e.getLevel().isClientSide&&holding(e.getEntity()))e.setCanceled(true);}

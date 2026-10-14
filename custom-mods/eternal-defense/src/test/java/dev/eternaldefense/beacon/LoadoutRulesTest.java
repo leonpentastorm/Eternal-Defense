@@ -64,6 +64,9 @@ class LoadoutRulesTest {
         assertNull(LoadoutRules.kitProblem(kit,size));assertEquals("too_big",LoadoutRules.kitProblem(kit,size-1));
         var huge=fullKit();var book=stack("minecraft:writable_book",1);var t=new CompoundTag();var pages=new ListTag();for(int i=0;i<100;i++)pages.add(StringTag.valueOf("x".repeat(1000)));t.put("pages",pages);book.put("tag",t);huge.set(LoadoutRules.HOTBAR_FIRST+8,book);
         assertEquals("too_big",LoadoutRules.kitProblem(huge,64*1024),"a kit over 64 KB is refused");
+        var unsaved=fullKit();var paper=stack("minecraft:paper",1);var pt=new CompoundTag();pt.putString("Filler","x".repeat(70*1024));paper.put("tag",pt);unsaved.set(LoadoutRules.HOTBAR_FIRST+8,paper);
+        assertTrue(LoadoutRules.bytes(LoadoutRules.pack(unsaved))>70*1024,"a string too long to save counts in full");
+        assertEquals("too_big",LoadoutRules.kitProblem(unsaved,64*1024),"a 70 KB string is refused (the game would save it empty)");
     }
     @Test void aSlotRemembersItsKind(){
         var a=LoadoutRules.pack(fullKit());var other=fullKit();other.set(LoadoutRules.OFFHAND_SLOT,stack("minecraft:totem_of_undying",1));var b=LoadoutRules.pack(other);
@@ -121,6 +124,23 @@ class LoadoutRulesTest {
         var at=LoadoutRules.position(near,near.swapTick(),new double[]{.5,-1,-1.5},stand,exit);assertArrayEquals(stand,at,1e-9,"inside at the swap");
         var out=LoadoutRules.position(near,near.closeStart(),new double[]{.5,-1,-1.5},stand,exit);assertArrayEquals(exit,out,1e-9,"out in front when let go");
         for(float t=0;t<far.entry();t++){var a=LoadoutRules.position(far,t,new double[]{.5,-1,-4.2},stand,exit);var b=LoadoutRules.position(far,t+1,new double[]{.5,-1,-4.2},stand,exit);assertTrue(LoadoutRules.distance(a,b)<=LoadoutRules.WALK_SPEED+1e-9,"walks no faster than 0.2 blocks a tick");}
+    }
+    @Test void aLateClientCatchesUpWithoutAJump(){
+        double[] stand={.5,-.84375,.3125},from={.5,-1,-4.2};var tl=LoadoutRules.timeline(LoadoutRules.distance(from,stand),2.8);
+        double[] p=from.clone();double lag=0;
+        for(int t=4;t<tl.entry();t++){var next=LoadoutRules.toward(p,LoadoutRules.position(tl,t+1,from,stand,stand));
+            assertTrue(LoadoutRules.distance(p,next)<=LoadoutRules.CATCH_UP+1e-9,"never more than 0.45 blocks in a tick");p=next;lag=LoadoutRules.distance(p,LoadoutRules.position(tl,t+1,from,stand,stand));
+            assertTrue(lag<LoadoutRules.DRIFT,"stays within the server's drift allowance: "+lag);}
+        assertEquals(0,lag,1e-9,"on the path before the walk ends");
+        assertArrayEquals(stand,LoadoutRules.toward(new double[]{.5,-.84375,.1},stand),1e-12,"near the path: on it at once");
+    }
+    @Test void aClientAFewTicksBehindIsNotPutBack(){
+        double[] stand={.5,-.84375,.3125},from={.5,-1,-4.2},exit={.5,-1,-2.5};var tl=LoadoutRules.timeline(LoadoutRules.distance(from,stand),LoadoutRules.distance(stand,exit));
+        for(int t=0;t<tl.closeStart();t++)for(int behind=0;behind<=LoadoutRules.LAG_TICKS;behind++){
+            var client=LoadoutRules.position(tl,Math.max(0,t-behind),from,stand,exit);
+            assertTrue(LoadoutRules.drift(tl,t,client,from,stand,exit)<1e-9,"a client "+behind+" ticks behind is on the path at tick "+t);}
+        var aside=LoadoutRules.position(tl,10,from,stand,exit).clone();aside[0]+=1;
+        assertTrue(LoadoutRules.drift(tl,10,aside,from,stand,exit)>LoadoutRules.DRIFT,"a block to the side is put back");
     }
     @Test void theSwapStopsBeforeAnythingChanges(){
         assertNull(LoadoutRules.swapProblem(true,true,true,true,true,true));

@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT (code); All Rights Reserved (artwork)"
 [[mods]]
 modId="eternal_defense_displays"
-version="1.0.1"
+version="1.1.0"
 displayName="Eternal Defense: Displays"
 description="Eleven gun stands, wall racks and glass cases for TaCZ guns, made at the crafting table. With Eternal Defense installed they can also be bought at the Weapon Platform."
 [[dependencies.eternal_defense_displays]]

@@ -90,16 +90,18 @@ public final class LoadoutClient {
             var mc=Minecraft.getInstance();var be=held();if(be==null||e.getEntity()!=mc.player)return;
             float t=elapsed(be,0);if(!be.timeline().holding(t))return;
             var in=e.getInput();in.leftImpulse=0;in.forwardImpulse=0;in.up=in.down=in.left=in.right=false;in.jumping=false;in.shiftKeyDown=false;
-            var next=at(be,t+1);var p=mc.player;p.setDeltaMovement(next.x-p.getX(),next.y-p.getY(),next.z-p.getZ());
+            var p=mc.player;var next=step(p.position(),at(be,t+1));p.setDeltaMovement(next.x-p.getX(),next.y-p.getY(),next.z-p.getZ());
         }
         @SubscribeEvent public static void heldAfter(TickEvent.PlayerTickEvent e){
             var mc=Minecraft.getInstance();if(e.phase!=TickEvent.Phase.END||e.side.isServer()||e.player!=mc.player)return;
             var be=held();if(be==null)return;float t=elapsed(be,0);if(!be.timeline().holding(t))return;
-            var p=mc.player;var to=at(be,t+1);p.setPos(to.x,to.y,to.z);
+            var p=mc.player;var to=step(new Vec3(p.xo,p.yo,p.zo),at(be,t+1));p.setPos(to.x,to.y,to.z);
             float yaw=yaw(be,t+1);p.yBodyRot=yaw;
             if(LoadoutCinematic.running()){p.setYRot(yaw);p.yHeadRot=yaw;p.setXRot(0);}
             p.fallDistance=0;
         }
+        /** Where the held player goes this tick from where the tick began: the path, reached at no more than CATCH_UP blocks a tick. */
+        private static Vec3 step(Vec3 from,Vec3 target){var n=LoadoutRules.toward(new double[]{from.x,from.y,from.z},new double[]{target.x,target.y,target.z});return new Vec3(n[0],n[1],n[2]);}
         @SubscribeEvent public static void heldInteract(InputEvent.InteractionKeyMappingTriggered e){if(held()!=null&&held().timeline().holding(elapsed(held(),0))){e.setCanceled(true);e.setSwingHand(false);}}
     }
 

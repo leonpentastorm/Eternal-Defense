@@ -1,0 +1,674 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.authlib.GameProfile;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of the Loadout Station: placement, coins, the print with its camera shots, the stops, the flare and the capsule. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaLoadout {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static ServerLevel nether(){return server().getLevel(Level.NETHER);}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});
+            var cam=mc().gameRenderer.getMainCamera();log("QA_SHOT {} t={} cinematic={} detached={} camera={} player={}",pendingShot,mc().level==null?-1:clientElapsed(),LoadoutCinematic.running(),cam.isDetached(),cam.getPosition(),mc().player==null?null:mc().player.position());holding=false;}
+    }
+
+    // Chat and the action bar
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>()),BAR=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();
+        if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay()){BAR.add(t);log("QA_BAR {}",t);}else{CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean barHas(String s){synchronized(BAR){return BAR.stream().anyMatch(b->b.toLowerCase(Locale.ROOT).contains(s.toLowerCase(Locale.ROOT)));}}
+    static boolean chatHas(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.toLowerCase(Locale.ROOT).contains(s.toLowerCase(Locale.ROOT)));}}
+    static String bars(){synchronized(BAR){return String.join(" | ",BAR);}}
+    static String chats(){synchronized(CHAT){return String.join(" | ",CHAT);}}
+    static void clearMessages(){BAR.clear();CHAT.clear();}
+
+    // One frame's texts (the UI kit records them): none cut off, none over another
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static void layout(String name){
+        var texts=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();
+        for(var a:texts){if(a.cut())bad.add("cut: '"+a.text()+"'");for(var b:texts)if(a!=b&&a.w()>0&&b.w()>0&&a.x()<b.x()+b.w()&&b.x()<a.x()+a.w()&&a.y()<b.y()+b.h()&&b.y()<a.y()+a.h()&&texts.indexOf(a)<texts.indexOf(b))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+        check(name+": "+texts.size()+" texts, none cut off or over another",bad.isEmpty()&&!texts.isEmpty(),String.join(" | ",bad));
+    }
+    // The HUD during the camera shots: counted on the hotbar overlay
+    static int hudDrawn,hudHidden;static boolean countHud;
+    @SubscribeEvent(priority=EventPriority.LOWEST,receiveCanceled=true) public static void hud(RenderGuiOverlayEvent.Pre e){
+        if(!countHud||e.getOverlay()!=VanillaGuiOverlay.HOTBAR.type())return;if(e.isCanceled())hudHidden++;else hudDrawn++;
+    }
+
+    // The walk as the client sees it: distance from the synced path and jumps between ticks
+    static double maxDev,maxStep,startLag;static int samples,jumps;static Vec3 last;static boolean watchWalk;static int cinematicTicks,detachedTicks;
+    @SubscribeEvent public static void walk(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||mc().player==null||mc().level==null)return;
+        var be=LoadoutClient.held();
+        if(be==null||!watchWalk){last=null;return;}
+        float t=be.elapsed(mc().level.getGameTime(),0);if(!be.timeline().holding(t)){last=null;return;}
+        var p=mc().player.position();double best=Double.MAX_VALUE;
+        for(int dt=-1;dt<=1;dt++)best=Math.min(best,p.distanceTo(LoadoutClient.at(be,t+dt)));
+        if(t>=10)maxDev=Math.max(maxDev,best);else startLag=Math.max(startLag,best);samples++;
+        if(last!=null){double d=p.distanceTo(last);maxStep=Math.max(maxStep,d);if(d>.5){jumps++;note("JUMP at t={} from {} to {} (synced {})",t,last,p,LoadoutClient.at(be,t));}}
+        last=p;
+        if(LoadoutCinematic.running())cinematicTicks++;
+        if(mc().gameRenderer.getMainCamera().isDetached())detachedTicks++;
+    }
+    static void resetWalk(){startLag=0;maxDev=0;maxStep=0;samples=0;jumps=0;last=null;cinematicTicks=0;detachedTicks=0;hudDrawn=0;hudHidden=0;}
+
+    // The driver
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_loadout",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_loadout",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static ItemStack st(net.minecraftforge.registries.RegistryObject<? extends Item> i,int n){return new ItemStack(i.get(),n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){
+        double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    /** The menu slot of inventory slot i (main 9..35 first, then the hotbar). */
+    static int menuSlot(int i){return i<9?LoadoutMenu.INV+27+i:LoadoutMenu.INV+i-9;}
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
+    static void button(int id){mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,id);}
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static LoadoutData.Machine machine(){return srvGet(()->LoadoutStation.machine(sl(),S));}
+    static LoadoutData data(){return LoadoutData.get(sl());}
+    static int stock(int slot){return srvGet(()->{var m=LoadoutStation.machine(sl(),S);return m==null?-1:m.coins[slot].getCount();});}
+    static List<ItemStack> worn(){return srvGet(()->{var out=new ArrayList<ItemStack>();for(var s:LoadoutPrint.worn(sp()))out.add(s.copy());return out;});}
+    static boolean same(List<ItemStack> a,List<ItemStack> b){if(a.size()!=b.size())return false;for(int i=0;i<a.size();i++)if(!ItemStack.matches(a.get(i),b.get(i)))return false;return true;}
+    static String diff(List<ItemStack> a,List<ItemStack> b){var out=new StringBuilder();for(int i=0;i<Math.min(a.size(),b.size());i++)if(!ItemStack.matches(a.get(i),b.get(i)))out.append(i).append(": ").append(a.get(i)).append(a.get(i).getTag()).append(" vs ").append(b.get(i)).append(b.get(i).getTag()).append("; ");return out.toString();}
+    static List<ItemStack> main27(){return srvGet(()->{var out=new ArrayList<ItemStack>();for(int i=9;i<36;i++)out.add(sp().getInventory().items.get(i).copy());return out;});}
+    static LoadoutStation.StationEntity clientStation(){return mc().level.getBlockEntity(S) instanceof LoadoutStation.StationEntity be?be:null;}
+    static float clientElapsed(){var be=clientStation();return be==null||be.occupant==null?-1:be.elapsed(mc().level.getGameTime(),0);}
+    static LoadoutRules.Timeline clientTimeline(){var be=clientStation();return be==null?null:be.timeline();}
+    /** The closet figure of the open Loadout screen (station or capsule), read by reflection. */
+    static net.minecraft.client.player.RemotePlayer figure(){
+        try{var screen=mc().screen;if(screen==null)return null;var f=screen.getClass().getDeclaredField("mannequin");f.setAccessible(true);var m=f.get(screen);
+            var g=m.getClass().getDeclaredField("figure");g.setAccessible(true);return (net.minecraft.client.player.RemotePlayer)g.get(m);}catch(ReflectiveOperationException e){return null;}
+    }
+    static String wears(){var f=figure();if(f==null)return "no figure";return BuiltInRegistries.ITEM.getKey(f.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).getItem()).getPath()+" "+BuiltInRegistries.ITEM.getKey(f.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).getItem()).getPath()+" "+BuiltInRegistries.ITEM.getKey(f.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND).getItem()).getPath()+" "+BuiltInRegistries.ITEM.getKey(f.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND).getItem()).getPath();}
+    static String cameraState(){var c=mc().gameRenderer.getMainCamera();return "detached="+c.isDetached()+" type="+mc().options.getCameraType()+" cinematic="+LoadoutCinematic.running()+" hideGui="+mc().options.hideGui+" camera="+mc().getCameraEntity()+" screen="+mc().screen;}
+    static boolean firstPerson(){return !mc().gameRenderer.getMainCamera().isDetached()&&mc().options.getCameraType()==CameraType.FIRST_PERSON&&!LoadoutCinematic.running();}
+    static void readyNow(){srv(()->{data().players.setReadyAt(sp().getUUID(),0);data().setDirty();});}
+    static void face(){tp(S.getX()+.5,sy,S.getZ()-3.5,0,10);}
+    static void hubPut(ItemStack s){srv(()->{var h=hub();if(h!=null)h.storage.insert(s,false);});}
+    static HubData.Hub hub(){return sl().getBlockEntity(H) instanceof LogisticsHub.HubEntity be?HubData.get(sl()).hub(be.hubId):null;}
+    static int inHub(Item item){return srvGet(()->{var h=hub();return h==null?-1:h.storage.count(item);});}
+    /** No stray creatures near the base (slimes and traders of the flat world). */
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,new AABB(B).inflate(160,64,160)))e.discard();}
+    /** Only n Loadout Flares in the pack, in hotbar slot slot, selected. */
+    static void flares(int slot,int n){var inv=sp().getInventory();for(int i=0;i<inv.getContainerSize();i++)if(inv.getItem(i).is(EternalDefense.LOADOUT_FLARE.get()))inv.setItem(i,ItemStack.EMPTY);inv.setItem(slot,st(EternalDefense.LOADOUT_FLARE,n));inv.selected=slot;inv.setChanged();}
+    static String inventory(){return srvGet(()->{var b=new StringBuilder();var inv=sp().getInventory();for(int i=0;i<inv.getContainerSize();i++)if(!inv.getItem(i).isEmpty())b.append(i).append('=').append(BuiltInRegistries.ITEM.getKey(inv.getItem(i).getItem()).getPath()).append('x').append(inv.getItem(i).getCount()).append(' ');return b.toString();});}
+    /** Waits until the client stands in the overworld with no screen open and the game running. */
+    static void settled(String name){until(name+": the client is back",400,()->mc().player!=null&&mc().level!=null&&mc().level.dimension()==Level.OVERWORLD&&mc().screen==null&&!mc().isPaused(),()->{});}
+    static net.minecraftforge.common.util.FakePlayer rival(){return net.minecraftforge.common.util.FakePlayerFactory.get(sl(),new GameProfile(UUID.fromString("8a6b3c55-3c1e-4d3e-9a0b-2b0c55d5e001"),"Rival"));}
+
+    /** A TaCZ AK-47 with up to four attachments, 30 rounds and a name; its 64 rounds of ammo. */
+    static ItemStack gun(){
+        var stack=new ItemStack(item("tacz:modern_kinetic_gun"));var g=com.tacz.guns.api.item.IGun.getIGunOrNull(stack);
+        if(g==null){note("no TaCZ gun item");return new ItemStack(Items.CROSSBOW);}
+        g.setGunId(stack,new ResourceLocation("tacz:ak47"));var types=new HashSet<Object>();int n=0;
+        for(var e:com.tacz.guns.api.TimelessAPI.getAllCommonAttachmentIndex()){
+            var att=new ItemStack(item("tacz:attachment"));var ia=com.tacz.guns.api.item.IAttachment.getIAttachmentOrNull(att);if(ia==null)continue;ia.setAttachmentId(att,e.getKey());
+            var type=e.getValue().getType();if(types.contains(type)||!g.allowAttachment(stack,att))continue;
+            g.installAttachment(stack,att);types.add(type);note("attachment {} ({})",e.getKey(),type);if(++n>=4)break;
+        }
+        g.setCurrentAmmoCount(stack,30);g.setBulletInBarrel(stack,true);stack.setHoverName(Component.literal("Personal AK"));
+        return stack;
+    }
+    static ItemStack ammo(){
+        var ammo=new ItemStack(item("tacz:ammo"),64);var ia=com.tacz.guns.api.item.IAmmo.getIAmmoOrNull(ammo);
+        var data=com.tacz.guns.api.TimelessAPI.getCommonGunIndex(new ResourceLocation("tacz:ak47"));
+        if(ia!=null&&data.isPresent())ia.setAmmoId(ammo,data.get().getGunData().getAmmoId());return ammo;
+    }
+    static int attachments(ItemStack gun){
+        var g=com.tacz.guns.api.item.IGun.getIGunOrNull(gun);if(g==null)return -1;int n=0;
+        for(var t:com.tacz.guns.api.item.attachment.AttachmentType.values())if(t!=com.tacz.guns.api.item.attachment.AttachmentType.NONE&&!g.getAttachment(gun,t).isEmpty())n++;return n;
+    }
+    /** Kit A in kit order (feet, legs, chest, head, off hand, hotbar 1-9). */
+    static List<ItemStack> kitA(){
+        var helmet=st(Items.DIAMOND_HELMET,1);helmet.enchant(Enchantments.ALL_DAMAGE_PROTECTION,4);helmet.setDamageValue(33);
+        var sword=st(Items.IRON_SWORD,1);sword.setHoverName(Component.literal("Old Faithful"));sword.enchant(Enchantments.SHARPNESS,3);
+        return List.of(st(Items.DIAMOND_BOOTS,1),st(Items.DIAMOND_LEGGINGS,1),st(Items.DIAMOND_CHESTPLATE,1),helmet,st(Items.SHIELD,1),
+            gun(),ammo(),st(Items.GOLDEN_APPLE,8),st(Items.ENDER_PEARL,16),sword,st(Items.TORCH,64),st(Items.BREAD,32),st(Items.WATER_BUCKET,1),st(Items.COMPASS,1));
+    }
+    static List<ItemStack> kitB(){
+        var empty=ItemStack.EMPTY;
+        return List.of(st(Items.CHAINMAIL_BOOTS,1),empty,st(Items.CHAINMAIL_CHESTPLATE,1),st(Items.CHAINMAIL_HELMET,1),empty,
+            st(Items.CROSSBOW,1),st(Items.ARROW,32),empty,empty,empty,empty,empty,empty,st(Items.COOKED_BEEF,16));
+    }
+    /** What the player wears before a print: iron armor, a stone sword, apples, a torch in the off hand. */
+    static void dressPlain(){srv(()->{
+        var inv=sp().getInventory();for(int i=0;i<4;i++)inv.armor.set(i,ItemStack.EMPTY);for(int i=0;i<9;i++)inv.items.set(i,ItemStack.EMPTY);inv.offhand.set(0,ItemStack.EMPTY);
+        inv.armor.set(0,st(Items.IRON_BOOTS,1));inv.armor.set(1,st(Items.IRON_LEGGINGS,1));inv.armor.set(2,st(Items.IRON_CHESTPLATE,1));inv.armor.set(3,st(Items.IRON_HELMET,1));
+        inv.items.set(0,st(Items.STONE_SWORD,1));inv.items.set(3,st(Items.APPLE,5));inv.offhand.set(0,st(Items.TORCH,12));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;}
+
+    // The places
+    /** B: the beacon (core 3, radius 24); S: the station's anchor (facing north); H: the Hub's anchor; PLAT, CANNON: support blocks */
+    static BlockPos B,S,H,PLAT,CANNON,OUT,FIELD,BUNKER,LOW,LOW2;
+    static final BlockPos[] EXTRA=new BlockPos[3];
+    static void places(){
+        B=new BlockPos(sx-6,sy,sz-6);S=B.offset(0,1,10);H=B.offset(-9,1,10);PLAT=B.offset(8,0,-8);CANNON=B.offset(12,0,-8);OUT=B.offset(60,1,0);
+        EXTRA[0]=B.offset(8,1,10);EXTRA[1]=B.offset(14,1,10);EXTRA[2]=B.offset(20,1,10);
+        FIELD=B.offset(-12,0,-14);BUNKER=B.offset(-30,0,20);LOW=B.offset(-30,0,-20);LOW2=B.offset(-45,0,-20);
+    }
+
+    static void script(){
+        // 1. The base
+        step(40,()->{srv(()->{
+            var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+            rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+            server().setDifficulty(Difficulty.PEACEFUL,true);clearMobs();
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon (core 3); survival; keep inventory on");
+        step(5,()->check("the station's spot is inside the Home Zone",srvGet(()->BaseZone.problem(sl(),S)==null&&BaseZone.problem(sl(),OUT)!=null),"B="+B.toShortString()+" S="+S.toShortString()),"the base");
+
+        // 2. Placing
+        step(20,()->{clearMessages();hold(st(EternalDefense.LOADOUT_STATION_ITEM,1));tp(OUT.getX()+.5,sy,OUT.getZ()-4.5,0,30);},"hold the station outside the Home Zone");
+        step(15,()->click(OUT.below(2),Direction.UP),"try to place it there");
+        step(10,()->check("outside the Home Zone: refused, the item kept",srvGet(()->!LoadoutStation.isStation(sl().getBlockState(OUT))&&inPack(EternalDefense.LOADOUT_STATION_ITEM.get())==1)&&!BAR.isEmpty(),bars()),"refused outside");
+        step(20,()->{hold(st(EternalDefense.LOADOUT_STATION_ITEM,1));tp(S.getX()+.5,sy,S.getZ()-4.5,0,30);},"hold the station in front of its spot");
+        step(20,()->shot("lo01_ghost"),"the placement ghost");
+        step(5,()->click(S.below(2),Direction.UP),"place it (a real right-click on the ground)");
+        step(20,()->{
+            String r=srvGet(()->{var be=sl().getBlockEntity(S) instanceof LoadoutStation.StationEntity e?e:null;if(be==null)return "no anchor";int ok=0;
+                for(var p:LoadoutStation.cells(S)){var s=sl().getBlockState(p);if(LoadoutStation.isStation(s)&&LoadoutStation.anchor(sl(),p).equals(S)&&s.getValue(DefenseStructures.FACING)==Direction.NORTH)ok++;}
+                return ok+" "+be.machineId;});
+            check("27 cells, all pointing at the anchor, facing north",r.startsWith("27 "),r);
+            check("the machine record exists",machine()!=null,"");
+            check("the item was used up (survival)",srvGet(()->inPack(EternalDefense.LOADOUT_STATION_ITEM.get())==0),"");
+            check("the bottom-centre cell is the clicked spot",srvGet(()->sl().getBlockState(S.below()).is(EternalDefense.LOADOUT_STATION_PART.get())),"");
+        },"placed");
+        step(10,()->{mc().options.hideGui=true;look(S.getX()-3.5,sy,S.getZ()-6.5,S.getX()+.5,S.getY()+.2,S.getZ()+.5);},"camera: front left");
+        step(25,()->shot("lo02_station_day"),"picture: the station by day");
+        // Collision (north): anchor none, bottom-centre floor, top-centre from y 5.5, closed doors solid
+        step(5,()->{
+            String r=srvGet(()->{var ctx=CollisionContext.empty();
+                var anchor=sl().getBlockState(S).getCollisionShape(sl(),S,ctx);var floor=sl().getBlockState(S.below()).getCollisionShape(sl(),S.below(),ctx);var top=sl().getBlockState(S.above()).getCollisionShape(sl(),S.above(),ctx);
+                var door=sl().getBlockState(S.offset(0,-1,-1)).getCollisionShape(sl(),S.offset(0,-1,-1),ctx);
+                return anchor.isEmpty()+" "+Math.round(floor.max(Direction.Axis.Y)*16*10)/10.0+" "+Math.round(top.min(Direction.Axis.Y)*16*10)/10.0+" "+(!door.isEmpty());});
+            check("collision: anchor none, floor top 2.5 px, top-centre from 5.5 px, closed door solid",r.equals("true 2.5 5.5 true"),r);
+        },"collision");
+        // Four facings: the standing point is free for the player's box
+        step(5,()->srv(()->{Direction[] f={Direction.EAST,Direction.SOUTH,Direction.WEST};
+            for(int i=0;i<3;i++){sl().setBlock(EXTRA[i],EternalDefense.LOADOUT_STATION.get().defaultBlockState().setValue(DefenseStructures.FACING,f[i]),3);if(sl().getBlockEntity(EXTRA[i]) instanceof LoadoutStation.StationEntity be)be.heal();}}),"three more stations, facing east, south and west");
+        step(60,()->{
+            String r=srvGet(()->{var out=new StringBuilder();BlockPos[] anchors={S,EXTRA[0],EXTRA[1],EXTRA[2]};Direction[] f={Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST};
+                for(int i=0;i<4;i++){var stand=LoadoutStation.world(anchors[i],f[i],LoadoutModel.STAND_X,LoadoutModel.STAND_Y,LoadoutModel.STAND_Z);double half=LoadoutModel.HITBOX_WIDTH/32;
+                    var box=new AABB(stand.x-half,stand.y+.001,stand.z-half,stand.x+half,stand.y+LoadoutModel.HITBOX_HEIGHT/16,stand.z+half);
+                    int cells=0;for(var p:LoadoutStation.cells(anchors[i]))if(LoadoutStation.isStation(sl().getBlockState(p)))cells++;
+                    out.append(f[i].getSerializedName()).append(':').append(cells).append(sl().noCollision(box)?" free":" BLOCKED").append(String.format(" (%.3f %.3f %.3f) ",stand.x-anchors[i].getX(),stand.y-anchors[i].getY(),stand.z-anchors[i].getZ()));}
+                return out.toString();});
+            check("every facing: 27 cells and a free standing point",!r.contains("BLOCKED")&&r.split(":27 ").length==5,r);
+        },"four facings");
+        step(5,()->look(B.getX()+14.5,sy+4,B.getZ()+1.5,B.getX()+11,sy+1,B.getZ()+10.5),"camera over the four stations");
+        step(25,()->shot("lo03_four_facings"),"picture: four facings");
+        step(5,()->srv(()->{for(var a:EXTRA)sl().removeBlock(a,false);}),"remove the three extra stations");
+        step(10,()->check("removing an anchor removes its 26 cells and its record",srvGet(()->{int left=0;for(var a:EXTRA)for(var p:LoadoutStation.cells(a))if(LoadoutStation.isStation(sl().getBlockState(p)))left++;return left==0&&LoadoutData.get(sl()).near(sl(),S).size()==1;}),""),"removed");
+        step(5,()->check("blast resistant and fireproof",srvGet(()->sl().getBlockState(S).getBlock().getExplosionResistance()>=3600000f&&new ItemStack(EternalDefense.LOADOUT_STATION_ITEM.get()).getItem().isFireResistant()),""),"resistance");
+
+        // 3. A coin
+        List<ItemStack> A=new ArrayList<>();
+        step(5,()->{mc().options.hideGui=false;var kit=kitA();A.clear();A.addAll(kit);srv(()->{var inv=sp().getInventory();inv.clearContent();
+            for(int i=0;i<4;i++)inv.setItem(9+i,kit.get(3-i).copy());for(int i=0;i<9;i++)inv.setItem(13+i,kit.get(5+i).copy());inv.setItem(22,kit.get(4).copy());
+            inv.setItem(30,st(EternalDefense.PLATING,4));inv.setItem(31,st(EternalDefense.ARDENT_ENERGY,1));inv.setChanged();});
+            note("gun attachments {} tag {}",attachments(kit.get(5)),kit.get(5).getTag());face();},"kit A and the fee in the pack");
+        step(10,()->click(S.offset(1,-1,-1),Direction.NORTH),"open the menu from a side cell");
+        step(15,()->check("the station's menu opens",mc().screen instanceof LoadoutScreen&&mc().player.containerMenu instanceof LoadoutMenu,String.valueOf(mc().screen)),"menu");
+        step(3,()->recordFrame=true,"record a frame of the menu");
+        step(3,()->{layout("the station's menu");shot("lo10_menu_empty");},"picture: the menu");
+        step(10,()->{for(int k=0;k<14;k++)slotClick(LoadoutMenu.INV+k,0,ClickType.QUICK_MOVE);},"shift-click the 14 items into the pack area");
+        step(10,()->{
+            var m=srvGet(()->sp().containerMenu instanceof LoadoutMenu lm?lm:null);
+            var pack=srvGet(()->{var out=new ArrayList<ItemStack>();for(int i=0;i<LoadoutRules.KIT_SLOTS;i++)out.add(sp().containerMenu.getSlot(LoadoutMenu.PACK+i).getItem().copy());return out;});
+            // menu slots 0-3 are head..feet: put back in kit order
+            var kit=new ArrayList<ItemStack>();for(int i=0;i<4;i++)kit.add(pack.get(3-i));for(int i=4;i<14;i++)kit.add(pack.get(i));
+            check("shift-click puts armor in its slot, the rest in the hotbar row, the shield in the off hand",same(kit,A),diff(kit,A));
+            var fig=figure();
+            check("the closet figure wears the kit being packed (diamond armor, the AK in hand, the shield)",fig!=null&&ItemStack.matches(fig.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD),A.get(3))&&ItemStack.matches(fig.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND),A.get(5))&&fig.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND).is(Items.SHIELD),wears());
+            shot("lo11_menu_full");},"pack filled");
+        int[] bytes={0};
+        step(5,()->{clearMessages();button(LoadoutMenu.MAKE);},"Make coin (fee in the pack)");
+        step(10,()->{
+            var coin=srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.LOADOUT_COIN.get()))return s.copy();return ItemStack.EMPTY;});
+            check("a coin is made and lands in the pack",!coin.isEmpty()&&coin.getCount()==1,String.valueOf(coin));
+            check("the fee is paid: 4 plating and 1 Ardent gone",srvGet(()->inPack(EternalDefense.PLATING.get())==0&&inPack(EternalDefense.ARDENT_ENERGY.get())==0),"");
+            check("the pack area is empty",srvGet(()->{for(int i=0;i<14;i++)if(!sp().containerMenu.getSlot(LoadoutMenu.PACK+i).getItem().isEmpty())return false;return true;}),"");
+            if(!coin.isEmpty()){var kit=LoadoutCoin.kit(coin);
+                check("the coin holds all 14 stacks exactly (NBT round trip, TaCZ gun with attachments and ammo)",same(kit,A),diff(kit,A));
+                check("the gun keeps its attachments and its 30 rounds",attachments(kit.get(5))==attachments(A.get(5))&&attachments(kit.get(5))>0&&com.tacz.guns.api.item.IGun.getIGunOrNull(kit.get(5)).getCurrentAmmoCount(kit.get(5))==30,attachments(kit.get(5))+" attachments");
+                bytes[0]=LoadoutRules.bytes(coin.getTag());note("FULL COIN NBT {} bytes ({} KB); limit {} KB",bytes[0],String.format("%.2f",bytes[0]/1024.0),DefenseConfig.LOADOUT_KIT_LIMIT_KB.get());
+                check("a full coin is under the size limit",bytes[0]>0&&bytes[0]<LoadoutCoin.limitBytes(),bytes[0]+" bytes");}
+            check("the action bar says the coin is made",!BAR.isEmpty(),bars());
+        },"coin made");
+        // Refusals: nothing changes
+        step(5,()->{clearMessages();srv(()->{var m=sp().containerMenu;
+            var box=st(Items.SHULKER_BOX,1);var tag=new CompoundTag();var items=new net.minecraft.nbt.ListTag();var dirt=st(Items.DIRT,5).save(new CompoundTag());dirt.putByte("Slot",(byte)0);items.add(dirt);tag.put("Items",items);box.getOrCreateTag().put("BlockEntityTag",tag);
+            m.getSlot(LoadoutMenu.PACK+5).set(box);m.getSlot(LoadoutMenu.PACK+6).set(st(Items.BREAD,3));
+            sp().getInventory().setItem(30,st(EternalDefense.PLATING,4));sp().getInventory().setItem(31,st(EternalDefense.ARDENT_ENERGY,1));});},"a filled shulker box in the pack area; the fee again");
+        step(5,()->button(LoadoutMenu.MAKE),"Make coin");
+        step(10,()->check("a filled shulker box: refused, nothing taken",srvGet(()->inPack(EternalDefense.LOADOUT_COIN.get())==1&&inPack(EternalDefense.PLATING.get())==4&&sp().containerMenu.getSlot(LoadoutMenu.PACK+5).getItem().is(Items.SHULKER_BOX))&&!BAR.isEmpty(),bars()),"container refused");
+        step(5,()->{clearMessages();srv(()->{var m=sp().containerMenu;m.getSlot(LoadoutMenu.PACK+5).set(srvCoinCopy());});},"a coin in the pack area");
+        step(5,()->button(LoadoutMenu.MAKE),"Make coin");
+        step(10,()->check("a coin inside a coin: refused, nothing taken",srvGet(()->inPack(EternalDefense.PLATING.get())==4&&sp().containerMenu.getSlot(LoadoutMenu.PACK+5).getItem().is(EternalDefense.LOADOUT_COIN.get()))&&!BAR.isEmpty(),bars()),"coin refused");
+        step(5,()->{clearMessages();srv(()->{var big=st(Items.PAPER,1);big.getOrCreateTag().putString("Filler","x".repeat(70*1024));sp().containerMenu.getSlot(LoadoutMenu.PACK+5).set(big);});},"a paper with 70 KB of data");
+        step(5,()->button(LoadoutMenu.MAKE),"Make coin");
+        step(10,()->check("over the size limit: refused, nothing taken",srvGet(()->inPack(EternalDefense.PLATING.get())==4&&sp().containerMenu.getSlot(LoadoutMenu.PACK+5).getItem().is(Items.PAPER))&&!BAR.isEmpty(),bars()),"too big refused");
+        step(5,()->srv(()->{var m=sp().containerMenu;m.getSlot(LoadoutMenu.PACK+5).set(ItemStack.EMPTY);m.getSlot(LoadoutMenu.PACK+6).set(ItemStack.EMPTY);sp().getInventory().setItem(30,ItemStack.EMPTY);sp().getInventory().setItem(31,ItemStack.EMPTY);}),"clear the pack area");
+        // Coin slots
+        step(5,()->{int k=srvGet(()->{for(int i=0;i<36;i++)if(sp().getInventory().items.get(i).is(EternalDefense.LOADOUT_COIN.get()))return i;return -1;});button(LoadoutMenu.SELECT);slotClick(menuSlot(k),0,ClickType.QUICK_MOVE);},"shift-click the coin into slot 1");
+        step(10,()->check("slot 1 holds the coin and remembers its kind",stock(0)==1&&srvGet(()->!LoadoutStation.machine(sl(),S).kind(0).isEmpty()),""+stock(0)),"slot 1");
+        step(5,()->srv(()->sp().getInventory().setItem(9,srvCoinCopy())),"an identical coin");
+        step(5,()->slotClick(LoadoutMenu.INV,0,ClickType.QUICK_MOVE),"shift-click it");
+        step(10,()->check("identical coins stack in slot 1",stock(0)==2,""+stock(0)),"stacked");
+        step(5,()->srv(()->sp().getInventory().setItem(9,LoadoutCoin.create(kitB()))),"a different coin (kit B)");
+        step(5,()->{slotClick(LoadoutMenu.INV,0,ClickType.PICKUP);slotClick(LoadoutMenu.COINS,0,ClickType.PICKUP);},"try to drop it on slot 1");
+        step(10,()->{check("slot 1 refuses a different kind",stock(0)==2,""+stock(0));slotClick(LoadoutMenu.INV,0,ClickType.PICKUP);},"refused kind");
+        step(5,()->slotClick(LoadoutMenu.INV,0,ClickType.QUICK_MOVE),"shift-click kit B's coin");
+        step(10,()->check("kit B's coin goes to the next slot that takes it",stock(1)==1&&stock(0)==2,stock(0)+" "+stock(1)),"slot 2");
+        step(5,()->{button(LoadoutMenu.SELECT);button(LoadoutMenu.SET_ACTIVE);},"select slot 1, Set active");
+        step(3,()->recordFrame=true,"record a frame with coins");
+        step(10,()->{layout("the station's menu with coins and the active slot");check("the active slot is stored for this player",srvGet(()->LoadoutData.get(sl()).players.active(sp().getUUID()))==0,"");check("another player's active slot is their own (default slot 1)",srvGet(()->LoadoutData.get(sl()).players.active(rival().getUUID()))==0,"");shot("lo12_menu_coins");},"active slot");
+        step(3,()->check("the closet shows slot 1's coin: kit A on the figure",wears().startsWith("diamond_helmet diamond_chestplate modern_kinetic_gun shield"),wears()),"closet: slot 1");
+        step(3,()->{var b=mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().equals(">")).findFirst().orElse(null);if(b!=null)press((Ui.UiButton)b);},"browse: the next hanger");
+        step(10,()->{check("> browses to slot 2: kit B on the figure (chainmail, crossbow)",wears().startsWith("chainmail_helmet chainmail_chestplate crossbow air")&&srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==1,wears());recordFrame=true;},"closet: slot 2");
+        step(3,()->{layout("the closet on slot 2");shot("lo13_closet_browse");},"picture: browsing the closet");
+        step(5,()->{var b=mc().screen.children().stream().filter(c->c instanceof Ui.UiButton u&&u.getMessage().getString().equals("<")).findFirst().orElse(null);if(b!=null)press((Ui.UiButton)b);},"browse back");
+        step(10,()->check("< browses back to slot 1",srvGet(()->((LoadoutMenu)sp().containerMenu).selected())==0,""),"closet: back");
+        step(5,()->{button(LoadoutMenu.SELECT+1);button(LoadoutMenu.SET_ACTIVE);},"Set active: slot 2");
+        step(10,()->{check("Set active moves to slot 2",srvGet(()->LoadoutData.get(sl()).players.active(sp().getUUID()))==1,"");button(LoadoutMenu.SELECT);button(LoadoutMenu.SET_ACTIVE);},"back to slot 1");
+        step(10,()->closeAll(),"close the menu");
+
+        // 4. Print 1: locker only (no Hub yet), the camera shots
+        List<ItemStack> before=new ArrayList<>();List<ItemStack> main=new ArrayList<>();
+        step(5,()->{srv(QaLoadout::clearMobs);dressPlain();srv(()->{sp().getInventory().setItem(9,st(Items.DIRT,64));sp().getInventory().setItem(20,st(Items.COBBLESTONE,40));sp().getInventory().setItem(35,st(Items.REDSTONE,7));});face();},"plain gear; things in the main inventory");
+        step(10,()->{before.clear();before.addAll(worn());main.clear();main.addAll(main27());resetWalk();watchWalk=true;countHud=true;clearMessages();},"remember what is worn");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door");
+        step(3,()->{
+            check("the print starts: the station is busy with this player",srvGet(()->LoadoutPrint.of(sp().getUUID())!=null&&LoadoutPrint.at(LoadoutStation.machine(sl(),S).id)!=null),bars());
+            var tl=clientTimeline();if(tl!=null)note("TIMELINE entry {} cycle {}..{} swap {} exit {}..{} close {}..{} total {} ticks",tl.entry(),tl.cycleStart(),tl.cycleStart()+LoadoutModel.CYCLE_TICKS,tl.swapTick(),tl.exitStart(),tl.closeStart(),tl.closeStart(),tl.end(),tl.end());
+        },"started");
+        until("entry shot",100,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.entry()/2f;},()->{check("the camera shot is on during the walk in",LoadoutCinematic.running(),"");shot("lo20_cine_entry");});
+        until("print shot",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.cycleStart()+24;},()->shot("lo21_cine_print"));
+        until("flash",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.swapTick()-6;},()->shot("lo22_cine_flash"));
+        until("the swap is done",100,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.swapTick()+3;},()->{});
+        step(1,()->{
+            var w=worn();check("tick 40: the kit is on, exactly",same(w,A),diff(w,A));
+            check("the coin left slot 1 (2 -> 1)",stock(0)==1,""+stock(0));
+            check("the old gear is in the locker (no Hub)",srvGet(()->{var m=LoadoutStation.machine(sl(),S);int n=0;for(int i=0;i<27;i++)if(!m.locker.getItem(i).isEmpty())n++;return n;})==before.stream().filter(s->!s.isEmpty()).count(),"");
+            check("the 27 main slots were not touched",same(main27(),main),diff(main27(),main));
+        },"after the swap");
+        until("exit shot",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.cycleStart()+LoadoutModel.STEAM_AT+4;},()->shot("lo23_cine_exit"));
+        until("settle shot",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.closeStart()-5;},()->shot("lo23b_cine_settle"));
+        int[] corrections={-1};
+        until("near the end",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.end()-3;},()->corrections[0]=srvGet(()->{var s=LoadoutPrint.of(sp().getUUID());return s==null?-1:s.corrections;}));
+        until("print over",100,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
+        step(6,()->{
+            watchWalk=false;countHud=false;
+            note("JITTER samples {} max distance from the synced path {} blocks (from tick 10; catching up before: {}), max step {} blocks, jumps over 0.5: {}, server corrections {}",samples,String.format("%.3f",maxDev),String.format("%.3f",startLag),String.format("%.3f",maxStep),jumps,corrections[0]);
+            note("HUD during the print: hotbar drawn {} frames, hidden {} frames; cinematic ticks {}, detached ticks {}",hudDrawn,hudHidden,cinematicTicks,detachedTicks);
+            check("the walk follows the path (within 0.3 blocks of the synced position from tick 10, no step over 0.5 blocks, no server correction)",maxDev<.3&&jumps==0&&samples>40&&corrections[0]==0,String.format("%.3f",maxDev)+" "+jumps+" "+samples+" "+corrections[0]);
+            check("the HUD was hidden during the shots",hudHidden>0,hudDrawn+" drawn "+hudHidden+" hidden");
+            check("back in first person, HUD shown, FOV restored",firstPerson()&&!mc().options.hideGui,"");
+            var exit=srvGet(()->{var e=LoadoutRules.exitPoint();return LoadoutStation.world(S,Direction.NORTH,e[0],e[1],e[2]);});
+            double d=srvGet(()->sp().position().distanceTo(exit));
+            check("the player stands at the exit cell, two blocks out",d<.6,String.format("%.2f",d));
+            check("the cooldown runs (30 s)",srvGet(()->LoadoutRules.secondsLeft(LoadoutData.get(sl()).players.readyAt(sp().getUUID()),sl().getGameTime()))>=28,"");
+            check("the action bar says where the old gear went",barHas("locker"),bars());
+            shot("lo24_after_print");
+        },"after the print");
+        // Cooldown and a refusal that changes nothing
+        step(5,()->{clearMessages();face();},"in front again");
+        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door during the cooldown");
+        step(10,()->check("refused during the cooldown; nothing starts",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&barHas("more seconds")&&stock(0)==1,bars()),"cooldown refused");
+        step(5,()->{clearMessages();readyNow();tp(S.getX()+.5,sy,S.getZ()-8.5,0,10);},"cooldown cleared; stand 7 blocks out");
+        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door from too far");
+        step(10,()->check("too far: refused",srvGet(()->LoadoutPrint.of(sp().getUUID())==null&&"far".equals(LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0))),bars()),"far refused");
+        step(5,()->{srv(()->sl().setBlock(S.offset(0,-1,-3),Blocks.STONE.defaultBlockState(),3));tp(S.getX()+.5,sy,S.getZ()-4.5,0,10);},"a stone between the player and the door");
+        step(5,()->check("blocked path: refused","path".equals(srvGet(()->LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0))),srvGet(()->String.valueOf(LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0)))),"path refused");
+        step(5,()->{srv(()->sl().removeBlock(S.offset(0,-1,-3),false));tp(S.getX()+3.5,sy,S.getZ()-1.5,0,10);},"stand beside the doors");
+        step(5,()->check("aside: refused",srvGet(()->LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0))!=null,srvGet(()->String.valueOf(LoadoutPrint.problem(sp(),LoadoutStation.machine(sl(),S),0)))),"aside refused");
+
+        // 5. The Hub: a second coin paid from the Hub, then a print that stows into the Hub, watched from outside
+        step(5,()->{srv(()->sp().getInventory().setItem(30,sp().getInventory().getItem(0).copy()));hold(st(EternalDefense.LOGISTICS_HUB_ITEM,1));tp(H.getX()+.5,sy,H.getZ()-4.5,0,30);},"hold a Hub in front of its spot (the gun put aside)");
+        step(10,()->click(H.below(2),Direction.UP),"place the Hub");
+        step(30,()->{check("the Hub stands",srvGet(()->hub()!=null),"");hubPut(st(EternalDefense.PLATING,10));hubPut(st(EternalDefense.ARDENT_ENERGY,5));
+            srv(()->{var inv=sp().getInventory();inv.setItem(0,inv.getItem(30).copy());inv.setItem(30,ItemStack.EMPTY);inv.setChanged();});},"fee in the Hub; the gun back in hand");
+        List<ItemStack> Bk=new ArrayList<>();
+        step(5,()->{Bk.clear();Bk.addAll(kitB());srv(()->{var inv=sp().getInventory();for(int i=0;i<14;i++)if(!Bk.get(i).isEmpty())inv.setItem(9+i,Bk.get(i).copy());});face();},"kit B in the pack (no fee there)");
+        step(10,()->click(S.offset(1,-1,-1),Direction.NORTH),"open the menu");
+        step(10,()->{for(int k=0;k<14;k++)slotClick(LoadoutMenu.INV+k,0,ClickType.QUICK_MOVE);clearMessages();},"fill the pack area");
+        step(5,()->button(LoadoutMenu.MAKE),"Make coin (fee from the Hub)");
+        until("the Hub line",200,()->srvGet(HubNotices::idle)&&chatHas("Hub"),()->{});
+        step(10,()->{
+            check("the fee came from the Hub with a chat line",inHub(EternalDefense.PLATING.get())==6&&inHub(EternalDefense.ARDENT_ENERGY.get())==4&&chatHas("Hub"),chats());
+            check("coin B is in the pack",srvGet(()->inPack(EternalDefense.LOADOUT_COIN.get()))>=1,"");},"coin B");
+        step(5,()->closeAll(),"close");
+        // Print 2 watched from outside: the camera shots off, a still camera
+        int[] stand={-1};
+        step(5,()->{DefenseClientConfig.set(DefenseClientConfig.LOADOUT_CINEMATIC,false);readyNow();face();before.clear();before.addAll(worn());clearMessages();resetWalk();watchWalk=true;},"camera shots off (client config)");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door");
+        step(2,()->{var st=new ArmorStand(EntityType.ARMOR_STAND,mc().level);st.setInvisible(true);st.setNoGravity(true);
+            double x=S.getX()-3.5,y=sy+.8,z=S.getZ()-5.5;st.moveTo(x,y,z,(float)Math.toDegrees(Math.atan2(-(S.getX()+.5-x),(S.getZ()+.5-z))),12);st.yHeadRot=st.getYRot();
+            mc().level.putNonPlayerEntity(-4242,st);stand[0]=-4242;mc().setCameraEntity(st);mc().options.hideGui=true;},"a still camera outside");
+        until("outside: walking in",100,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.entry()*0.6f;},()->{check("no camera shots with the option off",!LoadoutCinematic.running(),"");shot("lo30_outside_entry");});
+        until("outside: cycle",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.cycleStart()+30;},()->shot("lo31_outside_cycle"));
+        step(1,()->{
+            var rv=rival();
+            String r=srvGet(()->{rv.moveTo(S.getX()+.9,sy,S.getZ()-3.5,0,0);var m=LoadoutStation.machine(sl(),S);var p=LoadoutPrint.problem(rv,m,0);LoadoutPrint.request(rv,m,0);var s=LoadoutPrint.at(m.id);return p+" "+(s==null?"none":s.name);});
+            check("a second player asking now is refused: busy, the print stays this player's",r.startsWith("busy ")&&r.endsWith(mc().player.getGameProfile().getName()),r);
+            String held=srvGet(()->{var p=sp();float hp=p.getHealth();p.hurt(p.damageSources().generic(),5f);boolean hurt=p.getHealth()<hp;
+                var e=new net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem(p,InteractionHand.MAIN_HAND);boolean use=net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(e);
+                return hurt+" "+use;});
+            check("held: no damage, item use cancelled",held.equals("false true"),held);
+            mc().player.drop(false);
+        },"busy lock and the hold");
+        until("outside: exit",200,()->{var tl=clientTimeline();return tl!=null&&clientElapsed()>=tl.exitStart()+4;},()->shot("lo32_outside_exit"));
+        until("print 2 over",200,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
+        step(5,()->{
+            watchWalk=false;mc().setCameraEntity(mc().player);mc().level.removeEntity(-4242,net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);mc().options.hideGui=false;
+            note("JITTER (camera shots off) samples {} max distance {} blocks (from tick 10; catching up before: {}), max step {}, jumps {}",samples,String.format("%.3f",maxDev),String.format("%.3f",startLag),String.format("%.3f",maxStep),jumps);
+            check("print 2 (camera off): no step over 0.5 blocks",jumps==0,""+maxStep);
+            String hubGun=srvGet(()->{var h=hub();if(h==null)return "no hub";for(int i=0;i<HubStorage.SLOTS;i++){var g=h.storage.get(i);if(g.is(A.get(5).getItem()))return attachments(g)+" "+g.getTag();}return "none";});
+            check("stowed into the Hub: kit A's gun with its 4 attachments is in the Hub",hubGun.startsWith("4 "),hubGun);
+            check("the action bar says the Hub",barHas("hub"),bars());
+            var w=worn();check("now wearing kit A again? no: the coin of slot 1 was kit A, so kit A again",same(w,A),diff(w,A));
+            DefenseClientConfig.set(DefenseClientConfig.LOADOUT_CINEMATIC,true);
+        },"after print 2");
+
+        // 6. Stow room: Hub full -> locker; locker full too -> refused before anything changes
+        step(5,()->srv(()->{var h=hub();for(int i=0;h!=null&&h.storage.usedSlots()<HubStorage.SLOTS&&i<HubStorage.SLOTS*2;i++)h.storage.insert(st(Items.COBBLESTONE,64),false);
+            var m=LoadoutStation.machine(sl(),S);for(int i=0;i<27;i++)if(m.locker.getItem(i).isEmpty())m.locker.setItem(i,st(Items.DIRT,64));
+            var slot=m.coins[0];if(slot.getCount()<3){var c=slot.isEmpty()?LoadoutCoin.create(A):slot.copy();c.setCount(3);m.shelf.setItem(0,c);}}),"fill the Hub and the locker; three coins in slot 1");
+        step(5,()->{readyNow();face();clearMessages();},"in front, cooldown cleared");
+        step(5,()->click(S.offset(0,-1,-1),Direction.NORTH),"right-click the door with no room to stow");
+        step(10,()->check("no room in the Hub or the locker: refused, nothing changes",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&stock(0)==3&&barHas("room"),bars()),"no room refused");
+        step(5,()->srv(()->{var m=LoadoutStation.machine(sl(),S);for(int i=0;i<27;i++)m.locker.setItem(i,ItemStack.EMPTY);var h=hub();for(int i=0;h!=null&&i<HubStorage.SLOTS;i++){var s=h.storage.get(i);if(s.is(Items.COBBLESTONE))h.storage.extract(HubStorage.Key.of(s),s.getCount(),false);}}),"empty the locker and the Hub's cobblestone");
+
+        // 7. Stops before tick 40: nothing is consumed and the camera comes back
+        stopCase("death",()->srv(()->sp().kill()),true);
+        stopCase("dimension",()->srv(()->{var n=nether();for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++){n.setBlock(new BlockPos(x,99,z),Blocks.OBSIDIAN.defaultBlockState(),3);for(int y=100;y<104;y++)n.setBlock(new BlockPos(x,y,z),Blocks.AIR.defaultBlockState(),3);}
+            sp().teleportTo(n,.5,100,.5,0,0);}),false);
+        stopCase("logout",null,false);
+        // Esc and sneak skip the shots; the print goes on
+        step(5,()->{readyNow();face();resetWalk();watchWalk=true;},"skip: in front");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        until("shot on",60,()->LoadoutCinematic.running(),()->{});
+        step(2,()->mc().setScreen(new net.minecraft.client.gui.screens.PauseScreen(true)),"press Esc");
+        step(3,()->check("Esc: the pause menu does not open, the shots stop, the print goes on",mc().screen==null&&!LoadoutCinematic.running()&&srvGet(()->LoadoutPrint.of(sp().getUUID())!=null),String.valueOf(mc().screen)),"Esc skip");
+        until("print 3 over",300,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
+        step(5,()->{watchWalk=false;check("after an Esc skip: first person, the kit printed",firstPerson()&&same(worn(),A),"");},"after Esc");
+        step(5,()->{readyNow();face();},"sneak: in front");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        until("shot on (2)",60,()->LoadoutCinematic.running(),()->{});
+        step(2,()->net.minecraft.client.KeyMapping.set(mc().options.keyShift.getKey(),true),"hold sneak");
+        step(2,()->{net.minecraft.client.KeyMapping.set(mc().options.keyShift.getKey(),false);check("sneak: the shots stop, the print goes on",!LoadoutCinematic.running()&&srvGet(()->LoadoutPrint.of(sp().getUUID())!=null),"");},"release sneak");
+        until("print 4 over",300,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
+        step(5,()->check("after a sneak skip: first person, standing (not sneaking)",firstPerson()&&!mc().player.isShiftKeyDown(),""),"after sneak");
+        // Late joiners: the update tag carries the print
+        step(5,()->{readyNow();face();},"update tag: in front");
+        step(2,()->click(S.offset(0,-1,-1),Direction.NORTH),"start a print");
+        step(10,()->{
+            String r=srvGet(()->{var be=(LoadoutStation.StationEntity)sl().getBlockEntity(S);var tag=be.getUpdateTag();var copy=new LoadoutStation.StationEntity(S,sl().getBlockState(S));copy.handleUpdateTag(tag);
+                return tag.hasUUID("Occupant")+" "+(copy.start==be.start)+" "+(copy.timeline().end()==be.timeline().end())+" "+String.format("%.2f",copy.door(sl().getGameTime(),0));});
+            check("a client joining now gets the print from the update tag (occupant, start, timeline, door)",r.startsWith("true true true"),r);
+        },"update tag");
+        until("print 5 over",300,()->srvGet(()->LoadoutPrint.of(sp().getUUID())==null),()->{});
+
+        // 8. Night: the glow
+        step(30,()->{srv(QaLoadout::clearMobs);mc().options.hideGui=true;look(S.getX()+.5,sy,S.getZ()-3.5,S.getX()+.5,S.getY()+.5,S.getZ()+.5);},"day; camera close front");
+        step(20,()->shot("lo41_day_close"),"picture: close by day (for the glow comparison)");
+        step(80,()->{srv(()->sl().setDayTime(18000));look(S.getX()-3.5,sy,S.getZ()-6.5,S.getX()+.5,S.getY()+.2,S.getZ()+.5);},"night; camera front left");
+        step(20,()->shot("lo40_night_glow"),"picture: the station at night");
+        step(30,()->look(S.getX()+.5,sy,S.getZ()-3.5,S.getX()+.5,S.getY()+.5,S.getZ()+.5),"camera: close front");
+        step(20,()->shot("lo41_night_glow_close"),"picture: close at night");
+        step(5,()->{srv(()->sl().setDayTime(6000));mc().options.hideGui=false;},"day again");
+
+        // 9. The Loadout Flare and the capsule
+        step(5,()->srv(()->{
+            sl().setBlock(CANNON,EternalDefense.SUPPORT_CANNON.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(CANNON) instanceof SupportCannon.CannonEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            sl().setBlock(PLAT,EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(PLAT) instanceof SupportPlatform.PlatformEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            var sd=SupportData.get(sl());sd.setCannon(sp().getUUID(),CANNON);sd.setPlatform(sp().getUUID(),PLAT);
+            sp().getInventory().setItem(30,st(EternalDefense.ARDENT_ENERGY,Economy.LOADOUT_FLARE_PRICE*3));tp0(PLAT.getX()+.5,sy,PLAT.getZ()-2.5);}),"a Support Platform and Cannon; Ardent Energy");
+        step(10,()->srv(()->{var s=sl().getBlockState(PLAT);s.use(sl(),sp(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(PLAT),Direction.NORTH,PLAT,false));}),"open the platform");
+        step(10,()->{int idx=-1;for(int i=0;i<SupportShop.PRODUCTS.size();i++)if(SupportShop.PRODUCTS.get(i).id().equals("loadout"))idx=i;int at=idx;srv(()->{SupportShop.buy(sp(),at);SupportShop.buy(sp(),at);SupportShop.buy(sp(),at);});},"buy three Loadout Flares");
+        step(10,()->{check("three Loadout Flares for 5 Ardent each",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==3&&inPack(EternalDefense.ARDENT_ENERGY.get())==0),srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())+" flares "+inPack(EternalDefense.ARDENT_ENERGY.get())+" energy"));shot("lo50_platform_shop");closeAll();},"bought");
+        // No coin anywhere: refused, flare kept
+        step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);m.shelf.setItem(0,ItemStack.EMPTY);removeFlares(sp());clearMobs();flares(0,3);});
+            mc().player.getInventory().selected=0;tp(FIELD.getX()+.5,sy,FIELD.getZ()+.5,180,35);},"slot 1 empty; flares in hand, out in the field");
+        step(5,()->throwHeld(),"throw a Loadout Flare");
+        step(10,()->check("no coin in slot 1 or the Hub: refused, the flare kept",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==3&&sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(FIELD).inflate(40)).isEmpty())&&!(CHAT.isEmpty()&&BAR.isEmpty()),chats()+" / "+bars()),"no coin refused");
+        int[] coins={0};
+        step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(2);m.shelf.setItem(0,c);});coins[0]=2;dressPlain();srv(()->flares(1,3));mc().player.getInventory().selected=1;},"two coins in slot 1");
+        step(5,()->throwHeld(),"throw a Loadout Flare outdoors");
+        step(5,()->{clearMessages();throwHeld();},"throw another at once");
+        step(10,()->{
+            check("a second call while one is on its way: refused",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==2),chats()+" / "+bars());
+            check("the coin is still in the slot after the throw",stock(0)==2,""+stock(0));},"one at a time");
+        until("the cannon fires",900,()->stock(0)==1,()->check("the coin is taken when the cannon fires",stock(0)==1,""));
+        until("the capsule falls",600,()->srvGet(()->!sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30)).isEmpty()),()->{
+            var d=srvGet(()->sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30)).get(0).position());
+            mc().options.hideGui=true;look(d.x+5,sy,d.z+7,d.x,Math.max(sy+2,d.y-6),d.z);});
+        until("the capsule is low enough for a picture",400,()->{var d=srvGet(()->{var l=sl().getEntitiesOfClass(LoadoutCapsule.Drop.class,new AABB(FIELD).inflate(30,80,30));return l.isEmpty()?null:l.get(0).position();});return d==null||d.y<sy+14;},()->shot("lo51_capsule_falling"));
+        BlockPos[] cap={null};
+        until("the capsule lands",600,()->(cap[0]=capsuleNear(FIELD,12))!=null,()->{});
+        step(30,()->{
+            check("a capsule stands where the flare landed, two blocks high",cap[0]!=null&&srvGet(()->sl().getBlockState(cap[0].above()).is(EternalDefense.LOADOUT_CAPSULE_PART.get())),String.valueOf(cap[0]));
+            if(cap[0]!=null){var f=srvGet(()->sl().getBlockState(cap[0]).getValue(DefenseStructures.FACING));var to=srvGet(()->Direction.getNearest(sp().getX()-(cap[0].getX()+.5),0,sp().getZ()-(cap[0].getZ()+.5)));check("it faces its owner",f==to,f+" vs "+to);
+                capCam(cap[0]);}
+        },"landed");
+        step(20,()->shot("lo52_capsule_closed"),"picture: the capsule");
+        step(5,()->{if(cap[0]==null)return;var rv=rival();String r=srvGet(()->{rv.moveTo(cap[0].getX()+.5,sy,cap[0].getZ()-1.5,0,0);LoadoutCapsule.use(sl(),cap[0],rv);return String.valueOf(rv.containerMenu instanceof LoadoutCapsule.CapsuleMenu);});check("another player cannot open it",r.equals("false"),r);},"owner only");
+        step(5,()->{if(cap[0]==null)return;srv(()->{var inv=sp().getInventory();for(int i=0;i<4;i++)inv.armor.set(i,ItemStack.EMPTY);for(int i=0;i<9;i++)inv.items.set(i,ItemStack.EMPTY);inv.offhand.set(0,ItemStack.EMPTY);
+            inv.armor.set(3,st(Items.LEATHER_HELMET,1));inv.items.set(0,st(Items.STICK,1));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;click(cap[0],Direction.NORTH);},"wear only a leather helmet and hold a stick; open the capsule");
+        step(12,()->recordFrame=true,"record a frame of the capsule menu");
+        step(3,()->{check("the capsule's menu opens",mc().player.containerMenu instanceof LoadoutCapsule.CapsuleMenu,String.valueOf(mc().screen));layout("the capsule's menu");
+            check("the capsule's figure wears the kit inside",wears().startsWith("diamond_helmet diamond_chestplate modern_kinetic_gun shield"),wears());shot("lo53_capsule_menu");},"capsule menu");
+        step(5,()->{mc().setScreen(null);capCam(cap[0]);},"hide the screen (the menu stays open on the server); camera in front of the door");
+        step(12,()->shot("lo54_capsule_open"),"picture: the open capsule");
+        step(5,()->button(LoadoutCapsule.CapsuleMenu.EQUIP),"Equip");
+        step(10,()->{
+            String r=srvGet(()->{var inv=sp().getInventory();var be=(LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0]);int left=0;for(int i=0;i<14;i++)if(!be.items.getItem(i).isEmpty())left++;
+                return inv.armor.get(3).is(Items.LEATHER_HELMET)+" "+inv.items.get(0).is(Items.STICK)+" "+inv.armor.get(2).is(Items.DIAMOND_CHESTPLATE)+" "+left+" "+be.items.getItem(3).is(Items.DIAMOND_HELMET)+" "+be.items.getItem(5).is(A.get(5).getItem());});
+            check("Equip fills only empty slots; the helmet and the hotbar 1 item stay in the capsule",r.equals("true true true 2 true true"),r);
+            var gun=srvGet(()->((LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0])).items.getItem(5).copy());
+            check("the gun in the capsule is the exact gun",ItemStack.matches(gun,A.get(5)),String.valueOf(gun.getTag()));
+            check("the door state is in the update tag",srvGet(()->((LoadoutCapsule.CapsuleEntity)sl().getBlockEntity(cap[0])).getUpdateTag().getLong("OpenAt")>0),"");
+        },"Equip");
+        step(5,()->{slotClick(0,0,ClickType.QUICK_MOVE);slotClick(5,0,ClickType.QUICK_MOVE);},"take the last two");
+        step(5,()->closeAll(),"close the capsule");
+        step(3,()->capCam(cap[0]),"camera");
+        step(10,()->shot("lo55_capsule_folding"),"picture: folding away");
+        step(30,()->check("empty and closed: the capsule folds away",srvGet(()->!sl().getBlockState(cap[0]).is(EternalDefense.LOADOUT_CAPSULE.get())&&!sl().getBlockState(cap[0].above()).is(EternalDefense.LOADOUT_CAPSULE_PART.get())),""),"folded");
+        // Underground: without Quantum tunneling the flare comes back, with it the capsule stands up inside
+        step(5,()->{mc().options.hideGui=false;clearMessages();srv(()->{buildBunker();var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=0;SupportData.get(sl()).setDirty();
+            flares(1,2);sp().teleportTo(sl(),BUNKER.getX()+.5,sy,BUNKER.getZ()+.5,0,60);});mc().player.getInventory().selected=1;},"inside a bunker under 3 blocks of stone");
+        step(5,()->throwHeld(),"throw a Loadout Flare underground");
+        until("the flare comes back",300,()->srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==2),()->check("underground without Quantum tunneling: the flare comes back, the coin stays",stock(0)==1,chats()));
+        step(5,()->{clearMessages();srv(()->{var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=1;SupportData.get(sl()).setDirty();});},"Quantum tunneling bought");
+        step(5,()->throwHeld(),"throw again");
+        until("a capsule stands up inside",900,()->capsuleNear(BUNKER,4)!=null,()->{check("with Quantum tunneling: a capsule stands up inside the bunker",capsuleNear(BUNKER,4)!=null,"");check("its coin was used",stock(0)==0,""+stock(0));});
+        // No room for a capsule: the old parcel
+        step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(2);m.shelf.setItem(0,c);lowCeiling(LOW,4,3);lowCeiling(LOW2,1,1);});},"two coins; a 9 x 9 low ceiling and a 3 x 3 one");
+        step(5,()->srv(()->landedFlare(LOW)),"a Loadout Flare under the wide low ceiling");
+        until("a parcel instead",900,()->chatHas("parcel"),()->{
+            String r=srvGet(()->{var l=sl().getEntitiesOfClass(SupportCrate.ParcelEntity.class,new AABB(B).inflate(120,40,120));return l.size()+" "+(l.isEmpty()?"":l.get(0).blockPosition().toShortString()+" player "+sp().blockPosition().toShortString());});
+            check("no two-high cell within 3 blocks: the old parcel (beside the caller, as an underground supply parcel) and a chat line",r.startsWith("1 ")&&capsuleNear(LOW,5)==null&&chatHas("parcel"),r+" | "+chats());});
+        step(5,()->srv(()->landedFlare(LOW2)),"a Loadout Flare under the small low ceiling");
+        until("a capsule beside it",900,()->capsuleNear(LOW2,4)!=null,()->{var c=capsuleNear(LOW2,4);check("the nearest two-high cell within 3 blocks gets the capsule",c!=null&&!c.equals(LOW2)&&c.distSqr(LOW2)<=9,String.valueOf(c));});
+        // The Nether: refused without the Dimensional Link, delivered with it
+        step(5,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(1);m.shelf.setItem(0,c);var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]=0;
+            var n=nether();for(int x=-5;x<=5;x++)for(int z=-5;z<=5;z++){n.setBlock(new BlockPos(x,99,z),Blocks.OBSIDIAN.defaultBlockState(),3);for(int y=100;y<106;y++)n.setBlock(new BlockPos(x,y,z),Blocks.AIR.defaultBlockState(),3);}
+            flares(1,2);sp().teleportTo(n,.5,100,.5,180,40);});mc().player.getInventory().selected=1;},"the Nether, no Dimensional Link");
+        step(40,()->throwHeld(),"throw in the Nether");
+        step(10,()->check("the Nether without the Dimensional Link: refused, the flare kept",srvGet(()->inPack(EternalDefense.LOADOUT_FLARE.get())==2)&&!(CHAT.isEmpty()&&BAR.isEmpty()),chats()+" / "+bars()),"Nether refused");
+        step(5,()->srv(()->{var b=SupportData.get(sl()).ensure(sp().getUUID());b.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]=1;SupportData.get(sl()).setDirty();}),"Dimensional Link bought");
+        step(5,()->throwHeld(),"throw again");
+        until("a capsule in the Nether",900,()->srvGet(()->{for(var p:BlockPos.betweenClosed(new BlockPos(-6,98,-6),new BlockPos(6,104,6)))if(nether().getBlockState(p).is(EternalDefense.LOADOUT_CAPSULE.get()))return true;return false;}),()->{check("with the Dimensional Link: a capsule stands up in the Nether",true,"");check("its coin was used",stock(0)==0,""+stock(0));});
+        step(20,()->{var c=srvGet(()->{for(var p:BlockPos.betweenClosed(new BlockPos(-6,98,-6),new BlockPos(6,104,6)))if(nether().getBlockState(p).is(EternalDefense.LOADOUT_CAPSULE.get()))return p.immutable();return null;});
+            if(c!=null){mc().options.hideGui=true;srv(()->sp().teleportTo(nether(),c.getX()+.5-2.5,c.getY(),c.getZ()+.5-3.5,(float)Math.toDegrees(Math.atan2(-2.5,3.5)),15));}},"camera at the Nether capsule");
+        step(20,()->{shot("lo56_capsule_nether");},"picture: the Nether capsule");
+        step(5,()->mc().options.hideGui=false,"HUD");
+        step(5,()->srv(()->sp().teleportTo(sl(),S.getX()+.5,sy,S.getZ()-3.5,0,10)),"home");
+        settled("home from the Nether");
+
+        // 10. Mining guard, then the machine broken during a print
+        step(10,()->{clearMessages();srv(()->{var m=LoadoutStation.machine(sl(),S);var c=LoadoutCoin.create(A);c.setCount(2);m.shelf.setItem(0,c);sp().gameMode.destroyBlock(S.offset(1,0,-1));});},"survival: mine the station with coins inside");
+        step(10,()->check("with coins inside it cannot be mined: still standing",srvGet(()->LoadoutStation.isStation(sl().getBlockState(S))&&LoadoutStation.isStation(sl().getBlockState(S.offset(1,0,-1)))),bars()),"break guard");
+        step(5,()->{readyNow();face();dressPlain();before.clear();clearMessages();},"in front for a print that will be broken");
+        int[] stocked={0};
+        step(2,()->{before.addAll(worn());stocked[0]=srvGet(()->{int n=0;for(var c:LoadoutStation.machine(sl(),S).coins)n+=c.getCount();return n;});srv(()->{for(var e:sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(S).inflate(10)))e.discard();});click(S.offset(0,-1,-1),Direction.NORTH);},"start a print");
+        until("tick 20",100,()->clientElapsed()>=20,()->srv(()->sl().destroyBlock(S,true)));
+        step(10,()->{},"the break reaches the client");
+        step(10,()->{
+            int dropped=srvGet(()->sl().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(S).inflate(8)).stream().filter(e->e.getItem().is(EternalDefense.LOADOUT_COIN.get())).mapToInt(e->e.getItem().getCount()).sum());
+            check("broken before tick 40: the print stops, nothing consumed (coins dropped as items), gear unchanged",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&same(worn(),before)&&dropped==stocked[0]&&stocked[0]>0,"stock "+stocked[0]+", session "+srvGet(()->LoadoutPrint.of(sp().getUUID())!=null)+", coins dropped "+dropped+", gear "+diff(worn(),before)+" | "+bars());
+            check("the camera is back after the machine broke",firstPerson(),cameraState());
+            check("the cells are gone",srvGet(()->{for(var p:LoadoutStation.cells(S))if(LoadoutStation.isStation(sl().getBlockState(p)))return false;return true;}),"");
+            shot("lo60_broken");},"after the break");
+    }
+
+    static ItemStack srvCoinCopy(){var m=LoadoutStation.machine(sl(),S);if(m!=null&&!m.coins[0].isEmpty())return m.coins[0].copyWithCount(1);for(var s:sp().getInventory().items)if(s.is(EternalDefense.LOADOUT_COIN.get()))return s.copyWithCount(1);return ItemStack.EMPTY;}
+    /** The camera 3.5 blocks in front of a capsule's door, a little to its side. */
+    static void capCam(BlockPos c){var f=srvGet(()->sl().getBlockState(c).getValue(DefenseStructures.FACING));double x=c.getX()+.5+f.getStepX()*3.5+f.getStepZ()*1.2,z=c.getZ()+.5+f.getStepZ()*3.5-f.getStepX()*1.2;look(x,sy,z,c.getX()+.5,sy+.9,c.getZ()+.5);}
+    static void tp0(double x,double y,double z){sp().teleportTo(sl(),x,y,z,0,10);}
+    static void throwHeld(){srv(()->{var stack=sp().getMainHandItem();stack.getItem().use(sp().serverLevel(),sp(),InteractionHand.MAIN_HAND);});}
+    static void removeFlares(ServerPlayer p){for(var e:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(B).inflate(200)))e.discard();}
+    static BlockPos capsuleNear(BlockPos at,int r){return srvGet(()->{for(var p:BlockPos.betweenClosed(at.offset(-r,-3,-r),at.offset(r,6,r)))if(sl().getBlockState(p).is(EternalDefense.LOADOUT_CAPSULE.get()))return p.immutable();return null;});}
+    /** A 5 x 5 room, 3 high, under a 3-block stone roof. */
+    static void buildBunker(){
+        for(int x=-3;x<=3;x++)for(int z=-3;z<=3;z++)for(int y=0;y<7;y++){var p=BUNKER.offset(x,y,z);boolean wall=Math.abs(x)==3||Math.abs(z)==3||y>=3;sl().setBlock(p,wall?Blocks.STONE.defaultBlockState():Blocks.AIR.defaultBlockState(),3);}
+    }
+    /** A ceiling one block over the ground, (2r+1) blocks square and thick blocks thick. */
+    static void lowCeiling(BlockPos at,int r,int thick){for(int x=-r;x<=r;x++)for(int z=-r;z<=r;z++)for(int y=1;y<=thick;y++)sl().setBlock(at.offset(x,y,z),Blocks.STONE.defaultBlockState(),3);}
+    static void landedFlare(BlockPos at){
+        var base=SupportData.get(sl()).ensure(sp().getUUID());var cfg=CannonUpgrades.Config.of(base.up,base.type());
+        var f=new SupportFlares.FlareEntity(EternalDefense.FLARE.get(),sl());f.setOwner(sp());f.configure(SupportCalls.Kind.LOADOUT,new net.minecraft.nbt.ListTag(),cfg);
+        f.loadout=LoadoutCall.reserve(sp());LoadoutCall.pending(sp().getUUID(),f.getUUID());
+        f.setPos(at.getX()+.5,at.getY(),at.getZ()+.5);f.setNoGravity(true);f.getEntityData().set(SupportFlares.FlareEntity.LANDED,true);sl().addFreshEntity(f);
+    }
+
+    /** A print stopped before tick 40 by how: nothing consumed, the gear as it was, the camera back. */
+    static void stopCase(String how,Runnable stop,boolean respawn){
+        List<ItemStack> before=new ArrayList<>();int[] coins={0};
+        step(5,()->{readyNow();face();dressPlain();clearMessages();},how+": in front");
+        if(how.equals("logout")){
+            // A player who is not in the player list (a fake player) is treated as gone on the next tick
+            step(5,()->{var rv=rival();String r=srvGet(()->{var m=LoadoutStation.machine(sl(),S);int c=m.coins[0].getCount();rv.moveTo(S.getX()+.5,sy,S.getZ()-3.5,0,0);rv.getInventory().clearContent();
+                LoadoutData.get(sl()).players.setReadyAt(rv.getUUID(),0);LoadoutPrint.request(rv,m,0);boolean started=LoadoutPrint.of(rv.getUUID())!=null;return c+" "+started;});coins[0]=Integer.parseInt(r.split(" ")[0]);note("logout case: {}",r);},"a player not in the player list starts a print");
+            step(5,()->check("logout before tick 40: the print stops, the coin stays",srvGet(()->LoadoutPrint.of(rival().getUUID())==null&&LoadoutPrint.at(LoadoutStation.machine(sl(),S).id)==null)&&stock(0)==coins[0],""+stock(0)),"logout");
+            return;
+        }
+        step(2,()->{coins[0]=stock(0);before.clear();before.addAll(worn());note("{} inventory before: {}",how,inventory());click(S.offset(0,-1,-1),Direction.NORTH);},how+": start a print");
+        until(how+": tick 20",100,()->clientElapsed()>=20,()->{check(how+": the camera shot is on before the stop",LoadoutCinematic.running(),"");stop.run();});
+        step(20,()->{
+            if(respawn&&mc().player.isDeadOrDying())mc().player.respawn();
+        },how+": respawn if dead");
+        int[] presses={0};
+        until(how+": alive again",300,()->{var p=mc().player;if(p==null)return false;if(p.isDeadOrDying()){if(presses[0]++%20==0)p.respawn();return false;}return true;},()->{if(mc().screen instanceof net.minecraft.client.gui.screens.DeathScreen)mc().setScreen(null);});
+        until(how+": the client is ready",400,()->mc().player!=null&&mc().level!=null&&mc().screen==null&&!mc().isPaused()&&!mc().player.isDeadOrDying()&&srvGet(()->sp().level().dimension())==mc().level.dimension(),()->note("{} inventory after: {}",how,inventory()));
+        step(10,()->{},how+": a few frames in the new place");
+        step(20,()->{
+            check(how+" before tick 40: the print stops, the coin stays, the gear is unchanged",srvGet(()->LoadoutPrint.of(sp().getUUID())==null)&&stock(0)==coins[0]&&same(worn(),before),stock(0)+" "+diff(worn(),before));
+            check(how+": the camera is back in first person, HUD on",firstPerson()&&!mc().options.hideGui,cameraState());
+            check(how+": doors close (or the station is idle)",srvGet(()->{var be=(LoadoutStation.StationEntity)sl().getBlockEntity(S);return be.occupant==null;}),"");
+            shot("lo3x_stop_"+how);
+        },how+": after");
+        step(10,()->srv(()->{if(sp().level()!=sl())sp().teleportTo(sl(),S.getX()+.5,sy,S.getZ()-3.5,0,10);}),how+": back home");
+        settled(how);
+    }
+}

@@ -237,7 +237,7 @@ final class LoadoutCapsule {
 
     /** The capsule's menu: the kit in its own slots (take only) and Equip. */
     static final class CapsuleMenu extends AbstractContainerMenu {
-        static final int W=196,H=200,INV_X=18,INV_Y=118,ROW_A=40,ROW_B=62,OFFHAND_X=100,EQUIP=0;
+        static final int W=332,H=200,INV_X=142,INV_Y=118,ROW_A=40,ROW_B=62,OFFHAND_X=224,EQUIP=0;
         final CapsuleEntity capsule;final Container items;final Player player;final BlockPos pos;
         CapsuleMenu(int id,Inventory inv,CapsuleEntity capsule,Container items){this(id,inv,capsule,items,capsule.getBlockPos());}
         private CapsuleMenu(int id,Inventory inv,CapsuleEntity capsule,Container items,BlockPos pos){

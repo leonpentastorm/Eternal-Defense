@@ -23,7 +23,7 @@ import java.util.ArrayList;
 /** The Loadout Station's menu: the kit to pack, Make coin, the 9 shared coin slots, Set active and Print; a second page shows the locker. */
 final class LoadoutMenu extends AbstractContainerMenu {
     /** 238 tall: it fits a 720p window at GUI scale 3. */
-    static final int W=210,H=238,INV_X=24,INV_Y=158,ROW_A=40,ROW_B=60,COIN_Y=102,LOCKER_Y=44,OFFHAND_X=106,MAKE_X=130;
+    static final int W=384,H=240,INV_X=182,INV_Y=158,ROW_A=40,ROW_B=60,COIN_Y=104,LOCKER_Y=44,OFFHAND_X=264,MAKE_X=290;
     static final int MAKE=0,SET_ACTIVE=1,PRINT=2,FORGET=3,PAGE=4,SELECT=10;
     /** Slot indices: the kit, the coin slots, the locker, the remembered kinds (never shown as slots), the player's inventory. */
     static final int PACK=0,COINS=PACK+LoadoutRules.KIT_SLOTS,LOCKER=COINS+LoadoutRules.COIN_SLOTS,KINDS=LOCKER+LoadoutRules.LOCKER_SLOTS,INV=KINDS+LoadoutRules.COIN_SLOTS;

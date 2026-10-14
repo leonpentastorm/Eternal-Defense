@@ -15,7 +15,8 @@
   ],
   "client": [
     "RaidMusicMixin",
-    "LoadoutCameraMixin"
+    "LoadoutCameraMixin",
+    "LoadoutHandMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -40,6 +40,8 @@ public final class LoadoutCinematic {
 
     /** True while a shot is on screen. */
     static boolean running(){return current!=null;}
+    /** For the hand mixin: true while a shot is on screen. */
+    public static boolean hidingHands(){return current!=null;}
     private static LoadoutStation.StationEntity station(){
         var mc=Minecraft.getInstance();var be=LoadoutClient.held();
         if(be==null||mc.player==null||mc.level==null||faulted||!DefenseClientConfig.get(DefenseClientConfig.LOADOUT_CINEMATIC))return null;
@@ -73,8 +75,9 @@ public final class LoadoutCinematic {
         }
         float c=tl.cycleTick(t);
         if(c<LoadoutModel.STEAM_AT){
-            // The print: inside the cavity, low in a front corner, looking across at the player
-            var pos=LoadoutStation.world(anchor,facing,2.5,.5,-1.5);var look=LoadoutStation.world(anchor,facing,LoadoutModel.STAND_X,1,LoadoutModel.STAND_Z);
+            // The print: high in a front corner of the clear cavity, looking down across the player
+            var pos=LoadoutStation.world(anchor,facing,LoadoutModel.CAVITY_X0+.5,LoadoutModel.CAVITY_Y1-.5,LoadoutModel.CAVITY_Z0+.5);
+            var look=LoadoutStation.world(anchor,facing,LoadoutModel.STAND_X,LoadoutModel.STAND_Y+LoadoutModel.HITBOX_HEIGHT*.6,LoadoutModel.STAND_Z);
             return aim(pos,look,PRINT_FOV);
         }
         // The exit: pulling back from the doors as they open and the player walks out, settling into their own view
@@ -103,7 +106,7 @@ public final class LoadoutCinematic {
     // The frame: lens, no HUD, no hand, the flash at the swap
     @SubscribeEvent public static void cinematicFov(ViewportEvent.ComputeFov e){if(current!=null&&e.usedConfiguredFov())e.setFOV(current.fov());}
     @SubscribeEvent(priority=EventPriority.HIGHEST) public static void cinematicHud(RenderGuiOverlayEvent.Pre e){if(current!=null)e.setCanceled(true);}
-    @SubscribeEvent public static void cinematicHand(RenderHandEvent e){if(current!=null)e.setCanceled(true);}
+    @SubscribeEvent(priority=EventPriority.HIGHEST) public static void cinematicHand(RenderHandEvent e){if(current!=null)e.setCanceled(true);}
     @SubscribeEvent public static void cinematicFlash(RenderGuiEvent.Post e){
         var be=LoadoutClient.held();var mc=Minecraft.getInstance();if(current==null||be==null||mc.level==null)return;
         float since=be.timeline().cycleTick(be.elapsed(mc.level.getGameTime(),e.getPartialTick()))-LoadoutRules.SWAP_AT;

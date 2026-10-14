@@ -37,6 +37,10 @@ final class LoadoutRules {
     static final double DRIFT=.75;
     /** Ticks a held player takes to turn round from the walk to the standing yaw. */
     static final int TURN_TICKS=8;
+    /** Fastest a held player moves on their own screen to reach the path, when the print reached them late (blocks per tick). */
+    static final double CATCH_UP=.45;
+    /** Ticks a client may run behind the server's clock before its held player counts as off the path. */
+    static final int LAG_TICKS=3;
 
     // The capsule
     /** Ticks the capsule door takes to slide, and the capsule to fold away. */
@@ -96,6 +100,15 @@ final class LoadoutRules {
     }
     static float wrap(float a){a%=360f;if(a>=180f)a-=360f;if(a<-180f)a+=360f;return a;}
     static double[] lerp(double[] a,double[] b,double f){f=Math.max(0,Math.min(1,f));return new double[]{a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f};}
+    /** How far a held player at at is from the path at tick t: the nearest of the last LAG_TICKS + 1 ticks' positions (blocks). */
+    static double drift(Timeline tl,int t,double[] at,double[] start,double[] stand,double[] exit){
+        double best=Double.MAX_VALUE;for(int dt=0;dt<=LAG_TICKS;dt++)best=Math.min(best,distance(at,position(tl,Math.max(0,t-dt),start,stand,exit)));return best;
+    }
+    /** The next position of a held player at from heading for to: there at once when near, else CATCH_UP blocks closer. */
+    static double[] toward(double[] from,double[] to){
+        double d=distance(from,to);if(d<=CATCH_UP)return to.clone();
+        double f=CATCH_UP/d;return new double[]{from[0]+(to[0]-from[0])*f,from[1]+(to[1]-from[1])*f,from[2]+(to[2]-from[2])*f};
+    }
     static double distance(double[] a,double[] b){double x=a[0]-b[0],y=a[1]-b[1],z=a[2]-b[2];return Math.sqrt(x*x+y*y+z*z);}
 
     // Walking in: the player's feet in the station's own pixels (north-facing, anchor corner at 0)
@@ -190,13 +203,23 @@ final class LoadoutRules {
         if(!tag.getList("Items",Tag.TAG_COMPOUND).isEmpty())return true;
         return !tag.getCompound("BlockEntityTag").getList("Items",Tag.TAG_COMPOUND).isEmpty();
     }
-    /** The size of a tag as it is saved, in bytes. */
+    /** The size of a tag as it is saved, in bytes; a string too long to save counts in full. */
     static int bytes(CompoundTag tag){
         var count=new int[1];
         try(var out=new DataOutputStream(new OutputStream(){@Override public void write(int b){count[0]++;}@Override public void write(byte[] b,int off,int len){count[0]+=len;}})){NbtIo.write(tag,out);}
         catch(IOException e){throw new IllegalStateException(e);}
-        return count[0];
+        return (int)Math.min(Integer.MAX_VALUE,count[0]+unsaved(tag));
     }
+    /** Bytes of the strings in tag that are over the 65,535 bytes NBT can save (the game writes them empty). */
+    static long unsaved(Tag tag){
+        long n=0;
+        if(tag instanceof CompoundTag c)for(var key:c.getAllKeys()){n+=Math.max(0,utf(key)-65535);n+=unsaved(c.get(key));}
+        else if(tag instanceof ListTag l)for(var t:l)n+=unsaved(t);
+        else if(tag instanceof net.minecraft.nbt.StringTag s){long u=utf(s.getAsString());if(u>65535)n+=u;}
+        return n;
+    }
+    /** Modified UTF-8 length of a string, as DataOutput writes it. */
+    static long utf(String s){long n=0;for(int i=0;i<s.length();i++){char c=s.charAt(i);n+=c>=1&&c<=0x7F?1:c<=0x7FF?2:3;}return n;}
 
     /** The capsule door's slide (px, 0 shut .. CAPSULE_DOOR_TRAVEL open) at game time now, opened at openAt and closed at closeAt (-1: not). */
     static float capsuleDoor(float now,long openAt,long closeAt){

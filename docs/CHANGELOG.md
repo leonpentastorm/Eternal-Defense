@@ -1,5 +1,16 @@
 # Change log
 
+## 1.1.0 — The Loadout Station (2026-10-14, branch `feature/loadout-station`)
+
+From 1.0.1 on its own branch (owner: "New feature new git branch, 1.1.0"); `dev` and `main` unchanged. No packet added or changed: network protocol stays **41**. Rules: GDD 1.1.0 (Part L, section 5.13); tests: `docs/ROUND-1.1.0-TESTING.md`.
+
+* **Loadout Station** (owner's art pack, `docs/art/Eternal-Defense-Loadout`): a 3 x 3 x 3 machine for the Home Zone, sold at Workshop Fabrication (proposed: 64 Reinforced Beacon Plating, 8 Restoration Matrices, 32 iron ingots, 16 glass). Right-click its doors and it walks you in, prints the kit of your active coin onto you (armor, off hand and hotbar in one step; what you wore goes to a Logistics Hub or the station's 27-slot Locker; your 27 main inventory slots are never touched) and walks you out, about 6 seconds in all, with a camera that follows it (sneak or Esc skips it; `loadoutCinematic` in the client config turns it off). 30-second cooldown per player. It refuses before anything changes when busy, too far, off to the side, blocked, on cooldown, without a coin or without room; a print stopped before the kit goes on (logout, death, dimension, the station broken) uses nothing. It cannot be mined while coins wait in it.
+* **The station's screen is a closet** (owner): your own figure, lit on a turning stand, wears the selected coin's kit (or the kit you are packing); browse the 9 coin slots with < and >, drag the figure to turn it. The capsule's screen shows the kit inside on the same figure. Both screens are wider (384 and 332 pixels).
+* **Loadout Coin**: Make coin at the station seals the 14 stacks of its pack area (every tag kept: a TaCZ gun keeps its attachments and rounds) for 4 Reinforced Beacon Plating and 1 Ardent Energy (pack, then Hub). No coins, filled shulker boxes or other item containers; at most 64 KB (`kitLimitKilobytes`). 9 coin slots shared by the base, each remembering its kind; each player picks their own active slot.
+* **Loadout Flare** (Support Platform Shop, 5 Ardent Energy): the cannon fires a capsule with your active coin's kit; it parachutes in like the supply chest (12 s outdoors, 7 s under cover; Quantum Tunneling under 3 or more blocks, the Dimensional Link in other dimensions) and stands up facing you. The coin is used only when the cannon fires; a refused call keeps the flare and the coin. Only you can open the capsule; Equip fills only your empty slots; empty and closed, it folds away. No room for a two-block capsule within 3 blocks: the old supply parcel.
+* Field Guide card "Loadout Station" (station, coin, flare, capsule); the Dimensional Link's text names the Loadout Flare.
+* Tools: `tools/ui-assets/import_loadout.py` installs the art pack (re-runnable); `make_sprites.py` draws PLACEHOLDER icons for the coin and the flare; QA harness `QaLoadout`.
+
 ## 1.0.1 — A jar that works with its required mods alone; the displays on their own (2026-10-14, `dev`)
 
 On `dev` after 1.0.0; `main` stays at 1.0.0. No packet changed: network protocol stays **41**. Rules: GDD 1.0.1; tests: `docs/ROUND-1.0.1-TESTING.md`.
