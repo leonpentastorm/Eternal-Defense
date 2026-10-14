@@ -1,0 +1,299 @@
+package dev.createarsenal.beacon;
+
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/**
+ * QA ONLY (never part of a release): the owner's 0.0.43 list on a real client with Create running (setup-qa.sh with QA_CREATE=1). The
+ * Exchange: an untouched 0.0.42 offers file moves to the new default when the shop opens; Iron Ore 16 for 2, 8 iron blocks for 8, 16 andesite
+ * alloy for 1, each bought with Ardent Energy in survival. The FOB's mine: a FOB in a test village with both gates linked, the mine's picker
+ * on the Receiving Gate's screen (18 items: clay, the vanilla and Create stones), clay and asurine chosen with the screen's own buttons and
+ * delivered by the route into the gate's storage.
+ * Copied in by setup-qa.sh. Results: QA_CHECK lines, QA_SHOT, QA_DONE.
+ */
+@Mod.EventBusSubscriber(modid=ArsenalBeacon.ID,value=Dist.CLIENT)
+public final class QaRound43 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    /** A step runs, then the next one waits {@code delay} ticks. */
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    /** Waits {@code ticks}, then runs the check. */
+    static void after(int ticks,Runnable check,String name){step(ticks,()->{},"wait: "+name);step(1,check,name);}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static net.minecraft.server.level.ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static net.minecraft.server.level.ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+6;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    /** Every sound of the mod the client actually starts. */
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
+        var s=e.getOriginalSound();if(s==null||!s.getLocation().getNamespace().equals(ArsenalBeacon.ID))return;
+        SOUNDS.add(s.getLocation().getPath());log("QA_SOUND {}",s.getLocation());
+    }
+    static long sounds(String prefix){synchronized(SOUNDS){return SOUNDS.stream().filter(s->s.startsWith(prefix)).count();}}
+    /**
+     * The container has no audio device, so the client's sound engine never starts and plays nothing (no PlaySoundEvent). What the
+     * server sends is counted instead: every sound packet of the mod that reaches the client's connection (a handler in front of the
+     * connection's own, in the integrated server's local channel the packets arrive as objects).
+     */
+    static boolean hooked;
+    static void hookSounds(){
+        if(hooked||mc().getConnection()==null)return;hooked=true;
+        mc().getConnection().getConnection().channel().pipeline().addBefore("packet_handler","qa_sounds",new io.netty.channel.ChannelInboundHandlerAdapter(){
+            @Override public void channelRead(io.netty.channel.ChannelHandlerContext ctx,Object msg)throws Exception{
+                ResourceLocation id=null;
+                if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket p)id=p.getSound().value().getLocation();
+                else if(msg instanceof net.minecraft.network.protocol.game.ClientboundSoundEntityPacket p)id=p.getSound().value().getLocation();
+                if(id!=null&&id.getNamespace().equals(ArsenalBeacon.ID)){SOUNDS.add(id.getPath());log("QA_SOUND_PACKET {}",id);}
+                super.channelRead(ctx,msg);
+            }
+        });
+        log("QA_NOTE sound packets are counted at the client's connection");
+    }
+
+    // ---- one frame's texts (Ui records them) ------------------------------------------------------------------------------------------
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+
+    // ---- the client's own actions ------------------------------------------------------------------------------------------------------
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->sp().teleportTo(sl(),x,y,z,yaw,pitch));mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(BlockPos from,double tx,double ty,double tz){
+        double x=from.getX()+.5,y=from.getY(),z=from.getZ()+.5,dx=tx-x,dy=ty-(y+1.62),dz=tz-z;
+        tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));
+    }
+    static void hold(ItemStack s){srv(()->{sp().getInventory().setItem(0,s);sp().getInventory().selected=0;});mc().player.getInventory().selected=0;}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void press(net.minecraft.client.gui.components.AbstractWidget w){var s=mc().screen;double x=w.getX()+w.getWidth()/2.0,y=w.getY()+w.getHeight()/2.0;s.mouseClicked(x,y,0);s.mouseReleased(x,y,0);}
+    static net.minecraft.client.gui.components.AbstractWidget button(String label){
+        if(mc().screen==null)return null;for(var c:mc().screen.children())if(c instanceof net.minecraft.client.gui.components.AbstractWidget b&&b.getMessage().getString().equals(label))return b;return null;
+    }
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static boolean loaded(BlockPos pos){return srvGet(()->sl().hasChunkAt(pos))&&mc().level!=null&&mc().level.hasChunkAt(pos);}
+
+    // ---- the places --------------------------------------------------------------------------------------------------------------------
+    /** B: the beacon; EX: the Exchange in its zone; V: a test village 300 blocks east; PLANT: the FOB Beacon; RECV and DELIV: the gates. */
+    static BlockPos B,EX,V,PLANT,RECV,DELIV;
+    static void places(){
+        B=new BlockPos(Math.floorDiv(sx+2000,16)*16,sy,Math.floorDiv(sz,16)*16);EX=B.offset(-6,0,-6);
+        V=B.offset(300,0,0);PLANT=V.offset(0,0,-3);RECV=new BlockPos(V.getX()-70,V.getY(),V.getZ()+30);DELIV=new BlockPos(V.getX()+70,V.getY(),V.getZ()+30);
+    }
+    static ItemStack st(Item item,int n){return new ItemStack(item,n);}
+    static void sync(){srv(()->BeaconNetwork.syncNearby(sl(),CampaignData.get(sl())));}
+    static Object field(Object o,String name){try{var f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(Exception x){return null;}}
+    static void command(String c){srv(()->server().getCommands().performPrefixedCommand(sp().createCommandSourceStack().withPermission(4),c));}
+    static int count(Item item){return srvGet(()->{int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;});}
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static CompoundTag exchangeData(){return mc().screen instanceof ExchangeScreen s?(CompoundTag)field(s,"data"):new CompoundTag();}
+    static CompoundTag offer(String id){for(var t:exchangeData().getList("buy",10)){var row=(CompoundTag)t;if(BuiltInRegistries.ITEM.getKey(ItemStack.of(row.getCompound("item")).getItem()).toString().equals(id))return row;}return null;}
+    @SuppressWarnings("unchecked") static List<Ui.UiButton> exchangeRows(){return mc().screen instanceof ExchangeScreen s?(List<Ui.UiButton>)field(s,"rows"):List.of();}
+    static FobData.Fob fob(){return srvGet(()->{var d=FobData.get(sl());return d.fobs.isEmpty()?null:d.fobs.values().iterator().next();});}
+    static GateClient.GateScreen gate(){return mc().screen instanceof GateClient.GateScreen s?s:null;}
+    static CompoundTag gateSlot(int i){var s=gate();return s==null?new CompoundTag():s.data().getList("slots",10).getCompound(i);}
+    static int stored(String id){return srvGet(()->{var f=FobData.get(sl()).fobs.values().iterator().next();int n=0;for(int i=0;i<f.depot().getContainerSize();i++)if(f.depot().getItem(i).is(item(id)))n+=f.depot().getItem(i).getCount();return n;});}
+    static void pressNth(String label,int n){
+        var s=mc().screen;if(s==null)return;int k=0;
+        for(var c:new ArrayList<>(s.children()))if(c instanceof Ui.UiButton b&&b.visible&&b.active&&b.getMessage().getString().equals(label)&&k++==n){b.onPress();log("QA_NOTE pressed {} #{}",label,n);return;}
+        log("QA_NOTE no button {} #{}",label,n);
+    }
+    static void hover(double guiX,double guiY){
+        try{
+            var w=mc().getWindow();var handler=mc().mouseHandler;double sx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),sy=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*sx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*sy);
+        }catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static int index(String id){for(int i=0;i<RouteRules.MINE_LOOT.size();i++)if(RouteRules.MINE_LOOT.get(i).id().equals(id))return i;return -1;}
+    /** The picker's button for a mine item (the grid may scroll; the wheel is used as a player would). */
+    static Ui.UiButton pick(String id){
+        var s=gate();if(s==null)return null;int at=index(id);
+        for(int tries=0;tries<10;tries++){
+            int cols=s.pickButtons.isEmpty()?1:Math.max(1,(int)s.pickButtons.stream().filter(b->b.getY()==s.pickButtons.get(0).getY()).count());
+            int scroll=(int)field(s,"pickScroll");int first=scroll*cols;
+            if(at>=first&&at-first<s.pickButtons.size())return s.pickButtons.get(at-first);
+            s.mouseScrolled(s.width/2.0,s.height/2.0,-1);
+        }
+        return null;
+    }
+    static volatile String note="";
+    static final java.nio.file.Path OFFERS=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get().resolve(ExchangeShop.FILE);
+
+    // ---- the driver --------------------------------------------------------------------------------------------------------------------
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r43",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r43",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;hookSounds();sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=3;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    static void script(){
+        // ---- the base: a beacon 2000 blocks out, survival, 20 Ardent Energy ---------------------------------------------------------------------
+        step(60,()->{srv(()->{
+            sl().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false,server());sl().setDayTime(6000);sl().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+            sl().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());
+            sp().teleportTo(sl(),B.getX()+.5,sy,B.getZ()-6.5,0,10);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.particles().set(net.minecraft.client.ParticleStatus.MINIMAL);},"go to the base site");
+        until("the base site is loaded",200,()->loaded(B),()->{});
+        step(20,()->srv(()->{
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,ArsenalBeacon.BEACON.get().defaultBlockState().setValue(ArsenalStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);sp().getAbilities().mayfly=true;sp().onUpdateAbilities();
+            sp().getInventory().add(new ItemStack(ArsenalBeacon.ARDENT_ENERGY.get(),20));}),"plant the beacon; survival; 20 Ardent Energy");
+        step(5,()->sync(),"sync");
+        step(5,()->check("Create runs in this client (andesite alloy and the Create stones exist)",BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:andesite_alloy"))&&BuiltInRegistries.ITEM.containsKey(new ResourceLocation("create:asurine")),""),"Create");
+
+        // ---- the Exchange: an untouched 0.0.42 file moves on; the new prices; three buys --------------------------------------------------------------
+        step(5,()->{try{java.nio.file.Files.writeString(OFFERS,ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_0041);}catch(Exception x){log("QA_NOTE {}",x);}
+            srv(()->sl().setBlock(EX,ArsenalBeacon.EXCHANGE_SHOP.get().defaultBlockState().setValue(ExchangeShop.ShopBlock.FACING,Direction.SOUTH),3));},"the offers file as 0.0.41 and 0.0.42 wrote it; an Exchange in the zone");
+        step(20,()->look(EX.south(3),EX.getX()+.5,EX.getY()+.8,EX.getZ()+.5),"face it");
+        step(10,()->click(EX,Direction.SOUTH),"open it (a real click)");
+        until("the Exchange opens",100,()->mc().screen instanceof ExchangeScreen,()->{});
+        step(5,()->{
+            check("the Exchange opens",mc().screen instanceof ExchangeScreen,String.valueOf(mc().screen));
+            String file="";try{file=java.nio.file.Files.readString(OFFERS);}catch(Exception x){file=x.toString();}
+            check("the untouched 0.0.42 offers file now holds the 0.0.43 default",ExchangeShop.normal(file).equals(ExchangeShop.normal(ExchangeShop.template())),file.length()+" chars");
+            var ore=offer("minecraft:iron_ore");var blocks=offer("minecraft:iron_block");var alloy=offer("create:andesite_alloy");
+            check("Iron Ore: 16 for 2 Ardent Energy",ore!=null&&ItemStack.of(ore.getCompound("item")).getCount()==16&&ore.getInt("cost")==2,String.valueOf(ore));
+            check("iron blocks: 8 for 8",blocks!=null&&ItemStack.of(blocks.getCompound("item")).getCount()==8&&blocks.getInt("cost")==8,String.valueOf(blocks));
+            check("andesite alloy: 16 for 1",alloy!=null&&ItemStack.of(alloy.getCompound("item")).getCount()==16&&alloy.getInt("cost")==1,String.valueOf(alloy));
+            check("iron ingots are no longer on the Buy list",offer("minecraft:iron_ingot")==null,"");
+            check("the balance reads 20",exchangeData().getInt("energy")==20,""+exchangeData().getInt("energy"));
+            for(int i=0;i<5;i++)mc().screen.mouseScrolled(mc().screen.width/2.0,mc().screen.height/2.0,-1);},"the Buy list");
+        step(10,()->shot("r43_01_exchange_buy_list"),"the Buy list, scrolled to iron and alloy");
+        String[][] buys={{"create:andesite_alloy","16","1"},{"minecraft:iron_ore","16","2"},{"minecraft:iron_block","8","8"}};
+        int[] spent={0};
+        for(var b:buys){
+            step(5,()->{var rows=exchangeRows();int row=-1;
+                for(int i=0;i<rows.size();i++){int at=(int)field(mc().screen,"scroll")+i;var list=exchangeData().getList("buy",10);
+                    if(at<list.size()&&BuiltInRegistries.ITEM.getKey(ItemStack.of(list.getCompound(at).getCompound("item")).getItem()).toString().equals(b[0]))row=i;}
+                note=count(item(b[0]))+" "+count(ArsenalBeacon.ARDENT_ENERGY.get());
+                if(row>=0){press(rows.get(row));press((Ui.UiButton)field(mc().screen,"buy"));}else log("QA_NOTE no row for {}",b[0]);},"select "+b[0]+" and press Buy (real clicks)");
+            step(20,()->{int got=count(item(b[0]))-Integer.parseInt(note.split(" ")[0]),paid=Integer.parseInt(note.split(" ")[1])-count(ArsenalBeacon.ARDENT_ENERGY.get());spent[0]+=paid;
+                check("bought "+b[1]+" x "+b[0]+" for "+b[2]+" Ardent Energy",got==Integer.parseInt(b[1])&&paid==Integer.parseInt(b[2]),"got "+got+", paid "+paid+"; message: "+(mc().screen instanceof ExchangeScreen s?String.valueOf(field(s,"message")):""));},"bought");
+        }
+        step(5,()->{check("20 Ardent Energy in, 11 spent, 9 left",count(ArsenalBeacon.ARDENT_ENERGY.get())==9&&spent[0]==11,"left "+count(ArsenalBeacon.ARDENT_ENERGY.get()));shot("r43_02_exchange_bought");},"after the buys");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
+
+        // ---- a FOB in a test village, both gates linked ---------------------------------------------------------------------------------------------
+        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);sp().teleportTo(sl(),V.getX()+.5,sy,V.getZ()+8.5,180,10);});},"to the village site (creative: the activation raid is called)");
+        until("the village site is loaded",200,()->loaded(V)&&loaded(RECV)&&loaded(DELIV),()->{});
+        step(5,()->srv(()->{var l=sl();
+            for(int x=-12;x<=12;x++)for(int z=-12;z<=12;z++)for(int y=0;y<4;y++)l.setBlock(V.offset(x,y,z),net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2);
+            l.setBlock(V,net.minecraft.world.level.block.Blocks.BELL.defaultBlockState(),3);
+            for(var at:List.of(V.offset(-5,0,-5),V.offset(5,0,-5),V.offset(-5,0,5)))l.setBlock(at,net.minecraft.world.level.block.Blocks.COMPOSTER.defaultBlockState(),3);
+            for(int x:new int[]{3,5}){var foot=V.offset(x,0,4);var bed=net.minecraft.world.level.block.Blocks.WHITE_BED.defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING,Direction.SOUTH);
+                l.setBlock(foot,bed.setValue(net.minecraft.world.level.block.BedBlock.PART,net.minecraft.world.level.block.state.properties.BedPart.FOOT),3);l.setBlock(foot.south(),bed.setValue(net.minecraft.world.level.block.BedBlock.PART,net.minecraft.world.level.block.state.properties.BedPart.HEAD),3);}
+            for(int i=0;i<6;i++){var v=net.minecraft.world.entity.EntityType.VILLAGER.create(l);var at=V.offset(-4+i%4*2,0,-1+i/4*2);v.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);v.setNoAi(true);v.setPersistenceRequired();l.addFreshEntity(v);}
+        }),"a test village: a bell, three composters, two beds, six villagers");
+        step(10,()->srv(()->{var poi=sl().getPoiManager();int n=0;
+            for(var at:List.of(V,V.offset(-5,0,-5),V.offset(5,0,-5),V.offset(-5,0,5),V.offset(3,0,5),V.offset(5,0,5)))if(poi.take(h->true,(h,p)->p.equals(at),at,1).isPresent())n++;
+            log("QA_NOTE claimed {} points of interest",n);}),"its points of interest claimed (as villagers would)");
+        step(10,()->{var r=srvGet(()->FobGameTests.plant(new FobGameTests.Fixture(sl(),sp(),List.of()),PLANT));check("the FOB Beacon is planted",r.consumesAction()&&fob()!=null,String.valueOf(r));},"plant the FOB Beacon");
+        step(20,()->command("arsenal fob complete"),"/arsenal fob complete");
+        step(20,()->srv(()->{var l=sl();var d=FobData.get(l);var f=d.fobs.values().iterator().next();
+            for(var kind:RailGates.Kind.values()){var at=kind==RailGates.Kind.DELIVERY?DELIV:RECV;var block=(kind==RailGates.Kind.DELIVERY?ArsenalBeacon.DELIVERY_GATE:ArsenalBeacon.RECEIVING_GATE).get();
+                l.setBlock(at,block.defaultBlockState().setValue(RailGates.FACING,Direction.EAST),3);Routes.link(l,d,f,kind,at,(RailGates.GateEntity)l.getBlockEntity(at));}
+            f.commissioned=true;f.baseline=60;f.clock=RouteRules.CLOCK;f.nextPassive=0;
+            f.slotOn[0]=false;f.slotOn[2]=false;f.slotOn[3]=false;   // the mine alone: the whole trip is its (more items to count)
+            d.setDirty();}),"both gates linked, the route open; emeralds, the farm and the specialty switched off");
+        step(10,()->{var f=fob();check("the FOB is ACTIVE with its route",f!=null&&f.state==FobRules.State.ACTIVE&&f.hasRoute()&&f.commissioned,f==null?"":f.state+" "+f.hasRoute());
+            tp(RECV.getX()-3.5,sy,RECV.getZ()+.5,-90,10);},"stand at the Receiving Gate");
+        until("the gate is loaded on the client",100,()->mc().level.getBlockState(RECV).getBlock() instanceof RailGates.GateBlock,()->{});
+        step(10,()->{look(RECV.west(4),RECV.getX()+.5,RECV.getY()+.5,RECV.getZ()+.5);},"face it");
+        step(10,()->click(RECV,Direction.WEST),"open its screen (a real click)");
+        until("the gate screen opens",100,()->gate()!=null,()->check("the Receiving Gate's screen opens",gate()!=null,String.valueOf(mc().screen)));
+
+        // ---- the mine's picker ----------------------------------------------------------------------------------------------------------------------
+        step(10,()->{var s=gate();Ui.UiButton choose=null;int k=0;if(s!=null)for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&b.getMessage().getString().equals("Choose")&&k++==0)choose=b;
+            if(choose!=null)hover(choose.getX()+choose.getWidth()/2.0,choose.getY()+choose.getHeight()/2.0);
+            check("the mine's Choose tip names clay and the stones",Ui.t("gate.slot.choose.tip.mine").getString().contains("clay, or a stone for building: calcite, dripstone, red sandstone, blackstone or one of Create's stones"),Ui.t("gate.slot.choose.tip.mine").getString());},"point at the mine's Choose button");
+        step(30,()->shot("r43_03_choose_tip"),"its tooltip");
+        step(5,()->{hover(1,1);pressNth("Choose",0);},"Choose for the mine");
+        step(10,()->{var s=gate();int buttons=s==null?0:s.pickButtons.size();
+            check("the mine's grid: 18 items, every one a real item on the client and the server",buttons==RouteRules.MINE_LOOT.size()
+                &&RouteRules.MINE_LOOT.stream().allMatch(l->!GateClient.icon(l.id()).isEmpty())&&srvGet(()->RouteRules.MINE_LOOT.stream().allMatch(l->BuiltInRegistries.ITEM.containsKey(new ResourceLocation(l.id())))),
+                "buttons "+buttons+" of "+RouteRules.MINE_LOOT.size());
+            var b=pick("minecraft:clay");if(b!=null)hover(b.getX()+9,b.getY()+9);},"the grid; point at clay");
+        step(30,()->shot("r43_04_mine_picker_clay"),"the grid with clay's tooltip");
+        step(5,()->{var b=pick("minecraft:clay");if(b!=null)b.onPress();hover(1,1);},"choose clay");
+        step(25,()->{var f=fob();check("the mine now sends clay (the server's choice and the screen's)",f!=null&&f.mine==index("minecraft:clay")&&gateSlot(1).getString("item").equals("minecraft:clay"),f==null?"":f.mine+" "+gateSlot(1).getString("item"));
+            note=""+gateSlot(1).getDouble("perTrip");
+            srv(()->{var d=FobData.get(sl());d.fobs.values().iterator().next().nextPassive=d.onlineTicks+20;});},"chosen; a delivery is due in a second");
+        until("a delivery with clay",200,()->stored("minecraft:clay")>0,()->{var f=fob();int clay=stored("minecraft:clay");
+            check("the route delivers clay into the gate's storage",clay>0&&f!=null&&"passive".equals(f.lastKind)&&f.lastItems==clay,"clay "+clay+", last "+(f==null?"":f.lastKind+" "+f.lastItems)+", per trip on the screen "+note);});
+        step(25,()->{pressNth("Choose",0);},"Choose for the mine again");
+        step(10,()->{var b=pick("create:asurine");if(b!=null)hover(b.getX()+9,b.getY()+9);},"point at asurine");
+        step(30,()->shot("r43_05_mine_picker_asurine"),"asurine's tooltip");
+        step(5,()->{var b=pick("create:asurine");if(b!=null)b.onPress();hover(1,1);},"choose asurine");
+        step(25,()->{var f=fob();double clayPer=Double.parseDouble(note),stonePer=gateSlot(1).getDouble("perTrip");
+            check("the mine now sends asurine",f!=null&&f.mine==index("create:asurine")&&gateSlot(1).getString("item").equals("create:asurine"),f==null?"":f.mine+" "+gateSlot(1).getString("item"));
+            check("a stone comes twice as many a trip as clay (worth half)",clayPer>0&&Math.abs(stonePer/clayPer-2)<1e-6,"clay "+clayPer+" a trip, asurine "+stonePer);
+            srv(()->{var d=FobData.get(sl());d.fobs.values().iterator().next().nextPassive=d.onlineTicks+20;});},"chosen; another delivery");
+        until("a delivery with asurine",200,()->stored("create:asurine")>0,()->{var f=fob();int stone=stored("create:asurine");
+            check("the route delivers asurine into the gate's storage",stone>0&&f!=null&&f.lastItems==stone,"asurine "+stone+", last "+(f==null?"":f.lastKind+" "+f.lastItems));});
+        step(45,()->{var s=gate();int stacks=0;if(s!=null)for(int i=0;i<FobData.DEPOT_SLOTS;i++){var it=s.getMenu().slots.get(i).getItem();if(it.is(item("minecraft:clay"))||it.is(item("create:asurine")))stacks++;}
+            check("the screen's storage shows the clay and the asurine",stacks>=2,"stacks "+stacks);shot("r43_06_gate_storage");},"the storage on the screen");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
+    }
+}

@@ -1,5 +1,13 @@
 # Change log
 
+## 0.0.43 — The owner's Exchange and mine list (2026-10-14, branch `feature/logistics-hub`)
+
+On `feature/logistics-hub` after 0.0.42. No packet changed: network protocol stays **41**. Rules: GDD 0.0.43; tests: `docs/ROUND-0043-TESTING.md`.
+
+* **Exchange** (owner): iron is sold as ore at twice the price, 16 Iron Ore for 2 Ardent Energy (was 16 iron ingots for 1; smelt it, or crush it with Create for about 1.75 ingots each); the bulk lot is 8 iron blocks for 8 (was 16 for 8); 16 andesite alloy cost 1 (was 2). A world whose offers file is still the untouched 0.0.41/0.0.42 default gets the new prices the next time the shop opens; an edited file is kept.
+* **The FOB's mine** (owner: clay was missing): it can send clay, and stones for building that most bases have to travel for: calcite, dripstone, red sandstone, blackstone, and Create's asurine, crimsite, ochrum, veridium, limestone, scoria and scorchia. A clay block is worth as much as one redstone dust; a stone block half that, as andesite (so twice as many come). The new choices come after the first six, so a FOB's saved choice is unchanged. The mine's Choose button says so.
+* QA: new harness `QaRound43` (Create running).
+
 ## 0.0.42 — The owner's list after 0.0.41: the corpse crash, placement, the return zone, magazines (2026-10-13, branch `feature/logistics-hub`)
 
 On `feature/logistics-hub` after 0.0.41. No packet changed: network protocol stays **41**. Rules: GDD 0.0.42; tests: `docs/ROUND-0042-TESTING.md`.

@@ -1,0 +1,24 @@
+QA_CHECK PASS Create runs in this client (andesite alloy and the Create stones exist) 
+QA_CHECK PASS the Exchange opens dev.createarsenal.beacon.ExchangeScreen@10635355
+QA_CHECK PASS the untouched 0.0.42 offers file now holds the 0.0.43 default 1425 chars
+QA_CHECK PASS Iron Ore: 16 for 2 Ardent Energy {cost:2,item:{Count:16b,id:"minecraft:iron_ore"}}
+QA_CHECK PASS iron blocks: 8 for 8 {cost:8,item:{Count:8b,id:"minecraft:iron_block"}}
+QA_CHECK PASS andesite alloy: 16 for 1 {cost:1,item:{Count:16b,id:"create:andesite_alloy"}}
+QA_CHECK PASS iron ingots are no longer on the Buy list 
+QA_CHECK PASS the balance reads 20 20
+QA_CHECK PASS bought 16 x create:andesite_alloy for 1 Ardent Energy got 16, paid 1; message: null
+QA_CHECK PASS bought 16 x minecraft:iron_ore for 2 Ardent Energy got 16, paid 2; message: null
+QA_CHECK PASS bought 8 x minecraft:iron_block for 8 Ardent Energy got 8, paid 8; message: null
+QA_CHECK PASS 20 Ardent Energy in, 11 spent, 9 left left 9
+QA_CHECK PASS the FOB Beacon is planted CONSUME
+QA_CHECK PASS the FOB is ACTIVE with its route ACTIVE true
+QA_CHECK PASS the Receiving Gate's screen opens dev.createarsenal.beacon.GateClient$GateScreen@ab8f3d3
+QA_CHECK PASS the mine's Choose tip names clay and the stones Pick what the mine sends: redstone, iron, andesite, flint, gunpowder, charcoal, clay, or a stone for building: calcite, dripstone, red sandstone, blackstone or one of Create's stones.
+QA_CHECK PASS the mine's grid: 18 items, every one a real item on the client and the server buttons 18 of 18
+QA_CHECK PASS the mine now sends clay (the server's choice and the screen's) 6 minecraft:clay
+QA_CHECK PASS the route delivers clay into the gate's storage clay 6, last passive 6, per trip on the screen 6.3608562691131505
+QA_CHECK PASS the mine now sends asurine 11 create:asurine
+QA_CHECK PASS a stone comes twice as many a trip as clay (worth half) clay 6.3608562691131505 a trip, asurine 12.721712538226301
+QA_CHECK PASS the route delivers asurine into the gate's storage asurine 13, last passive 13
+QA_CHECK PASS the screen's storage shows the clay and the asurine stacks 2
+QA_DONE pass=23 fail=0

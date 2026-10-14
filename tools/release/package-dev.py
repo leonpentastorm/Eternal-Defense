@@ -95,25 +95,20 @@ HOW TO INSTALL INTO YOUR PROFILE (the full test pack, Create-Arsenal-VERSION-tes
 3. A dedicated server: Tactical Movement 1.0.0 (tacticalmovement-1.0.0.jar) is client-only and stops a server from starting; keep it
    on the clients only (the test pack puts it in client-overrides).
 
-WHAT IS NEW IN 0.0.42 (no packet changed; protocol still 41)
-* The crash looking at a corpse is fixed: a Corpse mod body holding a gun piled up one Player Animator fade per frame (TaCZ starts
-  one each frame, only a game tick ends it, and the body never ticks) until the game ran out of stack. The mod now moves such a
-  body's animations on once a tick, as for a real player.
-* Placing: every piece of the mod refuses a spot with a block or a creature in the way of any part of it, and its see-through
-  preview turns red there (the FOB Beacon's too, with "Something is in the way" under the crosshair). A refused placement never
-  takes the item from your hand any more (it used to vanish until you opened a chest-like screen).
-* Return zone: sand, gravel or any block that falls or is pushed into the 2 blocks in front of your Support Platform pops out and
-  drops as an item.
-* Ammo table: a gun's standard magazine is listed as soon as its rounds are (before, many guns' rounds came an Age or more before
-  their magazine: 108 of the 425 magazine guns in your pack).
+WHAT IS NEW IN 0.0.43 (no packet changed; protocol still 41)
+* Exchange: 16 Iron Ore for 2 Ardent Energy (instead of 16 iron ingots for 1: smelt it, or crush it with Create for more), 8 iron
+  blocks for 8 (instead of 16 for 8), 16 andesite alloy for 1 (instead of 2). If your world's config/arsenal-beacon-exchange.txt
+  was never edited, it gets the new prices by itself the next time the shop opens; an edited one keeps yours.
+* The FOB's mine can send clay, and stones for building: calcite, dripstone, red sandstone, blackstone, and Create's asurine,
+  crimsite, ochrum, veridium, limestone, scoria and scorchia. A stone block counts half, so twice as many come as clay.
 
-PLAYTEST SCRIPT FOR 0.0.42 (about 10 minutes)
-1. Die holding a gun so a corpse lies there, then stand looking at it (and at a Satellite Beacon) for a few minutes: no crash.
-2. Dig a hole one block high and look into it with a FOB Beacon: the FOB is red, the line says something is in the way; right-click:
-   nothing is placed and the beacon stays in your hand. Try it on open ground away from a village: refused, still in your hand.
-3. Hold a Mess Hall, a Support Cannon, a Logistics Hub or a weapon table with a block in the way: red, refused, kept.
-4. Drop sand onto the 2 blocks in front of your Support Platform: it pops out as an item.
-5. At the ammo table, hold a gun whose rounds are listed: its standard magazine is listed too (Compatible magazines filter).
+PLAYTEST SCRIPT FOR 0.0.43 (about 5 minutes)
+1. Open the Exchange Shop's Buy tab: Iron Ore 16 for 2, Iron Block 8 for 8, Andesite Alloy 16 for 1. Buy one of each.
+2. At a FOB's Receiving Gate, press Choose for the mine: 18 items, clay and the stones among them. Pick clay, then a stone, and
+   watch the next deliveries arrive in the gate's storage.
+
+(0.0.42 fixed the corpse crash, made refused placements keep the item with a red preview, kept the return zone clear of falling
+blocks and listed magazines with their rounds at the ammo table: docs/CHANGELOG.md.)
 
 (0.0.41 brought the one edition, the Hub crash fix, the MRE rod, the later-Age line, the radio, the plating recipe, blaze rods at 6,
 cooking from the Hub, the raid skull, the Hub zone and the installations in the base score: docs/CHANGELOG.md.)

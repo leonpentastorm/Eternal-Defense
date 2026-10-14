@@ -190,7 +190,10 @@ final class RouteTest {
     }
     static Loot find(List<Loot> list,String id){return list.stream().filter(l->l.id().equals("minecraft:"+id)).findFirst().orElseThrow(()->new AssertionError(id));}
     @Test void theLootListsAreTheOwnersLists(){
-        assertEquals(List.of("minecraft:redstone","minecraft:iron_ingot","minecraft:andesite","minecraft:flint","minecraft:gunpowder","minecraft:charcoal"),MINE_LOOT.stream().map(Loot::id).toList());
+        // the owner's mine (0.0.31), then 0.0.43's clay and decorative stones, at the end so saved choices keep their item
+        assertEquals(List.of("minecraft:redstone","minecraft:iron_ingot","minecraft:andesite","minecraft:flint","minecraft:gunpowder","minecraft:charcoal",
+            "minecraft:clay","minecraft:calcite","minecraft:dripstone_block","minecraft:red_sandstone","minecraft:blackstone",
+            "create:asurine","create:crimsite","create:ochrum","create:veridium","create:limestone","create:scoria","create:scorchia"),MINE_LOOT.stream().map(Loot::id).toList());
         assertTrue(FARM_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:wheat","minecraft:carrot","minecraft:potato","minecraft:beetroot","minecraft:melon_slice","minecraft:pumpkin","minecraft:apple","minecraft:sweet_berries","minecraft:glow_berries","minecraft:cocoa_beans")));
         assertTrue(FISHING_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:cod","minecraft:salmon","minecraft:tropical_fish","minecraft:pufferfish")));
         assertTrue(HUSBANDRY_LOOT.stream().map(Loot::id).toList().containsAll(List.of("minecraft:beef","minecraft:porkchop","minecraft:chicken","minecraft:mutton","minecraft:rabbit","minecraft:leather","minecraft:rabbit_hide")));

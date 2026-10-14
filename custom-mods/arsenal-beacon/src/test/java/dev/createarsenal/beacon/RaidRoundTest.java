@@ -145,16 +145,17 @@ final class RaidRoundTest {
         assertTrue(pack.stream().anyMatch(r->r.id().equals("create:precision_mechanism")),"the pack's own goods stay");
     }
     @Test void theShopSellsIronInBulkSlightlyCheaperPerIngot(){
-        {
-            var list=buys(ExchangeShop.PACK);
-            var ingots=list.stream().filter(r->r.id().equals("minecraft:iron_ingot")).findFirst().orElseThrow();
-            var blocks=list.stream().filter(r->r.id().equals("minecraft:iron_block")).findFirst().orElseThrow();
-            assertEquals(16,ingots.count());assertEquals(1,ingots.value(),"16 ingots for 1 energy");
-            assertEquals(16,blocks.count(),"a large lot: 16 blocks, 144 ingots");
-            double perIngot=(double)ingots.value()/ingots.count(),perIngotInBulk=(double)blocks.value()/(blocks.count()*9);
-            assertTrue(perIngotInBulk<perIngot,"the bulk lot is a little cheaper per ingot");
-            assertTrue(perIngotInBulk>=perIngot*.85,"but only a little (8 energy instead of 9)");
-        }
+        // 0.0.43 (owner): iron comes as ore (16 for 2 energy) and the bulk lot is 8 blocks for 8; a block is still a little cheaper per
+        // ingot than ore smelted in a furnace (Create's crusher gets about 1.75 ingots out of one ore, which makes ore the better buy)
+        var list=buys(ExchangeShop.PACK);
+        assertTrue(list.stream().noneMatch(r->r.id().equals("minecraft:iron_ingot")),"no ingots any more");
+        var ore=list.stream().filter(r->r.id().equals("minecraft:iron_ore")).findFirst().orElseThrow();
+        var blocks=list.stream().filter(r->r.id().equals("minecraft:iron_block")).findFirst().orElseThrow();
+        assertEquals(16,ore.count());assertEquals(2,ore.value(),"16 Iron Ore for 2 energy");
+        assertEquals(8,blocks.count(),"8 blocks, 72 ingots");assertEquals(8,blocks.value());
+        double perOre=(double)ore.value()/ore.count(),perIngotInBulk=(double)blocks.value()/(blocks.count()*9);
+        assertTrue(perIngotInBulk<perOre,"the bulk lot is a little cheaper per ingot than smelted ore");
+        assertTrue(perIngotInBulk>=perOre*.85,"but only a little (1/9 instead of 1/8)");
     }
     @Test void anUntouchedOldDefaultFileGetsTheNewDefaultAnEditedOneIsKept(){
         String old=ExchangeShop.HEADER+"\n"+ExchangeShop.PACK_BEFORE_0021;

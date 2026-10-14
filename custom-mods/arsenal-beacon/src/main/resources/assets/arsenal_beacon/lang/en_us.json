@@ -1333,7 +1333,7 @@
   "gui.arsenal_beacon.gate.slot.toggle.tip": "Switch this slot off and the slots still on share its part of every trip.",
   "gui.arsenal_beacon.gate.slot.last": "At least one slot stays on.",
   "gui.arsenal_beacon.gate.slot.choose": "Choose",
-  "gui.arsenal_beacon.gate.slot.choose.tip.mine": "Pick what the mine sends: redstone, iron, andesite, flint, gunpowder or charcoal.",
+  "gui.arsenal_beacon.gate.slot.choose.tip.mine": "Pick what the mine sends: redstone, iron, andesite, flint, gunpowder, charcoal, clay, or a stone for building: calcite, dripstone, red sandstone, blackstone or one of Create's stones.",
   "gui.arsenal_beacon.gate.slot.choose.tip.farm": "Pick what the farm sends: any plant food.",
   "gui.arsenal_beacon.gate.slot.choose.tip.specialty": "Pick what this village's specialty sends. A and S items open with the FOB's research. To get another specialty, take the FOB Beacon back with the shovel and win a new FOB.",
   "gui.arsenal_beacon.gate.rate.per_trip": "%s per trip",

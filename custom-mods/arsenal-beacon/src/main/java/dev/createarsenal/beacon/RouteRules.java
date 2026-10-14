@@ -54,9 +54,17 @@ final class RouteRules {
     static final double EMERALD_VALUE=4,EMERALD_MIN=1/3.0;
     static final Loot EMERALD=plain("minecraft:emerald",EMERALD_VALUE);
     static final List<Loot> EMERALD_LOOT=List.of(EMERALD);
-    /** The mine: redstone, iron, andesite, flint, gunpowder or charcoal (owner's list). */
+    /**
+     * The mine: redstone, iron, andesite, flint, gunpowder or charcoal (owner's list). 0.0.43 (owner): clay, and decorative stones a base
+     * usually has to travel for: calcite (stony peaks, geodes), dripstone (dripstone caves), red sandstone (badlands), blackstone (the
+     * Nether) and Create's seven stones (thin layers deep underground, scorchia only in the Nether). A stone block is worth half a common
+     * item, as andesite; a clay block (4 clay balls) one. New items go at the end: a FOB's choice is saved as its place in the list.
+     */
     static final List<Loot> MINE_LOOT=List.of(plain("minecraft:redstone",1),plain("minecraft:iron_ingot",2),plain("minecraft:andesite",.5),
-        plain("minecraft:flint",1),plain("minecraft:gunpowder",1.5),plain("minecraft:charcoal",1));
+        plain("minecraft:flint",1),plain("minecraft:gunpowder",1.5),plain("minecraft:charcoal",1),
+        plain("minecraft:clay",1),plain("minecraft:calcite",.5),plain("minecraft:dripstone_block",.5),plain("minecraft:red_sandstone",.5),
+        plain("minecraft:blackstone",.5),plain("create:asurine",.5),plain("create:crimsite",.5),plain("create:ochrum",.5),
+        plain("create:veridium",.5),plain("create:limestone",.5),plain("create:scoria",.5),plain("create:scorchia",.5));
     /** The farm: every plant food material of vanilla 1.20.1. */
     static final List<Loot> FARM_LOOT=List.of(plain("minecraft:wheat",1),plain("minecraft:carrot",1),plain("minecraft:potato",1),
         plain("minecraft:beetroot",1),plain("minecraft:melon_slice",.5),plain("minecraft:pumpkin",1.5),plain("minecraft:apple",2),
