@@ -14,7 +14,8 @@
     "MealGrenadeMixin"
   ],
   "client": [
-    "RaidMusicMixin"
+    "RaidMusicMixin",
+    "LoadoutCameraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

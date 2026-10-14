@@ -10,7 +10,7 @@ import java.util.*;
 /** The beacon supplies starter installations; each installation owns its upgrades. */
 final class WorkshopFabrication {
     static final List<String> ITEMS=List.of("gun_platform","ammo_platform","attachment_platform","armor_platform",
-        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer_mk1","drink_pot","cup_dispenser","mre_maker","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub");
+        "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer_mk1","drink_pot","cup_dispenser","mre_maker","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","loadout_station");
     static ListTag state(ServerPlayer p){
         var d=CampaignData.get(p.server.overworld());var w=Supply.at(p,d.installed()?d.beacon:p.blockPosition());
         var rows=new ListTag();for(String id:ITEMS){var row=new CompoundTag();row.putString("id",id);row.put("item",new ItemStack(item(id)).save(new CompoundTag()));row.put("costs",WeaponPlatform.costTags(w,Economy.fabrication(id)));rows.add(row);}return rows;

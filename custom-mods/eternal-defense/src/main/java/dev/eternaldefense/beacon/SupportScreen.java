@@ -10,7 +10,9 @@ import java.util.*;
 
 /** Support Platform: Supply grid, Shop and Upgrade tabs in the shared Eternal Defense style. */
 final class SupportScreen extends AbstractContainerScreen<SupportPlatform.PlatformMenu> {
-    static final int W=308,H=200;
+    static final int W=308,H=214;
+    /** Shop rows: as tall as fits between the tabs and the Buy button. */
+    static int rowStep(){return Math.min(26,(H-92)/SupportShop.PRODUCTS.size());}
     private int tab,selected,lastSerial=-1;private long shownAt;private Component feedback=Component.empty();
     private final List<Ui.UiButton> tabs=new ArrayList<>();private Ui.UiButton buyButton,upgradeButton;
     SupportScreen(SupportPlatform.PlatformMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=W;imageHeight=H;}
@@ -20,7 +22,7 @@ final class SupportScreen extends AbstractContainerScreen<SupportPlatform.Platfo
         for(int i=0;i<3;i++){int index=i;var b=new Ui.UiButton(leftPos+12+i*tw,topPos+31,tw-2,18,Ui.t("support.tab."+names[i]),Ui.Look.TAB,x->showTab(index));tabs.add(addRenderableWidget(b));}
         addRenderableWidget(new Ui.UiButton(leftPos+W-30,topPos+4,22,18,Component.literal("X"),Ui.Look.NORMAL,b->onClose()));
         for(int i=0;i<SupportShop.PRODUCTS.size();i++){
-            int index=i;var row=new Ui.UiButton(leftPos+12,topPos+58+i*26,W-24,24,Component.empty(),Ui.Look.ROW,b->selected=index);
+            int index=i;var row=new Ui.UiButton(leftPos+12,topPos+58+i*rowStep(),W-24,rowStep()-2,Component.empty(),Ui.Look.ROW,b->selected=index);
             row.painter((g,self,hover)->paintProduct(g,self,index)).noLabel();addRenderableWidget(row);
         }
         buyButton=addRenderableWidget(new Ui.UiButton(leftPos+W-12-140,topPos+H-30,140,20,Ui.t("support.buy"),Ui.Look.PRIMARY,b->{}));

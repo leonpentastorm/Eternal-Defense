@@ -9,9 +9,9 @@ final class CreativeCatalog {
     static final List<String> FIRST=List.of("defense_beacon","beacon_controller","field_guide",
         "gun_platform","ammo_platform","attachment_platform","armor_platform","exchange_shop",
         "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","milk_bottle","prepared_sandwich","drink_mixer_mk1","drink_pot","cup_dispenser","drink_cup_empty","mre_maker","marines_fuel",
-        "support_platform","support_cannon","supply_flare","return_flare","fire_support_flare","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","warlord_seal",
+        "support_platform","support_cannon","supply_flare","return_flare","fire_support_flare","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","loadout_station","loadout_flare","warlord_seal",
         "ardent_energy","universal_ammo_coin","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
-    static boolean hidden(String id){return id.matches("(mess_hall|drink_mixer)_mk[234]")||id.equals("drink_cup")||id.equals("mre")||id.startsWith("incomplete_");}
+    static boolean hidden(String id){return id.matches("(mess_hall|drink_mixer)_mk[234]")||id.equals("drink_cup")||id.equals("mre")||id.startsWith("incomplete_")||id.equals("loadout_coin");}
     static void display(CreativeModeTab.Output output){
         var seen=new HashSet<Item>();
         for(String id:FIRST){var item=BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(EternalDefense.ID,id));if(item!=Items.AIR&&seen.add(item))output.accept(item);}

@@ -1,0 +1,5 @@
+doors 0-105 deg: CLEAR
+  leaves touch only when shut; smallest clearance while moving: 0.00 px (at 0.25 deg)
+  right door at 100 deg spans x -7.66..0.42 z -23.66..-9.84
+ring 0..-29.0 px: CLEAR
+  lowest ring point at full travel: y -13.50 (floor plate top -13.5)

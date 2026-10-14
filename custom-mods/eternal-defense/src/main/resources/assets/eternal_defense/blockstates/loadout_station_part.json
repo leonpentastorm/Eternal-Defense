@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "eternal_defense:block/loadout_station_part"
+      }
+    }
+  ]
+}

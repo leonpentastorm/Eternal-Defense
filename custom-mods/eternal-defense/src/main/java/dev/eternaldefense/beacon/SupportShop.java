@@ -21,7 +21,8 @@ final class SupportShop {
         new Product("cannon",()->EternalDefense.SUPPORT_CANNON_ITEM.get(),SupportRules.CANNON_PRICE),
         new Product("supply",()->EternalDefense.SUPPLY_FLARE.get(),SupportRules.SUPPLY_FLARE_PRICE),
         new Product("return",()->EternalDefense.RETURN_FLARE.get(),SupportRules.RETURN_FLARE_PRICE),
-        new Product("fire",()->EternalDefense.FIRE_FLARE.get(),SupportRules.FIRE_FLARE_PRICE));
+        new Product("fire",()->EternalDefense.FIRE_FLARE.get(),SupportRules.FIRE_FLARE_PRICE),
+        new Product("loadout",()->EternalDefense.LOADOUT_FLARE.get(),Economy.LOADOUT_FLARE_PRICE));
 
     static void buy(ServerPlayer p,int index){
         if(!(p.containerMenu instanceof SupportPlatform.PlatformMenu menu)||!menu.stillValid(p)||index<0||index>=PRODUCTS.size())return;

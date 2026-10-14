@@ -68,6 +68,11 @@ public final class PlacementPreviewClient {
                 var anchor=LogisticsHub.HubItem.anchorFor(ctx);var state=item.getBlock().defaultBlockState().setValue(DefenseStructures.FACING,ctx.getHorizontalDirection().getOpposite());
                 return new Ghost(List.of(anchor),List.of(state),new AABB(anchor).inflate(1),false,!LogisticsHub.HubItem.free(mc.level,anchor));
             }
+            if(item instanceof LoadoutStation.StationItem){
+                // The Loadout Station stands 3 x 3 x 3 above the spot looked at, facing the player
+                var anchor=LoadoutStation.StationItem.anchorFor(ctx);var state=item.getBlock().defaultBlockState().setValue(DefenseStructures.FACING,LoadoutStation.StationItem.facingFor(ctx));
+                return new Ghost(List.of(anchor),List.of(state),new AABB(anchor).inflate(1),false,!LoadoutStation.StationItem.free(mc.level,anchor));
+            }
             // A spot the block refuses (no state) or with anything in the way of a cell is shown in red where it would stand
             var pos=ctx.getClickedPos();BlockState wanted=ctx.canPlace()?item.getBlock().getStateForPlacement(ctx):null;
             boolean blocked=PlacementGuard.blocked(ctx,wanted);

@@ -20,6 +20,8 @@
     "eternal_defense:cup_dispenser",
     "eternal_defense:mre_maker",
     "eternal_defense:logistics_hub",
-    "eternal_defense:logistics_hub_part"
+    "eternal_defense:logistics_hub_part",
+    "eternal_defense:loadout_station",
+    "eternal_defense:loadout_station_part"
   ]
 }

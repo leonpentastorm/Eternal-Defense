@@ -22,9 +22,9 @@ final class DefenseSounds {
     static final RegistryObject<SoundEvent> BUNKER_BUSTER=of("bunker.buster"),CLUSTER_STRIKE=of("fire.cluster_strike"),SHOCKWAVE=of("fire.shockwave"),BEACON_ATTACKED=of("beacon.attacked");
     /** The flare radio lines (tools/audio/import_chatter.py), one event each, per flare kind */
     private static final java.util.Map<SupportCalls.Kind,List<RegistryObject<SoundEvent>>> CHATTER=new java.util.EnumMap<>(SupportCalls.Kind.class);
-    static {for(var kind:SupportCalls.Kind.values())CHATTER.put(kind,java.util.stream.IntStream.rangeClosed(1,SupportChatter.count(kind)).mapToObj(n->of(SupportChatter.event(kind,n))).toList());}
+    static {for(var kind:SupportCalls.Kind.values())if(kind.voice()==kind)CHATTER.put(kind,java.util.stream.IntStream.rangeClosed(1,SupportChatter.count(kind)).mapToObj(n->of(SupportChatter.event(kind,n))).toList());}
     /** The sound of one radio line (1-based) of a flare kind. */
-    static SoundEvent chatter(SupportCalls.Kind kind,int line){return CHATTER.get(kind).get(line-1).get();}
+    static SoundEvent chatter(SupportCalls.Kind kind,int line){return CHATTER.get(kind.voice()).get(line-1).get();}
     /** The incoming-shell scream: played where a shell or bomb will land, see OrdnanceClient. */
     static final RegistryObject<SoundEvent> INCOMING=of("ordnance.incoming");
     /** Made by tools/audio: the sounds of the fire supports that are not explosions. */

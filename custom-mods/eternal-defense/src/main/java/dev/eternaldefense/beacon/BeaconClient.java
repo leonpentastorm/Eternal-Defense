@@ -650,6 +650,7 @@ public final class BeaconClient {
                 case "drinks"->EternalDefense.DRINK_STATION_I.get().asItem();
                 case "mre"->EternalDefense.MRE_STATION_ITEM.get();
                 case "hub"->EternalDefense.LOGISTICS_HUB_ITEM.get();
+                case "loadout"->EternalDefense.LOADOUT_STATION_ITEM.get();
                 case "gear"->EternalDefense.RACKS.isEmpty()?net.minecraft.world.item.Items.CROSSBOW:EternalDefense.RACKS.get(0).get().asItem();
                 case "coop"->net.minecraft.world.item.Items.PLAYER_HEAD;
                 default->net.minecraft.world.item.Items.WRITABLE_BOOK;

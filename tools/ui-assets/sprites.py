@@ -35,21 +35,22 @@ def energy_cell():
 
 def flare(kind):
     im = new(64, 64)
-    body = {'support': 'cyan', 'return': 'purple', 'fire': 'red'}[kind]
-    flame = {'support': 'cyan', 'return': 'purple', 'fire': 'ember'}[kind]
+    body = {'support': 'cyan', 'return': 'purple', 'fire': 'red', 'loadout': 'steel'}[kind]
+    flame = {'support': 'cyan', 'return': 'purple', 'fire': 'ember', 'loadout': 'cyan'}[kind]
     vcylinder(im, 20, 44, 24, 53, body)
     for y in range(24, 54, 3):
         for x in (23, 41): im.putpixel((x, y), pick(body, .15))   # worn paint ticks
     # paper label band
     vcylinder(im, 20, 44, 31, 44, 'cloth')
-    stripe = {'support': 'cyan', 'return': 'purple', 'fire': 'red'}[kind]
+    stripe = {'support': 'cyan', 'return': 'purple', 'fire': 'red', 'loadout': 'brass'}[kind]
     for y in (32, 43):
         for x in range(20, 45):
             u = (x - 32) / 12.5; im.putpixel((x, y), pick(stripe, light(u, 0, math.sqrt(max(0, 1 - u*u)))))
     # glyph on the label
     g = {'support': ["..XX..", ".XXXX.", "XX..XX", "..XX..", "..XX..", "..XX.."],      # arrow down: delivery
          'return':  ["..XX..", ".XXXX.", "XXXXXX", ".X..X.", ".X..X.", ".XXXX."],      # house: home
-         'fire':    ["..X...", ".XX.X.", ".XXXX.", "XXXXXX", "XXXXXX", ".XXXX."]}[kind]  # flame
+         'fire':    ["..X...", ".XX.X.", ".XXXX.", "XXXXXX", "XXXXXX", ".XXXX."],     # flame
+         'loadout': ["..XX..", "..XX..", "XXXXXX", ".XXXX.", ".X..X.", ".X..X."]}[kind]  # a suited figure: a kit
     for j, row in enumerate(g):
         for i, c in enumerate(row):
             if c == 'X': im.putpixel((29 + i, 35 + j), pick(stripe, .25))
@@ -66,7 +67,29 @@ def flare(kind):
     rivet(im, 22, 55); rivet(im, 40, 55); rivet(im, 22, 19); rivet(im, 40, 19)
     outline(im); return im
 
-SPRITES = {'ardent_energy': energy_cell, 'support_flare': lambda: flare('support'), 'return_flare': lambda: flare('return'), 'fire_support_flare': lambda: flare('fire')}
+def loadout_coin():
+    """PLACEHOLDER Loadout Coin: a brass token with a milled rim and a cyan suited figure on a dark face."""
+    im = new(64, 64)
+    for y in range(64):
+        for x in range(64):
+            dx, dy = (x - 31.5) / 26, (y - 31.5) / 26; d = math.hypot(dx, dy)
+            if d > 1: continue
+            if d > .82:                                              # milled rim
+                v = light(dx, dy, math.sqrt(max(0, 1 - d * d))) + (.1 if (math.atan2(dy, dx) * 24 / math.pi) % 2 < 1 else -.08)
+                im.putpixel((x, y), pick('brass', v)); continue
+            if d > .7: im.putpixel((x, y), pick('brass', .25 + .3 * (1 - dy))); continue
+            im.putpixel((x, y), pick('dark', .35 + .3 * (1 - d)))
+    figure = ["....XXXX....", "...XXXXXX...", "...XXXXXX...", "....XXXX....", ".XXXXXXXXXX.", "XXXXXXXXXXXX", "XX.XXXXXX.XX", "XX.XXXXXX.XX",
+              "...XXXXXX...", "...XXX.XXX..", "...XX...XX..", "...XX...XX..", "..XXX...XXX."]
+    for j, row in enumerate(figure):
+        for i, c in enumerate(row):
+            if c == 'X':
+                for (ox, oy) in ((0, 0), (1, 0), (0, 1), (1, 1)): im.putpixel((20 + i * 2 + ox, 18 + j * 2 + oy), pick('cyan', .55 + .4 * (1 - j / len(figure))))
+    rivet(im, 31, 9); rivet(im, 31, 54); rivet(im, 9, 31); rivet(im, 54, 31)
+    outline(im); return im
+
+SPRITES = {'ardent_energy': energy_cell, 'support_flare': lambda: flare('support'), 'return_flare': lambda: flare('return'), 'fire_support_flare': lambda: flare('fire'),
+           'loadout_flare': lambda: flare('loadout'), 'loadout_coin': loadout_coin}
 
 def portal_sheet():
     """Return Flare portal: four 16 x 32 frames side by side, a spinning violet vortex in a bright rim, drawn 1 block wide and 2 tall."""

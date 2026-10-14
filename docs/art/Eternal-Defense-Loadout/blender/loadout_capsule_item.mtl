@@ -1,0 +1,3 @@
+newmtl loadout_capsule_item
+Kd 1 1 1
+map_Kd textures/block/loadout_capsule.png

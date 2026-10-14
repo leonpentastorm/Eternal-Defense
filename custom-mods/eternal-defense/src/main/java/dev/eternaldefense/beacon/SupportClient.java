@@ -177,7 +177,7 @@ public final class SupportClient {
         @Override public void render(SupportFlares.FlareEntity e,float yaw,float partial,PoseStack pose,MultiBufferSource buffer,int light){
             var kind=e.kind();boolean landed=e.landed();
             if(kind==SupportCalls.Kind.RETURN&&e.open()){drawPortal(pose,buffer,entityRenderDispatcher,e.tickCount+partial,3f,255,255,255,255);return;}
-            Item item=switch(kind){case SUPPLY->EternalDefense.SUPPLY_FLARE.get();case RETURN->EternalDefense.RETURN_FLARE.get();case FIRE->EternalDefense.FIRE_FLARE.get();};
+            Item item=switch(kind){case SUPPLY->EternalDefense.SUPPLY_FLARE.get();case RETURN->EternalDefense.RETURN_FLARE.get();case FIRE->EternalDefense.FIRE_FLARE.get();case LOADOUT->EternalDefense.LOADOUT_FLARE.get();};
             pose.pushPose();
             pose.translate(0,landed?.45:.12,0);pose.scale(1.4f,1.4f,1.4f);
             pose.mulPose(entityRenderDispatcher.cameraOrientation());pose.mulPose(Axis.YP.rotationDegrees(180f));
@@ -290,7 +290,9 @@ public final class SupportClient {
             pose.popPose();
         }
         /** The canopy and its cords, drawn with its cords starting at the current origin. */
-        static void canopy(PoseStack pose,MultiBufferSource buffer,int light,float age,ResourceLocation texture){
+        static void canopy(PoseStack pose,MultiBufferSource buffer,int light,float age,ResourceLocation texture){canopy(pose,buffer,light,age,texture,.44f);}
+        /** The canopy with its cords meeting within reach blocks of the origin (a crate's edges, or a lifting eye). */
+        static void canopy(PoseStack pose,MultiBufferSource buffer,int light,float age,ResourceLocation texture,float reach){
             pose.pushPose();
             var last=pose.last();var m=last.pose();var n=last.normal();
             var vc=buffer.getBuffer(RenderType.entityCutoutNoCull(texture));
@@ -310,7 +312,7 @@ public final class SupportClient {
                 // The cord hangs from the middle of the panel's lower edge down to the crate's top edge
                 float am=(a0+a1)/2;
                 float[] top={Mth.cos(am)*RADIUS*breathe*.99f,RIM,Mth.sin(am)*RADIUS*breathe*.99f};
-                float[] bot={Mth.clamp(Mth.cos(am)*.7f,-.44f,.44f),0f,Mth.clamp(Mth.sin(am)*.7f,-.44f,.44f)};
+                float[] bot={Mth.clamp(Mth.cos(am)*.7f,-reach,reach),0f,Mth.clamp(Mth.sin(am)*.7f,-reach,reach)};
                 cord(vc,m,n,bot,top,light);
             }
             pose.popPose();

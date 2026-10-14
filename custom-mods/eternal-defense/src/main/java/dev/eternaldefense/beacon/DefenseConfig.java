@@ -10,6 +10,8 @@ final class DefenseConfig {
     static final ForgeConfigSpec.IntValue BOSS_ENERGY;
     static final ForgeConfigSpec.ConfigValue<java.util.List<? extends Double>> TIER_HEALTH,TIER_DAMAGE;
     static final ForgeConfigSpec.IntValue ORDINARY_CAP,ELITE_CAP,BOSS_CAP;
+    static final ForgeConfigSpec.IntValue LOADOUT_COOLDOWN,LOADOUT_KIT_LIMIT_KB;
+    static final ForgeConfigSpec.ConfigValue<String> LOADOUT_DOOR_SOUND,LOADOUT_STEAM_SOUND;
     static {
         var b=new ForgeConfigSpec.Builder();
         b.comment("Ardent Energy: the currency hostile mobs sometimes drop.").push("energy");
@@ -23,6 +25,12 @@ final class DefenseConfig {
         ORDINARY_CAP=b.comment("Health cap for ordinary mobs (base health under 50).").defineInRange("ordinaryHealthCap",240,1,100000);
         ELITE_CAP=b.comment("Health cap for elite mobs (base health 50 to 149).").defineInRange("eliteHealthCap",900,1,100000);
         BOSS_CAP=b.comment("Health cap for bosses (base health 150 or more).").defineInRange("bossHealthCap",4000,1,100000);
+        b.pop();
+        b.comment("The Loadout Station.").push("loadout");
+        LOADOUT_COOLDOWN=b.comment("Seconds a player waits between two prints (kept over a relog).").defineInRange("printCooldownSeconds",LoadoutRules.COOLDOWN_SECONDS,0,3600);
+        LOADOUT_KIT_LIMIT_KB=b.comment("Largest kit a coin may hold, in kilobytes of saved item data.").defineInRange("kitLimitKilobytes",LoadoutRules.KIT_LIMIT_KB,1,1024);
+        LOADOUT_DOOR_SOUND=b.comment("Sound of the doors (placeholder: a vanilla piston).").define("doorSound","minecraft:block.piston.extend");
+        LOADOUT_STEAM_SOUND=b.comment("Sound of the steam and the print (placeholder: vanilla fire being put out).").define("steamSound","minecraft:block.fire.extinguish");
         b.pop();
         SPEC=b.build();
     }

@@ -1,0 +1,3 @@
+newmtl loadout_station_arm_a
+Kd 1 1 1
+map_Kd textures/block/loadout_station.png

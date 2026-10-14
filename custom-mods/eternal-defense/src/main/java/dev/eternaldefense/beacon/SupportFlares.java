@@ -79,10 +79,12 @@ final class SupportFlares {
             var base=SupportData.get(sp.serverLevel()).of(sp.getUUID());
             var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],base!=null?base.type():CannonUpgrades.FireType.EXPLOSION);
             ListTag cargo=kind==SupportCalls.Kind.SUPPLY?SupportCalls.takeGrid(sp):new ListTag();
+            var call=kind==SupportCalls.Kind.LOADOUT?LoadoutCall.reserve(sp):null;
             SupportCalls.announce(sp,kind==SupportCalls.Kind.FIRE?cfg.type().callId():kind.id);
             var flare=new FlareEntity(EternalDefense.FLARE.get(),level);
             flare.setOwner(player);flare.setPos(player.getX(),player.getEyeY()-.1,player.getZ());
             flare.configure(kind,cargo,cfg);
+            if(call!=null){flare.loadout=call;LoadoutCall.pending(sp.getUUID(),flare.getUUID());}
             flare.shootFromRotation(player,player.getXRot(),player.getYRot(),0f,1.1f,1f);
             level.addFreshEntity(flare);
             level.playSound(null,player.getX(),player.getY(),player.getZ(),SoundEvents.FIREWORK_ROCKET_LAUNCH,SoundSource.PLAYERS,.8f,1.2f);
@@ -160,7 +162,7 @@ final class SupportFlares {
             f.setPos(at.x,at.y,at.z);f.setNoGravity(true);f.entityData.set(LANDED,true);f.entityData.set(OPEN,true);level.addFreshEntity(f);return f;
         }
         @Override protected void defineSynchedData(){super.defineSynchedData();entityData.define(KIND,0);entityData.define(TYPE,0);entityData.define(RADIUS,(float)SupportRules.BLAST_RADIUS);entityData.define(LANDED,false);entityData.define(OPEN,false);}
-        @Override protected Item getDefaultItem(){return switch(kind()){case SUPPLY->EternalDefense.SUPPLY_FLARE.get();case RETURN->EternalDefense.RETURN_FLARE.get();case FIRE->EternalDefense.FIRE_FLARE.get();};}
+        @Override protected Item getDefaultItem(){return switch(kind()){case SUPPLY->EternalDefense.SUPPLY_FLARE.get();case RETURN->EternalDefense.RETURN_FLARE.get();case FIRE->EternalDefense.FIRE_FLARE.get();case LOADOUT->EternalDefense.LOADOUT_FLARE.get();};}
         @Override protected float getGravity(){return landed()?0f:0.05f;}
         @Override protected boolean canHitEntity(net.minecraft.world.entity.Entity e){return false;}
         @Override protected void onHitEntity(EntityHitResult r){}
@@ -169,7 +171,7 @@ final class SupportFlares {
             if(hit.getDirection()==Direction.UP){
                 // It comes to rest exactly where it touched the ground: everything the call does is measured from this point
                 Vec3 at=hit.getLocation();setPos(at.x,at.y,at.z);setDeltaMovement(Vec3.ZERO);setNoGravity(true);entityData.set(LANDED,true);
-                if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY->1.1f;case RETURN->1f;case FIRE->.9f;});
+                if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY,LOADOUT->1.1f;case RETURN->1f;case FIRE->.9f;});
             }else{
                 Vec3 m=getDeltaMovement();setDeltaMovement(-m.x*.2,Math.min(m.y,0)*.5,-m.z*.2);   // Slides down walls and bounces off ceilings
             }
@@ -180,7 +182,7 @@ final class SupportFlares {
                 var items=new ArrayList<ItemStack>();for(var t:cargo)items.add(ItemStack.of((CompoundTag)t));
                 cargo=new ListTag();SupportCalls.giveBack(server,getOwner().getUUID(),position(),items);
             }
-            if(!level().isClientSide&&level() instanceof ServerLevel server){releaseGun(server);if(reason.shouldDestroy())clearPlaced(server);}
+            if(!level().isClientSide&&level() instanceof ServerLevel server){releaseGun(server);if(reason.shouldDestroy())clearPlaced(server);if(reason.shouldDestroy()&&getOwner()!=null)LoadoutCall.done(getOwner().getUUID(),getUUID());}
             super.remove(reason);
         }
         private ServerPlayer owner(ServerLevel server){return getOwner()==null?null:server.getServer().getPlayerList().getPlayer(getOwner().getUUID());}
@@ -232,13 +234,17 @@ final class SupportFlares {
                 if(cfg.type()==CannonUpgrades.FireType.BUNKER&&BaseZone.touches(server,box())){bunkerHome(server,owner);return;}
                 if(!cfg.tunnel()&&server.dimensionType().hasSkyLight()&&SupportRules.underground(cover(server,blockPosition()))){underground(server,owner);return;}
             }
+            // A Loadout call follows the fire support's cover rule: under 3 or more blocks it needs Quantum tunneling
+            if(t==0&&kind==SupportCalls.Kind.LOADOUT&&!cfg.tunnel()&&server.dimensionType().hasSkyLight()&&SupportRules.underground(cover(server,blockPosition()))){underground(server,owner);return;}
+            if(kind==SupportCalls.Kind.LOADOUT&&getOwner()!=null)LoadoutCall.pending(getOwner().getUUID(),getUUID());
             if(t==0&&dest==null)SupportChatter.say(server,position(),kind,owner);   // The call is taken: the radio answers
-            if(t%2==0)server.sendParticles(kind==SupportCalls.Kind.FIRE?ParticleTypes.FLAME:kind==SupportCalls.Kind.SUPPLY?ParticleTypes.END_ROD:ParticleTypes.WITCH,getX(),getY()+.25,getZ(),2,.06,.15,.06,.02);
+            if(t%2==0)server.sendParticles(kind==SupportCalls.Kind.FIRE?ParticleTypes.FLAME:kind==SupportCalls.Kind.SUPPLY?ParticleTypes.END_ROD:kind==SupportCalls.Kind.LOADOUT?ParticleTypes.ELECTRIC_SPARK:ParticleTypes.WITCH,getX(),getY()+.25,getZ(),2,.06,.15,.06,.02);
             if(t%6==0)server.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE,getX(),getY()+.3,getZ(),0,0,.07,0,1);
             if(kind==SupportCalls.Kind.FIRE&&cfg.slow()&&t%10==0)slowField(server);
             if(carveY!=Integer.MIN_VALUE)carveStep(server);
             switch(kind){
                 case SUPPLY->supply(server,owner,live,t);
+                case LOADOUT->loadout(server,owner,live,t);
                 case FIRE->fire(server,owner,live,t);
                 case RETURN->portal(server,owner,live,t);
             }
@@ -248,7 +254,7 @@ final class SupportFlares {
         private void underground(ServerLevel server,ServerPlayer owner){
             if(getOwner()!=null){
                 if(owner!=null)SupportCalls.refuse(owner,"underground");
-                SupportCalls.giveBack(server,getOwner().getUUID(),position(),List.of(new ItemStack(EternalDefense.FIRE_FLARE.get())));
+                SupportCalls.giveBack(server,getOwner().getUUID(),position(),List.of(new ItemStack(getDefaultItem())));
             }
             server.sendParticles(ParticleTypes.POOF,getX(),getY()+.3,getZ(),10,.2,.2,.2,.02);discard();
         }
@@ -294,6 +300,37 @@ final class SupportFlares {
                 if(gone&&auraLeft<0)auraLeft=CannonUpgrades.AURA_AFTER_PICKUP_TICKS;
                 if(auraLeft>=0&&--auraLeft<0)discard();
             }
+        }
+        // Loadout: like a supply call, but the coin is only taken when the cannon fires, and a capsule lands
+        /** The station, slot and coin kind this Loadout call was made with. */
+        LoadoutCall.Reserved loadout;
+        /** Its coin: taken once, when the cannon fires (a reloaded call that had fired has fireTick set and never asks again). */
+        private final LoadoutRules.Call call=new LoadoutRules.Call();
+        private void loadout(ServerLevel server,ServerPlayer owner,SupportCannon.CannonEntity live,int t){
+            if(!planned){
+                planned=true;clear=SupportCalls.clearAbove(server,blockPosition());
+                outside=server.canSeeSky(blockPosition())&&clear>=SupportRules.PARCEL_MIN_DROP;
+            }
+            if(fireTick<0){
+                if(!gunReady(server,owner,live,t))return;
+                var kit=new ListTag[1];
+                if(!call.fire(()->(kit[0]=loadout==null?null:LoadoutCall.take(server,getOwner()==null?null:getOwner().getUUID(),loadout))!=null)){
+                    // The coin is gone (taken from the slot, the Hub emptied): nothing is fired, the flare comes back
+                    releaseGun(server);
+                    if(getOwner()!=null){if(owner!=null)SupportCalls.refuse(owner,"coin_gone");SupportCalls.giveBack(server,getOwner().getUUID(),position(),List.of(new ItemStack(EternalDefense.LOADOUT_FLARE.get())));}
+                    server.sendParticles(ParticleTypes.POOF,getX(),getY()+.3,getZ(),10,.2,.2,.2,.02);discard();return;
+                }
+                cargo=kit[0];fireTick=t;shot(server,owner,live,true);releaseGun(server);
+                total=fireTick+SupportRules.supplyTicks(outside);spawnAt=fireTick+(outside?SupportRules.parcelSpawnTick(clear):SupportRules.supplyTicks(false));
+            }
+            if(owner!=null&&(t-fireTick)%20==0&&t<total){
+                int seconds=(total-t+19)/20;
+                if(seconds>0)owner.sendSystemMessage(Component.translatable("gui.eternal_defense.support.countdown",seconds).withStyle(ChatFormatting.YELLOW));
+            }
+            if(!spawned&&t>=spawnAt){
+                spawned=true;LoadoutCapsule.deliver(server,owner,getOwner()==null?null:getOwner().getUUID(),position(),cargo,outside,clear);cargo=new ListTag();
+            }
+            if(t>=total)discard();
         }
         private void aura(ServerLevel server,int t){
             if(t%20==0)for(ServerPlayer p:server.getEntitiesOfClass(ServerPlayer.class,new AABB(position(),position()).inflate(CannonUpgrades.AURA_RADIUS,4,CannonUpgrades.AURA_RADIUS),pl->pl.distanceToSqr(this)<=CannonUpgrades.AURA_RADIUS*(double)CannonUpgrades.AURA_RADIUS))
@@ -647,6 +684,7 @@ final class SupportFlares {
             n.putInt("Life",life);n.putInt("AuraLeft",auraLeft);if(parcelId!=null)n.putUUID("Parcel",parcelId);
             if(carveY!=Integer.MIN_VALUE){n.putInt("CarveY",carveY);n.putInt("CarveFloor",carveFloor);n.putInt("CarveX0",carveX0);n.putInt("CarveX1",carveX1);n.putInt("CarveZ0",carveZ0);n.putInt("CarveZ1",carveZ1);}
             if(dest!=null){n.putDouble("DestX",dest.x);n.putDouble("DestY",dest.y);n.putDouble("DestZ",dest.z);n.putString("DestDim",destDim);}
+            if(loadout!=null)n.put("Loadout",loadout.save());
         }
         @Override public void readAdditionalSaveData(CompoundTag n){
             super.readAdditionalSaveData(n);entityData.set(KIND,n.getInt("Kind"));entityData.set(LANDED,n.getBoolean("Landed"));landedTicks=n.getInt("LandedTicks");cargo=n.getList("Cargo",Tag.TAG_COMPOUND);
@@ -660,6 +698,7 @@ final class SupportFlares {
             life=n.contains("Life")?n.getInt("Life"):CannonUpgrades.portalTicks(cfg.longPortal());auraLeft=n.contains("AuraLeft")?n.getInt("AuraLeft"):-1;if(n.hasUUID("Parcel"))parcelId=n.getUUID("Parcel");
             if(n.contains("CarveY")){carveY=n.getInt("CarveY");carveFloor=n.getInt("CarveFloor");carveX0=n.getInt("CarveX0");carveX1=n.getInt("CarveX1");carveZ0=n.getInt("CarveZ0");carveZ1=n.getInt("CarveZ1");}
             if(n.contains("DestX")){dest=new Vec3(n.getDouble("DestX"),n.getDouble("DestY"),n.getDouble("DestZ"));destDim=n.getString("DestDim");}
+            if(n.contains("Loadout"))loadout=LoadoutCall.Reserved.load(n.getCompound("Loadout"));
             setNoGravity(landed());
         }
         @Override public Packet<ClientGamePacketListener> getAddEntityPacket(){return NetworkHooks.getEntitySpawningPacket(this);}

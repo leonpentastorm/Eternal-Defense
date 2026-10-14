@@ -20,8 +20,10 @@ import java.util.UUID;
 final class SupportCalls {
     private SupportCalls(){}
     enum Kind{
-        SUPPLY("supply"),RETURN("return"),FIRE("fire");
+        SUPPLY("supply"),RETURN("return"),FIRE("fire"),LOADOUT("loadout");
         final String id;Kind(String id){this.id=id;}
+        /** The radio lines a call of this kind plays: a Loadout call answers like a supply call. */
+        Kind voice(){return this==LOADOUT?SUPPLY:this;}
         static Kind of(int ordinal){var v=values();return v[Math.max(0,Math.min(v.length-1,ordinal))];}
     }
 
@@ -52,8 +54,8 @@ final class SupportCalls {
         var overworld=p.getServer().overworld();
         var base=SupportData.get(overworld).of(p.getUUID());
         if(kind!=Kind.RETURN&&p.level().dimension()!=Level.OVERWORLD){
-            // Only fire support can be called in another dimension, and only with the Dimensional Link upgrade
-            if(kind!=Kind.FIRE||base==null||base.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]<=0)return "wrong_dimension";
+            // Only fire support and Loadout calls reach another dimension, and only with the Dimensional Link upgrade
+            if((kind!=Kind.FIRE&&kind!=Kind.LOADOUT)||base==null||base.up[CannonUpgrades.Upgrade.DIMENSION.ordinal()]<=0)return "wrong_dimension";
         }
         var platform=platform(overworld,p.getUUID());
         if(platform==null)return "no_platform";
@@ -64,6 +66,7 @@ final class SupportCalls {
         if(!overworld.getBlockState(base.cannon).is(EternalDefense.SUPPORT_CANNON.get()))return "no_cannon";
         if(BaseZone.problem(overworld,base.cannon)!=null)return "disabled";
         if(kind==Kind.SUPPLY&&!platform.hasItems())return "empty_grid";
+        if(kind==Kind.LOADOUT){String loadout=LoadoutCall.problem(p);if(loadout!=null)return loadout;}
         if(kind==Kind.RETURN&&returnSpot(overworld,platform.getBlockPos(),platform.getBlockState().getValue(SupportPlatform.FACING))==null)return "return_blocked";
         return null;
     }

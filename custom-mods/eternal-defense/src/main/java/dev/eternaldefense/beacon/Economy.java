@@ -41,6 +41,13 @@ final class Economy {
     static final int MRE_STATION_KEY=4,MRE_STATION_IRON=8;
     /** The Logistics Center Hub. */
     static final int HUB_PLATING=64,HUB_IRON=64,HUB_CHESTS=16,HUB_HOPPERS=8;
+    /** The Loadout Station (proposed, unplaytested): the Hub's 64 plating, with restoration matrices, iron and glass. */
+    static final int LOADOUT_PLATING=64,LOADOUT_MATRICES=8,LOADOUT_IRON=32,LOADOUT_GLASS=16;
+    /** A Loadout Coin's fee (unplaytested): 4 Reinforced Beacon Plating and 1 Ardent Energy. */
+    static final int COIN_FEE_PLATING=4,COIN_FEE_ARDENT=1;
+    /** The Loadout Flare at the Support Platform, in Ardent Energy (unplaytested). */
+    static final int LOADOUT_FLARE_PRICE=5;
+    static List<WeaponPlatform.Cost> coinFee(){return List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",COIN_FEE_PLATING),WeaponPlatform.cost("eternal_defense:ardent_energy",COIN_FEE_ARDENT));}
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(EternalDefense.PLATING::get,DRINKS_PLATING[mk-1]);}
 
     static List<WeaponPlatform.Cost> stationCosts(String kind){
@@ -82,6 +89,9 @@ final class Economy {
             // The Logistics Center Hub, the most expensive installation: 64 plating, with iron, chests and hoppers
             case "logistics_hub"->List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",HUB_PLATING),
                 WeaponPlatform.cost("minecraft:iron_ingot",HUB_IRON),WeaponPlatform.cost("minecraft:chest",HUB_CHESTS),WeaponPlatform.cost("minecraft:hopper",HUB_HOPPERS));
+            // The Loadout Station, the flagship next to the Hub
+            case "loadout_station"->List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",LOADOUT_PLATING),WeaponPlatform.cost("eternal_defense:restoration_matrix",LOADOUT_MATRICES),
+                WeaponPlatform.cost("minecraft:iron_ingot",LOADOUT_IRON),WeaponPlatform.cost("minecraft:glass",LOADOUT_GLASS));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };
