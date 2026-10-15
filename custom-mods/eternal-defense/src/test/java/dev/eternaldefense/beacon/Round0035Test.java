@@ -114,7 +114,7 @@ final class Round0035Test {
         assertTrue(menu.contains("mixing<limit()"));
     }
     @Test void protocolFortyCarriesTheStationView() throws Exception{
-        var net=source("BeaconNetwork.java");assertEquals("42",BeaconNetwork.PROTOCOL);assertTrue(net.contains("registerMessage(24,DrinkStationMenu.View.class"));
+        var net=source("BeaconNetwork.java");assertEquals("43",BeaconNetwork.PROTOCOL);assertTrue(net.contains("registerMessage(24,DrinkStationMenu.View.class"));
     }
     @Test void theFieldGuideQuotesTheRealNumbers() throws Exception{
         var all=lang();

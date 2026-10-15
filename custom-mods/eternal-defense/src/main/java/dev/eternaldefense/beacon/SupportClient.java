@@ -138,22 +138,10 @@ public final class SupportClient {
         @Override public boolean shouldRenderOffScreen(SupportCannon.CannonEntity be){return false;}
     }
 
-    /** The red parachute of a paratrooper (any raider marked as floating down) and the red exclamation mark above */
-    @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+    /** The red parachute of a paratrooper and the red exclamation mark above a raid mob (drawn by EliteClient for any renderer) */
     public static final class TrooperChutes {
         static final ResourceLocation RED=new ResourceLocation(EternalDefense.ID,"textures/entity/parachute_red.png");
         static final ResourceLocation MARK=new ResourceLocation(EternalDefense.ID,"textures/entity/raid_mark.png");
-        @SubscribeEvent public static void draw(net.minecraftforge.client.event.RenderLivingEvent.Post<?,?> e){
-            var mob=e.getEntity();
-            if(!mob.isAlive())return;
-            boolean chute=RaidTypes.CHUTED.contains(mob.getId())&&!mob.onGround();
-            if(chute){
-                var pose=e.getPoseStack();pose.pushPose();pose.translate(0,mob.getBbHeight()*.8,0);
-                ParcelRenderer.canopy(pose,e.getMultiBufferSource(),e.getPackedLight(),mob.tickCount+e.getPartialTick(),RED);pose.popPose();
-            }
-            if(RaidTypes.RAIDERS.contains(mob.getId())&&mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition())<=96*96)
-                mark(e.getPoseStack(),e.getMultiBufferSource(),mob,chute?mob.getBbHeight()+3.6f:mob.getBbHeight()+.75f,mob.tickCount+e.getPartialTick(),net.minecraft.client.Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-        }
         /** A camera-facing exclamation mark that bobs above the head */
         static void mark(PoseStack pose,MultiBufferSource buffer,net.minecraft.world.entity.LivingEntity mob,float height,float age,org.joml.Quaternionf camera){
             double distance=Math.sqrt(mob.distanceToSqr(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition()));

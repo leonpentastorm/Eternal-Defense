@@ -18,13 +18,15 @@ final class HardRaids {
     private static final Map<ServerLevel,ServerBossEvent> BARS=new WeakHashMap<>();
     static boolean isHard(int raidNumber){return Rules.hardRaid(raidNumber);}
     static float health(int tier){return Rules.bossHealth(tier);}
-    static void awaken(Mob mob){
+    /** Wakes a guardian boss (or, with apply off, only checks that it can be woken) */
+    static boolean awaken(Mob mob,boolean apply){
         // These author APIs wake a campaign-spawned guardian without waiting at a ruin.
         String id=BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString();
         try{
-            if(id.equals("cataclysm:ender_golem"))mob.getClass().getMethod("setIsAwaken",boolean.class).invoke(mob,true);
-            if(id.equals("cataclysm:kobolediator")){mob.getClass().getMethod("setAwaken",boolean.class).invoke(mob,true);mob.getClass().getMethod("setSleep",boolean.class).invoke(mob,false);}
-        }catch(ReflectiveOperationException e){throw new IllegalStateException("Cannot awaken raid boss "+id,e);}
+            if(id.equals("cataclysm:ender_golem")){var awake=mob.getClass().getMethod("setIsAwaken",boolean.class);if(apply)awake.invoke(mob,true);}
+            if(id.equals("cataclysm:kobolediator")){var awake=mob.getClass().getMethod("setAwaken",boolean.class);var sleep=mob.getClass().getMethod("setSleep",boolean.class);if(apply){awake.invoke(mob,true);sleep.invoke(mob,false);}}
+            return true;
+        }catch(ReflectiveOperationException e){Compat.warn("waking the raid boss "+id,e);return false;}
     }
     static void start(CampaignData d){d.raidsStarted++;d.hardRaid=isHard(d.raidsStarted);d.bossSpawned=false;d.bossKilled=false;d.bossId=null;d.setDirty();}
     static void balance(Mob mob,int tier){
@@ -35,11 +37,12 @@ final class HardRaids {
     }
     static boolean spawn(ServerLevel l,CampaignData d,BlockPos pos){
         if(!d.hardRaid||d.bossSpawned||!d.phase.equals("raid"))return false;String id=TYPES[Math.max(0,Math.min(5,d.raidTier))];
-        var type=BuiltInRegistries.ENTITY_TYPE.getOptional(new ResourceLocation(id)).orElse(EntityType.RAVAGER);var entity=type.create(l);if(!(entity instanceof Mob mob))return false;
+        var type=BuiltInRegistries.ENTITY_TYPE.getOptional(new ResourceLocation(id)).orElse(EntityType.RAVAGER);
+        Mob mob=type.create(l) instanceof Mob boss&&awaken(boss,false)?boss:EntityType.RAVAGER.create(l);if(mob==null)return false;
         mob.moveTo(pos.getX()+.5,pos.getY(),pos.getZ()+.5,0,0);mob.finalizeSpawn(l,l.getCurrentDifficultyAt(pos),MobSpawnType.EVENT,null,null);
         mob.setPersistenceRequired();mob.getPersistentData().putBoolean("eternalRaider",true);mob.getPersistentData().putBoolean("eternalBoss",true);mob.getPersistentData().putLong("eternalBossSerial",d.campaignSerial);mob.getPersistentData().putInt("eternalBossDefenders",d.wavePlayers);
         mob.setCustomName(Component.literal("Raid Boss — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);
-        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false;awaken(mob);balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);BeaconCombat.attach(mob);
+        if(!l.noCollision(mob)||!l.addFreshEntity(mob))return false;awaken(mob,true);balance(mob,d.raidTier);mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);BeaconCombat.attach(mob);
         d.bossId=mob.getUUID();d.bossSpawned=true;d.raiders.add(mob.getUUID());d.setDirty();
         l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Eternal Defense] RAID BOSS INCOMING: ").append(mob.getType().getDescription()).append("! Defeat it and clear the wave for the hard-raid cache."),false);return true;
     }

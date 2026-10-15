@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 final class BeaconNetwork {
     /** Protocol 41: one edition only (the standalone edition is discontinued) */
-    static final String PROTOCOL="42";
+    static final String PROTOCOL="43";
     static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(EternalDefense.ID,"control"),()->PROTOCOL,PROTOCOL::equals,PROTOCOL::equals);
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}

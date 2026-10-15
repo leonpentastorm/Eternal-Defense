@@ -35,10 +35,10 @@ import java.util.*;
 final class Elites {
     private Elites(){}
     enum Kind {
-        BADASS("badass",25),SPEEDSTER("speedster",12),HEALER("healer",9),MATRIOSKA("matrioska",9),LONG_SHOT("long_shot",10),
-        FLAK_ARMOR("flak_armor",9),BODY_ARMOR("body_armor",9),VAMPIRIC("vampiric",6),FROSTBITE("frostbite",6),BERSERKER("berserker",6);
-        final String id;final int weight;
-        Kind(String id,int weight){this.id=id;this.weight=weight;}
+        BADASS("badass",25,0xFFC233),SPEEDSTER("speedster",12,0xFFF04D),HEALER("healer",9,0x4DFF73),MATRIOSKA("matrioska",9,0xFF66CC),LONG_SHOT("long_shot",10,0x4DD2FF),
+        FLAK_ARMOR("flak_armor",9,0xC8D2E6),BODY_ARMOR("body_armor",9,0xE0A050),VAMPIRIC("vampiric",6,0xE0245E),FROSTBITE("frostbite",6,0x9BE7FF),BERSERKER("berserker",6,0xFF7A1A);
+        final String id;final int weight;final int color;
+        Kind(String id,int weight,int color){this.id=id;this.weight=weight;this.color=color;}
         static Kind of(String id){for(var k:values())if(k.id.equals(id))return k;return null;}
     }
     static final String TAG="eternalElite",LEVEL="eternalEliteLevel",GEN="eternalEliteGen",SCALE="eternalEliteScale",LONG_SHOT_ARROW="eternalLongShot";
@@ -260,4 +260,11 @@ final class Elites {
     }
     /** Client: the size of each elite in view, sent with the raid's marks */
     static final Map<Integer,Float> SCALES=new java.util.concurrent.ConcurrentHashMap<>();
+    /** Client: elite ids and their kind and level (see code) */
+    static final Map<Integer,Integer> KINDS=new java.util.concurrent.ConcurrentHashMap<>();
+    /** Pure: kind and level in one number for the marks packet */
+    static int code(Kind kind,int level){return kind.ordinal()*8+Math.max(1,Math.min(5,level));}
+    static Kind kindOf(int code){var all=Kind.values();int k=code>>3;return k>=0&&k<all.length?all[k]:null;}
+    /** Pure: the aura colour of an elite; Badass IV and V red like their names */
+    static int color(int code){var k=kindOf(code);if(k==null)return 0xFFFFFF;return k==Kind.BADASS&&(code&7)>=4?0xFF3B30:k.color;}
 }

@@ -143,7 +143,7 @@ final class FobTest {
         assertFalse(fobs.contains("setInvulnerable"),"villagers are protected by the damage event, not the invulnerable flag");
         assertTrue(source("DefenseStructures.java").contains("state.is(EternalDefense.FOB_BEACON.get())"),"the FOB Beacon is two tall like the shop");
         assertTrue(source("PlayerMeals.java").contains("MealZone.at(p)")&&!source("PlayerMeals.java").contains("BaseZone.problem"),"meals use MealZone");
-        assertEquals("42",BeaconNetwork.PROTOCOL,"protocol 42 since 1.1.4 (raid control)");
+        assertEquals("43",BeaconNetwork.PROTOCOL,"protocol 43 since 1.1.8 (elite kinds in the raid marks)");
     }
     /** Forge names the class it generates for a @SubscribeEvent method after the SIMPLE name of its class */
     @Test void noTwoEventHandlersShareTheBusGeneratedName() throws Exception{

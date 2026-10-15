@@ -11,6 +11,6 @@ final class WeaponTypes {
             var api=Class.forName("com.tacz.guns.api.TimelessAPI");
             var index=((Optional<?>)api.getMethod("getCommonGunIndex",ResourceLocation.class).invoke(null,new ResourceLocation(entry.gate().id()))).orElse(null);
             return index==null?"other":WeaponBrowser.nativeType((String)index.getClass().getMethod("getType").invoke(index));
-        }catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot resolve native weapon type for "+entry.gate().id(),ex);}
+        }catch(ReflectiveOperationException|ClassCastException ex){Compat.warn("weapon types from TaCZ",ex);return "other";}
     }
 }

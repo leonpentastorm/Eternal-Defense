@@ -1,0 +1,33 @@
+QA_CHECK PASS GeckoLib, Born in Chaos, Cataclysm and LesRaisins are loaded geckolib true, born_in_chaos_v1 true, cataclysm true, lrtactical true
+QA_NOTE RENDERERS door_knight net.mcreator.borninchaosv.client.renderer.DoorKnightRenderer < software.bernie.geckolib.renderer.GeoEntityRenderer < net.minecraft.client.renderer.entity.EntityRenderer | koboleton com.github.L_Ender.cataclysm.client.render.entity.Koboleton_Renderer < net.minecraft.client.renderer.entity.MobRenderer < net.minecraft.client.renderer.entity.LivingEntityRenderer < net.minecraft.client.renderer.entity.EntityRenderer
+QA_CHECK PASS the door knight is drawn by GeckoLib (not a living-entity renderer: no RenderLivingEvent for it) net.mcreator.borninchaosv.client.renderer.DoorKnightRenderer < software.bernie.geckolib.renderer.GeoEntityRenderer < net.minecraft.client.renderer.entity.EntityRenderer
+QA_CHECK PASS the koboleton is drawn by a vanilla-style mob renderer com.github.L_Ender.cataclysm.client.render.entity.Koboleton_Renderer < net.minecraft.client.renderer.entity.MobRenderer < net.minecraft.client.renderer.entity.LivingEntityRenderer < net.minecraft.client.renderer.entity.EntityRenderer
+QA_CHECK PASS the raid's specialists come from Born in Chaos and Cataclysm when they are installed {born_in_chaos_v1:bone_imp=11, born_in_chaos_v1:decrepit_skeleton=13, born_in_chaos_v1:door_knight=12, born_in_chaos_v1:dread_hound=10, cataclysm:koboleton=14}
+QA_NOTE REPLY knight5 Badass V Door Knight: health 180 (6.0x), size 5.0x, 25% slower, drops 5 Ardent, in the raid.
+QA_NOTE REPLY kobo Healer Koboleton: health 30 (1.0x), size 1.0x, drops 2 Ardent, in the raid.
+QA_NOTE REPLY zombie Speedster Zombie: health 30 (1.0x), size 1.0x, drops 1 Ardent, in the raid.
+QA_NOTE REPLY hound Badass III Dread Hound: health 120 (4.0x), size 3.0x, 15% slower, drops 3 Ardent, in the raid.
+QA_NOTE SERVER knight5=born_in_chaos_v1:door_knight 4.50x9.50 raider true; knight=born_in_chaos_v1:door_knight 0.90x1.90 raider true; kobo=cataclysm:koboleton 0.85x1.60 raider true; zombie=minecraft:zombie 0.60x1.95 raider true; hound=born_in_chaos_v1:dread_hound 2.70x3.00 raider true; 
+QA_CHECK PASS Badass V door knight (GeckoLib): its hitbox is five times as wide and tall as a plain one knight5=born_in_chaos_v1:door_knight 4.50x9.50 raider true; knight=born_in_chaos_v1:door_knight 0.90x1.90 raider true; kobo=cataclysm:koboleton 0.85x1.60 raider true; zombie=minecraft:zombie 0.60x1.95 raider true; hound=born_in_chaos_v1:dread_hound 2.70x3.00 raider true; 
+QA_CHECK PASS all five are raid mobs knight5=born_in_chaos_v1:door_knight 4.50x9.50 raider true; knight=born_in_chaos_v1:door_knight 0.90x1.90 raider true; kobo=cataclysm:koboleton 0.85x1.60 raider true; zombie=minecraft:zombie 0.60x1.95 raider true; hound=born_in_chaos_v1:dread_hound 2.70x3.00 raider true; 
+QA_NOTE CLIENT client scale 5.0, kinds {147=5, 149=17, 151=9, 153=3}, raiders [147, 149, 151, 153, 155], hitbox 4.50x9.50
+QA_CHECK PASS the client knows the giant's size and gives it the grown hitbox client scale 5.0, kinds {147=5, 149=17, 151=9, 153=3}, raiders [147, 149, 151, 153, 155], hitbox 4.50x9.50
+QA_CHECK PASS the client knows each elite's kind (for its colour) client scale 5.0, kinds {147=5, 149=17, 151=9, 153=3}, raiders [147, 149, 151, 153, 155], hitbox 4.50x9.50
+QA_CHECK PASS the client marks every raid mob, the GeckoLib ones too client scale 5.0, kinds {147=5, 149=17, 151=9, 153=3}, raiders [147, 149, 151, 153, 155], hitbox 4.50x9.50
+QA_NOTE OVERLAY auras 4 bars 4 marks 5 over 20 ticks
+QA_CHECK PASS an aura and a health bar for each of the four elites, a mark for each of the five raid mobs auras 4, bars 4, marks 5
+QA_NOTE TAGS scale {133=1.0, 101=1.0, 14=1.0, 18=1.0, 115=1.0, 147=4.9999995, 149=0.99999994, 151=0.99999994, 121=1.0, 153=2.9999998, 91=1.0, 155=0.99999994} inside {133=false, 101=false, 14=false, 18=false, 115=false, 147=true, 149=false, 151=false, 121=false, 153=true, 91=false, 155=false}
+QA_CHECK PASS the GeckoLib giant's draw runs inside the size: its name tag is drawn in the five-times pose (then undone) giant 4.9999995 plain 0.99999994 inside true
+QA_CHECK PASS a mob that is not grown is drawn as it is {133=false, 101=false, 14=false, 18=false, 115=false, 147=true, 149=false, 151=false, 121=false, 153=true, 91=false, 155=false}
+QA_NOTE BOSSES minecraft:wither attached=false boss=true health=300; cataclysm:netherite_monstrosity attached=false boss=true health=600; cataclysm:ender_golem attached=false boss=true health=150; minecraft:zombie attached=true boss=false health=20; born_in_chaos_v1:door_knight attached=true boss=false health=30; 
+QA_CHECK PASS the Wither and Cataclysm's Netherite Monstrosity are never sent at the beacon minecraft:wither attached=false boss=true health=300; cataclysm:netherite_monstrosity attached=false boss=true health=600; cataclysm:ender_golem attached=false boss=true health=150; minecraft:zombie attached=true boss=false health=20; born_in_chaos_v1:door_knight attached=true boss=false health=30; 
+QA_CHECK PASS a zombie and a door knight still are minecraft:wither attached=false boss=true health=300; cataclysm:netherite_monstrosity attached=false boss=true health=600; cataclysm:ender_golem attached=false boss=true health=150; minecraft:zombie attached=true boss=false health=20; born_in_chaos_v1:door_knight attached=true boss=false health=30; 
+QA_NOTE BOSS tier 3 spawned true cataclysm:ender_golem awake true
+QA_CHECK PASS hard raid level 3: Cataclysm's Ender Golem comes awake (not a ravager) spawned true cataclysm:ender_golem awake true
+QA_NOTE BOSS tier 4 spawned true cataclysm:kobolediator awake true asleep false
+QA_CHECK PASS hard raid level 4: Cataclysm's Kobolediator comes awake (not a ravager) spawned true cataclysm:kobolediator awake true asleep false
+QA_CHECK PASS a hard raid's cache at level 3 still holds LesRaisins' medical kits and the three grenades [9 lrtactical:carfak, 16 lrtactical:m67, 8 lrtactical:smoke_grenade, 3 lrtactical:flash_grenade]
+QA_NOTE BACKENDS ammo prices 27 reload bridge true explosive field private boolean com.tacz.guns.entity.EntityKineticBullet.explosion
+QA_CHECK PASS TaCZ Attributes' reload bridge, TaCZ's explosive-bullet field and its ammunition are found prices 27, bridge true, field private boolean com.tacz.guns.entity.EntityKineticBullet.explosion
+QA_CHECK PASS no feature switched itself off []
+QA_DONE pass=19 fail=0

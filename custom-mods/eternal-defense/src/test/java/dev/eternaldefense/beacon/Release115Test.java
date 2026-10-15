@@ -21,7 +21,7 @@ final class Release115Test {
         String raid=source("EternalDefense.java");assertTrue(raid.contains("if(idle&&Elites.giant(mob))RaidBreaching.smash(l,d,mob);"));
         String smash=source("RaidBreaching.java");assertTrue(smash.contains("static int smash(")&&smash.contains("EternalDefense.damageBlock(l,d,at)"),"inside the base a smashed block goes in the repair journal");
         String client=source("EliteClient.java");
-        assertTrue(client.contains("priority=EventPriority.HIGHEST) public static void post("),"the size is undone before the raid mark is drawn");
+        assertTrue(client.contains("public static void end(Entity e,PoseStack pose)")&&client.contains("pose.popPose()"),"the size is undone right after the mob is drawn");
         assertTrue(client.contains("RenderNameTagEvent")&&client.contains("scale(1/s,1/s,1/s)"),"the name tag sits above the grown hitbox, not five times higher");
     }
     @Test void dropsAreHalfAgainAndTwiceWithEverythingOn(){

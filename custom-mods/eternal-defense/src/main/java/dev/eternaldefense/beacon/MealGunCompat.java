@@ -14,7 +14,7 @@ public final class MealGunCompat {
         MealGunBackend.verifyReloadBridge();
         try{
             explosive=EntityKineticBullet.class.getDeclaredField("explosion");explosive.setAccessible(true);
-        }catch(ReflectiveOperationException ex){throw new IllegalStateException("Unsupported pinned meal projectile API",ex);}
+        }catch(ReflectiveOperationException|RuntimeException ex){explosive=null;Compat.warn("Demolition on explosive bullets",ex);}
         com.mojang.logging.LogUtils.getLogger().info("Meal backend: TaCZ Attributes 1.4 global damage/reload; native bash and explosive kinetic projectiles; LesRaisins adapter {} (installed: {})",MealOptionalCompat.lrtacticalSupported()?"active":"inactive",MealOptionalCompat.lrtacticalVersion());
     }
     public static double bonus(LivingEntity shooter,String effect){
@@ -29,7 +29,7 @@ public final class MealGunCompat {
     public static float radius(Entity owner,Entity exploder,float radius){
         if(!(exploder instanceof EntityKineticBullet bullet)||owner!=bullet.getOwner()||explosive==null)return radius;
         try{return explosive.getBoolean(bullet)?demolition(bullet.getOwner(),radius):radius;}
-        catch(IllegalAccessException ex){throw new IllegalStateException("Cannot read native TaCZ explosive behavior",ex);}
+        catch(IllegalAccessException|RuntimeException ex){Compat.warn("Demolition on explosive bullets",ex);return radius;}
     }
     /** Called only by the optional onDeath getRadius call site; the stored grenade radius is never changed. */
     public static float grenadeRadius(Projectile shot,float radius){return shot.level().isClientSide?radius:demolition(shot.getOwner(),radius);}

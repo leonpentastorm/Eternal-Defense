@@ -122,7 +122,7 @@ final class Release114Test {
         assertFalse(types.contains("static String roll("),"no random roll any more");
         String mods=source("RaidModifiers.java");assertTrue(mods.contains("id.startsWith(\"special:\")")&&mods.contains("type.equals(\"normal\")"));
         assertTrue(source("BeaconActions.java").contains("raid-mod:"));
-        assertEquals("42",BeaconNetwork.PROTOCOL);
+        assertEquals("43",BeaconNetwork.PROTOCOL);
         assertTrue(mods.contains("BeaconNetwork.announceOthers(p,\"next_raid\""),"the chooser sees the pick on the page, the others get the popup");
         assertTrue(Elites.LongShotGoal.PRIORITY<0,"the Long Shot's aim outranks the raid's own beacon attack (priority 0)");
         assertTrue(source("BeaconCombat.java").contains("mob.goalSelector.addGoal(0,new RangedBeacon("));

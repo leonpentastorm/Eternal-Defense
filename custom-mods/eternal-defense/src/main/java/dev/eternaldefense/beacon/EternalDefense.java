@@ -485,7 +485,7 @@ public final class EternalDefense {
         if(spawnPos==null)return false;
         if(bossNow)return HardRaids.spawn(l,d,spawnPos);
         int soldiers=SpecialForcesRaids.count(d.raidTier,d.wavePlayers);
-        if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&net.minecraftforge.fml.ModList.get().isLoaded("taczsf"))return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
+        if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&SpecialForcesRaids.available())return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
         String role=d.introRaid?"grunt":RaidTypes.role(raidType,d.raidTier,l.random.nextInt(100));
         EntityType<?> type=d.introRaid?EntityType.HUSK:RaidTypes.type(raidType,d.raidTier,role,l);
         var mob=raider(l,d,type,role,raidType,spawnPos);if(mob==null)return false;

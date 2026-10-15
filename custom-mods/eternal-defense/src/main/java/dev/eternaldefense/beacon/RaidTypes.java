@@ -60,17 +60,18 @@ final class RaidTypes {
         mob.getPersistentData().putBoolean("eternalChute",true);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,20*90,0,false,false,false));
     }
-    /** Raider ids (red mark), those under a parachute, and the elites drawn larger (id and size), for every client. */
-    record Marks(int[] raiders,int[] chuted,int[] scaled,float[] scales) {
-        static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);b.writeVarIntArray(p.scaled);for(float f:p.scales)b.writeFloat(f);}
-        static Marks decode(net.minecraft.network.FriendlyByteBuf b){var raiders=b.readVarIntArray();var chuted=b.readVarIntArray();var scaled=b.readVarIntArray();var scales=new float[scaled.length];for(int i=0;i<scales.length;i++)scales[i]=b.readFloat();return new Marks(raiders,chuted,scaled,scales);}
+    /** Raider ids (red mark), those under a parachute, the elites drawn larger (id and size) and every elite's kind and level, for every client. */
+    record Marks(int[] raiders,int[] chuted,int[] scaled,float[] scales,int[] elites,int[] codes) {
+        static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);b.writeVarIntArray(p.scaled);for(float f:p.scales)b.writeFloat(f);b.writeVarIntArray(p.elites);b.writeVarIntArray(p.codes);}
+        static Marks decode(net.minecraft.network.FriendlyByteBuf b){var raiders=b.readVarIntArray();var chuted=b.readVarIntArray();var scaled=b.readVarIntArray();var scales=new float[scaled.length];for(int i=0;i<scales.length;i++)scales[i]=b.readFloat();var elites=b.readVarIntArray();var codes=b.readVarIntArray();return new Marks(raiders,chuted,scaled,scales,elites,codes);}
         static void handle(Marks p,java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctx){
             ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{
                 RAIDERS.clear();CHUTED.clear();for(int id:p.raiders)RAIDERS.add(id);for(int id:p.chuted)CHUTED.add(id);
                 var level=net.minecraft.client.Minecraft.getInstance().level;var seen=new java.util.HashSet<Integer>();
                 for(int i=0;i<p.scaled.length;i++){seen.add(p.scaled[i]);Float old=Elites.SCALES.put(p.scaled[i],p.scales[i]);
                     if((old==null||old!=p.scales[i])&&level!=null){var e=level.getEntity(p.scaled[i]);if(e!=null)e.refreshDimensions();}}
-                Elites.SCALES.keySet().removeIf(id->!seen.contains(id));}));ctx.get().setPacketHandled(true);
+                Elites.SCALES.keySet().removeIf(id->!seen.contains(id));
+                Elites.KINDS.clear();for(int i=0;i<p.elites.length&&i<p.codes.length;i++)Elites.KINDS.put(p.elites[i],p.codes[i]);}));ctx.get().setPacketHandled(true);
         }
     }
     /** Client: ids of the raiding mobs, and of those floating down under a red parachute. */
@@ -79,13 +80,17 @@ final class RaidTypes {
     /** Server: send the current marks to everybody (an empty list once after the raid so the marks go away). */
     static void broadcast(ServerLevel l,CampaignData d){
         var raiders=new it.unimi.dsi.fastutil.ints.IntArrayList();var chuted=new it.unimi.dsi.fastutil.ints.IntArrayList();var scaled=new it.unimi.dsi.fastutil.ints.IntArrayList();var scales=new it.unimi.dsi.fastutil.floats.FloatArrayList();
-        if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("eternalChute"))chuted.add(m.getId());
-            if(m.getPersistentData().contains(Elites.SCALE)){scaled.add(m.getId());scales.add(m.getPersistentData().getFloat(Elites.SCALE));}}
+        var elites=new it.unimi.dsi.fastutil.ints.IntArrayList();var codes=new it.unimi.dsi.fastutil.ints.IntArrayList();
+        if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("eternalChute"))chuted.add(m.getId());elite(m,scaled,scales,elites,codes);}
         for(int id:HuntWarband.markIds(l))raiders.add(id);   // A hunt warband carries the same red mark
-        for(var it=Elites.LOOSE.iterator();it.hasNext();){if(l.getEntity(it.next()) instanceof Mob m&&m.isAlive()){if(m.getPersistentData().contains(Elites.SCALE)){scaled.add(m.getId());scales.add(m.getPersistentData().getFloat(Elites.SCALE));}}else it.remove();}
-        boolean any=!raiders.isEmpty()||!scaled.isEmpty();
+        for(var it=Elites.LOOSE.iterator();it.hasNext();){if(l.getEntity(it.next()) instanceof Mob m&&m.isAlive())elite(m,scaled,scales,elites,codes);else it.remove();}
+        boolean any=!raiders.isEmpty()||!scaled.isEmpty()||!elites.isEmpty();
         if(!any&&!marked)return;marked=any;
-        BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray(),scaled.toIntArray(),scales.toFloatArray()));
+        BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray(),scaled.toIntArray(),scales.toFloatArray(),elites.toIntArray(),codes.toIntArray()));
+    }
+    private static void elite(Mob m,it.unimi.dsi.fastutil.ints.IntArrayList scaled,it.unimi.dsi.fastutil.floats.FloatArrayList scales,it.unimi.dsi.fastutil.ints.IntArrayList elites,it.unimi.dsi.fastutil.ints.IntArrayList codes){
+        var n=m.getPersistentData();if(n.contains(Elites.SCALE)){scaled.add(m.getId());scales.add(n.getFloat(Elites.SCALE));}
+        var kind=Elites.kind(m);if(kind!=null){elites.add(m.getId());codes.add(Elites.code(kind,n.getInt(Elites.LEVEL)));}
     }
     /** Flyers that steer themselves straight at their target */
     static boolean glider(Mob mob){return mob instanceof net.minecraft.world.entity.monster.Vex||mob instanceof net.minecraft.world.entity.monster.Phantom;}

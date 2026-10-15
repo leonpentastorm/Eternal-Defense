@@ -39,12 +39,15 @@ final class SpecialForcesRaids {
             event.setCanceled(true);event.getEntity().discard();
         }
     }
+    static final String SOLDIERS="Special Forces soldiers";
+    /** Can raids bring soldiers now (the mod is here and its API answered) */
+    static boolean available(){return installed()&&!Compat.broken(SOLDIERS);}
     @SuppressWarnings({"unchecked","rawtypes"})
     static boolean spawn(ServerLevel l,CampaignData d,BlockPos pos,boolean warn){
         if(count(d.raidTier,d.wavePlayers)==0||!d.phase.equals("raid"))return false;
         try{
             Class specialty=Class.forName("su.uTa4u.specialforces.Specialty");
-            Class<?> swat=Class.forName("su.uTa4u.specialforces.entities.SwatEntity");
+            Class<?> swat=Class.forName("su.uTa4u.specialforces.entities.SwatEntity");states(swat);
             String role=d.raidTier>=7&&d.spawnRemaining==1?"BULLDOZER":d.spawnRemaining>1?"SNIPER":"ASSAULTER";
             Mob mob=(Mob)swat.getMethod("withSpecialty",Level.class,specialty).invoke(null,l,Enum.valueOf(specialty,role));
             mob.moveTo(pos.getX()+.5,pos.getY(),pos.getZ()+.5,l.random.nextFloat()*360,0);
@@ -68,19 +71,22 @@ final class SpecialForcesRaids {
                 player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal("Get behind sandbags. Prepare for a shootout!")));
             }
             return true;
-        }catch(ReflectiveOperationException ex){throw new IllegalStateException("Installed Special Forces API changed",ex);}
+        }catch(ReflectiveOperationException|RuntimeException ex){Compat.warn(SOLDIERS,ex);return false;}
     }
     private static java.lang.reflect.Method stateGetter,stateSetter;
+    static void states(Class<?> swat)throws ReflectiveOperationException{
+        if(stateGetter!=null)return;var setter=swat.getDeclaredMethod("setState",byte.class);setter.setAccessible(true);stateGetter=swat.getMethod("getState");stateSetter=setter;
+    }
     static int nativeState(Entity e){
         if(!soldier(e))return 0;
-        try{if(stateGetter==null){stateGetter=e.getClass().getMethod("getState");stateSetter=e.getClass().getDeclaredMethod("setState",byte.class);stateSetter.setAccessible(true);}return ((Number)stateGetter.invoke(e)).intValue();}
-        catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot read Special Forces defeat state",ex);}
+        try{states(e.getClass());return ((Number)stateGetter.invoke(e)).intValue();}
+        catch(ReflectiveOperationException|RuntimeException ex){Compat.warn(SOLDIERS,ex);return 0;}
     }
     static boolean defeated(Entity e){return soldier(e)&&nativeState(e)!=0;}
     static boolean corpse(Entity e){return soldier(e)&&e.getPersistentData().getBoolean("eternalSpecialForces")&&e.getPersistentData().getBoolean("eternalCorpse")&&defeated(e);}
     static void retire(Entity e,ServerLevel l){
         if(!(e instanceof Mob mob)||!defeated(e))return;
-        try{stateSetter.invoke(e,(byte)2);}catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot preserve defeated soldier corpse",ex);}
+        try{stateSetter.invoke(e,(byte)2);}catch(ReflectiveOperationException|RuntimeException ex){Compat.warn(SOLDIERS,ex);}
         // Native DEAD bodies stay lootable at one HP.
         mob.setHealth(1);mob.setTarget(null);mob.getNavigation().stop();mob.setNoAi(true);mob.setInvulnerable(true);mob.setGlowingTag(false);
         mob.getPersistentData().putBoolean("eternalCorpse",true);mob.getPersistentData().putBoolean("eternalRaider",false);

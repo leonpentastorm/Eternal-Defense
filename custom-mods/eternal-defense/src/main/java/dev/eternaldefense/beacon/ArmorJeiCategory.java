@@ -30,7 +30,7 @@ final class ArmorJeiCategory implements IRecipeCategory<WeaponPlatform.Entry> {
         try{int i=0;for(var cost:WeaponPlatform.costs(recipe)){
             var choices=Arrays.stream(cost.ingredient().getItems()).map(s->s.copyWithCount(cost.count())).toList();
             b.addSlot(RecipeIngredientRole.INPUT,8+(i%3)*21,30+(i/3)*21).addItemStacks(choices);i++;
-        }}catch(ReflectiveOperationException ex){throw new IllegalStateException(ex);}
+        }}catch(ReflectiveOperationException|RuntimeException ex){Compat.warn("JEI costs for "+recipe.gate().id(),ex);}
         b.addSlot(RecipeIngredientRole.OUTPUT,140,48).addItemStack(recipe.output());
     }
     @Override public void draw(WeaponPlatform.Entry recipe,IRecipeSlotsView slots,GuiGraphics g,double mx,double my){

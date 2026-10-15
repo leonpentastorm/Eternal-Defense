@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.8 — Elites that stand out, on any mob; other mods can change without crashing the game (2026-10-15, `dev`)
+
+The first update on `dev` after 1.1.0 to 1.1.7 were merged into it; `main` unchanged. **Network protocol 43** (the raid marks packet carries each elite's kind: 1.1.8 clients and servers cannot join older ones). Rules: GDD 1.1.8; tests: `docs/ROUND-1.1.8-TESTING.md`.
+
+* **Elites stand out** (owner): a ring turns at an elite's feet, with a few rising sparks, and a health bar floats over its head, both full bright in its kind's colour, so they are easy to see at night. The Field Guide lists the colours.
+* **Elites on any mob** (owner: "will mobs added from other pack or visual datapack ... break"): a Badass is drawn at its size whatever renders it, GeckoLib mobs (Born in Chaos' raid specialists) and entity model packs too; its name, health bar and mark float above it, higher the bigger it is, so a model that reaches above its hitbox does not hide them. Every raid mob gets its red mark and parachute the same way (GeckoLib raiders had no mark before).
+* **Other mods' bosses** (a Wither, Cataclysm's bosses outside a raid) are no longer sent at the beacon.
+* **Compatibility pass** (owner): when another mod changes, the feature that uses it is switched off with one line in the log instead of stopping the game: raid cache items and LesRaisins supplies, waking Cataclysm raid bosses (a ravager comes instead), TaCZ Attributes' reload bridge, Demolition on explosive bullets, ammunition prices, weapon types, JEI costs, the split gun pack sync, Special Forces soldiers (the wave's usual mobs come instead). The hooks into TaCZ, LesRaisins, ModernFix and the entity renderer only lose their bonus when their target moved.
+
 ## 1.1.7 — Elites that fit the mob (2026-10-15, branch `feature/raid-control`)
 
 After 1.1.6 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged). Rules: GDD 1.1.7; tests: `docs/ROUND-1.1.7-TESTING.md`.

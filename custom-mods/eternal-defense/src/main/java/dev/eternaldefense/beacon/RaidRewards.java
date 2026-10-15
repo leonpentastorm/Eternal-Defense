@@ -10,14 +10,14 @@ import java.util.*;
 /** One authoritative payout definition for previews and payment. */
 final class RaidRewards {
     static int waveIron(int tier){return 4+Math.max(0,Math.min(5,tier))*2;}
-    static void add(List<ItemStack> list,String id,int count){if(count<=0)return;Item item=BuiltInRegistries.ITEM.get(new ResourceLocation(id));if(item==Items.AIR)throw new IllegalStateException("Missing guaranteed reward "+id);list.add(new ItemStack(item,count));}
+    static void add(List<ItemStack> list,String id,int count){if(count<=0)return;Item item=BuiltInRegistries.ITEM.get(new ResourceLocation(id));if(item==Items.AIR){Compat.warn("reward item "+id,null);return;}list.add(new ItemStack(item,count));}
     static ItemStack tactical(ServerLevel l,String key,String id){
         for(var recipe:l.getRecipeManager().getRecipes())if(recipe.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe"))try{
             var item=(ItemStack)recipe.getClass().getMethod("getOutput").invoke(recipe);if(item.hasTag()&&item.getTag().getString(key).equals("lrtactical:"+id))return item.copyWithCount(1);
-        }catch(ReflectiveOperationException e){throw new IllegalStateException("Cannot read tactical supply recipe",e);}
-        throw new IllegalStateException("Missing guaranteed tactical supply "+id);
+        }catch(ReflectiveOperationException|ClassCastException e){Compat.warn("tactical supply rewards",e);return ItemStack.EMPTY;}
+        Compat.warn("tactical supply "+id,null);return ItemStack.EMPTY;
     }
-    static void supply(List<ItemStack> list,ServerLevel l,String key,String id,int count){if(count<=0)return;var stack=tactical(l,key,id);stack.setCount(count);list.add(stack);}
+    static void supply(List<ItemStack> list,ServerLevel l,String key,String id,int count){if(count<=0)return;var stack=tactical(l,key,id);if(stack.isEmpty())return;stack.setCount(count);list.add(stack);}
     /** The completion cache raised by the raid modifiers' payout bonus (every stack, rounded up) */
     static List<ItemStack> completion(ServerLevel l,int tier,boolean hard,int bonusPercent){var list=completion(l,tier,hard);for(var s:list)s.setCount(RaidModifiers.raised(s.getCount(),bonusPercent));return list;}
     static List<ItemStack> completion(ServerLevel l,int tier,boolean hard){

@@ -15,7 +15,7 @@ final class AmmoCoins {
             var bullet=index.getClass().getMethod("getBulletData").invoke(index);if(bullet==null)continue;double value=((Number)bullet.getClass().getMethod("getDamageAmount").invoke(bullet)).doubleValue()*Math.max(1,((Number)bullet.getClass().getMethod("getBulletAmount").invoke(bullet)).intValue());
             var explosion=bullet.getClass().getMethod("getExplosionData").invoke(bullet);if(explosion!=null)value=Math.max(64,value*4);
             result.merge(ammo,Math.max(1,Math.min(256,value)),Math::max);
-        }}catch(ReflectiveOperationException ex){throw new IllegalStateException("Cannot price native ammunition",ex);}return result;
+        }}catch(ReflectiveOperationException|ClassCastException ex){Compat.warn("ammunition prices from TaCZ",ex);}return result;
     });}
     static int price(ServerPlayer p,WeaponPlatform.Entry entry){if(MagazineBridge.isMagazine(entry.output()))return MagazineBridge.coinPrice(entry);double power=damage(p.server.overworld()).getOrDefault(entry.gate().id(),8.0);return price(entry.gate().age(),entry.output().getCount(),power);}
     static int price(int age,int rounds,double damage){return Math.max(1,(int)Math.ceil(Math.max(1,rounds)*Math.max(1,age)*Math.max(1,damage/8)/32.0));}

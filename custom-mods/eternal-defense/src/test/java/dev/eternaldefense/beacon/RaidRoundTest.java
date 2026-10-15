@@ -158,6 +158,6 @@ final class RaidRoundTest {
     }
     @Test void theProtocolMovedOn() throws Exception{
         // Moved it to 30 (MissionSync carries the mission id); to 31 (FOB screen and removal confirmation), see FobTest
-        assertEquals("42",BeaconNetwork.PROTOCOL,"protocol 42 since 1.1.4 (raid control)");
+        assertEquals("43",BeaconNetwork.PROTOCOL,"protocol 43 since 1.1.8 (elite kinds in the raid marks)");
     }
 }

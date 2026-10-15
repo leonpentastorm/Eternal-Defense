@@ -151,5 +151,5 @@ final class Round0041Test {
         assertTrue(repeated.isEmpty(),"a Reference line appears twice (the zone and stations pages had one line 8 times until 0.0.41): "+repeated);
     }
 
-    @Test void theProtocolIsFortyTwo(){assertEquals("42",BeaconNetwork.PROTOCOL);}
+    @Test void theProtocolIsFortyThree(){assertEquals("43",BeaconNetwork.PROTOCOL);}
 }

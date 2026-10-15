@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Pseudo
 @Mixin(targets="org.embeddedt.modernfix.resources.PackResourcesCacheEngine",remap=false)
 public abstract class SoundResourceCacheMixin {
-    @Inject(method="isValidCachedResourcePath",at=@At("HEAD"),cancellable=true,remap=false)
+    @Inject(method="isValidCachedResourcePath",at=@At("HEAD"),cancellable=true,remap=false,require=0)
     private static void eternal$validateGunSounds(Path path,CallbackInfoReturnable<Boolean> result){
         if(SoundResourcePaths.malformedCachedPath(path.toString()))result.setReturnValue(false);
     }

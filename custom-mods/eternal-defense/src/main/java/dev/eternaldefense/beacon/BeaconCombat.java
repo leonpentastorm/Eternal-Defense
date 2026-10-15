@@ -55,8 +55,11 @@ final class BeaconCombat {
     }
     /** Whether a mob got the beacon goals (for the tests: a hunt warband never does). */
     static boolean isAttached(Mob mob){return attached.contains(mob);}
+    /** A boss (the bosses tag, or 150+ default health) that is not one of the raid's own mobs */
+    static boolean bossOutsideRaid(Mob mob){return !mob.getPersistentData().getBoolean("eternalRaider")&&(mob.getType().is(net.minecraftforge.common.Tags.EntityTypes.BOSSES)||ArdentEnergy.defaultHealth(mob)>=ArdentEnergy.BOSS_BASE);}
     static void attach(Mob mob){
         if(HuntWarband.hunter(mob))return;   // A hunt warband fights the team where it stands, never the beacon
+        if(bossOutsideRaid(mob))return;   // Another mod's boss keeps its own fight
         if(!attached.add(mob))return;
         mob.targetSelector.addGoal(0,new TargetBeacon(mob));
         if(RaidTypes.glider(mob))return; // Vexes and phantoms are steered straight at their target by RaidTypes

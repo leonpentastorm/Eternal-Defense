@@ -20,18 +20,18 @@ public abstract class MealReloadContinuityMixin {
     @Unique private long eternal$beforeReload;
     @Unique private double eternal$rate=1;
 
-    @Inject(method="reload",at=@At("HEAD"))
+    @Inject(method="reload",at=@At("HEAD"),require=0)
     private void eternal$beforeReload(CallbackInfo ci){eternal$beforeReload=data.reloadTimestamp;}
-    @Inject(method="reload",at=@At("RETURN"))
+    @Inject(method="reload",at=@At("RETURN"),require=0)
     private void eternal$beginReload(CallbackInfo ci){
         if(data.reloadTimestamp<0)eternal$transition.reset();
         else if(data.reloadTimestamp!=eternal$beforeReload&&data.currentGunItem!=null)
             eternal$transition.begin(data.currentGunItem.get(),MealGunBackend.reloadRate(shooter));
     }
-    @Inject(method="cancelReload",at=@At("RETURN"))
+    @Inject(method="cancelReload",at=@At("RETURN"),require=0)
     private void eternal$cancelReload(CallbackInfo ci){if(data.reloadTimestamp<0||!data.reloadStateType.isReloading())eternal$transition.reset();}
 
-    @Inject(method="tickReloadState",at=@At(value="INVOKE",target="Lcom/tacz/guns/api/item/gun/AbstractGunItem;tickReload(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lcom/tacz/guns/api/entity/ReloadState;"))
+    @Inject(method="tickReloadState",at=@At(value="INVOKE",target="Lcom/tacz/guns/api/item/gun/AbstractGunItem;tickReload(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lcom/tacz/guns/api/entity/ReloadState;"),require=0)
     private void eternal$preserveProgress(CallbackInfoReturnable<ReloadState> ci){
         eternal$rate=MealGunBackend.reloadRate(shooter);
         long backend=MealGunBackend.backendTimestamp(this),original=backend<0?data.reloadTimestamp:backend;
@@ -43,7 +43,7 @@ public abstract class MealReloadContinuityMixin {
             data.reloadTimestamp=now-Math.round((now-rebased)*eternal$rate);
         }else data.reloadTimestamp=rebased; // The backend intentionally skips scaling at rate 1.
     }
-    @Redirect(method="tickReloadState",at=@At(value="INVOKE",target="Lcom/tacz/guns/api/item/gun/AbstractGunItem;tickReload(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lcom/tacz/guns/api/entity/ReloadState;"))
+    @Redirect(method="tickReloadState",at=@At(value="INVOKE",target="Lcom/tacz/guns/api/item/gun/AbstractGunItem;tickReload(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Lcom/tacz/guns/api/entity/ReloadState;"),require=0)
     private ReloadState eternal$retainNativeStageChanges(AbstractGunItem gun,ShooterDataHolder holder,ItemStack stack,LivingEntity user){
         long before=holder.reloadTimestamp;var result=gun.tickReload(holder,stack,user);
         // Native single-round scripts adjustReloadTime between shells.

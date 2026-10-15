@@ -21,19 +21,20 @@ public final class GunPackSync {
     public static boolean intercept(Object message,Player player){
         if(message==null||!message.getClass().getName().equals(MESSAGE))return false;
         if(!(player instanceof ServerPlayer target))return false;
-        for(var part:ChunkedPayload.split(nativeEncode(message)))CHANNEL.send(PacketDistributor.PLAYER.with(()->target),part);
+        byte[] bytes=nativeEncode(message);if(bytes==null)return false;   // TaCZ sends its own packet then
+        for(var part:ChunkedPayload.split(bytes))CHANNEL.send(PacketDistributor.PLAYER.with(()->target),part);
         return true;
     }
     static byte[] nativeEncode(Object message){
         var buf=new FriendlyByteBuf(Unpooled.buffer());
         try{message.getClass().getMethod("encode",message.getClass(),FriendlyByteBuf.class).invoke(null,message,buf);byte[] bytes=new byte[buf.readableBytes()];buf.readBytes(bytes);return bytes;}
-        catch(ReflectiveOperationException e){throw new IllegalStateException("Cannot encode native TaCZ catalogue",e);}
+        catch(ReflectiveOperationException|RuntimeException e){Compat.warn("split gun pack sync",e);return null;}
         finally{buf.release();}
     }
     static Object nativeDecode(byte[] bytes){
         var buf=new FriendlyByteBuf(Unpooled.wrappedBuffer(bytes));
         try{Object message=Class.forName(MESSAGE).getMethod("decode",FriendlyByteBuf.class).invoke(null,buf);if(buf.isReadable())throw new IllegalArgumentException("Trailing catalogue data");return message;}
-        catch(ReflectiveOperationException e){throw new IllegalStateException("Cannot decode native TaCZ catalogue",e);}
+        catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("[Eternal Defense] The server's gun packs could not be read: is TaCZ the same version on both sides?",e);return null;}
         finally{buf.release();}
     }
     static void encode(ChunkedPayload.Part p,FriendlyByteBuf b){ChunkedPayload.validate(p);b.writeUUID(p.transfer());b.writeVarInt(p.rawBytes());b.writeVarInt(p.packedBytes());b.writeVarInt(p.index());b.writeByteArray(p.bytes());}
@@ -48,11 +49,11 @@ public final class GunPackSync {
                 if(complete!=null)RECEIVING.remove(connection);
             }
             if(complete==null)return;
-            Object message=nativeDecode(complete);
+            Object message=nativeDecode(complete);if(message==null)return;
             try{
                 // Keep TaCZ's integrated/remote connection handling and client index reload exactly once.
                 message.getClass().getMethod("handle",message.getClass(),Supplier.class).invoke(null,message,supplier);
-            }catch(ReflectiveOperationException e){throw new IllegalStateException("Cannot apply native TaCZ catalogue",e);}
+            }catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("[Eternal Defense] The server's gun packs could not be applied: is TaCZ the same version on both sides?",e);}
         });
     }
 }

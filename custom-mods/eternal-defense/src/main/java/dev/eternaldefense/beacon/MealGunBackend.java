@@ -23,17 +23,20 @@ public final class MealGunBackend {
         private static java.lang.reflect.Field find(){
             try{
                 var field=com.tacz.guns.entity.shooter.LivingEntityReload.class.getDeclaredField("tacz_attributes$originalTimestamp");
-                if(field.getType()!=long.class)throw new IllegalStateException("Unexpected TaCZ Attributes reload timestamp type");
+                if(field.getType()!=long.class){Compat.warn("TaCZ Attributes reload bridge",null);return null;}
                 field.setAccessible(true);return field;
-            }catch(ReflectiveOperationException ex){throw new IllegalStateException("TaCZ Attributes 1.4 reload bridge is unavailable",ex);}
+            }catch(ReflectiveOperationException|RuntimeException ex){Compat.warn("TaCZ Attributes reload bridge",ex);return null;}
         }
     }
-    static void verifyReloadBridge(){var field=TimestampField.VALUE;}
+    static boolean verifyReloadBridge(){return TimestampField.VALUE!=null;}
+    /** The backend's own reload start, or -1 when it has none (TaCZ's timing is used) */
     public static long backendTimestamp(Object reload){
-        try{return TimestampField.VALUE.getLong(reload);}catch(IllegalAccessException ex){throw new IllegalStateException("Cannot read backend reload timestamp",ex);}
+        var field=TimestampField.VALUE;if(field==null)return -1;
+        try{return field.getLong(reload);}catch(IllegalAccessException|RuntimeException ex){Compat.warn("TaCZ Attributes reload bridge",ex);return -1;}
     }
     public static void backendTimestamp(Object reload,long timestamp){
-        try{TimestampField.VALUE.setLong(reload,timestamp);}catch(IllegalAccessException ex){throw new IllegalStateException("Cannot update backend reload timestamp",ex);}
+        var field=TimestampField.VALUE;if(field==null)return;
+        try{field.setLong(reload,timestamp);}catch(IllegalAccessException|RuntimeException ex){Compat.warn("TaCZ Attributes reload bridge",ex);}
     }
     /** Rebase only when rate changes. */
     public static final class ReloadTransition {

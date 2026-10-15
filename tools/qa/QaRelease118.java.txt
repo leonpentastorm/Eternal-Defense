@@ -1,0 +1,292 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.8: elites on GeckoLib and other modded mobs (size, name, mark, aura, health bar at night); other-mod features still on. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease118 {
+    // One line moves a gun to another Age: written before the game reads it
+    static{
+        try{var dir=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get();Files.createDirectories(dir);Files.writeString(dir.resolve("eternal-defense-ages.json"),"{\n  \"tacz:m1911\": 4\n}\n");}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(!(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())){CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String saidLine(String s){synchronized(CHAT){return CHAT.stream().filter(b->b.contains(s)).findFirst().orElse("");}}
+    // One frame's texts (Ui records them)
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+    static String cut(){return lastFrame.stream().filter(Ui.Drawn::cut).map(Ui.Drawn::text).toList().toString();}
+    /** The server's last answer cleared from the screen's message strip (a long one is cut on purpose) */
+    static void quiet(){if(mc().screen instanceof BeaconClient.PanelScreen p)p.message="";}
+    /** Every button's label fits it */
+    static String buttonsCut(){var s=mc().screen;var out=new ArrayList<String>();if(s==null)return "[]";var font=mc().font;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&font.width(b.getMessage())>b.getWidth()-10-(b.look==Ui.Look.TOGGLE?36:0))out.add(b.getMessage().getString()+" ("+font.width(b.getMessage())+" in "+b.getWidth()+")");return out.toString();}
+
+    // What each kill drops (counted after every other listener), and the blasts
+    static final Map<String,Integer> KILLS=new java.util.concurrent.ConcurrentHashMap<>(),ARDENT=new java.util.concurrent.ConcurrentHashMap<>();
+    static final List<String> ELITE_DROPS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void drops(net.minecraftforge.event.entity.living.LivingDropsEvent e){
+        if(e.getEntity().level().isClientSide)return;
+        int n=0;for(var it:e.getDrops())if(it.getItem().is(EternalDefense.ARDENT_ENERGY.get()))n+=it.getItem().getCount();
+        var tag=e.getEntity().getPersistentData();boolean raider=tag.getBoolean("eternalRaider");var kind=Elites.kind(e.getEntity());
+        String group=kind!=null?"elite":raider?"marked":e.getEntity().getType()==EntityType.WITHER?"boss":"wild";
+        KILLS.merge(group,1,Integer::sum);ARDENT.merge(group,n,Integer::sum);
+        if(kind!=null)ELITE_DROPS.add(kind.id+" level "+tag.getInt(Elites.LEVEL)+" gen "+tag.getInt(Elites.GEN)+": "+n);
+    }
+    static final List<String> BLASTS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void blast(net.minecraftforge.event.level.ExplosionEvent.Start e){
+        if(e.getLevel().isClientSide)return;var src=e.getExplosion().getDirectSourceEntity();
+        BLASTS.add(src==null?"none":src instanceof net.minecraft.world.entity.projectile.AbstractArrow?"arrow":Elites.kind(src)!=null?"elite:"+Elites.kind(src).id:BuiltInRegistries.ENTITY_TYPE.getKey(src.getType()).getPath());
+    }
+    static long blasts(String kind){synchronized(BLASTS){return BLASTS.stream().filter(kind::equals).count();}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r118",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r118",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){if(y>sy+1)srv(()->{var p=BlockPos.containing(x,y-1,z);if(sl().getBlockState(p).isAir())sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());});double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void setField(Object o,String name,Object value){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);f.set(o,value);return;}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverOn(net.minecraft.client.gui.components.AbstractWidget b){hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);}
+    static CompoundTag clientState(){return (CompoundTag)staticField(BeaconClient.class,"state");}
+    static void sync(){srv(()->BeaconNetwork.sendState(sp(),"","",""));}
+    static BeaconClient.ControlScreen screen(){return mc().screen instanceof BeaconClient.ControlScreen s?s:null;}
+    static net.minecraft.client.gui.components.Button labelled(String text){var s=mc().screen;if(s==null)return null;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(text))return b;return null;}
+    static void press(net.minecraft.client.gui.components.Button b){if(b==null)throw new IllegalStateException("no such button");b.onPress();}
+    static String message(){return mc().screen instanceof BeaconClient.PanelScreen p?p.message:"";}
+    static List<Mob> raiders(){var d=cd();var out=new ArrayList<Mob>();for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m&&m.isAlive())out.add(m);return out;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))e.discard();}
+    static void kill(net.minecraft.world.entity.LivingEntity m){m.invulnerableTime=0;m.hurt(sl().damageSources().playerAttack(sp()),100000);}
+    static String names(List<String> l){return String.join(", ",l);}
+    static int ardentIn(List<CompoundTag> tags){int n=0;for(var t:tags){var s=ItemStack.of(t);if(s.is(EternalDefense.ARDENT_ENERGY.get()))n+=s.getCount();}return n;}
+
+    // The places: B the beacon, ARENA the staged raid (outside the zone), T the weapon table
+    static BlockPos B,ARENA,T;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);ARENA=new BlockPos(sx+40,sy,sz+40);T=B.offset(0,0,7);}
+    static void world(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();sp().getAbilities().invulnerable=true;sp().onUpdateAbilities();
+        var d=cd();d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+
+    // Commands typed by the player, and the lines the server sent back since
+    static int mark;
+    static void cmd(String c){mark=CHAT.size();log("QA_CMD /{}",c);mc().player.connection.sendCommand(c);}
+    static List<String> replies(){synchronized(CHAT){return new ArrayList<>(CHAT.subList(Math.min(mark,CHAT.size()),CHAT.size()));}}
+    static String reply(String part){for(var s:replies())if(s.contains(part))return s;return null;}
+    static String all(){return String.join(" | ",replies());}
+    static Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob subject(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m?m:null;}
+    static final float[] SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    static final List<String> GIANT_REPLIES=new ArrayList<>();
+    /** The ring of stone around the smash test: 15 x 15, 7 high, one thick */
+    static List<BlockPos> ring(BlockPos c){var out=new ArrayList<BlockPos>();for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++)if(Math.max(Math.abs(x),Math.abs(z))==7)for(int y=0;y<7;y++)out.add(c.offset(x,y,z));return out;}
+    static BlockPos RING,STEP;static int ringBlocks,level;
+    static String pct(double v){return String.format(Locale.ROOT,"%.1f%%",v*100);}
+
+
+    // What the name tag's pose looked like when a mob's tag was drawn, before the size is undone for it
+    static final Map<Integer,Float> TAG_SCALE=new java.util.concurrent.ConcurrentHashMap<>();
+    static final Map<Integer,Boolean> TAG_INSIDE=new java.util.concurrent.ConcurrentHashMap<>();
+    @SubscribeEvent(priority=EventPriority.HIGHEST) public static void tag(net.minecraftforge.client.event.RenderNameTagEvent e){
+        var m=e.getPoseStack().last().pose();float s=(float)Math.sqrt(m.m00()*m.m00()+m.m01()*m.m01()+m.m02()*m.m02());
+        TAG_SCALE.put(e.getEntity().getId(),s);var scaled=(ArrayDeque<?>)staticField(EliteClient.class,"SCALED");
+        TAG_INSIDE.put(e.getEntity().getId(),!scaled.isEmpty()&&scaled.peek()==e.getEntity());
+    }
+    static String chain(Object o){var out=new ArrayList<String>();for(Class<?> c=o.getClass();c!=null&&c!=Object.class;c=c.getSuperclass())out.add(c.getName());return String.join(" < ",out);}
+    static String type(net.minecraft.world.entity.Entity e){return BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString();}
+    static Mob make(String id){var t=BuiltInRegistries.ENTITY_TYPE.getOptional(new ResourceLocation(id)).orElseThrow();return (Mob)t.create(sl());}
+    static int clientId(String key){var m=subject(key);return m==null?-1:m.getId();}
+    static final List<String> BROKEN_NAMES=List.of("TaCZ Attributes reload bridge","Demolition on explosive bullets","ammunition prices from TaCZ","weapon types from TaCZ","split gun pack sync","tactical supply rewards","tactical supply carfak","tactical supply m67","tactical supply smoke_grenade","tactical supply flash_grenade",SpecialForcesRaids.SOLDIERS,"waking the raid boss cataclysm:ender_golem","waking the raid boss cataclysm:kobolediator");
+    static int counted;static final int[] AURAS=new int[1],BARS=new int[1],MARKS=new int[1];
+    static void sample(){AURAS[0]=Math.max(AURAS[0],EliteClient.auras);BARS[0]=Math.max(BARS[0],EliteClient.bars);MARKS[0]=Math.max(MARKS[0],EliteClient.marks);counted++;}
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(10,QaRelease118::world,"a flat world, night never comes by itself; a beacon (core 3) and the first raid done");
+
+        // 1. The mods and their renderers
+        step(5,()->{var mods=net.minecraftforge.fml.ModList.get();
+            check("GeckoLib, Born in Chaos, Cataclysm and LesRaisins are loaded",mods.isLoaded("geckolib")&&mods.isLoaded("born_in_chaos_v1")&&mods.isLoaded("cataclysm")&&mods.isLoaded("lrtactical"),"geckolib "+mods.isLoaded("geckolib")+", born_in_chaos_v1 "+mods.isLoaded("born_in_chaos_v1")+", cataclysm "+mods.isLoaded("cataclysm")+", lrtactical "+mods.isLoaded("lrtactical"));
+            var knight=BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("born_in_chaos_v1:door_knight")).create(mc().level);
+            var kobo=BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("cataclysm:koboleton")).create(mc().level);
+            String k=chain(mc().getEntityRenderDispatcher().getRenderer(knight)),c=chain(mc().getEntityRenderDispatcher().getRenderer(kobo));note("RENDERERS door_knight {} | koboleton {}",k,c);
+            check("the door knight is drawn by GeckoLib (not a living-entity renderer: no RenderLivingEvent for it)",k.contains("software.bernie.geckolib.renderer.GeoEntityRenderer")&&!k.contains("LivingEntityRenderer"),k);
+            check("the koboleton is drawn by a vanilla-style mob renderer",c.contains("net.minecraft.client.renderer.entity.LivingEntityRenderer"),c);},"mods and renderers");
+        step(5,()->{var pool=srvGet(()->{var m=new TreeMap<String,Integer>();for(int i=0;i<60;i++)m.merge(BuiltInRegistries.ENTITY_TYPE.getKey(RaidBalance.type(sl(),i%2==0?2:6,"specialist")).toString(),1,Integer::sum);return m;});
+            check("the raid's specialists come from Born in Chaos and Cataclysm when they are installed",pool.keySet().stream().allMatch(s->s.startsWith("born_in_chaos_v1:")||s.startsWith("cataclysm:")),String.valueOf(pool));},"specialist pool");
+
+        // 2. A raid with elites on modded mobs, seen at night
+        step(5,()->{srv(()->sl().setDayTime(18000));mc().player.getInventory().selected=8;tp(ARENA.getX()-15.5,sy,ARENA.getZ()-10.5,0,0);},"night; to the arena");
+        step(5,()->srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.hardRaid=false;d.raidTier=5;d.introRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=1;d.spawnCooldown=1_000_000;d.raiders.clear();d.activeMods.clear();d.setDirty();}),"a raid with no waves of its own");
+        String[][] elites={{"knight5","badass 5 born_in_chaos_v1:door_knight","-15.5"},{"kobo","healer 1 cataclysm:koboleton","0.5"},{"zombie","speedster 1 minecraft:zombie","7.5"},{"hound","badass 3 born_in_chaos_v1:dread_hound","15.5"}};
+        for(var e:elites){
+            step(3,()->{tp(ARENA.getX()+Double.parseDouble(e[2]),sy,ARENA.getZ()-10.5,0,0);},"stand for "+e[0]);
+            step(3,()->cmd("eternaldefense elite "+e[1]),"/eternaldefense elite "+e[1]);
+            until("its reply",100,()->reply(": health ")!=null,()->{});
+            step(2,()->{note("REPLY {} {}",e[0],reply(": health "));srv(()->{for(var m:sl().getEntitiesOfClass(Mob.class,sp().getBoundingBox().inflate(20))){if(Elites.kind(m)==null||SUBJECTS.containsValue(m.getUUID()))continue;SUBJECTS.put(e[0],m.getUUID());m.setNoAi(true);}});},e[0]+" stands");
+        }
+        step(5,()->srv(()->{var d=cd();var m=EternalDefense.raider(sl(),d,BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("born_in_chaos_v1:door_knight")),"specialist","normal",ARENA.offset(-7,0,-4));
+            if(m!=null){m.setNoAi(true);SUBJECTS.put("knight",m.getUUID());}RaidTypes.broadcast(sl(),d);}),"a plain door knight raider (no elite) beside them");
+        step(10,()->{
+            String r=srvGet(()->{var b=new StringBuilder();for(String k:List.of("knight5","knight","kobo","zombie","hound")){var m=subject(k);b.append(k).append(m==null?"=none ":String.format(Locale.ROOT,"=%s %.2fx%.2f raider %s; ",type(m),m.getBbWidth(),m.getBbHeight(),cd().raiders.contains(m.getUUID())));}return b.toString();});
+            note("SERVER {}",r);
+            var big=srvGet(()->subject("knight5"));var plain=srvGet(()->subject("knight"));
+            check("Badass V door knight (GeckoLib): its hitbox is five times as wide and tall as a plain one",big!=null&&plain!=null&&Math.abs(big.getBbWidth()/plain.getBbWidth()-5)<.05&&Math.abs(big.getBbHeight()/plain.getBbHeight()-5)<.05,r);
+            check("all five are raid mobs",srvGet(()->{for(String k:List.of("knight5","knight","kobo","zombie","hound")){var m=subject(k);if(m==null||!cd().raiders.contains(m.getUUID()))return false;}return true;}),r);},"server side");
+        step(5,()->{
+            int big=clientId("knight5"),plain=clientId("knight");var client=mc().level.getEntity(big);
+            String s="client scale "+Elites.SCALES.get(big)+", kinds "+Elites.KINDS+", raiders "+RaidTypes.RAIDERS+", hitbox "+(client==null?"none":String.format(Locale.ROOT,"%.2fx%.2f",client.getBbWidth(),client.getBbHeight()));note("CLIENT {}",s);
+            check("the client knows the giant's size and gives it the grown hitbox",Elites.SCALES.getOrDefault(big,0f)==5f&&client!=null&&Math.abs(client.getBbWidth()-srvGet(()->subject("knight5").getBbWidth()))<.01,s);
+            boolean kinds=true;for(String k:List.of("knight5","kobo","zombie","hound"))kinds&=Elites.KINDS.containsKey(clientId(k));
+            check("the client knows each elite's kind (for its colour)",kinds&&Elites.kindOf(Elites.KINDS.get(clientId("kobo")))==Elites.Kind.HEALER&&Elites.color(Elites.KINDS.get(big))==0xFF3B30,s);
+            check("the client marks every raid mob, the GeckoLib ones too",RaidTypes.RAIDERS.contains(big)&&RaidTypes.RAIDERS.contains(plain)&&RaidTypes.RAIDERS.contains(clientId("hound")),s);},"client side");
+        step(5,()->{look(ARENA.getX()+.5,sy+5,ARENA.getZ()-38.5,ARENA.getX()+.5,sy+4,ARENA.getZ()-4.5);AURAS[0]=BARS[0]=MARKS[0]=0;counted=0;},"look at them from 34 blocks, at night");
+        for(int i=0;i<20;i++)step(1,QaRelease118::sample,"count what the overlay draws");
+        step(1,()->{note("OVERLAY auras {} bars {} marks {} over {} ticks",AURAS[0],BARS[0],MARKS[0],counted);
+            check("an aura and a health bar for each of the four elites, a mark for each of the five raid mobs",AURAS[0]==4&&BARS[0]==4&&MARKS[0]==5,"auras "+AURAS[0]+", bars "+BARS[0]+", marks "+MARKS[0]);},"overlay counts");
+        step(10,()->shot("r118_night_elites"),"picture at night, no night vision");
+        step(5,()->{int big=clientId("knight5"),plain=clientId("knight");note("TAGS scale {} inside {}",TAG_SCALE,TAG_INSIDE);
+            Float sb=TAG_SCALE.get(big),sp=TAG_SCALE.get(plain);
+            check("the GeckoLib giant's draw runs inside the size: its name tag is drawn in the five-times pose (then undone)",Boolean.TRUE.equals(TAG_INSIDE.get(big))&&sb!=null&&sp!=null&&Math.abs(sb/sp-5)<.05,"giant "+sb+" plain "+sp+" inside "+TAG_INSIDE.get(big));
+            check("a mob that is not grown is drawn as it is",!Boolean.TRUE.equals(TAG_INSIDE.get(clientId("kobo")))&&!Boolean.TRUE.equals(TAG_INSIDE.get(plain)),String.valueOf(TAG_INSIDE));},"name tag pose");
+        step(5,()->look(ARENA.getX()-15.5,sy+3,ARENA.getZ()-26.5,ARENA.getX()-11.5,sy+6,ARENA.getZ()-4.5),"closer to the giant door knight");
+        step(10,()->shot("r118_night_giant"),"picture of the giant at night");
+        step(5,()->{srv(()->sp().addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.NIGHT_VISION,1_000_000,0,false,false)));mc().getEntityRenderDispatcher().setRenderHitBoxes(true);},"night vision and hitboxes");
+        step(15,()->shot("r118_giant_hitbox"),"picture: the model fills its hitbox");
+        step(5,()->{mc().getEntityRenderDispatcher().setRenderHitBoxes(false);srv(()->sp().removeEffect(MobEffects.NIGHT_VISION));},"hitboxes off");
+        step(5,()->srv(()->{var d=cd();for(var id:new ArrayList<>(d.raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d.raiders.clear();d.phase="preparation";d.spawnRemaining=0;d.setDirty();clearMobs();}),"end the staged raid");
+
+        // 3. Another mod's boss keeps its own fight
+        step(5,()->{String r=srvGet(()->{var b=new StringBuilder();int i=0;
+            for(String id:List.of("minecraft:wither","cataclysm:netherite_monstrosity","cataclysm:ender_golem","minecraft:zombie","born_in_chaos_v1:door_knight")){
+                var m=make(id);m.moveTo(B.getX()+10+i*8,sy,B.getZ()+20,0,0);m.setNoAi(true);sl().addFreshEntity(m);i++;
+                b.append(id).append(" attached=").append(BeaconCombat.isAttached(m)).append(" boss=").append(BeaconCombat.bossOutsideRaid(m)).append(String.format(Locale.ROOT," health=%.0f; ",ArdentEnergy.defaultHealth(m)));m.discard();}
+            return b.toString();});note("BOSSES {}",r);
+            check("the Wither and Cataclysm's Netherite Monstrosity are never sent at the beacon",r.contains("minecraft:wither attached=false boss=true")&&r.contains("cataclysm:netherite_monstrosity attached=false boss=true"),r);
+            check("a zombie and a door knight still are",r.contains("minecraft:zombie attached=true")&&r.contains("born_in_chaos_v1:door_knight attached=true"),r);},"bosses near the beacon");
+
+        // 4. Hard raid bosses from Cataclysm wake up
+        for(int tier:new int[]{3,4})step(10,()->{String r=srvGet(()->{var d=cd();d.phase="raid";d.hardRaid=true;d.bossSpawned=false;d.bossId=null;d.raidTier=tier;d.wavePlayers=1;d.spawnRemaining=1;d.spawnCooldown=1_000_000;d.raiders.clear();d.setDirty();
+                boolean ok=HardRaids.spawn(sl(),d,ARENA.offset(0,0,20));var boss=d.bossId==null?null:sl().getEntity(d.bossId);String out="spawned "+ok+" "+(boss==null?"none":type(boss));
+                try{if(boss!=null&&type(boss).equals("cataclysm:ender_golem"))out+=" awake "+boss.getClass().getMethod("getIsAwaken").invoke(boss);
+                    if(boss!=null&&type(boss).equals("cataclysm:kobolediator"))out+=" awake "+boss.getClass().getMethod("getAwaken").invoke(boss)+" asleep "+boss.getClass().getMethod("isSleep").invoke(boss);}catch(ReflectiveOperationException ex){out+=" "+ex;}
+                if(boss!=null)boss.discard();d.raiders.clear();d.bossId=null;d.hardRaid=false;d.phase="preparation";d.spawnRemaining=0;d.setDirty();HardRaids.clear(sl());return out;});
+            note("BOSS tier {} {}",tier,r);
+            check("hard raid level "+tier+": Cataclysm's "+(tier==3?"Ender Golem":"Kobolediator")+" comes awake (not a ravager)",tier==3?r.equals("spawned true cataclysm:ender_golem awake true"):r.equals("spawned true cataclysm:kobolediator awake true asleep false"),r);},"hard raid boss at level "+tier);
+
+        // 5. The features that call other mods are all on
+        step(5,()->{var rewards=srvGet(()->RaidRewards.completion(sl(),3,true));int tactical=0;var names=new ArrayList<String>();
+            for(var s:rewards)if(s.hasTag()&&(s.getTag().contains("ConsumableId")||s.getTag().contains("ThrowableId"))){tactical++;names.add(s.getCount()+" "+s.getTag().getString(s.getTag().contains("ConsumableId")?"ConsumableId":"ThrowableId"));}
+            check("a hard raid's cache at level 3 still holds LesRaisins' medical kits and the three grenades",tactical==4,String.valueOf(names));
+            int prices=srvGet(()->AmmoCoins.damage(sl()).size());boolean bridge=MealGunBackend.verifyReloadBridge();Object explosive=staticField(MealGunCompat.class,"explosive");
+            note("BACKENDS ammo prices {} reload bridge {} explosive field {}",prices,bridge,explosive);
+            check("TaCZ Attributes' reload bridge, TaCZ's explosive-bullet field and its ammunition are found",bridge&&explosive!=null&&prices>10,"prices "+prices+", bridge "+bridge+", field "+explosive);
+            var broken=BROKEN_NAMES.stream().filter(Compat::broken).toList();check("no feature switched itself off",broken.isEmpty(),String.valueOf(broken));},"the features that call other mods");
+    }
+}
