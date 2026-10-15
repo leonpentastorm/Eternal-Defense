@@ -39,14 +39,14 @@ final class RaidBalance {
         set(mob,Attributes.MOVEMENT_SPEED,heavy?.22:role.equals("specialist")?.28:.23);
         mob.setCanPickUpLoot(false);arm(mob);
         if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
-        if(heavy){mob.setCustomName(Component.literal("HEAVY — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);}
+        if(heavy&&!Elites.elite(mob)){mob.setCustomName(Component.literal("HEAVY — ").append(mob.getType().getDescription()));mob.setCustomNameVisible(true);}
     }
     /** The weapon a ranged raider needs: a skeleton or stray gets a bow, a pillager a crossbow. */
     static void arm(Mob mob){
         if(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton&&!(mob.getMainHandItem().getItem() instanceof BowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.BOW));
         else if(mob instanceof net.minecraft.world.entity.monster.Pillager&&!(mob.getMainHandItem().getItem() instanceof CrossbowItem))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.CROSSBOW));
     }
-    private static void set(Mob mob,net.minecraft.world.entity.ai.attributes.Attribute attribute,double value){var a=mob.getAttribute(attribute);if(a!=null){a.removeModifiers();a.setBaseValue(value);}}
+    private static void set(Mob mob,net.minecraft.world.entity.ai.attributes.Attribute attribute,double value){Elites.reset(mob.getAttribute(attribute),value);}
     static boolean canSpawn(ServerLevel level,CampaignData d){
         long alive=d.raiders.stream().map(level::getEntity).filter(e->e!=null&&e.isAlive()&&!SpecialForcesRaids.defeated(e)).count();
         return alive<RaidTypes.concurrent(d.raidType,Rules.concurrentAttackers(d.wavePlayers,d.raidTier));

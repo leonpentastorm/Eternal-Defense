@@ -60,14 +60,17 @@ final class FobRules {
 
     // Names
     /** Pure: the generated name of a FOB id, always the same for the same id ("FOB IRON HOUND") */
-    static String codename(long id){
-        long seed=TacticalRules.mix(id,0x464F42L);   // "FOB": not the same words as the hunt with the same number
+    static String codename(long id){return codename(0,id);}
+    /** Pure: the name of FOB id in a world whose names are shuffled by salt (each world draws its own) */
+    static String codename(long salt,long id){
+        long seed=TacticalRules.mix(salt,id,0x464F42L);   // "FOB": not the same words as the hunt with the same number
         long a=seed*0x9E3779B97F4A7C15L;a^=a>>>29;long b=(seed+0x632BE59BD9B4E019L)*0xBF58476D1CE4E5B9L;b^=b>>>31;
         return "FOB "+TacticalRules.FIRST[(int)Math.floorMod(a,(long)TacticalRules.FIRST.length)]+" "+TacticalRules.SECOND[(int)Math.floorMod(b,(long)TacticalRules.SECOND.length)];
     }
     /** Pure: a generated name not used by another FOB of this beacon */
-    static String freeCodename(long id,Collection<String> taken){
-        for(long k=0;k<400;k++){String name=codename(id+k*1_000_003L);if(!contains(taken,name))return name;}
+    static String freeCodename(long id,Collection<String> taken){return freeCodename(0,id,taken);}
+    static String freeCodename(long salt,long id,Collection<String> taken){
+        for(long k=0;k<400;k++){String name=codename(salt,id+k*1_000_003L);if(!contains(taken,name))return name;}
         return "FOB "+id;
     }
     /** Pure: why a name cannot be used (a key under fob.rename.), or null */

@@ -54,6 +54,7 @@ public final class ArmorPlatform {
         return "field";
     }
     static int age(ItemStack stack){
+        Integer set=CraftBalance.override(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());if(set!=null)return set;   // A hand-set Age wins
         String id=key(stack.getItem()),type=type(stack);
         if(matches(id,"exoskeleton","juggernaut","restorative","thermal","digital_vision"))return 5;
         if(matches(id,"heavy","defender","armored_chemical","reinforced","viper","redut","airstrike"))return 4;

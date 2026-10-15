@@ -185,7 +185,7 @@ public final class EternalDefense {
             try{Class.forName("dev.eternaldefense.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
             catch(ReflectiveOperationException|LinkageError e){com.mojang.logging.LogUtils.getLogger().warn("[Logistics Hub] mechanical arms cannot use the Hub: {}",e.toString());}
         bus.addListener((BuildCreativeModeTabContentsEvent e)->{if(e.getTabKey()==CreativeModeTabs.FUNCTIONAL_BLOCKS){e.accept(BEACON_ITEM);e.accept(CONTROLLER);e.accept(GUIDE);e.accept(PLATING);e.accept(LOGISTICS);e.accept(COIL);e.accept(REPAIR);e.accept(GUN_PLATFORM.get());e.accept(AMMO_PLATFORM.get());e.accept(ATTACHMENT_PLATFORM.get());e.accept(ARMOR_PLATFORM.get());}});
-        MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());MinecraftForge.EVENT_BUS.register(new EndlessEffects.EndlessEvents());MinecraftForge.EVENT_BUS.register(new ReturnZone());MinecraftForge.EVENT_BUS.register(new FactoryTiers.Events());MinecraftForge.EVENT_BUS.register(new RecipeRules.Events());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,DefenseConfig.SPEC,"eternal-defense-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,DefenseClientConfig.SPEC,"eternal-defense-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
+        MinecraftForge.EVENT_BUS.register(this);MinecraftForge.EVENT_BUS.register(new ArdentEnergy());MinecraftForge.EVENT_BUS.register(new Elites.Events());MinecraftForge.EVENT_BUS.register(new SupportFlares.Safety());MinecraftForge.EVENT_BUS.register(new SupportHud.Login());MinecraftForge.EVENT_BUS.register(new RaidTypes.Events());MinecraftForge.EVENT_BUS.register(new RaidAdaptation.Events());MinecraftForge.EVENT_BUS.register(new FireMarks.MarkEvents());MinecraftForge.EVENT_BUS.register(new EndlessEffects.EndlessEvents());MinecraftForge.EVENT_BUS.register(new ReturnZone());MinecraftForge.EVENT_BUS.register(new FactoryTiers.Events());MinecraftForge.EVENT_BUS.register(new RecipeRules.Events());net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON,DefenseConfig.SPEC,"eternal-defense-common.toml");net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT,DefenseClientConfig.SPEC,"eternal-defense-client.toml");MinecraftForge.EVENT_BUS.register(new WeaponPlatform());MinecraftForge.EVENT_BUS.register(new CreateUnlocks());
         MinecraftForge.EVENT_BUS.register(new LoadoutPrint.Events());MinecraftForge.EVENT_BUS.register(new StructureMigration());MinecraftForge.EVENT_BUS.register(new HubNotices.NoticeEvents());MinecraftForge.EVENT_BUS.register(new BaseScoring());MinecraftForge.EVENT_BUS.register(new SpecialForcesRaids());MinecraftForge.EVENT_BUS.register(new BeaconCombat());
         MinecraftForge.EVENT_BUS.register(new BeaconItems.RecoveryCombat());MinecraftForge.EVENT_BUS.register(new HuntWarband.Events());MinecraftForge.EVENT_BUS.register(new IngredientTraits());MinecraftForge.EVENT_BUS.register(new PlayerMeals.MealEvents());MinecraftForge.EVENT_BUS.register(new PlayerDrinks.DrinkEvents());MinecraftForge.EVENT_BUS.register(new DrinkStation.GuardEvents());MinecraftForge.EVENT_BUS.register(new Fobs.FobEvents());MinecraftForge.EVENT_BUS.register(new Routes.RouteEvents());
         bus.addListener((net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent e)->e.enqueueWork(MealGunCompat::register));
@@ -351,6 +351,7 @@ public final class EternalDefense {
         if(d.installed()&&l.hasChunkAt(d.beacon)&&!l.getBlockState(d.beacon).is(BEACON.get())) {decommission(l,d,null);return true;}return false;
     }
     static void announce(ServerLevel l,String s){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Eternal Defense] "+s).withStyle(ChatFormatting.GOLD),false);}
+    static void announce(ServerLevel l,Component c){l.getServer().getPlayerList().broadcastSystemMessage(Component.literal("[Eternal Defense] ").append(c).withStyle(ChatFormatting.GOLD),false);}
     @SubscribeEvent public void tick(TickEvent.ServerTickEvent event) {
         if(event.phase!=TickEvent.Phase.END)return;
         ServerLevel l=event.getServer().overworld();CampaignData d=CampaignData.get(l);clock++;if(clock%20==0){SpecialForcesRaids.cleanup(l);RaidTypes.broadcast(l,d);}BeaconCombat.tick(l,d);BaseSurvey.tick(l,d);HardRaids.tick(l,d);
@@ -398,13 +399,20 @@ public final class EternalDefense {
             BlockState s=l.getBlockState(pos);if(s.isAir())continue;d.snapshot.put(pos.asLong(),s);
             auditBlock(d,pos,s);
         }
-        if(d.scanCursor>=total){d.score=BaseScoring.analyze(d,d.snapshot,BaseScoring.Ledger.get(l).placed).total();d.raidTier=d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,d.score));RaidRespite.started(d);d.phase="raid";HardRaids.start(d);if(d.introRaid)d.hardRaid=false;d.raidType=d.introRaid?"normal":d.nextRaidType;BeaconNetwork.announce(l,"raid_start",d.raidsStarted,d.hardRaid?1:0,d.raidType,"");if(RaidTypes.special(d.raidType)){announce(l,RaidTypes.name(d.raidType).getString()+"! "+Component.translatable("gui.eternal_defense.raidtype.tip."+d.raidType).getString());}if(d.hardRaid)announce(l,"HARD RAID #"+d.raidsStarted+"! A boss leads the final wave. Survive for a 50% larger resource cache and bonus medical kits/grenades.");nextWave(l,d);d.setDirty();announce(l,"Base saved. Score "+d.score+", payout tier "+d.raidTier+". Defend the beacon!");}
+        if(d.scanCursor>=total){d.score=BaseScoring.analyze(d,d.snapshot,BaseScoring.Ledger.get(l).placed).total();d.raidTier=d.introRaid?0:RaidRespite.previewTier(d,Rules.rewardTier(d.logistics,d.score));RaidRespite.started(d);d.phase="raid";HardRaids.start(d);if(d.introRaid)d.hardRaid=false;d.raidType=d.introRaid?"normal":d.nextRaidType;d.nextRaidType="normal";RaidModifiers.begin(d);d.eliteWave=1+l.random.nextInt(Rules.waves(d.raidTier));d.eliteLeft=d.eliteWaves=0;d.eliteThisWave=false;announceModifiers(l,d);BeaconNetwork.announce(l,"raid_start",d.raidsStarted,d.hardRaid?1:0,d.raidType,"");if(RaidTypes.special(d.raidType)){announce(l,RaidTypes.name(d.raidType).getString()+"! "+Component.translatable("gui.eternal_defense.raidtype.tip."+d.raidType).getString());}if(d.hardRaid)announce(l,"HARD RAID #"+d.raidsStarted+"! A boss leads the final wave. Survive for a 50% larger resource cache and bonus medical kits/grenades.");nextWave(l,d);d.setDirty();announce(l,"Base saved. Score "+d.score+", payout tier "+d.raidTier+". Defend the beacon!");}
     }
     private static void nextWave(ServerLevel l,CampaignData d) {
-        d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=RaidTypes.count(d.raidType,Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid));d.spawnCooldown=0;
+        d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=RaidModifiers.attackers(Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid),d.raidType,d.activeMods);d.spawnCooldown=0;
+        d.eliteLeft=d.introRaid?0:Elites.count(d.raidTier,d.wave,d.eliteWave,l.random.nextDouble(),RaidModifiers.on(d,"elite_cadre"));d.eliteThisWave=false;
         RaidAdaptation.nextWave(l,d);
         BeaconNetwork.announce(l,"wave",d.wave,Rules.waves(d.raidTier),Integer.toString(d.spawnRemaining),"");
         announce(l,"Wave "+d.wave+" / "+Rules.waves(d.raidTier)+" incoming. "+d.wavePlayers+" defender(s), "+d.spawnRemaining+" attackers"+(d.waveVeteran>0?", veteran reinforcements +"+(d.waveVeteran*10)+"%":"")+".");d.setDirty();
+    }
+    /** At the raid's start: what its modifiers do, for everybody */
+    static void announceModifiers(ServerLevel l,CampaignData d){
+        if(d.activeMods.isEmpty())return;
+        var names=Component.empty();boolean first=true;for(String id:d.activeMods){if(!first)names.append(", ");names.append(Component.translatable("gui.eternal_defense.raidmod."+id));first=false;}
+        announce(l,Component.translatable("gui.eternal_defense.raidmod.active",names,RaidModifiers.payoutPercent(d.activeMods),d.dropBonus()));
     }
     static void auditBlock(CampaignData d,BlockPos pos,BlockState s){
         if(!d.inside(pos))return;
@@ -415,7 +423,8 @@ public final class EternalDefense {
     private static void raid(ServerLevel l,CampaignData d) {
         d.raidTicks++;d.waveTicks++;
         int reveal=Rules.revealTicks(d.reconnaissance);
-        if(reveal>0&&d.waveTicks==reveal)announce(l,reveal/1200+(reveal==1200?" minute":" minutes")+" elapsed: remaining attackers are now highlighted through walls.");
+        boolean fog=RaidModifiers.on(d,"fog_of_war");
+        if(!fog&&reveal>0&&d.waveTicks==reveal)announce(l,reveal/1200+(reveal==1200?" minute":" minutes")+" elapsed: remaining attackers are now highlighted through walls.");
         if(d.raidTicks>24000L){fail(l,d,"Raid timed out. Beacon loses 20% health; damaged structures stay damaged.");return;}
         if(d.health<=0){fail(l,d,"Beacon disabled. Repair it between raids; your base remains in the world.");return;}
         if(!l.hasChunkAt(d.beacon)){fail(l,d,"Beacon area unloaded. Retreat counts as a lost defense.");return;}
@@ -428,7 +437,7 @@ public final class EternalDefense {
             if(mob.getPersistentData().getBoolean("eternalBoss"))HardRaids.balance(mob,d.raidTier);else if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);
             else if(mob.getPersistentData().getBoolean("eternalSpecialForces"))SpecialForcesRaids.balance(mob,d.raidTier);
             else RaidBalance.balance(mob,d.raidTier);
-            mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
+            mob.setGlowingTag(!fog&&Rules.highlightAttackers(d.reconnaissance,d.waveTicks));Elites.restore(mob);Elites.tick(l,mob);
             // Real attack goals target the objective; contact alone never damages it.
             BeaconCombat.attach(mob);
             if(RaidRescue.tick(l,d,mob,it))continue; // Stuck for good: withdrawn (a rescue only moves it)
@@ -449,7 +458,9 @@ public final class EternalDefense {
             if(d.wave>=Rules.waves(d.raidTier)){
                 if(d.hardRaid&&(!d.bossSpawned||!d.bossKilled)){fail(l,d,"Boss was not defeated. No completion cache awarded; surviving wave rewards remain.");return;}
                 d.victories++;d.rewardTier=d.raidTier;
-                RaidRewards.queue(d,RaidRewards.completion(l,d.rewardTier,d.hardRaid&&d.bossKilled));
+                int payout=RaidModifiers.payoutPercent(d.activeMods);RaidRewards.queue(d,RaidRewards.completion(l,d.rewardTier,d.hardRaid&&d.bossKilled,payout));
+                if(payout>0)announce(l,Component.translatable("gui.eternal_defense.raidmod.paid",payout));
+                if(d.eliteWaves>0){RaidRewards.queue(d,java.util.List.of(new ItemStack(ARDENT_ENERGY.get(),d.eliteWaves)));announce(l,Component.translatable("gui.eternal_defense.elite.paid",d.eliteWaves));}
                 if(RaidTypes.special(d.raidType)){int bonus=RaidTypes.bonusEnergy(d.rewardTier);RaidRewards.queue(d,java.util.List.of(new ItemStack(ARDENT_ENERGY.get(),bonus)));announce(l,RaidTypes.name(d.raidType).getString()+" survived: +"+bonus+" Ardent Energy in the reward.");}
                 if(d.introRaid&&!d.introCompleted){RaidRewards.queue(d,java.util.List.of(new ItemStack(GUN_PLATFORM.get())));d.introCompleted=true;d.introRaid=false;announce(l,"Introduction complete! Claim your Weapon Platform at the beacon.");}
                 BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";RaidTypes.finish(l,d);RaidRescue.reset(l);announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
@@ -473,7 +484,8 @@ public final class EternalDefense {
         if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&net.minecraftforge.fml.ModList.get().isLoaded("taczsf"))return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
         String role=d.introRaid?"grunt":RaidTypes.role(raidType,d.raidTier,l.random.nextInt(100));
         EntityType<?> type=d.introRaid?EntityType.HUSK:RaidTypes.type(raidType,d.raidTier,role,l);
-        if(raider(l,d,type,role,raidType,spawnPos)==null)return false;
+        var mob=raider(l,d,type,role,raidType,spawnPos);if(mob==null)return false;
+        Elites.roll(l,d,mob);
         RaidTypes.broadcast(l,d);
         return true;
     }
@@ -485,6 +497,8 @@ public final class EternalDefense {
         if(!l.noCollision(mob)||!l.addFreshEntity(mob))return null; // Let pack spawn handlers run first.
         mob.getPersistentData().putString("eternalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
         if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
+        if(RaidModifiers.on(d,"hardened"))Elites.modifier(mob,net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,Elites.RAID_HEALTH,"Hardened raiders",RaidModifiers.HARDENED_HEALTH,net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL);
+        if(RaidModifiers.on(d,"forced_march"))Elites.modifier(mob,net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED,Elites.RAID_SPEED,"Forced march",RaidModifiers.FORCED_MARCH_SPEED,net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL);
         mob.setHealth(mob.getMaxHealth());RaidSpawns.rush(mob);
         d.raiders.add(mob.getUUID());
         return mob;
@@ -495,11 +509,11 @@ public final class EternalDefense {
         }
         if(mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton&&(!mob.getMainHandItem().is(Items.BOW)||mob.getMainHandItem().isEnchanted()))mob.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.BOW));
         for(var attr:List.of(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR,net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS,net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)){
-            var value=mob.getAttribute(attr);if(value!=null){value.removeModifiers();value.setBaseValue(0);}
+            Elites.reset(mob.getAttribute(attr),0);
         }
         var health=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
-        if(health!=null){float current=mob.getHealth();health.removeModifiers();health.setBaseValue(20+Math.min(3,wave)*2+tier*8);mob.setHealth(Math.min(current,mob.getMaxHealth()));}
-        var damage=mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);if(damage!=null){damage.removeModifiers();damage.setBaseValue(2+tier);}
+        if(health!=null){float current=mob.getHealth();Elites.reset(health,20+Math.min(3,wave)*2+tier*8);mob.setHealth(Math.min(current,mob.getMaxHealth()));}
+        Elites.reset(mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE),2+tier);
         mob.setCanPickUpLoot(false);RaidBalance.arm(mob);if(mob instanceof net.minecraft.world.entity.monster.Zombie zombie)zombie.setBaby(false);
     }
     private static void breach(ServerLevel l,CampaignData d,Mob mob) {

@@ -38,7 +38,13 @@ public final class Rules {
         return Math.min(144,(int)Math.ceil(solo*(1+.65*(p-1))));
     }
     public static int veteranPressure(int tier,int victories){return tier<5?0:Math.min(3,Math.max(0,victories)/3);}
-    public static int waveEnemies(int tier,int wave,int players,int veteran,boolean hard){return Math.min(144,(int)Math.ceil(enemies(tier,wave,players)*(1+.1*Math.max(0,Math.min(3,veteran)))*(hard?1.25:1)));}
+    public static int waveEnemies(int tier,int wave,int players,int veteran,boolean hard){return Math.min(WAVE_CAP,boosted(Math.min(144,(int)Math.ceil(enemies(tier,wave,players)*(1+.1*Math.max(0,Math.min(3,veteran)))*(hard?1.25:1)))));}
+    /** Most attackers a wave sends */
+    public static final int WAVE_CAP=166;
+    /** Pure: a wave 15% larger than its base count, at least one attacker more */
+    public static int boosted(int n){return Math.max(n+1,(int)Math.ceil(n*1.15));}
+    /** Pure: the raid's guaranteed Ardent Energy at reward tier t: 1 + t, and a quarter more, rounded up */
+    public static int raidArdent(int tier){return (int)Math.ceil((1+Math.max(0,Math.min(10,tier)))*1.25);}
     public static int concurrentAttackers(int players,int tier){return Math.min(48,Math.min(24,10+Math.max(0,Math.min(10,tier))*2)+8*(Math.max(1,Math.min(8,players))-1));}
     public static int scaledBossHealth(int tier,int players){return (int)Math.ceil(bossHealth(tier)*(1+.45*(Math.max(1,Math.min(4,players))-1)));}
     public static int defensePercent(int level){return Math.max(0,Math.min(4,level))*15;}

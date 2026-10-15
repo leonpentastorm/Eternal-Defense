@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 final class BeaconNetwork {
     /** Protocol 41: one edition only (the standalone edition is discontinued) */
-    static final String PROTOCOL="41";
+    static final String PROTOCOL="42";
     static final SimpleChannel CHANNEL=NetworkRegistry.newSimpleChannel(new ResourceLocation(EternalDefense.ID,"control"),()->PROTOCOL,PROTOCOL::equals,PROTOCOL::equals);
     record State(CompoundTag data,String screen,String token,String message){
         static void encode(State p,FriendlyByteBuf b){b.writeNbt(p.data);b.writeUtf(p.screen,24);b.writeUtf(p.token,64);b.writeUtf(p.message,256);}
@@ -32,6 +32,8 @@ final class BeaconNetwork {
         static void handle(Announce p,Supplier<NetworkEvent.Context> ctx){ctx.get().enqueueWork(()->DistExecutor.unsafeRunWhenOn(Dist.CLIENT,()->()->BeaconPopups.show(p)));ctx.get().setPacketHandled(true);}
     }
     static void announce(ServerLevel l,String kind,int a,int b,String who,String what){CHANNEL.send(PacketDistributor.ALL.noArg(),new Announce(kind,a,b,who,what));}
+    /** The same, to everyone but the player who caused it (they see it on their screen) */
+    static void announceOthers(ServerPlayer from,String kind,int a,int b,String who,String what){for(var p:from.server.getPlayerList().getPlayers())if(p!=from)CHANNEL.send(PacketDistributor.PLAYER.with(()->p),new Announce(kind,a,b,who,what));}
     record Placement(net.minecraft.world.phys.BlockHitResult hit,net.minecraft.world.InteractionHand hand){
         static void encode(Placement p,FriendlyByteBuf b){b.writeBlockHitResult(p.hit);b.writeEnum(p.hand);}
         static Placement decode(FriendlyByteBuf b){return new Placement(b.readBlockHitResult(),b.readEnum(net.minecraft.world.InteractionHand.class));}
@@ -92,6 +94,16 @@ final class BeaconNetwork {
         n.putInt("mk",DefenseStructures.actualMark(p.server.overworld(),d.beacon));n.putBoolean("hurtbox",d.showHurtbox);n.putBoolean("expansionBlocked",d.installed()&&DefenseStructures.actualMark(p.server.overworld(),d.beacon)!=DefenseStructures.mark(d.core));n.putBoolean("beam",d.showBeam);n.putBoolean("underAttack",d.underAttack(p.server.overworld().getGameTime()));n.putBoolean("outline",d.showBoundary);n.putBoolean("near",EternalDefense.near(p,d));n.putBoolean("installed",d.installed());n.putBoolean("active",d.active());
         n.putInt("livesLeft",Rules.livesLeft(d.deaths));n.putInt("hubs",HubZone.active(p.serverLevel()));   // The raid skull, the Hub count
         n.putInt("rewards",d.rewards.size());n.putString("raidType",d.raidType);n.putString("nextRaidType",d.nextRaidType);
+        // Raid Control: what the next raid brings and pays, and the modifiers chosen for it
+        int defenders=n.getInt("defenders"),veteran=Rules.veteranPressure(prospective,d.victories);
+        n.putInt("baseTier",d.introRaid?0:Rules.rewardTier(d.logistics,live));n.putInt("nextWaves",Rules.waves(prospective));
+        boolean prep=d.phase.equals("preparation");var mods=prep?d.chosenMods:d.activeMods;String type=prep?d.nextRaidType:d.raidType;
+        n.putInt("firstWave",RaidModifiers.attackers(Rules.waveEnemies(prospective,1,defenders,veteran,false),type,mods));n.putInt("lastWave",RaidModifiers.attackers(Rules.waveEnemies(prospective,Rules.waves(prospective),defenders,veteran,false),type,mods));
+        n.putFloat("elitesPerWave",(float)RaidModifiers.elites(prospective,mods));n.putInt("raidArdent",RaidModifiers.raised(Rules.raidArdent(prospective),RaidModifiers.payoutPercent(mods)));n.putInt("specialBonus",RaidTypes.bonusEnergy(prospective));
+        var chosen=new net.minecraft.nbt.ListTag();for(String id:d.chosenMods)chosen.add(net.minecraft.nbt.StringTag.valueOf(id));n.put("chosenMods",chosen);
+        var active=new net.minecraft.nbt.ListTag();for(String id:d.activeMods)active.add(net.minecraft.nbt.StringTag.valueOf(id));n.put("activeMods",active);
+        n.putInt("modPayout",RaidModifiers.payoutPercent(mods));n.putInt("modDrops",RaidModifiers.dropPercent(mods,type));
+        n.putInt("eliteWaves",d.eliteWaves);
         n.putBoolean("controller",p.getMainHandItem().is(EternalDefense.CONTROLLER.get())||p.getOffhandItem().is(EternalDefense.CONTROLLER.get()));
         n.putBoolean("canRemove",p.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+.5,d.beacon.getZ()+.5)<=64);
         for(String part:java.util.List.of("reinforced_plating","logistics_module","resonance_coil","restoration_matrix","ardent_energy")) {

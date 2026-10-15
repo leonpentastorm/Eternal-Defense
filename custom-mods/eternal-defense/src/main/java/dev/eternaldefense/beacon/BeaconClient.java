@@ -239,11 +239,13 @@ public final class BeaconClient {
     record Hover(ItemStack item,int x,int y){}
 
     static final class ControlScreen extends PanelScreen {
-        int tab;final List<Ui.UiButton> fabricationButtons=new ArrayList<>();net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,animations,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
+        int tab,raidPage;final List<Ui.UiButton> fabricationButtons=new ArrayList<>(),specials=new ArrayList<>(),modToggles=new ArrayList<>();Ui.UiButton modsPage;net.minecraft.nbt.ListTag upgradeHoverCosts;Button claim,repair,outline,beam,hurtbox,music,player,animations,remove,respite,startRaid,lowerTier,higherTier;final List<Button> upgrades=new ArrayList<>();
         private final List<Hover> icons=new ArrayList<>();
         static final String[] BRANCHES={"core","logistics","defense","restoration","reconnaissance","vertical"};
         private static ItemStack item(String id){return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,id)));}
         static final String[] TABS={"overview","upgrades","fabrication","raid"};
+        /** The special raid row: none, then the four special raids */
+        static final String[] SPECIALS={"normal","air","paratroopers","siege","swarm"};
         ControlScreen(){super(Ui.t("title"));}
         @Override Component subtitle(){return Ui.t("subtitle");}
         private int contentTop(){return top+54;}
@@ -267,14 +269,31 @@ public final class BeaconClient {
                     upgrades.add(button(Component.empty(),cx+cw-88,cy+ch-21,82,18,Ui.Look.NORMAL,b->BeaconNetwork.action("upgrade:"+branch,"")));
                 }
             }else if(tab==3){
-                var lay=raidLayout();
-                lowerTier=button(Ui.t("raid.lower"),x+10,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.max(0,n("raidLimit")-1),""));
-                higherTier=button(Ui.t("raid.raise"),x+w-106,lay.levelY,96,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.min(10,n("raidLimit")+1),""));
-                int half=(w-4)/2,y=top+ph-48;
-                respite=button(Ui.t("raid.buy"),x,y,half,Ui.Look.PRIMARY,b->BeaconNetwork.action("respite",""));
-                startRaid=button(Ui.t("raid.start"),x+half+4,y,w-half-4,Ui.Look.NORMAL,b->BeaconNetwork.action("start-raid",""));
+                int sw=(w-4)/2,by=top+ph-48;var lay=raidLayout(w);specials.clear();modToggles.clear();
+                button(Ui.t("raid.page.level"),x,contentTop(),sw,16,Ui.Look.TAB,b->{raidPage=0;rebuildWidgets();}).selected=raidPage==0;
+                modsPage=button(Ui.t("raid.page.mods"),x+sw+4,contentTop(),w-sw-4,16,Ui.Look.TAB,b->{raidPage=1;rebuildWidgets();});modsPage.selected=raidPage==1;
+                // Each card's action sits under it: Start raid under the level, Buy under the break
+                startRaid=button(Ui.t("raid.start"),x,by,raidPage==0?lay.cw():w,Ui.Look.NORMAL,b->BeaconNetwork.action("start-raid",""));
                 startRaid.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.start.tip")));
-                respite.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.buy.tip")));
+                if(raidPage==0){
+                    int cy=lay.y()+lay.capRow(),ch=lay.roomy()?18:16;
+                    lowerTier=button(Component.literal("-"),x+8,cy,22,ch,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.max(0,n("raidLimit")-1),""));
+                    higherTier=button(Component.literal("+"),x+lay.cw()-30,cy,22,ch,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-level:"+Math.min(10,n("raidLimit")+1),""));
+                    lowerTier.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.lower.tip")));
+                    higherTier.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.raise.tip")));
+                    respite=button(Ui.t("raid.buy"),x+lay.cw()+6,by,w-lay.cw()-6,Ui.Look.PRIMARY,b->BeaconNetwork.action("respite",""));
+                    respite.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.buy.tip")));
+                }else{
+                    // The special raid row: each button as wide as its name needs
+                    int gap=4,room=w-20-gap*(SPECIALS.length-1),names=0;for(String t:SPECIALS)names+=font.width(Ui.t("raid.special."+t))+12;
+                    int bx=x+10;
+                    for(int i=0;i<SPECIALS.length;i++){String type=SPECIALS[i];int bw=i==SPECIALS.length-1?x+w-10-bx:(font.width(Ui.t("raid.special."+type))+12)*room/names;
+                        specials.add(button(Ui.t("raid.special."+type),bx,lay.y()+15,bw,18,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-mod:special:"+type,"")));bx+=bw+gap;}
+                    int my=lay.y()+lay.specialH()+lay.gap()+15,mw=(w-20-8)/3;
+                    for(int i=0;i<RaidModifiers.MODS.size();i++){String id=RaidModifiers.MODS.get(i).id();int mx=x+10+(i%3)*(mw+4);
+                        var t=button(Ui.t("raidmod."+id),mx,my+(i/3)*lay.modStride(),i%3==2?x+w-10-mx:mw,18,Ui.Look.NORMAL,b->BeaconNetwork.action("raid-mod:"+id,""));
+                        t.accent(Ui.ORANGE).painter((g,self,hover)->checkbox(g,self));modToggles.add(t);}
+                }
             }else if(tab==2){
                 for(int i=0;i<WorkshopFabrication.ITEMS.size();i++){
                     int index=i;var cell=fabricationCell(i,x,w);
@@ -294,21 +313,29 @@ public final class BeaconClient {
         }
         private int settingsGap(){return Math.min(48,Math.max(33,(ph-54-28)/4));}
         private static int settingsColumn(int w){return (w-10)/2;}
-        private record RaidLayout(int levelY,int cardH,int breakY,boolean roomy){}
-        private RaidLayout raidLayout(){boolean roomy=ph>=270;int cardH=roomy?72:60;return new RaidLayout(contentTop()+20,cardH,contentTop()+cardH+4,roomy);}
+        /** Raid control: card top and height, the level card's width, its cap row, the special raid card, the gap and the modifier rows */
+        private record RaidLayout(int y,int h,int cw,int capRow,int specialH,int gap,int modStride,boolean roomy){}
+        private RaidLayout raidLayout(int w){boolean roomy=ph>=270;int y=contentTop()+20,h=roomy?top+ph-52-y:Math.min(110,top+ph-52-y);return new RaidLayout(y,h,(w-6)/2,roomy?18:15,roomy?50:37,roomy?6:4,roomy?44:20,roomy);}
+        /** A modifier's box: ticked when it is on */
+        private static void checkbox(GuiGraphics g,Ui.UiButton b){
+            int x=b.getX()+6,y=b.getY()+(b.getHeight()-8)/2;g.fill(x,y,x+8,y+8,b.active?Ui.EDGE:Ui.SLATE);g.fill(x+1,y+1,x+7,y+7,Ui.DEEP);
+            if(b.selected)g.fill(x+2,y+2,x+6,y+6,Ui.ORANGE);
+        }
         @Override public void render(GuiGraphics g,int mx,int my,float partial){
             panel(g);icons.clear();upgradeHoverCosts=null;List<Component> tooltip=null;
             int x=left+14,w=pw-28;
             if(tab==0)overview(g,x,w);
             else if(tab==1)tooltip=upgradeCards(g,mx,my,x,w);
-            else if(tab==3)raidTab(g,x,w);
+            else if(tab==3)tooltip=raidTab(g,mx,my,x,w);
             else if(tab==2)fabricationTab(g,mx,my,x,w);
             else settingsTab(g,x,w);
             super.render(g,mx,my,partial);
             boolean notice=footer(g);
             if(!notice&&tab==1&&!ready())hint(g,Ui.t("upgrades.near"));
+            if(!notice&&tab==3)raidHint(g);
             Hover hovered=itemAt(mx,my);
             if(hovered!=null)g.renderComponentTooltip(font,List.of(hovered.item().getHoverName(),Component.literal(ControlHints.jei())),mx,my);
+            else if(tooltip!=null&&tab==3){var lines=new ArrayList<net.minecraft.util.FormattedCharSequence>();for(var line:tooltip)lines.addAll(font.split(line,240));g.renderTooltip(font,lines,mx,my);}
             else if(tooltip!=null){if(upgradeHoverCosts!=null)Ui.materialTooltip(g,font,tooltip,upgradeHoverCosts,mx,my);else g.renderComponentTooltip(font,tooltip,mx,my);}
             if(tab==2&&upgradeHoverCosts!=null){
                 var rows=state.getList("fabrications",net.minecraft.nbt.Tag.TAG_COMPOUND);var fabItem=ItemStack.EMPTY;String id="";
@@ -538,35 +565,98 @@ public final class BeaconClient {
                 default -> Ui.t("upgrade."+BRANCHES[branch]+".done");
             };
         }
-        // Raid break: "Can I take a break or fight now?"
-        private void raidTab(GuiGraphics g,int x,int w){
-            var lay=raidLayout();int y=contentTop();
-            Ui.card(g,x,y,w,lay.cardH,Ui.CYAN);
-            Ui.text(g,font,Ui.t("raid.level_title"),x+10,y+5,Ui.CYAN,w-20);
-            Component level=Ui.t("raid.level",n("raidLimit"));
-            g.pose().pushPose();g.pose().translate(x+w/2f,lay.levelY+4,0);g.pose().scale(1.5f,1.5f,1);
-            g.drawString(font,level.getVisualOrderText(),-font.width(level)/2,0,Ui.INK,false);g.pose().popPose();
-            Ui.text(g,font,Ui.t("raid.payout",n("prospectiveTier")),x+10,lay.levelY+26,Ui.INK,w-20);
-            if(lay.roomy())Ui.wrap(g,font,Ui.t("raid.level_note"),x+10,lay.levelY+38,w-20,Ui.MUTED,2);
-            int by=lay.breakY;int breakH=Math.min(top+ph-52-by,lay.roomy()?84:58);
-            Ui.card(g,x,by,w,breakH,Ui.BRASS);
-            int pauseDays=(int)Math.ceil(state.getLong("respiteTicks")/24000.0);
-            Ui.text(g,font,Ui.t("raid.break_title"),x+10,by+5,Ui.BRASS,w-20);
-            Ui.text(g,font,Ui.t("raid.break",pauseDays,n("nextRaidBonus")),x+10,by+17,Ui.INK,w-20);
-            var costs=state.getList("respiteCosts",net.minecraft.nbt.Tag.TAG_COMPOUND);
-            Component priceLabel=Ui.t("raid.price");
-            int labelWidth=Math.min(70,font.width(priceLabel)+8);
-            Ui.text(g,font,priceLabel,x+10,by+32,Ui.MUTED,labelWidth);
-            int slot=(w-20-labelWidth)/Math.max(3,costs.size());
-            for(int i=0;i<costs.size();i++){
-                var row=costs.getCompound(i);var item=ItemStack.of(row.getCompound("item"));int cx=x+10+labelWidth+i*slot,cy=by+28;
-                g.renderItem(item,cx,cy);icons.add(new Hover(item,cx,cy));
-                Ui.text(g,font,Ui.t("raid.cost",row.getInt("have"),row.getInt("count")),cx+19,cy+4,row.getInt("have")>=row.getInt("count")?Ui.INK:Ui.ORANGE,slot-22);
+        // Raid control: "How hard is the next raid, when does it come, and what does it pay?"
+        private boolean preparing(){return state.getString("phase").equals("preparation");}
+        private List<Component> raidTab(GuiGraphics g,int mx,int my,int x,int w){
+            var lay=raidLayout(w);boolean controls=ready()&&preparing()&&on("introCompleted");
+            int chosen=state.getList(preparing()?"chosenMods":"activeMods",net.minecraft.nbt.Tag.TAG_STRING).size()+(RaidTypes.special(raidType())?1:0);
+            modsPage.setMessage(chosen>0?Ui.t("raid.page.mods_count",chosen):Ui.t("raid.page.mods"));
+            startRaid.setMessage(Ui.t(on("raidRequested")?"raid.start.booked":"raid.start"));startRaid.active=controls&&!on("raidRequested");
+            if(raidPage==0){levelPage(g,x,w,lay,controls);return null;}
+            return modifierPage(g,mx,my,x,w,lay,controls);
+        }
+        /** The special raid of the next raid, or of the one under way */
+        private String raidType(){return preparing()?state.getString("nextRaidType"):state.getString("raidType");}
+        private void levelPage(GuiGraphics g,int x,int w,RaidLayout lay,boolean controls){
+            int y=lay.y(),cw=lay.cw(),h=lay.h(),cap=n("raidLimit");boolean roomy=lay.roomy();
+            // Left: the level
+            Ui.card(g,x,y,cw,h,Ui.CYAN);
+            Component title=Ui.t("raid.level_title");Ui.text(g,font,title,x+10,y+4,Ui.CYAN,cw-20);
+            Component shared=Ui.t("raid.shared");int sharedW=Math.min(cw-28-font.width(title),font.width(shared));if(sharedW>=font.width(shared))Ui.text(g,font,shared,x+cw-8-sharedW,y+4,Ui.MUTED,sharedW);
+            Component capText=Ui.t("raid.cap",cap);int capW=Math.min(cw-80,font.width(capText));
+            Ui.text(g,font,capText,x+cw/2-capW/2,y+lay.capRow()+(roomy?5:4),Ui.INK,cw-80);
+            Component level=Ui.t("raid.next_level",n("prospectiveTier"));int ly=y+lay.capRow()+(roomy?24:20);
+            if(roomy){g.pose().pushPose();g.pose().translate(x+cw/2f,ly,0);g.pose().scale(1.5f,1.5f,1);g.drawString(font,level.getVisualOrderText(),-font.width(level)/2,0,Ui.INK,false);g.pose().popPose();ly+=16;}
+            else{int lw=Math.min(cw-20,font.width(level));Ui.text(g,font,level,x+cw/2-lw/2,ly,Ui.INK,cw-20);ly+=11;}
+            Ui.text(g,font,Ui.t("raid.sum",n("baseTier"),n("nextRaidBonus"),cap),x+10,ly,Ui.MUTED,cw-20);ly+=roomy?14:11;
+            // What that raid brings and pays: a chip a row when there is room, plain lines otherwise
+            float elites=state.getFloat("elitesPerWave");
+            Component eliteText=elites<1?Ui.t("raid.stats.elites_raid"):Math.abs(elites-Math.round(elites))<.01f?Ui.t("raid.stats.elites_wave",Math.round(elites)):Ui.t("raid.stats.elites_about",String.format(java.util.Locale.ROOT,"%.1f",elites));
+            Component waves=Ui.t("raid.stats.waves",n("nextWaves")),mobs=Ui.t("raid.stats.attackers",n("firstWave"),n("lastWave")),pay=Ui.t("raid.stats.ardent",n("raidArdent"));
+            if(roomy){
+                int[] accents={Ui.CYAN,Ui.CYAN,Ui.ORANGE,Ui.BRASS};Component[] rows={waves,mobs,eliteText,pay};
+                for(int i=0;i<rows.length;i++){Ui.chip(g,font,rows[i],x+10,ly,accents[i],cw-20);ly+=14;}
+                ly+=4;if(ly+10<=y+h)Ui.wrap(g,font,Ui.t("raid.level_note"),x+10,ly,cw-20,Ui.MUTED,Math.max(1,(y+h-ly-2)/10));
+            }else{
+                Ui.text(g,font,Component.empty().append(waves).append(", ").append(mobs),x+10,ly,Ui.INK,cw-20);ly+=11;
+                Ui.text(g,font,eliteText,x+10,ly,Ui.ORANGE,cw-20);ly+=11;
+                Ui.text(g,font,pay,x+10,ly,Ui.BRASS,cw-20);
             }
-            if(lay.roomy()&&breakH>=76)Ui.wrap(g,font,Ui.t("raid.note"),x+10,by+50,w-20,Ui.MUTED,2);
-            boolean controls=ready()&&state.getString("phase").equals("preparation")&&on("introCompleted");
-            respite.active=startRaid.active=controls;
-            startRaid.setMessage(Ui.t(on("raidRequested")?"raid.start.booked":"raid.start"));if(on("raidRequested"))startRaid.active=false;lowerTier.active=controls&&n("raidLimit")>0;higherTier.active=controls&&n("raidLimit")<10;
+            lowerTier.active=controls&&cap>0;higherTier.active=controls&&cap<10;
+            // Right: the break
+            int bx=x+cw+6,bw=w-cw-6;
+            Ui.card(g,bx,y,bw,h,Ui.BRASS);
+            Ui.text(g,font,Ui.t("raid.break_title"),bx+10,y+4,Ui.BRASS,bw-20);
+            Component until=preparing()?Ui.t("raid.break.until",String.format(java.util.Locale.ROOT,"%.1f",state.getLong("untilRaid")/24000.0)):Ui.t("raid.break.during");
+            int ry=y+(roomy?18:16);
+            Ui.text(g,font,until,bx+10,ry,Ui.INK,bw-20);ry+=11;
+            Ui.text(g,font,Ui.t("raid.break.bought",(int)Math.ceil(state.getLong("respiteTicks")/24000.0),n("nextRaidBonus")),bx+10,ry,Ui.MUTED,bw-20);ry+=roomy?16:13;
+            Ui.text(g,font,Ui.t("raid.price"),bx+10,ry,Ui.MUTED,bw-20);ry+=10;
+            var costs=state.getList("respiteCosts",net.minecraft.nbt.Tag.TAG_COMPOUND);int slot=(bw-20)/Math.max(3,costs.size());
+            for(int i=0;i<costs.size();i++){
+                var row=costs.getCompound(i);var item=ItemStack.of(row.getCompound("item"));int cx=bx+10+i*slot;
+                g.renderItem(item,cx,ry);icons.add(new Hover(item,cx,ry));
+                Ui.text(g,font,Ui.t("raid.cost",row.getInt("have"),row.getInt("count")),cx+18,ry+4,row.getInt("have")>=row.getInt("count")?Ui.INK:Ui.ORANGE,slot-20);
+            }
+            ry+=22;
+            if(roomy&&ry+10<=y+h)Ui.wrap(g,font,Ui.t("raid.note"),bx+10,ry,bw-20,Ui.MUTED,Math.max(1,(y+h-ry-2)/10));
+            respite.active=controls;
+        }
+        private List<Component> modifierPage(GuiGraphics g,int mx,int my,int x,int w,RaidLayout lay,boolean controls){
+            int y=lay.y();List<Component> tip=null;String type=raidType();
+            var mods=state.getList(preparing()?"chosenMods":"activeMods",net.minecraft.nbt.Tag.TAG_STRING);
+            // One special raid at a time
+            Ui.card(g,x,y,w,lay.specialH(),Ui.RED);
+            Ui.text(g,font,Ui.t("raid.special_title"),x+10,y+5,Ui.RED,w-20);
+            for(int i=0;i<specials.size();i++){
+                var b=specials.get(i);String id=SPECIALS[i];b.selected=RaidTypes.special(type)?id.equals(type):i==0;b.active=controls;
+                if(Ui.inside(mx,my,b.getX(),b.getY(),b.getWidth(),b.getHeight()))tip=RaidTypes.special(id)?List.of(Ui.t("raidtype."+id),Ui.t("raidtype.tip."+id),Ui.t("raid.special.bonus",n("specialBonus"),RaidModifiers.SPECIAL_DROPS).copy().withStyle(net.minecraft.ChatFormatting.GOLD))
+                    :List.of(Ui.t("raid.special.normal"),Ui.t("raid.special.tip.normal"));
+            }
+            if(lay.roomy())Ui.text(g,font,RaidTypes.special(type)?Ui.t("raidtype.short."+type):Ui.t("raid.special.short.normal"),x+10,y+37,Ui.MUTED,w-20);
+            // Any number of modifiers
+            int my2=y+lay.specialH()+lay.gap(),mh=15+2*lay.modStride()+(lay.roomy()?-2:2);
+            Ui.card(g,x,my2,w,mh,Ui.ORANGE);
+            Ui.text(g,font,Ui.t("raid.mods_title"),x+10,my2+5,Ui.ORANGE,w-20);
+            for(int i=0;i<modToggles.size();i++){
+                var b=modToggles.get(i);var mod=RaidModifiers.MODS.get(i);boolean picked=false;
+                for(int j=0;j<mods.size();j++)if(mods.getString(j).equals(mod.id()))picked=true;
+                b.selected=picked;b.active=controls;
+                if(lay.roomy()){
+                    Ui.text(g,font,Ui.t("raidmod."+mod.id()+".short"),b.getX()+2,b.getY()+21,Ui.MUTED,b.getWidth()-4);
+                    Ui.text(g,font,Ui.t("raidmod.bonus",mod.payout(),mod.drops()),b.getX()+2,b.getY()+31,Ui.BRASS,b.getWidth()-4);
+                }
+                if(Ui.inside(mx,my,b.getX(),b.getY(),b.getWidth(),b.getHeight()))tip=List.of(Ui.t("raidmod."+mod.id()),Ui.t("raidmod."+mod.id()+".desc"),Ui.t("raidmod.bonus.long",mod.payout(),mod.drops()).copy().withStyle(net.minecraft.ChatFormatting.GOLD));
+            }
+            return tip;
+        }
+        /** The line under Raid control: where to choose, or what the chosen modifiers pay */
+        private void raidHint(GuiGraphics g){
+            int payout=n("modPayout"),drops=n("modDrops");
+            if(!preparing()){if(raidPage==1)hint(g,Ui.t("raid.mods.running",payout,drops),Ui.BRASS);}
+            else if(!ready())hint(g,Ui.t("raid.near"));
+            else if(payout>0||drops>0)hint(g,Ui.t("raid.mods.sum",payout,drops),Ui.BRASS);
+            else if(raidPage==1)hint(g,Ui.t("raid.mods.none"));
         }
         // Settings: "What is protected?"
         private void settingsTab(GuiGraphics g,int x,int w){

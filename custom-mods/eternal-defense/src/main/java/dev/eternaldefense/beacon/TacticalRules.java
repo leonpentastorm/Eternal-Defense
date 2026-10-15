@@ -74,8 +74,7 @@ final class TacticalRules {
     }
 
     // Codenames
-    static final String[] FIRST={"IRON","STEEL","SILENT","BLACK","CRIMSON","GRANITE","AMBER","COPPER","COBALT","ASHEN","FROST","THUNDER","BROKEN","HOLLOW","SCARLET","GHOST","WINTER","RUSTED","SABLE","NORTHERN"};
-    static final String[] SECOND={"HOUND","LANCE","ANVIL","WOLF","TALON","HAMMER","SPEAR","RAVEN","BASTION","SHIELD","FALCON","VIPER","MANTIS","GLACIER","EMBER","SENTINEL","BADGER","COBRA","TEMPEST","ARROW"};
+    static final String[] FIRST=CodeNames.FIRST,SECOND=CodeNames.SECOND;
     /** Pure: the operation codename of a seed, always the same for the same seed ("OP IRON HOUND"). */
     static String codename(long seed){
         long a=seed*0x9E3779B97F4A7C15L;a^=a>>>29;long b=(seed+0x632BE59BD9B4E019L)*0xBF58476D1CE4E5B9L;b^=b>>>31;

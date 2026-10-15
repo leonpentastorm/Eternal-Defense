@@ -1,0 +1,101 @@
+QA_NOTE FOB SALT 75472988594742890 first FOB name FOB THIRD PHOENIX
+QA_CHECK PASS this world has its own FOB name salt 75472988594742890
+QA_CHECK PASS fifty worlds name their first FOB in at least forty ways 50 names
+QA_NOTE MEDIANS {5=31.37254887294513, 1=16.18497141053856, 2=24.121076233183853, 3=38.888888373787026, 4=58.53658672743511} (catalogued only {5=31.37254887294513, 1=16.18497141053856, 2=24.09178811659193, 3=38.888888373787026, 4=64.72928611162186})
+QA_NOTE STRONG bf1:chauchat Age 2 x1.70 -> 1 diamond | bf1:lewis Age 2 x1.93 -> 1 diamond | bf1:lunge_mine Age 2 x6.70 -> 4 diamond | bf1:m1916 Age 2 x1.53 -> 1 diamond | bf1:mg0815 Age 2 x2.88 -> 2 diamond | bf1:mg42 Age 2 x2.79 -> 2 diamond | bf1:model10 Age 2 x1.75 -> 1 diamond | bf1:smg0818 Age 2 x1.85 -> 1 diamond | bf1:vp1915 Age 2 x2.41 -> 2 diamond | bf1:zk383 Age 2 x1.53 -> 1 diamond | tacz:m1014 Age 3 x2.50 -> author's own rare part | tacz:m870 Age 3 x1.98 -> 2 emerald | tacz:scar_h Age 3 x1.55 -> author's own rare part | tacz:spas_12 Age 3 x3.79 -> author's own rare part | bf1:rorsch_mk4 Age 5 x3.19 -> author's own rare part
+QA_NOTE BALANCER strong ok authors bad: 15 11 4 []
+QA_CHECK PASS every gun far above its Age's median asks for a rare part (the balancer's or its author's) 15 11 4 []
+QA_NOTE NO3 1 1.19 1 | diamond x1; dark_oak_log x6; iron_ingot x24; pressed_receiver x1; 
+QA_CHECK PASS the No. 3 Revolver (bf1:sw_model3) is Age 1 by its line in age_overrides.json and keeps its author's one diamond (no second one added) 1 1.19 1 | diamond x1; dark_oak_log x6; iron_ingot x24; pressed_receiver x1; 
+QA_NOTE M1911 4 1 0 | iron_ingot x16; dark_oak_log x5; hardened_receiver x1; 
+QA_CHECK PASS one line in config/eternal-defense-ages.json moves the M1911 from Age 2 to Age 4, with that Age's receiver 4 1 0 | iron_ingot x16; dark_oak_log x5; hardened_receiver x1; 
+QA_NOTE ATTACHMENTS 3 16 true true true [trisdyna:trammo_1, trisdyna:muzzle_trls_3, trisdyna:stock_tris2, trisdyna:muzzle_tris1, trisdyna:sf7e_ammo_2, trisdyna:stock_sf7e_sp, trisdyna:sf7e_ammo_3, trisdyna:muzzle_tris_sl1, trisdyna:muzzle_tris2, trisdyna:stock_tris_st2, trisdyna:stock_sf7e_he, trisdyna:sf7e_ammo_1, trisdyna:trammo_2, trisdyna:muzzle_trls_1, trisdyna:muzzle_trls_2, trisdyna:muzzle_tris_sl2]
+QA_CHECK PASS TaCZ's own damage attachments stay on the table (hollow point, HE, incendiary) 3 16 true true true [trisdyna:trammo_1, trisdyna:muzzle_trls_3, trisdyna:stock_tris2, trisdyna:muzzle_tris1, trisdyna:sf7e_ammo_2, trisdyna:stock_sf7e_sp, trisdyna:sf7e_ammo_3, trisdyna:muzzle_tris_sl1, trisdyna:muzzle_tris2, trisdyna:stock_tris_st2, trisdyna:stock_sf7e_he, trisdyna:sf7e_ammo_1, trisdyna:trammo_2, trisdyna:muzzle_trls_1, trisdyna:muzzle_trls_2, trisdyna:muzzle_tris_sl2]
+QA_CHECK PASS add-on packs' attachments that raise damage are not sold 3 16 true true true [trisdyna:trammo_1, trisdyna:muzzle_trls_3, trisdyna:stock_tris2, trisdyna:muzzle_tris1, trisdyna:sf7e_ammo_2, trisdyna:stock_sf7e_sp, trisdyna:sf7e_ammo_3, trisdyna:muzzle_tris_sl1, trisdyna:muzzle_tris2, trisdyna:stock_tris_st2, trisdyna:stock_sf7e_he, trisdyna:sf7e_ammo_1, trisdyna:trammo_2, trisdyna:muzzle_trls_1, trisdyna:muzzle_trls_2, trisdyna:muzzle_tris_sl2]
+QA_CHECK PASS the weapon table stands BlockPos{x=-16, y=-60, z=8}
+QA_NOTE SEARCH chauchat
+QA_CHECK PASS the server marks it strong for its Age (percent of the median) 170% bf1:gun/chauchat
+QA_CHECK PASS its rare part heads the cost list, so the reason for the price is in view diamond of 5
+QA_CHECK PASS the table says so under the gun, whole and clear of the unlock lines [WEAPONS, Age 1 | Frontier, AMMO, No nearby table, ATTACHMENTS, No nearby table, ARMOR & GEAR, No nearby table, Browsing weapons, 1-1 / 1, Chauchat, Age 2: World Wars, Materials (from your inventory), Diamond, 0 / 1 | need 1 more, Wood (any log), 0 / 12 | need 12 more, Iron Ingot, 0 / 32 | need 32 more, Leather, 0 / 6 | need 6 more, Strong: 170% of its Age's usual damage, Age 2, Chauchat]
+QA_CHECK PASS wild mobs drop no Ardent Energy {wild=40} {wild=0}
+QA_NOTE WITHER max health 900.0
+QA_CHECK PASS a boss with 300 health drops one {boss=1, wild=40} {boss=1, wild=0}
+QA_NOTE BADASS 30.0 120.0 30.0 6.0 0.600 0.960 1.200 Badass III Zombie Badass V Zombie
+QA_CHECK PASS Badass III: four times the health of its kind (+300%) 30.0 120.0 30.0 6.0 0.600 0.960 1.200 Badass III Zombie Badass V Zombie
+QA_CHECK PASS Badass V: six times (+500%) 30.0 120.0 30.0 6.0 0.600 0.960 1.200 Badass III Zombie Badass V Zombie
+QA_CHECK PASS bigger hitboxes: 1.6 and 2.0 times as wide 30.0 120.0 30.0 6.0 0.600 0.960 1.200 Badass III Zombie Badass V Zombie
+QA_CHECK PASS their names show the modifier over their heads 30.0 120.0 30.0 6.0 0.600 0.960 1.200 Badass III Zombie Badass V Zombie
+QA_CHECK PASS after the raid's own balancing the Badass III still has four times the health 4.00
+QA_CHECK PASS the client draws it 1.6 times as big, with its hitbox 1.6 0.96000004
+QA_NOTE ARMOR explosion/arrow/melee: flak hp 45/30 4.0 12.0 12.0;body hp 45/30 12.0 4.0 12.0;plain2 hp 30/30 10.0 10.0 10.0;
+QA_CHECK PASS Flak Armor: 50% more health; explosions 4 of 10, arrows and melee 12 flak hp 45/30 4.0 12.0 12.0;body hp 45/30 12.0 4.0 12.0;plain2 hp 30/30 10.0 10.0 10.0;
+QA_CHECK PASS Body Armor: arrows (bullets) 4 of 10, explosions and melee 12 flak hp 45/30 4.0 12.0 12.0;body hp 45/30 12.0 4.0 12.0;plain2 hp 30/30 10.0 10.0 10.0;
+QA_CHECK PASS a plain zombie takes all 10 of each flak hp 45/30 4.0 12.0 12.0;body hp 45/30 12.0 4.0 12.0;plain2 hp 30/30 10.0 10.0 10.0;
+QA_CHECK PASS both armored elites have 50% more health 1.50 1.50
+QA_CHECK PASS the Healer heals hostiles around it, raid-bound or not (2 a second) 12 12
+QA_CHECK PASS Speedster keeps its +80% speed (twice the rush) after the raid's balancing 0.80 0.580
+QA_NOTE MATRIOSKA health 15.0 of 30.0
+QA_CHECK PASS Matrioska has half the health 
+QA_CHECK PASS killed: it explodes and two copies take its place blasts [elite:matrioska] copies 2 0
+QA_CHECK PASS each copy splits once more (four) 4
+QA_CHECK PASS the last copies split no more 0 raiders left
+QA_CHECK PASS only the first Matrioska drops its own Ardent (2); its copies drop only what any raid mob may [matrioska level 1 gen 0: 2, matrioska level 1 gen 1: 0, matrioska level 1 gen 1: 1, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0]
+QA_NOTE HITS vamp dealt 3.0 healed 1.5; frost slow 1 dig true; berserk full 3.00 low 5.70 ratio 1.90
+QA_CHECK PASS Vampiric heals itself by half the damage it deals vamp dealt 3.0 healed 1.5; frost slow 1 dig true; berserk full 3.00 low 5.70 ratio 1.90
+QA_CHECK PASS Frostbite's hit slows (Slowness II) and slows digging vamp dealt 3.0 healed 1.5; frost slow 1 dig true; berserk full 3.00 low 5.70 ratio 1.90
+QA_CHECK PASS Berserker hits about 1.9 times as hard at a tenth of its health vamp dealt 3.0 healed 1.5; frost slow 1 dig true; berserk full 3.00 low 5.70 ratio 1.90
+QA_NOTE LONG SHOT follow range 101.0
+QA_CHECK PASS Long Shot: sees 85 blocks more, has its own aim, and its arrow exploded at 40 blocks 101 true blasts [arrow]
+QA_NOTE ELITE DROPS [matrioska level 1 gen 0: 2, matrioska level 1 gen 1: 0, matrioska level 1 gen 1: 1, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, badass level 1 gen 0: 3, badass level 2 gen 0: 2, badass level 3 gen 0: 3, badass level 4 gen 0: 4, badass level 5 gen 0: 5, healer level 1 gen 0: 2, speedster level 1 gen 0: 1, flak_armor level 1 gen 0: 1]
+QA_CHECK PASS every elite drops Ardent: its Badass level, 2 for a Healer, at least 1 otherwise [matrioska level 1 gen 0: 2, matrioska level 1 gen 1: 0, matrioska level 1 gen 1: 1, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, badass level 1 gen 0: 3, badass level 2 gen 0: 2, badass level 3 gen 0: 3, badass level 4 gen 0: 4, badass level 5 gen 0: 5, healer level 1 gen 0: 2, speedster level 1 gen 0: 1, flak_armor level 1 gen 0: 1]
+QA_CHECK PASS the old Raid break tab is now Raid control dev.eternaldefense.beacon.Ui$UiButton@1a5690d0
+QA_CHECK PASS it opens on Level & break, with its two pages 3 0
+QA_CHECK PASS the layout at this window (GUI scale 3) is the compact one ph 224
+QA_NOTE DRAWN level [RAID LEVEL, Shared by the team, Cap 10 / 10, Next raid: level 0, Base 0 + break 0, cap 10, 3 waves, 5 to 7 mobs a wave, Elites: 1 a raid or more, Pays 2 Ardent + a cache, RAID BREAK, Next raid in 10.0 active days, Bought 0 days, +0 of 3 levels, Next price, 0/16, 0/2, 0/4]
+QA_CHECK PASS it shows the cap, the next raid's level and why, waves, mobs, elites and pay [RAID LEVEL, Shared by the team, Cap 10 / 10, Next raid: level 0, Base 0 + break 0, cap 10, 3 waves, 5 to 7 mobs a wave, Elites: 1 a raid or more, Pays 2 Ardent + a cache, RAID BREAK, Next raid in 10.0 active days, Bought 0 days, +0 of 3 levels, Next price, 0/16, 0/2, 0/4]
+QA_CHECK PASS and the break with its price [RAID LEVEL, Shared by the team, Cap 10 / 10, Next raid: level 0, Base 0 + break 0, cap 10, 3 waves, 5 to 7 mobs a wave, Elites: 1 a raid or more, Pays 2 Ardent + a cache, RAID BREAK, Next raid in 10.0 active days, Bought 0 days, +0 of 3 levels, Next price, 0/16, 0/2, 0/4]
+QA_CHECK PASS no text is cut short []
+QA_CHECK PASS every button's label fits []
+QA_CHECK PASS - lowers the cap (shared by the team, saved on the server) 9
+QA_CHECK PASS + raises it again 10
+QA_CHECK PASS Buy sits under the break card 
+QA_CHECK PASS a break is bought: 5 days and +1 level 119990 1
+QA_CHECK PASS the card shows it [RAID LEVEL, Shared by the team, Cap 10 / 10, Next raid: level 1, Base 0 + break 1, cap 10, 4 waves, 11 to 14 mobs a wave, Elites: 1 a raid or more, Pays 3 Ardent + a cache, RAID BREAK, Next raid in 15.0 active days, Bought 5 days, +1 of 3 levels, Next price, 0/32, 0/4, 0/8]
+QA_NOTE BEFORE MODS waves 4 first 11 last 14 elites 0.2 ardent 3
+QA_CHECK PASS the page has the special raid row (Ordinary and four) and six modifiers 5 6
+QA_CHECK PASS Ordinary is chosen; no modifier on 
+QA_CHECK PASS its texts fit [] []
+QA_CHECK PASS it says what modifiers do [SPECIAL RAID | PICK ONE, MODIFIERS | ANY NUMBER, NEXT RAID ONLY, Harder raids pay more: pick any number of modifiers.]
+QA_CHECK PASS Air raid is chosen for the next raid air
+QA_CHECK PASS only one special raid at a time: Siege replaces Air raid siege
+QA_CHECK PASS Ordinary clears it normal
+QA_CHECK PASS Reinforcements and Elite Cadre are chosen on the server and ticked on screen [reinforcements, elite_cadre]
+QA_CHECK PASS the raid pays 35% more and its mobs drop Ardent 25% more often 35 25
+QA_CHECK PASS its first wave is 30% bigger, one more elite a wave, the Ardent pay raised by 35% 15 1.2 5 (was 11 0.2 3)
+QA_CHECK PASS the tab and the line under it say so [SPECIAL RAID | PICK ONE, MODIFIERS | ANY NUMBER, NEXT RAID ONLY, Next raid: payout +35%, Ardent drops +25% (that raid only)]
+QA_CHECK PASS its texts fit []
+QA_CHECK PASS the roomy layout ph 340
+QA_CHECK PASS roomy page buttons fit []
+QA_CHECK PASS roomy modifiers page: texts fit, each modifier says what it does and pays [] [SPECIAL RAID | PICK ONE, Ordinary raid: the usual mix of mobs. Pick a special raid for a twist and a bigger prize., MODIFIERS | ANY NUMBER, NEXT RAID ONLY, 30% more mobs every wave, +20% pay, +10% Ardent, One more elite every wave, +15% pay, +15% Ardent, Raid mobs: 35% more health, +15% pay, +10% Ardent, Raid mobs: 20% faster, +10% pay, +10% Ardent, Survivors never glow, +10% pay, +5% Ardent, Beacon hurt 50% more, +15% pay, +10% Ardent, Next raid: payout +35%, Ardent drops +25% (that raid only)]
+QA_CHECK PASS roomy level page: texts fit, the stats as chips [] [RAID LEVEL, Shared by the team, Cap 10 / 10, Base 0 + break 1, cap 10, 4 waves, 15 to 19 mobs a wave, Elites: about 1.2 a wave, Pays 5 Ardent + a cache, Lower levels keep your upgrades; rewards, match the level you fight., RAID BREAK, Next raid in 15.0 active days, Bought 5 days, +1 of 3 levels, Next price, 0/32, 0/4, 0/8, Buy breaks for expeditions, or start now to, farm this level. Starting ends the break., Time counts only while someone is online., Next raid: payout +35%, Ardent drops +25% (that raid only)]
+QA_NOTE RAID [reinforcements, elite_cadre] [] normal 1 false 15 1 0
+QA_CHECK PASS the raid runs with both modifiers; the choice is used up [reinforcements, elite_cadre] [] normal 1 false 15 1 0
+QA_CHECK PASS chat names them and what they pay [Eternal Defense] Raid modifiers: Reinforcements, Elite Cadre. Payout +35%, Ardent drops from raid mobs +25%.
+QA_CHECK PASS wave 1 sends the 15% larger count raised 30% by Reinforcements (15) [Eternal Defense] Wave 1 / 4 incoming. 1 defender(s), 15 attackers.
+QA_CHECK PASS during the raid the page shows this raid's modifiers, locked 
+QA_CHECK PASS and says what this raid pays [SPECIAL RAID | PICK ONE, MODIFIERS | ANY NUMBER, NEXT RAID ONLY, This raid: payout +35%, Ardent drops +25%]
+QA_NOTE ELITE LINE [Eternal Defense] Wave 1: an elite is here, Speedster Zombie! This wave pays 1 more Ardent Energy.
+QA_CHECK PASS chat announces the elite and the wave's extra Ardent [Eternal Defense] Wave 1: an elite is here, Speedster Zombie! This wave pays 1 more Ardent Energy.
+QA_NOTE ELITES speedster lvl 1 hp 30/30 Speedster Zombie shown; 
+QA_CHECK PASS the elite carries its name over its head speedster lvl 1 hp 30/30 Speedster Zombie shown; 
+QA_CHECK PASS eliteWaves counts the waves with an elite so far 1 of 1
+QA_NOTE AFTER preparation 1 4 1 9 [] normal
+QA_CHECK PASS the raid is won preparation 1 4 1 9 [] normal
+QA_CHECK PASS with Elite Cadre every wave had an elite (4 waves) preparation 1 4 1 9 [] normal
+QA_CHECK PASS the reward chest gets the raid's Ardent raised 35% (5) plus 1 a wave with an elite preparation 1 4 1 9 [] normal
+QA_CHECK PASS chat says the cache is 35% bigger and pays the elite waves [Eternal Defense] Raid modifiers: the cache is 35% bigger. | [Eternal Defense] Elite waves: +4 Ardent Energy in the reward chest.
+QA_CHECK PASS after the raid: no modifiers, the next raid is ordinary, chat says where to choose preparation 1 4 1 9 [] normal
+QA_NOTE DROPS kills {marked=62, elite=11} ardent {marked=16, elite=7} elites [speedster level 1 gen 0: 1, berserker level 1 gen 0: 1, vampiric level 1 gen 0: 1, matrioska level 1 gen 0: 2, matrioska level 1 gen 1: 0, matrioska level 1 gen 1: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 1, frostbite level 1 gen 0: 1]
+QA_CHECK PASS raid mobs drop Ardent now and then (about 1 in 6 with +25%; here 16 from 62) {marked=62, elite=11} {marked=16, elite=7}
+QA_CHECK PASS every elite of the raid dropped Ardent [speedster level 1 gen 0: 1, berserker level 1 gen 0: 1, vampiric level 1 gen 0: 1, matrioska level 1 gen 0: 2, matrioska level 1 gen 1: 0, matrioska level 1 gen 1: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 0, matrioska level 1 gen 2: 1, frostbite level 1 gen 0: 1]
+QA_DONE pass=78 fail=0

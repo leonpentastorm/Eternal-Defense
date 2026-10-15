@@ -82,7 +82,7 @@ final class Hunts {
         if(spot==null)spot=TacticalRules.place(random,d.beacon.getX(),d.beacon.getZ(),d.radius(),range,taken,inside);
         if(spot==null)return Added.NO;
         long id=h.board.nextId++;
-        h.board.offers.add(new HuntBoard.Offer(id,kind,TacticalRules.codename(l.getSeed()*31+id),spot.x(),spot.z(),spot.distance(),spot.bearing()));
+        h.board.offers.add(new HuntBoard.Offer(id,kind,TacticalRules.codename(TacticalRules.mix(l.getSeed(),FobData.get(l).nameSalt,id)),spot.x(),spot.z(),spot.distance(),spot.bearing()));
         h.setDirty();return Added.YES;
     }
     /** Blocks around an objective checked for water (the objective itself and four points this far out). */

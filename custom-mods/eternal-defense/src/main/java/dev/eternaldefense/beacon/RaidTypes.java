@@ -15,20 +15,12 @@ import java.util.List;
 final class RaidTypes {
     private RaidTypes(){}
     static final List<String> SPECIAL=List.of("air","paratroopers","siege","swarm");
-    /** Raids before this number (counting the introduction) are always ordinary */
-    static final int FIRST_SPECIAL_RAID=4;
-    static final int CHANCE_PERCENT=50;
     /** Height above the beacon from which paratroopers jump */
     static final int DROP_HEIGHT=46;static final double FALL_SPEED=.16;
 
-    /** Pure: the kind of raid number raidNumber, given two random numbers (0-99 and 0-3). */
-    static String roll(int raidNumber,int percent,int pick){
-        if(raidNumber<FIRST_SPECIAL_RAID||percent>=CHANCE_PERCENT)return "normal";
-        return SPECIAL.get(Math.floorMod(pick,SPECIAL.size()));
-    }
     static boolean special(String type){return SPECIAL.contains(type);}
     /** Extra Ardent Energy for winning a special raid: more at higher reward tiers. */
-    static int bonusEnergy(int tier){return 3+2*Math.max(0,Math.min(10,tier));}
+    static int bonusEnergy(int tier){return (int)Math.ceil((3+2*Math.max(0,Math.min(10,tier)))*1.25);}
     /** Attackers of a wave relative to an ordinary raid. */
     static double countFactor(String type){return switch(type){case "swarm"->2.0;case "paratroopers"->.5;default->1.0;};}
     static int count(String type,int ordinary){return Math.max(1,Math.min(200,(int)Math.ceil(ordinary*countFactor(type))));}
@@ -68,13 +60,17 @@ final class RaidTypes {
         mob.getPersistentData().putBoolean("eternalChute",true);
         mob.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,20*90,0,false,false,false));
     }
-    /** Raider ids (red mark) and those under a parachute, for every client. */
-    record Marks(int[] raiders,int[] chuted) {
-        static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);}
-        static Marks decode(net.minecraft.network.FriendlyByteBuf b){return new Marks(b.readVarIntArray(),b.readVarIntArray());}
+    /** Raider ids (red mark), those under a parachute, and the elites drawn larger (id and size), for every client. */
+    record Marks(int[] raiders,int[] chuted,int[] scaled,float[] scales) {
+        static void encode(Marks p,net.minecraft.network.FriendlyByteBuf b){b.writeVarIntArray(p.raiders);b.writeVarIntArray(p.chuted);b.writeVarIntArray(p.scaled);for(float f:p.scales)b.writeFloat(f);}
+        static Marks decode(net.minecraft.network.FriendlyByteBuf b){var raiders=b.readVarIntArray();var chuted=b.readVarIntArray();var scaled=b.readVarIntArray();var scales=new float[scaled.length];for(int i=0;i<scales.length;i++)scales[i]=b.readFloat();return new Marks(raiders,chuted,scaled,scales);}
         static void handle(Marks p,java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctx){
             ctx.get().enqueueWork(()->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{
-                RAIDERS.clear();CHUTED.clear();for(int id:p.raiders)RAIDERS.add(id);for(int id:p.chuted)CHUTED.add(id);}));ctx.get().setPacketHandled(true);
+                RAIDERS.clear();CHUTED.clear();for(int id:p.raiders)RAIDERS.add(id);for(int id:p.chuted)CHUTED.add(id);
+                var level=net.minecraft.client.Minecraft.getInstance().level;var seen=new java.util.HashSet<Integer>();
+                for(int i=0;i<p.scaled.length;i++){seen.add(p.scaled[i]);Float old=Elites.SCALES.put(p.scaled[i],p.scales[i]);
+                    if((old==null||old!=p.scales[i])&&level!=null){var e=level.getEntity(p.scaled[i]);if(e!=null)e.refreshDimensions();}}
+                Elites.SCALES.keySet().removeIf(id->!seen.contains(id));}));ctx.get().setPacketHandled(true);
         }
     }
     /** Client: ids of the raiding mobs, and of those floating down under a red parachute. */
@@ -82,11 +78,12 @@ final class RaidTypes {
     private static boolean marked;
     /** Server: send the current marks to everybody (an empty list once after the raid so the marks go away). */
     static void broadcast(ServerLevel l,CampaignData d){
-        var raiders=new it.unimi.dsi.fastutil.ints.IntArrayList();var chuted=new it.unimi.dsi.fastutil.ints.IntArrayList();
-        if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("eternalChute"))chuted.add(m.getId());}
+        var raiders=new it.unimi.dsi.fastutil.ints.IntArrayList();var chuted=new it.unimi.dsi.fastutil.ints.IntArrayList();var scaled=new it.unimi.dsi.fastutil.ints.IntArrayList();var scales=new it.unimi.dsi.fastutil.floats.FloatArrayList();
+        if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("eternalChute"))chuted.add(m.getId());
+            if(m.getPersistentData().contains(Elites.SCALE)){scaled.add(m.getId());scales.add(m.getPersistentData().getFloat(Elites.SCALE));}}
         for(int id:HuntWarband.markIds(l))raiders.add(id);   // A hunt warband carries the same red mark
         if(raiders.isEmpty()&&!marked)return;marked=!raiders.isEmpty();
-        BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray()));
+        BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray(),scaled.toIntArray(),scales.toFloatArray()));
     }
     /** Flyers that steer themselves straight at their target */
     static boolean glider(Mob mob){return mob instanceof net.minecraft.world.entity.monster.Vex||mob instanceof net.minecraft.world.entity.monster.Phantom;}
@@ -97,13 +94,10 @@ final class RaidTypes {
 
     // Announcements
     static Component name(String type){return Component.translatable("gui.eternal_defense.raidtype."+type);}
-    /** At the end of a raid: decide the next one's kind and tell everybody (chat and a toast). */
+    /** At the end of a raid: the next one is ordinary unless someone chooses a special raid or modifiers in Raid Control. */
     static void finish(ServerLevel l,CampaignData d){
-        d.nextRaidType=roll(d.raidsStarted+1,l.random.nextInt(100),l.random.nextInt(SPECIAL.size()));d.setDirty();
-        var text=Component.translatable("gui.eternal_defense.raidtype.next",name(d.nextRaidType)).withStyle(special(d.nextRaidType)?net.minecraft.ChatFormatting.GOLD:net.minecraft.ChatFormatting.GRAY);
-        l.getServer().getPlayerList().broadcastSystemMessage(text,false);
-        if(special(d.nextRaidType))l.getServer().getPlayerList().broadcastSystemMessage(Component.translatable("gui.eternal_defense.raidtype.tip."+d.nextRaidType).withStyle(net.minecraft.ChatFormatting.YELLOW),false);
-        BeaconNetwork.announce(l,"next_raid",0,0,d.nextRaidType,"");
+        d.nextRaidType="normal";d.activeMods.clear();d.setDirty();
+        l.getServer().getPlayerList().broadcastSystemMessage(Component.translatable("gui.eternal_defense.raidtype.choose").withStyle(net.minecraft.ChatFormatting.GRAY),false);
     }
 
     // Paratroopers: a gentle fall

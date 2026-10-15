@@ -18,6 +18,8 @@ final class RaidRewards {
         throw new IllegalStateException("Missing guaranteed tactical supply "+id);
     }
     static void supply(List<ItemStack> list,ServerLevel l,String key,String id,int count){if(count<=0)return;var stack=tactical(l,key,id);stack.setCount(count);list.add(stack);}
+    /** The completion cache raised by the raid modifiers' payout bonus (every stack, rounded up) */
+    static List<ItemStack> completion(ServerLevel l,int tier,boolean hard,int bonusPercent){var list=completion(l,tier,hard);for(var s:list)s.setCount(RaidModifiers.raised(s.getCount(),bonusPercent));return list;}
     static List<ItemStack> completion(ServerLevel l,int tier,boolean hard){
         tier=Math.max(0,Math.min(10,tier));List<ItemStack> list=new ArrayList<>();int t=tier,b=Math.min(5,t),extra=Math.max(0,t-5);
         // Raw starter stone tapers off; later caches prioritize compact useful production inputs.
@@ -32,7 +34,7 @@ final class RaidRewards {
         if(t>=6){add(list,"minecraft:shulker_shell",2+2*((t-6)/2));add(list,"minecraft:phantom_membrane",4+2*(t-6));}
         if(t>=8)add(list,"minecraft:dragon_breath",2*(t-7));
         add(list,"eternal_defense:universal_ammo_coin",8+8*t);
-        add(list,"eternal_defense:ardent_energy",1+t);   // The floor of the Ardent Energy income: farming and exchange sell-offs add to it
+        add(list,"eternal_defense:ardent_energy",Rules.raidArdent(t));   // The floor of the Ardent Energy income
         // Bonus resources are 50% of the completion cache, rounded up; wave iron stays unchanged.
         if(hard){for(var s:list)s.setCount(s.getCount()+(s.getCount()+1)/2);if(t>=5)add(list,"minecraft:nether_star",1+extra/3);}
         add(list,"eternal_defense:pressed_receiver",1);   // Every won raid gives one Pressed Receiver, a hard raid too (after the bonus)

@@ -14,13 +14,13 @@ class RulesTest {
         assertEquals(32,Rules.enemies(6,1,2));assertEquals(43,Rules.enemies(6,8,2));
         for(int tier=0;tier<=10;tier++)for(int wave=1;wave<=8;wave++){
             int solo=Rules.waveEnemies(tier,wave,1,0,false),duo=Rules.waveEnemies(tier,wave,2,0,false);
-            assertTrue(duo>solo&&duo<solo*2);assertTrue(Rules.waveEnemies(tier,wave,100,3,true)<=144);
+            assertTrue(duo>solo&&duo<solo*2);assertTrue(Rules.waveEnemies(tier,wave,100,3,true)<=Rules.WAVE_CAP);
             assertTrue(Rules.concurrentAttackers(1,tier)<=24&&Rules.concurrentAttackers(100,tier)<=48);
         }
     }
     @Test void veteranEscalationBuysReinforcementsAndStopsAtThirtyPercent(){
         assertEquals(0,Rules.veteranPressure(4,1000));assertEquals(0,Rules.veteranPressure(6,2));assertEquals(1,Rules.veteranPressure(6,3));assertEquals(3,Rules.veteranPressure(6,100000));
-        assertEquals(25,Rules.waveEnemies(6,1,1,3,false));assertEquals(650,Rules.scaledBossHealth(6,1));assertEquals(943,Rules.scaledBossHealth(6,2));assertEquals(1528,Rules.scaledBossHealth(6,1000));
+        assertEquals(29,Rules.waveEnemies(6,1,1,3,false));assertEquals(650,Rules.scaledBossHealth(6,1));assertEquals(943,Rules.scaledBossHealth(6,2));assertEquals(1528,Rules.scaledBossHealth(6,1000));
     }
     @Test void platformAgesRaiseScoreAndHaveARewardConsequence(){
         assertEquals(40,Rules.blockScore("eternal_defense:gun_platform#platform",1));

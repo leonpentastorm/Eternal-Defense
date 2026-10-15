@@ -134,8 +134,11 @@ public final class WeaponPlatform {
     }
     static List<Entry> entries(ServerPlayer p,String kind,String query){
         if(kind.equals("armor"))return ArmorPlatform.entries(p,query);
-        String filter=query.toLowerCase(Locale.ROOT);List<Entry> list=new ArrayList<>();List<Object[]> magazines=new ArrayList<>();
-        for(var recipe:p.level().getRecipeManager().getRecipes()){
+        return entries(p.level().getRecipeManager(),kind,query);
+    }
+    static List<Entry> entries(net.minecraft.world.item.crafting.RecipeManager recipes,String kind,String query){
+        String filter=query.toLowerCase(Locale.ROOT);List<Entry> list=new ArrayList<>();List<Object[]> magazines=new ArrayList<>();AttachmentDamage.fresh(recipes);
+        for(var recipe:recipes.getRecipes()){
             if(!recipe.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe"))continue;
             var id=recipe.getId();
             try{
@@ -146,9 +149,11 @@ public final class WeaponPlatform {
                 if(gate==null){var tag=output.getOrCreateTag();String type=tag.contains("GunId")?"gun":tag.contains("AmmoId")?"ammo":"attachment";
                     String indexed=tag.getString(type.equals("gun")?"GunId":type.equals("ammo")?"AmmoId":"AttachmentId");gate=new Gate(5,type,indexed.isEmpty()?id.toString():indexed);}
                 if(!gate.kind.equals(kind))continue;
+                if(kind.equals("attachment")&&!AttachmentDamage.sold(output))continue;   // An add-on pack's attachment that adds damage is not sold
                 list.add(new Entry(id,recipe,gate,output));
             }catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",id,e);}
         }
+        list=new ArrayList<>(CraftBalance.aged(list,catalogue().keySet(),kind,recipes));   // Hand-set Ages, unknown guns by damage output
         if(kind.equals("ammo")){
             // A magazine is listed no later than the rounds it holds, as the table lists them
             Map<String,Integer> rounds=new HashMap<>();for(var e:list)if(e.output.hasTag()&&e.output.getTag().contains("AmmoId"))rounds.merge(e.output.getTag().getString("AmmoId"),e.gate.age,Math::min);
@@ -190,9 +195,13 @@ public final class WeaponPlatform {
         }
         costs=InventoryPayment.consolidate(costs);
         if(CreateUnlocks.armory(e))return costs;
-        // Factory part for the gun's Age
+        // Factory part for the gun's final Age (a recipe made for another Age loses its part), and a rare part when it is far stronger than its Age
         String id=switch(e.gate.age){case 1,2->"eternal_defense:pressed_receiver";case 3,4->"eternal_defense:hardened_receiver";default->"eternal_defense:exotic_receiver";};
-        if(e.gate.kind.equals("gun"))addUnlessPresent(costs,cost(id,e.gate.age==2?2:1));
+        if(e.gate.kind.equals("gun")){
+            var rare=CraftBalance.surcharge(e,costs);
+            costs=new ArrayList<>(costs);costs.removeIf(c->is(c,"eternal_defense:pressed_receiver")||is(c,"eternal_defense:hardened_receiver")||is(c,"eternal_defense:exotic_receiver"));
+            costs.add(cost(id,e.gate.age==2?2:1));if(rare!=null)costs.add(0,rare);   // First, so the reason for the price is seen
+        }
         else if(e.gate.kind.equals("ammo")){
             // The platform sets the cases and propellant itself, whatever the recipe (or an older pack script) lists
             String ammo=e.output.hasTag()&&e.output.getTag().contains("AmmoId")?e.output.getTag().getString("AmmoId"):e.gate.id;
@@ -302,6 +311,7 @@ public final class WeaponPlatform {
         for(int i=page*pageSize;i<Math.min(entries.size(),(page+1)*pageSize);i++){
             Entry e=entries.get(i);var row=new CompoundTag();row.putString("recipe",e.recipeId.toString());row.putString("id",e.gate.id);row.putInt("age",e.gate.age);row.putBoolean("unlocked",CreateUnlocks.unlocked(p,e,age));row.putBoolean("special",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e));row.putString("progression",CreateUnlocks.label(e));row.putString("requirement",CreateUnlocks.armory(e)||CreateUnlocks.turret(e)||CreateUnlocks.supply(e)?CreateUnlocks.requirement(CreateUnlocks.turret(e)?2:CreateUnlocks.required(e)):"Upgrade this table to "+CreateUnlocks.label(e));row.put("output",e.output.copyWithCount(1).save(new CompoundTag()));row.putInt("outputCount",e.output.getCount());row.putBoolean("magazine",MagazineBridge.isMagazine(e.output));if(MagazineBridge.isMagazine(e.output))row.putInt("capacity",MagazineBridge.capacity(e.output));
             try{row.put("costs",costTags(w,costs(e)));}catch(ReflectiveOperationException ex){row.putBoolean("invalid",true);}
+            if(e.gate.kind.equals("gun")){double r=CraftBalance.ratio(e);if(r>=CraftBalance.settings().outlierFrom())row.putInt("strength",(int)Math.round(r*100));}
             if(station.kind.equals("ammo"))row.putInt("coinCost",AmmoCoins.price(p,e));recipes.add(row);
         }
         n.put("recipes",recipes);n.put("upgrades",costTags(w,upgrades(age)));

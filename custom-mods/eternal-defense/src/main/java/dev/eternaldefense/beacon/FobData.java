@@ -75,6 +75,8 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     }
 
     long nextId=1;
+    /** Shuffles this world's generated FOB names (drawn once, saved) */
+    long nameSalt=new Random().nextLong();
     final Map<Long,Fob> fobs=new LinkedHashMap<>();
     /** Ticks of play: grows by 20 a second while at least one player is online */
     long onlineTicks;
@@ -88,7 +90,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     List<String> names(long except){var out=new ArrayList<String>();for(var f:fobs.values())if(f.id!=except)out.add(f.name);return out;}
     int count(FobRules.State state){int n=0;for(var f:fobs.values())if(f.state==state)n++;return n;}
     Fob add(BlockPos pos,long villageSection,long now){
-        var f=new Fob(nextId++);f.pos=pos.immutable();f.villageSection=villageSection;f.placedAt=now;f.name=FobRules.freeCodename(f.id,names(f.id));
+        var f=new Fob(nextId++);f.pos=pos.immutable();f.villageSection=villageSection;f.placedAt=now;f.name=FobRules.freeCodename(nameSalt,f.id,names(f.id));
         f.specialty=RouteRules.Specialty.of(new Random().nextInt(RouteRules.Specialty.values().length));   // Rolled once, at planting
         f.dirty=this::setDirty;
         fobs.put(f.id,f);setDirty();return f;
@@ -96,7 +98,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
 
     // Save / load: one bad entry is skipped, never the whole list
     static FobData load(CompoundTag n){
-        var d=new FobData();d.nextId=Math.max(1,n.getLong("nextId"));d.onlineTicks=Math.max(0,n.getLong("onlineTicks"));
+        var d=new FobData();d.nextId=Math.max(1,n.getLong("nextId"));if(n.contains("nameSalt"))d.nameSalt=n.getLong("nameSalt");d.onlineTicks=Math.max(0,n.getLong("onlineTicks"));
         d.sosClock=Math.max(0,n.getLong("sosClock"));d.sosFob=n.getLong("sosFob");d.sosLeft=Math.max(0,n.getLong("sosLeft"));d.sosSerial=n.getLong("sosSerial");
         if(n.contains("sosMap",Tag.TAG_COMPOUND))d.sosMap=n.getCompound("sosMap");
         for(var t:n.getList("fobs",Tag.TAG_COMPOUND)){
@@ -107,7 +109,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
                 f.state=FobRules.State.of(c.getInt("state"));f.activated=c.getBoolean("activated");f.placedAt=c.getLong("placed");
                 f.raidId=c.getInt("raid");f.raidVillagers=c.getInt("raidVillagers");f.showZone=!c.contains("showZone")||c.getBoolean("showZone");
                 String name=FobRules.clean(c.getString("name"));
-                f.name=name.isEmpty()||FobRules.contains(d.names(f.id),name)?FobRules.freeCodename(f.id,d.names(f.id)):name;
+                f.name=name.isEmpty()||FobRules.contains(d.names(f.id),name)?FobRules.freeCodename(d.nameSalt,f.id,d.names(f.id)):name;
                 if(c.contains("dead",Tag.TAG_LIST))f.deadVillagers=c.getList("dead",Tag.TAG_COMPOUND);
                 if(c.contains("stockpile",Tag.TAG_COMPOUND))f.stockpile=c.getCompound("stockpile");
                 if(c.contains("route",Tag.TAG_COMPOUND))f.route=c.getCompound("route");
@@ -176,7 +178,7 @@ final class FobData extends net.minecraft.world.level.saveddata.SavedData {
     Fob byCatapult(BlockPos pos){for(var f:fobs.values())if(pos.equals(f.catapult))return f;return null;}
     Fob byGate(BlockPos anchor){for(var f:fobs.values())if(anchor.equals(f.deliveryGate)||anchor.equals(f.receivingGate))return f;return null;}
     @Override public CompoundTag save(CompoundTag n){
-        n.putLong("nextId",nextId);n.putLong("onlineTicks",onlineTicks);
+        n.putLong("nextId",nextId);n.putLong("nameSalt",nameSalt);n.putLong("onlineTicks",onlineTicks);
         n.putLong("sosClock",sosClock);n.putLong("sosFob",sosFob);n.putLong("sosLeft",sosLeft);n.putLong("sosSerial",sosSerial);if(sosMap!=null)n.put("sosMap",sosMap);
         var list=new ListTag();
         for(var f:fobs.values()){

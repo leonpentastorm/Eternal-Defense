@@ -43,12 +43,9 @@ final class EnergyAndExchangeTest {
         }
         assertTrue(ExchangeShop.sections(List.of("junk","[Sell]","a = 1","[buy]","b = 2")).get("sell").contains("a = 1"));
     }
-    @Test void specialRaidsStartLateAndHalfTheTime(){
-        for(int raid=1;raid<RaidTypes.FIRST_SPECIAL_RAID;raid++)assertEquals("normal",RaidTypes.roll(raid,0,0),"early raids are ordinary so support can be afforded first");
-        assertEquals("normal",RaidTypes.roll(9,50,2));assertEquals("normal",RaidTypes.roll(9,99,2));
-        assertEquals("air",RaidTypes.roll(4,49,0));assertEquals("paratroopers",RaidTypes.roll(4,0,1));assertEquals("siege",RaidTypes.roll(30,10,2));assertEquals("swarm",RaidTypes.roll(30,10,3));
-        int special=0;for(int p=0;p<100;p++)if(!RaidTypes.roll(6,p,p).equals("normal"))special++;assertEquals(50,special);
-        assertEquals(3,RaidTypes.bonusEnergy(0));assertTrue(RaidTypes.bonusEnergy(5)>RaidTypes.bonusEnergy(2));
+    @Test void specialRaidsAreChosenAndPayMore(){
+        assertTrue(RaidTypes.special("air")&&!RaidTypes.special("normal"));
+        assertEquals(4,RaidTypes.bonusEnergy(0));assertTrue(RaidTypes.bonusEnergy(5)>RaidTypes.bonusEnergy(2));
         assertEquals(40,RaidTypes.count("swarm",20));assertEquals(5,RaidTypes.count("paratroopers",10));assertEquals(10,RaidTypes.count("air",10));
     }
     @Test void upgradePricesAreSane(){

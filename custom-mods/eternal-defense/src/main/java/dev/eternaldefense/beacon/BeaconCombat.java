@@ -164,7 +164,7 @@ final class BeaconCombat {
             var d=CampaignData.get(l);if(serial!=d.campaignSerial||!enabled(l,d)||!inDetectionRange(attacker,this))return false;
             long now=l.getGameTime();boolean first=!d.underAttack(now);d.lastAttackTick=now;if(first)BeaconNetwork.syncNearby(l,d);if(now-lastHit.getOrDefault(attacker.getUUID(),now-60)<60)return true;
             lastHit.put(attacker.getUUID(),now);lastHit.entrySet().removeIf(e->now-e.getValue()>1200);
-            d.health=Math.max(0,d.health-Rules.contactDamage(attacker.getPersistentData().getBoolean("eternalBoss")?Math.min(5,d.raidTier+2):attacker.getPersistentData().getBoolean("eternalRaider")?d.raidTier:0,d.defense));d.setDirty();
+            int hit=Rules.contactDamage(attacker.getPersistentData().getBoolean("eternalBoss")?Math.min(5,d.raidTier+2):attacker.getPersistentData().getBoolean("eternalRaider")?d.raidTier:0,d.defense);if(RaidModifiers.on(d,"exposed_beacon"))hit=(int)Math.ceil(hit*RaidModifiers.EXPOSED_BEACON);d.health=Math.max(0,d.health-hit);d.setDirty();
             l.sendParticles(ParticleTypes.CRIT,getX(),getY()+.3,getZ(),5,.25,.25,.25,.1);
             if(d.health==0&&d.phase.equals("preparation")){d.phase="disabled";l.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal("[Eternal Defense] The beacon has been disabled by nearby enemies. Repair it with reinforced plating."),false);BeaconNetwork.syncNearby(l,d);}
             return true;

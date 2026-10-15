@@ -1,0 +1,4 @@
+{
+  "_about": "One line moves an item to an Age (1 to 5): a gun, ammo or attachment id, a table recipe id or an armor item id. Wins over the catalogue and over the Age found from damage output. A server can add its own lines in config/eternal-defense-ages.json.",
+  "bf1:sw_model3": 1
+}

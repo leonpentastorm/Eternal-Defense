@@ -1,5 +1,19 @@
 # Change log
 
+## 1.1.4 — Raid control, elite mobs, raid modifiers, fair gun prices (2026-10-15, branch `feature/raid-control`)
+
+From 1.1.3 on `feature/display-tuner`; `dev` and `main` unchanged. **Network protocol 42** (was 41): client and server must both run 1.1.4. Rules: GDD 1.1.4; tests: `docs/ROUND-1.1.4-TESTING.md`.
+
+* **Raid control** (owner): the beacon's Raid break tab is now **Raid control**, with two pages. *Level & break*: a level card (cap with - and +, the next raid's level and how it is made, its waves, mobs, elites and Ardent pay) beside a break card (days to the raid, days bought, the next price); Start raid sits under the level, Buy under the break. *Raid modifiers*: pick a special raid (or Ordinary) and any number of modifiers for the next raid.
+* **Special raids are chosen, not rolled** (owner): every raid is ordinary unless someone picks Air raid, Paratroopers, Siege or Thousands. Picking one tells every player.
+* **Raid modifiers** (owner): Reinforcements (30% more mobs), Elite Cadre (one more elite a wave), Hardened (+35% health), Forced March (+20% speed), Fog of War (survivors never glow), Exposed Beacon (mobs hurt the beacon 50% more). Each raises the raid's cache and the Ardent drop chance of its mobs (shown on the page); a special raid adds 15% to the drops. They count for one raid.
+* **Elite mobs** (owner): raid mobs with a power and a name over their head: Badass I to V (up to six times the health, bigger), Speedster, Healer, Matrioska (explodes and splits), Long Shot (far, exploding arrows), Flak Armor, Body Armor, Vampiric, Frostbite, Berserker. At least one a raid at low levels, one a wave at level 5, about three a wave at level 10. Each drops Ardent Energy; each wave with one pays 1 Ardent more, announced in chat.
+* **Ardent Energy** (owner): ordinary wild mobs drop none; bosses with 300 or more health drop one; raid and Tactical Operation mobs (the red "!") drop it twice as often as before (`markedChanceMultiplier` in the config), more with modifiers. Won raids pay 25% more Ardent.
+* **Bigger raids** (owner): every wave sends 15% more mobs, at least one more.
+* **Fair gun prices** (owner): a gun far stronger than the median of its Age (damage a second over a magazine and its reload) needs diamonds, emeralds or blaze rods by its Age, unless its author already asked for one. The weapon table marks such a gun ("Strong: 170% of its Age's usual damage"). Any gun, ammo, attachment or armor piece can be moved to another Age with one line in `config/eternal-defense-ages.json`; guns from packs the mod does not know are placed by their damage.
+* **Damage attachments** (owner): attachments from add-on gun packs that raise damage are no longer sold at the attachment table; TaCZ's own are kept.
+* **Names** (owner): hundreds more words for FOB and operation names, and each world draws its own (the first FOB is no longer always the same name).
+
 ## 1.1.3 — The owner's list after 1.1.2: fixed models, logos, the starter revolver, a clean print, no empty tables (2026-10-14, branch `feature/display-tuner`)
 
 After 1.1.2 on the same branch; `dev` and `main` unchanged. No packet changed: Eternal Defense's network protocol stays **41**, the displays channel **1**. Rules: GDD 1.1.3; tests: `docs/ROUND-1.1.3-TESTING.md`.

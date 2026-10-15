@@ -103,6 +103,7 @@ public final class RecipeRules {
 
     /** The Age of a gun smith result: its component entry, else its weapon entry, else 5. */
     static int age(String type,String id){
+        Integer set=CraftBalance.override(id);if(set!=null)return set;   // A hand-set Age wins
         if(weaponAges==null){weaponAges=load("weapon_ages.json");componentAges=load("component_ages.json");}
         int component=componentAges.getOrDefault(type+"|"+id,0);
         if(component!=0)return component;

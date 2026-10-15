@@ -41,6 +41,12 @@ public final class CampaignData extends SavedData {
     public final net.minecraft.world.SimpleContainer rewardBox=new net.minecraft.world.SimpleContainer(54);
     /** Kind of the raid in progress and of the next one (see RaidTypes); "normal" for an ordinary raid. */
     public String raidType="normal",nextRaidType="normal";
+    /** Raid modifiers chosen for the next raid, and those of the raid in progress (RaidModifiers ids) */
+    public final Set<String> chosenMods=new LinkedHashSet<>(),activeMods=new LinkedHashSet<>();
+    /** Elites: the wave that must have one (below level 5), how many this wave still owes, waves that had one */
+    public int eliteWave,eliteLeft,eliteWaves;public boolean eliteThisWave;
+    /** Extra Ardent drop chance of this raid's mobs (percent) */
+    public int dropBonus(){return phase.equals("raid")?RaidModifiers.dropPercent(activeMods,raidType):0;}
     public final List<CompoundTag> destroyedTurrets=new ArrayList<>();
     public record Damage(BlockState before,CompoundTag entity) {}
     public static CampaignData get(ServerLevel level) {
@@ -57,7 +63,7 @@ public final class CampaignData extends SavedData {
         rewardChest=null;raidLimit=10;raidsStarted=0;hardRaid=bossSpawned=bossKilled=false;bossId=null;
         core=logistics=defense=restoration=reconnaissance=vertical=victories=rewardTier=raidTier=score=wave=deaths=0;respiteTicks=0;respitePurchases=nextRaidBonus=0;introRaid=false;raidRequested=false;
         wavePlayers=1;waveVeteran=0;preparationTicks=raidTicks=waveTicks=0;spawnRemaining=spawnCooldown=breachClock=scanCursor=0;
-        health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();rewardBox.clearContent();raidType=nextRaidType="normal";participants.clear();raiders.clear();baseCounts.clear();
+        health=1000;showBoundary=showBeam=showHurtbox=true;lastAttackTick=-1;victoryRestoration=false;rewards.clear();rewardBox.clearContent();raidType=nextRaidType="normal";chosenMods.clear();activeMods.clear();eliteWave=eliteLeft=eliteWaves=0;eliteThisWave=false;participants.clear();raiders.clear();baseCounts.clear();
         trapFirstWave.clear();setDirty();
     }
     public void finishDecommission() {
@@ -95,6 +101,9 @@ public final class CampaignData extends SavedData {
         for(Tag t:n.getList("destroyedTurrets",Tag.TAG_COMPOUND))d.destroyedTurrets.add(((CompoundTag)t).copy());
         d.victoryRestoration=n.getBoolean("victoryRestoration");d.raidsStarted=n.contains("raidsStarted")?n.getInt("raidsStarted"):d.victories;d.hardRaid=n.getBoolean("hardRaid");d.bossSpawned=n.getBoolean("bossSpawned");d.bossKilled=n.getBoolean("bossKilled");d.bossId=n.hasUUID("bossId")?n.getUUID("bossId"):null;
         CompoundTag counts=n.getCompound("baseCounts");for(String key:counts.getAllKeys())d.baseCounts.put(key,counts.getInt(key));
+        for(Tag t:n.getList("chosenMods",Tag.TAG_STRING))if(RaidModifiers.of(t.getAsString())!=null)d.chosenMods.add(t.getAsString());
+        for(Tag t:n.getList("activeMods",Tag.TAG_STRING))if(RaidModifiers.of(t.getAsString())!=null)d.activeMods.add(t.getAsString());
+        d.eliteWave=n.getInt("eliteWave");d.eliteLeft=n.getInt("eliteLeft");d.eliteWaves=n.getInt("eliteWaves");d.eliteThisWave=n.getBoolean("eliteThisWave");
         return d;
     }
     @Override public CompoundTag save(CompoundTag n) {
@@ -119,6 +128,9 @@ public final class CampaignData extends SavedData {
         ListTag rewardsTag=new ListTag();rewards.forEach(t->rewardsTag.add(t.copy()));n.put("rewards",rewardsTag);
         ListTag turretTags=new ListTag();destroyedTurrets.forEach(t->turretTags.add(t.copy()));n.put("destroyedTurrets",turretTags);n.putBoolean("victoryRestoration",victoryRestoration);n.putInt("raidsStarted",raidsStarted);n.putBoolean("hardRaid",hardRaid);n.putBoolean("bossSpawned",bossSpawned);n.putBoolean("bossKilled",bossKilled);if(bossId!=null)n.putUUID("bossId",bossId);
         CompoundTag counts=new CompoundTag();baseCounts.forEach(counts::putInt);n.put("baseCounts",counts);
+        ListTag chosen=new ListTag();chosenMods.forEach(id->chosen.add(StringTag.valueOf(id)));n.put("chosenMods",chosen);
+        ListTag active=new ListTag();activeMods.forEach(id->active.add(StringTag.valueOf(id)));n.put("activeMods",active);
+        n.putInt("eliteWave",eliteWave);n.putInt("eliteLeft",eliteLeft);n.putInt("eliteWaves",eliteWaves);n.putBoolean("eliteThisWave",eliteThisWave);
         return n;
     }
 }

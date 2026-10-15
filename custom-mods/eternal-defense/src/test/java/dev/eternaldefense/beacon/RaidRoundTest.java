@@ -158,6 +158,6 @@ final class RaidRoundTest {
     }
     @Test void theProtocolMovedOn() throws Exception{
         // Moved it to 30 (MissionSync carries the mission id); to 31 (FOB screen and removal confirmation), see FobTest
-        assertEquals("41",BeaconNetwork.PROTOCOL,"protocol 41 since 0.0.41 (one edition; the states lost their \"standalone\" flag)");
+        assertEquals("42",BeaconNetwork.PROTOCOL,"protocol 42 since 1.1.4 (raid control)");
     }
 }
