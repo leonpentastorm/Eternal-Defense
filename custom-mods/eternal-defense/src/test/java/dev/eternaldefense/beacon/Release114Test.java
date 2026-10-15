@@ -102,7 +102,7 @@ final class Release114Test {
         assertEquals(1,Elites.maxBadass(0));assertEquals(5,Elites.maxBadass(8));
         for(double r=0;r<1;r+=.01)assertTrue(Elites.badassLevel(2,r)<=2);
         int high=0;for(double r=0;r<1;r+=.001)if(Elites.badassLevel(10,r)==5)high++;assertTrue(high<100,"Badass V is the rarest");
-        for(double r=0;r<1;r+=.01)assertNotEquals(Elites.Kind.LONG_SHOT,Elites.choose(r,false),"only a shooter can be a Long Shot");
+        for(double r=0;r<1;r+=.01)assertNotEquals(Elites.Kind.LONG_SHOT,Elites.choose(r,false,false),"only a shooter can be a Long Shot");
         assertEquals(3,Elites.reward(Elites.Kind.BADASS,3,0));assertEquals(2,Elites.reward(Elites.Kind.MATRIOSKA,1,0));assertEquals(0,Elites.reward(Elites.Kind.MATRIOSKA,1,1),"copies drop none of their own");
         assertEquals(1,Elites.reward(Elites.Kind.SPEEDSTER,1,0));assertEquals(2.0,Elites.berserk(0,20),1e-9);assertEquals(1.0,Elites.berserk(20,20),1e-9);
         assertEquals(2,Elites.MATRIOSKA_COPIES);

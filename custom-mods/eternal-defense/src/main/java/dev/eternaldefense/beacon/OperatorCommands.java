@@ -51,7 +51,8 @@ final class OperatorCommands {
             mob=l.addFreshEntity(m)?m:null;
         }
         if(mob==null)return fail(c,"No room for it there.");
-        if(kind==Elites.Kind.LONG_SHOT&&!Elites.ranged(mob))say(c,"A Long Shot only shoots as a skeleton or a pillager.");
+        if(kind==Elites.Kind.LONG_SHOT&&!Elites.ranged(mob))say(c,"A Long Shot only shoots as a skeleton or a pillager (raids never make this one).");
+        if(Elites.melee(kind)&&Elites.shooter(mob))say(c,"This power works only on hits it lands itself; a mob that shoots rarely lands one (raids never make this one).");
         Elites.make(mob,kind,kind==Elites.Kind.BADASS?level:1,0);if(!raid)Elites.LOOSE.add(mob.getUUID());
         RaidTypes.broadcast(l.getServer().overworld(),d);
         float size=Elites.scale(kind,level);double health=1+Elites.healthBonus(kind,kind==Elites.Kind.BADASS?level:1);

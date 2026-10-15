@@ -67,7 +67,7 @@ final class Elites {
     /** From this size a Badass smashes the blocks its body runs into */
     static final float GIANT=2;
     /** Badass: +100% health a level */
-    static double healthBonus(Kind kind,int level){return switch(kind){case BADASS->Math.max(1,level);case MATRIOSKA->-.5;case FLAK_ARMOR,BODY_ARMOR->.5;default->0;};}
+    static double healthBonus(Kind kind,int level){return switch(kind){case BADASS->Math.max(1,level);case MATRIOSKA->-.5;case FLAK_ARMOR,BODY_ARMOR,VAMPIRIC,FROSTBITE,BERSERKER->.5;default->0;};}
     static float scale(Kind kind,int level){return kind==Kind.BADASS?BADASS_SIZES[Math.max(1,Math.min(5,level))-1]:1;}
     /** Pure: extra step height of a mob this many times its size (a giant climbs what it could step over at its own size) */
     static double stride(float scale){return scale<=1?0:.6*(scale-1);}
@@ -77,10 +77,14 @@ final class Elites {
     static double slowdown(int level,boolean creeper){return BADASS_SLOW*Math.max(1,Math.min(5,level))*(creeper?CREEPER_SLOW:1);}
     /** Pure: a Badass creeper's blast radius grows with its size */
     static int blast(int radius,float scale){return Math.max(radius,Math.round(radius*scale));}
-    /** Pure: the modifier for one spawn; Long Shot only for a mob that shoots */
-    static Kind choose(double roll,boolean ranged){
-        int total=0;for(var k:Kind.values())if(ranged||k!=Kind.LONG_SHOT)total+=k.weight;
-        double r=roll*total;for(var k:Kind.values()){if(!ranged&&k==Kind.LONG_SHOT)continue;r-=k.weight;if(r<0)return k;}
+    /** Kinds whose power works only on hits the mob lands itself */
+    static boolean melee(Kind k){return k==Kind.VAMPIRIC||k==Kind.FROSTBITE||k==Kind.BERSERKER;}
+    /** Pure: Long Shot only for a bow or crossbow; the hit-based kinds never for a mob that fights from afar */
+    static boolean fits(Kind k,boolean bow,boolean shooter){return k==Kind.LONG_SHOT?bow:!(melee(k)&&(shooter||bow));}
+    /** Pure: the modifier for one spawn, among the kinds that fit the mob */
+    static Kind choose(double roll,boolean bow,boolean shooter){
+        int total=0;for(var k:Kind.values())if(fits(k,bow,shooter))total+=k.weight;
+        double r=roll*total;for(var k:Kind.values()){if(!fits(k,bow,shooter))continue;r-=k.weight;if(r<0)return k;}
         return Kind.BADASS;
     }
     /** Pure: Ardent Energy an elite always drops: its Badass level, 2 for the stronger kinds, 1 otherwise; a Matrioska's copies none */
@@ -128,6 +132,8 @@ final class Elites {
     static final Set<UUID> LOOSE=java.util.concurrent.ConcurrentHashMap.newKeySet();
     static int reward(Entity e){var k=kind(e);return k==null?0:reward(k,e.getPersistentData().getInt(LEVEL),e.getPersistentData().getInt(GEN));}
     static boolean ranged(Mob mob){return mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton||mob instanceof net.minecraft.world.entity.monster.Pillager;}
+    /** A mob that fights from afar (bow, crossbow, fireballs) */
+    static boolean shooter(Mob mob){return ranged(mob)||mob instanceof net.minecraft.world.entity.monster.Blaze||mob instanceof net.minecraft.world.entity.monster.Ghast||mob instanceof net.minecraft.world.entity.monster.RangedAttackMob;}
     static Component title(Kind kind,int level,Entity mob){
         var name=Component.translatable("gui.eternal_defense.elite."+kind.id);
         if(kind==Kind.BADASS)name=Component.translatable("gui.eternal_defense.elite.badass_level",ROMAN[Math.max(1,Math.min(5,level))]);
@@ -156,7 +162,7 @@ final class Elites {
     /** The wave's next spawn: maybe an elite (never a boss or a special-forces soldier) */
     static Kind roll(ServerLevel l,CampaignData d,Mob mob){
         if(d.introRaid||!pick(d.eliteLeft,d.spawnRemaining,l.random.nextDouble()))return null;
-        var kind=choose(l.random.nextDouble(),ranged(mob));int level=kind==Kind.BADASS?badassLevel(d.raidTier,l.random.nextDouble()):1;
+        var kind=choose(l.random.nextDouble(),ranged(mob),shooter(mob));int level=kind==Kind.BADASS?badassLevel(d.raidTier,l.random.nextDouble()):1;
         make(mob,kind,level,0);d.eliteLeft--;
         if(!d.eliteThisWave){d.eliteThisWave=true;d.eliteWaves++;
             EternalDefense.announce(l,Component.translatable("gui.eternal_defense.elite.sighted",d.wave,title(kind,level,mob)));}

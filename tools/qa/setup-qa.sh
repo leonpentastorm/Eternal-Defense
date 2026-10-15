@@ -2,7 +2,7 @@
 # Builds a THROWAWAY copy of the repo that boots a real client into a flat world and runs scripted checks (QaWorld).
 # Nothing here is part of the mod: the harness is stored as QaWorld.java.txt so it is never compiled into a release.
 # QA_CREATE=1 (pack only): Create runs too; QA_MODS=<dir>: the jars in it run too (0.0.42); the scenario is compiled in the Create compat source set; the first run needs the network.
-# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice|QaRelease101|QaLoadout|QaDisplays|QaRelease113|QaRelease114|QaRelease115|QaRelease116]   (QA_NO_DISPLAYS=1: without the displays mod)   (QaWorld scenario by flag file, e.g. echo all > /tmp/ed-qa/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
+# Usage: tools/qa/setup-qa.sh [target-dir] [pack] [QaWorld|QaKitchen|QaGuide|QaStuck|QaOptimize|QaHunt|QaFob|QaDrinks|QaFire|QaDrinkLoop|QaMre|QaAnim|QaHub|QaHubCreate|QaRound41|QaRound42|QaRound43|QaProfile|QaMagazines|QaVoice|QaRelease101|QaLoadout|QaDisplays|QaRelease113|QaRelease114|QaRelease115|QaRelease116|QaRelease117]   (QA_NO_DISPLAYS=1: without the displays mod)   (QaWorld scenario by flag file, e.g. echo all > /tmp/ed-qa/qa-r7.flag for the music player and beautify checks)   (QA_WIDTH / QA_HEIGHT set the window, default 1280 x 720)   (the scenario file tools/qa/<name>.java.txt)
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 DST="${1:-/tmp/ed-qa/qa}"; FLAVOR="${2:-pack}"

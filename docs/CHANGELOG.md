@@ -1,5 +1,12 @@
 # Change log
 
+## 1.1.7 — Elites that fit the mob (2026-10-15, branch `feature/raid-control`)
+
+After 1.1.6 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged). Rules: GDD 1.1.7; tests: `docs/ROUND-1.1.7-TESTING.md`.
+
+* **Elites fit the mob** (owner): mobs that shoot (skeletons, strays, pillagers, blazes) never become Vampiric, Frostbite or Berserker, whose powers work on their own hits; melee mobs never become a Long Shot. The other kinds fit every mob.
+* **Vampiric, Frostbite and Berserker** have 50% more health (owner).
+
 ## 1.1.6 — Heavy giants, bigger creeper blasts (2026-10-15, branch `feature/raid-control`)
 
 After 1.1.5 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged; no packet changed). Rules: GDD 1.1.6; tests: `docs/ROUND-1.1.6-TESTING.md`.
