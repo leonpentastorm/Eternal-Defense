@@ -1,0 +1,265 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.6: Badass mobs slower by level (creepers 1.5 times), a Badass creeper's blast growing with its size. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease116 {
+    // One line moves a gun to another Age: written before the game reads it
+    static{
+        try{var dir=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get();Files.createDirectories(dir);Files.writeString(dir.resolve("eternal-defense-ages.json"),"{\n  \"tacz:m1911\": 4\n}\n");}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(!(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())){CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String saidLine(String s){synchronized(CHAT){return CHAT.stream().filter(b->b.contains(s)).findFirst().orElse("");}}
+    // One frame's texts (Ui records them)
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+    static String cut(){return lastFrame.stream().filter(Ui.Drawn::cut).map(Ui.Drawn::text).toList().toString();}
+    /** The server's last answer cleared from the screen's message strip (a long one is cut on purpose) */
+    static void quiet(){if(mc().screen instanceof BeaconClient.PanelScreen p)p.message="";}
+    /** Every button's label fits it */
+    static String buttonsCut(){var s=mc().screen;var out=new ArrayList<String>();if(s==null)return "[]";var font=mc().font;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&font.width(b.getMessage())>b.getWidth()-10-(b.look==Ui.Look.TOGGLE?36:0))out.add(b.getMessage().getString()+" ("+font.width(b.getMessage())+" in "+b.getWidth()+")");return out.toString();}
+
+    // What each kill drops (counted after every other listener), and the blasts
+    static final Map<String,Integer> KILLS=new java.util.concurrent.ConcurrentHashMap<>(),ARDENT=new java.util.concurrent.ConcurrentHashMap<>();
+    static final List<String> ELITE_DROPS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void drops(net.minecraftforge.event.entity.living.LivingDropsEvent e){
+        if(e.getEntity().level().isClientSide)return;
+        int n=0;for(var it:e.getDrops())if(it.getItem().is(EternalDefense.ARDENT_ENERGY.get()))n+=it.getItem().getCount();
+        var tag=e.getEntity().getPersistentData();boolean raider=tag.getBoolean("eternalRaider");var kind=Elites.kind(e.getEntity());
+        String group=kind!=null?"elite":raider?"marked":e.getEntity().getType()==EntityType.WITHER?"boss":"wild";
+        KILLS.merge(group,1,Integer::sum);ARDENT.merge(group,n,Integer::sum);
+        if(kind!=null)ELITE_DROPS.add(kind.id+" level "+tag.getInt(Elites.LEVEL)+" gen "+tag.getInt(Elites.GEN)+": "+n);
+    }
+    static final List<String> BLASTS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void blast(net.minecraftforge.event.level.ExplosionEvent.Start e){
+        if(e.getLevel().isClientSide)return;var src=e.getExplosion().getDirectSourceEntity();
+        BLASTS.add(src==null?"none":src instanceof net.minecraft.world.entity.projectile.AbstractArrow?"arrow":Elites.kind(src)!=null?"elite:"+Elites.kind(src).id:BuiltInRegistries.ENTITY_TYPE.getKey(src.getType()).getPath());
+    }
+    static long blasts(String kind){synchronized(BLASTS){return BLASTS.stream().filter(kind::equals).count();}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r116",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r116",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){if(y>sy+1)srv(()->{var p=BlockPos.containing(x,y-1,z);if(sl().getBlockState(p).isAir())sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());});double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void setField(Object o,String name,Object value){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);f.set(o,value);return;}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverOn(net.minecraft.client.gui.components.AbstractWidget b){hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);}
+    static CompoundTag clientState(){return (CompoundTag)staticField(BeaconClient.class,"state");}
+    static void sync(){srv(()->BeaconNetwork.sendState(sp(),"","",""));}
+    static BeaconClient.ControlScreen screen(){return mc().screen instanceof BeaconClient.ControlScreen s?s:null;}
+    static net.minecraft.client.gui.components.Button labelled(String text){var s=mc().screen;if(s==null)return null;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(text))return b;return null;}
+    static void press(net.minecraft.client.gui.components.Button b){if(b==null)throw new IllegalStateException("no such button");b.onPress();}
+    static String message(){return mc().screen instanceof BeaconClient.PanelScreen p?p.message:"";}
+    static List<Mob> raiders(){var d=cd();var out=new ArrayList<Mob>();for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m&&m.isAlive())out.add(m);return out;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))e.discard();}
+    static void kill(net.minecraft.world.entity.LivingEntity m){m.invulnerableTime=0;m.hurt(sl().damageSources().playerAttack(sp()),100000);}
+    static String names(List<String> l){return String.join(", ",l);}
+    static int ardentIn(List<CompoundTag> tags){int n=0;for(var t:tags){var s=ItemStack.of(t);if(s.is(EternalDefense.ARDENT_ENERGY.get()))n+=s.getCount();}return n;}
+
+    // The places: B the beacon, ARENA the staged raid (outside the zone), T the weapon table
+    static BlockPos B,ARENA,T;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);ARENA=new BlockPos(sx+40,sy,sz+40);T=B.offset(0,0,7);}
+    static void world(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();sp().getAbilities().invulnerable=true;sp().onUpdateAbilities();
+        var d=cd();d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+
+    // Commands typed by the player, and the lines the server sent back since
+    static int mark;
+    static void cmd(String c){mark=CHAT.size();log("QA_CMD /{}",c);mc().player.connection.sendCommand(c);}
+    static List<String> replies(){synchronized(CHAT){return new ArrayList<>(CHAT.subList(Math.min(mark,CHAT.size()),CHAT.size()));}}
+    static String reply(String part){for(var s:replies())if(s.contains(part))return s;return null;}
+    static String all(){return String.join(" | ",replies());}
+    static Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob subject(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m?m:null;}
+    static final float[] SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    static final List<String> GIANT_REPLIES=new ArrayList<>();
+    /** The ring of stone around the smash test: 15 x 15, 7 high, one thick */
+    static List<BlockPos> ring(BlockPos c){var out=new ArrayList<BlockPos>();for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++)if(Math.max(Math.abs(x),Math.abs(z))==7)for(int y=0;y<7;y++)out.add(c.offset(x,y,z));return out;}
+    static BlockPos RING,STEP;static int ringBlocks,level;
+    static String pct(double v){return String.format(Locale.ROOT,"%.1f%%",v*100);}
+
+    static final int[] RADII={5,7,9,12,15};
+    static final double[] SLOW={.05,.10,.15,.20,.25};
+    static double speedMod(Mob m){var a=m.getAttribute(Attributes.MOVEMENT_SPEED).getModifier(Elites.SPEED);return a==null?0:a.getAmount();}
+    /** A stone pad 31 x 31, 12 high, a creeper on top of its middle */
+    static List<BlockPos> pad(BlockPos c){var out=new ArrayList<BlockPos>();for(var p:BlockPos.betweenClosed(c.offset(-15,0,-15),c.offset(15,11,15)))out.add(p.immutable());return out;}
+    static final Map<String,BlockPos> PADS=new LinkedHashMap<>();
+    static final Map<String,Integer> CRATERS=new LinkedHashMap<>();
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(10,QaRelease116::world,"a flat world, night never comes by itself; a beacon (core 3) and the first raid done");
+        step(5,()->{srv(()->sp().addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.NIGHT_VISION,1_000_000,0,false,false)));mc().player.getInventory().selected=8;srv(()->sl().setDayTime(18000));},"night vision for the pictures; an empty hand; night");
+
+        // 1. The command: Badass zombies and creepers, levels 1 to 5
+        for(int lvl=1;lvl<=5;lvl++){int l=lvl;
+            for(String mob:List.of("zombie","creeper")){
+                step(5,()->tp(ARENA.getX()-30+l*10+.5,sy,ARENA.getZ()+(mob.equals("zombie")?.5:20.5),0,0),"stand for Badass "+l+" "+mob);
+                step(5,()->cmd("eternaldefense elite badass "+l+" minecraft:"+mob),"/eternaldefense elite badass "+l+" minecraft:"+mob);
+                until("its reply",100,()->reply("Badass ")!=null||reply("No room")!=null,()->{});
+                step(5,()->{GIANT_REPLIES.add(String.valueOf(reply("Badass ")));
+                    srv(()->{for(var m:sl().getEntitiesOfClass(Mob.class,sp().getBoundingBox().inflate(14))){if(Elites.kind(m)!=Elites.Kind.BADASS||SUBJECTS.containsValue(m.getUUID()))continue;SUBJECTS.put(mob+l,m.getUUID());m.setNoAi(true);}});},"it stands");
+            }
+        }
+        step(10,()->{note("REPLIES {}",GIANT_REPLIES);
+            String r=srvGet(()->{var b=new StringBuilder();for(int l=1;l<=5;l++)for(String k:List.of("zombie","creeper")){var m=subject(k+l);
+                if(m==null){b.append(k).append(l).append(":none;");continue;}
+                b.append(String.format(Locale.ROOT,"%s%d:%.3f/%.4f/%.4f",k,l,speedMod(m),m.getAttributeValue(Attributes.MOVEMENT_SPEED),m.getAttribute(Attributes.MOVEMENT_SPEED).getBaseValue()));
+                if(m instanceof net.minecraft.world.entity.monster.Creeper c)b.append("/r").append(Elites.blast(c));b.append(";");}return b.toString();});
+            note("SPEEDS {}",r);boolean zombies=true,creepers=true,radii=true,said=true;
+            for(int l=1;l<=5;l++){
+                var z=java.util.regex.Pattern.compile("zombie"+l+":(-?[\\d.]+)/([\\d.]+)/([\\d.]+)").matcher(r);var c=java.util.regex.Pattern.compile("creeper"+l+":(-?[\\d.]+)/([\\d.]+)/([\\d.]+)/r(\\d+)").matcher(r);
+                if(!z.find()||!c.find()){zombies=creepers=radii=false;continue;}
+                zombies&=Math.abs(Double.parseDouble(z.group(1))+SLOW[l-1])<1e-3&&Math.abs(Double.parseDouble(z.group(2))-Double.parseDouble(z.group(3))*(1-SLOW[l-1]))<1e-3;
+                creepers&=Math.abs(Double.parseDouble(c.group(1))+SLOW[l-1]*1.5)<1e-3&&Math.abs(Double.parseDouble(c.group(2))-Double.parseDouble(c.group(3))*(1-SLOW[l-1]*1.5))<1e-3;
+                radii&=Integer.parseInt(c.group(4))==RADII[l-1];
+                String zr=GIANT_REPLIES.get((l-1)*2),cr=GIANT_REPLIES.get((l-1)*2+1);
+                said&=zr.contains(String.format(Locale.ROOT,"%.1f",SLOW[l-1]*100).replace(".0","")+"% slower")&&!zr.contains("blast")&&cr.contains(String.format(Locale.ROOT,"%.1f",SLOW[l-1]*150).replace(".0","")+"% slower")&&cr.contains("blast radius "+RADII[l-1]);}
+            check("Badass zombies I to V walk 5, 10, 15, 20 and 25% slower",zombies,r);
+            check("Badass creepers lose 1.5 times as much: 7.5, 15, 22.5, 30 and 37.5%",creepers,r);
+            check("Badass creepers' blast radius grows with their size: 5, 7, 9, 12 and 15 (a plain creeper's is 3)",radii,r);
+            check("the elite command says how much slower, and a creeper's blast",said,String.valueOf(GIANT_REPLIES));},"speeds and blasts");
+        step(5,()->look(ARENA.getX()+.5,sy+8,ARENA.getZ()-22.5,ARENA.getX()+.5,sy+4,ARENA.getZ()+20.5),"step back");
+        step(20,()->shot("r116_badass_rows"),"zombies in front, creepers behind");
+        step(5,()->srv(()->{for(var k:List.copyOf(SUBJECTS.keySet())){var m=subject(k);if(m!=null){Elites.LOOSE.remove(m.getUUID());m.discard();}}SUBJECTS.clear();clearMobs();}),"clear");
+
+        // 2. In a raid the balancing keeps the slowdown
+        step(5,()->srv(()->{var d=cd();d.phase="raid";d.raidType="siege";d.hardRaid=false;d.raidTier=3;d.introRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.activeMods.clear();d.deaths=0;d.setDirty();
+            for(var k:List.of("zombie","creeper")){var m=EternalDefense.raider(sl(),d,k.equals("zombie")?EntityType.ZOMBIE:EntityType.CREEPER,"grunt","siege",ARENA.offset(k.equals("zombie")?-6:6,0,-30));m.setNoAi(true);Elites.make(m,Elites.Kind.BADASS,5,0);SUBJECTS.put("raid"+k,m.getUUID());}
+            RaidTypes.broadcast(sl(),d);}),"a raid at level 3: a Badass V zombie and a Badass V creeper raider");
+        step(80,()->{},"four seconds: the raid balances its mobs every second");
+        step(5,()->{String r=srvGet(()->{var z=subject("raidzombie");var c=subject("raidcreeper");
+                return String.format(Locale.ROOT,"%.3f %.3f %.4f %.4f %.4f %.4f %d",speedMod(z),speedMod(c),z.getAttributeValue(Attributes.MOVEMENT_SPEED),z.getAttribute(Attributes.MOVEMENT_SPEED).getBaseValue(),c.getAttributeValue(Attributes.MOVEMENT_SPEED),c.getAttribute(Attributes.MOVEMENT_SPEED).getBaseValue(),Elites.blast((net.minecraft.world.entity.monster.Creeper)c));});
+            note("RAID {}",r);String[] v=r.split(" ");
+            check("after the raid's balancing a Badass V raider is still 25% slower, a creeper 37.5%, and the creeper's blast is still 15",v[0].equals("-0.250")&&v[1].equals("-0.375")&&Math.abs(Double.parseDouble(v[2])-Double.parseDouble(v[3])*.75)<1e-3&&Math.abs(Double.parseDouble(v[4])-Double.parseDouble(v[5])*.625)<1e-3&&v[6].equals("15"),r);},"kept");
+        step(5,()->srv(()->{var d=cd();d.phase="preparation";d.raiders.clear();d.spawnRemaining=0;d.raidType="normal";d.setDirty();clearMobs();}),"end the staged raid");
+
+        // 3. Craters: a plain creeper, a Badass I and a Badass V, each on its own stone pad outside the zone
+        step(10,()->srv(()->{int i=0;for(String k:List.of("plain","badass1","badass5")){var c=ARENA.offset(-60+i*60,0,60);PADS.put(k,c);for(var p:pad(c))sl().setBlock(p,net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),2);i++;}
+            i=0;for(String k:List.of("plain_planks","badass5_planks")){var c=ARENA.offset(-30+i*60,0,120);PADS.put(k,c);for(var p:pad(c))sl().setBlock(p,net.minecraft.world.level.block.Blocks.OAK_PLANKS.defaultBlockState(),2);i++;}
+            note("PADS {} inside the zone {}",PADS,PADS.values().stream().map(p->cd().inside(p)).toList());}),"three stone pads and two oak plank pads, 31 x 31, 12 high, 60 blocks apart");
+        step(10,()->srv(()->{for(var e:PADS.entrySet()){var c=EntityType.CREEPER.create(sl());var at=e.getValue().above(12);c.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);c.setNoAi(true);c.setPersistenceRequired();sl().addFreshEntity(c);
+            if(!e.getKey().startsWith("plain")){Elites.make(c,Elites.Kind.BADASS,e.getKey().equals("badass1")?1:5,0);Elites.LOOSE.add(c.getUUID());}SUBJECTS.put(e.getKey(),c.getUUID());}RaidTypes.broadcast(sl(),cd());}),"a creeper on each");
+        step(5,()->{var c=PADS.get("badass5");look(c.getX()+.5,sy+24,c.getZ()-40.5,c.getX()+.5,sy+14,c.getZ()+.5);},"look at the Badass V creeper");
+        step(20,()->shot("r116_creeper_giant"),"picture");
+        step(5,()->{var c=PADS.get("badass1");look(c.getX()+.5,sy+70,c.getZ()-50.5,c.getX()+.5,sy+8,c.getZ()+30.5);srv(()->{for(var k:PADS.keySet()){var m=subject(k);if(m instanceof net.minecraft.world.entity.monster.Creeper cr)cr.ignite();}});},"stand well back; light all three");
+        step(80,()->{},"the fuses burn");
+        step(10,()->{for(var e:PADS.entrySet()){int gone=srvGet(()->{int n=0;for(var p:pad(e.getValue()))if(sl().getBlockState(p).isAir())n++;return n;});CRATERS.put(e.getKey(),gone);}
+            note("CRATERS {}",CRATERS);boolean blown=srvGet(()->PADS.keySet().stream().allMatch(k->subject(k)==null));
+            check("all three creepers blew up",blown,CRATERS.toString());
+            check("in stone a Badass I creeper's crater is bigger than a plain creeper's, a Badass V's far bigger",CRATERS.get("plain")>0&&CRATERS.get("badass1")>CRATERS.get("plain")&&CRATERS.get("badass5")>5*CRATERS.get("plain"),CRATERS.toString());
+            check("in oak planks too, a Badass V creeper's crater is far bigger than a plain one's",CRATERS.get("plain_planks")>0&&CRATERS.get("badass5_planks")>5*CRATERS.get("plain_planks"),CRATERS.toString());},"craters");
+        step(20,()->shot("r116_craters"),"the three craters");
+    }
+}

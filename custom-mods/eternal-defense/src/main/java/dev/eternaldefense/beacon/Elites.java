@@ -18,6 +18,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
@@ -70,6 +71,12 @@ final class Elites {
     static float scale(Kind kind,int level){return kind==Kind.BADASS?BADASS_SIZES[Math.max(1,Math.min(5,level))-1]:1;}
     /** Pure: extra step height of a mob this many times its size (a giant climbs what it could step over at its own size) */
     static double stride(float scale){return scale<=1?0:.6*(scale-1);}
+    /** Badass: 5% slower a level; a creeper 1.5 times as much */
+    static final double BADASS_SLOW=.05,CREEPER_SLOW=1.5;
+    /** Pure: speed lost by a Badass of this level (a fraction) */
+    static double slowdown(int level,boolean creeper){return BADASS_SLOW*Math.max(1,Math.min(5,level))*(creeper?CREEPER_SLOW:1);}
+    /** Pure: a Badass creeper's blast radius grows with its size */
+    static int blast(int radius,float scale){return Math.max(radius,Math.round(radius*scale));}
     /** Pure: the modifier for one spawn; Long Shot only for a mob that shoots */
     static Kind choose(double roll,boolean ranged){
         int total=0;for(var k:Kind.values())if(ranged||k!=Kind.LONG_SHOT)total+=k.weight;
@@ -132,11 +139,18 @@ final class Elites {
         var n=mob.getPersistentData();n.putString(TAG,kind.id);n.putInt(LEVEL,level);n.putInt(GEN,generation);
         double bonus=healthBonus(kind,level);if(bonus!=0)modifier(mob,Attributes.MAX_HEALTH,HEALTH,"Elite health",bonus,AttributeModifier.Operation.MULTIPLY_TOTAL);
         if(kind==Kind.SPEEDSTER)modifier(mob,Attributes.MOVEMENT_SPEED,SPEED,"Elite speed",SPEEDSTER_SPEED,AttributeModifier.Operation.MULTIPLY_TOTAL);
+        if(kind==Kind.BADASS)modifier(mob,Attributes.MOVEMENT_SPEED,SPEED,"Elite weight",-slowdown(level,mob instanceof Creeper),AttributeModifier.Operation.MULTIPLY_TOTAL);
+        if(kind==Kind.BADASS&&mob instanceof Creeper creeper)setBlast(creeper,blast(blast(creeper),scale(kind,level)));
         if(kind==Kind.LONG_SHOT){modifier(mob,Attributes.FOLLOW_RANGE,RANGE,"Elite range",LONG_SHOT_RANGE+10,AttributeModifier.Operation.ADDITION);mob.goalSelector.addGoal(LongShotGoal.PRIORITY,new LongShotGoal(mob));}
         float s=scale(kind,level);if(s!=1){n.putFloat(SCALE,s);mob.refreshDimensions();modifier(mob,net.minecraftforge.common.ForgeMod.STEP_HEIGHT_ADDITION.get(),STEP,"Elite stride",stride(s),AttributeModifier.Operation.ADDITION);}
         mob.setCustomName(title(kind,level,mob));mob.setCustomNameVisible(true);
         mob.setHealth(mob.getMaxHealth());
     }
+    private static java.lang.reflect.Field radius;
+    /** A creeper's blast radius (3 for a vanilla one) */
+    static int blast(Creeper creeper){try{return radiusField().getInt(creeper);}catch(ReflectiveOperationException|RuntimeException e){return 3;}}
+    static void setBlast(Creeper creeper,int r){try{radiusField().setInt(creeper,r);}catch(ReflectiveOperationException|RuntimeException e){com.mojang.logging.LogUtils.getLogger().warn("[Eternal Defense] creeper blast radius not set: {}",e.toString());}}
+    private static java.lang.reflect.Field radiusField(){if(radius==null)radius=net.minecraftforge.fml.util.ObfuscationReflectionHelper.findField(Creeper.class,"f_32272_");return radius;}
     /** A raider loaded from a save keeps its Long Shot aim */
     static void restore(Mob mob){if(kind(mob)==Kind.LONG_SHOT&&mob.goalSelector.getAvailableGoals().stream().noneMatch(g->g.getGoal() instanceof LongShotGoal))mob.goalSelector.addGoal(LongShotGoal.PRIORITY,new LongShotGoal(mob));}
     /** The wave's next spawn: maybe an elite (never a boss or a special-forces soldier) */

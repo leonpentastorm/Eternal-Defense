@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.6 — Heavy giants, bigger creeper blasts (2026-10-15, branch `feature/raid-control`)
+
+After 1.1.5 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged; no packet changed). Rules: GDD 1.1.6; tests: `docs/ROUND-1.1.6-TESTING.md`.
+
+* **Slower giants** (owner): Badass I to V walk 5, 10, 15, 20 and 25% slower; a Badass creeper 1.5 times as much (7.5 to 37.5%).
+* **Bigger creeper blasts** (owner): a Badass creeper's blast grows with its size: radius 5, 7, 9, 12 and 15 blocks (a plain creeper's is 3).
+* `/eternaldefense elite` says how much slower an elite is and a creeper's blast radius.
+
 ## 1.1.5 — Giants, drops for the modifiers, test commands (2026-10-15, branch `feature/raid-control`)
 
 After 1.1.4 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged; no packet changed). Rules: GDD 1.1.5; tests: `docs/ROUND-1.1.5-TESTING.md`.
