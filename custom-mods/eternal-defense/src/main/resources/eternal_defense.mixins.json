@@ -11,7 +11,8 @@
     "MealReloadContinuityMixin",
     "RaiderSunlightMixin",
     "RecipeManagerMixin",
-    "MealGrenadeMixin"
+    "MealGrenadeMixin",
+    "GiantHeadMixin"
   ],
   "client": [
     "RaidMusicMixin",

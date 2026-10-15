@@ -54,6 +54,10 @@ final class Elites {
     }
     /** Pure: whether this spawn is an elite, spreading the wave's elites over its spawns (the last ones are certain) */
     static boolean pick(int left,int remaining,double roll){return left>0&&(remaining<=left||roll<left/(double)Math.max(1,remaining));}
+    /** Pure: the introduction raid's elites: exactly one, in its chosen wave */
+    static int introCount(int wave,int chosenWave){return wave==chosenWave?1:0;}
+    /** Pure: a Badass level for a raid; the introduction raid's is always I */
+    static int badassLevel(boolean intro,int raidLevel,double roll){return intro?1:badassLevel(raidLevel,roll);}
     /** Badass levels, each rarer than the one before; the raid level caps them (I at level 0, V from level 8) */
     static final int[] BADASS_WEIGHTS={40,25,17,11,7};
     static int maxBadass(int raidLevel){return Math.max(1,Math.min(5,1+Math.max(0,raidLevel)/2));}
@@ -71,8 +75,8 @@ final class Elites {
     static float scale(Kind kind,int level){return kind==Kind.BADASS?BADASS_SIZES[Math.max(1,Math.min(5,level))-1]:1;}
     /** Pure: extra step height of a mob this many times its size (a giant climbs what it could step over at its own size) */
     static double stride(float scale){return scale<=1?0:.6*(scale-1);}
-    /** Badass: 5% slower a level; a creeper 1.5 times as much */
-    static final double BADASS_SLOW=.05,CREEPER_SLOW=1.5;
+    /** Badass: 2.5% slower a level; a creeper 1.5 times as much */
+    static final double BADASS_SLOW=.025,CREEPER_SLOW=1.5;
     /** Pure: speed lost by a Badass of this level (a fraction) */
     static double slowdown(int level,boolean creeper){return BADASS_SLOW*Math.max(1,Math.min(5,level))*(creeper?CREEPER_SLOW:1);}
     /** Pure: a Badass creeper's blast radius grows with its size */
@@ -161,8 +165,8 @@ final class Elites {
     static void restore(Mob mob){if(kind(mob)==Kind.LONG_SHOT&&mob.goalSelector.getAvailableGoals().stream().noneMatch(g->g.getGoal() instanceof LongShotGoal))mob.goalSelector.addGoal(LongShotGoal.PRIORITY,new LongShotGoal(mob));}
     /** The wave's next spawn: maybe an elite (never a boss or a special-forces soldier) */
     static Kind roll(ServerLevel l,CampaignData d,Mob mob){
-        if(d.introRaid||!pick(d.eliteLeft,d.spawnRemaining,l.random.nextDouble()))return null;
-        var kind=choose(l.random.nextDouble(),ranged(mob),shooter(mob));int level=kind==Kind.BADASS?badassLevel(d.raidTier,l.random.nextDouble()):1;
+        if(!pick(d.eliteLeft,d.spawnRemaining,l.random.nextDouble()))return null;
+        var kind=choose(l.random.nextDouble(),ranged(mob),shooter(mob));int level=kind==Kind.BADASS?badassLevel(d.introRaid,d.raidTier,l.random.nextDouble()):1;
         make(mob,kind,level,0);d.eliteLeft--;
         if(!d.eliteThisWave){d.eliteThisWave=true;d.eliteWaves++;
             EternalDefense.announce(l,Component.translatable("gui.eternal_defense.elite.sighted",d.wave,title(kind,level,mob)));}
@@ -250,13 +254,16 @@ final class Elites {
         }
         @SubscribeEvent public void eliteJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent e){if(!e.getLevel().isClientSide&&e.getEntity() instanceof Mob mob)restore(mob);}
         @SubscribeEvent public void eliteSize(EntityEvent.Size e){
-            var entity=e.getEntity();float s;
-            if(entity.level()==null)return;
-            if(entity.level().isClientSide){Float f=SCALES.get(entity.getId());s=f==null?1:f;}
-            else s=entity.getPersistentData().contains(SCALE)?entity.getPersistentData().getFloat(SCALE):1;
-            if(s==1||s<=0)return;
-            EntityDimensions old=e.getNewSize();e.setNewSize(old.scale(s),true);
+            var entity=e.getEntity();if(entity.level()==null)return;
+            float s=size(entity);if(s==1)return;
+            // Eyes grow with the body (many mobs have a fixed eye height)
+            float eye=e.getNewEyeHeight();e.setNewSize(e.getNewSize().scale(s),false);e.setNewEyeHeight(eye*s);
         }
+    }
+    /** How many times its usual size an entity is drawn and hit (1 for any other) */
+    static float size(Entity e){
+        float s;if(e.level()!=null&&e.level().isClientSide){Float f=SCALES.get(e.getId());s=f==null?1:f;}else s=e.getPersistentData().contains(SCALE)?e.getPersistentData().getFloat(SCALE):1;
+        return s>0?s:1;
     }
     /** Client: the size of each elite in view, sent with the raid's marks */
     static final Map<Integer,Float> SCALES=new java.util.concurrent.ConcurrentHashMap<>();
@@ -266,5 +273,7 @@ final class Elites {
     static int code(Kind kind,int level){return kind.ordinal()*8+Math.max(1,Math.min(5,level));}
     static Kind kindOf(int code){var all=Kind.values();int k=code>>3;return k>=0&&k<all.length?all[k]:null;}
     /** Pure: the aura colour of an elite; Badass IV and V red like their names */
+    /** Pure: the ring texture of an elite (kind id; Badass IV and V their own red one) */
+    static String ring(int code){var k=kindOf(code);if(k==null)return "badass";return k==Kind.BADASS&&(code&7)>=4?"badass_top":k.id;}
     static int color(int code){var k=kindOf(code);if(k==null)return 0xFFFFFF;return k==Kind.BADASS&&(code&7)>=4?0xFF3B30:k.color;}
 }

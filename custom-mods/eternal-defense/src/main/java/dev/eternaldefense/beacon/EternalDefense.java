@@ -404,7 +404,7 @@ public final class EternalDefense {
     }
     private static void nextWave(ServerLevel l,CampaignData d) {
         d.wave++;d.waveTicks=0;d.wavePlayers=RaidBalance.defenders(l,d);d.waveVeteran=Rules.veteranPressure(d.raidTier,d.victories);d.spawnRemaining=RaidModifiers.attackers(Rules.waveEnemies(d.raidTier,d.wave,d.wavePlayers,d.waveVeteran,d.hardRaid),d.raidType,d.activeMods);d.spawnCooldown=0;
-        d.eliteLeft=d.introRaid?0:Elites.count(d.raidTier,d.wave,d.eliteWave,l.random.nextDouble(),RaidModifiers.on(d,"elite_cadre"));d.eliteThisWave=false;
+        d.eliteLeft=d.introRaid?Elites.introCount(d.wave,d.eliteWave):Elites.count(d.raidTier,d.wave,d.eliteWave,l.random.nextDouble(),RaidModifiers.on(d,"elite_cadre"));d.eliteThisWave=false;
         RaidAdaptation.nextWave(l,d);
         BeaconNetwork.announce(l,"wave",d.wave,Rules.waves(d.raidTier),Integer.toString(d.spawnRemaining),"");
         announce(l,"Wave "+d.wave+" / "+Rules.waves(d.raidTier)+" incoming. "+d.wavePlayers+" defender(s), "+d.spawnRemaining+" attackers"+(d.waveVeteran>0?", veteran reinforcements +"+(d.waveVeteran*10)+"%":"")+".");d.setDirty();

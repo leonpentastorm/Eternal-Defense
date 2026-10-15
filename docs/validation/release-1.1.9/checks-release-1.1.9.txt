@@ -1,0 +1,18 @@
+QA_CHECK PASS Oculus is loaded with the owner's MakeUp UltraFast pack in use in use true
+QA_NOTE REPLIES [zombie5: Badass V Zombie: health 360 (6.0x), size 5.0x, 12.5% slower, drops 5 Ardent (not a raid mob)., healer: Healer Zombie: health 60 (1.0x), size 1.0x, drops 2 Ardent (not a raid mob)., speedster: Speedster Zombie: health 60 (1.0x), size 1.0x, drops 1 Ardent (not a raid mob)., vampiric: Vampiric Zombie: health 90 (1.5x), size 1.0x, drops 1 Ardent (not a raid mob)., hound: Badass III Dread Hound: health 204 (4.0x), size 3.0x, 7.5% slower, drops 3 Ardent (not a raid mob)., creeper5: Badass V Creeper: health 360 (6.0x), size 5.0x, 18.75% slower, blast radius 15, drops 5 Ardent (not a raid mob).]
+QA_CHECK PASS Badass V is 12.5% slower, a Badass V creeper 18.75% (half of 1.1.6 to 1.1.8) zombie V -0.1250, creeper V -0.1875
+QA_CHECK PASS the command says so [zombie5: Badass V Zombie: health 360 (6.0x), size 5.0x, 12.5% slower, drops 5 Ardent (not a raid mob)., healer: Healer Zombie: health 60 (1.0x), size 1.0x, drops 2 Ardent (not a raid mob)., speedster: Speedster Zombie: health 60 (1.0x), size 1.0x, drops 1 Ardent (not a raid mob)., vampiric: Vampiric Zombie: health 90 (1.5x), size 1.0x, drops 1 Ardent (not a raid mob)., hound: Badass III Dread Hound: health 204 (4.0x), size 3.0x, 7.5% slower, drops 3 Ardent (not a raid mob)., creeper5: Badass V Creeper: health 360 (6.0x), size 5.0x, 18.75% slower, blast radius 15, drops 5 Ardent (not a raid mob).]
+QA_NOTE EYES server eyes: giant 8.70 (box 9.75 tall), plain 1.74 client giant 8.70
+QA_CHECK PASS a Badass V zombie's eyes are five times as high (8.70, not 1.74), on the server and the client server eyes: giant 8.70 (box 9.75 tall), plain 1.74 client 8.70
+QA_NOTE HITS giant 1.00=body; giant 1.74=body; giant 4.00=body; giant 7.00=body; giant 7.60=head; giant 8.70=head; giant 9.60=head; plain 1.00=body; plain 1.74=head; plain 1.95=head; 
+QA_CHECK PASS TaCZ's hit test counts the giant's head (7.6 to 9.6 blocks up) as a headshot, its legs and chest not giant 1.00=body; giant 1.74=body; giant 4.00=body; giant 7.00=body; giant 7.60=head; giant 8.70=head; giant 9.60=head; plain 1.00=body; plain 1.74=head; plain 1.95=head; 
+QA_CHECK PASS a plain zombie keeps TaCZ's own head (1.74 head, 1.00 body) giant 1.00=body; giant 1.74=body; giant 4.00=body; giant 7.00=body; giant 7.60=head; giant 8.70=head; giant 9.60=head; plain 1.00=body; plain 1.74=head; plain 1.95=head; 
+QA_CHECK PASS a ring and a health bar for each of the six elites auras 6, bars 6
+QA_NOTE INTRO ROLLS {badass 1=93}
+QA_CHECK PASS in the first raid every Badass is level I, even at raid level 9 {badass 1=93}
+QA_NOTE INTRO RAID 18 raiders, elites [flak_armor 1]
+QA_CHECK PASS the introduction raid brought exactly one elite 18 raiders, elites [flak_armor 1]
+QA_CHECK PASS its Badass, if it is one, is level I [flak_armor 1]
+QA_CHECK PASS chat named it [Eternal Defense] Wave 1: an elite is here, Flak Armor Husk! This wave pays 1 more Ardent Energy.
+QA_CHECK PASS the raid was won and the first raid is done preparation
+QA_DONE pass=12 fail=0

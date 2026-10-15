@@ -27,7 +27,7 @@ final class Release118Test {
     @Test void aGiantsNameBarAndMarkFloatHigherInProportion() throws Exception{
         String client=source("EliteClient.java");
         assertTrue(client.contains("e.getPoseStack().scale(1/s,1/s,1/s);e.getPoseStack().translate(0,.5f*(s-1),0);"),"the name at its hitbox plus half a block times the size");
-        assertTrue(client.contains("bar(pose,mob,top+.56f*lift,color,facing)")&&client.contains("top+(code!=null?.8f:.75f)*lift"),"the bar and the mark above it, in the same proportion");
+        assertTrue(client.contains("bar(pose,mob,top+.56f*lift,facing)")&&client.contains("top+(code!=null?.8f:.75f)*lift"),"the bar and the mark above it, in the same proportion");
         assertTrue(client.contains("static float lift(Entity e){Float s=scale(e);return s==null?1:s;}"),"a mob that is not grown keeps the usual gap");
     }
     @Test void everyEliteKindHasItsOwnColourAndTheCodeRoundTrips(){
@@ -55,11 +55,11 @@ final class Release118Test {
     }
     @Test void auraAndHealthBarAreBrightAndInTheGuide() throws Exception{
         String client=source("EliteClient.java");
-        assertTrue(client.contains("RenderType.eyes(RING)"),"the ring glows in the dark");
-        assertTrue(client.contains("RenderType.entityTranslucentEmissive(BAR)")&&client.contains("mob.getHealth()/Math.max(1,mob.getMaxHealth())"),"the bar shows its health, full bright");
-        for(String png:List.of("elite_ring.png","elite_bar.png"))assertTrue(Files.exists(Path.of("src/main/resources/assets/eternal_defense/textures/entity/"+png)),png);
-        assertTrue(text("guide.raids.body").contains("A glowing ring turns at their feet and a health bar floats over their head"));
-        assertTrue(text("guide.raids.detail").contains("Elite colours (ring and health bar): Badass gold, red from IV"));
+        assertTrue(client.contains("RenderType.eyes(ring(code))"),"the ring glows in the dark");
+        assertTrue(client.contains("mob.getHealth()/Math.max(1,mob.getMaxHealth())"),"the bar shows its health, full bright");
+        // 1.1.9: the colours moved into the textures and the bar is red (Release119Test)
+        assertTrue(text("guide.raids.body").contains("A glowing ring in the power's colour turns at their feet and a red health bar floats over their head"));
+        assertTrue(text("guide.raids.detail").contains("Elite ring colours (the health bar is always red): Badass gold, red from IV"));
     }
     @Test void anotherModsBossKeepsItsOwnFight() throws Exception{
         String combat=source("BeaconCombat.java");

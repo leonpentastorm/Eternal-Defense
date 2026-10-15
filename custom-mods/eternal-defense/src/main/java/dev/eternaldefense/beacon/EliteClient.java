@@ -23,7 +23,12 @@ import java.util.ArrayDeque;
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
 public final class EliteClient {
     private EliteClient(){}
-    static final ResourceLocation RING=new ResourceLocation(EternalDefense.ID,"textures/entity/elite_ring.png"),BAR=new ResourceLocation(EternalDefense.ID,"textures/entity/elite_bar.png");
+    // Colours live in the textures: shader packs drop a vertex tint
+    static final ResourceLocation FILL=new ResourceLocation(EternalDefense.ID,"textures/entity/elite/bar_fill.png"),TRACK=new ResourceLocation(EternalDefense.ID,"textures/entity/elite/bar_track.png");
+    private static final java.util.Map<String,ResourceLocation> RINGS=new java.util.HashMap<>();
+    static ResourceLocation ring(int code){return RINGS.computeIfAbsent(Elites.ring(code),n->new ResourceLocation(EternalDefense.ID,"textures/entity/elite/ring_"+n+".png"));}
+    /** Where the ring and the spark strip sit in a ring texture (64 x 72) */
+    static final float RING_V=64/72f,SPARK_V0=66.5f/72,SPARK_V1=69.5f/72;
     static final double RANGE=96;
     private static final MultiBufferSource.BufferSource BUFFER=MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<16));
     /** Entities whose draw is scaled right now (draws can nest) */
@@ -57,7 +62,7 @@ public final class EliteClient {
             pose.pushPose();
             pose.translate(Mth.lerp(partial,mob.xo,mob.getX())-cam.x,Mth.lerp(partial,mob.yo,mob.getY())-cam.y,Mth.lerp(partial,mob.zo,mob.getZ())-cam.z);
             if(chute){pose.pushPose();pose.translate(0,top*.8,0);SupportClient.ParcelRenderer.canopy(pose,BUFFER,dispatcher.getPackedLightCoords(mob,partial),age,SupportClient.TrooperChutes.RED);pose.popPose();}
-            if(code!=null){int color=Elites.color(code);aura(pose,mob,age,color);bar(pose,mob,top+.56f*lift,color,facing);auras++;bars++;}
+            if(code!=null){aura(pose,mob,age,code);bar(pose,mob,top+.56f*lift,facing);auras++;bars++;}
             if(raider){SupportClient.TrooperChutes.mark(pose,BUFFER,mob,chute?top+3.6f:top+(code!=null?.8f:.75f)*lift,age,facing);marks++;}
             pose.popPose();
         }
@@ -65,44 +70,42 @@ public final class EliteClient {
     }
 
     /** A glowing ring at the feet in the elite's colour, turning, with a few sparks rising from it */
-    static void aura(PoseStack pose,LivingEntity mob,float age,int color){
-        float r=Math.max(.7f,mob.getBbWidth()*.85f),pulse=.75f+.25f*Mth.sin(age*.15f);
-        int red=(int)((color>>16&255)*pulse),green=(int)((color>>8&255)*pulse),blue=(int)((color&255)*pulse);
-        VertexConsumer glow=BUFFER.getBuffer(RenderType.eyes(RING));
+    static void aura(PoseStack pose,LivingEntity mob,float age,int code){
+        float r=Math.max(.7f,mob.getBbWidth()*.85f);int pulse=(int)(255*(.75f+.25f*Mth.sin(age*.15f)));
+        VertexConsumer glow=BUFFER.getBuffer(RenderType.eyes(ring(code)));
         pose.pushPose();pose.translate(0,.03,0);pose.mulPose(Axis.YP.rotationDegrees(age*3));
-        flat(pose,glow,r,red,green,blue);
-        pose.mulPose(Axis.YP.rotationDegrees(-age*5));flat(pose,glow,r*(1.15f+.1f*Mth.sin(age*.1f)),red/2,green/2,blue/2);
+        flat(pose,glow,r,pulse);
+        pose.mulPose(Axis.YP.rotationDegrees(-age*5));flat(pose,glow,r*(1.15f+.1f*Mth.sin(age*.1f)),pulse/2);
         pose.popPose();
-        VertexConsumer spark=BUFFER.getBuffer(RenderType.eyes(BAR));
         for(int i=0;i<4;i++){
             float t=((age*.02f+i*.25f)%1f),angle=i*1.57f+age*.03f,size=.06f*(1-t)+.02f;
             pose.pushPose();pose.translate(Mth.cos(angle)*r*.9f,t*Math.max(1.2f,mob.getBbHeight()*.8f),Mth.sin(angle)*r*.9f);
             pose.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-            quad(pose,spark,-size,-size,size,size,red,green,blue,255);pose.popPose();
+            quad(pose,glow,-size,-size,size,size,.4f,SPARK_V0,.6f,SPARK_V1,255,255);pose.popPose();
         }
     }
-    /** A ring texture flat on the ground, seen from above and below */
-    static void flat(PoseStack pose,VertexConsumer v,float r,int red,int green,int blue){
-        var m=pose.last().pose();var n=pose.last().normal();int light=15728880;
-        float[][] c={{-r,-r,0,0},{-r,r,0,1},{r,r,1,1},{r,-r,1,0}};
-        for(int i=0;i<4;i++){var p=c[i];v.vertex(m,p[0],0,p[1]).color(red,green,blue,255).uv(p[2],p[3]).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,1,0).endVertex();}
-        for(int i=3;i>=0;i--){var p=c[i];v.vertex(m,p[0],0,p[1]).color(red,green,blue,255).uv(p[2],p[3]).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,-1,0).endVertex();}
+    /** A ring texture flat on the ground, seen from above and below; brightness dims it where the tint is kept */
+    static void flat(PoseStack pose,VertexConsumer v,float r,int brightness){
+        var m=pose.last().pose();var n=pose.last().normal();int light=15728880,b=brightness;
+        float[][] c={{-r,-r,0,0},{-r,r,0,RING_V},{r,r,1,RING_V},{r,-r,1,0}};
+        for(int i=0;i<4;i++){var p=c[i];v.vertex(m,p[0],0,p[1]).color(b,b,b,255).uv(p[2],p[3]).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,1,0).endVertex();}
+        for(int i=3;i>=0;i--){var p=c[i];v.vertex(m,p[0],0,p[1]).color(b,b,b,255).uv(p[2],p[3]).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,-1,0).endVertex();}
     }
-    /** The elite's health over its head, facing the camera: a dark track and a fill in its colour */
-    static void bar(PoseStack pose,LivingEntity mob,float height,int color,org.joml.Quaternionf facing){
+    /** The elite's health over its head, facing the camera: a dark track and a red fill */
+    static void bar(PoseStack pose,LivingEntity mob,float height,org.joml.Quaternionf facing){
         float w=Mth.clamp(mob.getBbWidth()*.8f,.9f,2.4f),h=.09f,left=-w/2,fraction=Mth.clamp(mob.getHealth()/Math.max(1,mob.getMaxHealth()),0,1);
         pose.pushPose();pose.translate(0,height,0);pose.mulPose(facing);
-        VertexConsumer v=BUFFER.getBuffer(RenderType.entityTranslucentEmissive(BAR));
-        quad(pose,v,left-.03f,-.03f,-left+.03f,h+.03f,0,0,0,170);
+        quad(pose,BUFFER.getBuffer(RenderType.entityCutoutNoCull(TRACK)),left-.03f,-.03f,-left+.03f,h+.03f,0,0,1,1,255,255);
         pose.translate(0,0,-.002);
-        quad(pose,v,left,0,left+w*fraction,h,color>>16&255,color>>8&255,color&255,240);
+        if(fraction>0)quad(pose,BUFFER.getBuffer(RenderType.entityCutoutNoCull(FILL)),left,0,left+w*fraction,h,0,0,fraction,1,255,255);
         pose.popPose();
     }
-    static void quad(PoseStack pose,VertexConsumer v,float x0,float y0,float x1,float y1,int red,int green,int blue,int alpha){
-        var m=pose.last().pose();var n=pose.last().normal();int light=15728880;
-        v.vertex(m,x0,y0,0).color(red,green,blue,alpha).uv(0,1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
-        v.vertex(m,x1,y0,0).color(red,green,blue,alpha).uv(1,1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
-        v.vertex(m,x1,y1,0).color(red,green,blue,alpha).uv(1,0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
-        v.vertex(m,x0,y1,0).color(red,green,blue,alpha).uv(0,0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+    /** A quad with its own texture area, tinted grey (white leaves the texture as it is) */
+    static void quad(PoseStack pose,VertexConsumer v,float x0,float y0,float x1,float y1,float u0,float v0,float u1,float v1,int grey,int alpha){
+        var m=pose.last().pose();var n=pose.last().normal();int light=15728880,g=grey;
+        v.vertex(m,x0,y0,0).color(g,g,g,alpha).uv(u0,v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+        v.vertex(m,x1,y0,0).color(g,g,g,alpha).uv(u1,v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+        v.vertex(m,x1,y1,0).color(g,g,g,alpha).uv(u1,v0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
+        v.vertex(m,x0,y1,0).color(g,g,g,alpha).uv(u0,v0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(n,0,0,1).endVertex();
     }
 }

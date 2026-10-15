@@ -56,7 +56,7 @@ final class OperatorCommands {
         Elites.make(mob,kind,kind==Elites.Kind.BADASS?level:1,0);if(!raid)Elites.LOOSE.add(mob.getUUID());
         RaidTypes.broadcast(l.getServer().overworld(),d);
         float size=Elites.scale(kind,level);double health=1+Elites.healthBonus(kind,kind==Elites.Kind.BADASS?level:1);
-        String slow=kind==Elites.Kind.BADASS?", "+String.format(Locale.ROOT,"%.1f",Elites.slowdown(level,mob instanceof net.minecraft.world.entity.monster.Creeper)*100).replace(".0","")+"% slower":"";
+        String slow=kind==Elites.Kind.BADASS?", "+String.format(Locale.ROOT,"%.2f",Elites.slowdown(level,mob instanceof net.minecraft.world.entity.monster.Creeper)*100).replaceAll("\\.?0+$","")+"% slower":"";
         String blast=mob instanceof net.minecraft.world.entity.monster.Creeper creeper?", blast radius "+Elites.blast(creeper):"";
         say(c,Elites.title(kind,level,mob).getString()+": health "+Math.round(mob.getMaxHealth())+" ("+String.format(Locale.ROOT,"%.1f",health)+"x), size "+String.format(Locale.ROOT,"%.1f",size)+"x"+slow+blast+", drops "+Elites.reward(kind,level,0)+" Ardent"+(raid?", in the raid.":" (not a raid mob)."));
         return 1;

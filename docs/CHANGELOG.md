@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.9 — Red health bars that shaders keep, giants' heads, lighter Badass slowdown, the first raid's elite (2026-10-15, `dev`)
+
+After 1.1.8 on `dev`; `main` unchanged. **Network protocol 43** (unchanged from 1.1.8). Rules: GDD 1.1.9; tests: `docs/ROUND-1.1.9-TESTING.md`.
+
+* **Red health bars** (owner): every elite's health bar is red. With a shader pack (the owner's Oculus with MakeUp UltraFast) the rings and bars were drawn white: their colours now live in the textures, so the rings keep their kind's colour too.
+* **A giant's head is its head** (owner: "the head hitbox is somewhere in its leg"): a grown mob's eyes grow with it, and TaCZ counts a headshot on a Badass where its head is drawn (a Badass V zombie's head was at its shins).
+* **Badass slowdown halved** (owner): 2.5% a level (12.5% at V); a creeper 3.75% a level (18.75% at V).
+* **The first raid has an elite** (owner): exactly one in the introduction raid; a Badass there is always level I.
+
 ## 1.1.8 — Elites that stand out, on any mob; other mods can change without crashing the game (2026-10-15, `dev`)
 
 The first update on `dev` after 1.1.0 to 1.1.7 were merged into it; `main` unchanged. **Network protocol 43** (the raid marks packet carries each elite's kind: 1.1.8 clients and servers cannot join older ones). Rules: GDD 1.1.8; tests: `docs/ROUND-1.1.8-TESTING.md`.
