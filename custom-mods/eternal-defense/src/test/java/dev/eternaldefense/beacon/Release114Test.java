@@ -73,10 +73,10 @@ final class Release114Test {
     @Test void onlyMarkedMobsAndBigBossesDropArdent(){
         assertEquals(0,ArdentEnergy.drop(false,0,.0667,2,3,.01,false,12,40,0),"an ordinary wild mob drops none");
         assertEquals(0,ArdentEnergy.drop(false,0,.0667,2,0,.01,true,12,299,0));assertEquals(1,ArdentEnergy.drop(false,.99,.0667,2,0,.01,true,12,300,0),"a 300 health boss drops one");
-        assertEquals(1,ArdentEnergy.drop(true,.13,.0667,2,0,.01,false,12,20,0),"marked mobs roll at twice the chance");assertEquals(0,ArdentEnergy.drop(true,.14,.0667,2,0,.01,false,12,20,0));
+        assertEquals(1,ArdentEnergy.drop(true,.09,.0667,1.5,0,.01,false,12,20,0),"marked mobs roll at 1.5 times the chance");assertEquals(0,ArdentEnergy.drop(true,.11,.0667,1.5,0,.01,false,12,20,0));
         assertEquals(2,ArdentEnergy.drop(true,.99,.0667,2,0,.01,false,12,20,2),"an elite always drops its own");
-        assertEquals(2.0,ArdentEnergy.multiplier(2,0,0),1e-9);assertEquals(3.0,ArdentEnergy.multiplier(2,50,0),1e-9);assertEquals(2.5,ArdentEnergy.multiplier(2,0,1),1e-9);
-        assertEquals(2.0,DefenseConfig.MARKED_MULTIPLIER.getDefault(),1e-9);
+        assertEquals(1.5,ArdentEnergy.multiplier(1.5,0,0),1e-9);assertEquals(2.0,ArdentEnergy.multiplier(1.5,50,0),1e-9);assertEquals(1.875,ArdentEnergy.multiplier(1.5,0,1),1e-9);
+        assertEquals(1.5,DefenseConfig.MARKED_MULTIPLIER.getDefault(),1e-9);
     }
     @Test void raidsPayAQuarterMoreAndSendMoreMobs(){
         assertEquals(2,Rules.raidArdent(0));assertEquals(14,Rules.raidArdent(10));
@@ -95,7 +95,7 @@ final class Release114Test {
     @Test void eliteRulesFollowTheOwnersNumbers(){
         for(int l=1;l<=5;l++)assertEquals(l,Elites.healthBonus(Elites.Kind.BADASS,l),"+100%% health a Badass level");
         assertEquals(-.5,Elites.healthBonus(Elites.Kind.MATRIOSKA,1));assertEquals(.5,Elites.healthBonus(Elites.Kind.FLAK_ARMOR,1));assertEquals(.5,Elites.healthBonus(Elites.Kind.BODY_ARMOR,1));
-        assertEquals(1.2f,Elites.scale(Elites.Kind.BADASS,1),1e-6);assertEquals(2.0f,Elites.scale(Elites.Kind.BADASS,5),1e-6);assertEquals(1f,Elites.scale(Elites.Kind.HEALER,1));
+        assertEquals(1.5f,Elites.scale(Elites.Kind.BADASS,1),1e-6);assertEquals(5.0f,Elites.scale(Elites.Kind.BADASS,5),1e-6);assertEquals(1f,Elites.scale(Elites.Kind.HEALER,1));
         assertEquals(.4,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"explosion"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"bullet"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"melee"));
         assertEquals(.4,Elites.damageFactor(Elites.Kind.BODY_ARMOR,"bullet"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.BODY_ARMOR,"explosion"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.BODY_ARMOR,"melee"));
         assertEquals(1,Elites.damageFactor(Elites.Kind.HEALER,"bullet"));
@@ -112,7 +112,7 @@ final class Release114Test {
     @Test void modifiersPayMoreForHarderRaids(){
         assertEquals(List.of("reinforcements","elite_cadre","hardened","forced_march","fog_of_war","exposed_beacon"),RaidModifiers.MODS.stream().map(RaidModifiers.Mod::id).toList());
         assertEquals(35,RaidModifiers.payoutPercent(List.of("reinforcements","elite_cadre","nonsense")));
-        assertEquals(25,RaidModifiers.dropPercent(List.of("reinforcements"),"air"));assertEquals(10,RaidModifiers.dropPercent(List.of("reinforcements"),"normal"));
+        assertEquals(16,RaidModifiers.dropPercent(List.of("reinforcements"),"air"));assertEquals(8,RaidModifiers.dropPercent(List.of("reinforcements"),"normal"));
         assertEquals(13,RaidModifiers.raised(10,25));assertEquals(10,RaidModifiers.raised(10,0));
         assertEquals(26,RaidModifiers.attackers(20,"normal",List.of("reinforcements")));assertEquals(52,RaidModifiers.attackers(20,"swarm",List.of("reinforcements")));assertEquals(20,RaidModifiers.attackers(20,"normal",List.of()));
         assertEquals(2,RaidModifiers.elites(5,List.of("elite_cadre")),1e-9);

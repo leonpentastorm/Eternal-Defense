@@ -61,9 +61,15 @@ final class Elites {
         double r=roll*total;for(int i=0;i<max;i++){r-=BADASS_WEIGHTS[i];if(r<0)return i+1;}
         return max;
     }
-    /** Badass: +100% health a level; its size grows with it, 20% a level */
+    /** Badass sizes by level: up to a giant five times as big */
+    static final float[] BADASS_SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    /** From this size a Badass smashes the blocks its body runs into */
+    static final float GIANT=2;
+    /** Badass: +100% health a level */
     static double healthBonus(Kind kind,int level){return switch(kind){case BADASS->Math.max(1,level);case MATRIOSKA->-.5;case FLAK_ARMOR,BODY_ARMOR->.5;default->0;};}
-    static float scale(Kind kind,int level){return kind==Kind.BADASS?1+.2f*Math.max(1,level):1;}
+    static float scale(Kind kind,int level){return kind==Kind.BADASS?BADASS_SIZES[Math.max(1,Math.min(5,level))-1]:1;}
+    /** Pure: extra step height of a mob this many times its size (a giant climbs what it could step over at its own size) */
+    static double stride(float scale){return scale<=1?0:.6*(scale-1);}
     /** Pure: the modifier for one spawn; Long Shot only for a mob that shoots */
     static Kind choose(double roll,boolean ranged){
         int total=0;for(var k:Kind.values())if(ranged||k!=Kind.LONG_SHOT)total+=k.weight;
@@ -95,8 +101,9 @@ final class Elites {
 
     // Attribute changes the raid's own balancing keeps
     static final UUID HEALTH=UUID.fromString("5e1c0a1e-0001-4c2a-9d1e-e7e7e7e7e701"),SPEED=UUID.fromString("5e1c0a1e-0002-4c2a-9d1e-e7e7e7e7e702"),
-        RANGE=UUID.fromString("5e1c0a1e-0003-4c2a-9d1e-e7e7e7e7e703"),RAID_HEALTH=UUID.fromString("5e1c0a1e-0004-4c2a-9d1e-e7e7e7e7e704"),RAID_SPEED=UUID.fromString("5e1c0a1e-0005-4c2a-9d1e-e7e7e7e7e705");
-    static final Set<UUID> OURS=Set.of(HEALTH,SPEED,RANGE,RAID_HEALTH,RAID_SPEED);
+        RANGE=UUID.fromString("5e1c0a1e-0003-4c2a-9d1e-e7e7e7e7e703"),RAID_HEALTH=UUID.fromString("5e1c0a1e-0004-4c2a-9d1e-e7e7e7e7e704"),RAID_SPEED=UUID.fromString("5e1c0a1e-0005-4c2a-9d1e-e7e7e7e7e705"),
+        STEP=UUID.fromString("5e1c0a1e-0006-4c2a-9d1e-e7e7e7e7e706");
+    static final Set<UUID> OURS=Set.of(HEALTH,SPEED,RANGE,RAID_HEALTH,RAID_SPEED,STEP);
     static void modifier(Mob mob,Attribute attribute,UUID id,String name,double amount,AttributeModifier.Operation op){
         var a=mob.getAttribute(attribute);if(a==null||amount==0)return;a.removeModifier(id);a.addPermanentModifier(new AttributeModifier(id,name,amount,op));
     }
@@ -108,6 +115,10 @@ final class Elites {
     // Server
     static Kind kind(Entity e){return e==null?null:Kind.of(e.getPersistentData().getString(TAG));}
     static boolean elite(Entity e){return kind(e)!=null;}
+    /** A Badass big enough to smash its way through */
+    static boolean giant(Entity e){return kind(e)==Kind.BADASS&&e.getPersistentData().getFloat(SCALE)>=GIANT;}
+    /** Server: elites made by the test command outside a raid (their size is sent to clients too) */
+    static final Set<UUID> LOOSE=java.util.concurrent.ConcurrentHashMap.newKeySet();
     static int reward(Entity e){var k=kind(e);return k==null?0:reward(k,e.getPersistentData().getInt(LEVEL),e.getPersistentData().getInt(GEN));}
     static boolean ranged(Mob mob){return mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton||mob instanceof net.minecraft.world.entity.monster.Pillager;}
     static Component title(Kind kind,int level,Entity mob){
@@ -122,7 +133,7 @@ final class Elites {
         double bonus=healthBonus(kind,level);if(bonus!=0)modifier(mob,Attributes.MAX_HEALTH,HEALTH,"Elite health",bonus,AttributeModifier.Operation.MULTIPLY_TOTAL);
         if(kind==Kind.SPEEDSTER)modifier(mob,Attributes.MOVEMENT_SPEED,SPEED,"Elite speed",SPEEDSTER_SPEED,AttributeModifier.Operation.MULTIPLY_TOTAL);
         if(kind==Kind.LONG_SHOT){modifier(mob,Attributes.FOLLOW_RANGE,RANGE,"Elite range",LONG_SHOT_RANGE+10,AttributeModifier.Operation.ADDITION);mob.goalSelector.addGoal(LongShotGoal.PRIORITY,new LongShotGoal(mob));}
-        float s=scale(kind,level);if(s!=1){n.putFloat(SCALE,s);mob.refreshDimensions();}
+        float s=scale(kind,level);if(s!=1){n.putFloat(SCALE,s);mob.refreshDimensions();modifier(mob,net.minecraftforge.common.ForgeMod.STEP_HEIGHT_ADDITION.get(),STEP,"Elite stride",stride(s),AttributeModifier.Operation.ADDITION);}
         mob.setCustomName(title(kind,level,mob));mob.setCustomNameVisible(true);
         mob.setHealth(mob.getMaxHealth());
     }
@@ -137,7 +148,7 @@ final class Elites {
             EternalDefense.announce(l,Component.translatable("gui.eternal_defense.elite.sighted",d.wave,title(kind,level,mob)));}
         d.setDirty();return kind;
     }
-    /** Once a second for each raider: a Healer mends the hostiles around it */
+    /** Once a second: a Healer mends the hostiles around it */
     static void tick(ServerLevel l,Mob mob){
         if(kind(mob)!=Kind.HEALER)return;
         var box=mob.getBoundingBox().inflate(HEALER_RADIUS);int healed=0;
@@ -213,6 +224,11 @@ final class Elites {
             p.level().explode(p,at.x,at.y,at.z,LONG_SHOT_BLAST,Level.ExplosionInteraction.TNT);
             p.discard();e.setImpactResult(ProjectileImpactEvent.ImpactResult.STOP_AT_CURRENT_NO_DAMAGE);
         }
+        @SubscribeEvent public void eliteTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent e){
+            var entity=e.getEntity();if(entity.tickCount%20!=0||!(entity.level() instanceof ServerLevel l)||!(entity instanceof Mob mob)||kind(mob)!=Kind.HEALER)return;
+            tick(l,mob);
+        }
+        @SubscribeEvent public void eliteJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent e){if(!e.getLevel().isClientSide&&e.getEntity() instanceof Mob mob)restore(mob);}
         @SubscribeEvent public void eliteSize(EntityEvent.Size e){
             var entity=e.getEntity();float s;
             if(entity.level()==null)return;

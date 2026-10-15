@@ -77,7 +77,7 @@ public final class FobClient {
             outlineButton.on=data.getBoolean("showZone");
             outlineButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.outline.tip",data.getInt("sections"))));
             // The raid call, only while the FOB waits for its first won raid
-            callButton=addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-50,colW,20,Ui.t("fob.screen.call"),Ui.Look.PRIMARY,b->click(Fobs.CALL_RAID)));
+            callButton=addRenderableWidget(new Ui.UiButton(leftX,topPos+imageHeight-50,colW,20,Ui.t("fob.screen.call"),Ui.Look.DANGER,b->click(Fobs.CALL_RAID)));
             callButton.visible=state().equals("planted");callButton.active=data.getBoolean("mayCallRaid")&&data.getBoolean("raidsPossible");
             callButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("fob.screen.call.tip")));
             for(int i=0;i<Fobs.SHOP.size();i++){

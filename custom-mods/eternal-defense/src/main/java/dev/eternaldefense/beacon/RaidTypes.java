@@ -82,7 +82,9 @@ final class RaidTypes {
         if(d.phase.equals("raid"))for(var id:d.raiders)if(l.getEntity(id) instanceof Mob m&&m.isAlive()){raiders.add(m.getId());if(m.getPersistentData().getBoolean("eternalChute"))chuted.add(m.getId());
             if(m.getPersistentData().contains(Elites.SCALE)){scaled.add(m.getId());scales.add(m.getPersistentData().getFloat(Elites.SCALE));}}
         for(int id:HuntWarband.markIds(l))raiders.add(id);   // A hunt warband carries the same red mark
-        if(raiders.isEmpty()&&!marked)return;marked=!raiders.isEmpty();
+        for(var it=Elites.LOOSE.iterator();it.hasNext();){if(l.getEntity(it.next()) instanceof Mob m&&m.isAlive()){if(m.getPersistentData().contains(Elites.SCALE)){scaled.add(m.getId());scales.add(m.getPersistentData().getFloat(Elites.SCALE));}}else it.remove();}
+        boolean any=!raiders.isEmpty()||!scaled.isEmpty();
+        if(!any&&!marked)return;marked=any;
         BeaconNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(),new Marks(raiders.toIntArray(),chuted.toIntArray(),scaled.toIntArray(),scales.toFloatArray()));
     }
     /** Flyers that steer themselves straight at their target */

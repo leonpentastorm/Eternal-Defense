@@ -1,5 +1,16 @@
 # Change log
 
+## 1.1.5 — Giants, drops for the modifiers, test commands (2026-10-15, branch `feature/raid-control`)
+
+After 1.1.4 on the same branch; `dev` and `main` unchanged. **Network protocol 42** (unchanged; no packet changed). Rules: GDD 1.1.5; tests: `docs/ROUND-1.1.5-TESTING.md`.
+
+* **Giants** (owner: "Max badass size should be 5x, i want Giants rushing at you"): Badass I to V are 1.5, 2.2, 3, 4 and 5 times as big, hitbox too, and step up to 3 blocks at five times. From Badass II a giant in a raid that gets stuck smashes the blocks its body runs into (inside the base the raid repairs them afterwards). Its name and the raid mark sit just above its head.
+* **Modifiers by timer** (owner): the modifiers and special raid you choose apply to the next raid however it starts, Start raid or the timer running out; the Raid modifiers page and the guide now say so.
+* **Red raid buttons** (owner): Start raid at the beacon and Call the raid at a FOB are red.
+* **Fog of War** (owner): it switches off your Reconnaissance upgrade for that raid, and its tooltip says so; no raid mob glows, not even for the second after it spawns.
+* **Drops** (owner: "decrease base ardent drop chance to 1.5x original, if you enable every modifier you get 2x"): red-marked mobs drop Ardent at 1.5 times the base chance (was 2); the modifiers add 8, 9, 8, 6, 5 and 6 percent of the base chance and a special raid 8, so everything on is twice the base chance. Raid payouts unchanged. The config value is now `markedDropMultiplier`.
+* **Operator test commands** (owner: "Add appropriate console command so i can test the features"): `/eternaldefense elite <kind> [level] [mob]`, `raid-mod list|clear|special <type>|<modifier>`, `raid-timer <seconds>`, `raid-info`, `balance [gun]`, `ages [reload]`.
+
 ## 1.1.4 — Raid control, elite mobs, raid modifiers, fair gun prices (2026-10-15, branch `feature/raid-control`)
 
 From 1.1.3 on `feature/display-tuner`; `dev` and `main` unchanged. **Network protocol 42** (was 41): client and server must both run 1.1.4. Rules: GDD 1.1.4; tests: `docs/ROUND-1.1.4-TESTING.md`.

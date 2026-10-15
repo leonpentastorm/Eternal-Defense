@@ -55,7 +55,7 @@ final class SpecialForcesRaids {
             var health=mob.getAttribute(Attributes.MAX_HEALTH);if(health!=null){health.removeModifiers();health.setBaseValue(role.equals("BULLDOZER")?110:56+Math.max(0,Math.min(10,d.raidTier))*2);mob.setHealth(mob.getMaxHealth());}
             var armor=mob.getAttribute(Attributes.ARMOR);if(armor!=null){armor.removeModifiers();armor.setBaseValue(role.equals("BULLDOZER")?8:3);}
             var toughness=mob.getAttribute(Attributes.ARMOR_TOUGHNESS);if(toughness!=null){toughness.removeModifiers();toughness.setBaseValue(0);}
-            mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));
+            mob.setGlowingTag(EternalDefense.revealed(d));
             if(!l.noCollision(mob))return false;
             d.raiders.add(mob.getUUID()); // The join guard verifies ownership before allowing insertion.
             if(!l.addFreshEntity(mob)){d.raiders.remove(mob.getUUID());return false;}

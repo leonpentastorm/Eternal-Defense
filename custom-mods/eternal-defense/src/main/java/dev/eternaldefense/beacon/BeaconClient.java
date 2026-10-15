@@ -273,7 +273,7 @@ public final class BeaconClient {
                 button(Ui.t("raid.page.level"),x,contentTop(),sw,16,Ui.Look.TAB,b->{raidPage=0;rebuildWidgets();}).selected=raidPage==0;
                 modsPage=button(Ui.t("raid.page.mods"),x+sw+4,contentTop(),w-sw-4,16,Ui.Look.TAB,b->{raidPage=1;rebuildWidgets();});modsPage.selected=raidPage==1;
                 // Each card's action sits under it: Start raid under the level, Buy under the break
-                startRaid=button(Ui.t("raid.start"),x,by,raidPage==0?lay.cw():w,Ui.Look.NORMAL,b->BeaconNetwork.action("start-raid",""));
+                startRaid=button(Ui.t("raid.start"),x,by,raidPage==0?lay.cw():w,Ui.Look.DANGER,b->BeaconNetwork.action("start-raid",""));
                 startRaid.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Ui.t("raid.start.tip")));
                 if(raidPage==0){
                     int cy=lay.y()+lay.capRow(),ch=lay.roomy()?18:16;

@@ -6,17 +6,17 @@ import java.util.*;
 /** Raid modifiers: harder raids, chosen at the beacon for the next raid, that pay more and drop more Ardent Energy. */
 final class RaidModifiers {
     private RaidModifiers(){}
-    /** One modifier: its id, the extra payout of the raid's completion cache and the extra Ardent drop chance of raid mobs, in percent */
+    /** One modifier: its id, the extra payout of the raid's completion cache (percent) and the Ardent drop chance it adds (percent of the base chance) */
     record Mod(String id,int payout,int drops){}
     static final List<Mod> MODS=List.of(
-        new Mod("reinforcements",20,10),
-        new Mod("elite_cadre",15,15),
-        new Mod("hardened",15,10),
-        new Mod("forced_march",10,10),
+        new Mod("reinforcements",20,8),
+        new Mod("elite_cadre",15,9),
+        new Mod("hardened",15,8),
+        new Mod("forced_march",10,6),
         new Mod("fog_of_war",10,5),
-        new Mod("exposed_beacon",15,10));
-    /** A special raid chosen here (one at a time): its own Ardent bonus as before, and this much more drop chance */
-    static final int SPECIAL_DROPS=15;
+        new Mod("exposed_beacon",15,6));
+    /** A special raid chosen here (one at a time): its own Ardent bonus, and this much more drop chance (with every modifier, half the base chance more) */
+    static final int SPECIAL_DROPS=8;
     /** What the modifiers change */
     static final double REINFORCEMENTS=1.3,HARDENED_HEALTH=.35,FORCED_MARCH_SPEED=.2,EXPOSED_BEACON=1.5;
     static final int ELITE_CADRE=1;
@@ -45,6 +45,10 @@ final class RaidModifiers {
             BeaconNetwork.announceOthers(p,"next_raid",0,0,d.nextRaidType,"");
             return d.nextRaidType.equals("normal")?"Next raid: ordinary.":"Next raid: "+RaidTypes.name(type).getString()+".";
         }
+        return flip(d,id);
+    }
+    /** A modifier on or off for the next raid, whoever asks (the screen checks where and when first) */
+    static String flip(CampaignData d,String id){
         if(of(id)==null)return "Unknown raid modifier.";
         if(!d.chosenMods.remove(id))d.chosenMods.add(id);d.setDirty();
         return "Next raid: payout +"+payoutPercent(d.chosenMods)+"%, Ardent from raid mobs +"+dropPercent(d.chosenMods,d.nextRaidType)+"%.";

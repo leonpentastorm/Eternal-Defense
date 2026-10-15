@@ -25,11 +25,11 @@ final class ArdentEnergy {
     }
     /** Pure: what one kill drops. Unmarked mobs drop only as big bosses; marked ones roll at the multiplied chance; an elite adds its own. */
     static int drop(boolean marked,double roll,double base,double multiplier,int looting,double lootingBonus,boolean boss,int bossAmount,float maxHealth,int elite){
-        if(!marked)return boss&&maxHealth>=BOSS_HEALTH?1:0;
+        if(!marked)return (boss&&maxHealth>=BOSS_HEALTH?1:0)+Math.max(0,elite);
         return amount(roll,base*Math.max(0,multiplier),looting,lootingBonus,boss,bossAmount,maxHealth)+Math.max(0,elite);
     }
-    /** Pure: the multiplier of marked mobs: the config's, raised by the raid's modifiers and the killer's Luck (+25% a level) */
-    static double multiplier(double config,int modifierPercent,int luck){return Math.max(0,config)*(1+Math.max(0,modifierPercent)/100.0)*(1+.25*Math.max(0,luck));}
+    /** Pure: the multiplier of marked mobs: the config's, plus the raid modifiers' percent of the base chance, then the killer's Luck (+25% a level) */
+    static double multiplier(double config,int modifierPercent,int luck){return (Math.max(0,config)+Math.max(0,modifierPercent)/100.0)*(1+.25*Math.max(0,luck));}
     /** Pure: a raider that came in a wave of a vanilla raid */
     static boolean vanillaRaider(boolean raider,int wave,boolean ours){return raider&&wave>0&&!ours;}
     static int balance(Player p){

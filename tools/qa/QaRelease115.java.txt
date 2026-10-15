@@ -1,0 +1,388 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.5: giant elites, the operator commands, a timer raid with every modifier, drops, red raid buttons, Fog of War. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease115 {
+    // One line moves a gun to another Age: written before the game reads it
+    static{
+        try{var dir=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get();Files.createDirectories(dir);Files.writeString(dir.resolve("eternal-defense-ages.json"),"{\n  \"tacz:m1911\": 4\n}\n");}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(!(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())){CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String saidLine(String s){synchronized(CHAT){return CHAT.stream().filter(b->b.contains(s)).findFirst().orElse("");}}
+    // One frame's texts (Ui records them)
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+    static String cut(){return lastFrame.stream().filter(Ui.Drawn::cut).map(Ui.Drawn::text).toList().toString();}
+    /** The server's last answer cleared from the screen's message strip (a long one is cut on purpose) */
+    static void quiet(){if(mc().screen instanceof BeaconClient.PanelScreen p)p.message="";}
+    /** Every button's label fits it */
+    static String buttonsCut(){var s=mc().screen;var out=new ArrayList<String>();if(s==null)return "[]";var font=mc().font;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&font.width(b.getMessage())>b.getWidth()-10-(b.look==Ui.Look.TOGGLE?36:0))out.add(b.getMessage().getString()+" ("+font.width(b.getMessage())+" in "+b.getWidth()+")");return out.toString();}
+
+    // What each kill drops (counted after every other listener), and the blasts
+    static final Map<String,Integer> KILLS=new java.util.concurrent.ConcurrentHashMap<>(),ARDENT=new java.util.concurrent.ConcurrentHashMap<>();
+    static final List<String> ELITE_DROPS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void drops(net.minecraftforge.event.entity.living.LivingDropsEvent e){
+        if(e.getEntity().level().isClientSide)return;
+        int n=0;for(var it:e.getDrops())if(it.getItem().is(EternalDefense.ARDENT_ENERGY.get()))n+=it.getItem().getCount();
+        var tag=e.getEntity().getPersistentData();boolean raider=tag.getBoolean("eternalRaider");var kind=Elites.kind(e.getEntity());
+        String group=kind!=null?"elite":raider?"marked":e.getEntity().getType()==EntityType.WITHER?"boss":"wild";
+        KILLS.merge(group,1,Integer::sum);ARDENT.merge(group,n,Integer::sum);
+        if(kind!=null)ELITE_DROPS.add(kind.id+" level "+tag.getInt(Elites.LEVEL)+" gen "+tag.getInt(Elites.GEN)+": "+n);
+    }
+    static final List<String> BLASTS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void blast(net.minecraftforge.event.level.ExplosionEvent.Start e){
+        if(e.getLevel().isClientSide)return;var src=e.getExplosion().getDirectSourceEntity();
+        BLASTS.add(src==null?"none":src instanceof net.minecraft.world.entity.projectile.AbstractArrow?"arrow":Elites.kind(src)!=null?"elite:"+Elites.kind(src).id:BuiltInRegistries.ENTITY_TYPE.getKey(src.getType()).getPath());
+    }
+    static long blasts(String kind){synchronized(BLASTS){return BLASTS.stream().filter(kind::equals).count();}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r115",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r115",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){if(y>sy+1)srv(()->{var p=BlockPos.containing(x,y-1,z);if(sl().getBlockState(p).isAir())sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());});double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void setField(Object o,String name,Object value){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);f.set(o,value);return;}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverOn(net.minecraft.client.gui.components.AbstractWidget b){hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);}
+    static CompoundTag clientState(){return (CompoundTag)staticField(BeaconClient.class,"state");}
+    static void sync(){srv(()->BeaconNetwork.sendState(sp(),"","",""));}
+    static BeaconClient.ControlScreen screen(){return mc().screen instanceof BeaconClient.ControlScreen s?s:null;}
+    static net.minecraft.client.gui.components.Button labelled(String text){var s=mc().screen;if(s==null)return null;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(text))return b;return null;}
+    static void press(net.minecraft.client.gui.components.Button b){if(b==null)throw new IllegalStateException("no such button");b.onPress();}
+    static String message(){return mc().screen instanceof BeaconClient.PanelScreen p?p.message:"";}
+    static List<Mob> raiders(){var d=cd();var out=new ArrayList<Mob>();for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m&&m.isAlive())out.add(m);return out;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))e.discard();}
+    static void kill(net.minecraft.world.entity.LivingEntity m){m.invulnerableTime=0;m.hurt(sl().damageSources().playerAttack(sp()),100000);}
+    static String names(List<String> l){return String.join(", ",l);}
+    static int ardentIn(List<CompoundTag> tags){int n=0;for(var t:tags){var s=ItemStack.of(t);if(s.is(EternalDefense.ARDENT_ENERGY.get()))n+=s.getCount();}return n;}
+
+    // The places: B the beacon, ARENA the staged raid (outside the zone), T the weapon table
+    static BlockPos B,ARENA,T;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);ARENA=new BlockPos(sx+40,sy,sz+40);T=B.offset(0,0,7);}
+    static void world(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();sp().getAbilities().invulnerable=true;sp().onUpdateAbilities();
+        var d=cd();d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+
+    // Commands typed by the player, and the lines the server sent back since
+    static int mark;
+    static void cmd(String c){mark=CHAT.size();log("QA_CMD /{}",c);mc().player.connection.sendCommand(c);}
+    static List<String> replies(){synchronized(CHAT){return new ArrayList<>(CHAT.subList(Math.min(mark,CHAT.size()),CHAT.size()));}}
+    static String reply(String part){for(var s:replies())if(s.contains(part))return s;return null;}
+    static String all(){return String.join(" | ",replies());}
+    static Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob subject(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m?m:null;}
+    static final float[] SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    static final List<String> GIANT_REPLIES=new ArrayList<>();
+    /** The ring of stone around the smash test: 15 x 15, 7 high, one thick */
+    static List<BlockPos> ring(BlockPos c){var out=new ArrayList<BlockPos>();for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++)if(Math.max(Math.abs(x),Math.abs(z))==7)for(int y=0;y<7;y++)out.add(c.offset(x,y,z));return out;}
+    static BlockPos RING,STEP;static int ringBlocks,level;
+    static String pct(double v){return String.format(Locale.ROOT,"%.1f%%",v*100);}
+
+    /** A staged raid (no waves) with these modifiers: 400 marked zombies killed by the player, Ardent counted */
+    static void sample(String name,List<String> mods,String type,double times){
+        step(10,()->{KILLS.clear();ARDENT.clear();srv(()->{var d=cd();d.phase="raid";d.raidType=type;d.activeMods.clear();d.activeMods.addAll(mods);d.raidTier=0;d.introRaid=false;d.hardRaid=false;d.wave=1;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.setDirty();clearMobs();});},"a staged raid: "+name);
+        for(int b=0;b<8;b++)step(5,()->srv(()->{var d=cd();for(int i=0;i<50;i++){var m=EternalDefense.raider(sl(),d,EntityType.ZOMBIE,"grunt",type,ARENA.offset(i%10*2-10,0,i/10*2-30));if(m!=null)kill(m);}clearMobs();}),"fifty red-marked zombies killed ("+name+")");
+        step(5,()->{int n=KILLS.getOrDefault("marked",0),got=ARDENT.getOrDefault("marked",0);double expect=n*DefenseConfig.ENERGY_CHANCE.get()*times;
+            note("SAMPLE {} kills {} ardent {} expected {}",name,n,got,String.format(Locale.ROOT,"%.1f",expect));
+            check(name+": red-marked mobs drop Ardent at "+times+" times the base chance ("+got+" from "+n+", expected "+String.format(Locale.ROOT,"%.1f",expect)+")",n>=390&&got>=expect*.65&&got<=expect*1.35,KILLS+" "+ARDENT);},"the rate ("+name+")");
+    }
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(10,QaRelease115::world,"a flat world, night never comes by itself; a beacon (core 3) and the first raid done");
+        step(5,()->srv(()->{var d=cd();d.reconnaissance=3;d.setDirty();}),"Reconnaissance at its top level (raid mobs glow at once)");
+        step(5,()->{srv(()->{sp().addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.NIGHT_VISION,1_000_000,0,false,false));});mc().player.getInventory().selected=8;},"night vision for the pictures; an empty hand (no placement preview)");
+
+        // 1. The commands
+        step(5,()->{var root=mc().player.connection.getCommands().getRoot().getChild("eternaldefense");var names=new ArrayList<String>();if(root!=null)for(var c:root.getChildren())names.add(c.getName());
+            note("COMMANDS {}",names);check("the client knows the operator commands under /eternaldefense",names.containsAll(List.of("elite","raid-mod","raid-timer","raid-info","balance","ages")),names.toString());},"the command tree");
+        step(5,()->cmd("eternaldefense balance"),"/eternaldefense balance");
+        until("its reply",100,()->reply(" guns at ")!=null,()->{});
+        step(5,()->{note("BALANCE {}",all());
+            check("balance: the Age medians and the guns far above theirs",reply("Age medians (damage a second, guns): 1=")!=null&&reply(" guns at 1.4x their Age's median or more")!=null,all());},"balance");
+        step(5,()->cmd("eternaldefense balance tacz:m1911"),"/eternaldefense balance tacz:m1911");
+        until("its reply",100,()->reply("Costs:")!=null,()->{});
+        step(5,()->{note("M1911 {}",all());check("balance <gun>: the M1911 is Age 4 by its config line, with its numbers and costs",reply("tacz:m1911: Age 4 (set by an Age line)")!=null&&reply("Costs:")!=null&&reply("Costs:").contains("hardened_receiver"),all());},"one gun");
+        step(5,()->cmd("eternaldefense ages"),"/eternaldefense ages");
+        until("its reply",100,()->reply("Ages set by hand")!=null,()->{});
+        step(5,()->{String r=reply("Ages set by hand");note("AGES {}",r);check("ages: the lines set by hand (the mod's own and the config's)",r.contains("bf1:sw_model3=1")&&r.contains("tacz:m1911=4"),r);
+            try{Files.writeString(net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get().resolve("eternal-defense-ages.json"),"{\n  \"tacz:m1911\": 4,\n  \"tacz:glock_17\": 1\n}\n");}catch(Exception e){throw new IllegalStateException(e);}},"a second line written in the config: the Glock 17 to Age 1");
+        step(5,()->cmd("eternaldefense ages reload"),"/eternaldefense ages reload");
+        until("its reply",100,()->reply("Read again: ")!=null,()->{});
+        step(5,()->{String r=reply("Read again: ");note("RELOAD {}",r);check("ages reload reads the file again (one more line)",r!=null&&r.startsWith("Read again: 3 Ages set by hand"),r);cmd("reload");},"then /reload for the recipe rules");
+        step(400,()->{},"twenty seconds for the reload");
+        step(5,()->cmd("eternaldefense balance tacz:glock_17"),"/eternaldefense balance tacz:glock_17");
+        until("its reply",200,()->reply("Costs:")!=null,()->{});
+        step(5,()->{note("GLOCK {}",all());check("after the reload the Glock 17 is Age 1 and takes Age 1's receiver",reply("tacz:glock_17: Age 1 (set by an Age line)")!=null&&reply("Costs:").contains("pressed_receiver"),all());},"moved");
+
+        // 2. Giants by command: Badass I to V
+        step(5,()->{tp(ARENA.getX()+.5,sy,ARENA.getZ()-10.5,0,0);srv(()->sl().setDayTime(18000));},"to the arena, at night");
+        for(int lvl=1;lvl<=5;lvl++){int l=lvl;
+            step(5,()->tp(ARENA.getX()-30+l*10+.5,sy,ARENA.getZ()+.5,0,0),"stand for Badass "+l);
+            step(5,()->cmd("eternaldefense elite badass "+l),"/eternaldefense elite badass "+l);
+            until("its reply",100,()->reply("Badass ")!=null||reply("No room")!=null,()->{});
+            step(5,()->{GIANT_REPLIES.add(String.valueOf(reply("Badass ")));
+                srv(()->{for(var m:sl().getEntitiesOfClass(Mob.class,sp().getBoundingBox().inflate(14))){if(Elites.kind(m)!=Elites.Kind.BADASS||SUBJECTS.containsValue(m.getUUID()))continue;SUBJECTS.put("b"+l,m.getUUID());m.setNoAi(true);}});},"it stands");
+        }
+        step(20,()->{note("GIANT REPLIES {}",GIANT_REPLIES);
+            String r=srvGet(()->{var b=new StringBuilder();for(int l=1;l<=5;l++){var m=subject("b"+l);if(m==null){b.append(l).append(":none;");continue;}b.append(String.format(Locale.ROOT,"%d:%.3f/%.3f/%.3f/%.0f/%b/%b;",l,m.getBbWidth()/.6f,m.getBbHeight()/1.95f,m.getStepHeight(),m.getMaxHealth(),Elites.LOOSE.contains(m.getUUID()),m.isCustomNameVisible()));}return b.toString();});
+            note("GIANTS {}",r);boolean size=true,stride=true,said=true;
+            for(int l=1;l<=5;l++){var m=java.util.regex.Pattern.compile(l+":([\\d.]+)/([\\d.]+)/([\\d.]+)/").matcher(r);if(!m.find()){size=stride=false;continue;}
+                size&=Math.abs(Double.parseDouble(m.group(1))-SIZES[l-1])<.02&&Math.abs(Double.parseDouble(m.group(2))-SIZES[l-1])<.02;
+                stride&=Math.abs(Double.parseDouble(m.group(3))-(.6+Elites.stride(SIZES[l-1])))<.01;
+                var line=GIANT_REPLIES.size()>=l?GIANT_REPLIES.get(l-1):"";said&=line.contains(String.format(Locale.ROOT,"size %.1fx",SIZES[l-1]))&&line.contains("drops "+l+" Ardent")&&line.contains("(not a raid mob)");}
+            check("elite badass 1..5: hitboxes 1.5, 2.2, 3, 4 and 5 times as wide and tall",size,r);
+            check("each climbs higher steps the bigger it is (0.9 to 3 blocks)",stride,r);
+            check("the command says size, health and drops for each",said,String.valueOf(GIANT_REPLIES));
+            check("they carry their names over their heads",!r.contains("/false;")&&!r.contains("none"),r);
+            StringBuilder client=new StringBuilder();boolean ok=true;
+            for(int l=1;l<=5;l++){int ll=l;int id=srvGet(()->subject("b"+ll)==null?-1:subject("b"+ll).getId());var ce=mc().level.getEntity(id);Float s=Elites.SCALES.get(id);
+                client.append(l).append(":").append(s).append("/").append(ce==null?"none":String.format(Locale.ROOT,"%.2f",ce.getBbWidth())).append(" ");
+                ok&=s!=null&&Math.abs(s-SIZES[l-1])<.01&&ce!=null&&Math.abs(ce.getBbWidth()/.6f-SIZES[l-1])<.02;}
+            check("the client draws each at its size, with its hitbox (outside any raid too)",ok,client.toString());},"five giants");
+        step(5,()->look(ARENA.getX()+.5,sy+6,ARENA.getZ()-24.5,ARENA.getX()+.5,sy+5,ARENA.getZ()+6.5),"step back to see the row");
+        step(20,()->shot("r115_giants_row"),"picture");
+        step(5,()->{var at=srvGet(()->subject("b5").position());look(at.x+1,sy+9,at.z-12,at.x,sy+10,at.z);},"level with Badass V's head, 12 blocks away");
+        step(20,()->shot("r115_giant_name"),"its name over its head");
+
+        // 3. Its stride: a three-block ledge
+        step(5,()->{STEP=ARENA.offset(0,0,40);srv(()->{
+            for(var p:BlockPos.betweenClosed(STEP.offset(-8,0,0),STEP.offset(8,2,12)))sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+            for(String k:List.of("b1","b5")){var m=subject(k);m.setNoAi(false);m.goalSelector.removeAllGoals(g->true);m.targetSelector.removeAllGoals(g->true);m.setTarget(null);}
+            subject("b5").moveTo(STEP.getX()+3.5,sy,STEP.getZ()-6.5,0,0);subject("b1").moveTo(STEP.getX()-4.5,sy,STEP.getZ()-6.5,0,0);});
+            look(STEP.getX()+16.5,sy+6,STEP.getZ()-4.5,STEP.getX(),sy+3,STEP.getZ());},"a ledge three blocks high; Badass I and V walk to the top");
+        int[] stepPoll={0};
+        until("Badass V is up",400,()->{if(stepPoll[0]++%20==0)srv(()->{for(String k:List.of("b1","b5")){var m=subject(k);m.getNavigation().moveTo(STEP.getX()+(k.equals("b5")?3.5:-4.5),sy+3,STEP.getZ()+6.5,1.0);}});return srvGet(()->subject("b5").getY())>=sy+2.9;},()->{});
+        step(40,()->{},"two seconds more");
+        step(5,()->{String r=srvGet(()->String.format(Locale.ROOT,"V %.2f I %.2f",subject("b5").getY()-sy,subject("b1").getY()-sy));note("LEDGE {}",r);
+            check("Badass V walks up the three-block ledge; Badass I does not",srvGet(()->subject("b5").getY())>=sy+2.9&&srvGet(()->subject("b1").getY())<sy+1.5,r);shot("r115_giant_ledge");},"the ledge");
+        step(5,()->srv(()->{for(var k:List.copyOf(SUBJECTS.keySet())){var m=subject(k);if(m!=null){Elites.LOOSE.remove(m.getUUID());m.discard();}}SUBJECTS.clear();clearMobs();}),"clear");
+
+        // 4. A giant raider in a stone ring (a staged raid with no waves of its own)
+        step(5,()->{RING=ARENA.offset(-10,0,-25);srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.hardRaid=false;d.raidTier=1;d.introRaid=false;d.wave=1;d.wavePlayers=1;d.spawnRemaining=500;d.spawnCooldown=1_000_000;d.raiders.clear();d.activeMods.clear();d.deaths=0;d.waveTicks=100000;d.setDirty();
+                var ring=ring(RING);ringBlocks=ring.size();for(var p:ring)sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());note("RING at {} inside the zone {} ({} blocks)",RING,d.inside(RING),ringBlocks);});
+            look(RING.getX()+.5,sy+14,RING.getZ()-22.5,RING.getX()+.5,sy+3,RING.getZ()+.5);},"a raid at level 1 with no waves of its own; a stone ring 15 wide and 7 high");
+        step(10,()->srv(()->{var d=cd();var m=EternalDefense.raider(sl(),d,EntityType.ZOMBIE,"grunt","normal",RING);if(m==null)throw new IllegalStateException("no room");Elites.make(m,Elites.Kind.BADASS,5,0);RaidTypes.broadcast(sl(),d);SUBJECTS.put("giant",m.getUUID());}),"a Badass V raider in its middle");
+        step(5,()->shot("r115_ring_before"),"picture");
+        int[] ringPoll={0};
+        until("it smashes its way out",900,()->{ringPoll[0]++;return srvGet(()->{var m=subject("giant");return m!=null&&Math.max(Math.abs(m.getX()-RING.getX()-.5),Math.abs(m.getZ()-RING.getZ()-.5))>9;});},()->{});
+        step(5,()->{String r=srvGet(()->{int gone=0;for(var p:ring(RING))if(sl().getBlockState(p).isAir())gone++;var m=subject("giant");return gone+" "+(m==null?"none":String.format(Locale.ROOT,"%.1f %.1f %b",m.getX()-RING.getX(),m.getZ()-RING.getZ(),m.hasGlowingTag()));});
+            note("SMASH {} after {} ticks",r,ringPoll[0]);String[] v=r.split(" ");
+            check("the giant smashes a hole in the stone ring (a 3-wide body needs about 21 blocks) and walks out",Integer.parseInt(v[0])>=15&&!r.contains("none")&&Math.max(Math.abs(Double.parseDouble(v[1])),Math.abs(Double.parseDouble(v[2])))>8,r+" in "+ringPoll[0]+" ticks");
+            check("without Fog of War, Reconnaissance makes it glow",r.endsWith(" true"),r);
+            int id=srvGet(()->subject("giant")==null?-1:subject("giant").getId());var ce=mc().level.getEntity(id);
+            check("the client shows the glow",ce!=null&&ce.isCurrentlyGlowing(),String.valueOf(ce));
+            shot("r115_ring_smashed");},"smashed");
+        step(5,()->srv(()->{var d=cd();d.phase="preparation";d.raiders.clear();d.spawnRemaining=0;d.damage.clear();d.destroyedTurrets.clear();d.setDirty();clearMobs();}),"end the staged raid");
+
+        // 5. Choosing the next raid by command
+        step(5,()->{tp(B.getX()+.5,sy,B.getZ()-3.5,0,10);srv(()->{sl().setDayTime(6000);var d=cd();d.raidLimit=10;d.respiteTicks=0;d.respitePurchases=0;d.nextRaidBonus=0;d.preparationTicks=0;d.chosenMods.clear();d.nextRaidType="normal";d.raidsStarted=0;d.victories=0;d.setDirty();});},"back at the beacon, by day");
+        step(5,()->cmd("eternaldefense raid-info"),"/eternaldefense raid-info");
+        until("its reply",100,()->reply("Ardent from a red-marked mob")!=null,()->{});
+        step(5,()->{note("INFO {}",all());double base=DefenseConfig.ENERGY_CHANCE.get();level=srvGet(()->BeaconNetwork.prospectiveTier(server(),cd()));
+            check("raid-info: a red-marked mob drops Ardent at 1.5 times the base chance",reply("Ardent from a red-marked mob: "+pct(base)+" x 1.50 = "+pct(base*1.5))!=null,all());
+            check("raid-info names the next raid's level, waves, mobs and elites",reply("Phase preparation | next raid level "+level+" (Ordinary raid) | ")!=null&&reply(" waves | wave 1 ")!=null&&reply("Elites ")!=null,all());},"raid-info");
+        step(5,()->cmd("eternaldefense raid-mod list"),"/eternaldefense raid-mod list");
+        until("its reply",100,()->reply("special raid")!=null,()->{});
+        step(5,()->{note("LIST {}",all());boolean ok=true;for(var m:RaidModifiers.MODS)ok&=reply(" [ ] "+m.id()+": payout +"+m.payout()+"%, drops +"+m.drops()+"%")!=null;
+            check("raid-mod list: the six with what each pays and drops",ok&&reply("started by Start raid or by its timer")!=null,all());},"list");
+        for(var m:RaidModifiers.MODS)step(5,()->cmd("eternaldefense raid-mod "+m.id()),"/eternaldefense raid-mod "+m.id());
+        step(5,()->cmd("eternaldefense raid-mod special swarm"),"/eternaldefense raid-mod special swarm");
+        until("its reply",100,()->reply("special raid")!=null,()->{});
+        step(5,()->{note("ALL {}",all());var d=srvGet(()->List.copyOf(cd().chosenMods)+" "+cd().nextRaidType);
+            check("every modifier and a Swarm are chosen on the server",d.equals(RaidModifiers.MODS.stream().map(RaidModifiers.Mod::id).toList()+" swarm"),d);
+            check("together: payout +85%, Ardent drops +50% of the base chance",reply("payout +85%, Ardent drops +50% of the base chance")!=null,all());},"everything on");
+        step(5,()->cmd("eternaldefense raid-info"),"/eternaldefense raid-info");
+        until("its reply",100,()->reply("Ardent from a red-marked mob")!=null,()->{});
+        step(5,()->{note("INFO ALL {}",all());double base=DefenseConfig.ENERGY_CHANCE.get();int pay=RaidModifiers.raised(Rules.raidArdent(level),85);
+            check("with everything on a red-marked mob drops at twice the original chance",reply("Ardent from a red-marked mob: "+pct(base)+" x 2.00 = "+pct(base*2))!=null,all());
+            check("the raid pays its Ardent raised by 85% ("+pay+"), plus the Swarm's",reply("raid pay "+pay+" Ardent")!=null&&reply(" special")!=null,all());},"twice");
+
+        // 6. The beacon shows the choice; Start raid is red; Fog of War says what it does
+        step(5,()->{mc().options.guiScale().set(3);mc().resizeDisplay();srv(()->BeaconNetwork.open(sp(),"menu",""));},"GUI scale 3; open the beacon");
+        until("beacon screen",60,()->screen()!=null,()->{});
+        step(10,()->press(labelled("Raid control")),"Raid control");
+        step(10,()->{var s=screen();check("Start raid is red (the danger look)",s.startRaid instanceof Ui.UiButton b&&b.look==Ui.Look.DANGER,String.valueOf(s.startRaid instanceof Ui.UiButton b?b.look:null));quiet();recordFrame=true;},"Level & break");
+        step(5,()->{check("its texts fit",cut().equals("[]")&&buttonsCut().equals("[]"),cut()+" "+buttonsCut());shot("r115_raid_level_red");},"the level page");
+        step(5,()->press(screen().modsPage),"the modifiers page");
+        step(10,()->{var s=screen();var st=clientState();
+            check("all six ticked and Swarm picked, as the commands chose",s.modToggles.stream().allMatch(b->b.selected)&&s.specials.get(4).selected,"");
+            check("the screen's numbers: payout +85%, drops +50%",st.getInt("modPayout")==85&&st.getInt("modDrops")==50,st.getInt("modPayout")+" "+st.getInt("modDrops"));
+            check("Start raid is red on this page too",s.startRaid instanceof Ui.UiButton b&&b.look==Ui.Look.DANGER,"");quiet();recordFrame=true;},"page 2");
+        step(5,()->{note("DRAWN mods {}",drawn());
+            check("the page says the choice counts however the raid starts",drawnHas("NEXT RAID, HOWEVER IT STARTS")&&drawnHas("Next raid: payout +85%, Ardent drops +50% (however it starts)"),drawn());
+            check("its texts fit",cut().equals("[]")&&buttonsCut().equals("[]"),cut()+" "+buttonsCut());shot("r115_raid_mods_all");},"the summary");
+        step(3,()->hoverOn(screen().modToggles.get(4)),"hover Fog of War");
+        step(8,()->{String desc=Ui.t("raidmod.fog_of_war.desc").getString(),name=Ui.t("raidmod.fog_of_war.short").getString();note("FOG {} | {}",name,desc);
+            check("Fog of War's tooltip says it switches off Reconnaissance",desc.startsWith("Switches off your Reconnaissance upgrade")&&name.contains("Reconnaissance"),desc);shot("r115_fog_tooltip");},"its tooltip");
+        step(5,()->{hover(0,0);mc().options.guiScale().set(0);mc().resizeDisplay();mc().setScreen(null);},"close");
+
+        // 7. The raid timer runs out: the raid comes with every modifier
+        step(5,()->{CHAT.clear();KILLS.clear();ARDENT.clear();ELITE_DROPS.clear();cmd("eternaldefense raid-timer 0");},"/eternaldefense raid-timer 0 (by day)");
+        until("its reply",100,()->reply("The raid is due in 0 s")!=null,()->{});
+        step(5,()->{String r=reply("The raid is due in 0 s");note("TIMER {}",r);var d=srvGet(()->cd().preparationTicks+" "+cd().respiteTicks+" "+Rules.intervalDays(cd().rewardTier));String[] v=d.split(" ");
+            check("raid-timer 0: the raid is due now; by day it says to wait for night (or /time set 14000)",r.contains("/time set 14000")&&Long.parseLong(v[0])>=Long.parseLong(v[2])*24000L&&v[1].equals("0"),r+" | "+d);},"due");
+        step(100,()->{},"five seconds of day");
+        step(5,()->{check("by day a due raid waits",srvGet(()->cd().phase).equals("preparation"),srvGet(()->cd().phase));cmd("time set 14000");},"/time set 14000");
+        until("the raid starts by its timer",1200,()->srvGet(()->cd().phase).equals("raid"),()->{});
+        until("the start's chat lines reach the client",100,()->said("Wave 1 / "),()->{});
+        step(10,()->{var d=srvGet(()->List.copyOf(cd().activeMods)+" "+List.copyOf(cd().chosenMods)+" "+cd().raidType+" "+cd().raidTier+" "+cd().raidRequested);note("TIMER RAID {}",d);
+            check("the timer's raid runs with every modifier chosen and a Swarm; the choice is used up",d.equals(RaidModifiers.MODS.stream().map(RaidModifiers.Mod::id).toList()+" [] swarm "+level+" false"),d);
+            String line=saidLine("Raid modifiers: ");check("chat names them: payout +85%, drops +50%",line.contains("Fog of War")&&line.endsWith("Payout +85%, Ardent drops from raid mobs +50%."),line);},"started by the timer");
+        // Fog of War: Reconnaissance is at its top level, yet nothing glows
+        int[] fog={0,0,0};
+        until("raiders seen forty times (at most a minute)",1300,()->{if(++fog[0]%20==0){srv(()->{for(var m:raiders()){fog[1]++;if(m.hasGlowingTag())fog[2]++;}});
+                for(var e:mc().level.entitiesForRendering())if(e instanceof Mob m&&m.isCurrentlyGlowing())fog[2]+=1000;}
+            return fog[1]>=40||fog[0]>=1200;},()->{});
+        step(5,()->{note("FOG samples {} raiders seen {} glowing {}",fog[0],fog[1],fog[2]);
+            check("Fog of War: no raid mob glows on the server or the client although Reconnaissance is at its top level",fog[1]>=20&&fog[2]==0,fog[1]+" seen, "+fog[2]+" glowing");
+            String r=srvGet(()->{for(var m:raiders()){var h=m.getAttribute(Attributes.MAX_HEALTH).getModifier(Elites.RAID_HEALTH);var s=m.getAttribute(Attributes.MOVEMENT_SPEED).getModifier(Elites.RAID_SPEED);
+                return (h==null?"none":String.format(Locale.ROOT,"%.2f",h.getAmount()))+" "+(s==null?"none":String.format(Locale.ROOT,"%.2f",s.getAmount()));}return "no raider";});
+            check("Hardened (+35% health) and Forced March (+20% speed) are on the raiders",r.equals("0.35 0.20"),r);
+            look(B.getX()+.5,sy+10,B.getZ()-16.5,B.getX()+.5,sy+1,B.getZ()+.5);},"Fog of War, Hardened, Forced March; look over the beacon");
+        step(20,()->shot("r115_fog_raid"),"picture");
+        step(5,()->cmd("eternaldefense raid-info"),"/eternaldefense raid-info in the raid");
+        until("its reply",100,()->reply("Wave 1/")!=null,()->{});
+        step(5,()->{note("INFO RAID {}",all());double base=DefenseConfig.ENERGY_CHANCE.get();
+            check("raid-info in the raid: this raid's drops at twice the chance, the wave, mobs and elites",reply("Ardent from a red-marked mob: "+pct(base)+" x 2.00")!=null&&reply("Wave 1/")!=null&&reply(" | alive ")!=null,all());cmd("eternaldefense raid-mod hardened");},"/eternaldefense raid-mod hardened in the raid");
+        until("its reply",100,()->reply("Choose modifiers between raids")!=null,()->{});
+        step(5,()->{check("modifiers cannot change during a raid",reply("Choose modifiers between raids (now: raid).")!=null&&srvGet(()->cd().activeMods.contains("hardened")),all());cmd("eternaldefense raid-timer 30");},"/eternaldefense raid-timer 30 in the raid");
+        until("its reply",100,()->reply("The raid timer runs between raids")!=null,()->{});
+        step(5,()->{check("nor the timer",reply("The raid timer runs between raids (now: raid).")!=null,all());tp(B.getX()+.5,sy,B.getZ()+6.5,0,0);},"stand by the beacon, facing away from it");
+        step(5,()->cmd("eternaldefense elite badass 5"),"/eternaldefense elite badass 5 in the raid");
+        until("its reply",100,()->reply("Badass V")!=null,()->{});
+        step(5,()->{String r=reply("Badass V");note("RAID GIANT {}",r);
+            String in=srvGet(()->{for(var m:raiders())if(Elites.kind(m)==Elites.Kind.BADASS&&m.getPersistentData().getInt(Elites.LEVEL)==5){SUBJECTS.put("raidgiant",m.getUUID());return String.format(Locale.ROOT,"%.2f %b",m.getBbWidth()/.6f,m.hasGlowingTag());}return "none";});
+            check("in a raid the command's elite joins the raid (no glow under Fog of War)",r.endsWith("in the raid.")&&in.equals("5.00 false"),r+" | "+in);},"a giant joins the raid");
+        step(30,()->{var at=srvGet(()->{var m=subject("raidgiant");return m==null?null:m.position();});if(at!=null)look(at.x+14,sy+8,at.z-12,at.x,at.y+5,at.z);},"look at it from 18 blocks");
+        step(10,()->shot("r115_raid_giant"),"picture");
+        // Win: every raider falls to the player as it comes
+        int[] poll={0};
+        until("the raid is won",12000,()->{if(++poll[0]%10==0)srv(()->{for(var m:raiders())kill(m);});return !srvGet(()->cd().phase).equals("raid");},()->{});
+        step(20,()->{var d=srvGet(()->cd().phase+" "+cd().victories+" "+cd().eliteWaves+" "+cd().rewardTier+" "+ardentIn(cd().rewards)+" "+List.copyOf(cd().activeMods)+" "+cd().nextRaidType);note("AFTER {}",d);
+            String[] v=d.split(" ");int eliteWaves=Integer.parseInt(v[2]);int raid=RaidModifiers.raised(Rules.raidArdent(Integer.parseInt(v[3])),85),special=RaidTypes.bonusEnergy(Integer.parseInt(v[3]));
+            check("the raid is won",(v[0].equals("restore")||v[0].equals("preparation"))&&v[1].equals("1"),d);
+            check("the reward chest gets the raid's Ardent raised 85% ("+raid+"), 1 a wave with an elite and the Swarm's "+special,Integer.parseInt(v[4])==raid+eliteWaves+special,d);
+            check("chat says the cache is 85% bigger",said("Raid modifiers: the cache is 85% bigger."),saidLine("cache is"));
+            note("DROPS kills {} ardent {} elites {}",KILLS,ARDENT,ELITE_DROPS);
+            int marked=KILLS.getOrDefault("marked",0),got=ARDENT.getOrDefault("marked",0);double expect=marked*DefenseConfig.ENERGY_CHANCE.get()*2;
+            check("raid mobs drop Ardent in the raid (expected about "+String.format(Locale.ROOT,"%.1f",expect)+", got "+got+" from "+marked+"; the rate is measured below)",marked>=20&&got>=1&&got<=marked/2,KILLS+" "+ARDENT);
+            check("every elite of the raid dropped Ardent",ELITE_DROPS.stream().filter(s->s.contains(" gen 0: ")).noneMatch(s->s.endsWith(": 0")),String.valueOf(ELITE_DROPS));},"the payout");
+
+        // 8. The drop rate: 400 red-marked kills with every modifier and a Swarm, 400 with none
+        sample("every modifier and a Swarm",RaidModifiers.MODS.stream().map(RaidModifiers.Mod::id).toList(),"swarm",2.0);
+        sample("no modifier",List.of(),"normal",1.5);
+        step(5,()->srv(()->{var d=cd();d.phase="preparation";d.activeMods.clear();d.raidType="normal";d.raiders.clear();d.spawnRemaining=0;d.setDirty();clearMobs();}),"end the staged raid");
+    }
+}

@@ -20,6 +20,22 @@ final class RaidBreaching {
         for(int y=1;y>=0;y--)if(breakable(l,d,ahead.above(y)))return ahead.above(y);
         if(dir.y<-.3&&breakable(l,d,ahead.below()))return ahead.below();return null;
     }
+    static final int SMASH_LIMIT=24;
+    /** A giant stuck on its way: every block its body would run into a block further on breaks (the ground under it stays) */
+    static int smash(ServerLevel l,CampaignData d,Mob mob){
+        if(!d.phase.equals("raid"))return 0;
+        Vec3 target=mob.getTarget()==null?Vec3.atCenterOf(d.beacon):mob.getTarget().position();var flat=new Vec3(target.x-mob.getX(),0,target.z-mob.getZ());
+        if(flat.lengthSqr()<1e-4)return 0;
+        var box=mob.getBoundingBox().move(flat.normalize()).deflate(.05);int floor=net.minecraft.util.Mth.floor(mob.getY()+.01),broken=0;
+        for(var p:BlockPos.betweenClosed(net.minecraft.util.Mth.floor(box.minX),Math.max(floor,net.minecraft.util.Mth.floor(box.minY)),net.minecraft.util.Mth.floor(box.minZ),net.minecraft.util.Mth.floor(box.maxX),net.minecraft.util.Mth.floor(box.maxY),net.minecraft.util.Mth.floor(box.maxZ))){
+            if(broken>=SMASH_LIMIT)break;
+            var at=p.immutable();if(!breakable(l,d,at))continue;
+            if(d.inside(at)){if(!d.snapshot.containsKey(at.asLong()))continue;EternalDefense.damageBlock(l,d,at);}else l.destroyBlock(at,true,mob);
+            broken++;
+        }
+        if(broken>0){RaidMarch.breached(mob,l.getGameTime());mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);}
+        return broken;
+    }
     static boolean breach(ServerLevel l,CampaignData d,Mob mob){
         if(!d.phase.equals("raid")||!BeaconCombat.hostile(mob))return false;var p=choose(l,d,mob);if(p==null)return false;
         if(d.inside(p)){if(!d.snapshot.containsKey(p.asLong()))return false;EternalDefense.damageBlock(l,d,p);}else l.destroyBlock(p,true,mob);

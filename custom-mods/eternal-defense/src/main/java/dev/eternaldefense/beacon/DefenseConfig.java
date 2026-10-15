@@ -16,7 +16,7 @@ final class DefenseConfig {
         var b=new ForgeConfigSpec.Builder();
         b.comment("Ardent Energy: the currency hostile mobs sometimes drop.").push("energy");
         ENERGY_CHANCE=b.comment("Base chance (0-1) behind the drop of a red-marked mob (raids, operations); other mobs drop none, big bosses one.").defineInRange("baseDropChance",0.0667,0.0,1.0);
-        MARKED_MULTIPLIER=b.comment("Multiplier on the base chance for red-marked mobs, before raid modifiers and Luck.").defineInRange("markedChanceMultiplier",2.0,0.0,15.0);
+        MARKED_MULTIPLIER=b.comment("Multiplier on the base chance for red-marked mobs; raid modifiers add their percent of the base chance on top, then Luck.").defineInRange("markedDropMultiplier",1.5,0.0,15.0);
         LOOTING_BONUS=b.comment("Extra chance per Looting level.").defineInRange("lootingBonusPerLevel",0.01,0.0,1.0);
         BOSS_ENERGY=b.comment("Energy dropped by a raid's boss (always).").defineInRange("bossDrop",1,1,256);
         b.pop();

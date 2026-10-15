@@ -281,6 +281,7 @@ public final class EternalDefense {
             .then(Commands.literal("test-raid").requires(s->s.hasPermission(2)).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);if(!d.phase.equals("preparation"))return 0;begin(l,d);return 1;})
                 .then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var l=c.getSource().getServer().overworld();var d=CampaignData.get(l);String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}if(!d.phase.equals("preparation")){c.getSource().sendFailure(Component.literal("A raid can only be started during preparation."));return 0;}d.nextRaidType=t;d.setDirty();begin(l,d);if(d.introRaid)c.getSource().sendSuccess(()->Component.literal("The introduction raid is always an ordinary raid; finish it first, then run this again."),false);return 1;})))
             .then(Commands.literal("next-raid").requires(s->s.hasPermission(2)).then(Commands.argument("type",StringArgumentType.word()).suggests(RAID_TYPE_SUGGEST).executes(c->{var d=CampaignData.get(c.getSource().getServer().overworld());String t=StringArgumentType.getString(c,"type");if(!raidTypeOk(t)){c.getSource().sendFailure(Component.literal("Unknown raid type. Use normal, air, paratroopers, siege or swarm."));return 0;}d.nextRaidType=t;d.setDirty();c.getSource().sendSuccess(()->Component.literal("Next raid: "+RaidTypes.name(t).getString()),true);return 1;}))));
+        for(var command:OperatorCommands.all())event.getDispatcher().register(Commands.literal("eternaldefense").then(command));
     }
     /** /eternaldefense test-gate (operators): opens a red gate five blocks in front of the player and sends */
     static void testGate(ServerPlayer p){
@@ -420,6 +421,8 @@ public final class EternalDefense {
         if(s.getBlock() instanceof WeaponPlatform.Station)d.baseCounts.merge(id+"#platform",s.getValue(WeaponPlatform.AGE),Math::max);
         else d.baseCounts.merge(id,1,Integer::sum);
     }
+    /** Raiders glow once Reconnaissance has found them; never under Fog of War, which switches Reconnaissance off */
+    static boolean revealed(CampaignData d){return !RaidModifiers.on(d,"fog_of_war")&&Rules.highlightAttackers(d.reconnaissance,d.waveTicks);}
     private static void raid(ServerLevel l,CampaignData d) {
         d.raidTicks++;d.waveTicks++;
         int reveal=Rules.revealTicks(d.reconnaissance);
@@ -437,7 +440,7 @@ public final class EternalDefense {
             if(mob.getPersistentData().getBoolean("eternalBoss"))HardRaids.balance(mob,d.raidTier);else if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);
             else if(mob.getPersistentData().getBoolean("eternalSpecialForces"))SpecialForcesRaids.balance(mob,d.raidTier);
             else RaidBalance.balance(mob,d.raidTier);
-            mob.setGlowingTag(!fog&&Rules.highlightAttackers(d.reconnaissance,d.waveTicks));Elites.restore(mob);Elites.tick(l,mob);
+            mob.setGlowingTag(revealed(d));Elites.restore(mob);
             // Real attack goals target the objective; contact alone never damages it.
             BeaconCombat.attach(mob);
             if(RaidRescue.tick(l,d,mob,it))continue; // Stuck for good: withdrawn (a rescue only moves it)
@@ -449,6 +452,7 @@ public final class EternalDefense {
             }
             // Raiders march straight on; only one that stopped making progress digs (vexes pass through walls)
             if(idle&&!(mob instanceof net.minecraft.world.entity.monster.Vex)&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
+            if(idle&&Elites.giant(mob))RaidBreaching.smash(l,d,mob);   // A giant breaks what its body runs into
             // All hostile breach attempts run through BeaconCombat and the same damage journal.
         }
         RaidMarch.prune(d.raiders);RaiderGates.cleanup(l,d);
@@ -493,7 +497,7 @@ public final class EternalDefense {
     static Mob raider(ServerLevel l,CampaignData d,EntityType<?> type,String role,String raidType,BlockPos at){
         Entity entity=type.create(l);if(!(entity instanceof Mob mob))return null;
         mob.moveTo(at.getX()+0.5,at.getY(),at.getZ()+0.5,l.random.nextFloat()*360,0);mob.setPersistenceRequired();mob.getPersistentData().putBoolean("eternalRaider",true);
-        mob.setGlowingTag(Rules.highlightAttackers(d.reconnaissance,d.waveTicks));RaidBalance.arm(mob);   // Armed before it joins: its beacon goal depends on the weapon
+        mob.setGlowingTag(revealed(d));RaidBalance.arm(mob);   // Armed before it joins: its beacon goal depends on the weapon
         if(!l.noCollision(mob)||!l.addFreshEntity(mob))return null; // Let pack spawn handlers run first.
         mob.getPersistentData().putString("eternalRole",role);RaidTypes.prepare(mob,raidType);if(raidType.equals("paratroopers"))RaidTypes.parachute(mob);
         if(d.raidTier<=1)balanceEarly(mob,d.raidTier,d.wave);else RaidBalance.balance(mob,d.raidTier);
