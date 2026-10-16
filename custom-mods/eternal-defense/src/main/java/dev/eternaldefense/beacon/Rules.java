@@ -23,7 +23,7 @@ public final class Rules {
     public static long untilRaidHour(long dayTime){long t=Math.floorMod(dayTime,24000L);return raidHour(dayTime)?0:Math.floorMod(RAID_HOUR_FROM-t,24000L);}
     public static boolean hardRaid(int raidNumber){return raidNumber>0&&raidNumber%3==0;}
     // Lookup tables are built once: these are asked thousands of times a tick
-    private static final int[] BOSS_HEALTH={100,160,240,360,500,650},RADIUS={8,12,18,24},MAXIMUM_HEALTH={1000,1250,1500,2000},BELOW={3,6,10,13,16},ABOVE={8,16,24,36,48},PLATFORM_SCORE={0,40,90,180,300,450};
+    private static final int[] BOSS_HEALTH={100,160,240,360,500,650},RADIUS={8,12,20,32},MAXIMUM_HEALTH={1000,1250,1500,2000},BELOW={3,6,10,13,16},ABOVE={8,16,24,36,48},PLATFORM_SCORE={0,40,90,180,300,450};
     public static int bossHealth(int tier){return BOSS_HEALTH[Math.max(0,Math.min(5,tier))];}
     public static int radius(int core) { return RADIUS[Math.max(0,Math.min(3,core))]; }
     public static int maximumHealth(int core) { return MAXIMUM_HEALTH[Math.max(0,Math.min(3,core))]; }

@@ -57,7 +57,7 @@ class RulesTest {
     }
     @Test void defensesStayBoundedForCoop() {
         assertTrue(Rules.enemies(5,8,30)<=144);
-        assertEquals(24, Rules.radius(100));
+        assertEquals(32, Rules.radius(100));
         assertEquals(8, Rules.waves(100));
     }
     @Test void deathsPenalizeTheSharedBeaconAtTheThresholdOnly() {

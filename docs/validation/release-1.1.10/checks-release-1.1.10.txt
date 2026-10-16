@@ -1,0 +1,7 @@
+QA_NOTE ZONE server 32 16 48 65 corners truetrue outside falsefalsefalse client [32, 16, 48]
+QA_CHECK PASS a Mk-4 zone with the full Vertical zone reaches 32 each way, 16 down and 48 up: 65 x 65 x 65 32 16 48 65 corners truetrue outside falsefalsefalse
+QA_CHECK PASS the client draws it at that size [32, 16, 48]
+QA_NOTE SNAPSHOT 67 ticks, 16918 blocks kept, worst average tick 5.0 ms, phase raid
+QA_CHECK PASS the snapshot of the 65 x 65 x 65 zone finishes in about 70 ticks (274,625 positions, 4,096 a tick) 67 ticks, phase raid
+QA_CHECK PASS the server keeps up while it scans (average tick under 50 ms) 5.0 ms
+QA_DONE pass=4 fail=0

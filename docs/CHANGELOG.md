@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.10 — A wider zone at the top (2026-10-16, `dev`)
+
+After 1.1.9 on `dev`; `main` unchanged. **Network protocol 43** (unchanged). Rules: GDD 1.1.10; tests: `docs/ROUND-1.1.10-TESTING.md`.
+
+* **Zone width** (owner: "extend horizontal zone maximum to match the max vertical"): the core upgrades now give a radius of 8, 12, 20 and 32 blocks (was 8, 12, 18, 24). The first level is unchanged, each step is bigger than the last, and a Mk-4 zone is 65 blocks across, as wide as the full Vertical zone is tall. Costs are unchanged.
+
 ## 1.1.9 — Red health bars that shaders keep, giants' heads, lighter Badass slowdown, the first raid's elite (2026-10-15, `dev`)
 
 After 1.1.8 on `dev`; `main` unchanged. **Network protocol 43** (unchanged from 1.1.8). Rules: GDD 1.1.9; tests: `docs/ROUND-1.1.9-TESTING.md`.
