@@ -77,22 +77,20 @@ final class StuckRaiderTest {
     }
 
     // Escalation ladder
-    @Test void aRaiderOpensThreeGatesAndIsWithdrawnOnTheFourthStall(){
+    @Test void aRaiderOpensThreeGatesAndJoinsTheSquadronOnTheFourthStall(){
         assertEquals(3,RaidMarch.MAX_GATES);
         int rescues=0;var steps=new ArrayList<RaidMarch.Step>();
         for(int stall=0;stall<4;stall++){var step=RaidMarch.next(rescues,false);steps.add(step);if(step==RaidMarch.Step.RESCUE)rescues++;}
-        assertEquals(List.of(RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.WITHDRAW),steps);
+        assertEquals(List.of(RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.RESCUE,RaidMarch.Step.DROP),steps);
     }
-    @Test void aBossAlwaysGetsAGateAndIsNeverWithdrawn(){
+    @Test void aBossAlwaysGetsAGateWhileThereIsAPlace(){
         for(int rescues:new int[]{0,1,2,3,4,10,1000})assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(rescues,true));
-        for(int dry=0;dry<20;dry++)assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(dry,true));
+        for(int dry=0;dry<RaidMarch.DRY_LIMIT;dry++)assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(dry,true));
+        assertEquals(RaidMarch.Step.DROP,RaidMarch.afterNoDestination(RaidMarch.DRY_LIMIT,true),"with nowhere to go, a boss drops over the beacon too");
     }
-    @Test void aRaiderWithNoGateDestinationIsRetriedTwiceThenWithdrawn(){
+    @Test void aRaiderWithNoGateDestinationIsRetriedTwiceThenDropped(){
         assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(1,false));assertEquals(RaidMarch.Step.RETRY,RaidMarch.afterNoDestination(2,false));
-        assertEquals(RaidMarch.Step.WITHDRAW,RaidMarch.afterNoDestination(3,false));assertEquals(3,RaidMarch.DRY_LIMIT);
-    }
-    @Test void theWithdrawalLineCountsTheWave(){
-        assertEquals("1 stuck raider withdrew",RaidMarch.withdrawnMessage(1));assertEquals("2 stuck raiders withdrew",RaidMarch.withdrawnMessage(2));
+        assertEquals(RaidMarch.Step.DROP,RaidMarch.afterNoDestination(3,false));assertEquals(3,RaidMarch.DRY_LIMIT);
     }
 
     // Bookkeeping: nothing is kept for raiders that are gone
@@ -102,12 +100,12 @@ final class StuckRaiderTest {
         RaidMarch.track(alive,RaidMarch.start(50,0));RaidMarch.track(gone,RaidMarch.start(50,0));
         assertEquals(2,RaidMarch.kept());
         RaidMarch.prune(Set.of(alive));assertEquals(1,RaidMarch.kept());assertNotNull(RaidMarch.track(alive));assertNull(RaidMarch.track(gone));
-        RaidMarch.withdrew();RaidMarch.withdrew();
-        RaidMarch.forget();assertEquals(0,RaidMarch.kept());assertEquals(0,RaidMarch.takeWithdrawn());
+        RaidMarch.dropped();RaidMarch.dropped();
+        RaidMarch.forget();assertEquals(0,RaidMarch.kept());assertEquals(0,RaidMarch.takeDropped());
     }
-    @Test void withdrawnRaidersAreCountedOncePerWave(){
-        RaidMarch.forget();RaidMarch.withdrew();RaidMarch.withdrew();
-        assertEquals(2,RaidMarch.takeWithdrawn());assertEquals(0,RaidMarch.takeWithdrawn(),"announced once, then the count starts again");
+    @Test void droppedRaidersAreAnnouncedOnce(){
+        RaidMarch.forget();RaidMarch.dropped();RaidMarch.dropped();
+        assertEquals(2,RaidMarch.takeDropped());assertEquals(0,RaidMarch.takeDropped(),"announced once, then the count starts again");
     }
 
     // Marchable corridors

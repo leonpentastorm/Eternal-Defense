@@ -92,7 +92,8 @@ final class LangKeysTest {
     @Test void theRaidsCardExplainsTheRedGateInPlainWords(){
         {
             String body=edition("raids","body");
-            assertTrue(body.contains("red gate")&&body.contains("lava, a chasm or a wide lake")&&body.contains("You can shoot it"),"the gate is explained: what it is, what it does and what to do about it");
+            assertTrue(body.contains("red gate")&&body.contains("stuck for a long time")&&body.contains("You can shoot it"),"the gate is explained: what it is, what it does and what to do about it");
+            assertTrue(body.contains("plank bridges across water, lava and chasms"),"water and chasms are bridged first");
             assertTrue(body.lines().filter(l->l.contains("red gate")).allMatch(l->l.length()<=330),"one short line");
         }
     }
@@ -216,7 +217,7 @@ final class LangKeysTest {
             Map.entry("pressed_receiver","Factory parts"),Map.entry("brass_receiver","Factory parts"),Map.entry("hardened_receiver","Factory parts"),Map.entry("exotic_receiver","Factory parts"),
             Map.entry("incomplete_brass_receiver","Factory parts"),Map.entry("incomplete_hardened_receiver","Factory parts"),Map.entry("hardened_alloy","Factory parts"),Map.entry("cartridge_case","Factory parts"),Map.entry("propellant","Factory parts"),
             Map.entry("loadout_station","Loadout Station"),Map.entry("loadout_coin","Loadout Coin"),Map.entry("loadout_flare","Loadout Flare"),Map.entry("loadout_capsule","Loadout Capsule"));
-        var ignored=Set.of("structure_part","gate_part","logistics_hub_part","loadout_station_part","loadout_capsule_part","supply_delivery_gate_left","supply_receiving_gate_left","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
+        var ignored=Set.of("raider_bridge","structure_part","gate_part","logistics_hub_part","loadout_station_part","loadout_capsule_part","supply_delivery_gate_left","supply_receiving_gate_left","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/eternaldefense/beacon/EternalDefense.java"));
         var registered=new TreeSet<String>();
         for(String regex:List.of("(?:BLOCKS|ITEMS)\\.register\\(\"([a-z0-9_]+)\"","part\\(\"([a-z_]+)\"\\)","kitchen\\(\"([a-z0-9_]+)\"","drinks\\(\"([a-z0-9_]+)\"")){Matcher m=Pattern.compile(regex).matcher(source);while(m.find())registered.add(m.group(1));}

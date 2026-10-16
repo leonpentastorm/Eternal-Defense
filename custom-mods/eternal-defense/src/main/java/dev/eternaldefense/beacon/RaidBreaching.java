@@ -7,7 +7,7 @@ import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.phys.*;
 
-/** Raid-only digging with nearby doors preferred. */
+/** Which block a blocked raider digs (nearby doors first), and the giants' wall smashing. */
 final class RaidBreaching {
     static boolean breakable(ServerLevel l,CampaignData d,BlockPos p){var s=l.getBlockState(p);return l.hasChunkAt(p)&&!s.isAir()&&!DefenseStructures.beacon(l,p)&&!s.getCollisionShape(l,p).isEmpty()&&s.getDestroySpeed(l,p)>=0;}
     static BlockPos choose(ServerLevel l,CampaignData d,Mob mob){
@@ -35,10 +35,5 @@ final class RaidBreaching {
         }
         if(broken>0){RaidMarch.breached(mob,l.getGameTime());mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);}
         return broken;
-    }
-    static boolean breach(ServerLevel l,CampaignData d,Mob mob){
-        if(!d.phase.equals("raid")||!BeaconCombat.hostile(mob))return false;var p=choose(l,d,mob);if(p==null)return false;
-        if(d.inside(p)){if(!d.snapshot.containsKey(p.asLong()))return false;EternalDefense.damageBlock(l,d,p);}else l.destroyBlock(p,true,mob);
-        RaidMarch.breached(mob,l.getGameTime());mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);mob.getNavigation().stop();return l.getBlockState(p).isAir();
     }
 }

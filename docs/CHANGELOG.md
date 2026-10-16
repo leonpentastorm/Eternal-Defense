@@ -1,5 +1,19 @@
 # Change log
 
+## 1.1.11 — Tower defense raiders (2026-10-16, `dev`)
+
+After 1.1.10 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed; a new block and entity type mean 1.1.10 and 1.1.11 clients and servers cannot join each other). Rules: GDD 1.1.11; tests: `docs/ROUND-1.1.11-TESTING.md`.
+
+* **Defenses tag** (owner: "we are about to add trap towers and sandbags and such. Apply a tag for these call defenses"): `eternal_defense:defenses` for blocks and for entity types, shipped empty for the coming blocks; TaCZ Turrets count as defenses too.
+* **Who raiders go for** (owner's rules): on the way in, the closest defense or closed door or gate in their path (piston doors are walls and are dug like walls). Then fighters rush the beacon and only fight a player who comes within 4 blocks (they let go past 10); archers and gunners shoot the defense in their way, then a player they can see, then the beacon. Raiders ignore players in Creative.
+* **The ring** (owner: melee raiders should start attacking in a 3 x 3 grid around the beacon, 5 x 5 at Mk IV): fighters hit the beacon from anywhere one block around it, or from on top, and swing the whole time, so no blow lands without the attack animation.
+* **Digging like a player**: raiders swing at a block and its crack grows like a player's until it breaks; tougher blocks take longer (3 + 6 damage a hardness point, 300 at most), several raiders dig faster together, cracks heal after 8 seconds. Arrows and bullets wear defenses and doors down. A creeper near the base blows the wall up.
+* **Bridges**: raiders lay Raider Bridge planks across water, lava and chasms (up to 24 a bridge, 384 a raid). The raid takes them away when it ends and puts the water back; players can break them, even inside the zone.
+* **Gates only in extreme cases**: water, lava and drops no longer open a gate; only a raider without progress for 25 seconds does.
+* **Superflat worlds**: enemies come out on open ground there again, and stuck ones find a gate destination (the void under the bedrock counted as an overhang, so every spot was refused).
+* **Parachute squadron instead of withdrawing** (owner: "in a case where mob normally withdraw, they join a parachute squadron and drop straight above your beacon instead. This is annouched"): after three gates, three tries without a place, or at once when the beacon stands 4+ blocks above a stuck raider near the zone, the raider jumps from 24 blocks above the beacon, and chat says so. Nobody leaves a raid any more, so a sky base no longer wins by default.
+* **No ground at all**: when there is neither ground nor a gate spot, the wave jumps by parachute over the zone instead of stalling until the 20-minute timeout.
+
 ## 1.1.10 — A wider zone at the top (2026-10-16, `dev`)
 
 After 1.1.9 on `dev`; `main` unchanged. **Network protocol 43** (unchanged). Rules: GDD 1.1.10; tests: `docs/ROUND-1.1.10-TESTING.md`.

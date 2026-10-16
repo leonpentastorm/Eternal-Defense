@@ -41,7 +41,7 @@ final class RaidSpawns {
     }
     static boolean environmentSafe(ServerLevel l,BlockPos p){
         if(p.getY()<l.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p.getX(),p.getZ()))return false;
-        int airBelow=0;for(int depth=1;depth<=12;depth++){airBelow=l.getBlockState(p.below(depth)).isAir()?airBelow+1:0;if(airBelow>=2)return false;} // Reject thin terrain-coloured roofs and overhangs.
+        int airBelow=0;for(int depth=1;depth<=12&&p.getY()-depth>=l.getMinBuildHeight();depth++){airBelow=l.getBlockState(p.below(depth)).isAir()?airBelow+1:0;if(airBelow>=2)return false;} // Reject thin terrain-coloured roofs and overhangs (the world's floor is not one).
         var floor=p.below();String id=BuiltInRegistries.BLOCK.getKey(l.getBlockState(floor).getBlock()).toString();
         if(!BaseScoring.terrain(id)||!l.getBlockState(floor).isSolid()||!l.getFluidState(floor).isEmpty()||!l.getFluidState(p).isEmpty()||!l.getFluidState(p.above()).isEmpty()||!l.getBlockState(p).getCollisionShape(l,p).isEmpty()||!l.getBlockState(p.above()).getCollisionShape(l,p.above()).isEmpty())return false;
         var placed=BaseScoring.Ledger.get(l).placed;
@@ -183,8 +183,8 @@ final class RaidSpawns {
     static final int GATE_AFTER_TICKS=200;
     /** A gate spot is never inside the zone or within GATE_BEYOND_ZONE blocks of its edge */
     static final int GATE_BEYOND_ZONE=12,GATE_PLAYER_DISTANCE=12,GATE_HEIGHT=32,GATE_SKY_LIGHT=13,GATE_RING_STEP=8;
-    /** Where a reinforcement appears, and whether it comes through a gate. */
-    record Place(BlockPos pos,boolean gate){}
+    /** Where a reinforcement appears, and whether it comes through a gate or by parachute. */
+    record Place(BlockPos pos,boolean gate,boolean chute){}
     /** Pure: it is time for gates (failingSince: when natural ground was last missed, MIN_VALUE when it was not). */
     static boolean gateDue(long failingSince,long now){return failingSince!=Long.MIN_VALUE&&now-failingSince>=GATE_AFTER_TICKS;}
     /** Pure: the ring distances a gate spot is tried at, from the outer edge of the active chunks in to the closest */
@@ -193,14 +193,25 @@ final class RaidSpawns {
         for(int r=Math.max(near,farthest);r>near;r-=GATE_RING_STEP)out.add(r);
         out.add(near);return out;
     }
-    /** A reinforcement's place: natural ground (find) whenever there */
+    /** A reinforcement's place: natural ground (find) whenever there, else a gate closer in, else a parachute drop over the zone */
     static Place place(ServerLevel l,CampaignData d){
-        var natural=find(l,d);if(natural!=null)return new Place(natural,false);
+        var natural=find(l,d);if(natural!=null)return new Place(natural,false,false);
         long now=l.getGameTime();
         if(!gateDue(FAILING.getOrDefault(l,Long.MIN_VALUE),now))return null;
         var gate=findGate(l,d,RaidRescue.players(l));
         tell(l,d,gate!=null);
-        return gate==null?null:new Place(gate,true);
+        return gate!=null?new Place(gate,true,false):new Place(chuteDrop(l,d),false,true);
+    }
+    /** A jump spot over the zone above ground near the beacon's height (the base, a platform, an island), else right above the beacon */
+    static BlockPos chuteDrop(ServerLevel l,CampaignData d){
+        int reach=Math.max(2,(int)(d.radius()*.7));
+        for(int tries=0;tries<12;tries++){
+            int x=d.beacon.getX()+l.random.nextInt(reach*2+1)-reach,z=d.beacon.getZ()+l.random.nextInt(reach*2+1)-reach;
+            int top=l.getHeight(Heightmap.Types.MOTION_BLOCKING,x,z);
+            if(top>=d.beacon.getY()-d.below()&&top<=d.beacon.getY()+d.above())return new BlockPos(x,Math.min(l.getMaxBuildHeight()-6,Math.max(d.beacon.getY()+RaidTypes.DROP_HEIGHT,top+RaidRescue.SQUADRON_CLEARANCE)),z);
+        }
+        int top=l.getHeight(Heightmap.Types.MOTION_BLOCKING,d.beacon.getX(),d.beacon.getZ());
+        return new BlockPos(d.beacon.getX(),Math.min(l.getMaxBuildHeight()-6,Math.max(d.beacon.getY()+RaidTypes.DROP_HEIGHT,top+RaidRescue.SQUADRON_CLEARANCE)),d.beacon.getZ());
     }
     private static void tell(ServerLevel l,CampaignData d,boolean gates){
         long wave=(d.campaignSerial*1_000_003L+d.raidsStarted)*64+d.wave;

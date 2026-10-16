@@ -1,0 +1,405 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.11: raiders go for defenses and doors first, dig with cracks, bridge water and chasms, hit from the ring, and join the parachute squadron. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1111 {
+    // One line moves a gun to another Age: written before the game reads it
+    static{
+        try{var dir=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get();Files.createDirectories(dir);Files.writeString(dir.resolve("eternal-defense-ages.json"),"{\n  \"tacz:m1911\": 4\n}\n");}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(!(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())){CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String saidLine(String s){synchronized(CHAT){return CHAT.stream().filter(b->b.contains(s)).findFirst().orElse("");}}
+    // One frame's texts (Ui records them)
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+    static String cut(){return lastFrame.stream().filter(Ui.Drawn::cut).map(Ui.Drawn::text).toList().toString();}
+    /** The server's last answer cleared from the screen's message strip (a long one is cut on purpose) */
+    static void quiet(){if(mc().screen instanceof BeaconClient.PanelScreen p)p.message="";}
+    /** Every button's label fits it */
+    static String buttonsCut(){var s=mc().screen;var out=new ArrayList<String>();if(s==null)return "[]";var font=mc().font;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&font.width(b.getMessage())>b.getWidth()-10-(b.look==Ui.Look.TOGGLE?36:0))out.add(b.getMessage().getString()+" ("+font.width(b.getMessage())+" in "+b.getWidth()+")");return out.toString();}
+
+    // What each kill drops (counted after every other listener), and the blasts
+    static final Map<String,Integer> KILLS=new java.util.concurrent.ConcurrentHashMap<>(),ARDENT=new java.util.concurrent.ConcurrentHashMap<>();
+    static final List<String> ELITE_DROPS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void drops(net.minecraftforge.event.entity.living.LivingDropsEvent e){
+        if(e.getEntity().level().isClientSide)return;
+        int n=0;for(var it:e.getDrops())if(it.getItem().is(EternalDefense.ARDENT_ENERGY.get()))n+=it.getItem().getCount();
+        var tag=e.getEntity().getPersistentData();boolean raider=tag.getBoolean("eternalRaider");var kind=Elites.kind(e.getEntity());
+        String group=kind!=null?"elite":raider?"marked":e.getEntity().getType()==EntityType.WITHER?"boss":"wild";
+        KILLS.merge(group,1,Integer::sum);ARDENT.merge(group,n,Integer::sum);
+        if(kind!=null)ELITE_DROPS.add(kind.id+" level "+tag.getInt(Elites.LEVEL)+" gen "+tag.getInt(Elites.GEN)+": "+n);
+    }
+    static final List<String> BLASTS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void blast(net.minecraftforge.event.level.ExplosionEvent.Start e){
+        if(e.getLevel().isClientSide)return;var src=e.getExplosion().getDirectSourceEntity();
+        BLASTS.add(src==null?"none":src instanceof net.minecraft.world.entity.projectile.AbstractArrow?"arrow":Elites.kind(src)!=null?"elite:"+Elites.kind(src).id:BuiltInRegistries.ENTITY_TYPE.getKey(src.getType()).getPath());
+    }
+    static long blasts(String kind){synchronized(BLASTS){return BLASTS.stream().filter(kind::equals).count();}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1111",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1111",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){if(y>sy+1)srv(()->{var p=BlockPos.containing(x,y-1,z);if(sl().getBlockState(p).isAir())sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());});double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void setField(Object o,String name,Object value){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);f.set(o,value);return;}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverOn(net.minecraft.client.gui.components.AbstractWidget b){hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);}
+    static CompoundTag clientState(){return (CompoundTag)staticField(BeaconClient.class,"state");}
+    static void sync(){srv(()->BeaconNetwork.sendState(sp(),"","",""));}
+    static BeaconClient.ControlScreen screen(){return mc().screen instanceof BeaconClient.ControlScreen s?s:null;}
+    static net.minecraft.client.gui.components.Button labelled(String text){var s=mc().screen;if(s==null)return null;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(text))return b;return null;}
+    static void press(net.minecraft.client.gui.components.Button b){if(b==null)throw new IllegalStateException("no such button");b.onPress();}
+    static String message(){return mc().screen instanceof BeaconClient.PanelScreen p?p.message:"";}
+    static List<Mob> raiders(){var d=cd();var out=new ArrayList<Mob>();for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m&&m.isAlive())out.add(m);return out;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))e.discard();}
+    static void kill(net.minecraft.world.entity.LivingEntity m){m.invulnerableTime=0;m.hurt(sl().damageSources().playerAttack(sp()),100000);}
+    static String names(List<String> l){return String.join(", ",l);}
+    static int ardentIn(List<CompoundTag> tags){int n=0;for(var t:tags){var s=ItemStack.of(t);if(s.is(EternalDefense.ARDENT_ENERGY.get()))n+=s.getCount();}return n;}
+
+    // Commands typed by the player, and the lines the server sent back since
+    static int mark;
+    static void cmd(String c){mark=CHAT.size();log("QA_CMD /{}",c);mc().player.connection.sendCommand(c);}
+    static List<String> replies(){synchronized(CHAT){return new ArrayList<>(CHAT.subList(Math.min(mark,CHAT.size()),CHAT.size()));}}
+    static String reply(String part){for(var s:replies())if(s.contains(part))return s;return null;}
+    static String all(){return String.join(" | ",replies());}
+    static Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob subject(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m?m:null;}
+    static final float[] SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    static final List<String> GIANT_REPLIES=new ArrayList<>();
+    /** The ring of stone around the smash test: 15 x 15, 7 high, one thick */
+    static List<BlockPos> ring(BlockPos c){var out=new ArrayList<BlockPos>();for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++)if(Math.max(Math.abs(x),Math.abs(z))==7)for(int y=0;y<7;y++)out.add(c.offset(x,y,z));return out;}
+    static BlockPos RING,STEP;static int ringBlocks,level;
+    static String pct(double v){return String.format(Locale.ROOT,"%.1f%%",v*100);}
+
+
+
+    // What the client sees: swings of raid mobs and the block cracks drawn
+    static final Map<Integer,int[]> SWINGS=new HashMap<>();
+    static final Map<Long,Set<Integer>> CRACKS=new HashMap<>();
+    @SubscribeEvent public static void watch(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||mc().level==null)return;
+        for(var en:mc().level.entitiesForRendering())if(en instanceof net.minecraft.world.entity.LivingEntity le&&RaidTypes.RAIDERS.contains(le.getId())){
+            var s=SWINGS.computeIfAbsent(le.getId(),k->new int[2]);if(le.swinging&&s[1]==0)s[0]++;s[1]=le.swinging?1:0;}
+        @SuppressWarnings("unchecked") var map=(it.unimi.dsi.fastutil.ints.Int2ObjectMap<net.minecraft.server.level.BlockDestructionProgress>)field(mc().levelRenderer,"destroyingBlocks");
+        for(var p:map.values())CRACKS.computeIfAbsent(p.getPos().asLong(),k->new TreeSet<>()).add(p.getProgress());
+    }
+    static int swings(Mob m){var s=SWINGS.get(m.getId());return s==null?0:s[0];}
+    static Set<Integer> cracks(BlockPos p){return CRACKS.getOrDefault(p.asLong(),Set.of());}
+    // Every blow on the beacon: was the raider in the ring, and swinging?
+    static final List<String> HITS=Collections.synchronizedList(new ArrayList<>());
+    static boolean keepRaid;
+    @SubscribeEvent public static void serverWatch(TickEvent.ServerTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||server()==null)return;var d=cd();
+        if(keepRaid&&d.phase.equals("raid")){d.raidTicks=0;d.spawnCooldown=1_000_000;}
+        skyWatch();
+        if(!d.phase.equals("raid"))return;
+        for(var m:raiders())if(m.getLastHurtMob() instanceof BeaconCombat.Objective o&&m.getLastHurtMobTimestamp()==m.tickCount)
+            HITS.add((RaidDigging.inRing(m.getBoundingBox(),o.getBoundingBox())?"ring":"OUT")+(m.swinging||m instanceof net.minecraft.world.entity.monster.Creeper?"+swing":"+still")+":"+m.getId());
+    }
+    static String skyKey;static int skyTick;
+    static void skyWatch(){if(skyKey==null||++skyTick%40!=0)return;var m=get(skyKey);if(m==null){note("SKY gone");return;}var j=RaidDigging.job(m);var d=m.getPersistentData();
+        note("SKY {} ground={} chute={} target={} job={} drops={} gates={} beacon={}",String.format(Locale.ROOT,"%.1f %.1f %.1f",m.getX(),m.getY(),m.getZ()),m.onGround(),d.getBoolean("eternalChute"),targetOf(m),j==null?"-":j.dig!=null?"dig "+j.dig.toShortString():"bridge",d.getInt(RaidMarch.DROPS),d.getInt(RaidMarch.GATES),cd().beacon.toShortString());}
+    static long hits(String kind){synchronized(HITS){return HITS.stream().filter(h->h.startsWith(kind)).count();}}
+    // Arrows fired by raid archers and the blocks they land on
+    static final Map<Long,Integer> LANDED=new java.util.concurrent.ConcurrentHashMap<>();static final int[] FIRED={0};
+    @SubscribeEvent public static void arrow(net.minecraftforge.event.entity.ProjectileImpactEvent e){if(!e.getProjectile().level().isClientSide&&e.getRayTraceResult() instanceof BlockHitResult b&&e.getProjectile().getOwner() instanceof Mob)LANDED.merge(b.getBlockPos().asLong(),1,Integer::sum);}
+    @SubscribeEvent public static void fired(net.minecraftforge.event.entity.EntityJoinLevelEvent e){if(!e.getLevel().isClientSide&&e.getEntity() instanceof net.minecraft.world.entity.projectile.AbstractArrow a&&a.getOwner() instanceof Mob)FIRED[0]++;}
+    static String watch(String key){var m=get(key);if(m==null)return key+" gone";var p=sp();return String.format(Locale.ROOT,"%s at %s target %s, %.1f from the player (%s)",key,m.blockPosition().toShortString(),targetOf(m),m.distanceTo(p),p.gameMode.getGameModeForPlayer());}
+
+    // The scene
+    static BlockPos B;
+    static void places(){B=new BlockPos(sx+12,sy,sz+12);}
+    static void world(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();survival();
+        var d=cd();d.phase="preparation";d.beacon=B;d.core=0;d.vertical=0;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+    static void survival(){var p=sp();p.setGameMode(GameType.SURVIVAL);p.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.DAMAGE_RESISTANCE,1_000_000,4,false,false));p.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.REGENERATION,1_000_000,4,false,false));p.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.NIGHT_VISION,1_000_000,0,false,false));p.getFoodData().setFoodLevel(20);}
+    /** A raid that never spawns or times out by itself: the checks bring their own raiders */
+    static void raidOn(){srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.raidTier=0;d.wave=1;d.spawnRemaining=1000;d.spawnCooldown=1_000_000;d.raidTicks=0;d.waveTicks=0;d.setDirty();});keepRaid=true;}
+    static void clearRaid(){srv(()->{var d=cd();for(var id:new ArrayList<>(d.raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d.raiders.clear();RaidTargets.reset(sl());RaidDigging.reset(sl());RaidMarch.forget();});}
+    /** A block of the saved base (it can be broken and is put back) */
+    static void put(BlockPos p,net.minecraft.world.level.block.state.BlockState s){sl().setBlock(p,s,3);var d=cd();if(d.inside(p)&&!s.isAir())d.snapshot.put(p.asLong(),s);}
+    static Mob raider(EntityType<?> type,BlockPos at){var m=EternalDefense.raider(sl(),cd(),type,"grunt","normal",at);if(m!=null)m.removeEffect(MobEffects.MOVEMENT_SPEED);return m;}
+    static Mob raider(String id,BlockPos at){var t=BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(id));return t==EntityType.PIG&&!id.equals("minecraft:pig")?null:raider(t,at);}
+    static final Map<String,Integer> IDS=new HashMap<>();
+    static Mob get(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m&&m.isAlive()?m:null;}
+    static void keep(String key,Mob m){if(m!=null){SUBJECTS.put(key,m.getUUID());note("SUBJECT {} {} at {}",key,BuiltInRegistries.ENTITY_TYPE.getKey(m.getType()),m.blockPosition().toShortString());}}
+    static String targetOf(Mob m){var t=m==null?null:m.getTarget();return t==null?"none":t instanceof BeaconCombat.Objective?"beacon":t instanceof RaidTargets.Point p?"defense@"+p.block.toShortString():t instanceof net.minecraft.world.entity.player.Player?"player":BuiltInRegistries.ENTITY_TYPE.getKey(t.getType()).toString();}
+    static net.minecraft.world.level.block.state.BlockState bs(net.minecraft.world.level.block.Block b){return b.defaultBlockState();}
+    static long bridges(BlockPos from,BlockPos to){long n=0;for(var p:BlockPos.betweenClosed(from,to))if(sl().getBlockState(p).is(EternalDefense.RAIDER_BRIDGE.get()))n++;return n;}
+    static long water(BlockPos from,BlockPos to){long n=0;for(var p:BlockPos.betweenClosed(from,to))if(sl().getFluidState(p).isSource())n++;return n;}
+    static void fill(BlockPos a,BlockPos b,net.minecraft.world.level.block.state.BlockState s){for(var p:BlockPos.betweenClosed(a,b))sl().setBlock(p,s,2);}
+    static void moveBeacon(BlockPos to){srv(()->{var d=cd();sl().setBlock(d.beacon,bs(net.minecraft.world.level.block.Blocks.AIR),3);d.beacon=to;d.core=0;sl().setBlock(to,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);d.snapshot.clear();d.damage.clear();RaidTargets.reset(sl());d.setDirty();});}
+    static int health0;
+
+    static void script(){
+        var A=net.minecraft.world.level.block.Blocks.AIR;var STONE=net.minecraft.world.level.block.Blocks.STONE;
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(10,QaRelease1111::world,"a flat world, a Mk I beacon (zone radius 8), survival with resistance");
+        // The defenses tag gets hay bales from a world data pack (the mod ships it empty)
+        step(5,()->srv(()->{try{var dir=server().getWorldPath(net.minecraft.world.level.storage.LevelResource.DATAPACK_DIR).resolve("qa1111");
+            Files.createDirectories(dir.resolve("data/eternal_defense/tags/blocks"));Files.writeString(dir.resolve("pack.mcmeta"),"{\"pack\":{\"pack_format\":15,\"description\":\"qa\"}}");
+            Files.writeString(dir.resolve("data/eternal_defense/tags/blocks/defenses.json"),"{\"replace\":false,\"values\":[\"minecraft:hay_block\"]}");}catch(Exception ex){throw new IllegalStateException(ex);}}),"a data pack adds hay bales to eternal_defense:defenses");
+        step(80,()->cmd("reload"),"reload");
+        step(5,()->{boolean tagged=srvGet(()->RaidTargets.defense(bs(net.minecraft.world.level.block.Blocks.HAY_BLOCK)))&&!srvGet(()->RaidTargets.defense(bs(STONE)));
+            check("the defenses tag is read from data packs (hay bales tagged, stone not)",tagged,""+tagged);
+            boolean doors=srvGet(()->RaidTargets.door(bs(net.minecraft.world.level.block.Blocks.OAK_DOOR))&&RaidTargets.door(bs(net.minecraft.world.level.block.Blocks.OAK_FENCE_GATE))&&!RaidTargets.door(bs(net.minecraft.world.level.block.Blocks.OAK_TRAPDOOR))
+                &&!RaidTargets.door(net.minecraft.world.level.block.Blocks.OAK_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN,true)));
+            check("closed doors and gates count as doors; open ones and trapdoors do not",doors,""+doors);},"tags");
+
+        // 1. The ring around a Mk I beacon
+        step(5,()->{raidOn();tp(B.getX()+.5,sy,B.getZ()-18.5,0,10);srv(()->{health0=cd().health;
+            keep("z1",raider(EntityType.ZOMBIE,B.offset(7,0,0)));keep("z2",raider(EntityType.ZOMBIE,B.offset(-7,0,0)));keep("z3",raider(EntityType.ZOMBIE,B.offset(0,0,7)));
+            keep("z4",raider(EntityType.ZOMBIE,B.offset(6,0,6)));keep("husk",raider(EntityType.HUSK,B.offset(-6,0,6)));keep("knight",raider("born_in_chaos_v1:door_knight",B.offset(6,0,-6)));});},"six raiders around the beacon, the player 18 blocks away");
+        step(100,()->{HITS.clear();SWINGS.clear();},"they arrive");
+        step(160,()->{},"eight seconds of fighting");
+        step(5,()->{var notes=new ArrayList<String>();int ringed=0,swung=0,total=0;
+            for(var k:List.of("z1","z2","z3","z4","husk","knight")){var m=get(k);if(m==null)continue;total++;var o=BeaconCombat.objective(sl());
+                boolean in=o!=null&&RaidDigging.inRing(m.getBoundingBox(),o.getBoundingBox());if(in)ringed++;if(swings(m)>=10)swung++;
+                notes.add(k+" "+(in?"ring":"out")+" swings="+swings(m)+" at "+m.blockPosition().toShortString()+" target="+targetOf(m));}
+            note("RING {}",notes);note("HITS ring={} out={} still={} health {} -> {}",hits("ring"),hits("OUT"),HITS.stream().filter(h->h.contains("still")).count(),health0,srvGet(()->cd().health));
+            check("every melee raider stands in the ring one block around the beacon",ringed==total&&total>=5,ringed+" of "+total);
+            check("each one swings without a break while it attacks (10+ swings seen by the client in 8 seconds)",swung==total,swung+" of "+total+" "+notes);
+            check("every blow on the beacon comes from the ring, swinging",hits("ring")>0&&hits("OUT")==0&&HITS.stream().noneMatch(h->h.contains("still")),HITS.size()+" blows "+hits("OUT")+" from outside");
+            check("the beacon loses health",srvGet(()->cd().health)<health0,health0+" -> "+srvGet(()->cd().health));},"the ring");
+        step(5,()->look(B.getX()+5.5,sy+3,B.getZ()-6.5,B.getX()+.5,sy+.5,B.getZ()+.5),"look at them");
+        step(10,()->shot("r1111_ring"),"picture: raiders swinging at the beacon");
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 2. Creative players are ignored; survival players up close are fought; archers focus players
+        step(5,()->{srv(()->{sp().setGameMode(GameType.CREATIVE);keep("cz",raider(EntityType.ZOMBIE,B.offset(10,0,0)));keep("sk",raider(EntityType.SKELETON,B.offset(-14,0,-4)));});tp(B.getX()+9.5,sy,B.getZ()+1.5,90,0);},"a creative player beside a zombie, a skeleton 25 blocks off");
+        step(30,()->{var z=get("cz");var s=get("sk");
+            check("a zombie ignores a Creative player beside it and heads for the beacon",z!=null&&targetOf(z).equals("beacon"),targetOf(z));
+            check("so does an archer",s!=null&&targetOf(s).equals("beacon"),targetOf(s));},"creative");
+        step(5,()->{srv(QaRelease1111::survival);var z=get("cz");if(z!=null)tp(z.getX()+2,sy,z.getZ(),90,0);},"survival, two blocks from the zombie");
+        until("the zombie turns",100,()->{var z=get("cz");return z!=null&&targetOf(z).equals("player");},()->{var z=get("cz");check("a Survival player that comes close is fought",z!=null&&targetOf(z).equals("player"),watch("cz"));});
+        until("the archer turns",100,()->{var s=get("sk");return s!=null&&targetOf(s).equals("player");},()->{var s=get("sk");
+            check("an archer that sees a Survival player within 32 blocks shoots at them first",s!=null&&targetOf(s).equals("player"),watch("sk"));});
+        step(10,()->tp(B.getX()+.5,sy,B.getZ()+30.5,180,0),"the player walks 20+ blocks away");
+        until("back to the beacon",100,()->{var z=get("cz");return z!=null&&targetOf(z).equals("beacon");},()->{var z=get("cz");check("past the leash the zombie goes back to the beacon",z!=null&&targetOf(z).equals("beacon"),watch("cz"));});
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 3. Defenses and doors first
+        step(5,()->{srv(()->sp().setGameMode(GameType.CREATIVE));tp(B.getX()+.5,sy+8,B.getZ()-14.5,0,30);srv(()->{RaidTargets.reset(sl());
+            put(B.offset(4,0,0),bs(net.minecraft.world.level.block.Blocks.HAY_BLOCK));
+            for(int x=-2;x<=2;x++)for(int y=0;y<2;y++)if(x!=0)put(B.offset(x,y,5),bs(net.minecraft.world.level.block.Blocks.COBBLESTONE));
+            var door=net.minecraft.world.level.block.Blocks.OAK_DOOR.defaultBlockState();
+            put(B.offset(0,0,5),door);put(B.offset(0,1,5),door.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+            put(B.offset(-4,0,0),bs(net.minecraft.world.level.block.Blocks.HAY_BLOCK));
+            keep("hz",raider(EntityType.ZOMBIE,B.offset(13,0,1)));keep("dz",raider(EntityType.ZOMBIE,B.offset(1,0,14)));});},"a hay bale (defense) east, a wall with a closed door south, a second bale west");
+        step(40,()->{var hz=get("hz");var dz=get("dz");
+            check("a raider goes for the defense in its way first",hz!=null&&targetOf(hz).equals("defense@"+B.offset(4,0,0).toShortString()),targetOf(hz));
+            check("a raider goes for the closed door in its way",dz!=null&&targetOf(dz).equals("defense@"+B.offset(0,0,5).toShortString()),targetOf(dz));
+            boolean hidden=srvGet(()->sl().getEntitiesOfClass(RaidTargets.Point.class,new AABB(B).inflate(20)).stream().allMatch(p->p.isInvisible()&&!p.isPickable()));
+            check("the stand-in it aims at is invisible and cannot be hit by players",hidden,""+hidden);},"targets");
+        until("the bale breaks",400,()->srvGet(()->sl().getBlockState(B.offset(4,0,0)).isAir()),()->{
+            var c=cracks(B.offset(4,0,0));boolean saved=srvGet(()->cd().damage.containsKey(B.offset(4,0,0).asLong()));
+            check("the bale cracks like a player mines it, then breaks and is saved to be put back",c.size()>=3&&saved,"stages "+c+" saved "+saved);});
+        until("it chooses again",100,()->{var hz=get("hz");return hz!=null&&!targetOf(hz).startsWith("defense@"+B.offset(4,0,0).toShortString());},()->note("AFTER BALE {}",watch("hz")));
+        step(5,()->{var hz=get("hz");check("with the defense gone it goes for the beacon (not the bale on the far side of it)",hz!=null&&targetOf(hz).equals("beacon"),watch("hz"));
+            srv(()->keep("sk2",raider(EntityType.SKELETON,B.offset(-15,0,1))));},"then the beacon; an archer comes from the west");
+        step(30,()->{FIRED[0]=0;LANDED.clear();var s=get("sk2");check("an archer goes for the defense in its way before players and the beacon",s!=null&&targetOf(s).equals("defense@"+B.offset(-4,0,0).toShortString()),targetOf(s));},"archer target");
+        for(int i=0;i<6;i++)step(40,()->note("ARCHER {} fired {} landed on the bale {} cracks {}",watch("sk2"),FIRED[0],LANDED.getOrDefault(B.offset(-4,0,0).asLong(),0),cracks(B.offset(-4,0,0))),"archer");
+        until("the west bale breaks",600,()->srvGet(()->sl().getBlockState(B.offset(-4,0,0)).isAir()),()->{var s=get("sk2");note("ARCHER END fired {} landed {}",FIRED[0],LANDED);
+            check("arrows wear the bale down from range",srvGet(()->sl().getBlockState(B.offset(-4,0,0)).isAir())&&s!=null&&s.distanceToSqr(Vec3.atCenterOf(B.offset(-4,0,0)))>16&&!cracks(B.offset(-4,0,0)).isEmpty(),s==null?"gone":String.format(Locale.ROOT,"%.1f blocks, stages %s",Math.sqrt(s.distanceToSqr(Vec3.atCenterOf(B.offset(-4,0,0)))),cracks(B.offset(-4,0,0))));});
+        until("the door breaks",600,()->srvGet(()->sl().getBlockState(B.offset(0,0,5)).isAir()),()->{
+            boolean both=srvGet(()->sl().getBlockState(B.offset(0,1,5)).isAir()&&cd().damage.containsKey(B.offset(0,0,5).asLong())&&cd().damage.containsKey(B.offset(0,1,5).asLong()));
+            check("the door is hacked down (both halves saved), the wall beside it stands",both&&srvGet(()->sl().getBlockState(B.offset(1,0,5)).is(net.minecraft.world.level.block.Blocks.COBBLESTONE)),"stages "+cracks(B.offset(0,0,5))+" both "+both);});
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 4. Digging through a wall
+        step(5,()->srv(()->{for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)if(Math.max(Math.abs(x),Math.abs(z))==2)for(int y=0;y<3;y++)put(B.offset(x,y,z),bs(net.minecraft.world.level.block.Blocks.OAK_PLANKS));
+            keep("wz",raider(EntityType.ZOMBIE,B.offset(9,0,0)));}),"a closed ring of planks two blocks around the beacon; a zombie east");
+        step(5,()->look(B.getX()+6.5,sy+2,B.getZ()+3.5,B.getX()+2.5,sy+1,B.getZ()+.5),"watch the east wall");
+        until("a crack shows",600,()->CRACKS.keySet().stream().anyMatch(k->{var p=BlockPos.of(k);return Math.abs(p.getX()-B.getX())==2&&cracks(p).stream().anyMatch(s->s>=4);}),()->shot("r1111_crack"));
+        until("it reaches the beacon",900,()->hits("ring")>0&&HITS.stream().anyMatch(h->h.endsWith(":"+(get("wz")==null?-1:get("wz").getId()))),()->{
+            long broken=srvGet(()->cd().damage.keySet().stream().filter(k->Math.abs(BlockPos.of(k).getX()-B.getX())==2||Math.abs(BlockPos.of(k).getZ()-B.getZ())==2).count());var wz=get("wz");
+            var dug=CRACKS.keySet().stream().filter(k->{var p=BlockPos.of(k);return Math.max(Math.abs(p.getX()-B.getX()),Math.abs(p.getZ()-B.getZ()))==2;}).map(k->BlockPos.of(k).toShortString()+cracks(BlockPos.of(k))).toList();
+            check("a blocked raider digs through the wall block by block, cracks growing, and swings while it digs",broken>=1&&broken<=4&&dug.stream().anyMatch(s->s.contains("9"))&&wz!=null&&swings(wz)>=10,broken+" planks broken, cracks "+dug+", swings "+(wz==null?0:swings(wz)));});
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 5. Bridges over water and a chasm
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);
+            fill(B.offset(12,-2,-6),B.offset(16,-1,6),bs(net.minecraft.world.level.block.Blocks.WATER));
+            fill(B.offset(-4,-6,-16),B.offset(4,-1,-13),bs(A));
+            keep("bw",raider(EntityType.ZOMBIE,B.offset(22,0,0)));keep("bc",raider(EntityType.ZOMBIE,B.offset(0,0,-22)));}),"a water moat (5 wide, 2 deep) east, a chasm (4 wide, 6 deep) north; a zombie beyond each");
+        step(5,()->look(B.getX()+19.5,sy+6,B.getZ()+8.5,B.getX()+14.5,sy,B.getZ()+.5),"watch the moat");
+        until("the moat is crossed",800,()->{var m=get("bw");return m!=null&&m.getX()<B.getX()+11.5;},()->{
+            long planks=srvGet(()->bridges(B.offset(12,-1,-6),B.offset(16,-1,6)));var m=get("bw");
+            check("a zombie lays a plank bridge across the moat and walks over it",planks>=5&&m!=null&&m.getPersistentData().getInt(RaidMarch.GATES)==0&&!m.isInWater(),planks+" planks, gates "+(m==null?-1:m.getPersistentData().getInt(RaidMarch.GATES)));
+            shot("r1111_bridge");});
+        until("the chasm is crossed",800,()->{var m=get("bc");return m!=null&&m.getZ()>B.getZ()-12.5;},()->{
+            long planks=srvGet(()->bridges(B.offset(-4,-1,-16),B.offset(4,-1,-13)));var m=get("bc");
+            check("and one across the chasm",planks>=4&&m!=null&&m.getY()>=sy-.5&&m.getPersistentData().getInt(RaidMarch.GATES)==0,planks+" planks, y "+(m==null?"-":String.format(Locale.ROOT,"%.1f",m.getY())));});
+        step(5,()->{int n=srvGet(()->cd().bridges.size());note("BRIDGES recorded {}",n);check("every plank is recorded with what it replaced",n==srvGet(()->(int)(bridges(B.offset(12,-1,-6),B.offset(16,-1,6))+bridges(B.offset(-4,-1,-16),B.offset(4,-1,-13)))),""+n);},"records");
+
+        // 6. The raid ends: bridges go, water comes back, cracks heal, stand-ins go
+        step(5,()->{keepRaid=false;srv(()->{cd().raidTicks=24001;});},"the raid times out");
+        step(40,()->{long planks=srvGet(()->bridges(B.offset(12,-1,-6),B.offset(16,-1,6))+bridges(B.offset(-4,-1,-16),B.offset(4,-1,-13)));long wet=srvGet(()->water(B.offset(12,-1,-6),B.offset(16,-1,6)));
+            int recs=srvGet(()->cd().bridges.size());int points=srvGet(()->sl().getEntitiesOfClass(RaidTargets.Point.class,new AABB(B).inflate(40)).size());
+            check("when the raid ends every plank is taken away and the water is put back",planks==0&&recs==0&&wet==65,planks+" planks, "+recs+" records, "+wet+" of 65 water");
+            check("no crack and no stand-in is left",RaidDigging.cracks()==0&&points==0,"cracks "+RaidDigging.cracks()+" points "+points);},"after the raid");
+        step(5,()->srv(()->{var d=cd();d.damage.clear();d.destroyedTurrets.clear();d.phase="preparation";d.health=d.maximumHealth();d.setDirty();}),"repairs skipped");
+
+        // 7. A beacon on a covered one-block sky island
+        step(5,()->{var S=B.offset(-40,12,0);moveBeacon(S);srv(()->{
+            for(int y=-12;y<0;y++)sl().setBlock(S.offset(0,y,0),bs(STONE),3);
+            for(var p:List.of(S.east(),S.west(),S.north(),S.south(),S.above()))put(p,bs(STONE));
+            for(int y=-12;y<=0;y++)for(var p:List.of(S.offset(2,y,0),S.offset(-2,y,0),S.offset(0,y,2),S.offset(0,y,-2)))sl().setBlock(p,bs(net.minecraft.world.level.block.Blocks.SCAFFOLDING),3);});},"a beacon 12 up on a one-block pillar, covered on every side and on top, scaffolding around");
+        step(5,()->{raidOn();skyKey="sky";srv(()->keep("sky",raider(EntityType.ZOMBIE,B.offset(-36,0,0))));tp(B.getX()-40.5,sy+4,B.getZ()-24.5,0,-10);},"a zombie on the ground below; the player 24 blocks off");
+        until("it joins the squadron",1400,()->{var m=get("sky");return m!=null&&m.getPersistentData().getInt(RaidMarch.DROPS)>0;},()->{var m=get("sky");var S=cd().beacon;
+            check("stuck under the sky beacon, it joins the parachute squadron and jumps right above the beacon",m!=null&&m.getPersistentData().getBoolean("eternalChute")&&m.getY()>=S.getY()+20&&Math.abs(m.getX()-S.getX()-.5)<=2.5&&Math.abs(m.getZ()-S.getZ()-.5)<=2.5,m==null?"gone":String.format(Locale.ROOT,"%.1f %.1f %.1f",m.getX(),m.getY(),m.getZ()));
+            look(S.getX()+.5,S.getY()+4,S.getZ()-14.5,S.getX()+.5,S.getY()+16,S.getZ()+.5);});
+        until("chat",60,()->said("joined the parachute squadron"),()->check("chat says so",said("joined the parachute squadron"),saidLine("squadron")));
+        step(40,()->shot("r1111_squadron"),"picture: the drop");
+        until("it hits the beacon",1600,()->{var m=get("sky");return m!=null&&HITS.stream().anyMatch(h->h.endsWith(":"+m.getId()));},()->{var m=get("sky");
+            check("it lands on the island and hits the beacon from on top of it or its cover (digging through when it lands on top)",m!=null&&HITS.stream().anyMatch(h->h.endsWith(":"+m.getId()))&&m.getPersistentData().getInt(RaidMarch.DROPS)==1,m==null?"gone":m.blockPosition().toShortString()+" cracks "+CRACKS.keySet().stream().filter(k->BlockPos.of(k).closerThan(cd().beacon,2)).map(k->BlockPos.of(k).toShortString()).toList());});
+        step(10,()->{skyKey=null;clearRaid();},"clear");
+
+        // 8. No ground anywhere near: parachutes
+        step(5,()->{var H=B.offset(0,40,60);moveBeacon(H);srv(()->{for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)sl().setBlock(H.offset(x,-1,z),bs(STONE),3);RaidSpawns.forgetGates();});
+            tp(H.getX()+.5,H.getY()+1,H.getZ()-6.5,0,-20);keepRaid=false;srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.wave=1;d.spawnRemaining=3;d.spawnCooldown=1;d.raidTicks=0;d.waveTicks=0;d.setDirty();});},"a beacon on a 3x3 platform 40 blocks up: the real spawner runs");
+        until("parachutes",700,()->raiders().stream().anyMatch(m->m.getPersistentData().getBoolean("eternalChute")),()->{var H=cd().beacon;var m=raiders().stream().filter(r->r.getPersistentData().getBoolean("eternalChute")).findFirst().orElse(null);
+            check("with no ground and no gate spot the enemies jump by parachute over the zone",m!=null&&m.getY()>=H.getY()+12&&Math.max(Math.abs(m.getX()-H.getX()),Math.abs(m.getZ()-H.getZ()))<=cd().radius()+1,m==null?"none":m.blockPosition().toShortString());
+            look(H.getX()+.5,H.getY()+1,H.getZ()-6.5,H.getX()+.5,H.getY()+30,H.getZ()+.5);});
+        until("chat",60,()->said("jump by parachute"),()->check("chat says so",said("jump by parachute"),saidLine("jump by parachute")));
+        step(40,()->shot("r1111_chute"),"picture: parachutes over the sky base");
+        step(5,()->{keepRaid=true;srv(()->{var d=cd();d.spawnRemaining=1000;d.spawnCooldown=1_000_000;});},"no more spawns");
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 9. A raider walled in by bedrock still gets a gate (the extreme case); the superflat floor is no overhang
+        step(5,()->{boolean ok=srvGet(()->{var p=B.offset(80,0,0);return RaidSpawns.environmentSafe(sl(),sl().getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p));});
+            check("open ground on a superflat world (bedrock over the void) is a safe spawn spot",ok,""+ok);},"superflat ground");
+        step(5,()->{moveBeacon(B);var P=B.offset(40,0,-20);srv(()->{for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)for(int y=-1;y<=3;y++)if(Math.max(Math.abs(x),Math.abs(z))==2||y==-1||y==3)sl().setBlock(P.offset(x,y,z),bs(net.minecraft.world.level.block.Blocks.BEDROCK),3);
+            keep("pit",raider(EntityType.ZOMBIE,P));});raidOn();tp(B.getX()+40.5,sy+6,B.getZ()-30.5,0,20);},"a zombie shut in bedrock 40 blocks out");
+        until("a gate",1400,()->{var m=get("pit");return m!=null&&(m.getPersistentData().getInt(RaidMarch.GATES)>0);},()->{var m=get("pit");
+            check("a raider that is really stuck, far out, goes through a gate",m!=null&&m.getPersistentData().getInt(RaidMarch.DROPS)==0,m==null?"gone":"gates "+m.getPersistentData().getInt(RaidMarch.GATES)+" drops "+m.getPersistentData().getInt(RaidMarch.DROPS));});
+        until("it comes out",600,()->{var m=get("pit");return m!=null&&RaiderGates.channel(m.getUUID())==null&&Math.max(Math.abs(m.getX()-B.getX()-40),Math.abs(m.getZ()-B.getZ()+20))>4;},()->{var m=get("pit");
+            check("and steps out of the exit gate on open ground outside the zone",m!=null&&Math.max(Math.abs(m.getX()-cd().beacon.getX()),Math.abs(m.getZ()-cd().beacon.getZ()))>cd().radius(),m==null?"gone":m.blockPosition().toShortString());});
+        step(10,QaRelease1111::clearRaid,"clear");
+
+        // 10. The ring around a Mk IV beacon (3 x 3): 5 x 5
+        step(60,()->{var M=B.offset(30,0,30);moveBeacon(M);srv(()->{var d=cd();d.core=3;d.setDirty();});},"a Mk IV beacon");
+        step(5,()->{boolean mk4=srvGet(()->DefenseStructures.actualMark(sl(),cd().beacon)==4);note("MK4 {}",mk4);var M=cd().beacon;HITS.clear();SWINGS.clear();
+            srv(()->{keep("m1",raider(EntityType.ZOMBIE,M.offset(9,0,0)));keep("m2",raider(EntityType.ZOMBIE,M.offset(-9,0,1)));keep("m3",raider(EntityType.ZOMBIE,M.offset(7,0,7)));keep("m4",raider(EntityType.ZOMBIE,M.offset(-7,0,-7)));});
+            tp(M.getX()+.5,sy,M.getZ()-16.5,0,10);check("the Mk IV structure stands",mk4,""+mk4);},"four zombies");
+        step(260,()->{},"they fight");
+        step(5,()->{int ringed=0,swung=0;var notes=new ArrayList<String>();var o=BeaconCombat.objective(sl());
+            for(var k:List.of("m1","m2","m3","m4")){var m=get(k);if(m==null)continue;boolean in=o!=null&&RaidDigging.inRing(m.getBoundingBox(),o.getBoundingBox());if(in)ringed++;if(swings(m)>=10)swung++;notes.add(k+" "+m.blockPosition().toShortString()+" "+(in?"ring":"out")+" swings="+swings(m));}
+            note("MK4 RING {} box {}",notes,o==null?"-":o.getBoundingBox());
+            check("around a Mk IV they attack from the 5 x 5 ring, swinging, and every blow comes from it",ringed==4&&swung==4&&hits("ring")>0&&hits("OUT")==0,ringed+" in ring, "+swung+" swinging, blows "+hits("ring")+"/"+hits("OUT"));},"Mk IV ring");
+        step(5,()->{var M=cd().beacon;look(M.getX()+6.5,sy+4,M.getZ()-6.5,M.getX()+.5,sy+.5,M.getZ()+.5);},"look");
+        step(10,()->shot("r1111_mk4"),"picture: the Mk IV ring");
+        step(10,QaRelease1111::clearRaid,"done");
+    }
+}

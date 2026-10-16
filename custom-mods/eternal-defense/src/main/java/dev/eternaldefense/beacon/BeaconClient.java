@@ -57,7 +57,7 @@ public final class BeaconClient {
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut e){state=new CompoundTag();receivedAt=0;BeaconStartup.clear();BeaconAlerts.clear();GunPackSync.clearReceiving();}
     @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
     public static final class Registration {
-        @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(EternalDefense.BEACON_ENTITY.get(),Beam::new);e.registerEntityRenderer(EternalDefense.OBJECTIVE.get(),net.minecraft.client.renderer.entity.NoopRenderer::new);}
+        @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){e.registerBlockEntityRenderer(EternalDefense.BEACON_ENTITY.get(),Beam::new);e.registerEntityRenderer(EternalDefense.OBJECTIVE.get(),net.minecraft.client.renderer.entity.NoopRenderer::new);e.registerEntityRenderer(EternalDefense.DEFENSE_POINT.get(),net.minecraft.client.renderer.entity.NoopRenderer::new);}
         @SubscribeEvent public static void overlays(RegisterGuiOverlaysEvent e){e.registerAboveAll("beacon_status",(gui,g,partial,w,h)->hud(g,w,h));}
     }
     /** Status card shown near a planted beacon, during raids and while holding the recovery shovel. */

@@ -111,9 +111,9 @@ final class RaiderGateTest {
     }
 
     // Escalation, in gates
-    @Test void thirdGateThenWithdraw(){
+    @Test void thirdGateThenTheSquadron(){
         assertEquals(3,RaidMarch.MAX_GATES);
         assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(0,false));assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(2,false));
-        assertEquals(RaidMarch.Step.WITHDRAW,RaidMarch.next(3,false));assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(3,true),"a boss gets another gate");
+        assertEquals(RaidMarch.Step.DROP,RaidMarch.next(3,false));assertEquals(RaidMarch.Step.RESCUE,RaidMarch.next(3,true),"a boss gets another gate");
     }
 }

@@ -59,9 +59,9 @@ public final class RaiderGateGameTests {
     }
     /** One second of the raid loop for one raider, as the real loop calls it (and the clean-up it runs afterwards). */
     static boolean second(Fixture f,Mob mob){
-        var it=f.campaign().raiders.iterator();boolean withdrawn=false;
-        while(it.hasNext())if(it.next().equals(mob.getUUID())){withdrawn=RaidRescue.tick(f.level(),f.campaign(),mob,it);break;}
-        RaiderGates.cleanup(f.level(),f.campaign());return withdrawn;
+        var it=f.campaign().raiders.iterator();boolean moved=false;
+        while(it.hasNext())if(it.next().equals(mob.getUUID())){moved=RaidRescue.tick(f.level(),f.campaign(),mob,it);break;}
+        RaiderGates.cleanup(f.level(),f.campaign());return moved;
     }
     static List<? extends RaiderGate> gatesNear(ServerLevel l,BlockPos at,double r){return RaiderGates.gates(l).stream().filter(g->g.isAlive()&&g.distanceToSqr(at.getX()+.5,at.getY(),at.getZ()+.5)<=r*r).toList();}
     static void fill(ServerLevel l,BlockPos from,BlockPos to,net.minecraft.world.level.block.state.BlockState state){for(var p:BlockPos.betweenClosed(from,to))l.setBlock(p,state,2|16);}
@@ -225,7 +225,7 @@ public final class RaiderGateGameTests {
 
     // Escalation
     @GameTest(template="empty3x3x3",batch="gate_07",timeoutTicks=3600)
-    public static void afterThreeGatesTheRaiderIsWithdrawnAndTheWaveCompletesWellBeforeTheTimeout(GameTestHelper h)throws Exception{
+    public static void afterThreeGatesTheRaiderJoinsTheParachuteSquadronAboveTheBeacon(GameTestHelper h)throws Exception{
         var f=fixture(h);var l=f.level();RaidRescue.reset(l);var d=f.campaign();
         d.wave=1;d.spawnRemaining=0;d.hardRaid=false; // The first wave of several: finishing it needs no Create reward items
         var mob=raider(f,EntityType.HUSK,BEACON.south(40),true);
@@ -238,25 +238,24 @@ public final class RaiderGateGameTests {
             seen[0]=Math.max(seen[0],mob.getPersistentData().getInt(RaidMarch.GATES));
         });
         h.succeedWhen(()->{
-            h.assertTrue(d.wave==2,"the wave has not completed yet (gates opened so far "+seen[0]+")");
-            h.assertTrue(seen[0]==RaidMarch.MAX_GATES,"exactly "+RaidMarch.MAX_GATES+" gates before the withdrawal, saw "+seen[0]);
-            h.assertTrue(mob.isRemoved()&&!d.raiders.contains(mob.getUUID()),"the stuck raider was withdrawn from the world and the raid");
-            h.assertTrue(!d.rewards.isEmpty(),"the cleared wave paid its supply reward");
-            h.assertTrue(d.phase.equals("raid")&&d.victories==0,"the raid goes on with the next wave");
-            h.assertTrue(d.raidTicks<24000L&&d.raidTicks<=4*(RaidMarch.STUCK_SECONDS+RaidMarch.CHANNEL_SECONDS)*SEC+600,"the wave cleared after "+d.raidTicks+" raid ticks, far below the 24000 timeout");
+            h.assertTrue(mob.getPersistentData().getInt(RaidMarch.DROPS)==1,"the raider has not joined the squadron yet (gates opened so far "+seen[0]+")");
+            h.assertTrue(seen[0]==RaidMarch.MAX_GATES,"exactly "+RaidMarch.MAX_GATES+" gates before the drop, saw "+seen[0]);
+            h.assertTrue(!mob.isRemoved()&&d.raiders.contains(mob.getUUID()),"the stuck raider is still part of the raid");
+            h.assertTrue(Math.abs(mob.getX()-(BEACON.getX()+.5))<=2.5&&Math.abs(mob.getZ()-(BEACON.getZ()+.5))<=2.5&&mob.getY()>=BEACON.getY()+RaidRescue.SQUADRON_HEIGHT-1,"it jumps right above the beacon");
+            h.assertTrue(mob.getPersistentData().getBoolean("eternalChute"),"under a parachute");
             h.assertTrue(d.health==1000,"no timeout penalty: the beacon kept its health");
-            h.assertTrue(RaidMarch.takeWithdrawn()==0,"the withdrawal was announced once and the count started over");
-            h.assertTrue(RaiderGates.assigned()==0&&gatesNear(l,BEACON,300).isEmpty(),"no channel and no gate is left");
+            h.assertTrue(RaidMarch.takeDropped()==0,"the drop was announced and the count started over");
+            mob.discard();d.wave=2;
         });
     }
     @GameTest(template="empty3x3x3",batch="gate_08",timeoutTicks=3800)
-    public static void aBossGoesThroughGateAfterGateAndIsNeverWithdrawn(GameTestHelper h){
+    public static void aBossGoesThroughGateAfterGateAndIsNeverDropped(GameTestHelper h){
         var f=fixture(h);var l=f.level();RaidSpawns.forgetCorridors();
         var mob=raider(f,EntityType.HUSK,BEACON.west(40),true);mob.getPersistentData().putBoolean("eternalBoss",true);long t0=l.getGameTime();
-        h.onEachTick(()->{long t=l.getGameTime()-t0;if(t>0&&t%SEC==0&&second(f,mob))h.fail("a boss was withdrawn");});
+        h.onEachTick(()->{long t=l.getGameTime()-t0;if(t>0&&t%SEC==0){second(f,mob);if(mob.getPersistentData().getInt(RaidMarch.DROPS)>0)h.fail("a boss with gate destinations was dropped");}});
         h.succeedWhen(()->{
             int gates=mob.getPersistentData().getInt(RaidMarch.GATES);
-            h.assertTrue(gates>=RaidMarch.MAX_GATES+1,"the boss opened "+gates+" gates so far; it must go past the point where an ordinary raider is withdrawn");
+            h.assertTrue(gates>=RaidMarch.MAX_GATES+1,"the boss opened "+gates+" gates so far; it must go past the point where an ordinary raider is dropped");
             h.assertTrue(mob.isAlive()&&!mob.isRemoved()&&f.campaign().raiders.contains(mob.getUUID()),"the boss is still part of the raid");
             mob.discard();second(f,mob);
         });

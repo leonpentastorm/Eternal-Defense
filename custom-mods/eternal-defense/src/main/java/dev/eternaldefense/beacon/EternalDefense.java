@@ -45,6 +45,8 @@ public final class EternalDefense {
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> ENTITIES=DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES,ID);
     public static final RegistryObject<Block> STRUCTURE_PART=BLOCKS.register("structure_part",DefenseStructures.Part::new);
     public static final RegistryObject<Block> BEACON=BLOCKS.register("defense_beacon",()->new DefenseBlock());
+    /** The plank raiders lay over water and chasms (no item: it only comes from raids) */
+    static final RegistryObject<Block> RAIDER_BRIDGE=BLOCKS.register("raider_bridge",RaidBridges.BridgeBlock::new);
     public static final RegistryObject<Item> BEACON_ITEM=ITEMS.register("defense_beacon",()->new BeaconItems.Placement(BEACON.get()));
     public static final RegistryObject<Item> CONTROLLER=ITEMS.register("beacon_controller",()->new BeaconItems.Controller());
     public static final RegistryObject<Item> GUIDE=ITEMS.register("field_guide",()->new BeaconItems.Guide());
@@ -169,6 +171,8 @@ public final class EternalDefense {
     public static final RegistryObject<EntityType<SupportFlares.FlareEntity>> FLARE=OBJECTIVES.register("support_flare",()->EntityType.Builder.<SupportFlares.FlareEntity>of(SupportFlares.FlareEntity::new,MobCategory.MISC).sized(.25f,.25f).clientTrackingRange(10).updateInterval(5).build(ID+":support_flare"));
     public static final RegistryObject<EntityType<SupportCrate.ParcelEntity>> PARCEL=OBJECTIVES.register("support_parcel",()->EntityType.Builder.<SupportCrate.ParcelEntity>of(SupportCrate.ParcelEntity::new,MobCategory.MISC).sized(.9f,.9f).clientTrackingRange(8).updateInterval(3).build(ID+":support_parcel"));
     /** The red gate a stuck raider channels beside (see RaiderGates) */
+    /** The invisible stand-in on a defense block or door that raiders aim at (see RaidTargets) */
+    static final RegistryObject<EntityType<RaidTargets.Point>> DEFENSE_POINT=OBJECTIVES.register("defense_point",()->EntityType.Builder.<RaidTargets.Point>of(RaidTargets.Point::new,MobCategory.MISC).sized(1f,1f).noSave().noSummon().fireImmune().clientTrackingRange(8).updateInterval(20).build(ID+":defense_point"));
     static final RegistryObject<EntityType<RaiderGate>> RAIDER_GATE=OBJECTIVES.register("raider_gate",()->EntityType.Builder.<RaiderGate>of(RaiderGate::new,MobCategory.MISC).sized(1.2f,2.2f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":raider_gate"));
     /** A shell, bomb or starshell falling onto a fire support flare (see Ordnance) */
     static final RegistryObject<EntityType<Ordnance>> ORDNANCE=OBJECTIVES.register("ordnance",()->EntityType.Builder.<Ordnance>of(Ordnance::new,MobCategory.MISC).sized(.5f,1f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).build(ID+":ordnance"));
@@ -179,7 +183,7 @@ public final class EternalDefense {
     private static int clock;
     public EternalDefense() {
         net.minecraftforge.common.ForgeMod.enableMilkFluid();
-        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);DefenseSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build()));BeaconNetwork.init();
+        var bus=FMLJavaModLoadingContext.get().getModEventBus();BLOCKS.register(bus);MealEffects.register(bus);ITEMS.register(bus);ENTITIES.register(bus);TABS.register(bus);OBJECTIVES.register(bus);MENUS.register(bus);DefenseSounds.SOUNDS.register(bus);bus.addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent e)->{e.put(OBJECTIVE.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build());e.put(DEFENSE_POINT.get(),Mob.createMobAttributes().add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH,20).build());});BeaconNetwork.init();
         // With Create: mechanical arms may use the Logistics Center Hub
         if(net.minecraftforge.fml.ModList.get().isLoaded("create"))
             try{Class.forName("dev.eternaldefense.beacon.CreateArmCompat").getMethod("register",net.minecraftforge.eventbus.api.IEventBus.class).invoke(null,bus);}
@@ -360,7 +364,7 @@ public final class EternalDefense {
         Fobs.tick(l,clock);Routes.tick(l,clock);FobOutline.tick(l,clock);SupplyCatapult.tick(l,clock);
         if(clock%20==0){
             if(reconcileMissing(l,d))announce(l,"Missing beacon cleared. Place a beacon to start a fresh campaign.");
-            BeaconNetwork.syncNearby(l,d);
+            BeaconNetwork.syncNearby(l,d);RaidBridges.tick(l,d);   // Planks left over in unloaded land go before any repair
         }
         if(d.phase.equals("decommissioning")){restore(l,d);return;}
         if(d.phase.equals("unplaced"))return;
@@ -443,21 +447,20 @@ public final class EternalDefense {
             mob.setGlowingTag(revealed(d));Elites.restore(mob);
             // Real attack goals target the objective; contact alone never damages it.
             BeaconCombat.attach(mob);
-            if(RaidRescue.tick(l,d,mob,it))continue; // Stuck for good: withdrawn (a rescue only moves it)
+            if(RaidRescue.tick(l,d,mob,it))continue; // Stuck: a gate or the parachute squadron moves it
             boolean idle=RaidMarch.idle(mob);
             if(d.raidType.equals("siege")&&mob instanceof net.minecraft.world.entity.monster.Creeper creeper){
                 // Siege creepers dig: stuck at a wall near the base, they blow a hole for the shooters behind them
                 if(idle&&creeper.getTarget()!=null&&Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY(),d.beacon.getZ()+.5))<=d.radius()+RaidMarch.DIG_RANGE&&RaidBreaching.choose(l,d,mob)!=null)creeper.ignite();
                 continue;
             }
-            // Raiders march straight on; only one that stopped making progress digs (vexes pass through walls)
-            if(idle&&!(mob instanceof net.minecraft.world.entity.monster.Vex)&&BeaconCombat.needsBreach(mob,d))RaidBreaching.breach(l,d,mob);
+            // Raiders lay bridges, break the defenses they came for and dig through what stops them (vexes pass through walls)
+            if(!(mob instanceof net.minecraft.world.entity.monster.Vex))RaidDigging.think(l,d,mob,idle);
             if(idle&&Elites.giant(mob))RaidBreaching.smash(l,d,mob);   // A giant breaks what its body runs into
             // All hostile breach attempts run through BeaconCombat and the same damage journal.
         }
-        RaidMarch.prune(d.raiders);RaiderGates.cleanup(l,d);
+        RaidMarch.prune(d.raiders);RaiderGates.cleanup(l,d);RaidTargets.cleanup(l);RaidDigging.tick(l);RaidRescue.announceDrops(l);
         if(d.spawnRemaining==0&&d.raiders.isEmpty()){
-            RaidRescue.announceWithdrawn(l);
             reward(d,Items.IRON_INGOT,RaidRewards.waveIron(d.raidTier)); // Each cleared wave has a claimable supply reward.
             if(d.wave>=Rules.waves(d.raidTier)){
                 if(d.hardRaid&&(!d.bossSpawned||!d.bossKilled)){fail(l,d,"Boss was not defeated. No completion cache awarded; surviving wave rewards remain.");return;}
@@ -475,14 +478,20 @@ public final class EternalDefense {
     }
     private static boolean spawn(ServerLevel l,CampaignData d) {
         String raidType=d.introRaid?"normal":d.raidType;boolean bossNow=d.hardRaid&&d.wave==Rules.waves(d.raidTier)&&!d.bossSpawned;
-        BlockPos spawnPos;
+        BlockPos spawnPos;boolean chute=false;
         if(raidType.equals("paratroopers")&&!bossNow)spawnPos=RaidTypes.dropPoint(l,d);
         else{
-            // Natural ground far out first, else a red gate closer in.
-            var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();
+            // Natural ground far out first, else a red gate closer in, else a parachute over the zone.
+            var place=RaidSpawns.place(l,d);spawnPos=place==null?null:place.pos();chute=place!=null&&place.chute();
             if(place!=null&&place.gate())RaiderGates.spawnGate(l,spawnPos,net.minecraft.world.phys.Vec3.atCenterOf(d.beacon));   // The gate stands behind it, seen from the base
         }
         if(spawnPos==null)return false;
+        if(!chute)return spawnAt(l,d,raidType,bossNow,spawnPos);
+        var before=new HashSet<>(d.raiders);boolean spawned=spawnAt(l,d,raidType,bossNow,spawnPos);
+        for(UUID id:d.raiders)if(!before.contains(id)&&l.getEntity(id) instanceof Mob mob)RaidTypes.parachute(mob);
+        return spawned;
+    }
+    private static boolean spawnAt(ServerLevel l,CampaignData d,String raidType,boolean bossNow,BlockPos spawnPos){
         if(bossNow)return HardRaids.spawn(l,d,spawnPos);
         int soldiers=SpecialForcesRaids.count(d.raidTier,d.wavePlayers);
         if(!RaidTypes.special(raidType)&&soldiers>0&&d.spawnRemaining<=soldiers&&SpecialForcesRaids.available())return SpecialForcesRaids.spawn(l,d,spawnPos,d.spawnRemaining==soldiers);
@@ -567,7 +576,7 @@ public final class EternalDefense {
     }
     private static void fail(ServerLevel l,CampaignData d,String reason) {
         d.health=Math.max(0,d.health-d.maximumHealth()/5);d.victoryRestoration=false;d.phase="restore";d.preparationTicks=0;d.spawnRemaining=0;
-        BeaconNetwork.announce(l,"defeat",0,0,"","");RaidTypes.finish(l,d);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();RaidRescue.announceWithdrawn(l);RaidRescue.reset(l);
+        BeaconNetwork.announce(l,"defeat",0,0,"","");RaidTypes.finish(l,d);for(UUID id:d.raiders){Entity e=l.getEntity(id);if(e!=null)e.discard();}d.raiders.clear();RaidRescue.reset(l);
         // Keep all machine journals until restoration succeeds, even if a chunk is unloaded.
         d.damage.entrySet().removeIf(e->e.getValue().entity()==null);d.setDirty();announce(l,reason);
     }
@@ -609,7 +618,7 @@ public final class EternalDefense {
         if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;
         CampaignData d=CampaignData.get(l);
         if(DefenseStructures.beacon(l,event.getPos())){event.setCanceled(true);if(event.getPlayer() instanceof ServerPlayer p)feedback(p,"Use the Beacon Recovery Shovel to remove it. Confirmation required.");return;}
-        if(d.active()&&d.inside(event.getPos())){event.setCanceled(true);if(event.getPlayer() instanceof ServerPlayer p)feedback(p,"The beacon area is locked until the raid and repairs end.");}
+        if(d.active()&&d.inside(event.getPos())&&!event.getState().is(RAIDER_BRIDGE.get())){event.setCanceled(true);if(event.getPlayer() instanceof ServerPlayer p)feedback(p,"The beacon area is locked until the raid and repairs end.");}
     }
     @SubscribeEvent public void placeBlock(BlockEvent.EntityPlaceEvent event) {
         if(!(event.getLevel() instanceof ServerLevel l)||l.dimension()!=Level.OVERWORLD)return;

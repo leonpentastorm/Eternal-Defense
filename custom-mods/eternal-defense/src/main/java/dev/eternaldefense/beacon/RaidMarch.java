@@ -21,16 +21,20 @@ final class RaidMarch {
     static final int GRACE_SECONDS=10;
     /** Breaking or damaging a block makes a raider busy for this long. */
     static final int BREACH_BUSY_SECONDS=5;
-    /** A raider opens this many gates before it is withdrawn (a raid boss opens as many as it needs). */
+    /** A raider opens this many gates before it joins the parachute squadron (a raid boss opens as many as it needs). */
     static final int MAX_GATES=3;
-    /** A raider that is stuck and for which no rescue place was found this many times in a row is withdrawn as well */
+    /** A raider that is stuck and for which no rescue place was found this many times in a row joins the squadron as well (a boss too) */
     static final int DRY_LIMIT=3;
+    /** A raider stuck within this many blocks of the zone's edge, with the beacon this much higher, drops at once: a gate would only send it back out */
+    static final int DROP_NEAR=8,DROP_RISE=4;
+    /** A player fighting a raider counts only this much higher or lower (one on a tower out of reach does not keep it busy) */
+    static final double ENGAGED_RISE=4;
     /** A ranged raider holding its firing distance is busy within this many blocks of its target */
     static final double FIRING_DISTANCE=14;
     /** A raider that a player this close has just hurt is being fought */
     static final double ENGAGED_RADIUS=12;
-    /** Persistent-data key of how many gates a raider has opened (survives chunk reloads). */
-    static final String GATES="eternalGates";
+    /** Persistent-data keys: how many gates a raider has opened, and how often it was dropped (survive chunk reloads). */
+    static final String GATES="eternalGates",DROPS="eternalDrops";
 
     // Raider gates
     /** Blocks of terrain checked ahead of a raider, one sample per block. */
@@ -86,6 +90,8 @@ final class RaidMarch {
     static boolean holdingRange(boolean ranged,double distance,boolean lineOfSight){return ranged&&lineOfSight&&distance<=FIRING_DISTANCE;}
     /** Pure: a defender is fighting the raider: a player is within ENGAGED_RADIUS and something hurt the raider */
     static boolean fought(boolean playerNear,boolean hurtRecently){return playerNear&&hurtRecently;}
+    /** Pure: a player this much higher than the raider can be fought (see ENGAGED_RISE) */
+    static boolean reachable(double rise){return Math.abs(rise)<=ENGAGED_RISE;}
     /** Pure: it broke or damaged a block within the last BREACH_BUSY_SECONDS (lastBreach<0 means never). */
     static boolean breachedRecently(long lastBreach,long now){return lastBreach>=0&&now-lastBreach<=BREACH_BUSY_SECONDS*TICKS_PER_SECOND;}
     /** Pure: any of the reasons a raider that is not advancing is not stuck. */
@@ -94,20 +100,19 @@ final class RaidMarch {
     }
 
     // The escalation ladder
-    enum Step{RESCUE,WITHDRAW,RETRY}
-    /** Pure: what happens to a raider that is stuck, given how many gates it has opened already. */
-    static Step next(int gates,boolean boss){return boss||gates<MAX_GATES?Step.RESCUE:Step.WITHDRAW;}
-    /** Pure: what happens when a stuck raider that should go through a gate found no destination */
-    static Step afterNoDestination(int dryAttempts,boolean boss){return !boss&&dryAttempts>=DRY_LIMIT?Step.WITHDRAW:Step.RETRY;}
-
-    /** Pure: the chat line for the raiders withdrawn in one wave. */
-    static String withdrawnMessage(int count){return count+(count==1?" stuck raider withdrew":" stuck raiders withdrew");}
+    enum Step{RESCUE,DROP,RETRY}
+    /** Pure: what happens to a raider that is stuck, given how many gates it has opened already: a gate, or the parachute squadron. */
+    static Step next(int gates,boolean boss){return boss||gates<MAX_GATES?Step.RESCUE:Step.DROP;}
+    /** Pure: what happens when a stuck raider that should go through a gate found no destination (a boss too) */
+    static Step afterNoDestination(int dryAttempts,boolean boss){return dryAttempts>=DRY_LIMIT?Step.DROP:Step.RETRY;}
+    /** Pure: a raider stuck this far from the beacon (level), with the beacon this much higher, is dropped over it at once */
+    static boolean dropNow(double horizontal,double rise,int zoneRadius){return horizontal<=zoneRadius+DROP_NEAR&&rise>=DROP_RISE;}
 
     // State (server thread only; transient)
     private static final Map<UUID,Vec3> LAST=new HashMap<>();
     private static final Map<UUID,Track> TRACKS=new HashMap<>();
     private static final Map<UUID,Long> BREACHES=new HashMap<>(),FALLBACKS=new HashMap<>();
-    private static int withdrawn;
+    private static int dropped;
 
     /** Called once a second per raider: true when it hardly moved since the last call. */
     static boolean idle(Mob mob){
@@ -125,15 +130,15 @@ final class RaidMarch {
     /** BeaconCombat.approach had no usable path and pushed the raider straight at its goal (the log tells when). */
     static void forcedMove(Mob mob,long now){if(mob.getPersistentData().getBoolean("eternalRaider"))FALLBACKS.put(mob.getUUID(),now);}
     static long lastForcedMove(UUID id){return FALLBACKS.getOrDefault(id,-1L);}
-    static void withdrew(){withdrawn++;}
-    /** The number of raiders withdrawn since the last call (the chat line is sent once per wave). */
-    static int takeWithdrawn(){int n=withdrawn;withdrawn=0;return n;}
-    /** Drops everything kept for raiders that are gone: dead, withdrawn, unloaded or removed. */
+    static void dropped(){dropped++;}
+    /** The number of raiders that joined the parachute squadron since the last call (chat says so once a second at most). */
+    static int takeDropped(){int n=dropped;dropped=0;return n;}
+    /** Drops everything kept for raiders that are gone: dead, unloaded or removed. */
     static void prune(Collection<UUID> alive){
         LAST.keySet().retainAll(alive);TRACKS.keySet().retainAll(alive);BREACHES.keySet().retainAll(alive);FALLBACKS.keySet().retainAll(alive);
     }
     /** A raid starts or ends, the server stops, the campaign is packed up. */
-    static void forget(){LAST.clear();TRACKS.clear();BREACHES.clear();FALLBACKS.clear();withdrawn=0;}
+    static void forget(){LAST.clear();TRACKS.clear();BREACHES.clear();FALLBACKS.clear();dropped=0;}
     /** For tests: how many entries are kept. */
     static int kept(){return LAST.size()+TRACKS.size()+BREACHES.size()+FALLBACKS.size();}
 }

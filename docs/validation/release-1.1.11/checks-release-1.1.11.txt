@@ -1,0 +1,75 @@
+# Run 7
+QA_CHECK PASS the defenses tag is read from data packs (hay bales tagged, stone not) true
+QA_CHECK PASS closed doors and gates count as doors; open ones and trapdoors do not true
+QA_CHECK PASS every melee raider stands in the ring one block around the beacon 6 of 6
+QA_CHECK PASS each one swings without a break while it attacks (10+ swings seen by the client in 8 seconds) 6 of 6 [z1 ring swings=23 at 10, -60, 11 target=beacon, z2 ring swings=23 at 6, -60, 11 target=beacon, z3 ring swings=23 at 8, -60, 13 target=beacon, z4 ring swings=22 at 10, -60, 13 target=beacon, husk ring swings=22 at 6, -60, 13 target=beacon, knight ring swings=22 at 10, -60, 9 target=beacon]
+QA_CHECK PASS every blow on the beacon comes from the ring, swinging 71 blows 0 from outside
+QA_CHECK PASS the beacon loses health 1000 -> 952
+QA_CHECK PASS a zombie ignores a Creative player beside it and heads for the beacon beacon
+QA_CHECK PASS so does an archer beacon
+QA_CHECK PASS a Survival player that comes close is fought cz at 12, -60, 11 target player, 2.7 from the player (SURVIVAL)
+QA_CHECK PASS an archer that sees a Survival player within 32 blocks shoots at them first sk at -2, -60, 8 target player, 17.0 from the player (SURVIVAL)
+QA_CHECK PASS past the leash the zombie goes back to the beacon cz at 13, -60, 11 target beacon, 30.2 from the player (SURVIVAL)
+QA_CHECK PASS a raider goes for the defense in its way first defense@12, -60, 11
+QA_CHECK PASS a raider goes for the closed door in its way defense@8, -60, 16
+QA_CHECK PASS the stand-in it aims at is invisible and cannot be hit by players true
+QA_CHECK PASS the bale cracks like a player mines it, then breaks and is saved to be put back stages [1, 3, 5, 6, 8] saved true
+QA_CHECK PASS with the defense gone it goes for the beacon (not the bale on the far side of it) hz at 13, -60, 11 target beacon, 16.3 from the player (CREATIVE)
+QA_CHECK PASS an archer goes for the defense in its way before players and the beacon defense@4, -60, 11
+QA_CHECK PASS arrows wear the bale down from range 6.9 blocks, stages [5]
+QA_CHECK PASS the door is hacked down (both halves saved), the wall beside it stands stages [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] both true
+QA_CHECK PASS a blocked raider digs through the wall block by block, cracks growing, and swings while it digs 2 planks broken, cracks [10, -60, 11[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10, -59, 11[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], swings 30
+QA_CHECK PASS a zombie lays a plank bridge across the moat and walks over it 5 planks, gates 0
+QA_CHECK PASS and one across the chasm 4 planks, y -60.0
+QA_CHECK PASS every plank is recorded with what it replaced 9
+QA_CHECK PASS when the raid ends every plank is taken away and the water is put back 0 planks, 0 records, 65 of 65 water
+QA_CHECK PASS no crack and no stand-in is left cracks 0 points 0
+QA_CHECK PASS stuck under the sky beacon, it joins the parachute squadron and jumps right above the beacon -31.3 -24.0 11.1
+QA_CHECK PASS chat says so [Eternal Defense] A stuck raider joined the parachute squadron: it drops right above the beacon!
+QA_CHECK PASS it lands on the island and hits the beacon from on top of it or its cover (digging through when it lands on top) -32, -47, 11 cracks [-32, -47, 11]
+QA_CHECK PASS with no ground and no gate spot the enemies jump by parachute over the zone 8, 26, 71
+QA_CHECK PASS chat says so [Eternal Defense] No ground anywhere for the enemies to come out on, so they jump by parachute over your zone.
+QA_CHECK PASS open ground on a superflat world (bedrock over the void) is a safe spawn spot true
+QA_CHECK PASS a raider that is really stuck, far out, goes through a gate gates 1 drops 0
+QA_CHECK PASS and steps out of the exit gate on open ground outside the zone 36, -60, 91
+QA_CHECK PASS the Mk IV structure stands true
+QA_CHECK PASS around a Mk IV they attack from the 5 x 5 ring, swinging, and every blow comes from it 4 in ring, 4 swinging, blows 48/0
+QA_DONE pass=35 fail=0
+
+# Run 8 (unchanged code)
+QA_CHECK PASS the defenses tag is read from data packs (hay bales tagged, stone not) true
+QA_CHECK PASS closed doors and gates count as doors; open ones and trapdoors do not true
+QA_CHECK PASS every melee raider stands in the ring one block around the beacon 6 of 6
+QA_CHECK PASS each one swings without a break while it attacks (10+ swings seen by the client in 8 seconds) 6 of 6 [z1 ring swings=23 at 13, -60, 8 target=beacon, z2 ring swings=23 at 9, -60, 8 target=beacon, z3 ring swings=23 at 11, -60, 10 target=beacon, z4 ring swings=23 at 13, -60, 10 target=beacon, husk ring swings=23 at 9, -60, 10 target=beacon, knight ring swings=22 at 13, -60, 6 target=beacon]
+QA_CHECK PASS every blow on the beacon comes from the ring, swinging 71 blows 0 from outside
+QA_CHECK PASS the beacon loses health 1000 -> 952
+QA_CHECK PASS a zombie ignores a Creative player beside it and heads for the beacon beacon
+QA_CHECK PASS so does an archer beacon
+QA_CHECK PASS a Survival player that comes close is fought cz at 15, -60, 8 target player, 2.4 from the player (SURVIVAL)
+QA_CHECK PASS an archer that sees a Survival player within 32 blocks shoots at them first sk at 1, -60, 5 target player, 17.2 from the player (SURVIVAL)
+QA_CHECK PASS past the leash the zombie goes back to the beacon cz at 15, -60, 8 target beacon, 30.2 from the player (SURVIVAL)
+QA_CHECK PASS a raider goes for the defense in its way first defense@15, -60, 8
+QA_CHECK PASS a raider goes for the closed door in its way defense@11, -60, 13
+QA_CHECK PASS the stand-in it aims at is invisible and cannot be hit by players true
+QA_CHECK PASS the bale cracks like a player mines it, then breaks and is saved to be put back stages [1, 3, 5, 6, 8] saved true
+QA_CHECK PASS with the defense gone it goes for the beacon (not the bale on the far side of it) hz at 16, -60, 8 target beacon, 16.3 from the player (CREATIVE)
+QA_CHECK PASS an archer goes for the defense in its way before players and the beacon defense@7, -60, 8
+QA_CHECK PASS arrows wear the bale down from range 6.8 blocks, stages [5]
+QA_CHECK PASS the door is hacked down (both halves saved), the wall beside it stands stages [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] both true
+QA_CHECK PASS a blocked raider digs through the wall block by block, cracks growing, and swings while it digs 2 planks broken, cracks [13, -60, 8[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 13, -59, 8[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], swings 30
+QA_CHECK PASS a zombie lays a plank bridge across the moat and walks over it 5 planks, gates 0
+QA_CHECK PASS and one across the chasm 4 planks, y -60.0
+QA_CHECK PASS every plank is recorded with what it replaced 9
+QA_CHECK PASS when the raid ends every plank is taken away and the water is put back 0 planks, 0 records, 65 of 65 water
+QA_CHECK PASS no crack and no stand-in is left cracks 0 points 0
+QA_CHECK PASS stuck under the sky beacon, it joins the parachute squadron and jumps right above the beacon -29.5 -24.0 8.9
+QA_CHECK PASS chat says so [Eternal Defense] A stuck raider joined the parachute squadron: it drops right above the beacon!
+QA_CHECK PASS it lands on the island and hits the beacon from on top of it or its cover (digging through when it lands on top) -29, -47, 8 cracks [-29, -47, 8]
+QA_CHECK PASS with no ground and no gate spot the enemies jump by parachute over the zone 11, 26, 68
+QA_CHECK PASS chat says so [Eternal Defense] No ground anywhere for the enemies to come out on, so they jump by parachute over your zone.
+QA_CHECK PASS open ground on a superflat world (bedrock over the void) is a safe spawn spot true
+QA_CHECK PASS a raider that is really stuck, far out, goes through a gate gates 1 drops 0
+QA_CHECK PASS and steps out of the exit gate on open ground outside the zone -61, -60, -23
+QA_CHECK PASS the Mk IV structure stands true
+QA_CHECK PASS around a Mk IV they attack from the 5 x 5 ring, swinging, and every blow comes from it 4 in ring, 4 swinging, blows 48/0
+QA_DONE pass=35 fail=0

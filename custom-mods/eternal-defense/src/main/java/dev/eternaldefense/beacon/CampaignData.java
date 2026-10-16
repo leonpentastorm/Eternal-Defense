@@ -48,6 +48,8 @@ public final class CampaignData extends SavedData {
     /** Extra Ardent drop chance of this raid's mobs (percent) */
     public int dropBonus(){return phase.equals("raid")?RaidModifiers.dropPercent(activeMods,raidType):0;}
     public final List<CompoundTag> destroyedTurrets=new ArrayList<>();
+    /** Planks raiders laid, with what each replaced (taken away when the raid ends) */
+    public final Map<Long,BlockState> bridges=new LinkedHashMap<>();
     public record Damage(BlockState before,CompoundTag entity) {}
     public static CampaignData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(CampaignData::load,CampaignData::new,"eternal_defense_beacon");
@@ -104,6 +106,7 @@ public final class CampaignData extends SavedData {
         for(Tag t:n.getList("chosenMods",Tag.TAG_STRING))if(RaidModifiers.of(t.getAsString())!=null)d.chosenMods.add(t.getAsString());
         for(Tag t:n.getList("activeMods",Tag.TAG_STRING))if(RaidModifiers.of(t.getAsString())!=null)d.activeMods.add(t.getAsString());
         d.eliteWave=n.getInt("eliteWave");d.eliteLeft=n.getInt("eliteLeft");d.eliteWaves=n.getInt("eliteWaves");d.eliteThisWave=n.getBoolean("eliteThisWave");
+        for(Tag t:n.getList("bridges",Tag.TAG_COMPOUND)){var c=(CompoundTag)t;d.bridges.put(c.getLong("pos"),NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(),c.getCompound("state")));}
         return d;
     }
     @Override public CompoundTag save(CompoundTag n) {
@@ -131,6 +134,7 @@ public final class CampaignData extends SavedData {
         ListTag chosen=new ListTag();chosenMods.forEach(id->chosen.add(StringTag.valueOf(id)));n.put("chosenMods",chosen);
         ListTag active=new ListTag();activeMods.forEach(id->active.add(StringTag.valueOf(id)));n.put("activeMods",active);
         n.putInt("eliteWave",eliteWave);n.putInt("eliteLeft",eliteLeft);n.putInt("eliteWaves",eliteWaves);n.putBoolean("eliteThisWave",eliteThisWave);
+        ListTag bridgeTags=new ListTag();bridges.forEach((p,s)->{var c=new CompoundTag();c.putLong("pos",p);c.put("state",NbtUtils.writeBlockState(s));bridgeTags.add(c);});n.put("bridges",bridgeTags);
         return n;
     }
 }
