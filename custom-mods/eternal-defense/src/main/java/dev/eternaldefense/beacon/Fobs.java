@@ -245,7 +245,7 @@ final class Fobs {
             var slots=plan.inventory();int main=p.getInventory().items.size();
             for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));
             for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
-            p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();
+            InventoryPayment.sync(p);
         }
         f.researchXp=Math.min(RouteRules.RESEARCH_XP[RouteRules.MAX_LEVEL],f.researchXp+n*per);FobData.get(l).setDirty();
         log("{}: {} gave {} {} to the research ({} points, level {})",f.name,p.getGameProfile().getName(),n,RESEARCH_ITEMS.get(kind),f.researchXp,f.level());

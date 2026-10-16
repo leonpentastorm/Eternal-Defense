@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.13 — Capsule armor shows at once (2026-10-16, `dev`)
+
+After 1.1.12 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed, no new block or entity). Rules: GDD 1.1.13; tests: `docs/ROUND-1.1.13-TESTING.md`.
+
+* **Fixed: armor from a Loadout capsule did not show** (owner's report): after Equip at a capsule dropped by a Loadout Flare, the armor was worn but the inventory's armor slots looked empty until another screen (such as Curios) was opened, and a second capsule said the slots were taken. The player's whole inventory is now sent after Equip, so armor and the off-hand item show at once. The same refresh follows the Loadout Station's print, every table and shop payment, and FOB research (a used-up off-hand item could keep showing there).
+
 ## 1.1.12 — Armor priced by protection, Gun Guide add-on keys (2026-10-16, `dev`)
 
 After 1.1.11 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed, no new block or entity; still run the same version on client and server: a 1.1.11 client calls an armor piece's strength "damage"). Rules: GDD 1.1.12; tests: `docs/ROUND-1.1.12-TESTING.md`.

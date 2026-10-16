@@ -1,0 +1,123 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks: what a Loadout capsule's Equip puts on reaches the player's own inventory. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaCapsuleSync {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){CHAT.add(e.getMessage().getString());log("QA_CHAT {}",e.getMessage().getString());}
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_capsule",GameType.SURVIVAL,false,Difficulty.PEACEFUL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_capsule",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void click(BlockPos pos,Direction face){mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false));}
+    static void button(int id){mc().gameMode.handleInventoryButtonClick(mc().player.containerMenu.containerId,id);}
+    /** A kit: armor feet first, the off hand, then the hotbar */
+    static ListTag kit(ItemStack... stacks){var l=new ListTag();for(int i=0;i<stacks.length;i++){if(stacks[i].isEmpty())continue;var c=stacks[i].save(new CompoundTag());c.putByte("LoadoutSlot",(byte)i);l.add(c);}return l;}
+    static String armor(net.minecraft.world.entity.player.Player p){var inv=p.getInventory();var out=new ArrayList<String>();for(int i=0;i<4;i++)out.add(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(inv.armor.get(i).getItem()).getPath());out.add(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(inv.offhand.get(0).getItem()).getPath());return out.toString();}
+    static String clientArmor(){return armor(mc().player);}
+    static String serverArmor(){return srvGet(()->armor(sp()));}
+    /** The slots of the client's own inventory screen menu, as the screen draws them */
+    static String clientSlots(){var m=mc().player.inventoryMenu;var out=new ArrayList<String>();for(int s:new int[]{5,6,7,8,45})out.add(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(m.getSlot(s).getItem().getItem()).getPath());return out.toString();}
+
+    static BlockPos C1,C2;
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(20,()->srv(()->{var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());sl().setDayTime(6000);
+            sp().getInventory().clearContent();C1=new BlockPos(sx+3,sy,sz);C2=new BlockPos(sx-3,sy,sz);
+            LoadoutCapsule.place(sl(),C1,sp().getUUID(),kit(st(Items.IRON_BOOTS),st(Items.IRON_LEGGINGS),st(Items.IRON_CHESTPLATE),st(Items.IRON_HELMET),st(Items.SHIELD),st(Items.IRON_SWORD)));
+            LoadoutCapsule.place(sl(),C2,sp().getUUID(),kit(st(Items.DIAMOND_BOOTS),st(Items.DIAMOND_LEGGINGS),st(Items.DIAMOND_CHESTPLATE),st(Items.DIAMOND_HELMET),st(Items.SHIELD),ItemStack.EMPTY,st(Items.BOW)));}),"two capsules with kits beside the player");
+        step(LoadoutRules.CAPSULE_OPEN_DELAY+10,()->tp(sx+.5,sy,sz+.5,-90,20),"face the first capsule");
+        step(10,()->click(C1,Direction.WEST),"open it (a real right-click)");
+        until("its menu",60,()->mc().player.containerMenu instanceof LoadoutCapsule.CapsuleMenu,()->{});
+        step(10,()->button(LoadoutCapsule.CapsuleMenu.EQUIP),"Equip");
+        step(10,()->{note("AFTER EQUIP server {} client {} client inventory screen {}",serverArmor(),clientArmor(),clientSlots());
+            check("the server puts the iron kit on",serverArmor().equals("[iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]"),serverArmor());
+            check("the client's own inventory has it too, with the capsule still open",clientArmor().equals(serverArmor()),"client "+clientArmor()+" server "+serverArmor());},"after Equip");
+        step(10,()->{mc().player.closeContainer();},"close the capsule");
+        step(10,()->{
+            check("after closing, the inventory screen's armor and off-hand slots show the kit",clientSlots().equals("[iron_helmet, iron_chestplate, iron_leggings, iron_boots, shield]"),clientSlots());
+            mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"open the inventory");
+        step(20,()->shot("capsule_inventory_after_equip"),"picture: the inventory after Equip");
+        step(5,()->mc().setScreen(null),"close it");
+        step(10,()->{CHAT.clear();tp(sx+.5,sy,sz+.5,90,20);},"face the second capsule");
+        step(10,()->click(C2,Direction.EAST),"open the second capsule");
+        until("its menu",60,()->mc().player.containerMenu instanceof LoadoutCapsule.CapsuleMenu,()->{});
+        step(10,()->button(LoadoutCapsule.CapsuleMenu.EQUIP),"Equip again");
+        step(10,()->{String said;synchronized(CHAT){said=String.join(" | ",CHAT);}
+            note("SECOND server {} client {} said {}",serverArmor(),clientArmor(),said);
+            check("the second capsule keeps the diamond armor and says the slots are taken",said.contains("stay in the capsule"),said);
+            check("the player still shows the iron kit they wear",clientArmor().equals(serverArmor())&&clientArmor().startsWith("[iron_boots"),"client "+clientArmor()+" server "+serverArmor());
+            mc().player.closeContainer();},"second capsule");
+        step(10,()->{mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"open the inventory");
+        step(20,()->{check("the inventory screen still shows the iron kit",clientSlots().equals("[iron_helmet, iron_chestplate, iron_leggings, iron_boots, shield]"),clientSlots());shot("capsule_inventory_second");},"picture");
+        step(5,()->mc().setScreen(null),"done");
+    }
+    static ItemStack st(net.minecraft.world.item.Item i){return new ItemStack(i);}
+}

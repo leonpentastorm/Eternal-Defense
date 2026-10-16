@@ -276,7 +276,7 @@ final class LoadoutCapsule {
             var worn=LoadoutPrint.worn(sp);int moved=0,left=0;
             for(int i=0;i<LoadoutRules.KIT_SLOTS;i++){var s=items.getItem(i);if(s.isEmpty())continue;
                 if(worn.get(i).isEmpty()){LoadoutPrint.wear(sp,i,s.copy());items.setItem(i,ItemStack.EMPTY);moved++;}else left++;}
-            sp.getInventory().setChanged();sp.inventoryMenu.broadcastChanges();
+            InventoryPayment.sync(sp);
             if(moved>0)sp.level().playSound(null,sp,SoundEvents.ARMOR_EQUIP_GENERIC,SoundSource.PLAYERS,1f,1f);
             say(sp,left>0?"equipped_some":"equipped_all",moved,left);
             return true;

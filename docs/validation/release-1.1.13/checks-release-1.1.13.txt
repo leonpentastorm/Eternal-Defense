@@ -1,0 +1,25 @@
+# Before the fix (1.1.12 code)
+QA_CHAT Equipped 6 items.
+QA_NOTE AFTER EQUIP server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] client [air, air, air, air, shield] client inventory screen [air, air, air, air, shield]
+QA_CHECK PASS the server puts the iron kit on [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK FAIL the client's own inventory has it too, with the capsule still open client [air, air, air, air, shield] server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK FAIL after closing, the inventory screen's armor and off-hand slots show the kit [air, air, air, air, shield]
+QA_CHAT Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_NOTE SECOND server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] client [air, air, air, air, shield] said Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_CHECK PASS the second capsule keeps the diamond armor and says the slots are taken Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_CHECK FAIL the player still shows the iron kit they wear client [air, air, air, air, shield] server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK FAIL the inventory screen still shows the iron kit [air, air, air, air, shield]
+QA_DONE pass=2 fail=4
+
+# After the fix
+QA_CHAT Equipped 6 items.
+QA_NOTE AFTER EQUIP server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] client [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] client inventory screen [iron_helmet, iron_chestplate, iron_leggings, iron_boots, shield]
+QA_CHECK PASS the server puts the iron kit on [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK PASS the client's own inventory has it too, with the capsule still open client [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK PASS after closing, the inventory screen's armor and off-hand slots show the kit [iron_helmet, iron_chestplate, iron_leggings, iron_boots, shield]
+QA_CHAT Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_NOTE SECOND server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] client [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] said Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_CHECK PASS the second capsule keeps the diamond armor and says the slots are taken Equipped 1 items. 5 stay in the capsule: those slots were taken.
+QA_CHECK PASS the player still shows the iron kit they wear client [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield] server [iron_boots, iron_leggings, iron_chestplate, iron_helmet, shield]
+QA_CHECK PASS the inventory screen still shows the iron kit [iron_helmet, iron_chestplate, iron_leggings, iron_boots, shield]
+QA_DONE pass=6 fail=0

@@ -183,7 +183,7 @@ final class LoadoutPrint {
         for(int i=0;i<LoadoutRules.KIT_SLOTS;i++)wear(p,i,ItemStack.EMPTY);
         s.stowedTo=stow(p,m,old);
         for(int i=0;i<LoadoutRules.KIT_SLOTS;i++)wear(p,i,kit.get(i).copy());
-        p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();
+        InventoryPayment.sync(p);
         HubNotices.pulled(p,pulls);
         com.mojang.logging.LogUtils.getLogger().info("[Loadout Station] {} printed a kit of {} stacks from the {} ({} stacks stowed: {})",s.name,LoadoutRules.kitItems(coin.getTag()),src.name().toLowerCase(Locale.ROOT),old.size(),s.stowedTo);
         return null;

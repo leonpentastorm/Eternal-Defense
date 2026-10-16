@@ -52,7 +52,12 @@ final class InventoryPayment {
         for(int i=0;i<main;i++)p.getInventory().items.set(i,slots.get(i));for(int i=0;i<p.getInventory().offhand.size();i++)p.getInventory().offhand.set(i,slots.get(main+i));
         var paid=new ArrayList<Supply.Pull>();for(var pull:plan.pulls()){int n=pull.hub().storage.extract(pull.key(),pull.count(),false);if(n>0)paid.add(new Supply.Pull(pull.hub(),pull.key(),n));}
         HubNotices.pulled(p,paid);
-        p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();if(p.containerMenu!=p.inventoryMenu)p.containerMenu.broadcastChanges();return true;
+        sync(p);if(p.containerMenu!=p.inventoryMenu)p.containerMenu.broadcastChanges();return true;
+    }
+    /** Sends the changed inventory; with another screen open the client drops single armor and off-hand slot updates, so it gets the whole inventory then */
+    static void sync(net.minecraft.world.entity.player.Player p){
+        p.getInventory().setChanged();p.inventoryMenu.broadcastChanges();
+        if(p.containerMenu!=p.inventoryMenu)p.inventoryMenu.sendAllDataToRemote();
     }
     static String failure(Supply.Where w,List<WeaponPlatform.Cost> costs){
         var p=w.player();var plan=plan(w,costs);if(p.isCreative()||plan.payable())return "Inventory full. Make room for the output. Nothing consumed.";
