@@ -1,0 +1,92 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+
+/** Lists every armor table entry with its stats and price, one JSON line each (armor-dump.jsonl in the run folder). */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaArmorDump {
+    static boolean created,done;static int tick;
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static String q(String s){return "\""+s.replace("\\","\\\\").replace("\"","\\\"").replace("\n"," ")+"\"";}
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_armor",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_armor",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(done||mc.player==null||mc.getSingleplayerServer()==null)return;
+        if(++tick<160)return;done=true;
+        var server=mc.getSingleplayerServer();
+        server.submit(()->{dump(server.getPlayerList().getPlayers().get(0));return 0;}).join();
+        log("QA_DONE pass=1 fail=0");mc.stop();
+    }
+    static void dump(net.minecraft.server.level.ServerPlayer player){
+        var lines=new ArrayList<String>();
+        var all=new ArrayList<WeaponPlatform.Entry>(ArmorPlatform.fabrications());all.addAll(ArmorPlatform.supplies(""));
+        for(var en:all){
+            var stack=en.output();var item=stack.getItem();var sb=new StringBuilder("{");
+            sb.append("\"id\":").append(q(en.gate().id())).append(",\"kind\":").append(q(en.gate().kind())).append(",\"type\":").append(q(ArmorPlatform.type(stack)));
+            sb.append(",\"age\":").append(en.gate().age()).append(",\"name\":").append(q(en.gate().name())).append(",\"class\":").append(q(item.getClass().getName()));
+            sb.append(",\"maxDamage\":").append(stack.getMaxDamage()).append(",\"stack\":").append(stack.getMaxStackSize());
+            if(item instanceof ArmorItem a){
+                sb.append(",\"slot\":").append(q(a.getEquipmentSlot().getName())).append(",\"defense\":").append(a.getDefense()).append(",\"toughness\":").append(a.getToughness());
+                sb.append(",\"kb\":").append(a.getMaterial().getKnockbackResistance()).append(",\"enchant\":").append(a.getMaterial().getEnchantmentValue()).append(",\"material\":").append(q(a.getMaterial().getName()));
+            }
+            var mods=new ArrayList<String>();
+            for(var slot:EquipmentSlot.values())try{for(var m:stack.getAttributeModifiers(slot).entries())mods.add(slot.getName()+":"+BuiltInRegistries.ATTRIBUTE.getKey(m.getKey())+":"+m.getValue().getOperation().name()+":"+m.getValue().getAmount());}catch(Throwable t){mods.add(slot.getName()+":error:"+t);}
+            sb.append(",\"mods\":[").append(String.join(",",mods.stream().map(QaArmorDump::q).toList())).append("]");
+            sb.append(",\"curios\":[").append(String.join(",",curios(stack,player).stream().map(QaArmorDump::q).toList())).append("]");
+            sb.append(",\"tag\":").append(q(stack.hasTag()?stack.getTag().toString():""));
+            try{sb.append(",\"costs\":[").append(String.join(",",ArmorPlatform.costs(en).stream().map(c->q(c.ingredient().getItems().length==0?"?":BuiltInRegistries.ITEM.getKey(c.ingredient().getItems()[0].getItem())+" x"+c.count())).toList())).append("]");}
+            catch(Throwable t){sb.append(",\"costs\":").append(q(t.toString()));}
+            lines.add(sb.append("}").toString());
+        }
+        try{Files.write(Path.of("armor-dump.jsonl"),lines);}catch(Exception ex){throw new IllegalStateException(ex);}
+        log("QA_NOTE ARMOR DUMP {} entries",lines.size());
+    }
+    /** Curios attribute modifiers, when Curios is loaded and the item is a curio */
+    static List<String> curios(ItemStack stack,net.minecraft.server.level.ServerPlayer player){
+        var out=new ArrayList<String>();
+        try{
+            var api=Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            var ctx=Class.forName("top.theillusivec4.curios.api.SlotContext");
+            Optional<?> curio=(Optional<?>)api.getMethod("getCurio",ItemStack.class).invoke(null,stack);
+            if(curio.isEmpty())return out;
+            var tags=new ArrayList<String>();
+            try{for(var t:(Iterable<?>)api.getMethod("getCuriosHelper").invoke(null).getClass().getMethod("getCurioTags",net.minecraft.world.item.Item.class).invoke(api.getMethod("getCuriosHelper").invoke(null),stack.getItem()))tags.add(t.toString());}catch(Throwable ignored){}
+            out.add("tags="+tags);
+            for(String slot:tags.isEmpty()?List.of("body","back","belt","head"):tags){
+                var sc=ctx.getConstructor(String.class,net.minecraft.world.entity.LivingEntity.class,int.class,boolean.class,boolean.class).newInstance(slot,player,0,false,true);
+                var c=curio.get();var m=c.getClass().getMethod("getAttributeModifiers",ctx,UUID.class);
+                var map=(com.google.common.collect.Multimap<?,?>)m.invoke(c,sc,UUID.nameUUIDFromBytes(slot.getBytes()));
+                for(var en:map.entries()){var key=en.getKey();String name=key instanceof net.minecraft.world.entity.ai.attributes.Attribute at?String.valueOf(BuiltInRegistries.ATTRIBUTE.getKey(at)):key.toString();
+                    var mod=(net.minecraft.world.entity.ai.attributes.AttributeModifier)en.getValue();out.add(slot+":"+name+":"+mod.getOperation().name()+":"+mod.getAmount());}
+            }
+        }catch(ClassNotFoundException ignored){}catch(Throwable t){out.add("error:"+t);}
+        return out;
+    }
+}

@@ -179,4 +179,18 @@ final class Economy {
     }
 
     // Support gear (Ardent Energy)
+
+    // Armor table
+    /** One material of a set price: an item id (#tag for any item of a tag) and how many */
+    record SetPart(String id,int amount){}
+    /** A full set (head, chest, legs, feet) of a typical piece of each Age; a piece pays its share, the first material always */
+    static final List<List<SetPart>> ARMOR_SETS=List.of(
+        List.of(new SetPart("create:iron_sheet",24),new SetPart("minecraft:leather",16),new SetPart("#minecraft:wool",8)),
+        List.of(new SetPart("create:iron_sheet",24),new SetPart("create:andesite_alloy",16),new SetPart("minecraft:leather",16),new SetPart("#minecraft:wool",8)),
+        List.of(new SetPart("eternal_defense:reinforced_plating",21),new SetPart("create:precision_mechanism",7),new SetPart("create:andesite_alloy",16),new SetPart("minecraft:leather",16),new SetPart("#minecraft:wool",8)),
+        List.of(new SetPart("eternal_defense:reinforced_plating",24),new SetPart("create:precision_mechanism",7),new SetPart("minecraft:netherite_scrap",4),new SetPart("create:andesite_alloy",16),new SetPart("minecraft:leather",16),new SetPart("#minecraft:wool",8)),
+        List.of(new SetPart("eternal_defense:reinforced_plating",28),new SetPart("create:precision_mechanism",7),new SetPart("minecraft:netherite_scrap",4),new SetPart("eternal_defense:resonance_coil",6),new SetPart("create:andesite_alloy",16),new SetPart("minecraft:leather",16),new SetPart("#minecraft:wool",8)));
+    static List<SetPart> armorSet(int age){return ARMOR_SETS.get(Math.max(1,Math.min(5,age))-1);}
+    /** Optics and NVGs that give no armor: their own parts, more precision mechanisms at Exotic */
+    static List<SetPart> vision(int age){return List.of(new SetPart("minecraft:quartz",4),new SetPart("minecraft:redstone",8),new SetPart("minecraft:amethyst_shard",4),new SetPart("create:precision_mechanism",age>=5?2:1));}
 }

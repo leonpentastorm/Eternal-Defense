@@ -9,8 +9,15 @@ public final class GuideActions {
         Map.entry("key.tacz.fire_select.desc","Fire mode"),Map.entry("key.tacz.melee.desc","Melee"),Map.entry("key.tacz.inspect.desc","Inspect"),
         Map.entry("key.tacz.refit.desc","Attachments"),Map.entry("key.tacz.crawl.desc","Prone"),Map.entry("key.tacz.interact.desc","Interact"),
         Map.entry("key.tacz.zoom.desc","Scope zoom"),Map.entry("key.tacz.open_config.desc","Gun settings"),
-        Map.entry("key.tactical.leanleft","Lean left"),Map.entry("key.tactical.leanright","Lean right"));
-    public static boolean relevant(String name){return name.startsWith("key.tacz.")||name.startsWith("key.lrtactical.")||name.startsWith("key.tactical.");}
+        Map.entry("key.tactical.leanleft","Lean left"),Map.entry("key.tactical.leanright","Lean right"),
+        Map.entry("key.lrtactical.sp_attack.desc","Special attack"),Map.entry("key.taczadditions.toggle_laser","Toggle laser"),Map.entry("key.taczmagazines.unload_mag","Unload magazine"));
+    /** Each kind of key and the mod it belongs to: listed only while that mod is loaded */
+    private static final Map<String,String> OWNERS=Map.of("key.tacz.","tacz","key.lrtactical.","lrtactical","key.tactical.","tacticalmovement","key.taczadditions.","taczadditions","key.taczmagazines.","taczmagazines");
+    /** The plain attack button is not a gun control */
+    private static final Set<String> LEFT_OUT=Set.of("key.lrtactical.normal_attack.desc");
+    public static String owner(String name){for(var e:OWNERS.entrySet())if(name.startsWith(e.getKey()))return e.getValue();return null;}
+    public static boolean relevant(String name){return owner(name)!=null&&!LEFT_OUT.contains(name);}
+    public static boolean relevant(String name,java.util.function.Predicate<String> loaded){return relevant(name)&&loaded.test(owner(name));}
     public static String label(String name,String translated,boolean jammed){return name.equals("key.tacz.inspect.desc")&&jammed?"Clear jam":LABELS.getOrDefault(name,translated);}
     public record Binding(String name,String key,String identity,boolean unbound,String translated){}
     public record Row(String name,String key,String label,boolean unbound,boolean conflict){}

@@ -38,13 +38,13 @@ final class CraftBalance {
         return overrides=Map.copyOf(all);
     }
     /** Reads the Age lines and the balance file again (the test command); the damage figures are counted anew */
-    static int reload(){settings=null;overrides=null;countedFor=null;knownFor=null;known=null;POWER.clear();medians=null;peers=null;return overrides().size();}
+    static int reload(){settings=null;overrides=null;countedFor=null;knownFor=null;known=null;POWER.clear();medians=null;peers=null;ArmorBalance.reload();ArmorPlatform.reset();return overrides().size();}
     /** The guns counted in each Age's median (after medians()) */
     static Map<Integer,Integer> peers(){return peers==null?Map.of():peers;}
     private static void read(JsonObject root,Map<String,Integer> into){for(var e:root.entrySet())if(!e.getKey().startsWith("_")&&e.getValue().isJsonPrimitive())into.put(e.getKey(),Math.max(1,Math.min(5,e.getValue().getAsInt())));}
     /** The Age set by hand for any of these ids (item, gun, ammo or recipe id), or null */
     static Integer override(String... ids){var o=overrides();for(String id:ids)if(id!=null&&o.containsKey(id))return o.get(id);return null;}
-    private static JsonObject json(String path){
+    static JsonObject json(String path){
         try(var in=CraftBalance.class.getResourceAsStream(path)){return JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8)).getAsJsonObject();}
         catch(Exception e){throw new IllegalStateException("Cannot load "+path,e);}
     }

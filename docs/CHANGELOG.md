@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.12 — Armor priced by protection, Gun Guide add-on keys (2026-10-16, `dev`)
+
+After 1.1.11 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed, no new block or entity; still run the same version on client and server: a 1.1.11 client calls an armor piece's strength "damage"). Rules: GDD 1.1.12; tests: `docs/ROUND-1.1.12-TESTING.md`.
+
+* **Armor prices follow protection, like guns' damage** (owner: "make sure the armor have a formular that gauge their crafting value just like gungs"): a piece's score is how much armor a full set of it keeps against a 10-damage hit, as the game counts it, with a little extra for knockback resistance. It is compared with the median of its Age: stronger pieces cost more and weaker ones less (a quarter to one and a half times a typical piece), and one far above its Age (1.4 times) also needs the guns' rare part (diamond, emerald or blaze rods). The armor table says "Strong: N% of its Age's usual protection". Every number is in `balance.json` and `Economy`.
+* **Frontier dearer, Advanced and Exotic cheaper** (owner: "Increase age 1 cost and lower age 4 and 5 cost"): a typical Frontier set now costs 24 iron sheets (a vanilla iron set's iron), 16 leather and 8 wool (was 7, 14, 14); World Wars rises a little so it stays above Frontier; Modern is about the same; Advanced and Exotic lose about a third (Exotic: 28 plating, 4 netherite scrap, 6 resonance coils for a set, was 35, 7, 14). Exotic optics take 2 precision mechanisms (4). In the owner's armor mods: Frontier 3 times its old total, World Wars 1.7, Modern 0.95, Advanced 0.71, Exotic 0.65.
+* **Chestplates are vests**: worn pieces named `..._chestplate_...` and plate carriers were listed under Armor plates; they are vests now.
+* **Gun Guide** (owner: "add keybind from tacz addtion, tacz tactical movement and tacz magazine ... only shows up when these mods are install, and also remove normal attack"): the card lists TaCZ Additions' Toggle laser, TaCZ Magazines' Unload magazine and Tactical Movement's Lean left and Lean right, each only while its mod is loaded; LesRaisins' Normal Attack is gone; its Special Attack reads "Special attack". The longest label in the card is no longer cut short.
+
 ## 1.1.11 — Tower defense raiders (2026-10-16, `dev`)
 
 After 1.1.10 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed; a new block and entity type mean 1.1.10 and 1.1.11 clients and servers cannot join each other). Rules: GDD 1.1.11; tests: `docs/ROUND-1.1.11-TESTING.md`.

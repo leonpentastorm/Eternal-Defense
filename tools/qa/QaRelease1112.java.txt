@@ -1,0 +1,306 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.12: armor prices by protection, and the gun panel's add-on keys. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1112 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();if(!(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay())){CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static boolean said(String s){synchronized(CHAT){return CHAT.stream().anyMatch(b->b.contains(s));}}
+    static String saidLine(String s){synchronized(CHAT){return CHAT.stream().filter(b->b.contains(s)).findFirst().orElse("");}}
+    // One frame's texts (Ui records them)
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static boolean drawnHas(String part){for(var d:lastFrame)if(d.text()!=null&&d.text().contains(part))return true;return false;}
+    static String drawn(){return lastFrame.stream().map(Ui.Drawn::text).filter(Objects::nonNull).toList().toString();}
+    static String cut(){return lastFrame.stream().filter(Ui.Drawn::cut).map(Ui.Drawn::text).toList().toString();}
+    /** The server's last answer cleared from the screen's message strip (a long one is cut on purpose) */
+    static void quiet(){if(mc().screen instanceof BeaconClient.PanelScreen p)p.message="";}
+    /** Every button's label fits it */
+    static String buttonsCut(){var s=mc().screen;var out=new ArrayList<String>();if(s==null)return "[]";var font=mc().font;
+        for(var c:s.children())if(c instanceof Ui.UiButton b&&b.visible&&font.width(b.getMessage())>b.getWidth()-10-(b.look==Ui.Look.TOGGLE?36:0))out.add(b.getMessage().getString()+" ("+font.width(b.getMessage())+" in "+b.getWidth()+")");return out.toString();}
+
+    // What each kill drops (counted after every other listener), and the blasts
+    static final Map<String,Integer> KILLS=new java.util.concurrent.ConcurrentHashMap<>(),ARDENT=new java.util.concurrent.ConcurrentHashMap<>();
+    static final List<String> ELITE_DROPS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void drops(net.minecraftforge.event.entity.living.LivingDropsEvent e){
+        if(e.getEntity().level().isClientSide)return;
+        int n=0;for(var it:e.getDrops())if(it.getItem().is(EternalDefense.ARDENT_ENERGY.get()))n+=it.getItem().getCount();
+        var tag=e.getEntity().getPersistentData();boolean raider=tag.getBoolean("eternalRaider");var kind=Elites.kind(e.getEntity());
+        String group=kind!=null?"elite":raider?"marked":e.getEntity().getType()==EntityType.WITHER?"boss":"wild";
+        KILLS.merge(group,1,Integer::sum);ARDENT.merge(group,n,Integer::sum);
+        if(kind!=null)ELITE_DROPS.add(kind.id+" level "+tag.getInt(Elites.LEVEL)+" gen "+tag.getInt(Elites.GEN)+": "+n);
+    }
+    static final List<String> BLASTS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void blast(net.minecraftforge.event.level.ExplosionEvent.Start e){
+        if(e.getLevel().isClientSide)return;var src=e.getExplosion().getDirectSourceEntity();
+        BLASTS.add(src==null?"none":src instanceof net.minecraft.world.entity.projectile.AbstractArrow?"arrow":Elites.kind(src)!=null?"elite:"+Elites.kind(src).id:BuiltInRegistries.ENTITY_TYPE.getKey(src.getType()).getPath());
+    }
+    static long blasts(String kind){synchronized(BLASTS){return BLASTS.stream().filter(kind::equals).count();}}
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1112",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1112",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(id));}
+    static ItemStack st(Item i,int n){return new ItemStack(i,n);}
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){if(y>sy+1)srv(()->{var p=BlockPos.containing(x,y-1,z);if(sl().getBlockState(p).isAir())sl().setBlockAndUpdate(p,net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());});double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void setField(Object o,String name,Object value){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);f.set(o,value);return;}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static void hover(double guiX,double guiY){
+        try{var w=mc().getWindow();var handler=mc().mouseHandler;double kx=w.getScreenWidth()/(double)w.getGuiScaledWidth(),ky=w.getScreenHeight()/(double)w.getGuiScaledHeight();
+            var fx=net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");fx.setAccessible(true);fx.setDouble(handler,guiX*kx);
+            var fy=net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");fy.setAccessible(true);fy.setDouble(handler,guiY*ky);}catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    static void hoverOn(net.minecraft.client.gui.components.AbstractWidget b){hover(b.getX()+b.getWidth()/2.0,b.getY()+b.getHeight()/2.0);}
+    static CompoundTag clientState(){return (CompoundTag)staticField(BeaconClient.class,"state");}
+    static void sync(){srv(()->BeaconNetwork.sendState(sp(),"","",""));}
+    static BeaconClient.ControlScreen screen(){return mc().screen instanceof BeaconClient.ControlScreen s?s:null;}
+    static net.minecraft.client.gui.components.Button labelled(String text){var s=mc().screen;if(s==null)return null;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(text))return b;return null;}
+    static void press(net.minecraft.client.gui.components.Button b){if(b==null)throw new IllegalStateException("no such button");b.onPress();}
+    static String message(){return mc().screen instanceof BeaconClient.PanelScreen p?p.message:"";}
+    static List<Mob> raiders(){var d=cd();var out=new ArrayList<Mob>();for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m&&m.isAlive())out.add(m);return out;}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();for(var e:sl().getEntitiesOfClass(ItemEntity.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))e.discard();}
+    static void kill(net.minecraft.world.entity.LivingEntity m){m.invulnerableTime=0;m.hurt(sl().damageSources().playerAttack(sp()),100000);}
+    static String names(List<String> l){return String.join(", ",l);}
+    static int ardentIn(List<CompoundTag> tags){int n=0;for(var t:tags){var s=ItemStack.of(t);if(s.is(EternalDefense.ARDENT_ENERGY.get()))n+=s.getCount();}return n;}
+
+    // The places: B the beacon, ARENA the staged raid (outside the zone), T the weapon table
+    static BlockPos B,ARENA,T;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);ARENA=new BlockPos(sx+40,sy,sz+40);T=B.offset(0,0,7);}
+    static void world(){srv(()->{
+        var rules=sl().getGameRules();rules.getRule(GameRules.RULE_DAYLIGHT).set(false,server());rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());sl().setDayTime(6000);
+        rules.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());rules.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+        clearMobs();sp().getAbilities().invulnerable=true;sp().onUpdateAbilities();
+        var d=cd();d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+        sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+        mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;
+    }
+
+    // Commands typed by the player, and the lines the server sent back since
+    static int mark;
+    static void cmd(String c){mark=CHAT.size();log("QA_CMD /{}",c);mc().player.connection.sendCommand(c);}
+    static List<String> replies(){synchronized(CHAT){return new ArrayList<>(CHAT.subList(Math.min(mark,CHAT.size()),CHAT.size()));}}
+    static String reply(String part){for(var s:replies())if(s.contains(part))return s;return null;}
+    static String all(){return String.join(" | ",replies());}
+    static Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob subject(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m?m:null;}
+    static final float[] SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
+    static final List<String> GIANT_REPLIES=new ArrayList<>();
+    /** The ring of stone around the smash test: 15 x 15, 7 high, one thick */
+    static List<BlockPos> ring(BlockPos c){var out=new ArrayList<BlockPos>();for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++)if(Math.max(Math.abs(x),Math.abs(z))==7)for(int y=0;y<7;y++)out.add(c.offset(x,y,z));return out;}
+    static BlockPos RING,STEP;static int ringBlocks,level;
+    static String pct(double v){return String.format(Locale.ROOT,"%.1f%%",v*100);}
+
+
+    static int snapStart=-1,snapTicks=-1;static double worstTick;static boolean watching;
+    @SubscribeEvent public static void serverTick(TickEvent.ServerTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||!watching||server()==null)return;var d=cd();
+        if(d.phase.equals("snapshot")){if(snapStart<0)snapStart=server().getTickCount();worstTick=Math.max(worstTick,server().getAverageTickTime());}
+        else if(snapStart>=0&&snapTicks<0)snapTicks=server().getTickCount()-snapStart;
+    }
+
+    // Rough worth of each material in iron ingots, to compare prices
+    static final Map<String,Double> WORTH=new HashMap<>(Map.ofEntries(Map.entry("create:iron_sheet",1.0),Map.entry("minecraft:leather",.3),Map.entry("minecraft:white_wool",.1),Map.entry("create:andesite_alloy",.3),
+        Map.entry("eternal_defense:reinforced_plating",6.0),Map.entry("create:precision_mechanism",4.0),Map.entry("minecraft:netherite_scrap",12.0),Map.entry("eternal_defense:resonance_coil",2.5),
+        Map.entry("minecraft:diamond",8.0),Map.entry("minecraft:emerald",8.0),Map.entry("minecraft:blaze_rod",3.0),Map.entry("minecraft:quartz",.5),Map.entry("minecraft:redstone",.2),Map.entry("minecraft:amethyst_shard",.5)));
+    static String costText(WeaponPlatform.Cost c){var items=c.ingredient().getItems();return (items.length==0?"?":BuiltInRegistries.ITEM.getKey(items[0].getItem()).toString())+" x"+c.count();}
+    static double worth(List<String> costs){double w=0;for(var c:costs){int x=c.lastIndexOf(" x");w+=WORTH.getOrDefault(c.substring(0,x),1.0)*Integer.parseInt(c.substring(x+2));}return w;}
+    static List<String> costs(WeaponPlatform.Entry e){try{return ArmorPlatform.costs(e).stream().map(QaRelease1112::costText).toList();}catch(ReflectiveOperationException ex){return List.of();}}
+    static int count(List<String> costs,String id){for(var c:costs)if(c.startsWith(id+" x"))return Integer.parseInt(c.substring(c.lastIndexOf(" x")+2));return 0;}
+    /** The 1.1.11 prices of the same gear (the earlier dump) */
+    static Map<String,List<String>> OLD=new HashMap<>();static Map<String,Integer> OLD_AGE=new HashMap<>();
+    static void readOld(){try{for(var line:Files.readAllLines(java.nio.file.Path.of("armor-dump-1111.jsonl"))){var o=com.google.gson.JsonParser.parseString(line).getAsJsonObject();if(!o.get("kind").getAsString().equals("armor"))continue;var l=new ArrayList<String>();o.getAsJsonArray("costs").forEach(x->l.add(x.getAsString()));OLD.put(o.get("id").getAsString(),l);OLD_AGE.put(o.get("id").getAsString(),o.get("age").getAsInt());}}catch(Exception ex){log("QA_NOTE no earlier dump {}",ex.toString());}}
+    static WeaponPlatform.Entry entry(String id){return ArmorPlatform.fabrications().stream().filter(e->e.gate().id().equals(id)).findFirst().orElse(null);}
+    static ItemStack gunStack(){var item=BuiltInRegistries.ITEM.get(new ResourceLocation("tacz:modern_kinetic_gun"));var gun=new ItemStack(item);try{item.getClass().getMethod("setGunId",ItemStack.class,ResourceLocation.class).invoke(item,gun,new ResourceLocation("tacz:ak47"));}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}return gun;}
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(20,()->{world();readOld();},"world");
+        // 1. Armor prices by protection
+        step(5,()->{String r=srvGet(()->{
+                var list=ArmorPlatform.fabrications();int plates=0,wornPlates=0;var out=new ArrayList<String>();
+                for(var e:list){var s=e.output();String slot=ArmorBalance.slot(s);if(ArmorPlatform.type(s).equals("plates")){plates++;if(slot!=null)wornPlates++;}
+                    var f=(ArmorPlatform.Fabrication)e.recipe();out.add("{\"id\":\""+e.gate().id()+"\",\"age\":"+e.gate().age()+",\"type\":\""+ArmorPlatform.type(s)+"\",\"slot\":\""+slot+"\",\"score\":"+String.format(Locale.ROOT,"%.2f",slot==null?0:ArmorBalance.score(s))+",\"ratio\":"+String.format(Locale.ROOT,"%.3f",f.ratio())+",\"costs\":"+costs(e).stream().map(c->"\""+c+"\"").toList()+"}");}
+                try{Files.write(java.nio.file.Path.of("armor-dump-1112.jsonl"),out);}catch(Exception ex){throw new IllegalStateException(ex);}
+                return list.size()+" "+plates+" "+wornPlates+" "+OLD.size();});
+            note("ARMOR {}",r);var p=r.split(" ");
+            check("the armor table lists the same gear as 1.1.11",p[0].equals(p[3])&&!p[0].equals("0"),r);
+            check("a worn chestplate_ piece or plate carrier is a vest, not an armor plate",p[2].equals("0")&&!p[1].equals("0"),"plates "+p[1]+", worn among them "+p[2]);},"armor list");
+        step(5,()->{String r=srvGet(()->{
+                double[] now=new double[6],before=new double[6];int[] n=new int[6];var sb=new StringBuilder();
+                for(var e:ArmorPlatform.fabrications()){var old=OLD.get(e.gate().id());if(old==null)continue;int a=e.gate().age();now[a]+=worth(costs(e));before[a]+=worth(old);n[a]++;}
+                for(int a=1;a<=5;a++)sb.append(String.format(Locale.ROOT," %d:%d pieces %.0f->%.0f (%.0f%%)",a,n[a],before[a],now[a],100*now[a]/Math.max(1,before[a])));
+                return sb.toString().trim();});
+            note("AGE TOTALS {}",r);
+            var m=java.util.regex.Pattern.compile("(\\d):\\d+ pieces (\\d+)->(\\d+)").matcher(r);var ratio=new double[6];while(m.find())ratio[Integer.parseInt(m.group(1))]=Double.parseDouble(m.group(3))/Math.max(1,Double.parseDouble(m.group(2)));
+            check("Frontier armor costs more than in 1.1.11",ratio[1]>1.3,r);
+            check("Advanced armor costs less",ratio[4]>0&&ratio[4]<.85,r);
+            check("Exotic armor costs less",ratio[5]>0&&ratio[5]<.85,r);},"Age totals against 1.1.11");
+        step(5,()->{String r=srvGet(()->{
+                var bad=new ArrayList<String>();int pairs=0;
+                var by=new HashMap<String,List<WeaponPlatform.Entry>>();
+                for(var e:ArmorPlatform.fabrications()){String slot=ArmorBalance.slot(e.output());if(slot!=null)by.computeIfAbsent(e.gate().age()+slot,k->new ArrayList<>()).add(e);}
+                for(var list:by.values()){list.sort(Comparator.comparingDouble(e->ArmorBalance.score(e.output())));
+                    for(int i=1;i<list.size();i++){var a=list.get(i-1);var b=list.get(i);if(ArmorBalance.score(b.output())-ArmorBalance.score(a.output())<.01)continue;pairs++;
+                        if(worth(costs(b))+.001<worth(costs(a)))bad.add(a.gate().id()+">"+b.gate().id());}}
+                return pairs+" "+bad.size()+" "+bad.stream().limit(5).toList();});
+            note("ORDER {}",r);check("within an Age and slot, a better protecting piece never costs less",r.split(" ")[1].equals("0")&&!r.startsWith("0 "),r);},"price follows protection");
+        step(5,()->{String r=srvGet(()->{
+                var boots=entry("lrarmor:scout_boots");var uniform=entry("fracturepoint:ratnik_uniform");var vest=entry("fracturepoint:mashinegunner_ru_chestplate");
+                if(boots==null||uniform==null||vest==null)return "missing";
+                var b=costs(boots);var u=costs(uniform);var v=costs(vest);
+                return b.get(0)+" | "+boots.gate().age()+" "+b+" | "+uniform.gate().age()+" "+u+" | "+vest.gate().age()+" "+v+" | old "+OLD.get("fracturepoint:mashinegunner_ru_chestplate");});
+            note("PIECES {}",r);
+            check("Frontier scout boots, as strong as iron boots among bare-bones gear, need a diamond first",r.startsWith("minecraft:diamond x1"),r);
+            String[] parts=r.split(" \\| ");
+            check("an Exotic uniform that gives 1 armor costs little and no netherite",parts.length>2&&!parts[2].contains("netherite")&&worth(java.util.Arrays.stream(parts[2].replaceAll("^\\d \\[|\\]$","").split(", ")).toList())<20,parts.length>2?parts[2]:r);
+            check("a typical Exotic vest costs less than in 1.1.11",parts.length>4&&worth(java.util.Arrays.stream(parts[3].replaceAll("^\\d \\[|\\]$","").split(", ")).toList())<.8*worth(OLD.getOrDefault("fracturepoint:mashinegunner_ru_chestplate",List.of("minecraft:diamond x1000"))),parts.length>3?parts[3]:r);},"single pieces");
+        // 2. A real craft in Survival at an armor table
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.ARMOR_PLATFORM.get()));inv.selected=0;inv.setChanged();}),"hold an armor table");
+        step(5,()->{mc().player.getInventory().selected=0;look(T.getX()+.5,sy,T.getZ()-3.5,T.getX()+.5,sy-1,T.getZ()+.5);},"in front of its spot");
+        step(10,()->click(T.below(),Direction.UP),"place it (a real right-click)");
+        step(10,()->{BlockPos at=srvGet(()->{for(var p:BlockPos.betweenClosed(T.offset(-2,-1,-2),T.offset(2,3,2)))if(sl().getBlockState(p).getBlock() instanceof WeaponPlatform.Station)return DefenseStructures.anchor(sl(),p.immutable());return null;});
+            check("the armor table stands",at!=null,String.valueOf(at));if(at!=null)T=at;},"armor table");
+        step(5,()->{String r=srvGet(()->{
+                var boots=entry("lrarmor:scout_boots");if(boots==null)return "missing";
+                sp().setGameMode(GameType.SURVIVAL);var inv=sp().getInventory();inv.clearContent();
+                try{for(var c:ArmorPlatform.costs(boots)){var items=c.ingredient().getItems();inv.add(new ItemStack(items[0].getItem(),c.count()));}}catch(ReflectiveOperationException ex){return "unreadable";}
+                String said=WeaponPlatform.craft(sp(),T,boots.recipeId());
+                int bootsHeld=inv.countItem(boots.output().getItem());int left=0;for(int i=0;i<inv.getContainerSize();i++){var s=inv.getItem(i);if(!s.isEmpty()&&!s.is(boots.output().getItem()))left+=s.getCount();}
+                String again=WeaponPlatform.craft(sp(),T,boots.recipeId());int after=inv.countItem(boots.output().getItem());
+                return said+" | "+bootsHeld+" "+left+" | "+again+" | "+after;});
+            note("CRAFT {}",r);
+            check("in Survival the boots are crafted for exactly their new price",r.startsWith("Crafted 1 item(s). | 1 0 |"),r);
+            check("without the materials nothing is made",r.endsWith("| 1")&&!r.contains("| Crafted 1 item(s). | 2"),r);},"craft");
+        // 3. The table's screen: the strong boots
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);WeaponPlatform.open(sp(),T);}),"open the armor table");
+        until("the table's screen",60,()->mc().screen instanceof PlatformScreen,()->{});
+        step(10,()->{var s=mc().screen;((net.minecraft.client.gui.components.EditBox)field(s,"search")).setValue("scout_boots");
+            try{var m=PlatformScreen.class.getDeclaredMethod("browse",int.class);m.setAccessible(true);m.invoke(s,0);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}},"search the table for the scout boots");
+        step(20,()->{recordFrame=true;},"it is the first in the list, selected");
+        step(5,()->{var data=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=data.getList("recipes",Tag.TAG_COMPOUND);var row=rows.isEmpty()?new CompoundTag():rows.getCompound(0);
+            check("the server marks it strong for its Age",row.getInt("strength")>=140&&row.getString("recipe").contains("scout_boots"),row.getInt("strength")+"% "+row.getString("recipe"));
+            var first=row.getList("costs",Tag.TAG_COMPOUND);String top=first.isEmpty()?"none":ItemStack.of(first.getCompound(0).getCompound("item")).getItem().toString();
+            check("the diamond heads its cost list",top.equals("diamond"),top+" of "+first.size());
+            check("the table says it in protection, not damage",drawnHas("of its Age's usual protection")&&!drawnHas("usual damage"),drawn());shot("r1112_armor_strong");},"strength line");
+        step(5,()->{var s=mc().screen;((net.minecraft.client.gui.components.EditBox)field(s,"search")).setValue("mashinegunner_ru_chestplate");
+            try{var m=PlatformScreen.class.getDeclaredMethod("browse",int.class);m.setAccessible(true);m.invoke(s,0);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}},"an Exotic vest");
+        step(20,()->{recordFrame=true;},"its card");
+        step(5,()->{var data=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=data.getList("recipes",Tag.TAG_COMPOUND);var row=rows.isEmpty()?new CompoundTag():rows.getCompound(0);
+            var c=row.getList("costs",Tag.TAG_COMPOUND);var l=new ArrayList<String>();for(int i=0;i<c.size();i++)l.add(ItemStack.of(c.getCompound(i).getCompound("item")).getItem()+" x"+c.getCompound(i).getInt("count"));
+            note("VEST ROW {} {}",row.getString("recipe"),l);int plating=l.stream().filter(x->x.startsWith("reinforced_plating x")).mapToInt(x->Integer.parseInt(x.substring(x.indexOf(" x")+2))).sum();
+            check("the screen shows the vest's new price (it took 15 plating in 1.1.11)",row.getString("recipe").contains("mashinegunner_ru_chestplate")&&plating>0&&plating<15,l.toString());shot("r1112_armor_exotic");},"Exotic vest price");
+        step(5,()->mc().setScreen(null),"close");
+        // 4. The gun panel: add-on keys only with their mods, never Normal Attack
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.clearContent();inv.setItem(0,gunStack());inv.selected=0;inv.setChanged();}),"hold a gun");
+        step(140,()->mc().player.getInventory().selected=0,"the panel's first five seconds pass");
+        step(5,()->{
+            var ml=net.minecraftforge.fml.ModList.get();var names=new ArrayList<String>();
+            try{var relevant=Class.forName("dev.eternaldefense.gunguide.GuideActions").getMethod("relevant",String.class,java.util.function.Predicate.class);java.util.function.Predicate<String> loaded=ml::isLoaded;
+                for(var k:mc().options.keyMappings)if((Boolean)relevant.invoke(null,k.getName(),loaded))names.add(k.getName());}catch(ReflectiveOperationException ex){throw new IllegalStateException(ex);}
+            var all=Arrays.stream(mc().options.keyMappings).map(net.minecraft.client.KeyMapping::getName).toList();
+            note("PANEL KEYS {} | mods additions {} magazines {} movement {} lrtactical {}",names,ml.isLoaded("taczadditions"),ml.isLoaded("taczmagazines"),ml.isLoaded("tacticalmovement"),ml.isLoaded("lrtactical"));
+            check("TaCZ Additions' laser key is listed exactly when the mod is loaded",names.contains("key.taczadditions.toggle_laser")==ml.isLoaded("taczadditions"),String.valueOf(all.contains("key.taczadditions.toggle_laser")));
+            check("TaCZ Magazines' unload key is listed exactly when the mod is loaded",names.contains("key.taczmagazines.unload_mag")==ml.isLoaded("taczmagazines"),String.valueOf(all.contains("key.taczmagazines.unload_mag")));
+            check("Tactical Movement's lean keys are listed exactly when the mod is loaded",(names.contains("key.tactical.leanleft")&&names.contains("key.tactical.leanright"))==ml.isLoaded("tacticalmovement"),String.valueOf(all.contains("key.tactical.leanleft")));
+            check("Normal Attack is never listed",ml.isLoaded("lrtactical")&&all.contains("key.lrtactical.normal_attack.desc")&&!names.contains("key.lrtactical.normal_attack.desc"),names.toString());
+            check("TaCZ's own keys stay",names.contains("key.tacz.reload.desc")&&names.contains("key.tacz.shoot.desc"),names.toString());
+            try{var f=Class.forName("dev.eternaldefense.gunguide.GuideClient").getDeclaredField("STATE");f.setAccessible(true);var st=f.get(null);st.getClass().getMethod("press").invoke(st);note("PANEL {}",st.getClass().getMethod("mode").invoke(st));}catch(ReflectiveOperationException ex){throw new IllegalStateException(ex);}
+        },"panel keys");
+        step(20,()->shot(net.minecraftforge.fml.ModList.get().isLoaded("taczadditions")?"r1112_panel_addons":"r1112_panel_plain"),"the open panel");
+        step(10,()->{},"done");
+    }
+}

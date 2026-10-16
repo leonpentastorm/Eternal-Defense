@@ -22,5 +22,8 @@
   "gui.eternal_defense_gun_guide.action.open_config": "Gun settings",
   "gui.eternal_defense_gun_guide.action.leanleft": "Lean left",
   "gui.eternal_defense_gun_guide.action.leanright": "Lean right",
+  "gui.eternal_defense_gun_guide.action.sp_attack": "Special attack",
+  "gui.eternal_defense_gun_guide.action.toggle_laser": "Toggle laser",
+  "gui.eternal_defense_gun_guide.action.unload_mag": "Unload magazine",
   "gui.eternal_defense_gun_guide.action.clear_jam": "Clear jam"
 }

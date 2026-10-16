@@ -1,0 +1,52 @@
+# Run 5 (with TaCZ Additions, TaCZ Magazines, Tactical Movement)
+QA_CHECK PASS the armor table lists the same gear as 1.1.11 569 15 0 569
+QA_CHECK PASS a worn chestplate_ piece or plate carrier is a vest, not an armor plate plates 15, worn among them 0
+QA_NOTE AGE TOTALS 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS Frontier armor costs more than in 1.1.11 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS Advanced armor costs less 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS Exotic armor costs less 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS within an Age and slot, a better protecting piece never costs less 74 0 []
+QA_CHECK PASS Frontier scout boots, as strong as iron boots among bare-bones gear, need a diamond first minecraft:diamond x1 | 1 [minecraft:diamond x1, create:iron_sheet x6, minecraft:leather x4, minecraft:white_wool x2] | 5 [eternal_defense:reinforced_plating x2, create:precision_mechanism x1, eternal_defense:resonance_coil x1, create:andesite_alloy x1, minecraft:leather x1, minecraft:white_wool x1] | 5 [eternal_defense:reinforced_plating x9, create:precision_mechanism x2, minecraft:netherite_scrap x1, eternal_defense:resonance_coil x2, create:andesite_alloy x5, minecraft:leather x5, minecraft:white_wool x3] | old [minecraft:white_wool x6, minecraft:leather x6, eternal_defense:reinforced_plating x15, create:andesite_alloy x6, create:precision_mechanism x3, minecraft:netherite_scrap x3, eternal_defense:resonance_coil x6]
+QA_CHECK PASS an Exotic uniform that gives 1 armor costs little and no netherite 5 [eternal_defense:reinforced_plating x2, create:precision_mechanism x1, eternal_defense:resonance_coil x1, create:andesite_alloy x1, minecraft:leather x1, minecraft:white_wool x1]
+QA_CHECK PASS a typical Exotic vest costs less than in 1.1.11 5 [eternal_defense:reinforced_plating x9, create:precision_mechanism x2, minecraft:netherite_scrap x1, eternal_defense:resonance_coil x2, create:andesite_alloy x5, minecraft:leather x5, minecraft:white_wool x3]
+QA_CHECK PASS the armor table stands BlockPos{x=-3, y=-60, z=-5}
+QA_NOTE CRAFT Crafted 1 item(s). | 1 0 | Need 1 more Diamond. Nothing consumed. | 1
+QA_CHECK PASS in Survival the boots are crafted for exactly their new price Crafted 1 item(s). | 1 0 | Need 1 more Diamond. Nothing consumed. | 1
+QA_CHECK PASS without the materials nothing is made Crafted 1 item(s). | 1 0 | Need 1 more Diamond. Nothing consumed. | 1
+QA_CHECK PASS the server marks it strong for its Age 200% eternal_defense:armor/lrarmor/scout_boots
+QA_CHECK PASS the diamond heads its cost list diamond of 4
+QA_CHECK PASS the table says it in protection, not damage [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, No nearby table, ARMOR & GEAR, Age 1 | Frontier, Browsing armor & gear, 1-1 / 1, SCOUT-BOOTS, Age 1: Frontier, Creative: free purchases, Diamond, 1 / 1, Iron Sheet, 6 / 6, Leather, 4 / 4, White Wool, 2 / 2, Strong: 200% of its Age's usual protection, Age 1, SCOUT-BOOTS]
+QA_NOTE VEST ROW eternal_defense:armor/fracturepoint/mashinegunner_ru_chestplate [reinforced_plating x9, precision_mechanism x2, netherite_scrap x1, resonance_coil x2, andesite_alloy x5, leather x5, white_wool x3]
+QA_CHECK PASS the screen shows the vest's new price (it took 15 plating in 1.1.11) [reinforced_plating x9, precision_mechanism x2, netherite_scrap x1, resonance_coil x2, andesite_alloy x5, leather x5, white_wool x3]
+QA_NOTE PANEL KEYS [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc, key.taczmagazines.unload_mag, key.taczadditions.toggle_laser, key.tactical.leanright, key.tactical.leanleft] | mods additions true magazines true movement true lrtactical true
+QA_CHECK PASS TaCZ Additions' laser key is listed exactly when the mod is loaded true
+QA_CHECK PASS TaCZ Magazines' unload key is listed exactly when the mod is loaded true
+QA_CHECK PASS Tactical Movement's lean keys are listed exactly when the mod is loaded true
+QA_CHECK PASS Normal Attack is never listed [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc, key.taczmagazines.unload_mag, key.taczadditions.toggle_laser, key.tactical.leanright, key.tactical.leanleft]
+QA_CHECK PASS TaCZ's own keys stay [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc, key.taczmagazines.unload_mag, key.taczadditions.toggle_laser, key.tactical.leanright, key.tactical.leanleft]
+QA_DONE pass=21 fail=0
+
+# Run 4 (without them)
+QA_CHECK PASS the armor table lists the same gear as 1.1.11 569 15 0 569
+QA_CHECK PASS a worn chestplate_ piece or plate carrier is a vest, not an armor plate plates 15, worn among them 0
+QA_CHECK PASS Frontier armor costs more than in 1.1.11 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS Advanced armor costs less 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS Exotic armor costs less 1:96 pieces 239->736 (307%) 2:54 pieces 296->490 (166%) 3:94 pieces 3602->3425 (95%) 4:60 pieces 4844->3420 (71%) 5:265 pieces 24850->16254 (65%)
+QA_CHECK PASS within an Age and slot, a better protecting piece never costs less 74 0 []
+QA_CHECK PASS Frontier scout boots, as strong as iron boots among bare-bones gear, need a diamond first minecraft:diamond x1 | 1 [minecraft:diamond x1, create:iron_sheet x6, minecraft:leather x4, minecraft:white_wool x2] | 5 [eternal_defense:reinforced_plating x2, create:precision_mechanism x1, eternal_defense:resonance_coil x1, create:andesite_alloy x1, minecraft:leather x1, minecraft:white_wool x1] | 5 [eternal_defense:reinforced_plating x9, create:precision_mechanism x2, minecraft:netherite_scrap x1, eternal_defense:resonance_coil x2, create:andesite_alloy x5, minecraft:leather x5, minecraft:white_wool x3] | old [minecraft:white_wool x6, minecraft:leather x6, eternal_defense:reinforced_plating x15, create:andesite_alloy x6, create:precision_mechanism x3, minecraft:netherite_scrap x3, eternal_defense:resonance_coil x6]
+QA_CHECK PASS an Exotic uniform that gives 1 armor costs little and no netherite 5 [eternal_defense:reinforced_plating x2, create:precision_mechanism x1, eternal_defense:resonance_coil x1, create:andesite_alloy x1, minecraft:leather x1, minecraft:white_wool x1]
+QA_CHECK PASS a typical Exotic vest costs less than in 1.1.11 5 [eternal_defense:reinforced_plating x9, create:precision_mechanism x2, minecraft:netherite_scrap x1, eternal_defense:resonance_coil x2, create:andesite_alloy x5, minecraft:leather x5, minecraft:white_wool x3]
+QA_CHECK PASS the armor table stands BlockPos{x=2, y=-60, z=5}
+QA_CHECK PASS in Survival the boots are crafted for exactly their new price Crafted 1 item(s). | 1 0 | Need 1 more Diamond. Nothing consumed. | 1
+QA_CHECK PASS without the materials nothing is made Crafted 1 item(s). | 1 0 | Need 1 more Diamond. Nothing consumed. | 1
+QA_CHECK PASS the server marks it strong for its Age 200% eternal_defense:armor/lrarmor/scout_boots
+QA_CHECK PASS the diamond heads its cost list diamond of 4
+QA_CHECK PASS the table says it in protection, not damage [WEAPONS, No nearby table, AMMO, No nearby table, ATTACHMENTS, No nearby table, ARMOR & GEAR, Age 1 | Frontier, Browsing armor & gear, 1-1 / 1, SCOUT-BOOTS, Age 1: Frontier, Creative: free purchases, Diamond, 1 / 1, Iron Sheet, 6 / 6, Leather, 4 / 4, White Wool, 2 / 2, Strong: 200% of its Age's usual protection, Age 1, SCOUT-BOOTS]
+QA_CHECK PASS the screen shows the vest's new price (it took 15 plating in 1.1.11) [reinforced_plating x9, precision_mechanism x2, netherite_scrap x1, resonance_coil x2, andesite_alloy x5, leather x5, white_wool x3]
+QA_NOTE PANEL KEYS [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc] | mods additions false magazines false movement false lrtactical true
+QA_CHECK PASS TaCZ Additions' laser key is listed exactly when the mod is loaded false
+QA_CHECK PASS TaCZ Magazines' unload key is listed exactly when the mod is loaded false
+QA_CHECK PASS Tactical Movement's lean keys are listed exactly when the mod is loaded false
+QA_CHECK PASS Normal Attack is never listed [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc]
+QA_CHECK PASS TaCZ's own keys stay [key.tacz.inspect.desc, key.tacz.reload.desc, key.tacz.shoot.desc, key.tacz.interact.desc, key.tacz.fire_select.desc, key.tacz.aim.desc, key.tacz.crawl.desc, key.tacz.refit.desc, key.tacz.zoom.desc, key.tacz.melee.desc, key.tacz.open_config.desc, key.lrtactical.sp_attack.desc]
+QA_DONE pass=21 fail=0

@@ -13,7 +13,8 @@ public final class ArmorPlatform {
     static final List<String> TYPES=List.of("all","head","vest","legs","boots","pouches","plates","vision","medical","explosives","melee","materials","field");
     private static List<WeaponPlatform.Entry> nativeEntries;
     private static Map<String,String> names;
-    record Fabrication(List<WeaponPlatform.Cost> costs,String type){}
+    /** A piece's price and type, and how far above its Age's usual protection it is */
+    record Fabrication(List<WeaponPlatform.Cost> costs,String type,double ratio){}
     private static String name(ResourceLocation id,ItemStack stack){
         if(names==null){var all=new HashMap<String,String>();
             try(var in=ArmorPlatform.class.getResourceAsStream("/data/eternal_defense/armor_names.json")){
@@ -42,12 +43,11 @@ public final class ArmorPlatform {
     static boolean matches(String value,String... fragments){for(String s:fragments)if(value.contains(s))return true;return false;}
     static String type(ItemStack stack){
         String id=key(stack.getItem());var n=stack.getOrCreateTag();
-        if(matches(id,"armorplate","armor_plate","plate_","ceramic_tile","steel_plate"))return "plates";
+        if(!(stack.getItem() instanceof ArmorItem)&&matches(id,"armorplate","armor_plate","plate_","ceramic_tile","steel_plate"))return "plates";   // Worn pieces (a chestplate_ id, a plate carrier) are not plates
         if(stack.getItem().isEdible()||n.contains("ConsumableId")||matches(id,"medkit","bandage","antibiotic","syringe","medical","first_aid"))return "medical";
         if(n.contains("ThrowableId")||matches(id,"grenade","explosive","detonator","airstrike","rocket","c4"))return "explosives";
         if(matches(id,"backpack","pouch","rucksack","shoulderpad","bag","rig"))return "pouches";
         if(matches(id,"nvg","night_vision","thermal","digital_vision","nods","goggle"))return "vision";
-        if(matches(id,"armorplate","armor_plate","plate_","ceramic_tile","steel_plate"))return "plates";
         if(stack.getItem() instanceof ArmorItem a)return switch(a.getEquipmentSlot()){case HEAD->"head";case CHEST->"vest";case LEGS->"legs";case FEET->"boots";default->"field";};
         if(matches(id,"knife","bayonet","hammer","bat","katana","machete","axe","sledge","pitchfork","wrench","ironstick"))return "melee";
         if(matches(id,"fiber","kevlar","resin","rubber","cloth","webbing","thread","blend","compound","woven","sheet","composite","blade","handle"))return "materials";
@@ -68,35 +68,46 @@ public final class ArmorPlatform {
         }
         return switch(type){case "vision"->3;case "plates"->matches(id,"lite","light")?2:3;case "pouches"->matches(id,"tactical","squad","leader")?3:2;case "medical"->matches(id,"bandage")?1:3;case "explosives"->3;case "materials"->matches(id,"kevlar","polyethylene","polymer")?3:1;default->matches(id,"gas_mask_filter","filter")?2:1;};
     }
+    /** Supplies (the weapon table's Supplies tab) */
     private static List<WeaponPlatform.Cost> materials(ItemStack output,int age){
-        String type=type(output);var c=new ArrayList<WeaponPlatform.Cost>();
+        String type=type(output);
         if(type.equals("materials"))return matches(key(output.getItem()),"plate","metal","steel","blade","handle")?List.of(WeaponPlatform.cost("create:iron_sheet",2),WeaponPlatform.cost("minecraft:coal",1)):List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),4),WeaponPlatform.cost("minecraft:slime_ball",2));
         if(type.equals("medical"))return List.of(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),8),WeaponPlatform.cost(age>=3?"minecraft:golden_apple":"minecraft:honey_bottle",1));
         if(type.equals("explosives"))return List.of(WeaponPlatform.cost("minecraft:tnt",key(output.getItem()).contains("airstrike")?32:2),WeaponPlatform.cost("create:iron_sheet",4),WeaponPlatform.cost("minecraft:redstone",8),WeaponPlatform.cost("create:precision_mechanism",age>=4?2:1));
         if(type.equals("melee"))return List.of(WeaponPlatform.cost("create:iron_sheet",4),WeaponPlatform.cost("minecraft:stick",2),WeaponPlatform.cost("create:andesite_alloy",2));
-        if(type.equals("vision"))return List.of(WeaponPlatform.cost("minecraft:quartz",4),WeaponPlatform.cost("minecraft:redstone",8),WeaponPlatform.cost("minecraft:amethyst_shard",4),WeaponPlatform.cost("create:precision_mechanism",age>=5?4:1));
-        int scale=type.equals("vest")?3:type.equals("legs")?2:1;
-        c.add(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),2*scale));
-        c.add(WeaponPlatform.cost("minecraft:leather",2*scale));
-        c.add(WeaponPlatform.cost(age>=3?"eternal_defense:reinforced_plating":"create:iron_sheet",Math.max(1,age)*scale));
-        if(age>=2)c.add(WeaponPlatform.cost("create:andesite_alloy",2*scale));
-        if(age>=3)c.add(WeaponPlatform.cost("create:precision_mechanism",scale));
-        if(age>=4)c.add(WeaponPlatform.cost("minecraft:netherite_scrap",scale));
-        if(age>=5)c.add(WeaponPlatform.cost("eternal_defense:resonance_coil",2*scale));
+        var c=new ArrayList<WeaponPlatform.Cost>();
+        c.add(new WeaponPlatform.Cost(net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.tags.ItemTags.WOOL),2));
+        c.add(WeaponPlatform.cost("minecraft:leather",2));
+        c.add(WeaponPlatform.cost(age>=3?"eternal_defense:reinforced_plating":"create:iron_sheet",Math.max(1,age)));
+        if(age>=2)c.add(WeaponPlatform.cost("create:andesite_alloy",2));
+        if(age>=3)c.add(WeaponPlatform.cost("create:precision_mechanism",1));
+        if(age>=4)c.add(WeaponPlatform.cost("minecraft:netherite_scrap",1));
+        if(age>=5)c.add(WeaponPlatform.cost("eternal_defense:resonance_coil",2));
         return List.copyOf(c);
     }
     private static List<WeaponPlatform.Entry> allFabrications(){
         if(nativeEntries==null){
-            var all=new ArrayList<WeaponPlatform.Entry>();
+            // Every item's Age and protection first: a piece is priced against the median of its Age
+            record Piece(ResourceLocation id,ItemStack output,int age,String type,String slot,double score){}
+            var pieces=new ArrayList<Piece>();var scores=new ArrayList<double[]>();
             BuiltInRegistries.ITEM.forEach(item->{if(allowed(item)){
-                var id=BuiltInRegistries.ITEM.getKey(item);var output=new ItemStack(item);int age=age(output);
-                all.add(new WeaponPlatform.Entry(new ResourceLocation(EternalDefense.ID,"armor/"+id.getNamespace()+"/"+id.getPath()),new Fabrication(materials(output,age),type(output)),new WeaponPlatform.Gate(age,armor(output)?"armor":"supply",id.toString(),name(id,output)),output));
+                var output=new ItemStack(item);int age=age(output);String type=type(output),slot=ArmorBalance.slot(output);double score=slot==null?0:ArmorBalance.score(output);
+                pieces.add(new Piece(BuiltInRegistries.ITEM.getKey(item),output,age,type,slot,score));if(armor(output)&&slot!=null)scores.add(new double[]{age,score});
             }});
+            var medians=ArmorBalance.medians(scores,CraftBalance.settings().minPeers());
+            var all=new ArrayList<WeaponPlatform.Entry>();
+            for(var p:pieces){
+                boolean gear=armor(p.output());Double median=medians.get(p.age());
+                var fabrication=gear?new Fabrication(ArmorBalance.costs(p.type(),p.slot(),p.age(),p.score(),median),p.type(),ArmorBalance.ratio(p.slot(),p.score(),median)):new Fabrication(materials(p.output(),p.age()),p.type(),1);
+                all.add(new WeaponPlatform.Entry(new ResourceLocation(EternalDefense.ID,"armor/"+p.id().getNamespace()+"/"+p.id().getPath()),fabrication,new WeaponPlatform.Gate(p.age(),gear?"armor":"supply",p.id().toString(),name(p.id(),p.output())),p.output()));
+            }
             nativeEntries=List.copyOf(all);
             com.mojang.logging.LogUtils.getLogger().info("Armor Platform registered {} native tactical gear items",all.size());
         }
         return nativeEntries;
     }
+    /** The list and its prices are worked out again on next use */
+    static void reset(){nativeEntries=null;}
     static boolean armor(ItemStack stack){return Set.of("head","vest","legs","boots","pouches","plates","vision").contains(type(stack));}
     static List<WeaponPlatform.Entry> fabrications(){return allFabrications().stream().filter(e->armor(e.output())).toList();}
     static List<WeaponPlatform.Entry> supplies(String query){return filter(allFabrications().stream().filter(e->!armor(e.output())).toList(),query);}

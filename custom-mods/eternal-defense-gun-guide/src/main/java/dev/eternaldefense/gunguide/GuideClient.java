@@ -61,13 +61,17 @@ public final class GuideClient {
     private static final int PANEL=0xe6111e28,EDGE=0xff3d5c6d,CYAN=0xff5ae2df,CYAN_DIM=0xff2f8d8c,INK=0xffedf5f8,MUTED=0xff9fb3bc,
         ORANGE=0xffffa36c,RED=0xffed7369,CAP=0xff0b141b,DISABLED=0xff74888f;
     private static final int ROW=12;
+    /** Room between a label and its key cap, and the width of the conflict mark before a label */
+    private static final int LABEL_GAP=24,CONFLICT_MARK=9;
+    /** The header's margins and gaps around its title, Hide and key cap, less the card's side margins */
+    private static final int HEADER_ROOM=25;
 
     private static Component t(String key,Object... args){return Component.translatable("gui.eternal_defense_gun_guide."+key,args);}
     private static String keyName(KeyMapping mapping){return mapping.isUnbound()?t("unbound").getString():mapping.getTranslatedKeyMessage().getString();}
     /** Prefers the language file; keys of unrecognised tactical addons fall back to their own label. */
     private static Component action(GuideActions.Row row,boolean jammed){
         if(jammed&&row.name().equals("key.tacz.inspect.desc"))return t("action.clear_jam");
-        String id=row.name().replaceFirst("^key\\.(tacz|tactical|lrtactical)\\.","").replaceFirst("\\.desc$","");
+        String id=row.name().replaceFirst("^key\\.(tacz|tactical|lrtactical|taczadditions|taczmagazines)\\.","").replaceFirst("\\.desc$","");
         String key="gui.eternal_defense_gun_guide.action."+id;
         return net.minecraft.client.resources.language.I18n.exists(key)?Component.translatable(key):Component.literal(row.label());
     }
@@ -101,11 +105,11 @@ public final class GuideClient {
             int ix=(int)(w/iconScale)-iconWidth-8,iy=Math.max(8,(int)((h/iconScale-iconHeight)/2));
             g.pose().pushPose();g.pose().scale(iconScale,iconScale,1);badge(g,font,ix,iy,iconWidth,iconHeight,shortcut,accent);g.pose().popPose();return;
         }
-        var bindings=new ArrayList<GuideActions.Binding>();for(var k:mc.options.keyMappings)if(GuideActions.relevant(k.getName()))bindings.add(new GuideActions.Binding(k.getName(),k.getTranslatedKeyMessage().getString(),k.getKeyModifier().name()+":"+k.getKey().getName(),k.isUnbound(),Component.translatable(k.getName()).getString()));
+        var bindings=new ArrayList<GuideActions.Binding>();for(var k:mc.options.keyMappings)if(GuideActions.relevant(k.getName(),ModList.get()::isLoaded))bindings.add(new GuideActions.Binding(k.getName(),k.getTranslatedKeyMessage().getString(),k.getKeyModifier().name()+":"+k.getKey().getName(),k.isUnbound(),Component.translatable(k.getName()).getString()));
         var rows=GuideActions.rows(bindings,jammed);if(rows.isEmpty())return;
         boolean anyConflict=rows.stream().anyMatch(GuideActions.Row::conflict);
         float scale=GunGuide.SCALE.get().floatValue();int maxRows=Math.max(4,(int)((h-96)/scale/ROW)-3);int columns=(rows.size()+maxRows-1)/maxRows;int count=(rows.size()+columns-1)/columns;
-        int cell=0;for(var row:rows){String key=row.unbound()?t("unbound").getString():row.key();cell=Math.max(cell,font.width(action(row,jammed))+capWidth(font,key)+22);}cell=Math.min(230,Math.max(150,cell));
+        int cell=0;for(var row:rows){String key=row.unbound()?t("unbound").getString():row.key();cell=Math.max(cell,font.width(action(row,jammed))+capWidth(font,key)+LABEL_GAP+(row.conflict()?CONFLICT_MARK:0));}int header=font.width(jammed?t("title.jammed"):t("title"))+font.width(t("hide"))+capWidth(font,shortcut)+HEADER_ROOM;cell=Math.min(230,Math.max(Math.max(150,header),cell));
         // Shrink only when a tiny GUI window would otherwise clip the right-hand panel.
         scale=Math.min(scale,(w-16f)/(columns*cell+14));
         int width=columns*cell+14,height=26+count*ROW+(anyConflict?13:0)+4;
@@ -131,7 +135,7 @@ public final class GuideClient {
             boolean jamKey=jammed&&row.name().equals("key.tacz.inspect.desc");
             int capW=capWidth(font,keyText);
             Component label=action(row,jammed);
-            g.drawString(font,fit(font,label,cell-capW-24),rx+(row.conflict()?9:0),ry+2,jamKey?RED:ink,false);
+            g.drawString(font,fit(font,label,cell-capW-LABEL_GAP-(row.conflict()?CONFLICT_MARK:0)),rx+(row.conflict()?CONFLICT_MARK:0),ry+2,jamKey?RED:ink,false);
             if(row.conflict()){g.fill(rx,ry+1,rx+7,ry+9,ORANGE);g.drawString(font,"!",rx+2,ry+1,CAP,false);}
             cap(g,font,keyText,rx+cell-9,ry,jamKey?RED:row.conflict()?ORANGE:row.unbound()?0xff2a3a44:EDGE,jamKey?RED:ink);
         }

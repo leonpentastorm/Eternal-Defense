@@ -209,7 +209,7 @@ final class PlatformScreen extends BeaconClient.PanelScreen {
         }
         if(!upgrades&&chosen!=null&&chosen.getBoolean("magazine"))Ui.text(g,font,Ui.t("platform.magazine",chosen.getInt("capacity")),right,top+ph-(compact?74:83),Ui.MUTED,rw);
         // A locked gun's unlock lines take that row: the strength goes above them (no room in the compact view)
-        else if(!upgrades&&chosen!=null&&chosen.getInt("strength")>0&&!(locked&&compact))Ui.text(g,font,Ui.t("platform.strong",chosen.getInt("strength")),right,top+ph-(locked?108:compact?74:83),Ui.BRASS,rw);
+        else if(!upgrades&&chosen!=null&&chosen.getInt("strength")>0&&!(locked&&compact))Ui.text(g,font,Ui.t(armor()?"platform.strong_armor":"platform.strong",chosen.getInt("strength")),right,top+ph-(locked?108:compact?74:83),Ui.BRASS,rw);
         if(upgrades&&targetAge==2)Ui.text(g,font,!data.getBoolean("netherVisited")?Ui.t("platform.nether"):costs.size()>visible?Ui.t("platform.nether_scroll"):Ui.t("platform.nether_materials"),right,top+ph-70,Ui.ORANGE,rw);
         else if(costs.size()>visible&&!locked&&(!compact||chosen==null||!chosen.getBoolean("magazine")))Ui.text(g,font,Ui.t("platform.scroll",costs.size()),right,top+ph-70,Ui.MUTED,rw);
         if(ArmorPlatform.component(data.getString("kind"))&&!upgrades)Ui.text(g,font,Ui.t("platform.later",data.getInt("locked")),right,top+ph-33,Ui.MUTED,rw);

@@ -8,5 +8,10 @@
   "rare_by_age": {"1": "minecraft:diamond", "2": "minecraft:diamond", "3": "minecraft:emerald", "4": "minecraft:blaze_rod", "5": "minecraft:blaze_rod"},
   "per_unit_by_age": {"1": 1, "2": 1, "3": 2, "4": 3, "5": 4},
   "_attachments": "Attachments that raise a gun's damage are not sold at the attachment table, except those of the gun packs listed here (by id namespace).",
-  "damage_attachments_kept_from": ["tacz"]
+  "damage_attachments_kept_from": ["tacz"],
+  "_armor": "Armor prices by protection. A piece's score is the armor a full set of it keeps against one hit of armor_reference_hit damage, as the game counts it (0 to 20), with up to a tenth more for knockback resistance. It is compared with the median score of its Age as (score + armor_soften) / (median + armor_soften); the piece pays that share of its Age's set price, kept between armor_price_min and armor_price_max, and a rare part like a gun at outlier_from and above.",
+  "armor_reference_hit": 10,
+  "armor_soften": 5,
+  "armor_price_min": 0.25,
+  "armor_price_max": 1.5
 }
