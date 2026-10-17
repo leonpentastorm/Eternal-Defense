@@ -32,16 +32,21 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The defense kit drawn: wire spans, pole reach, turrets that aim, recoil and show a status light, and the turret and Defense Depot screens */
+/** The defense kit drawn: wire spans, pole reach, towers that aim, recoil, zap and show a status light, and the turret and Defense Depot screens */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class PowerClient {
     private PowerClient(){}
 
-    @SubscribeEvent public static void models(ModelEvent.RegisterAdditional e){for(var id:EternalDefense.TURRETS.keySet()){e.register(part(id,"head"));e.register(part(id,"gun"));}}
+    @SubscribeEvent public static void models(ModelEvent.RegisterAdditional e){
+        for(var line:new Turrets.Line[]{Turrets.Line.MG,Turrets.Line.SHOTGUN,Turrets.Line.FLAME})for(int mk=1;mk<=3;mk++){var id=Turrets.id(line,mk);e.register(part(id,"head"));e.register(part(id,"gun"));}
+        for(var m:TowerClient.MODELS)e.register(m);
+    }
     @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers e){
         e.registerBlockEntityRenderer(EternalDefense.POLE_ENTITY.get(),PoleRenderer::new);
         e.registerBlockEntityRenderer(EternalDefense.SHOCK_BOX_ENTITY.get(),BoxRenderer::new);
         e.registerBlockEntityRenderer(EternalDefense.TURRET_ENTITY.get(),TurretRenderer::new);
+        e.registerBlockEntityRenderer(EternalDefense.PUNJI_ENTITY.get(),TowerClient.PunjiRenderer::new);
+        e.registerEntityRenderer(EternalDefense.TURRET_SHELL.get(),TowerClient.ShellRenderer::new);
     }
     @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->{MenuScreens.register(EternalDefense.DEPOT_MENU.get(),DepotScreen::new);MenuScreens.register(EternalDefense.TURRET_MENU.get(),TurretScreen::new);});}
     static ResourceLocation part(String id,String part){return new ResourceLocation(EternalDefense.ID,"block/"+id+"_"+part);}
@@ -115,30 +120,38 @@ public final class PowerClient {
         TurretRenderer(BlockEntityRendererProvider.Context c){}
         @Override public void render(Turrets.TurretEntity be,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
             var level=be.getLevel();if(level==null||!(be.getBlockState().getBlock() instanceof Turrets.TurretBlock block))return;
-            var id=Turrets.id(block.line,block.mk);float[] p=pivots(block.mk);float now=level.getGameTime()+partial;
-            aim(be,level,now,p);
-            pose.pushPose();
-            pose.translate(p[0]/16,0,p[1]/16);pose.mulPose(Axis.YP.rotation(be.drawYaw));pose.translate(-p[0]/16,0,-p[1]/16);
-            SupportClient.draw(pose,buffers,RenderType.cutout(),part(id,"head"),light,overlay);
-            pose.translate(0,p[2]/16,p[3]/16);pose.mulPose(Axis.XP.rotationDegrees(be.drawPitch));pose.translate(0,-p[2]/16,-p[3]/16);
-            if(block.line!=Turrets.Line.FLAME){float kick=Math.max(0,1-(now-be.shotAt)/RECOIL_TICKS);pose.translate(0,0,kick*RECOIL);}
-            SupportClient.draw(pose,buffers,RenderType.cutout(),part(id,"gun"),light,overlay);
-            pose.popPose();
-            lamp(pose,buffers,block.mk,be.light(),now);
+            float now=level.getGameTime()+partial;
+            switch(block.line){
+                case TESLA->TowerClient.bolts(be,pose,buffers,now,partial);
+                case CANNON->TowerClient.cannon(be,pose,buffers,light,overlay,now);
+                case CURSE->{}
+                default->{
+                    var id=Turrets.id(block.line,block.mk);float[] p=pivots(block.mk);
+                    aim(be,level,now,p);
+                    pose.pushPose();
+                    pose.translate(p[0]/16,0,p[1]/16);pose.mulPose(Axis.YP.rotation(be.drawYaw));pose.translate(-p[0]/16,0,-p[1]/16);
+                    SupportClient.draw(pose,buffers,RenderType.cutout(),part(id,"head"),light,overlay);
+                    pose.translate(0,p[2]/16,p[3]/16);pose.mulPose(Axis.XP.rotationDegrees(be.drawPitch));pose.translate(0,-p[2]/16,-p[3]/16);
+                    if(block.line!=Turrets.Line.FLAME){float kick=Math.max(0,1-(now-be.shotAt)/RECOIL_TICKS);pose.translate(0,0,kick*RECOIL);}
+                    SupportClient.draw(pose,buffers,RenderType.cutout(),part(id,"gun"),light,overlay);
+                    pose.popPose();
+                }
+            }
+            lamp(pose,buffers,TowerClient.lampAt(block.line,block.mk),be.light(),now);
         }
-        /** A small diamond lamp above the gun: steady when ready, pulsing when out of ammo or without power */
-        static void lamp(PoseStack pose,MultiBufferSource buffers,int mk,String state,float now){
-            int rgb=LIGHT.get(state);float pulse=state.equals("ready")?1:.55f+.45f*Mth.sin(now*.2f),c=mk>=3?1:.5f,y=LAMP_Y+.03f*Mth.sin(now*.08f),r=LAMP_R,h=LAMP_R*1.4f;
+        /** A small diamond lamp above the tower: steady when ready, pulsing when out of ammo or without power */
+        static void lamp(PoseStack pose,MultiBufferSource buffers,float[] at,String state,float now){
+            int rgb=LIGHT.get(state);float pulse=state.equals("ready")?1:.55f+.45f*Mth.sin(now*.2f),cx=at[0],cz=at[2],y=at[1]+.03f*Mth.sin(now*.08f),r=LAMP_R,h=LAMP_R*1.4f;
             float red=(rgb>>16&255)/255f*pulse,green=(rgb>>8&255)/255f*pulse,blue=(rgb&255)/255f*pulse;
             var vc=buffers.getBuffer(RenderType.debugQuads());var m=pose.last().pose();
             float[][] ring={{r,0},{0,r},{-r,0},{0,-r}};
             for(int i=0;i<4;i++){
                 float[] a=ring[i],b=ring[(i+1)%4];
                 for(int up=0;up<2;up++){float tip=up==0?h:-h,shade=(up==0?1:.7f)*(i%2==0?1:.85f);
-                    vc.vertex(m,c,y+tip,c).color(red*shade,green*shade,blue*shade,.95f).endVertex();
-                    vc.vertex(m,c+a[0],y,c+a[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
-                    vc.vertex(m,c+b[0],y,c+b[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
-                    vc.vertex(m,c,y+tip,c).color(red*shade,green*shade,blue*shade,.95f).endVertex();}
+                    vc.vertex(m,cx,y+tip,cz).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,cx+a[0],y,cz+a[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,cx+b[0],y,cz+b[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,cx,y+tip,cz).color(red*shade,green*shade,blue*shade,.95f).endVertex();}
             }
         }
         /** Swings toward the target the server named; an unpowered gun droops */
@@ -153,7 +166,8 @@ public final class PowerClient {
             be.drawYaw+=Mth.wrapDegrees((float)Math.toDegrees(yaw-be.drawYaw))*(float)Math.PI/180*k;
             be.drawPitch+=(pitch-be.drawPitch)*k;
         }
-        @Override public boolean shouldRenderOffScreen(Turrets.TurretEntity be){return false;}
+        /** A tesla's bolts and the cannon's raised barrel reach past the tower's own blocks */
+        @Override public boolean shouldRenderOffScreen(Turrets.TurretEntity be){return be.getBlockState().getBlock() instanceof Turrets.TurretBlock b&&(b.line==Turrets.Line.TESLA||b.line==Turrets.Line.CANNON);}
     }
 
     /** A pole's reach drawn as see-through walls and an outline: for every pole while defense gear is in hand, for a pole set to show it, and where a pole in hand would stand */
@@ -263,7 +277,7 @@ public final class PowerClient {
         private ItemStack ammo(){return new ItemStack(Turrets.ammo(menu.line));}
         @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
             var s=Turrets.stats(menu.line,menu.mk);var light=light();int accent=argb(light),loaded=menu.loaded.get(),x=leftPos+8,y=topPos+CARD_Y;
-            Ui.panel(g,leftPos,topPos,W,H);Ui.header(g,font,leftPos,topPos,W,title,Ui.t("turret.screen.subtitle",menu.mk));
+            Ui.panel(g,leftPos,topPos,W,H);Ui.header(g,font,leftPos,topPos,W,title,menu.line.marks>1?Ui.t("turret.screen.subtitle",menu.mk):Ui.t("turret.screen.subtitle_single"));
             Ui.card(g,x,y,160,CARD_H,accent);
             switch(light){case "ready"->Ui.check(g,x+8,y+6,accent);case "empty"->Ui.alert(g,x+9,y+5,accent);default->Ui.cross(g,x+8,y+6,accent);}
             Ui.text(g,font,Ui.t("turret.screen."+light),x+18,y+5,accent,138);

@@ -157,7 +157,7 @@ public final class EternalDefense {
     public static final RegistryObject<Item> SUPPLY_FLARE=ITEMS.register("support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.SUPPLY)),RETURN_FLARE=ITEMS.register("return_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.RETURN)),FIRE_FLARE=ITEMS.register("fire_support_flare",()->new SupportFlares.FlareItem(SupportCalls.Kind.FIRE));
     public static final RegistryObject<Item> RADIO=ITEMS.register("handheld_radio",HandheldRadio.RadioItem::new);
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<HandheldRadio.RadioMenu>> RADIO_MENU=MENUS.register("handheld_radio",()->net.minecraftforge.common.extensions.IForgeMenuType.create(HandheldRadio.RadioMenu::client));
-    // The defense kit: poles, wire, shock boxes, turrets, walls and the Defense Depot (the two dynamos are in the Create compat)
+    // The defense kit: poles, wire, shock boxes, towers, walls, traps, the spotlight and the Defense Depot (the two dynamos are in the Create compat)
     public static final RegistryObject<Block> STRUCTURE_PORT=BLOCKS.register("structure_port",DefenseStructures.Port::new);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<DefenseStructures.PortEntity>> PORT_ENTITY=ENTITIES.register("structure_port",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(DefenseStructures.PortEntity::new,STRUCTURE_PORT.get()).build(null));
     public static final RegistryObject<Block> POWER_POLE=kit("power_pole",PowerPoles.PoleBlock::new);
@@ -170,13 +170,16 @@ public final class EternalDefense {
     public static final java.util.Map<String,RegistryObject<Block>> TURRETS=turrets();
     private static java.util.Map<String,RegistryObject<Block>> turrets(){
         var out=new java.util.LinkedHashMap<String,RegistryObject<Block>>();
-        for(var line:Turrets.Line.values())for(int mk=1;mk<=3;mk++){int m=mk;String id=Turrets.id(line,mk);RegistryObject<Block> block=BLOCKS.register(id,()->new Turrets.TurretBlock(line,m));ITEMS.register(id,()->new Turrets.TurretItem(block.get(),line,m));out.put(id,block);}
+        for(var line:Turrets.Line.values())for(int mk=1;mk<=line.marks;mk++){int m=mk;String id=Turrets.id(line,mk);RegistryObject<Block> block=BLOCKS.register(id,()->Turrets.block(line,m));ITEMS.register(id,()->new Turrets.TurretItem(block.get(),line,m));out.put(id,block);}
         return java.util.Collections.unmodifiableMap(out);
     }
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<Turrets.TurretMenu>> TURRET_MENU=MENUS.register("turret",()->net.minecraftforge.common.extensions.IForgeMenuType.create(Turrets.TurretMenu::client));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<Turrets.TurretEntity>> TURRET_ENTITY=ENTITIES.register("turret",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(Turrets.TurretEntity::new,TURRETS.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
     public static final RegistryObject<Item> MG_AMMO=ITEMS.register("mg_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.MG)),SHOTGUN_AMMO=ITEMS.register("shotgun_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.SHOTGUN)),
-        FLAME_FUEL=ITEMS.register("flame_turret_fuel",()->new Turrets.AmmoItem(Turrets.Line.FLAME));
+        FLAME_FUEL=ITEMS.register("flame_turret_fuel",()->new Turrets.AmmoItem(Turrets.Line.FLAME)),CANNON_SHELLS=ITEMS.register("heavy_cannon_shell",()->new Turrets.AmmoItem(Turrets.Line.CANNON));
+    public static final RegistryObject<Block> PUNJI_TRAP=kit("punji_trap",PunjiTrap.TrapBlock::new),SPOTLIGHT=kit("spotlight",Spotlight.LightBlock::new);
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PunjiTrap.TrapEntity>> PUNJI_ENTITY=ENTITIES.register("punji_trap",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(PunjiTrap.TrapEntity::new,PUNJI_TRAP.get()).build(null));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<Spotlight.LightEntity>> SPOTLIGHT_ENTITY=ENTITIES.register("spotlight",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(Spotlight.LightEntity::new,SPOTLIGHT.get()).build(null));
     public static final RegistryObject<Block> DEFENSE_DEPOT=kit("defense_depot",DefenseDepot.DepotBlock::new);
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<DefenseDepot.DepotMenu>> DEPOT_MENU=MENUS.register("defense_depot",()->net.minecraftforge.common.extensions.IForgeMenuType.create(DefenseDepot.DepotMenu::client));
     private static RegistryObject<Block> kit(String id,java.util.function.Supplier<Block> block){RegistryObject<Block> out=BLOCKS.register(id,block);ITEMS.register(id,()->new PowerKit.KitItem(out.get(),id));return out;}
@@ -211,6 +214,8 @@ public final class EternalDefense {
     /** The box a Supply Catapult throws: only to be seen, never saved. */
     static final RegistryObject<EntityType<SupplyCatapult.ThrownSupply>> THROWN_SUPPLY=OBJECTIVES.register("thrown_supply",()->EntityType.Builder.<SupplyCatapult.ThrownSupply>of(SupplyCatapult.ThrownSupply::new,MobCategory.MISC).sized(.5f,.5f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(1).build(ID+":thrown_supply"));
     /** A Loadout Capsule falling under its parachute (see LoadoutCapsule) */
+    /** A Heavy Cannon shell in flight (see CannonShell) */
+    static final RegistryObject<EntityType<CannonShell>> TURRET_SHELL=OBJECTIVES.register("turret_shell",()->EntityType.Builder.<CannonShell>of(CannonShell::new,MobCategory.MISC).sized(.4f,.4f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(40).build(ID+":turret_shell"));
     public static final RegistryObject<EntityType<LoadoutCapsule.Drop>> CAPSULE_DROP=OBJECTIVES.register("loadout_capsule_drop",()->EntityType.Builder.<LoadoutCapsule.Drop>of(LoadoutCapsule.Drop::new,MobCategory.MISC).sized(.9f,2f).fireImmune().clientTrackingRange(10).updateInterval(3).build(ID+":loadout_capsule_drop"));
     private static int clock;
     public EternalDefense() {

@@ -31,9 +31,9 @@ final class TurretEffectsClient {
 
     /** A spent case thrown out of the side of each gun that fired (a red shell from a shotgun) */
     static void casing(Turrets.TurretEntity be){
-        if(!(be.getLevel() instanceof ClientLevel level)||!(be.getBlockState().getBlock() instanceof Turrets.TurretBlock block)||block.line==Turrets.Line.FLAME)return;
+        if(!(be.getLevel() instanceof ClientLevel level)||!(be.getBlockState().getBlock() instanceof Turrets.TurretBlock block)||block.line!=Turrets.Line.MG&&block.line!=Turrets.Line.SHOTGUN)return;
         var dir=facing(be.drawYaw,be.drawPitch);var side=right(be.drawYaw);var r=level.random;
-        var breech=Vec3.atLowerCornerOf(be.getBlockPos()).add(Turrets.middle(block.mk)).subtract(dir.scale(.1));
+        var breech=Vec3.atLowerCornerOf(be.getBlockPos()).add(Turrets.middle(block.line,block.mk)).subtract(dir.scale(.1));
         boolean shell=block.line==Turrets.Line.SHOTGUN;
         for(double gun:guns(block.mk)){
             var out=side.scale(gun<0?-1:1);var at=breech.add(side.scale(gun)).add(out.scale(.18)).add(0,.05,0);
@@ -61,7 +61,7 @@ final class TurretEffectsClient {
     /** Flames sent along the drawn aim, fast enough to reach about the jet's length before they burn out */
     static void jet(ClientLevel level,Turrets.TurretEntity be,Turrets.TurretBlock block){
         var s=Turrets.stats(block.line,block.mk);var dir=facing(be.drawYaw,be.drawPitch);var side=right(be.drawYaw);var r=level.random;
-        var nozzle=Vec3.atLowerCornerOf(be.getBlockPos()).add(Turrets.middle(block.mk)).add(dir.scale(block.mk>=3?.9:.6));
+        var nozzle=Vec3.atLowerCornerOf(be.getBlockPos()).add(Turrets.middle(block.line,block.mk)).add(dir.scale(block.mk>=3?.9:.6));
         double speed=s.range()/16.0,spread=s.spread()/s.range()*.5;
         for(double gun:guns(block.mk)){
             var from=nozzle.add(side.scale(gun));

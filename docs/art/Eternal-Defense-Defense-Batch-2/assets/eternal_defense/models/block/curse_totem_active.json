@@ -1,0 +1,264 @@
+{
+ "credit": "Eternal Defense - defense batch 2",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "eternal_defense:block/curse_totem_active",
+  "particle": "eternal_defense:block/curse_totem_active"
+ },
+ "elements": [
+  {
+   "name": "Gas_crown_x",
+   "from": [
+    0.5,
+    21.0,
+    7.99
+   ],
+   "to": [
+    15.5,
+    32.0,
+    8.01
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      0.0625,
+      3.8125,
+      2.8125
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      3.9375,
+      0.0625,
+      7.6875,
+      2.8125
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Gas_crown_z",
+   "from": [
+    7.99,
+    21.0,
+    0.5
+   ],
+   "to": [
+    8.01,
+    32.0,
+    15.5
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      7.8125,
+      0.0625,
+      11.5625,
+      2.8125
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      11.6875,
+      0.0625,
+      15.4375,
+      2.8125
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Gas_low_n",
+   "from": [
+    0.5,
+    0.5,
+    0.3
+   ],
+   "to": [
+    15.5,
+    7.0,
+    0.32
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      2.9375,
+      3.8125,
+      4.5625
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      3.9375,
+      2.9375,
+      7.6875,
+      4.5625
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Gas_low_s",
+   "from": [
+    0.5,
+    0.5,
+    15.68
+   ],
+   "to": [
+    15.5,
+    7.0,
+    15.7
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      7.8125,
+      2.9375,
+      11.5625,
+      4.5625
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      11.6875,
+      2.9375,
+      15.4375,
+      4.5625
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Gas_low_w",
+   "from": [
+    0.3,
+    0.5,
+    0.5
+   ],
+   "to": [
+    0.32,
+    7.0,
+    15.5
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      0.0625,
+      4.6875,
+      3.8125,
+      6.3125
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      3.9375,
+      4.6875,
+      7.6875,
+      6.3125
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Gas_low_e",
+   "from": [
+    15.68,
+    0.5,
+    0.5
+   ],
+   "to": [
+    15.7,
+    7.0,
+    15.5
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      7.8125,
+      4.6875,
+      11.5625,
+      6.3125
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      11.6875,
+      4.6875,
+      15.4375,
+      6.3125
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ],
+ "render_type": "minecraft:cutout"
+}

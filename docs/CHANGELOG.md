@@ -1,5 +1,18 @@
 # Change log
 
+## 1.1.23 — New towers: tesla coils, the Heavy Cannon, the Curse Gas Totem, punji traps and a spotlight (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.22 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet of the mod's channel changed); new blocks, items and an entity, so 1.1.22 and 1.1.23 do not mix. Rules: GDD 1.1.23 (Part M, 5.14); tests: `docs/ROUND-1.1.23-TESTING.md`. Art: the owner's "Defense Batch 2" models.
+
+* **Tesla Coil Turret Mk I, II and III.** No ammo. A bolt hits the nearest hostile mob in sight (10, 12 and 14 blocks) and jumps on to 3, 5 and 7 mobs, 15 percent weaker at each jump (6, 7 and 8 damage on the first). The coil's arcs glow while it has power; the bolts are drawn.
+* **Heavy Cannon.** One Mark, 2 x 2 blocks, the longest reach of any tower (40 blocks). A shell every 4 seconds bursts where it lands: 30 damage at the middle, 12 at the edge 4 blocks out, to hostile mobs only. It fires straight at mobs it can see and lobs its shells like a mortar over walls and hills at mobs it cannot see. New ammo: Heavy Cannon Shells (4 a crate). 512 coins, no upgrades.
+* **Curse Gas Totem.** No ammo. Drops a gas cloud on the biggest crowd it can see within 16 blocks every 2 seconds; mobs in it are slowed, poisoned and take 2 damage a second (undead are not poisoned but still gassed and slowed).
+* **Punji Spike Trap.** No power, no ammo. The first hostile mob that steps on it takes 20 damage; it stays sprung until the raid wave ends, or until you right-click it.
+* **Industrial Spotlight.** A work light from the same art pack: light level 15 while a powered pole reaches it.
+* **Same adaptation rule.** Tesla bolts count as lightning, shells as explosions, the curse gas and its poison as magic, punji stakes as spikes: raiders learn them wave by wave like every other trap (the curse's slowness shortens too).
+* **Prices.** Flame turrets now cost what the other turrets do (96, 192 and 384; were 128, 256 and 512); tesla coils the same; the Heavy Cannon 512; the totem 192; 4 crates of shells 48; 4 punji traps 32; the spotlight 24.
+* **Create recipes** (press in a basin): 4 Sandbags from 4 sand and 1 wool; 4 Barricades from 2 logs and 1 iron sheet; 4 Barbed Wire from 1 iron ingot and 2 iron nuggets; a crate of Heavy Cannon Shells from 2 cartridge cases, 4 propellant, 2 iron ingots and 1 gunpowder.
+
 ## 1.1.22 — Raiders reach the base sooner (2026-10-17, `feature/power-defense`)
 
 The update after 1.1.21 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.22 (Part B, Raids); tests: `docs/ROUND-1.1.22-TESTING.md`.

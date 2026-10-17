@@ -1,4 +1,4 @@
-"""Sound effects of the support cannon, the flares and the fire supports (original synthesis, mono Ogg Vorbis).
+"""Sound effects of the support cannon, the flares, the fire supports and the defense towers (original synthesis, mono Ogg Vorbis).
 
 Each function returns a mono numpy array at 44.1 kHz. The loud ones carry their own outdoor echo (delayed, darker copies)
 and a reverb tail, so a blast keeps rolling around the base. Run:
@@ -260,8 +260,61 @@ def starshell_pop():
     return finish(mono_reverb(out, 2.4, 0.35))
 
 
+def crackle(dur, rate, tau, lo=1800, hi=9000):
+    """Very short sparks of noise, thick at first and thinning out: an electric arc spitting."""
+    out = np.zeros(n_of(dur))
+    for _ in range(int(rate * dur)):
+        m = n_of(0.003 + 0.01 * S.RNG.random())
+        place(out, dur * S.RNG.random() * S.RNG.random(), bp(noise(m), lo, hi, 2) * decay(m, 0.003), 0.4 + 0.6 * S.RNG.random())
+    return out * np.exp(-t_of(len(out)) / tau)
+
+
+def tesla_zap():
+    """A tesla coil fires: a bright crack, a buzzing arc that wavers for a moment, and a crackle as it dies."""
+    S.seed(18)
+    n = n_of(0.75); t = t_of(n)
+    out = np.zeros(n)
+    m = n_of(0.05)
+    place(out, 0, hp(noise(m), 3000, 2) * decay(m, 0.012), 1.0)
+    env = np.minimum(1, t / 0.005) * np.where(t < 0.22, 1.0, np.exp(-(t - 0.22) / 0.09))
+    waver = lp(noise(n), 30, 2); waver = 1 + 0.4 * waver / (np.abs(waver).max() + 1e-9)
+    arc = bp(np.sign(np.sin(2 * np.pi * 118 * t)) + 0.6 * noise(n), 200, 5000, 2) * env * waver
+    place(out, 0, arc, 0.5)
+    place(out, 0, crackle(0.75, 140, 0.25), 0.8)
+    return finish(mono_reverb(out, 0.9, 0.18), 0.9)
+
+
+def curse_cloud():
+    """The curse totem drops a cloud: a hollow low whoosh, a gassy hiss, a falling eerie tone and a few bubbling pops."""
+    S.seed(19)
+    n = n_of(1.6); t = t_of(n)
+    out = np.zeros(n)
+    place(out, 0, S.sweep_lp(noise(n), 1800, 250, 2, 32) * np.minimum(1, t / 0.06) * np.exp(-t / 0.35), 0.7)
+    place(out, 0.05, bp(noise(n), 2500, 7000, 2) * np.minimum(1, t / 0.15) * np.exp(-t / 0.6), 0.3)
+    place(out, 0, lp((sine(92, n) + sine(97.5, n)) * 0.5 * np.minimum(1, t / 0.1) * np.exp(-t / 0.7), 400, 2), 0.5)
+    for _ in range(6):
+        m = n_of(0.06); tt = t_of(m); f = 300 + 400 * S.RNG.random()
+        place(out, 0.15 + 0.9 * S.RNG.random(), np.sin(2 * np.pi * (f * tt + 2000 * tt * tt)) * decay(m, 0.015), 0.25)
+    return finish(mono_reverb(out, 1.6, 0.3), 0.85)
+
+
+def punji_spring():
+    """A punji trap springs: a hard spring snap, the stakes rattling up through the grate and a wooden thud."""
+    S.seed(20)
+    out = np.zeros(n_of(0.7))
+    m = n_of(0.08)
+    place(out, 0, hp(noise(m), 1500, 2) * decay(m, 0.01), 0.9)
+    place(out, 0, metal(n_of(0.3), [1240, 1870, 2630], 0.06), 0.35)
+    for k in range(10):
+        m = n_of(0.02)
+        place(out, 0.01 + 0.008 * k + 0.004 * S.RNG.random(), bp(noise(m), 600, 2500, 2) * decay(m, 0.006), 0.5 + 0.3 * S.RNG.random())
+    place(out, 0.07, lp(boom(0.3, 110, 70, 0.07, 900, 0.3, 0.8), 1500, 2), 0.7)
+    return finish(mono_reverb(out, 0.6, 0.15), 0.9)
+
+
 EFFECTS = {f.__name__: f for f in (cannon_fire, cannon_traverse, cannon_clank, cannon_lock, flare_signal, shell_whistle, bomb_whistle, shell_explosion,
-                                    bunker_impact, bunker_dig, cluster_pop, cryo_burst, napalm_whoosh, gravity_hum, gravity_implode, shockwave_blast, starshell_pop)}
+                                    bunker_impact, bunker_dig, cluster_pop, cryo_burst, napalm_whoosh, gravity_hum, gravity_implode, shockwave_blast, starshell_pop,
+                                    tesla_zap, curse_cloud, punji_spring)}
 
 if __name__ == '__main__':
     out_dir = sys.argv[1]; os.makedirs(out_dir, exist_ok=True)

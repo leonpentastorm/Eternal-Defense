@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "minecraft:magic",
-    "minecraft:wither"
+    "minecraft:wither",
+    "eternal_defense:turret_curse"
   ]
 }

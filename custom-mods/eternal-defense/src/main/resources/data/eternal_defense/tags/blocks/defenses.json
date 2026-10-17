@@ -13,6 +13,12 @@
     "eternal_defense:sandbag",
     "eternal_defense:barricade",
     "eternal_defense:barbed_wire",
-    "eternal_defense:shock_box"
+    "eternal_defense:shock_box",
+    "eternal_defense:tesla_turret_mk1",
+    "eternal_defense:tesla_turret_mk2",
+    "eternal_defense:tesla_turret_mk3",
+    "eternal_defense:heavy_cannon",
+    "eternal_defense:curse_totem",
+    "eternal_defense:spotlight"
   ]
 }

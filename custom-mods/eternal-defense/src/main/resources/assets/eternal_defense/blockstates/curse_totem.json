@@ -1,0 +1,78 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "active": "true"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem_active"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "active": "true"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem_active",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "active": "true"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem_active",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "active": "true"
+      },
+      "apply": {
+        "model": "eternal_defense:block/curse_totem_active",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /** 1.1.20: the Defense Depot costs four times as much, turret sounds are louder and carry further (a new shotgun shot), a pole's reach is drawn as see-through walls. */
 final class Release1120Test {
     @Test void everyDepotPriceIsFourTimesTheOldOne(){
-        int[] old={24,48,96,24,48,96,32,64,128,8,8,10,4,4,4,16,4};
-        var now=DefenseDepot.PRODUCTS.stream().mapToInt(DefenseDepot.Product::price).toArray();
-        assertEquals(old.length,now.length,"the same 17 products");
-        for(int i=0;i<old.length;i++)assertEquals(4*old[i],now[i],DefenseDepot.PRODUCTS.get(i).id());
+        String[] ids={"mg_turret_mk1","mg_turret_mk2","mg_turret_mk3","shotgun_turret_mk1","shotgun_turret_mk2","shotgun_turret_mk3","mg_turret_ammo","shotgun_turret_ammo","flame_turret_fuel","sandbag","barricade","barbed_wire","shock_box","electric_wire"};
+        int[] old={24,48,96,24,48,96,8,8,10,4,4,4,16,4};
+        var now=new java.util.HashMap<String,Integer>();for(var p:DefenseDepot.PRODUCTS)now.put(p.id(),p.price());
+        for(int i=0;i<old.length;i++)assertEquals(4*old[i],now.get(ids[i]),ids[i]+" (the flame turrets cost what the others do since 1.1.23)");
     }
     @Test void theGuideQuotesEveryDepotPrice() throws Exception{
         String body=Release114Test.text("guide.defense.body");

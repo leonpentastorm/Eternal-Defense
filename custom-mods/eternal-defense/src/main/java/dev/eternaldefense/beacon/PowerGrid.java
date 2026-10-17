@@ -12,7 +12,7 @@ import java.util.*;
 final class PowerGrid {
     private PowerGrid(){}
 
-    /** Something a network powers: a turret in a pole's reach, or a shock box wired to a pole */
+    /** Something a network powers: a tower or a spotlight in a pole's reach, or a shock box wired to a pole */
     interface Consumer {
         /** Stress it asks for, per RPM of the dynamos */
         float stress();
@@ -32,6 +32,7 @@ final class PowerGrid {
     private static final Map<ServerLevel,Grid> GRIDS=new WeakHashMap<>();
     static Grid of(ServerLevel l){return GRIDS.computeIfAbsent(l,k->new Grid());}
     static void joinPole(ServerLevel l,BlockPos pos){of(l).poles.add(pos.immutable());}
+    /** A tower or a spotlight: powered by the nearest pole whose reach covers it */
     static void joinTurret(ServerLevel l,BlockPos pos){of(l).turrets.add(pos.immutable());}
     static void joinBox(ServerLevel l,BlockPos pos){of(l).boxes.add(pos.immutable());}
     static Summary summary(ServerLevel l,BlockPos pole){return of(l).summaries.get(pole);}
@@ -66,10 +67,10 @@ final class PowerGrid {
         var fed=new HashSet<BlockPos>();
         for(var e:poles.entrySet())for(var t:e.getValue().links)if(g.boxes.contains(t)&&l.isLoaded(t)&&l.getBlockEntity(t) instanceof ShockBoxes.BoxEntity box&&fed.add(t)){var net=nets.get(find(parent,e.getKey()));net.consumers.add(box);net.counts[1]++;}
         for(var it=g.turrets.iterator();it.hasNext();){
-            var p=it.next();if(!l.isLoaded(p)||!(l.getBlockEntity(p) instanceof Turrets.TurretEntity turret)){it.remove();continue;}
+            var p=it.next();if(!l.isLoaded(p)||!(l.getBlockEntity(p) instanceof Consumer turret)||turret instanceof ShockBoxes.BoxEntity){it.remove();continue;}
             BlockPos best=null;double d=Double.MAX_VALUE;for(var pole:poles.keySet())if(PowerKit.inAura(pole,p)){double dist=pole.distSqr(p);if(dist<d){d=dist;best=pole;}}
             if(best==null){turret.power(false);continue;}
-            var net=nets.get(find(parent,best));net.consumers.add(turret);net.counts[0]++;
+            var net=nets.get(find(parent,best));net.consumers.add(turret);if(turret instanceof Turrets.TurretEntity)net.counts[0]++;
         }
         for(var it=g.boxes.iterator();it.hasNext();){var p=it.next();if(!l.isLoaded(p)||!(l.getBlockEntity(p) instanceof ShockBoxes.BoxEntity box)){it.remove();continue;}if(!fed.contains(p))box.power(false);}
         g.summaries.clear();

@@ -1,0 +1,372 @@
+package dev.eternaldefense.beacon;
+
+import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
+import com.simibubi.create.content.kinetics.belt.BeltBlockEntity;
+import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
+import com.simibubi.create.content.kinetics.motor.CreativeMotorBlockEntity;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.WallSide;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.23: tesla chains, the Heavy Cannon (flat and lobbed), the Curse Gas Totem, punji traps, the spotlight, adaptation, prices and recipes. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1123 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){shot(name,true);}
+    static void shot(String name,boolean clearChat){mc().getToasts().clear();if(clearChat)mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+3;holding=true;}
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){CHAT.add(e.getMessage().getString());log("QA_CHAT {}",e.getMessage().getString());}
+    static final Set<String> HEARD=Collections.synchronizedSet(new LinkedHashSet<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){if(e.getSound()!=null&&e.getSound().getLocation().getNamespace().equals(EternalDefense.ID))HEARD.add(e.getSound().getLocation().getPath());}
+    static int casings(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o instanceof TurretEffectsClient.Casing)n++;return n;}
+    static int flames(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o.getClass().getSimpleName().contains("Flame"))n++;return n;}
+    static boolean flaming(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t&&t.flaming;}
+    static final List<Float> KNOCKS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void knock(net.minecraftforge.event.entity.living.LivingKnockBackEvent e){if(e.getEntity() instanceof net.minecraft.world.entity.monster.Husk)KNOCKS.add(e.getOriginalStrength());}
+    static int liveWire(BlockPos from,int length){int n=0;for(int i=0;i<length;i++)if(live(from.east(i)))n++;return n;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(boltShot&&mc().level!=null&&TS!=null&&mc().level.getBlockEntity(TS) instanceof Turrets.TurretEntity t&&!t.zaps.isEmpty()&&mc().level.getGameTime()-t.zaps.get(t.zaps.size()-1).at<=2){
+            boltShot=false;new File("shots").mkdirs();Screenshot.grab(new File("shots"),"r1123_tesla_bolts.png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}","r1123_tesla_bolts");}
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1123",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1123",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    /** Stand three blocks south of a block, looking at it */
+    static void near(BlockPos p){look(p.getX()+.5,sy,p.getZ()+3.5,p.getX()+.5,p.getY()+.5,p.getZ()+.5);}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void hold(ItemStack s){srv(()->{var inv=sp().getInventory();inv.setItem(0,s);inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void away(){for(String f:new String[]{"xpos","ypos"})try{var x=net.minecraft.client.MouseHandler.class.getDeclaredField(f);x.setAccessible(true);x.setDouble(mc().mouseHandler,4);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static Block ed(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Item edItem(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Block create(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation("create",id));}
+    @SuppressWarnings({"unchecked","rawtypes"})
+    static BlockState with(BlockState s,String property,Object value){
+        for(Property p:s.getProperties())if(p.getName().equals(property)){var v=p.getValue(value.toString().toLowerCase(Locale.ROOT));if(v.isPresent())return s.setValue(p,(Comparable)v.get());}
+        log("QA_NOTE no property {}={} on {}",property,value,s);return s;
+    }
+    static void put(BlockPos p,BlockState s){sl().setBlock(p,s,3);}
+    static IItemHandler handler(BlockPos p,Direction side){var be=sl().getBlockEntity(p);return be==null?null:be.getCapability(ForgeCapabilities.ITEM_HANDLER,side).resolve().orElse(null);}
+    static void insert(IItemHandler h,ItemStack s){if(h!=null){var rest=ItemHandlerHelper.insertItemStacked(h,s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}else log("QA_NOTE no handler for {}",s);}
+    static void motor(BlockPos pos,Direction facing,int rpm){
+        put(pos,with(create("creative_motor").defaultBlockState(),"facing",facing.getName()));
+        if(sl().getBlockEntity(pos) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(rpm);else log("QA_NOTE no motor entity at {}",pos);
+    }
+    /** The creative motor's stress capacity per RPM (Create's server config), so the network can be overloaded on purpose */
+    @SuppressWarnings("unchecked")
+    static double ORIGINAL=-1;
+    static void motorCapacity(double v){
+        try{var stress=com.simibubi.create.infrastructure.config.AllConfigs.server().kinetics.stressValues;var f=com.simibubi.create.infrastructure.config.CStress.class.getDeclaredField("capacities");f.setAccessible(true);
+            var map=(Map<ResourceLocation,net.minecraftforge.common.ForgeConfigSpec.ConfigValue<Double>>)f.get(stress);var value=map.get(new ResourceLocation("create","creative_motor"));
+            if(value==null){note("CAPACITY keys {}",map.keySet());return;}note("CAPACITY creative motor {} -> {}",value.get(),v);if(ORIGINAL<0)ORIGINAL=value.get();value.set(v);}
+        catch(ReflectiveOperationException e){throw new IllegalStateException(e);}
+    }
+    static String network(BlockPos kinetic){return sl().getBlockEntity(kinetic) instanceof KineticBlockEntity k&&k.hasNetwork()?"capacity "+k.getOrCreateNetwork().calculateCapacity()+" stress "+k.getOrCreateNetwork().calculateStress()+" over "+k.isOverStressed()+" speed "+k.getSpeed():"no network";}
+    static Turrets.TurretEntity turret(BlockPos p){return sl().getBlockEntity(p) instanceof Turrets.TurretEntity t?t:null;}
+    static int ammo(BlockPos p){var t=turret(p);if(t==null)return -1;int n=0;for(int i=0;i<Turrets.SLOTS;i++)n+=t.ammo.getStackInSlot(i).getCount();return n;}
+    static int loaded(BlockPos p){var t=turret(p);return t==null?-1:t.loaded();}
+    static boolean powered(BlockPos p){var t=turret(p);return t!=null&&t.powered;}
+    static PowerGrid.Summary summary(BlockPos pole){return PowerGrid.summary(sl(),pole);}
+    static float rpm(BlockPos p){return sl().getBlockEntity(p) instanceof PowerKit.Dynamo d?d.rpm():-1;}
+    static Mob husk(BlockPos at){return husk(at,false);}
+    /** A husk (it never burns in daylight); one with its AI moves, so the blocks it stands in act on it */
+    static Mob husk(BlockPos at,boolean ai){var h=EntityType.HUSK.create(sl());h.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);h.setNoAi(!ai);h.setPersistenceRequired();sl().addFreshEntity(h);return h;}
+    static final List<UUID> HUSKS=new ArrayList<>();
+    static Mob mob(UUID id){return sl().getEntity(id) instanceof Mob m?m:null;}
+    static boolean dead(UUID id){var m=mob(id);return m==null||!m.isAlive();}
+    static boolean live(BlockPos p){var s=sl().getBlockState(p);return s.getBlock() instanceof DefenseWalls.BarbedWire&&s.getValue(DefenseWalls.BarbedWire.POWERED);}
+
+    static float speed(BlockPos p){return sl().getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float clientSpeed(BlockPos p){return mc().level.getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float angle(BlockPos be,BlockPos at,Direction.Axis axis){return mc().level.getBlockEntity(be) instanceof KineticBlockEntity k?KineticBlockEntityRenderer.getAngleForBe(k,at,axis):Float.NaN;}
+    static PowerKit.Readout readout(BlockPos p){return (PowerKit.Readout)field(sl().getBlockEntity(p),"readout");}
+    static float demand(BlockPos p){return (Float)field(sl().getBlockEntity(p),"demand");}
+    static String light(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t?t.light():"?";}
+    static Turrets.TurretMenu menu(){return mc().screen instanceof PowerClient.TurretScreen s?s.getMenu():null;}
+    static void slotClick(int slot,ClickType type){var m=menu();mc().gameMode.handleInventoryMouseClick(m.containerId,slot,0,type,mc().player);}
+    static String chat(){return String.join(" / ",CHAT);}
+    static boolean said(String part){synchronized(CHAT){for(var c:CHAT)if(c.contains(part))return true;}return false;}
+    static void sneak(boolean on){srv(()->sp().setShiftKeyDown(on));}
+    static boolean poleLive(BlockPos p){return mc().level.getBlockEntity(p) instanceof PowerPoles.PoleEntity pole&&pole.live;}
+    static DefenseDepot.DepotMenu depot(){return mc().screen instanceof PowerClient.DepotScreen s?s.getMenu():null;}
+
+
+    static CampaignData cd(){return CampaignData.get(sl());}
+    /** The bolt picture is taken in the first frame a fresh zap is drawn (software rendering runs at a few frames a second) */
+    static volatile boolean boltShot;
+    static boolean keepRaid;
+    @SubscribeEvent public static void serverWatch(TickEvent.ServerTickEvent e){if(e.phase!=TickEvent.Phase.END||server()==null)return;var d=cd();if(keepRaid&&d.phase.equals("raid")){d.raidTicks=0;d.spawnCooldown=1_000_000;}}
+    /** A raid that never spawns or ends by itself: the checks bring their own raiders */
+    static void raidOn(int wave){srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.raidTier=0;d.wave=wave;d.spawnRemaining=1000;d.spawnCooldown=1_000_000;d.raidTicks=0;d.waveTicks=0;d.trapFirstWave.clear();d.setDirty();});keepRaid=true;}
+    static void raidOff(){keepRaid=false;srv(()->{var d=cd();for(var id:new ArrayList<>(d.raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d.raiders.clear();d.phase="preparation";d.spawnRemaining=0;d.trapFirstWave.clear();d.setDirty();});}
+    /** A vindicator (no armor, so damage reads exactly) with 200 health; a raider of the running raid when asked */
+    static UUID vin(BlockPos at,boolean raider){return vin(at,raider,false);}
+    /** One that keeps its AI (held still) moves now and then, so the blocks it stands in act on it, as for a walking raider */
+    static UUID vin(BlockPos at,boolean raider,boolean ai){var v=EntityType.VINDICATOR.create(sl());v.moveTo(at.getX()+.5,at.getY()+.3,at.getZ()+.5,0,0);v.setNoAi(!ai);v.setPersistenceRequired();
+        if(ai)v.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,100000,9,false,false));
+        v.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);v.setHealth(200);
+        if(raider){v.getPersistentData().putBoolean("eternalRaider",true);cd().raiders.add(v.getUUID());cd().setDirty();}
+        sl().addFreshEntity(v);return v.getUUID();}
+    static UUID undead(BlockPos at){var h=husk(at);h.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);h.setHealth(200);return h.getUUID();}
+    static float hp(UUID id){var m=mob(id);return m==null?-1:m.getHealth();}
+    static float lost(UUID id){var m=mob(id);return m==null?-1:m.getMaxHealth()-m.getHealth();}
+    static void clearMobs(){srv(()->{for(var m:sl().getEntitiesOfClass(Mob.class,new AABB(sx-120,sy-20,sz-120,sx+120,sy+60,sz+120),m->!(m instanceof RaidTargets.Point)&&!(m instanceof BeaconCombat.Objective)))m.discard();});}
+    static void clear(BlockPos root,int size){srv(()->{for(int x=0;x<size;x++)for(int y=0;y<2;y++)for(int z=0;z<size;z++)put(root.offset(x,y,z),Blocks.AIR.defaultBlockState());});}
+    static BlockState state(BlockPos p){return sl().getBlockState(p);}
+    static boolean has(UUID id,net.minecraft.world.effect.MobEffect e){var m=mob(id);return m!=null&&m.hasEffect(e);}
+    static int amp(UUID id,net.minecraft.world.effect.MobEffect e){var m=mob(id);var i=m==null?null:m.getEffect(e);return i==null?-1:i.getAmplifier();}
+    static void place(String id,BlockPos at){hold(new ItemStack(edItem(id)));near(at);}
+    static int clientShells(){int n=0;for(var e:mc().level.entitiesForRendering())if(e instanceof CannonShell)n++;return n;}
+
+    /** B beacon; P0 dynamo, A its pole; TS tesla; C cannon; U totem; K punji traps; L spotlights; DP depot */
+    static BlockPos B,P0,M0,A,TS,C,U,K1,K2,L1,L2,DP;
+    static final Map<String,UUID> M=Collections.synchronizedMap(new HashMap<>());
+    static void places(){
+        B=new BlockPos(sx-12,sy,sz-12);P0=new BlockPos(sx+4,sy,sz+6);M0=P0.west(2);A=P0.above();
+        TS=P0.offset(3,0,-4);C=P0.offset(-6,0,-3);U=P0.offset(-3,0,3);K1=new BlockPos(sx-6,sy,sz+12);K2=K1.east(3);L1=P0.offset(2,0,4);L2=P0.offset(16,0,4);DP=B.offset(5,0,6);
+    }
+
+    static void script(){
+        step(40,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sl().setDayTime(6000);sp().getInventory().clearContent();
+            for(var slime:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Slime.class,new AABB(sx-300,sy-20,sz-300,sx+300,sy+40,sz+300)))slime.discard();
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            put(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1));});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon, noon, no natural mobs");
+        step(5,()->{hold(new ItemStack(edItem("shaft_dynamo")));near(P0);},"hold a Shaft Dynamo");
+        step(10,()->click(P0.below(),Direction.UP),"place it");
+        step(10,()->srv(()->{put(P0.west(),with(create("shaft").defaultBlockState(),"axis","x"));motor(M0,Direction.EAST,32);}),"a creative motor and a shaft into it");
+        step(5,()->{hold(new ItemStack(EternalDefense.POWER_POLE.get()));near(P0);},"hold a Power Pole");
+        step(10,()->click(P0,Direction.UP),"a pole on the dynamo");
+        until("the pole is live",200,()->srvGet(()->{var s=summary(A);return s!=null&&s.running();}),()->{});
+
+        // 1. Tesla Coil Turret Mk III: placed from the item, it chains through 7 of 9 mobs, each jump 15% weaker
+        step(5,()->place("tesla_turret_mk3",TS),"hold a Tesla Coil Turret Mk III");
+        step(10,()->click(TS.below(),Direction.UP),"place it in the pole's reach (2 x 2)");
+        until("it is powered and its arcs are live",200,()->srvGet(()->powered(TS)&&state(TS).getValue(Turrets.TeslaBlock.POWERED)),()->{});
+        step(5,()->{check("placed from the item: a 2 x 2 x 2 tower, powered, live arcs",srvGet(()->state(TS).getBlock() instanceof Turrets.TeslaBlock&&state(TS.offset(1,1,1)).getBlock() instanceof DefenseStructures.Part&&state(TS).getValue(Turrets.TeslaBlock.POWERED)),""+srvGet(()->state(TS)));
+            check("it needs no ammo: green light, ready line",light(TS).equals("ready")&&srvGet(()->turret(TS).status().getString()).contains("needs no ammo"),light(TS)+" / "+srvGet(()->turret(TS).status().getString()));
+            check("the grid counts it as a turret",srvGet(()->summary(A).turrets())==1,""+srvGet(()->summary(A)));
+            HEARD.clear();srv(()->{for(int i=0;i<9;i++)M.put("t"+i,vin(TS.offset(1,0,-6-4*i),false));});
+            look(TS.getX()+11.5,sy+2,TS.getZ()+5,TS.getX()+1,sy+1,TS.getZ()-12);},"9 vindicators in a line north, 4 blocks apart");
+        until("the first zap",200,()->srvGet(()->lost(M.get("t0"))>0),()->{
+            var got=new ArrayList<String>();boolean chain=true;int hit=0;
+            for(int i=0;i<9;i++){float l=srvGet(()->lost(M.get("t"+got.size())));got.add(String.format(Locale.ROOT,"%.2f",l));if(l>0)hit++;if(i<7)chain&=Math.abs(l-Turrets.chainDamage(8,i))<.02f;}
+            note("TESLA damage along the line {}",got);
+            check("one zap reaches 7 mobs (Mark III) and no more",hit==7,got.toString());
+            check("8 on the first, 15% less at each jump",chain,got.toString());});
+        step(2,()->{var be=mc().level.getBlockEntity(TS) instanceof Turrets.TurretEntity t?t:null;int ids=be==null||be.zaps.isEmpty()?0:be.zaps.get(be.zaps.size()-1).mobs.size();
+            check("the client hears the zap's 7 links, so it draws the bolt",ids==7,""+ids);boltShot=true;},"picture of the next zap's bolt, in the frame it is drawn");
+        until("the bolt picture",100,()->!boltShot,()->check("the tesla zap is heard",HEARD.contains("turret.tesla_zap"),""+HEARD));
+        step(20,()->{},"between zaps");
+        step(5,()->{shot("r1123_tesla_live",false);},"picture: the coil between zaps");
+        step(5,()->{clearMobs();clear(TS,2);},"tesla and mobs away");
+
+        // 2. Heavy Cannon: flat shot in the open, area damage, ammo, then a lob over a wall, and nothing inside 5 blocks
+        step(5,()->place("heavy_cannon",C),"hold a Heavy Cannon");
+        step(10,()->click(C.below(),Direction.UP),"place it (2 x 2)");
+        until("it is powered",200,()->srvGet(()->powered(C)),()->{});
+        step(5,()->{check("out of shells: orange light",light(C).equals("empty"),light(C));srv(()->insert(handler(C.offset(1,1,0),Direction.UP),new ItemStack(EternalDefense.CANNON_SHELLS.get(),1)));},"a crate of shells through the top cell (a funnel's way)");
+        step(5,()->{check("a crate loads 4 shells",srvGet(()->loaded(C))==4,""+srvGet(()->loaded(C)));
+            srv(()->{M.put("c0",vin(C.offset(1,0,-22),false));M.put("c1",vin(C.offset(3,0,-22),false));});
+            HEARD.clear();look(C.getX()+9.5,sy+2,C.getZ()+4,C.getX()+1,sy+1,C.getZ()-12);},"two vindicators 22 blocks north, 2 apart");
+        until("a shell in flight",200,()->clientShells()>0,()->shot("r1123_cannon_flat",false));
+        until("the shell lands",100,()->srvGet(()->lost(M.get("c0"))>0||lost(M.get("c1"))>0),()->{});
+        step(3,()->{float a=srvGet(()->lost(M.get("c0"))),b=srvGet(()->lost(M.get("c1")));note("CANNON direct {} neighbour {}",a,b);
+            check("a flat shot hits for 30 at the middle",Math.abs(a-30)<.5f,""+a);
+            check("the blast also hurts the mob 2 blocks away, less",b>5&&b<a,""+b);
+            check("one shell spent",srvGet(()->loaded(C))==3,""+srvGet(()->loaded(C)));
+            check("it fired flat (no lob)",!srvGet(()->turret(C).high),"");check("the cannon's shot is heard",HEARD.contains("turret.heavy_cannon"),""+HEARD);},"the flat shot");
+        step(5,()->{clearMobs();srv(()->{for(int x=-4;x<=5;x++)for(int y=0;y<6;y++)put(C.offset(x,y,-10),Blocks.STONE.defaultBlockState());M.put("w",vin(C.offset(1,0,-18),false));});
+            look(C.getX()+14.5,sy+3,C.getZ()-6,C.getX()+1,sy+4,C.getZ()-10);},"a stone wall 6 high 10 blocks north, a vindicator behind it");
+        until("a lob",300,()->mc().level.getBlockEntity(C) instanceof Turrets.TurretEntity t&&t.high&&clientShells()>0,()->{});
+        step(20,()->{},"a second for the barrel to swing up");
+        step(8,()->{float pitch=mc().level.getBlockEntity(C) instanceof Turrets.TurretEntity t?t.drawPitch:0;note("CANNON drawn pitch {}",pitch);
+            check("over the wall it lobs, the barrel lifted high",pitch>40,""+pitch);shot("r1123_cannon_lob",false);},"picture: the barrel lifted");
+        until("the lob lands behind the wall",200,()->srvGet(()->lost(M.get("w"))>0),()->{float l=srvGet(()->lost(M.get("w")));note("CANNON lob {}",l);check("the lobbed shell hits the mob it could not see",l>10,""+l);});
+        step(5,()->{clearMobs();srv(()->{for(int x=-4;x<=5;x++)for(int y=0;y<6;y++)put(C.offset(x,y,-10),Blocks.AIR.defaultBlockState());M.put("near",vin(C.offset(1,0,-3),false));});},"wall gone; one vindicator 4 blocks from the cannon");
+        step(160,()->{},"8 seconds");
+        step(5,()->{check("nothing closer than 5 blocks is shelled",srvGet(()->lost(M.get("near")))==0&&srvGet(()->loaded(C))==2,srvGet(()->lost(M.get("near")))+" "+srvGet(()->loaded(C)));
+            look(C.getX()+6.5,sy+1,C.getZ()+6,C.getX()+1,sy+1,C.getZ()+1);},"too close");
+        step(10,()->shot("r1123_cannon_rest"),"picture: the cannon");
+        step(5,()->{clearMobs();clear(C,2);},"cannon away");
+
+        // 3. Curse Gas Totem: a cloud on the biggest crowd; slowness and poison, gas on the undead, nothing on the lone mob
+        step(5,()->place("curse_totem",U),"hold a Curse Gas Totem");
+        step(10,()->click(U.below(),Direction.UP),"place it");
+        until("powered",200,()->srvGet(()->powered(U)),()->{});
+        step(5,()->{srv(()->{M.put("k0",vin(U.offset(0,0,-9),false));M.put("k1",vin(U.offset(1,0,-10),false));M.put("k2",vin(U.offset(-1,0,-10),false));M.put("ku",undead(U.offset(0,0,-10)));M.put("lone",vin(U.offset(-9,0,-3),false));});
+            HEARD.clear();look(U.getX()+8.5,sy+3,U.getZ()-1,U.getX(),sy,U.getZ()-8);},"a crowd of 3 vindicators and a husk 9 blocks north, one vindicator alone to the west");
+        until("a cloud is down and it gasses",200,()->srvGet(()->lost(M.get("k1"))>0),()->{});
+        step(2,()->{var t=srvGet(()->turret(U));var c=t.clouds.isEmpty()?null:t.clouds.get(0).at();note("CURSE cloud {}",c);
+            check("the cloud lands on the crowd",c!=null&&c.distanceTo(Vec3.atBottomCenterOf(U.offset(0,0,-10)))<2.5,""+c);
+            check("crowd: Slowness II and Poison",amp(M.get("k1"),MobEffects.MOVEMENT_SLOWDOWN)==1&&has(M.get("k1"),MobEffects.POISON),amp(M.get("k1"),MobEffects.MOVEMENT_SLOWDOWN)+" "+has(M.get("k1"),MobEffects.POISON));
+            check("the husk: no poison (undead) but slowed and gassed",!has(M.get("ku"),MobEffects.POISON)&&has(M.get("ku"),MobEffects.MOVEMENT_SLOWDOWN)&&srvGet(()->lost(M.get("ku")))>0,""+srvGet(()->lost(M.get("ku"))));
+            check("the lone mob is untouched",srvGet(()->lost(M.get("lone")))==0&&!has(M.get("lone"),MobEffects.MOVEMENT_SLOWDOWN),"");
+            check("gas: 2 damage on the vindicator",Math.abs(srvGet(()->lost(M.get("k1")))-2)<.01f,""+srvGet(()->lost(M.get("k1"))));
+            check("the totem shows its gas",srvGet(()->state(U).getValue(Turrets.TotemBlock.ACTIVE)),"");check("the cloud is heard",HEARD.contains("turret.curse_cloud"),""+HEARD);shot("r1123_curse_cloud",false);},"the cloud");
+        step(5,()->clearMobs(),"mobs away");
+        until("the clouds clear",200,()->srvGet(()->turret(U).clouds.isEmpty()&&!state(U).getValue(Turrets.TotemBlock.ACTIVE)),()->check("clouds last their 5 seconds, then the gas on the totem stops",true,""));
+        step(5,()->clear(U,1),"totem away");
+
+        // 4. Punji Spike Trap: no power, one hit, stays sprung, set again by hand or when the raid wave changes
+        step(5,()->{hold(new ItemStack(edItem("punji_trap"),2));look(K1.getX()+.5,sy,K1.getZ()+3.5,K1.getX()+.5,sy,K1.getZ()+.5);},"two punji traps in hand");
+        step(10,()->click(K1.below(),Direction.UP),"place one");
+        step(10,()->click(K2.below(),Direction.UP),"and another");
+        step(10,()->shot("r1123_punji_armed"),"picture: armed");
+        step(5,()->{HEARD.clear();srv(()->M.put("p0",vin(K1,false,true)));},"a vindicator steps onto the first");
+        until("it springs",60,()->srvGet(()->lost(M.get("p0"))>0),()->{});
+        step(6,()->{check("the trap is heard",HEARD.contains("trap.punji_spring"),""+HEARD);check("20 damage, once",Math.abs(srvGet(()->lost(M.get("p0")))-20)<.01f,""+srvGet(()->lost(M.get("p0"))));check("the stakes are up",srvGet(()->state(K1).getValue(PunjiTrap.SPRUNG)),"");},"sprung");
+        step(40,()->{check("standing on a sprung trap does nothing more",Math.abs(srvGet(()->lost(M.get("p0")))-20)<.01f,""+srvGet(()->lost(M.get("p0"))));shot("r1123_punji_sprung");},"picture: sprung, 2 s later");
+        step(5,()->{clearMobs();hold(ItemStack.EMPTY);},"mob away");
+        step(5,()->click(K1,Direction.UP),"right-click the sprung trap");
+        step(5,()->check("set again by hand",!srvGet(()->state(K1).getValue(PunjiTrap.SPRUNG)),""),"set");
+        step(5,()->{raidOn(1);srv(()->M.put("p1",vin(K2,true,true)));},"a raid, wave 1: a raider steps on the second trap");
+        until("it springs",60,()->srvGet(()->state(K2).getValue(PunjiTrap.SPRUNG)),()->{});
+        step(30,()->{check("still sprung while wave 1 lasts",srvGet(()->state(K2).getValue(PunjiTrap.SPRUNG)),"");clearMobs();srv(()->{cd().raiders.clear();cd().wave=2;cd().setDirty();});},"wave 2 begins");
+        until("it sets itself again",60,()->!srvGet(()->state(K2).getValue(PunjiTrap.SPRUNG)),()->check("a new wave sets the trap again",true,""));
+        step(5,()->raidOff(),"raid over");
+
+        // 5. Industrial Spotlight: lit while a powered pole reaches it, dark outside the reach
+        step(5,()->{hold(new ItemStack(edItem("spotlight"),2));near(L1);},"two spotlights in hand");
+        step(10,()->click(L1.below(),Direction.UP),"one in the pole's reach");
+        step(5,()->near(L2),"one outside it");
+        step(10,()->click(L2.below(),Direction.UP),"place it");
+        until("the first lights",200,()->srvGet(()->state(L1).getValue(Spotlight.LIT)),()->{});
+        step(5,()->{check("lit in reach: light 15",srvGet(()->sl().getBrightness(net.minecraft.world.level.LightLayer.BLOCK,L1))==15,""+srvGet(()->sl().getBrightness(net.minecraft.world.level.LightLayer.BLOCK,L1)));
+            check("dark out of reach",!srvGet(()->state(L2).getValue(Spotlight.LIT)),"");srv(()->sl().setDayTime(18000));hold(ItemStack.EMPTY);look(L1.getX()+6.5,sy+1,L1.getZ()+6,L1.getX(),sy+1,L1.getZ());},"midnight");
+        step(40,()->shot("r1123_spotlight_night"),"picture: the lit spotlight at night");
+        step(5,()->srv(()->sl().setDayTime(6000)),"noon");
+
+        // 6. The same adaptation rule: the first hit marks the kind, and a raid that learned it takes less
+        step(5,()->{raidOn(3);srv(()->{put(TS,EternalDefense.TURRETS.get("tesla_turret_mk1").get().defaultBlockState());M.put("ra",vin(TS.offset(0,0,-5),true));});},"raid wave 3; a Mk I tesla and one raider");
+        until("the raider is zapped",200,()->srvGet(()->lost(M.get("ra"))>0),()->{float l=srvGet(()->lost(M.get("ra")));
+            check("a fresh kind: full damage (6), and lightning is marked as learned from wave 3",Math.abs(l-6)<.01f&&Integer.valueOf(3).equals(srvGet(()->cd().trapFirstWave.get(RaidAdaptation.Kind.LIGHTNING))),l+" "+srvGet(()->cd().trapFirstWave));
+            srv(()->{var m=mob(M.get("ra"));m.setHealth(200);cd().trapFirstWave.put(RaidAdaptation.Kind.LIGHTNING,1);});});
+        until("the next zap",100,()->srvGet(()->lost(M.get("ra"))>0),()->{float l=srvGet(()->lost(M.get("ra")));check("two waves later: half (3)",Math.abs(l-3)<.01f,""+l);});
+        step(5,()->{clearMobs();srv(()->{cd().raiders.clear();put(TS,Blocks.AIR.defaultBlockState());});clear(TS,2);},"tesla away");
+        step(5,()->srv(()->{put(C,EternalDefense.TURRETS.get("heavy_cannon").get().defaultBlockState());}),"a Heavy Cannon");
+        step(10,()->srv(()->{insert(handler(C,Direction.UP),new ItemStack(EternalDefense.CANNON_SHELLS.get(),1));cd().trapFirstWave.put(RaidAdaptation.Kind.EXPLOSION,1);M.put("rb",vin(C.offset(1,0,-20),true));}),"explosions learned two waves ago; a raider 20 blocks out");
+        until("shelled",300,()->srvGet(()->lost(M.get("rb"))>0),()->{float l=srvGet(()->lost(M.get("rb")));check("the raid's explosion resistance halves the shell (15)",Math.abs(l-15)<.5f,""+l);});
+        step(5,()->{clearMobs();srv(()->cd().raiders.clear());clear(C,2);},"cannon away");
+        step(5,()->srv(()->{put(U,EternalDefense.TURRETS.get("curse_totem").get().defaultBlockState());cd().trapFirstWave.put(RaidAdaptation.Kind.MAGIC,-1);
+            M.put("rc",vin(U.offset(0,0,-8),true));M.put("free",vin(U.offset(1,0,-8),false));}),"magic learned four waves ago (immune); a raider and a non-raider side by side");
+        until("the cloud acts on the non-raider",200,()->srvGet(()->lost(M.get("free"))>0),()->{});
+        step(2,()->{check("immune raider: no slowness, no gas damage",!has(M.get("rc"),MobEffects.MOVEMENT_SLOWDOWN)&&srvGet(()->lost(M.get("rc")))==0,srvGet(()->lost(M.get("rc")))+"");
+            check("the mob beside it is slowed and gassed",has(M.get("free"),MobEffects.MOVEMENT_SLOWDOWN)&&srvGet(()->lost(M.get("free")))>0,"");},"curse vs an immune raid");
+        step(5,()->{clearMobs();srv(()->{cd().raiders.clear();cd().trapFirstWave.put(RaidAdaptation.Kind.SPIKES,1);});clear(U,1);},"spikes learned two waves ago");
+        step(5,()->srv(()->M.put("rd",vin(K1,true,true))),"a raider on the armed trap");
+        until("it springs",60,()->srvGet(()->lost(M.get("rd"))>0),()->{float l=srvGet(()->lost(M.get("rd")));check("the stakes do half (10)",Math.abs(l-10)<.01f,""+l);});
+        step(5,()->{raidOff();clearMobs();},"raid over");
+
+        // 7. Prices, recipes, the Depot
+        step(5,()->{var p=new HashMap<String,Integer>();for(var x:DefenseDepot.PRODUCTS)p.put(x.id(),x.price());
+            check("flame turrets cost 96, 192 and 384 like the others; the Heavy Cannon 512",p.get("flame_turret_mk1")==96&&p.get("flame_turret_mk2")==192&&p.get("flame_turret_mk3")==384&&p.get("heavy_cannon")==512&&p.get("tesla_turret_mk3")==384,""+p);
+            var rm=server().getRecipeManager();var missing=new ArrayList<String>();
+            for(var id:List.of("sandbag","barricade","barbed_wire","heavy_cannon_shell")){var r=rm.byKey(new ResourceLocation(EternalDefense.ID,"defense/"+id));if(r.isEmpty()||!BuiltInRegistries.RECIPE_TYPE.getKey(r.get().getType()).toString().equals("create:compacting"))missing.add(id+"="+r.map(x->BuiltInRegistries.RECIPE_TYPE.getKey(x.getType()).toString()).orElse("none"));}
+            check("the walls and the shells load as Create compacting recipes",missing.isEmpty(),""+missing);
+            srv(()->{var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.DEFENSE_DEPOT.get()));inv.setItem(9,new ItemStack(EternalDefense.AMMO_COIN.get(),64));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;near(DP);},"a depot in hand");
+        step(10,()->click(DP.below(),Direction.UP),"place it");
+        step(10,()->{hold(ItemStack.EMPTY);click(DP,Direction.SOUTH);},"open it");
+        until("its screen opens",60,()->depot()!=null,()->{});
+        step(10,()->{away();shot("r1123_depot_top");},"picture: the top of the list");
+        step(5,()->{for(int i=0;i<12;i++)mc().screen.mouseScrolled(mc().screen.width/2.0,mc().screen.height/2.0,-1);},"scroll down");
+        step(10,()->{away();shot("r1123_depot_more");},"picture: further down");
+        step(5,()->{mc().player.closeContainer();srv(()->{for(var id:List.of("tesla_turret_mk1","tesla_turret_mk2","tesla_turret_mk3","heavy_cannon","curse_totem","punji_trap","spotlight","heavy_cannon_shell")){}});},"close");
+        // 8. A line-up of the new art in daylight
+        step(5,()->srv(()->{var o=new BlockPos(sx-20,sy,sz+20);int x=0;
+            for(var id:List.of("tesla_turret_mk1","tesla_turret_mk2","tesla_turret_mk3","heavy_cannon","curse_totem","spotlight","punji_trap")){var p=o.offset(x,0,0);put(p,BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,id)).defaultBlockState());x+=id.endsWith("mk3")||id.equals("heavy_cannon")?4:3;}
+            }),"all seven side by side (unpowered)");
+        step(20,()->look(sx-20+9,sy+3,sz+29,sx-20+9,sy+1,sz+20),"look at them");
+        step(20,()->shot("r1123_lineup"),"picture: the line-up");
+    }
+}

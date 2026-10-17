@@ -40,7 +40,9 @@ final class DefenseSounds {
     static final RegistryObject<SoundEvent> WAR_HORN=of("fob.war_horn");
     /** The machine gun and shotgun turrets' shots; the flame turret lighting, its roar looped while the jet burns, and going out */
     static final RegistryObject<SoundEvent> MG_SHOT=far("turret.mg_shot"),SHOTGUN_SHOT=far("turret.shotgun_shot"),FLAME_START=far("turret.flame_start"),FLAME_TURRET=far("turret.flame"),FLAME_END=far("turret.flame_end");
-    /** Turret sounds reach this many blocks, fading evenly to nothing (the same distance is in sounds.json) */
+    /** The tesla coil's zap, the Heavy Cannon's shot, the Curse Gas Totem's cloud and a punji trap springing */
+    static final RegistryObject<SoundEvent> TESLA_ZAP=far("turret.tesla_zap"),CANNON_SHOT=far("turret.heavy_cannon",96),CURSE_CLOUD=far("turret.curse_cloud"),PUNJI_SPRING=far("trap.punji_spring");
+    /** Turret sounds reach this many blocks, fading evenly to nothing (the same distance is in sounds.json); the Heavy Cannon twice as far */
     static final int TURRET_RANGE=48;
     private static final List<RegistryObject<SoundEvent>> ORDER_CHATTER=java.util.stream.IntStream.rangeClosed(1,SupplyCatapult.ORDER_LINES).mapToObj(n->of("seller.order_chatter_"+n)).toList();
     /** One order line (1-based). */
@@ -48,5 +50,6 @@ final class DefenseSounds {
     /** The jingle of a cleared mission. */
     static final RegistryObject<SoundEvent> MISSION_CLEARED=of("music.mission_cleared");
     private static RegistryObject<SoundEvent> far(String id){return SOUNDS.register(id,()->SoundEvent.createFixedRangeEvent(new ResourceLocation(EternalDefense.ID,id),TURRET_RANGE));}
+    private static RegistryObject<SoundEvent> far(String id,int range){return SOUNDS.register(id,()->SoundEvent.createFixedRangeEvent(new ResourceLocation(EternalDefense.ID,id),range));}
     private static RegistryObject<SoundEvent> of(String id){return SOUNDS.register(id,()->SoundEvent.createVariableRangeEvent(new ResourceLocation(EternalDefense.ID,id)));}
 }

@@ -1,0 +1,118 @@
+{
+ "leads": {
+  "tesla_turret_mk1": {
+   "in": [
+    12.75,
+    4.3,
+    12.75
+   ]
+  },
+  "tesla_turret_mk2": {
+   "in": [
+    12.75,
+    4.3,
+    12.75
+   ]
+  },
+  "tesla_turret_mk3": {
+   "in": [
+    16,
+    5.6,
+    28.75
+   ]
+  },
+  "spotlight": {
+   "in": [
+    8,
+    13.7,
+    9.6
+   ]
+  }
+ },
+ "tesla": {
+  "tesla_turret_mk1": {
+   "emitter": [
+    8,
+    30.5,
+    8
+   ],
+   "footprint": "1x1x2",
+   "overlay_when_powered": "tesla_turret_mk1_live"
+  },
+  "tesla_turret_mk2": {
+   "emitter": [
+    8,
+    31.5,
+    8
+   ],
+   "footprint": "1x1x2",
+   "overlay_when_powered": "tesla_turret_mk2_live"
+  },
+  "tesla_turret_mk3": {
+   "emitter": [
+    16,
+    32,
+    16
+   ],
+   "footprint": "2x2x2",
+   "overlay_when_powered": "tesla_turret_mk3_live"
+  }
+ },
+ "punji_trap": {
+  "part": "punji_trap_spikes",
+  "modelled": "sprung (raised)",
+  "rise_px": 10.5,
+  "armed_offset_y_px": -10.5,
+  "note": "translate the part from y -10.5 px (armed) to 0 (sprung)"
+ },
+ "spotlight": {
+  "footprint": "1x1x2 (lower block draws it, upper block = spotlight_upper)",
+  "lens_centres": [
+   [
+    3.875,
+    28.625,
+    6.25
+   ],
+   [
+    12.125,
+    28.625,
+    6.25
+   ]
+  ],
+  "beam_direction": "-z (front)",
+  "states": {
+   "lit=false": "spotlight",
+   "lit=true": "spotlight_on"
+  }
+ },
+ "heavy_cannon": {
+  "yaw_axis_xz": [
+   16,
+   16
+  ],
+  "pitch_axis_yz": [
+   20.0,
+   18.0
+  ],
+  "pitch_range_deg": [
+   -5,
+   90
+  ],
+  "barrel_recoil_px": 3,
+  "barrel_recoil_axis": "+z in the gun's pitched frame",
+  "muzzle": [
+   16,
+   20.0,
+   -15.75
+  ],
+  "muzzle_reach_from_yaw_axis_px": 31.75,
+  "muzzle_height_at_90deg_px": 53.75,
+  "footprint": "2x2x2 (anchor = north-west block)",
+  "parts": [
+   "heavy_cannon",
+   "heavy_cannon_head",
+   "heavy_cannon_gun",
+   "heavy_cannon_barrel"
+  ]
+ }
+}

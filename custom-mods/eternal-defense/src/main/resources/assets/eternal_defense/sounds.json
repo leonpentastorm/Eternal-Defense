@@ -391,5 +391,41 @@
       }
     ],
     "subtitle": "subtitles.eternal_defense.turret.shotgun_shot"
+  },
+  "turret.tesla_zap": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/tesla_zap",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.tesla_zap"
+  },
+  "turret.heavy_cannon": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/cannon_fire",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.heavy_cannon"
+  },
+  "turret.curse_cloud": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/curse_cloud",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.curse_cloud"
+  },
+  "trap.punji_spring": {
+    "sounds": [
+      {
+        "name": "eternal_defense:sfx/punji_spring",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.eternal_defense.trap.punji_spring"
   }
 }

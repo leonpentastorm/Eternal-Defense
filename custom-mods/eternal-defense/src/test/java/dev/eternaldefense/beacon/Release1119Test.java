@@ -81,7 +81,7 @@ final class Release1119Test {
         assertTrue(turrets.contains("return stack.is(Turrets.ammo(line));"),"a slot takes only the turret's own ammo");
         assertTrue(mod.contains("TURRET_MENU=MENUS.register(\"turret\""));
         assertTrue(client.contains("MenuScreens.register(EternalDefense.TURRET_MENU.get(),TurretScreen::new)"));
-        assertTrue(client.contains("lamp(pose,buffers,block.mk,be.light(),now);"),"every turret draws its lamp");
+        assertTrue(client.contains("lamp(pose,buffers,TowerClient.lampAt(block.line,block.mk),be.light(),now);"),"every turret draws its lamp");
         assertTrue(client.contains("be.status(be.loadedShown)"),"the crosshair line uses the shots the client heard");
         assertTrue(turrets.contains("t.putInt(\"Loaded\",loaded());")&&turrets.contains("loadedShown=tag.getInt(\"Loaded\")"));
         assertTrue(poles.contains("be.showReach=!be.showReach;")&&poles.contains("tag.putBoolean(\"ShowReach\",showReach)"),"the reach toggle is kept with the pole");
@@ -146,7 +146,7 @@ final class Release1119Test {
         String turrets=Release114Test.source("Turrets.java"),fx=Release114Test.source("TurretEffectsClient.java");
         assertTrue(turrets.contains("DefenseSounds.MG_SHOT.get()")&&turrets.contains("DefenseSounds.SHOTGUN_SHOT.get()"));
         assertFalse(turrets.contains("ParticleTypes.FLAME"),"the flame is drawn by each client, not sent as particles");
-        assertTrue(turrets.contains("if(block().line!=Line.FLAME)l.blockEvent("),"shots (and their casings) for the guns only");
+        assertTrue(turrets.contains("if(line.recoils())l.blockEvent(")&&!Turrets.Line.FLAME.recoils(),"shots (and their casings) for the guns only");
         assertTrue(turrets.contains("var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);"),"the block passes the shot event to its entity, so it reaches the clients");
         assertTrue(fx.contains("DefenseSounds.FLAME_START")&&fx.contains("new Roar(be)")&&fx.contains("DefenseSounds.FLAME_END")&&fx.contains("looping=true"),"lights once, loops while it burns, goes out once");
         assertTrue(fx.contains("now-burn.litAt>=START_TICKS"),"the loop starts when the start sound ends");

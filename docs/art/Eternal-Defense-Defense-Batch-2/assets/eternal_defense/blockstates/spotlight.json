@@ -1,0 +1,58 @@
+{
+ "variants": {
+  "facing=north,half=lower,lit=false": {
+   "model": "eternal_defense:block/spotlight"
+  },
+  "facing=north,half=lower,lit=true": {
+   "model": "eternal_defense:block/spotlight_on"
+  },
+  "facing=north,half=upper,lit=false": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=north,half=upper,lit=true": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=east,half=lower,lit=false": {
+   "model": "eternal_defense:block/spotlight",
+   "y": 90
+  },
+  "facing=east,half=lower,lit=true": {
+   "model": "eternal_defense:block/spotlight_on",
+   "y": 90
+  },
+  "facing=east,half=upper,lit=false": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=east,half=upper,lit=true": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=south,half=lower,lit=false": {
+   "model": "eternal_defense:block/spotlight",
+   "y": 180
+  },
+  "facing=south,half=lower,lit=true": {
+   "model": "eternal_defense:block/spotlight_on",
+   "y": 180
+  },
+  "facing=south,half=upper,lit=false": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=south,half=upper,lit=true": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=west,half=lower,lit=false": {
+   "model": "eternal_defense:block/spotlight",
+   "y": 270
+  },
+  "facing=west,half=lower,lit=true": {
+   "model": "eternal_defense:block/spotlight_on",
+   "y": 270
+  },
+  "facing=west,half=upper,lit=false": {
+   "model": "eternal_defense:block/spotlight_upper"
+  },
+  "facing=west,half=upper,lit=true": {
+   "model": "eternal_defense:block/spotlight_upper"
+  }
+ }
+}

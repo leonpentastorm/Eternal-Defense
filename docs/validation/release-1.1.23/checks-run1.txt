@@ -1,0 +1,44 @@
+Run 1 (first harness, before the fixes):
+QA_CHECK PASS placed from the item: a 2 x 2 x 2 tower, powered, live arcs Block{eternal_defense:tesla_turret_mk3}[powered=true]
+QA_CHECK PASS it needs no ammo: green light, ready line ready / Tesla Coil Turret Mk III: ready, range 14 blocks, needs no ammo.
+QA_CHECK PASS the grid counts it as a turret Summary[dynamos=1, turning=1, rpm=32.0, demand=22.0, running=true, overstressed=false, turrets=1, boxes=0, su=704.0]
+QA_CHECK PASS one zap reaches 7 mobs (Mark III) and no more [8.00, 6.80, 5.78, 4.91, 4.18, 3.55, 3.02, 0.00, 0.00]
+QA_CHECK PASS 8 on the first, 15% less at each jump [8.00, 6.80, 5.78, 4.91, 4.18, 3.55, 3.02, 0.00, 0.00]
+QA_CHECK PASS the client hears the zap's 7 links, so it draws the bolt 7
+QA_CHECK PASS out of shells: orange light empty
+QA_CHECK PASS a crate loads 4 shells 4
+QA_NOTE CANNON direct 28.650024 neighbour 22.17273
+QA_CHECK FAIL a flat shot hits for 30 at the middle 28.650024
+QA_CHECK PASS the blast also hurts the mob 2 blocks away, less 22.17273
+QA_CHECK PASS one shell spent 3
+QA_CHECK PASS it fired flat (no lob) 
+QA_NOTE CANNON drawn pitch 3.029125
+QA_CHECK FAIL over the wall it lobs, the barrel lifted high 3.029125
+QA_NOTE CANNON lob 28.64972
+QA_CHECK PASS the lobbed shell hits the mob it could not see 28.64972
+QA_CHECK PASS nothing closer than 5 blocks is shelled 0.0 2
+QA_NOTE CURSE cloud (-8.5, -60.0, -5.5)
+QA_CHECK PASS the cloud lands on the crowd (-8.5, -60.0, -5.5)
+QA_CHECK PASS crowd: Slowness II and Poison 1 true
+QA_CHECK PASS the husk: no poison (undead) but slowed and gassed 1.9199982
+QA_CHECK PASS the lone mob is untouched 
+QA_CHECK PASS gas: 2 damage on the vindicator 2.0
+QA_CHECK PASS the totem shows its gas 
+QA_CHECK PASS clouds last their 5 seconds, then the gas on the totem stops 
+QA_CHECK FAIL 20 damage, once 0.0
+QA_CHECK FAIL the stakes are up 
+QA_CHECK FAIL standing on a sprung trap does nothing more 0.0
+QA_CHECK PASS set again by hand 
+QA_CHECK FAIL still sprung while wave 1 lasts 
+QA_CHECK PASS a new wave sets the trap again 
+QA_CHECK PASS lit in reach: light 15 15
+QA_CHECK PASS dark out of reach 
+QA_CHECK PASS a fresh kind: full damage (6), and lightning is marked as learned from wave 3 6.0 {LIGHTNING=3}
+QA_CHECK PASS two waves later: half (3) 3.0
+QA_CHECK FAIL the raid's explosion resistance halves the shell (15) 14.325
+QA_CHECK PASS immune raider: no slowness, no gas damage 0.0
+QA_CHECK PASS the mob beside it is slowed and gassed 
+QA_CHECK FAIL the stakes do half (10) 0.0
+QA_CHECK PASS flame turrets cost 96, 192 and 384 like the others; the Heavy Cannon 512 {heavy_cannon_shell=48, shotgun_turret_ammo=32, flame_turret_fuel=40, shotgun_turret_mk2=192, shotgun_turret_mk3=384, shotgun_turret_mk1=96, punji_trap=32, barricade=16, shock_box=64, flame_turret_mk3=384, heavy_cannon=512, flame_turret_mk1=96, flame_turret_mk2=192, mg_turret_ammo=32, sandbag=16, mg_turret_mk1=96, tesla_turret_mk3=384, mg_turret_mk2=192, tesla_turret_mk2=192, mg_turret_mk3=384, tesla_turret_mk1=96, barbed_wire=16, electric_wire=16, spotlight=24, curse_totem=192}
+QA_CHECK PASS the walls and the shells load as Create compacting recipes []
+QA_DONE pass=30 fail=8

@@ -223,13 +223,16 @@ final class LangKeysTest {
             Map.entry("mg_turret_mk1","Machine Gun Turrets"),Map.entry("mg_turret_mk2","Machine Gun Turrets"),Map.entry("mg_turret_mk3","Machine Gun Turrets"),
             Map.entry("shotgun_turret_mk1","Shotgun Turrets"),Map.entry("shotgun_turret_mk2","Shotgun Turrets"),Map.entry("shotgun_turret_mk3","Shotgun Turrets"),
             Map.entry("flame_turret_mk1","Flame Turrets"),Map.entry("flame_turret_mk2","Flame Turrets"),Map.entry("flame_turret_mk3","Flame Turrets"),
-            Map.entry("mg_turret_ammo","Turret ammo"),Map.entry("shotgun_turret_ammo","Turret ammo"),Map.entry("flame_turret_fuel","Turret ammo"));
+            Map.entry("mg_turret_ammo","Turret ammo"),Map.entry("shotgun_turret_ammo","Turret ammo"),Map.entry("flame_turret_fuel","Turret ammo"),
+            Map.entry("tesla_turret_mk1","Tesla Coil Turrets"),Map.entry("tesla_turret_mk2","Tesla Coil Turrets"),Map.entry("tesla_turret_mk3","Tesla Coil Turrets"),
+            Map.entry("heavy_cannon","Heavy Cannon"),Map.entry("curse_totem","Curse Gas Totem"),Map.entry("heavy_cannon_shell","Turret ammo"),
+            Map.entry("punji_trap","Punji Spike Trap"),Map.entry("spotlight","Industrial Spotlight"));
         var ignored=Set.of("raider_bridge","structure_part","gate_part","logistics_hub_part","loadout_station_part","loadout_capsule_part","supply_delivery_gate_left","supply_receiving_gate_left","structure_port","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/eternaldefense/beacon/EternalDefense.java"));
         var registered=new TreeSet<String>();
         for(String regex:List.of("(?:BLOCKS|ITEMS)\\.register\\(\"([a-z0-9_]+)\"","part\\(\"([a-z_]+)\"\\)","kitchen\\(\"([a-z0-9_]+)\"","drinks\\(\"([a-z0-9_]+)\"","kit\\(\"([a-z0-9_]+)\"")){Matcher m=Pattern.compile(regex).matcher(source);while(m.find())registered.add(m.group(1));}
         // The turrets are registered in a loop, the dynamos by the Create compat
-        for(var line:Turrets.Line.values())for(int mk=1;mk<=3;mk++)registered.add(Turrets.id(line,mk));
+        for(var line:Turrets.Line.values())for(int mk=1;mk<=line.marks;mk++)registered.add(Turrets.id(line,mk));
         {Matcher m=Pattern.compile("(?:blocks|items)\\.register\\(\"([a-z0-9_]+)\"").matcher(Files.readString(Path.of("src/create/java/dev/eternaldefense/beacon/CreatePower.java")));while(m.find())registered.add(m.group(1));}
         Matcher platforms=Pattern.compile("platform\\(\"([a-z]+)\"\\)").matcher(source);while(platforms.find())registered.add(platforms.group(1)+"_platform");
         var unknown=registered.stream().filter(id->!cards.containsKey(id)&&!ignored.contains(id)).toList();

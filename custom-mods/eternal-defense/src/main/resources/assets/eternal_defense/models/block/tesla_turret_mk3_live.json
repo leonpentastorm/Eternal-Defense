@@ -1,0 +1,300 @@
+{
+ "credit": "Eternal Defense - defense batch 2",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "eternal_defense:block/tesla_turret_mk3_live",
+  "particle": "eternal_defense:block/tesla_turret_mk3_live"
+ },
+ "elements": [
+  {
+   "name": "Arc_0",
+   "from": [
+    4.9,
+    28.4,
+    15.99
+   ],
+   "to": [
+    27.1,
+    32.0,
+    16.01
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      5.0625,
+      5.625,
+      5.9375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      5.75,
+      5.0625,
+      11.3125,
+      5.9375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_1",
+   "from": [
+    4.9,
+    28.4,
+    15.99
+   ],
+   "to": [
+    27.1,
+    32.0,
+    16.01
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     16,
+     28,
+     16
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      6.0625,
+      5.625,
+      6.9375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      5.75,
+      6.0625,
+      11.3125,
+      6.9375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_2",
+   "from": [
+    15.99,
+    28.4,
+    4.9
+   ],
+   "to": [
+    16.01,
+    32.0,
+    27.1
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      0.0625,
+      7.0625,
+      5.625,
+      7.9375
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      5.75,
+      7.0625,
+      11.3125,
+      7.9375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_3",
+   "from": [
+    4.9,
+    28.4,
+    15.99
+   ],
+   "to": [
+    27.1,
+    32.0,
+    16.01
+   ],
+   "rotation": {
+    "angle": -45,
+    "axis": "y",
+    "origin": [
+     16,
+     28,
+     16
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      8.0625,
+      5.625,
+      8.9375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      5.75,
+      8.0625,
+      11.3125,
+      8.9375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Bridge_0",
+   "from": [
+    1.15,
+    19.0,
+    15.99
+   ],
+   "to": [
+    30.85,
+    28.5,
+    16.01
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     16,
+     19,
+     16
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      0.0625,
+      7.5,
+      2.4375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.625,
+      0.0625,
+      15.0625,
+      2.4375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Bridge_1",
+   "from": [
+    1.15,
+    19.0,
+    15.99
+   ],
+   "to": [
+    30.85,
+    28.5,
+    16.01
+   ],
+   "rotation": {
+    "angle": -45,
+    "axis": "y",
+    "origin": [
+     16,
+     19,
+     16
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.0625,
+      2.5625,
+      7.5,
+      4.9375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.625,
+      2.5625,
+      15.0625,
+      4.9375
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ],
+ "render_type": "minecraft:cutout"
+}

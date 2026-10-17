@@ -4,6 +4,7 @@
     "minecraft:cactus",
     "minecraft:sweet_berry_bush",
     "minecraft:stalagmite",
-    "eternal_defense:barbed_wire"
+    "eternal_defense:barbed_wire",
+    "eternal_defense:punji_spike"
   ]
 }

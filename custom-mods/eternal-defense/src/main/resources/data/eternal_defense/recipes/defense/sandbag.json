@@ -1,0 +1,26 @@
+{
+  "type": "create:compacting",
+  "ingredients": [
+    {
+      "tag": "minecraft:sand"
+    },
+    {
+      "tag": "minecraft:sand"
+    },
+    {
+      "tag": "minecraft:sand"
+    },
+    {
+      "tag": "minecraft:sand"
+    },
+    {
+      "tag": "minecraft:wool"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:sandbag",
+      "count": 4
+    }
+  ]
+}

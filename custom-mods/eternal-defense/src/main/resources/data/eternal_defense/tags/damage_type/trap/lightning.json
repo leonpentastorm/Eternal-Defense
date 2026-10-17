@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "minecraft:lightning_bolt",
-    "eternal_defense:electric_shock"
+    "eternal_defense:electric_shock",
+    "eternal_defense:turret_tesla"
   ]
 }

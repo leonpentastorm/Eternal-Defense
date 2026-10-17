@@ -34,7 +34,7 @@ final class Release1118Test {
         assertEquals(1f,DefenseWalls.through("",true));
     }
     @Test void turretLinesGrowWithTheirMark(){
-        for(var line:Turrets.Line.values())for(int mk=1;mk<3;mk++){
+        for(var line:Turrets.Line.values())for(int mk=1;mk<line.marks;mk++){
             var low=Turrets.stats(line,mk);var high=Turrets.stats(line,mk+1);
             assertTrue(high.range()>low.range()&&Turrets.dps(line,mk+1)>Turrets.dps(line,mk)&&high.stress()>low.stress(),line+" Mk "+mk);
         }
@@ -50,7 +50,7 @@ final class Release1118Test {
     @Test void theDepotSellsTheKitButNotThePowerPlant() throws Exception{
         String economy=Release114Test.source("Economy.java");
         var ids=DefenseDepot.PRODUCTS.stream().map(DefenseDepot.Product::id).toList();
-        for(var line:Turrets.Line.values())for(int mk=1;mk<=3;mk++)assertTrue(ids.contains(Turrets.id(line,mk)));
+        for(var line:Turrets.Line.values())for(int mk=1;mk<=line.marks;mk++)assertTrue(ids.contains(Turrets.id(line,mk)));
         assertTrue(ids.containsAll(List.of("mg_turret_ammo","shotgun_turret_ammo","flame_turret_fuel","sandbag","barricade","barbed_wire","shock_box","electric_wire")));
         for(var id:List.of("defense_depot","power_pole","shaft_dynamo","cog_dynamo")){
             assertFalse(ids.contains(id),id+" is fabricated, not sold");
@@ -65,11 +65,11 @@ final class Release1118Test {
         assertTrue(body.contains(mg[0]+", "+mg[1]+" and "+mg[2]+" blocks out"));
         assertTrue(body.contains(sg[0]+", "+sg[1]+" and "+sg[2]+" blocks out"));
         assertTrue(body.contains(fl[0]+", "+fl[1]+" and "+fl[2]+" blocks long"));
-        var t=Economy.TURRET_PRICE;var f=Economy.FLAME_TURRET_PRICE;
-        assertTrue(body.contains(t[0]+", "+t[1]+" and "+t[2]+" Universal Ammo Coins")&&body.contains(f[0]+", "+f[1]+" and "+f[2]+" Universal Ammo Coins"));
-        assertTrue(body.contains(Economy.DEPOT_MG_AMMO+", "+Economy.DEPOT_SHELLS+" and "+Economy.DEPOT_FUEL+" Universal Ammo Coins"));
+        var t=Economy.TURRET_PRICE;
+        assertTrue(body.contains(t[0]+", "+t[1]+" and "+t[2]+" Universal Ammo Coins"));
+        assertTrue(body.contains(Economy.DEPOT_MG_AMMO+", "+Economy.DEPOT_SHELLS+", "+Economy.DEPOT_FUEL+" and "+Economy.DEPOT_CANNON_SHELLS+" Universal Ammo Coins"));
         assertTrue(body.contains("for "+Economy.DEPOT_SHOCK_BOX+" Universal Ammo Coins"));
-        assertTrue(body.contains(Turrets.perItem(Turrets.Line.MG)+" shots a can, "+Turrets.perItem(Turrets.Line.SHOTGUN)+" shots a box and "+Turrets.perItem(Turrets.Line.FLAME)+" bursts a bottle"));
+        assertTrue(body.contains(Turrets.perItem(Turrets.Line.MG)+" shots a can, "+Turrets.perItem(Turrets.Line.SHOTGUN)+" shots a box, "+Turrets.perItem(Turrets.Line.FLAME)+" bursts a bottle and "+Turrets.perItem(Turrets.Line.CANNON)+" shells a crate"));
         assertTrue(body.contains("within "+PowerKit.AURA+" blocks")&&body.contains(PowerKit.AURA_DOWN+" blocks down and "+PowerKit.AURA_UP+" blocks up"));
         assertTrue(body.contains("at most "+PowerKit.WIRE_MAX+" blocks")&&body.contains(PowerKit.MIN_RPM+" RPM or more"));
         assertTrue(body.contains(PowerKit.SHOCK_CHARGE/20+" more seconds")&&body.contains(PowerKit.SHOCK_STRESS+" stress per RPM"));
@@ -85,7 +85,7 @@ final class Release1118Test {
         assertTrue(detail.contains("flame "+Turrets.stats(Turrets.Line.FLAME,1).stress()+", "+Turrets.stats(Turrets.Line.FLAME,2).stress()+" and "+s3.stress()));
         assertTrue(detail.contains("up to "+PowerKit.SHOCK_REACH+" joined")&&detail.contains("A pole holds "+PowerPoles.MAX_LINKS+" spans and a Shock Box "+ShockBoxes.MAX_LINKS));
         assertTrue(detail.contains("A turret holds "+Turrets.SLOTS+" stacks"));
-        for(var line:Turrets.Line.values())if(line!=Turrets.Line.FLAME)for(int mk=1;mk<=3;mk++)assertEquals(Turrets.stats(line,mk).stress(),Turrets.stats(Turrets.Line.MG,mk).stress(),"machine gun and shotgun share their stress");
+        for(var line:new Turrets.Line[]{Turrets.Line.MG,Turrets.Line.SHOTGUN})for(int mk=1;mk<=3;mk++)assertEquals(Turrets.stats(line,mk).stress(),Turrets.stats(Turrets.Line.MG,mk).stress(),"machine gun and shotgun share their stress");
     }
     private static int[] range(Turrets.Line line){return new int[]{Turrets.stats(line,1).range(),Turrets.stats(line,2).range(),Turrets.stats(line,3).range()};}
     @Test void wiring() throws Exception{

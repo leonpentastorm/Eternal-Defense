@@ -32,6 +32,8 @@ public final class RaidAdaptation {
     static double resistance(CampaignData d,Kind kind){
         var first=d.trapFirstWave.get(kind);return first==null?0:Math.min(1,Math.max(0,d.wave-first)*STEP);
     }
+    /** The share of this kind of trap damage a raider of the running raid shrugs off (none for any other mob) */
+    static double resistance(LivingEntity target,Kind kind){var d=raid(target);return d==null?0:resistance(d,kind);}
     static void begin(CampaignData d){d.trapFirstWave.clear();d.setDirty();}
     static void nextWave(ServerLevel level,CampaignData d){
         for(var kind:Kind.values()){

@@ -31,28 +31,30 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** The Defense Depot: turrets, their ammunition and the defenses, for Universal Ammo Coins */
+/** The Defense Depot: towers, their ammunition, walls, traps and the spotlight, for Universal Ammo Coins */
 final class DefenseDepot {
     private DefenseDepot(){}
     record Product(String id,Supplier<Item> item,int count,int price){}
-    static final List<Product> PRODUCTS=List.of(
-        new Product("mg_turret_mk1",()->EternalDefense.TURRETS.get("mg_turret_mk1").get().asItem(),1,Economy.TURRET_PRICE[0]),
-        new Product("mg_turret_mk2",()->EternalDefense.TURRETS.get("mg_turret_mk2").get().asItem(),1,Economy.TURRET_PRICE[1]),
-        new Product("mg_turret_mk3",()->EternalDefense.TURRETS.get("mg_turret_mk3").get().asItem(),1,Economy.TURRET_PRICE[2]),
-        new Product("shotgun_turret_mk1",()->EternalDefense.TURRETS.get("shotgun_turret_mk1").get().asItem(),1,Economy.TURRET_PRICE[0]),
-        new Product("shotgun_turret_mk2",()->EternalDefense.TURRETS.get("shotgun_turret_mk2").get().asItem(),1,Economy.TURRET_PRICE[1]),
-        new Product("shotgun_turret_mk3",()->EternalDefense.TURRETS.get("shotgun_turret_mk3").get().asItem(),1,Economy.TURRET_PRICE[2]),
-        new Product("flame_turret_mk1",()->EternalDefense.TURRETS.get("flame_turret_mk1").get().asItem(),1,Economy.FLAME_TURRET_PRICE[0]),
-        new Product("flame_turret_mk2",()->EternalDefense.TURRETS.get("flame_turret_mk2").get().asItem(),1,Economy.FLAME_TURRET_PRICE[1]),
-        new Product("flame_turret_mk3",()->EternalDefense.TURRETS.get("flame_turret_mk3").get().asItem(),1,Economy.FLAME_TURRET_PRICE[2]),
-        new Product("mg_turret_ammo",()->EternalDefense.MG_AMMO.get(),4,Economy.DEPOT_MG_AMMO),
-        new Product("shotgun_turret_ammo",()->EternalDefense.SHOTGUN_AMMO.get(),4,Economy.DEPOT_SHELLS),
-        new Product("flame_turret_fuel",()->EternalDefense.FLAME_FUEL.get(),4,Economy.DEPOT_FUEL),
-        new Product("sandbag",()->EternalDefense.SANDBAG.get().asItem(),8,Economy.DEPOT_SANDBAGS),
-        new Product("barricade",()->EternalDefense.BARRICADE.get().asItem(),4,Economy.DEPOT_BARRICADE),
-        new Product("barbed_wire",()->EternalDefense.BARBED_WIRE.get().asItem(),8,Economy.DEPOT_BARBED),
-        new Product("shock_box",()->EternalDefense.SHOCK_BOX.get().asItem(),1,Economy.DEPOT_SHOCK_BOX),
-        new Product("electric_wire",()->EternalDefense.ELECTRIC_WIRE.get(),8,Economy.DEPOT_WIRE));
+    static final List<Product> PRODUCTS=products();
+    /** Every tower and its Marks, then the ammunition, the walls and traps, the power gear and the spotlight */
+    private static List<Product> products(){
+        var out=new java.util.ArrayList<Product>();
+        for(var line:Turrets.Line.values())for(int mk=1;mk<=line.marks;mk++){var id=Turrets.id(line,mk);out.add(new Product(id,()->EternalDefense.TURRETS.get(id).get().asItem(),1,price(line,mk)));}
+        out.add(new Product("mg_turret_ammo",()->EternalDefense.MG_AMMO.get(),4,Economy.DEPOT_MG_AMMO));
+        out.add(new Product("shotgun_turret_ammo",()->EternalDefense.SHOTGUN_AMMO.get(),4,Economy.DEPOT_SHELLS));
+        out.add(new Product("flame_turret_fuel",()->EternalDefense.FLAME_FUEL.get(),4,Economy.DEPOT_FUEL));
+        out.add(new Product("heavy_cannon_shell",()->EternalDefense.CANNON_SHELLS.get(),4,Economy.DEPOT_CANNON_SHELLS));
+        out.add(new Product("sandbag",()->EternalDefense.SANDBAG.get().asItem(),8,Economy.DEPOT_SANDBAGS));
+        out.add(new Product("barricade",()->EternalDefense.BARRICADE.get().asItem(),4,Economy.DEPOT_BARRICADE));
+        out.add(new Product("barbed_wire",()->EternalDefense.BARBED_WIRE.get().asItem(),8,Economy.DEPOT_BARBED));
+        out.add(new Product("punji_trap",()->EternalDefense.PUNJI_TRAP.get().asItem(),4,Economy.DEPOT_PUNJI));
+        out.add(new Product("shock_box",()->EternalDefense.SHOCK_BOX.get().asItem(),1,Economy.DEPOT_SHOCK_BOX));
+        out.add(new Product("electric_wire",()->EternalDefense.ELECTRIC_WIRE.get(),8,Economy.DEPOT_WIRE));
+        out.add(new Product("spotlight",()->EternalDefense.SPOTLIGHT.get().asItem(),1,Economy.DEPOT_SPOTLIGHT));
+        return List.copyOf(out);
+    }
+    /** Pure: what a tower costs: every three-Mark line the same, the Heavy Cannon and the totem their own */
+    static int price(Turrets.Line line,int mk){return switch(line){case CANNON->Economy.HEAVY_CANNON_PRICE;case CURSE->Economy.CURSE_TOTEM_PRICE;default->Economy.TURRET_PRICE[mk-1];};}
     static final int BOUGHT=1,NO_COINS=2,NO_ROOM=3;
 
     static final class DepotBlock extends Block implements DefenseStructures.Footprint {

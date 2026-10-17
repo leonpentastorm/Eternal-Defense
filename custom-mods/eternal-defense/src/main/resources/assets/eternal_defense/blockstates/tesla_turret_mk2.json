@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "eternal_defense:block/tesla_turret_mk2"
+      }
+    },
+    {
+      "when": {
+        "powered": "true"
+      },
+      "apply": {
+        "model": "eternal_defense:block/tesla_turret_mk2_live"
+      }
+    }
+  ]
+}

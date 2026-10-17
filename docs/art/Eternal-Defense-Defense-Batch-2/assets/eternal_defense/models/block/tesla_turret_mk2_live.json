@@ -1,0 +1,366 @@
+{
+ "credit": "Eternal Defense - defense batch 2",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "eternal_defense:block/tesla_turret_mk2_live",
+  "particle": "eternal_defense:block/tesla_turret_mk2_live"
+ },
+ "elements": [
+  {
+   "name": "Arc_0",
+   "from": [
+    0.9,
+    26.6,
+    7.99
+   ],
+   "to": [
+    15.1,
+    30.5,
+    8.01
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.125,
+      0.125,
+      7.25,
+      2.125
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.5,
+      0.125,
+      14.625,
+      2.125
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_1",
+   "from": [
+    0.9,
+    26.6,
+    7.99
+   ],
+   "to": [
+    15.1,
+    30.5,
+    8.01
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     8,
+     25.0,
+     8
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.125,
+      2.375,
+      7.25,
+      4.375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.5,
+      2.375,
+      14.625,
+      4.375
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_2",
+   "from": [
+    7.99,
+    26.6,
+    0.9
+   ],
+   "to": [
+    8.01,
+    30.5,
+    15.1
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      0.125,
+      4.625,
+      7.25,
+      6.625
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      7.5,
+      4.625,
+      14.625,
+      6.625
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_3",
+   "from": [
+    0.9,
+    26.6,
+    7.99
+   ],
+   "to": [
+    15.1,
+    30.5,
+    8.01
+   ],
+   "rotation": {
+    "angle": -45,
+    "axis": "y",
+    "origin": [
+     8,
+     25.0,
+     8
+    ]
+   },
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.125,
+      6.875,
+      7.25,
+      8.875
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.5,
+      6.875,
+      14.625,
+      8.875
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Corona_0",
+   "from": [
+    4.1,
+    26.7,
+    1.25
+   ],
+   "to": [
+    11.9,
+    28.2,
+    1.27
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.125,
+      9.125,
+      4.0,
+      9.875
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      4.25,
+      9.125,
+      8.125,
+      9.875
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Corona_1",
+   "from": [
+    4.1,
+    26.7,
+    14.73
+   ],
+   "to": [
+    11.9,
+    28.2,
+    14.75
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      8.375,
+      9.125,
+      12.25,
+      9.875
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      0.125,
+      10.125,
+      4.0,
+      10.875
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Corona_2",
+   "from": [
+    1.25,
+    26.7,
+    4.1
+   ],
+   "to": [
+    1.27,
+    28.2,
+    11.9
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      4.25,
+      10.125,
+      8.125,
+      10.875
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      8.375,
+      10.125,
+      12.25,
+      10.875
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Corona_3",
+   "from": [
+    14.73,
+    26.7,
+    4.1
+   ],
+   "to": [
+    14.75,
+    28.2,
+    11.9
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "east": {
+     "uv": [
+      0.125,
+      11.125,
+      4.0,
+      11.875
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      4.25,
+      11.125,
+      8.125,
+      11.875
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ],
+ "render_type": "minecraft:cutout"
+}
