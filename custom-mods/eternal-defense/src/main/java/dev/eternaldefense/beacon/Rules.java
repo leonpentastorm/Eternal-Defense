@@ -28,6 +28,11 @@ public final class Rules {
     public static int radius(int core) { return RADIUS[Math.max(0,Math.min(3,core))]; }
     public static int maximumHealth(int core) { return MAXIMUM_HEALTH[Math.max(0,Math.min(3,core))]; }
     public static int waves(int tier) { return 3 + Math.min(5, Math.max(0, tier)); }
+    /** A raid's time limit (ticks): 20 minutes, and 5 more for each wave cleared */
+    public static final long RAID_TIME_TICKS=24000L,WAVE_CLEARED_BONUS_TICKS=6000L;
+    public static long raidTimeLimit(int wavesCleared){return RAID_TIME_TICKS+WAVE_CLEARED_BONUS_TICKS*Math.max(0,wavesCleared);}
+    /** Whole minutes left on the raid clock, rounded up */
+    public static long raidMinutesLeft(long raidTicks,int wavesCleared){return Math.max(0,(raidTimeLimit(wavesCleared)-raidTicks+1199)/1200);}
     /** Ticks into a wave after which the raiders still alive glow through walls, by Reconnaissance level */
     static final int[] REVEAL_TICKS={6000,3600,1200,0};
     public static int revealTicks(int reconnaissance){return REVEAL_TICKS[Math.max(0,Math.min(REVEAL_TICKS.length-1,reconnaissance))];}

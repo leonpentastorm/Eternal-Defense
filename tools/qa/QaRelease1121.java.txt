@@ -1,0 +1,159 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.21: every wave cleared adds 5 minutes to the raid clock, chat says so, and the raid times out at the longer limit. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1121 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1121",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1121",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Chat as the player sees it
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(ClientChatReceivedEvent e){String s=e.getMessage().getString();CHAT.add(s);note("CHAT {}",s);}
+    static boolean saw(String part){synchronized(CHAT){return CHAT.stream().anyMatch(s->s.contains(part));}}
+    static void shotChat(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    // A wave is held open (its raiders never come) until the script clears it
+    static volatile boolean hold;
+    @SubscribeEvent public static void serverStart(TickEvent.ServerTickEvent e){
+        if(e.phase!=TickEvent.Phase.START||server()==null||!hold)return;var d=cd();
+        if(d.phase.equals("raid"))d.spawnCooldown=1_000_000;
+    }
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(200,64,200)))if(!(e instanceof BeaconCombat.Objective))e.discard();}
+    static void clearWave(){srv(()->{var d=cd();d.spawnRemaining=0;d.raiders.clear();d.setDirty();});}
+    static String state(){return srvGet(()->{var d=cd();return "phase="+d.phase+" wave="+d.wave+" raidTicks="+d.raidTicks+" spawnRemaining="+d.spawnRemaining+" health="+d.health+"/"+d.maximumHealth();});}
+
+    static BlockPos B;
+    static void places(){B=new BlockPos(sx+6,sy,sz+6);}
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(20,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            r.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());r.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());sl().setDayTime(6000);clearMobs();
+            var d=cd();d.phase="preparation";d.beacon=B;d.core=0;d.vertical=0;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;look(B.getX()+.5,sy+2,B.getZ()+8.5,B.getX()+.5,sy+1,B.getZ()+.5);},"a Mk I beacon");
+
+        // 1. Wave 1 of a 3-wave raid cleared at minute 10: 5 more minutes, 15 left
+        step(5,()->{hold=true;srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.raidTier=0;d.hardRaid=false;d.introRaid=false;d.activeMods.clear();d.wave=1;d.spawnRemaining=0;d.raiders.clear();d.raidTicks=10*1200;d.waveTicks=0;d.health=d.maximumHealth();d.setDirty();});},"a raid at tier 0 (3 waves), wave 1 at minute 10, no raider left");
+        until("wave 2 starts and its line reaches the client",200,()->srvGet(()->cd().wave)==2&&saw("Wave 2 / 3 incoming."),()->{note("STATE {}",state());
+            check("the line goes out when wave 1 is cleared",saw("Wave 1 cleared: +5 minutes on the raid clock. 15 minutes left to win."),String.valueOf(CHAT));
+            check("the next wave comes as before",saw("Wave 2 / 3 incoming. 1 defender(s)"),"");shotChat("r1121_wave1_cleared");});
+
+        // 2. Past the old 20 minutes in wave 2: still on (1 wave cleared: 25 minutes)
+        step(5,()->srv(()->{var d=cd();d.raidTicks=24000+100;d.setDirty();}),"wave 2 at minute 20 and 5 seconds, past the old limit");
+        step(60,()->{},"3 seconds");
+        step(1,()->{var s=state();note("STATE {}",s);check("past 20 minutes the raid goes on in wave 2",srvGet(()->cd().phase.equals("raid")&&cd().wave==2&&cd().raidTicks>24100),s);},"still on");
+
+        // 3. Wave 2 cleared at minute 16 and a bit: 30 minutes in all, 14 left
+        step(5,()->{srv(()->{var d=cd();d.raidTicks=20000;d.setDirty();});clearWave();},"wave 2 cleared at minute 16.7");
+        until("wave 3 starts and its line reaches the client",200,()->srvGet(()->cd().wave)==3&&saw("Wave 3 / 3 incoming."),()->{note("STATE {}",state());
+            check("the line goes out when wave 2 is cleared",saw("Wave 2 cleared: +5 minutes on the raid clock. 14 minutes left to win."),String.valueOf(CHAT));});
+
+        // 4. Past 25 minutes in wave 3 (the last): still on (2 waves cleared: 30 minutes)
+        step(5,()->srv(()->{var d=cd();d.raidTicks=30000-10;d.setDirty();}),"wave 3 just under minute 25");
+        step(60,()->{},"3 seconds");
+        step(1,()->{var s=state();note("STATE {}",s);check("past 25 minutes the raid goes on in wave 3",srvGet(()->cd().phase.equals("raid")&&cd().wave==3&&cd().raidTicks>30000),s);},"still on");
+
+        // 5. It ends at 30 minutes
+        step(5,()->srv(()->{var d=cd();d.raidTicks=36000-10;d.setDirty();}),"wave 3 just under minute 30");
+        until("the raid ends and the line reaches the client",200,()->!srvGet(()->cd().phase).equals("raid")&&saw("Raid timed out."),()->{var s=state();note("STATE {}",s);
+            check("the raid times out on the first tick past 30 minutes",srvGet(()->cd().raidTicks)==36001,s);
+            check("chat says it timed out",saw("Raid timed out."),"");
+            check("the beacon loses a fifth of its health",srvGet(()->cd().health==cd().maximumHealth()-cd().maximumHealth()/5),s);
+            shotChat("r1121_timed_out");});
+
+        // 6. The Field Guide's raids page
+        step(200,()->hold=false,"10 seconds for the defeat banner to go");
+        step(20,()->{mc().gui.getChat().clearMessages(false);var g=new BeaconClient.GuideScreen(null);mc().setScreen(g);},"open the Field Guide");
+        step(10,()->{if(mc().screen instanceof BeaconClient.GuideScreen g){g.page=Arrays.asList(GuideText.IDS).indexOf("raids");g.scroll=0;}},"the raids page");
+        step(30,()->{check("the Field Guide shows the raids page",mc().screen instanceof BeaconClient.GuideScreen g&&GuideText.IDS[g.page].equals("raids"),"");shot("r1121_guide_raids");},"guide");
+        step(3,()->mc().setScreen(null),"close");
+    }
+
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+}

@@ -464,7 +464,7 @@ public final class EternalDefense {
         int reveal=Rules.revealTicks(d.reconnaissance);
         boolean fog=RaidModifiers.on(d,"fog_of_war");
         if(!fog&&reveal>0&&d.waveTicks==reveal)announce(l,reveal/1200+(reveal==1200?" minute":" minutes")+" elapsed: remaining attackers are now highlighted through walls.");
-        if(d.raidTicks>24000L){fail(l,d,"Raid timed out. Beacon loses 20% health; damaged structures stay damaged.");return;}
+        if(d.raidTicks>Rules.raidTimeLimit(d.wave-1)){fail(l,d,"Raid timed out. Beacon loses 20% health; damaged structures stay damaged.");return;}
         if(d.health<=0){fail(l,d,"Beacon disabled. Repair it between raids; your base remains in the world.");return;}
         if(!l.hasChunkAt(d.beacon)){fail(l,d,"Beacon area unloaded. Retreat counts as a lost defense.");return;}
         if(d.spawnRemaining>0&&--d.spawnCooldown<=0&&RaidBalance.canSpawn(l,d)){if(spawn(l,d))d.spawnRemaining--;d.spawnCooldown=RaidTypes.cooldown(d.raidType);d.setDirty();}
@@ -504,7 +504,7 @@ public final class EternalDefense {
                 if(d.introRaid&&!d.introCompleted){RaidRewards.queue(d,java.util.List.of(new ItemStack(GUN_PLATFORM.get())));d.introCompleted=true;d.introRaid=false;announce(l,"Introduction complete! Claim your Weapon Platform at the beacon.");}
                 BeaconNetwork.announce(l,"victory",d.rewardTier,0,"","");d.victoryRestoration=true;d.phase="restore";RaidTypes.finish(l,d);RaidRescue.reset(l);announce(l,"Defense won! Wave rewards are ready at the beacon. Repairing raid damage; ammunition stays spent.");
             }
-            else nextWave(l,d);
+            else{announce(l,Component.translatable("gui.eternal_defense.raid.wave_cleared",d.wave,Rules.WAVE_CLEARED_BONUS_TICKS/1200,Rules.raidMinutesLeft(d.raidTicks,d.wave)));nextWave(l,d);}
             d.setDirty();
         } else d.setDirty();
     }

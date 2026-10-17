@@ -1,0 +1,24 @@
+QA_NOTE CHAT [Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds.
+QA_NOTE CHAT Welcome to Eternal Defense. Right-click your Field Guide to get started.
+QA_NOTE CHAT [Eternal Defense] Wave 1 cleared: +5 minutes on the raid clock. 15 minutes left to win.
+QA_NOTE CHAT [Eternal Defense] Wave 2 / 3 incoming. 1 defender(s), 6 attackers.
+QA_NOTE STATE phase=raid wave=2 raidTicks=12007 spawnRemaining=6 health=1000/1000
+QA_CHECK PASS the line goes out when wave 1 is cleared [[Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds., Welcome to Eternal Defense. Right-click your Field Guide to get started., [Eternal Defense] Wave 1 cleared: +5 minutes on the raid clock. 15 minutes left to win., [Eternal Defense] Wave 2 / 3 incoming. 1 defender(s), 6 attackers.]
+QA_CHECK PASS the next wave comes as before 
+QA_NOTE STATE phase=raid wave=2 raidTicks=24166 spawnRemaining=6 health=1000/1000
+QA_CHECK PASS past 20 minutes the raid goes on in wave 2 phase=raid wave=2 raidTicks=24166 spawnRemaining=6 health=1000/1000
+QA_NOTE CHAT [Eternal Defense] Wave 2 cleared: +5 minutes on the raid clock. 14 minutes left to win.
+QA_NOTE CHAT [Eternal Defense] Wave 3 / 3 incoming. 1 defender(s), 7 attackers.
+QA_NOTE STATE phase=raid wave=3 raidTicks=20006 spawnRemaining=7 health=1000/1000
+QA_CHECK PASS the line goes out when wave 2 is cleared [[Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds., Welcome to Eternal Defense. Right-click your Field Guide to get started., [Eternal Defense] Wave 1 cleared: +5 minutes on the raid clock. 15 minutes left to win., [Eternal Defense] Wave 2 / 3 incoming. 1 defender(s), 6 attackers., [Eternal Defense] Wave 2 cleared: +5 minutes on the raid clock. 14 minutes left to win., [Eternal Defense] Wave 3 / 3 incoming. 1 defender(s), 7 attackers.]
+QA_NOTE STATE phase=raid wave=3 raidTicks=30057 spawnRemaining=7 health=1000/1000
+QA_CHECK PASS past 25 minutes the raid goes on in wave 3 phase=raid wave=3 raidTicks=30057 spawnRemaining=7 health=1000/1000
+QA_NOTE CHAT The next raid is an ordinary one. Pick a special raid or modifiers in the beacon's Raid control tab.
+QA_NOTE CHAT [Eternal Defense] Raid timed out. Beacon loses 20% health; damaged structures stay damaged.
+QA_NOTE STATE phase=restore wave=3 raidTicks=36001 spawnRemaining=0 health=800/1000
+QA_CHECK PASS the raid times out on the first tick past 30 minutes phase=restore wave=3 raidTicks=36001 spawnRemaining=0 health=800/1000
+QA_CHECK PASS chat says it timed out 
+QA_CHECK PASS the beacon loses a fifth of its health phase=restore wave=3 raidTicks=36001 spawnRemaining=0 health=800/1000
+QA_NOTE CHAT [Eternal Defense] Machine and turret contents recovered; defeated wall damage remains. Next interval: 10 active days.
+QA_CHECK PASS the Field Guide shows the raids page 
+QA_DONE pass=9 fail=0

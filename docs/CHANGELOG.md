@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.21 — Every cleared wave adds 5 minutes to the raid clock (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.20 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.21 (Part B, Raids); tests: `docs/ROUND-1.1.21-TESTING.md`.
+
+* **Raid time limit.** A raid must still be won within 20 minutes, but every wave you clear now adds 5 more minutes (a 3-wave raid has up to 30 minutes, an 8-wave raid up to 55). Before, it was a fixed 20 minutes for the whole raid.
+* **Chat** says when a wave is cleared and how many minutes are left to win.
+* **Field Guide:** the raids page explains the time limit and what happens when it runs out (you lose and the beacon loses a fifth of its health).
+
 ## 1.1.20 — Louder turrets heard further away, a new shotgun shot, reach walls, Defense Depot prices x4 (2026-10-17, `feature/power-defense`)
 
 The update after 1.1.19 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.20 (Part M, section 5.14); tests: `docs/ROUND-1.1.20-TESTING.md`.
