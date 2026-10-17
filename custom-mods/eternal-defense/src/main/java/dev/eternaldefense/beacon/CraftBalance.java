@@ -15,7 +15,7 @@ final class CraftBalance {
     private CraftBalance(){}
 
     /** The rules (data/eternal_defense/balance.json) */
-    record Settings(double outlierFrom,double step,int maxUnits,int minPeers,List<String> rare,Map<Integer,String> material,Map<Integer,Integer> perUnit,Set<String> keptPacks){}
+    record Settings(double outlierFrom,double step,int maxUnits,int minPeers,List<String> rare,Map<Integer,String> material,Map<Integer,Integer> perUnit,Set<String> keptPacks,int keptUpToAge){}
     private static Settings settings;
     static Settings settings(){
         if(settings!=null)return settings;
@@ -24,7 +24,7 @@ final class CraftBalance {
         var material=new HashMap<Integer,String>();root.getAsJsonObject("rare_by_age").entrySet().forEach(e->material.put(Integer.parseInt(e.getKey()),e.getValue().getAsString()));
         var perUnit=new HashMap<Integer,Integer>();root.getAsJsonObject("per_unit_by_age").entrySet().forEach(e->perUnit.put(Integer.parseInt(e.getKey()),e.getValue().getAsInt()));
         var kept=new HashSet<String>();if(root.has("damage_attachments_kept_from"))root.getAsJsonArray("damage_attachments_kept_from").forEach(e->kept.add(e.getAsString()));
-        return settings=new Settings(root.get("outlier_from").getAsDouble(),root.get("step").getAsDouble(),root.get("max_units").getAsInt(),root.get("min_peers").getAsInt(),List.copyOf(rare),Map.copyOf(material),Map.copyOf(perUnit),Set.copyOf(kept));
+        return settings=new Settings(root.get("outlier_from").getAsDouble(),root.get("step").getAsDouble(),root.get("max_units").getAsInt(),root.get("min_peers").getAsInt(),List.copyOf(rare),Map.copyOf(material),Map.copyOf(perUnit),Set.copyOf(kept),root.has("damage_attachments_kept_up_to_age")?root.get("damage_attachments_kept_up_to_age").getAsInt():0);
     }
 
     /** Ages set by hand: data/eternal_defense/age_overrides.json, then config/eternal-defense-ages.json; one line an item ("bf1:sw_model3": 1) */

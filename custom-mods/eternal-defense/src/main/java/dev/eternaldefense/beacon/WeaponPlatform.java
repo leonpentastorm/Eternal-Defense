@@ -149,11 +149,11 @@ public final class WeaponPlatform {
                 if(gate==null){var tag=output.getOrCreateTag();String type=tag.contains("GunId")?"gun":tag.contains("AmmoId")?"ammo":"attachment";
                     String indexed=tag.getString(type.equals("gun")?"GunId":type.equals("ammo")?"AmmoId":"AttachmentId");gate=new Gate(5,type,indexed.isEmpty()?id.toString():indexed);}
                 if(!gate.kind.equals(kind))continue;
-                if(kind.equals("attachment")&&!AttachmentDamage.sold(output))continue;   // An add-on pack's attachment that adds damage is not sold
                 list.add(new Entry(id,recipe,gate,output));
             }catch(ReflectiveOperationException e){com.mojang.logging.LogUtils.getLogger().error("Platform could not read recipe {}",id,e);}
         }
         list=new ArrayList<>(CraftBalance.aged(list,catalogue().keySet(),kind,recipes));   // Hand-set Ages, unknown guns by damage output
+        if(kind.equals("attachment"))list.removeIf(e->!AttachmentDamage.sold(e.output,e.gate.age));   // An add-on pack's attachment that adds damage is sold in the first two Ages only
         if(kind.equals("ammo")){
             // A magazine is listed no later than the rounds it holds, as the table lists them
             Map<String,Integer> rounds=new HashMap<>();for(var e:list)if(e.output.hasTag()&&e.output.getTag().contains("AmmoId"))rounds.merge(e.output.getTag().getString("AmmoId"),e.gate.age,Math::min);

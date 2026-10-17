@@ -1,0 +1,14 @@
+Real client, QaRelease1116 run 1 (2026-10-17), QA_CREATE=1, Create, the owner's Create Armorer 1.2.0.1 and TRIS-dyna 1.1.5 gun packs in run-client/tacz, config/eternal-defense-ages.json with "trisdyna:muzzle_tris2": 2, flat world, 1280 x 720
+QA_NOTE RAISING {create_armorer:muzzle_refit_ap_grenade=locked, create_armorer:muzzle_refit_bigger_cylinder=sold@1, create_armorer:refit_blasting_protocol=locked, trisdyna:muzzle_tris1=locked, trisdyna:muzzle_tris2=sold@2, trisdyna:muzzle_tris_sl1=locked, trisdyna:muzzle_tris_sl2=locked, trisdyna:muzzle_trls_1=locked, trisdyna:muzzle_trls_2=locked, trisdyna:muzzle_trls_3=locked, trisdyna:sf7e_ammo_1=locked, trisdyna:sf7e_ammo_2=locked, trisdyna:sf7e_ammo_3=locked, trisdyna:stock_sf7e_he=locked, trisdyna:stock_sf7e_sp=locked, trisdyna:stock_tris2=locked, trisdyna:stock_tris_st2=locked, trisdyna:trammo_1=locked, trisdyna:trammo_2=locked}
+QA_NOTE TACZ [tacz:ammo_mod_he@4, tacz:ammo_mod_hp@4, tacz:ammo_mod_i@4]
+QA_CHECK PASS Create Armorer's bigger cylinder (+1 damage, Age 1) is on the table again 1
+QA_CHECK PASS its AP grenade refit (+40, Age 4) stays off null
+QA_CHECK PASS so does its blasting protocol (explosive rounds, Age 4) null
+QA_CHECK PASS one config line moves TRIS-dyna's Tris 2 muzzle (+7%) to Age 2: sold there 2
+QA_CHECK PASS TRIS-dyna's other damage attachments (Age 5) stay off 15 of 15
+QA_CHECK PASS no add-on damage attachment past Age 2 is sold {create_armorer:muzzle_refit_ap_grenade=locked, create_armorer:muzzle_refit_bigger_cylinder=sold@1, create_armorer:refit_blasting_protocol=locked, trisdyna:muzzle_tris1=locked, trisdyna:muzzle_tris2=sold@2, trisdyna:muzzle_tris_sl1=locked, trisdyna:muzzle_tris_sl2=locked, trisdyna:muzzle_trls_1=locked, trisdyna:muzzle_trls_2=locked, trisdyna:muzzle_trls_3=locked, trisdyna:sf7e_ammo_1=locked, trisdyna:sf7e_ammo_2=locked, trisdyna:sf7e_ammo_3=locked, trisdyna:stock_sf7e_he=locked, trisdyna:stock_sf7e_sp=locked, trisdyna:stock_tris2=locked, trisdyna:stock_tris_st2=locked, trisdyna:trammo_1=locked, trisdyna:trammo_2=locked}
+QA_CHECK PASS TaCZ's own damage attachments stay on the table at any Age 4
+QA_CHECK PASS the attachment table stands BlockPos{x=-7, y=-60, z=1}
+QA_NOTE ROWS [create_armorer:attachments/muzzle_refit_bigger_cylinder create_armorer:muzzle_refit_bigger_cylinder@1]
+QA_CHECK PASS the screen lists the cylinder refit [create_armorer:attachments/muzzle_refit_bigger_cylinder create_armorer:muzzle_refit_bigger_cylinder@1]
+QA_DONE pass=9 fail=0

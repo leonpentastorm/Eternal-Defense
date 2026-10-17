@@ -5,7 +5,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Attachments of add-on gun packs that raise a gun's damage directly (its bullets, their blast, or explosive rounds); lowering it is fine. */
+/** Attachments of add-on gun packs that raise a gun's damage directly (its bullets, their blast, or explosive rounds) from Age 3 on; lowering it is fine. */
 final class AttachmentDamage {
     private AttachmentDamage(){}
     private static final Map<String,Boolean> SEEN=new HashMap<>();
@@ -16,10 +16,13 @@ final class AttachmentDamage {
     }
     /** Pure: an attachment from a pack whose damage attachments are kept (TaCZ's own by default) */
     static boolean kept(String attachmentId,java.util.Set<String> packs){int colon=attachmentId.indexOf(':');return packs.contains(colon<0?"minecraft":attachmentId.substring(0,colon));}
-    /** Whether the attachment table may sell it: not when an add-on pack's attachment raises damage */
-    static boolean sold(ItemStack output){
+    /** Pure: an attachment at an Age whose damage attachments are kept (the first two by default) */
+    static boolean keptAge(int age,int upTo){return age<=upTo;}
+    /** Whether the attachment table may sell it at its Age: not when an add-on pack's attachment raises damage past the kept Ages */
+    static boolean sold(ItemStack output,int age){
         var tag=output.getTag();if(tag==null||!tag.contains("AttachmentId"))return true;
-        return kept(tag.getString("AttachmentId"),CraftBalance.settings().keptPacks())||!raises(output);
+        var s=CraftBalance.settings();
+        return keptAge(age,s.keptUpToAge())||kept(tag.getString("AttachmentId"),s.keptPacks())||!raises(output);
     }
     static boolean raises(ItemStack output){
         var tag=output.getTag();if(tag==null||!tag.contains("AttachmentId"))return false;

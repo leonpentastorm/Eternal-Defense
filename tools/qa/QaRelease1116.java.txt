@@ -1,0 +1,144 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.16: add-on damage attachments are sold at the attachment table in Ages 1 and 2 only. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1116 {
+    // One line moves an Age 5 damage attachment to Age 2: written before the game reads it
+    static{
+        try{var dir=net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get();Files.createDirectories(dir);Files.writeString(dir.resolve("eternal-defense-ages.json"),"{\n  \"trisdyna:muzzle_tris2\": 2\n}\n");}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1116",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1116",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    /** Every attachment recipe of the table's kind that raises damage, by attachment id */
+    static Set<String> raising(){
+        var out=new TreeSet<String>();
+        for(var recipe:sl().getRecipeManager().getRecipes()){if(!recipe.getClass().getName().equals("com.tacz.guns.crafting.GunSmithTableRecipe"))continue;
+            try{var o=(ItemStack)recipe.getClass().getMethod("getOutput").invoke(recipe);if(o.hasTag()&&o.getTag().contains("AttachmentId")&&AttachmentDamage.raises(o))out.add(o.getTag().getString("AttachmentId"));}
+            catch(ReflectiveOperationException ex){throw new IllegalStateException(ex);}}
+        return out;
+    }
+    /** The attachment table's list: attachment id to its Age */
+    static Map<String,Integer> sold(){var out=new TreeMap<String,Integer>();for(var e:WeaponPlatform.entries(sl().getRecipeManager(),"attachment",""))if(e.output().hasTag())out.merge(e.output().getTag().getString("AttachmentId"),e.gate().age(),Math::min);return out;}
+    static BlockPos T;
+
+    static void script(){
+        T=new BlockPos(sx,sy,sz+6);
+        step(20,()->srvGet(()->{var r=raising();var s=sold();var addOn=new TreeMap<String,String>();
+            for(var id:r){if(id.startsWith("tacz:"))continue;addOn.put(id,s.containsKey(id)?"sold@"+s.get(id):"locked");}
+            note("RAISING {}",addOn);note("TACZ {}",r.stream().filter(id->id.startsWith("tacz:")).map(id->id+(s.containsKey(id)?"@"+s.get(id):" missing")).toList());
+            check("Create Armorer's bigger cylinder (+1 damage, Age 1) is on the table again",s.getOrDefault("create_armorer:muzzle_refit_bigger_cylinder",0)==1,String.valueOf(s.get("create_armorer:muzzle_refit_bigger_cylinder")));
+            check("its AP grenade refit (+40, Age 4) stays off",r.contains("create_armorer:muzzle_refit_ap_grenade")&&!s.containsKey("create_armorer:muzzle_refit_ap_grenade"),String.valueOf(s.get("create_armorer:muzzle_refit_ap_grenade")));
+            check("so does its blasting protocol (explosive rounds, Age 4)",r.contains("create_armorer:refit_blasting_protocol")&&!s.containsKey("create_armorer:refit_blasting_protocol"),String.valueOf(s.get("create_armorer:refit_blasting_protocol")));
+            check("one config line moves TRIS-dyna's Tris 2 muzzle (+7%) to Age 2: sold there",s.getOrDefault("trisdyna:muzzle_tris2",0)==2,String.valueOf(s.get("trisdyna:muzzle_tris2")));
+            long trisLocked=r.stream().filter(id->id.startsWith("trisdyna:")&&!id.equals("trisdyna:muzzle_tris2")).filter(id->!s.containsKey(id)).count(),tris=r.stream().filter(id->id.startsWith("trisdyna:")&&!id.equals("trisdyna:muzzle_tris2")).count();
+            check("TRIS-dyna's other damage attachments (Age 5) stay off",tris>0&&trisLocked==tris,trisLocked+" of "+tris);
+            check("no add-on damage attachment past Age 2 is sold",addOn.values().stream().noneMatch(v->v.startsWith("sold@")&&Integer.parseInt(v.substring(5))>2),addOn.toString());
+            check("TaCZ's own damage attachments stay on the table at any Age",r.stream().filter(id->id.startsWith("tacz:")).allMatch(s::containsKey)&&s.containsKey("tacz:ammo_mod_hp"),String.valueOf(s.get("tacz:ammo_mod_hp")));
+            return null;}),"the table's attachment list");
+        // The table's screen: the cylinder is listed at Frontier
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.setItem(0,new ItemStack(EternalDefense.ATTACHMENT_PLATFORM.get()));inv.selected=0;inv.setChanged();}),"hold an attachment table");
+        step(5,()->{mc().player.getInventory().selected=0;look(T.getX()+.5,sy,T.getZ()-3.5,T.getX()+.5,sy-1,T.getZ()+.5);},"in front of its spot");
+        step(10,()->click(T.below(),Direction.UP),"place it (a real right-click)");
+        step(20,()->{BlockPos at=srvGet(()->{for(var p:BlockPos.betweenClosed(T.offset(-2,-1,-2),T.offset(2,3,2)))if(sl().getBlockState(p).getBlock() instanceof WeaponPlatform.Station)return DefenseStructures.anchor(sl(),p.immutable());return null;});
+            check("the attachment table stands",at!=null,String.valueOf(at));if(at!=null){T=at;srv(()->WeaponPlatform.open(sp(),T));}},"open it");
+        until("the table's screen",60,()->mc().screen instanceof PlatformScreen,()->{});
+        step(10,()->{var s=mc().screen;((net.minecraft.client.gui.components.EditBox)field(s,"search")).setValue("cylinder");
+            try{var m=PlatformScreen.class.getDeclaredMethod("browse",int.class);m.setAccessible(true);m.invoke(s,0);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}},"search the table for the cylinder");
+        step(30,()->{var data=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=data.getList("recipes",Tag.TAG_COMPOUND);var names=new ArrayList<String>();for(int i=0;i<rows.size();i++)names.add(rows.getCompound(i).getString("recipe")+" "+rows.getCompound(i).getString("id")+"@"+rows.getCompound(i).getInt("age"));
+            note("ROWS {}",names);check("the screen lists the cylinder refit",names.stream().anyMatch(n->n.contains("bigger_cylinder")),names.toString());shot("r1116_cylinder");},"the list");
+        step(5,()->mc().setScreen(null),"close");
+    }
+}

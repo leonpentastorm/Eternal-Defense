@@ -45,7 +45,7 @@ final class Release114Test {
         assertTrue(AttachmentDamage.raises(1,0,1,null));assertTrue(AttachmentDamage.raises(0,.1,1,null));assertTrue(AttachmentDamage.raises(0,0,1.2,null));
         assertTrue(AttachmentDamage.raises(0,0,1,"return x*2"),"a scripted change counts as raising");
         assertFalse(AttachmentDamage.raises(0,0,1,null));assertFalse(AttachmentDamage.raises(-2,-.1,.8,""),"lowering damage is fine");
-        assertTrue(source("WeaponPlatform.java").contains("!AttachmentDamage.sold(output)"));
+        assertTrue(source("WeaponPlatform.java").contains("!AttachmentDamage.sold(e.output,e.gate.age)"));
     }
     @Test void taczsOwnAttachmentsAreKept(){
         assertEquals(Set.of("tacz"),CraftBalance.settings().keptPacks(),"the rule is for add-on packs only");

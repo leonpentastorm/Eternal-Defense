@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.16 — Damage attachments of the first two Ages back on the table (2026-10-17, `dev`)
+
+After 1.1.15 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.16; tests: `docs/ROUND-1.1.16-TESTING.md`.
+
+* **Attachment table:** gun pack attachments that raise damage are sold again when they belong to Age 1 (Frontier) or Age 2 (World Wars). From Age 3 on they stay off the table. The limit is `damage_attachments_kept_up_to_age` in `balance.json`. In the owner's pack this brings back Create Armorer's Bigger Cylinder refit (+1 damage); the other 92 such attachments are Age 3 or later.
+
 ## 1.1.15 — Raiders share bridges; long swims go through a gate (2026-10-17, `dev`)
 
 After 1.1.14 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.15; tests: `docs/ROUND-1.1.15-TESTING.md`.
