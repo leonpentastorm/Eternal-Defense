@@ -349,31 +349,46 @@
   },
   "turret.mg_shot": {
     "sounds": [
-      "eternal_defense:sfx/turret_lmg"
+      {
+        "name": "eternal_defense:sfx/turret_lmg",
+        "attenuation_distance": 48
+      }
     ],
     "subtitle": "subtitles.eternal_defense.turret.mg_shot"
   },
   "turret.flame_start": {
     "sounds": [
-      "eternal_defense:sfx/flame_start"
+      {
+        "name": "eternal_defense:sfx/flame_start",
+        "attenuation_distance": 48
+      }
     ],
     "subtitle": "subtitles.eternal_defense.turret.flame_start"
   },
   "turret.flame": {
     "sounds": [
-      "eternal_defense:sfx/flame_loop"
+      {
+        "name": "eternal_defense:sfx/flame_loop",
+        "attenuation_distance": 48
+      }
     ],
     "subtitle": "subtitles.eternal_defense.turret.flame"
   },
   "turret.flame_end": {
     "sounds": [
-      "eternal_defense:sfx/flame_end"
+      {
+        "name": "eternal_defense:sfx/flame_end",
+        "attenuation_distance": 48
+      }
     ],
     "subtitle": "subtitles.eternal_defense.turret.flame_end"
   },
   "turret.shotgun_shot": {
     "sounds": [
-      "eternal_defense:sfx/turret_shotgun"
+      {
+        "name": "eternal_defense:sfx/turret_shotgun",
+        "attenuation_distance": 48
+      }
     ],
     "subtitle": "subtitles.eternal_defense.turret.shotgun_shot"
   }

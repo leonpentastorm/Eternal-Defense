@@ -1,0 +1,270 @@
+package dev.eternaldefense.beacon;
+
+import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
+import com.simibubi.create.content.kinetics.belt.BeltBlockEntity;
+import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
+import com.simibubi.create.content.kinetics.motor.CreativeMotorBlockEntity;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.WallSide;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.20: the pole reach as see-through walls in daylight, turret sounds (new shotgun clip), Defense Depot prices x4. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1120 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){shot(name,true);}
+    static void shot(String name,boolean clearChat){mc().getToasts().clear();if(clearChat)mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+3;holding=true;}
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){CHAT.add(e.getMessage().getString());log("QA_CHAT {}",e.getMessage().getString());}
+    static final Set<String> HEARD=Collections.synchronizedSet(new LinkedHashSet<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){if(e.getSound()!=null&&e.getSound().getLocation().getNamespace().equals(EternalDefense.ID))HEARD.add(e.getSound().getLocation().getPath());}
+    static int casings(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o instanceof TurretEffectsClient.Casing)n++;return n;}
+    static int flames(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o.getClass().getSimpleName().contains("Flame"))n++;return n;}
+    static boolean flaming(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t&&t.flaming;}
+    static final List<Float> KNOCKS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void knock(net.minecraftforge.event.entity.living.LivingKnockBackEvent e){if(e.getEntity() instanceof net.minecraft.world.entity.monster.Husk)KNOCKS.add(e.getOriginalStrength());}
+    static int liveWire(BlockPos from,int length){int n=0;for(int i=0;i<length;i++)if(live(from.east(i)))n++;return n;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1120",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1120",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    /** Stand three blocks south of a block, looking at it */
+    static void near(BlockPos p){look(p.getX()+.5,sy,p.getZ()+3.5,p.getX()+.5,p.getY()+.5,p.getZ()+.5);}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void hold(ItemStack s){srv(()->{var inv=sp().getInventory();inv.setItem(0,s);inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void away(){for(String f:new String[]{"xpos","ypos"})try{var x=net.minecraft.client.MouseHandler.class.getDeclaredField(f);x.setAccessible(true);x.setDouble(mc().mouseHandler,4);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static Block ed(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Item edItem(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Block create(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation("create",id));}
+    @SuppressWarnings({"unchecked","rawtypes"})
+    static BlockState with(BlockState s,String property,Object value){
+        for(Property p:s.getProperties())if(p.getName().equals(property)){var v=p.getValue(value.toString().toLowerCase(Locale.ROOT));if(v.isPresent())return s.setValue(p,(Comparable)v.get());}
+        log("QA_NOTE no property {}={} on {}",property,value,s);return s;
+    }
+    static void put(BlockPos p,BlockState s){sl().setBlock(p,s,3);}
+    static IItemHandler handler(BlockPos p,Direction side){var be=sl().getBlockEntity(p);return be==null?null:be.getCapability(ForgeCapabilities.ITEM_HANDLER,side).resolve().orElse(null);}
+    static void insert(IItemHandler h,ItemStack s){if(h!=null){var rest=ItemHandlerHelper.insertItemStacked(h,s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}else log("QA_NOTE no handler for {}",s);}
+    static void motor(BlockPos pos,Direction facing,int rpm){
+        put(pos,with(create("creative_motor").defaultBlockState(),"facing",facing.getName()));
+        if(sl().getBlockEntity(pos) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(rpm);else log("QA_NOTE no motor entity at {}",pos);
+    }
+    /** The creative motor's stress capacity per RPM (Create's server config), so the network can be overloaded on purpose */
+    @SuppressWarnings("unchecked")
+    static double ORIGINAL=-1;
+    static void motorCapacity(double v){
+        try{var stress=com.simibubi.create.infrastructure.config.AllConfigs.server().kinetics.stressValues;var f=com.simibubi.create.infrastructure.config.CStress.class.getDeclaredField("capacities");f.setAccessible(true);
+            var map=(Map<ResourceLocation,net.minecraftforge.common.ForgeConfigSpec.ConfigValue<Double>>)f.get(stress);var value=map.get(new ResourceLocation("create","creative_motor"));
+            if(value==null){note("CAPACITY keys {}",map.keySet());return;}note("CAPACITY creative motor {} -> {}",value.get(),v);if(ORIGINAL<0)ORIGINAL=value.get();value.set(v);}
+        catch(ReflectiveOperationException e){throw new IllegalStateException(e);}
+    }
+    static String network(BlockPos kinetic){return sl().getBlockEntity(kinetic) instanceof KineticBlockEntity k&&k.hasNetwork()?"capacity "+k.getOrCreateNetwork().calculateCapacity()+" stress "+k.getOrCreateNetwork().calculateStress()+" over "+k.isOverStressed()+" speed "+k.getSpeed():"no network";}
+    static Turrets.TurretEntity turret(BlockPos p){return sl().getBlockEntity(p) instanceof Turrets.TurretEntity t?t:null;}
+    static int ammo(BlockPos p){var t=turret(p);if(t==null)return -1;int n=0;for(int i=0;i<Turrets.SLOTS;i++)n+=t.ammo.getStackInSlot(i).getCount();return n;}
+    static int loaded(BlockPos p){var t=turret(p);return t==null?-1:t.loaded();}
+    static boolean powered(BlockPos p){var t=turret(p);return t!=null&&t.powered;}
+    static PowerGrid.Summary summary(BlockPos pole){return PowerGrid.summary(sl(),pole);}
+    static float rpm(BlockPos p){return sl().getBlockEntity(p) instanceof PowerKit.Dynamo d?d.rpm():-1;}
+    static Mob husk(BlockPos at){return husk(at,false);}
+    /** A husk (it never burns in daylight); one with its AI moves, so the blocks it stands in act on it */
+    static Mob husk(BlockPos at,boolean ai){var h=EntityType.HUSK.create(sl());h.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);h.setNoAi(!ai);h.setPersistenceRequired();sl().addFreshEntity(h);return h;}
+    static final List<UUID> HUSKS=new ArrayList<>();
+    static Mob mob(UUID id){return sl().getEntity(id) instanceof Mob m?m:null;}
+    static boolean dead(UUID id){var m=mob(id);return m==null||!m.isAlive();}
+    static boolean live(BlockPos p){var s=sl().getBlockState(p);return s.getBlock() instanceof DefenseWalls.BarbedWire&&s.getValue(DefenseWalls.BarbedWire.POWERED);}
+
+    static float speed(BlockPos p){return sl().getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float clientSpeed(BlockPos p){return mc().level.getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float angle(BlockPos be,BlockPos at,Direction.Axis axis){return mc().level.getBlockEntity(be) instanceof KineticBlockEntity k?KineticBlockEntityRenderer.getAngleForBe(k,at,axis):Float.NaN;}
+    static PowerKit.Readout readout(BlockPos p){return (PowerKit.Readout)field(sl().getBlockEntity(p),"readout");}
+    static float demand(BlockPos p){return (Float)field(sl().getBlockEntity(p),"demand");}
+    static String light(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t?t.light():"?";}
+    static Turrets.TurretMenu menu(){return mc().screen instanceof PowerClient.TurretScreen s?s.getMenu():null;}
+    static void slotClick(int slot,ClickType type){var m=menu();mc().gameMode.handleInventoryMouseClick(m.containerId,slot,0,type,mc().player);}
+    static String chat(){return String.join(" / ",CHAT);}
+    static boolean said(String part){synchronized(CHAT){for(var c:CHAT)if(c.contains(part))return true;}return false;}
+    static void sneak(boolean on){srv(()->sp().setShiftKeyDown(on));}
+    static boolean poleLive(BlockPos p){return mc().level.getBlockEntity(p) instanceof PowerPoles.PoleEntity pole&&pole.live;}
+    static DefenseDepot.DepotMenu depot(){return mc().screen instanceof PowerClient.DepotScreen s?s.getMenu():null;}
+
+    /** B: beacon; P0/M0: shaft dynamo and its motor; A: its pole (live); D: a pole on bare ground (down); G: ground for the preview; T1/T4/T5: turrets; DP: the depot */
+    static BlockPos B,P0,M0,A,D,G,T1,T4,T5,DP;static UUID HUSK_A,HUSK_B,HUSK_C;
+    static void places(){
+        B=new BlockPos(sx-12,sy,sz-12);
+        P0=new BlockPos(sx+4,sy,sz+6);M0=P0.west(2);A=P0.above();D=new BlockPos(sx-10,sy,sz+6);G=new BlockPos(P0.getX(),sy-1,P0.getZ()-14);
+        T1=P0.offset(4,0,-3);T4=P0.offset(2,0,-7);T5=P0.offset(-5,0,-2);DP=B.offset(5,0,6);
+    }
+
+    static void script(){
+        step(40,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sl().setDayTime(6000);sp().getInventory().clearContent();
+            for(var slime:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Slime.class,new AABB(sx-300,sy-20,sz-300,sx+300,sy+40,sz+300)))slime.discard();   /* a flat world's slimes would draw the turrets' fire */
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            put(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1));});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon (defense gear stands in its zone), noon");
+        // 1. A live pole on a turning Shaft Dynamo, and a pole on bare ground (down)
+        step(5,()->{hold(new ItemStack(edItem("shaft_dynamo")));near(P0);},"hold a Shaft Dynamo");
+        step(10,()->click(P0.below(),Direction.UP),"place it");
+        step(10,()->srv(()->{put(P0.west(),with(create("shaft").defaultBlockState(),"axis","x"));motor(M0,Direction.EAST,32);}),"a creative motor and a shaft into it");
+        step(5,()->{hold(new ItemStack(EternalDefense.POWER_POLE.get(),2));near(P0);},"hold two Power Poles");
+        step(10,()->click(P0,Direction.UP),"a pole on the Shaft Dynamo");
+        step(5,()->near(D),"to bare ground");
+        step(10,()->click(D.below(),Direction.UP),"a pole on the ground, no dynamo under it");
+        until("the dynamo's pole is live",200,()->srvGet(()->{var s=summary(A);return s!=null&&s.running();})&&poleLive(A),()->{});
+        step(5,()->{
+            check("one pole live, the other down (no dynamo)",poleLive(A)&&mc().level.getBlockEntity(D) instanceof PowerPoles.PoleEntity&&!poleLive(D),poleLive(A)+" "+poleLive(D));
+            var type=PowerClient.Reach.Walls.TYPE.toString();note("WALLS {}",type);
+            check("the walls are drawn see-through, both sides, without writing depth",type.contains("reach_wall")&&type.contains("translucent_transparency")&&type.contains("cull[false]")&&type.contains("writeColor=true, writeDepth=false"),type);
+            hold(new ItemStack(EternalDefense.TURRETS.get("mg_turret_mk1").get()));look(P0.getX()+13.5,sy,P0.getZ()+13.5,P0.getX()-4,sy+1.5,P0.getZ()-1);},"holding a turret, standing at the field's edge at noon");
+        // 2. The reach in daylight: walls on, then the same view with empty hands
+        step(15,()->{check("defense gear in hand shows both reaches",PowerClient.Reach.holding(mc().player)&&PowerPoles.SEEN.contains(A)&&PowerPoles.SEEN.contains(D),""+PowerPoles.SEEN);shot("r1120_reach_day");},"picture: both reaches at noon, from the ground");
+        step(5,()->hold(ItemStack.EMPTY),"empty hands, same view");
+        step(15,()->shot("r1120_reach_day_none"),"picture: the same view without the reach");
+        step(5,()->{hold(new ItemStack(EternalDefense.TURRETS.get("mg_turret_mk1").get()));look(P0.getX()-3,sy+18,P0.getZ()+18,P0.getX()-3,sy,P0.getZ());},"from above");
+        step(15,()->shot("r1120_reach_day_above"),"picture: both reaches from above at noon");
+        step(5,()->hold(ItemStack.EMPTY),"empty hands, same view");
+        step(15,()->shot("r1120_reach_day_above_none"),"picture: the same view without the reach");
+        step(5,()->{hold(new ItemStack(EternalDefense.TURRETS.get("mg_turret_mk1").get()));look(P0.getX()+.5,sy,P0.getZ()+3.5,P0.getX()+8,sy+1.5,P0.getZ()-6);},"inside the live pole's reach, looking at its edge");
+        step(15,()->shot("r1120_reach_inside"),"picture: the wall from inside");
+        step(5,()->{hold(new ItemStack(EternalDefense.POWER_POLE.get()));look(G.getX()+.5,sy+1,G.getZ()+3,G.getX()+.5,G.getY()+.5,G.getZ()+.5);},"a pole in hand, looking at open ground");
+        step(15,()->{var t=PowerClient.Reach.target(mc());check("a pole in hand shows where its reach would be",G.above().equals(t),String.valueOf(t));shot("r1120_reach_preview");},"picture: the preview in daylight");
+        step(5,()->{CHAT.clear();hold(ItemStack.EMPTY);look(A.getX()+.5,sy,A.getZ()+3.5,A.getX()+.5,A.getY()+.5,A.getZ()+.5);sneak(true);},"sneak by the live pole");
+        step(5,()->click(A,Direction.SOUTH),"sneak and right-click it with both hands empty");
+        step(5,()->sneak(false),"stand up");
+        until("the client hears the pole is pinned",60,()->mc().level.getBlockEntity(A) instanceof PowerPoles.PoleEntity p&&p.showReach,()->{});
+        step(5,()->{check("a pinned pole keeps its walls with empty hands",!PowerClient.Reach.holding(mc().player)&&mc().level.getBlockEntity(A) instanceof PowerPoles.PoleEntity p&&p.showReach,"");
+            look(P0.getX()+13.5,sy,P0.getZ()+13.5,P0.getX()-4,sy+1.5,P0.getZ()-1);},"pinned, back to the field's edge");
+        step(15,()->shot("r1120_reach_pinned"),"picture: the pinned reach, empty hands");
+        step(40,()->{srv(()->sl().setDayTime(18000));hold(new ItemStack(EternalDefense.TURRETS.get("mg_turret_mk1").get()));},"midnight (2 s for the time to reach the client)");
+        step(25,()->shot("r1120_reach_night"),"picture: the same view at night");
+        step(5,()->{srv(()->sl().setDayTime(6000));CHAT.clear();hold(ItemStack.EMPTY);look(A.getX()+.5,sy,A.getZ()+3.5,A.getX()+.5,A.getY()+.5,A.getZ()+.5);sneak(true);},"noon; unpin the pole");
+        step(5,()->click(A,Direction.SOUTH),"sneak and right-click it again");
+        step(5,()->sneak(false),"stand up");
+        until("the client hears it",60,()->mc().level.getBlockEntity(A) instanceof PowerPoles.PoleEntity p&&!p.showReach,()->{});
+        // 3. The turret sounds: machine gun, Mark III shotgun (the new clip) and flame
+        step(5,()->srv(()->{put(T1,EternalDefense.TURRETS.get("mg_turret_mk1").get().defaultBlockState());put(T5,EternalDefense.TURRETS.get("shotgun_turret_mk3").get().defaultBlockState());
+            put(T4,EternalDefense.TURRETS.get("flame_turret_mk1").get().defaultBlockState());}),"a machine gun, a Mark III shotgun and a flame turret in the live pole's reach");
+        until("all three are powered",200,()->srvGet(()->powered(T1)&&powered(T5)&&powered(T4)),()->{});
+        step(5,()->{HEARD.clear();srv(()->{insert(handler(T1,Direction.UP),new ItemStack(EternalDefense.MG_AMMO.get(),1));insert(handler(T5,Direction.UP),new ItemStack(EternalDefense.SHOTGUN_AMMO.get(),1));
+            insert(handler(T4,Direction.UP),new ItemStack(EternalDefense.FLAME_FUEL.get(),1));
+            for(var at:new BlockPos[]{T1.offset(0,0,-6),T5.offset(0,0,-6),T4.offset(0,0,-3)}){var h=husk(at);h.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(400);h.setHealth(400);HUSKS.add(h.getUUID());}});
+            look(P0.getX()+.5,sy+2,P0.getZ()+30,P0.getX()+.5,sy,P0.getZ()-5);note("SOUND_START {}",System.currentTimeMillis());},"ammo in; a tough husk in front of each; the player 32 blocks away");
+        until("all three guns are heard",400,()->HEARD.contains("turret.mg_shot")&&HEARD.contains("turret.shotgun_shot")&&HEARD.contains("turret.flame_start"),()->{});
+        step(60,()->{},"let them fire 3 seconds");
+        step(5,()->{note("HEARD {}",HEARD);note("SOUND_END {}",System.currentTimeMillis());
+            double far=Math.sqrt(mc().player.distanceToSqr(Vec3.atCenterOf(T1))),far5=Math.sqrt(mc().player.distanceToSqr(Vec3.atCenterOf(T5)));note("DISTANCE machine gun {} shotgun {}",far,far5);
+            check("the guns are sent to a player over 16 blocks away (the old reach): 30 and more",far>30&&far5>30&&HEARD.contains("turret.mg_shot")&&HEARD.contains("turret.shotgun_shot"),Math.round(far)+" "+Math.round(far5)+" "+HEARD);
+            check("the machine gun, shotgun and flame turrets play their shots",HEARD.contains("turret.mg_shot")&&HEARD.contains("turret.shotgun_shot")&&HEARD.contains("turret.flame_start")&&HEARD.contains("turret.flame"),""+HEARD);
+            srv(()->{for(var id:HUSKS){var m=mob(id);if(m!=null)m.discard();}HUSKS.clear();for(var t:new BlockPos[]{T1,T5,T4})put(t,Blocks.AIR.defaultBlockState());});},"sounds");
+        // 4. The Defense Depot at four times the old prices
+        step(5,()->{
+            int[] old={24,48,96,24,48,96,32,64,128,8,8,10,4,4,4,16,4};var now=DefenseDepot.PRODUCTS.stream().mapToInt(DefenseDepot.Product::price).toArray();boolean x4=now.length==old.length;
+            for(int i=0;x4&&i<old.length;i++)x4=now[i]==4*old[i];check("every Defense Depot price is four times the old one",x4,Arrays.toString(now));
+            srv(()->{sp().setGameMode(GameType.SURVIVAL);var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.DEFENSE_DEPOT.get()));inv.setItem(9,new ItemStack(EternalDefense.AMMO_COIN.get(),64));
+                inv.setItem(10,new ItemStack(EternalDefense.AMMO_COIN.get(),32));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;near(DP);},"survival, a depot and 96 coins in the pack");
+        step(10,()->click(DP.below(),Direction.UP),"place the depot");
+        step(10,()->{hold(ItemStack.EMPTY);click(DP,Direction.SOUTH);},"open it");
+        until("its screen opens",60,()->depot()!=null,()->{});
+        step(10,()->{var m=depot();check("the depot sees 96 coins",m.coins.get()==96,""+m.coins.get());away();shot("r1120_depot_screen");},"picture: the depot screen");
+        step(5,()->mc().gameMode.handleInventoryButtonClick(depot().containerId,3),"buy a Shotgun Turret Mark I (96 coins)");
+        step(10,()->{var m=depot();boolean turret=srvGet(()->inPack(EternalDefense.TURRETS.get("shotgun_turret_mk1").get().asItem()))==1;int left=srvGet(()->inPack(EternalDefense.AMMO_COIN.get()));
+            check("96 coins buy a Mark I turret and leave nothing",turret&&left==0&&m.result.get()==DefenseDepot.BOUGHT,turret+" "+left+" "+m.result.get());},"bought");
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.setItem(9,new ItemStack(EternalDefense.AMMO_COIN.get(),31));inv.setChanged();}),"31 coins");
+        step(5,()->mc().gameMode.handleInventoryButtonClick(depot().containerId,9),"try 4 machine gun ammo (32 coins)");
+        step(10,()->{var m=depot();int left=srvGet(()->inPack(EternalDefense.AMMO_COIN.get()));
+            check("31 coins are not enough for 4 cans (32)",m.result.get()==DefenseDepot.NO_COINS&&left==31&&srvGet(()->inPack(EternalDefense.MG_AMMO.get()))==0,m.result.get()+" "+left);away();shot("r1120_depot_short");},"picture: not enough coins");
+        step(5,()->srv(()->{var inv=sp().getInventory();inv.setItem(10,new ItemStack(EternalDefense.AMMO_COIN.get(),1));inv.setChanged();}),"one more coin");
+        step(5,()->mc().gameMode.handleInventoryButtonClick(depot().containerId,9),"buy 4 machine gun ammo");
+        step(10,()->{int left=srvGet(()->inPack(EternalDefense.AMMO_COIN.get()));check("32 coins buy 4 cans",left==0&&srvGet(()->inPack(EternalDefense.MG_AMMO.get()))==4,""+left);mc().player.closeContainer();},"bought ammo");
+    }
+}

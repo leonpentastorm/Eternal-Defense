@@ -138,7 +138,8 @@ final class Release1119Test {
         var sounds=com.google.gson.JsonParser.parseString(Files.readString(Path.of(base+"sounds.json"))).getAsJsonObject();
         var files=java.util.Map.of("turret.mg_shot","turret_lmg","turret.shotgun_shot","turret_shotgun","turret.flame_start","flame_start","turret.flame","flame_loop","turret.flame_end","flame_end");
         for(var e:files.entrySet()){
-            assertEquals("eternal_defense:sfx/"+e.getValue(),sounds.getAsJsonObject(e.getKey()).getAsJsonArray("sounds").get(0).getAsString(),e.getKey());
+            var first=sounds.getAsJsonObject(e.getKey()).getAsJsonArray("sounds").get(0);
+            assertEquals("eternal_defense:sfx/"+e.getValue(),first.isJsonObject()?first.getAsJsonObject().get("name").getAsString():first.getAsString(),e.getKey());
             assertTrue(Files.exists(Path.of(base+"sounds/sfx/"+e.getValue()+".ogg")),e.getValue());
             assertFalse(Release114Test.lang().get(sounds.getAsJsonObject(e.getKey()).get("subtitle").getAsString()).getAsString().isBlank());
         }

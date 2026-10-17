@@ -1,0 +1,15 @@
+QA_CHECK PASS one pole live, the other down (no dynamo) true false
+QA_CHECK PASS the walls are drawn see-through, both sides, without writing depth RenderType[eternal_defense_reach_wall:CompositeState[[texture, shader[...]], translucent_transparency, depth_test[<=], cull[false], lightmap[false], overlay[false], no_layering, main_target, default_texturing, write_mask_state[writeColor=true, writeDepth=false], no_color_logic, line_width[1.0]], outlineProperty=none]]
+QA_CHECK PASS defense gear in hand shows both reaches [BlockPos{x=-13, y=-60, z=-2}, BlockPos{x=1, y=-59, z=-2}]
+QA_CHECK PASS a pole in hand shows where its reach would be BlockPos{x=1, y=-60, z=-16}
+QA_CHECK PASS a pinned pole keeps its walls with empty hands 
+QA_NOTE HEARD [turret.mg_shot, turret.shotgun_shot, turret.flame_start, turret.flame]
+QA_NOTE DISTANCE machine gun 32.77956680616753 shotgun 31.929610082179206
+QA_CHECK PASS the guns are sent to a player over 16 blocks away (the old reach): 30 and more 33 32 [turret.mg_shot, turret.shotgun_shot, turret.flame_start, turret.flame]
+QA_CHECK PASS the machine gun, shotgun and flame turrets play their shots [turret.mg_shot, turret.shotgun_shot, turret.flame_start, turret.flame]
+QA_CHECK PASS every Defense Depot price is four times the old one [96, 192, 384, 96, 192, 384, 128, 256, 512, 32, 32, 40, 16, 16, 16, 64, 16]
+QA_CHECK PASS the depot sees 96 coins 96
+QA_CHECK PASS 96 coins buy a Mark I turret and leave nothing true 0 1
+QA_CHECK PASS 31 coins are not enough for 4 cans (32) 2 31
+QA_CHECK PASS 32 coins buy 4 cans 0
+QA_DONE pass=12 fail=0

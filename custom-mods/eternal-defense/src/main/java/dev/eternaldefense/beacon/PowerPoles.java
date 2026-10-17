@@ -109,6 +109,8 @@ final class PowerPoles {
     static final java.util.Set<BlockPos> SEEN=java.util.concurrent.ConcurrentHashMap.newKeySet();
     /** Pure: the edges of a pole's reach on one layer, as (x, z, along x) from the pole's column corner */
     static final List<int[]> REACH_EDGES=reachEdges();
+    /** Pure: which way an edge's inside lies, +1 or -1 along the axis across it */
+    static int inward(int[] edge){return (edge[2]==1?edge[1]:edge[0])<=0?1:-1;}
     private static List<int[]> reachEdges(){
         var out=new ArrayList<int[]>();int r=PowerKit.AURA;
         for(int dx=-r;dx<=r;dx++)for(int dz=-r;dz<=r;dz++){

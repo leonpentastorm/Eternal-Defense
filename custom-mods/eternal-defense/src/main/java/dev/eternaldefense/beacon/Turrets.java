@@ -110,7 +110,7 @@ final class Turrets {
             if(p instanceof ServerPlayer sp){
                 var held=p.getItemInHand(hand);
                 if(held.is(ammo(line))){var rest=net.minecraftforge.items.ItemHandlerHelper.insertItem(be.ammo,held.copy(),false);int put=held.getCount()-rest.getCount();if(!p.isCreative())held.shrink(put);
-                    if(put>0)l.playSound(null,pos,SoundEvents.ARMOR_EQUIP_IRON,SoundSource.BLOCKS,.8f,1.2f);sp.displayClientMessage(be.status(),true);}
+                    if(put>0)l.playSound(null,pos,SoundEvents.ARMOR_EQUIP_IRON,SoundSource.BLOCKS,.96f,1.2f);sp.displayClientMessage(be.status(),true);}
                 else net.minecraftforge.network.NetworkHooks.openScreen(sp,new net.minecraft.world.SimpleMenuProvider((id,inv,who)->new TurretMenu(id,inv,be.ammo,pos,be,line,mk),getName()),
                     buf->{buf.writeBlockPos(pos);buf.writeByte(line.ordinal());buf.writeByte(mk);});
             }
@@ -182,7 +182,7 @@ final class Turrets {
             }
             aimAt(current);
             if(current==null||cooldown>0)return;
-            if(rounds<=0&&!reload()){if(l.getGameTime()%40==0)l.playSound(null,worldPosition,SoundEvents.DISPENSER_FAIL,SoundSource.BLOCKS,.6f,1.4f);return;}
+            if(rounds<=0&&!reload()){if(l.getGameTime()%40==0)l.playSound(null,worldPosition,SoundEvents.DISPENSER_FAIL,SoundSource.BLOCKS,.72f,1.4f);return;}
             rounds--;cooldown=s.cooldown();setChanged();shown=true;
             fire(l,from,current,s);
             if(block().line!=Line.FLAME)l.blockEvent(worldPosition,getBlockState().getBlock(),1,0);

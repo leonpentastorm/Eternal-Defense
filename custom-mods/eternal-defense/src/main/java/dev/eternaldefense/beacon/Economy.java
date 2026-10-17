@@ -50,8 +50,8 @@ final class Economy {
     /** The Handheld Radio at the Support Platform, in Ardent Energy. */
     static final int RADIO_PRICE=8;
     /** The Defense Depot (unplaytested), in Universal Ammo Coins: turrets Mk I to III, then lots of ammunition and defenses */
-    static final int[] TURRET_PRICE={24,48,96},FLAME_TURRET_PRICE={32,64,128};
-    static final int DEPOT_MG_AMMO=8,DEPOT_SHELLS=8,DEPOT_FUEL=10,DEPOT_SANDBAGS=4,DEPOT_BARRICADE=4,DEPOT_BARBED=4,DEPOT_SHOCK_BOX=16,DEPOT_WIRE=4;
+    static final int[] TURRET_PRICE={96,192,384},FLAME_TURRET_PRICE={128,256,512};
+    static final int DEPOT_MG_AMMO=32,DEPOT_SHELLS=32,DEPOT_FUEL=40,DEPOT_SANDBAGS=16,DEPOT_BARRICADE=16,DEPOT_BARBED=16,DEPOT_SHOCK_BOX=64,DEPOT_WIRE=16;
     /** The defense kit's Workshop Fabrication (unplaytested): the depot, the pole and the two dynamos */
     static final int DEPOT_IRON=16,DEPOT_COPPER=8,DEPOT_CHESTS=2,DEPOT_PLATING=2;
     static final int POLE_IRON=6,POLE_COPPER=8;

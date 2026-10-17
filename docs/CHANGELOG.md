@@ -1,5 +1,15 @@
 # Change log
 
+## 1.1.20 — Louder turrets heard further away, a new shotgun shot, reach walls, Defense Depot prices x4 (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.19 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.20 (Part M, section 5.14); tests: `docs/ROUND-1.1.20-TESTING.md`.
+
+* **Turret sounds** 20 percent louder: the machine gun shot, the flamethrower's start, loop and end, the ammo loading clank and the empty click.
+* **Shotgun turret** has a new shot (the owner's M1014-3), 25 percent louder than the old one's level, with the same room reverb.
+* **Turrets are heard from further away**: up to 48 blocks, fading evenly (two thirds as loud at 16 blocks, half at 24, a third at 32). Before, a shot was not heard at all beyond 16 blocks.
+* **Pole reach** is drawn as see-through walls on its edges (strongest at the floor) with the outline on top, so it shows in daylight; blue powered, orange down, white for a pole in hand.
+* **Defense Depot** prices are four times as high: turrets 96, 192 and 384 Universal Ammo Coins (flame 128, 256 and 512), 4 ammo 32, 32 and 40, 8 Sandbags, 4 Barricades, 8 Barbed Wire and 8 Electric Wire 16 each, the Shock Box 64.
+
 ## 1.1.19 — Dynamo readouts, pole reach, turret screen and lamps, the flame jet, the owner's turret sounds (2026-10-17, `feature/power-defense`)
 
 The update after 1.1.18 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed); a new menu type, so client and server must both run 1.1.19. Rules: GDD 1.1.19 (Part M, section 5.14); tests: `docs/ROUND-1.1.19-TESTING.md`.

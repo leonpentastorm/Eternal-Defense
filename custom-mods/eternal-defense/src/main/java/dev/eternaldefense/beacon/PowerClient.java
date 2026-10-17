@@ -156,13 +156,22 @@ public final class PowerClient {
         @Override public boolean shouldRenderOffScreen(Turrets.TurretEntity be){return false;}
     }
 
-    /** A pole's reach drawn as an outline: for every pole while defense gear is in hand, for a pole set to show it, and where a pole in hand would stand */
+    /** A pole's reach drawn as see-through walls and an outline: for every pole while defense gear is in hand, for a pole set to show it, and where a pole in hand would stand */
     @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
     public static final class Reach {
         private Reach(){}
         private static final MultiBufferSource.BufferSource BUFFER=MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<16));
         static final int[] LIVE={110,220,240},DOWN={255,150,60},PREVIEW={235,235,235};
         static final double RANGE=64;
+        /** Wall alpha at the floor, fading to a third at the top and lowest layers; and how far a wall sits inside the edge */
+        static final int WALL_ALPHA=96;
+        static final double WALL_INSET=.01;
+        /** See-through quads, both sides, that hide nothing drawn after them */
+        static final class Walls extends RenderType {
+            private Walls(){super("",com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR,com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS,0,false,false,()->{},()->{});}
+            static final RenderType TYPE=create(EternalDefense.ID+"_reach_wall",com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR,com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS,1<<16,false,true,
+                CompositeState.builder().setShaderState(POSITION_COLOR_SHADER).setTransparencyState(TRANSLUCENT_TRANSPARENCY).setCullState(NO_CULL).setWriteMaskState(COLOR_WRITE).createCompositeState(false));
+        }
         /** Defense gear in either hand */
         static boolean holding(net.minecraft.world.entity.player.Player p){for(var s:new ItemStack[]{p.getMainHandItem(),p.getOffhandItem()})if(s.getItem() instanceof PowerKit.KitItem||s.getItem() instanceof PowerPoles.WireItem)return true;return false;}
         /** Where a Power Pole in hand would stand */
@@ -183,6 +192,10 @@ public final class PowerClient {
             var preview=target(mc);
             if(shown.isEmpty()&&preview==null)return;
             var pose=e.getPoseStack();pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);
+            VertexConsumer walls=BUFFER.getBuffer(Walls.TYPE);
+            for(var pole:shown)wall(walls,pose.last().pose(),pole.getBlockPos(),ground(mc.level,pole.getBlockPos()),pole.live?LIVE:DOWN,pole.showReach?1f:.75f);
+            if(preview!=null)wall(walls,pose.last().pose(),preview,ground(mc.level,preview),PREVIEW,.85f);
+            BUFFER.endBatch(Walls.TYPE);
             VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());
             for(var pole:shown)outline(lines,pose.last(),pole.getBlockPos(),ground(mc.level,pole.getBlockPos()),pole.live?LIVE:DOWN,pole.showReach?220:170);
             if(preview!=null)outline(lines,pose.last(),preview,ground(mc.level,preview),PREVIEW,200);
@@ -191,6 +204,20 @@ public final class PowerClient {
         }
         /** The floor a pole stands on: under its dynamo, or under the pole itself */
         static int ground(net.minecraft.world.level.Level level,BlockPos pole){return level.getBlockEntity(pole.below()) instanceof PowerKit.Dynamo?pole.getY()-1:pole.getY();}
+        /** The reach's edge as a wall from its lowest to its highest layer, strongest at the floor */
+        static void wall(VertexConsumer v,Matrix4f m,BlockPos pole,int floor,int[] rgb,float strength){
+            float bottom=pole.getY()-PowerKit.AURA_DOWN,top=pole.getY()+PowerKit.AURA_UP+1;int strong=Math.round(WALL_ALPHA*strength),faint=strong/3;
+            for(var edge:PowerPoles.REACH_EDGES){
+                boolean alongX=edge[2]==1;double in=PowerPoles.inward(edge)*WALL_INSET;
+                float x=(float)(pole.getX()+edge[0]+(alongX?0:in)),z=(float)(pole.getZ()+edge[1]+(alongX?in:0)),xx=alongX?x+1:x,zz=alongX?z:z+1;
+                quad(v,m,x,z,xx,zz,bottom,faint,floor,strong,rgb);quad(v,m,x,z,xx,zz,floor,strong,top,faint,rgb);
+            }
+        }
+        private static void quad(VertexConsumer v,Matrix4f m,float x,float z,float xx,float zz,float low,int lowAlpha,float high,int highAlpha,int[] rgb){
+            if(high<=low)return;
+            v.vertex(m,x,low,z).color(rgb[0],rgb[1],rgb[2],lowAlpha).endVertex();v.vertex(m,xx,low,zz).color(rgb[0],rgb[1],rgb[2],lowAlpha).endVertex();
+            v.vertex(m,xx,high,zz).color(rgb[0],rgb[1],rgb[2],highAlpha).endVertex();v.vertex(m,x,high,z).color(rgb[0],rgb[1],rgb[2],highAlpha).endVertex();
+        }
         /** The reach's edge on the floor (bright), at its lowest and highest layer (faint), joined by uprights */
         static void outline(VertexConsumer v,PoseStack.Pose p,BlockPos pole,int floor,int[] rgb,int alpha){
             double ground=floor+.02,bottom=pole.getY()-PowerKit.AURA_DOWN+.02,top=pole.getY()+PowerKit.AURA_UP+.98;

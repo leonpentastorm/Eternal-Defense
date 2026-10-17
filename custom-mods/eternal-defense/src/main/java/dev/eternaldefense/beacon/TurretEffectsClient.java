@@ -16,8 +16,8 @@ import java.util.Map;
 /** Client only: spent casings thrown from the machine gun and shotgun turrets, and a flame turret's jet with one looping roar */
 final class TurretEffectsClient {
     private TurretEffectsClient(){}
-    /** Volume of the flame sounds (heard about 24 blocks away), the start clip's length and the roar's fade when it goes out (ticks) */
-    static final float VOLUME=1.5f;static final int START_TICKS=20,FADE_TICKS=3;
+    /** Volume of the flame sounds (their reach is in sounds.json), the start clip's length and the roar's fade when it goes out (ticks) */
+    static final float VOLUME=1f;static final int START_TICKS=20,FADE_TICKS=3;
     /** Flame particles a nozzle sends out each tick, and the twin's nozzles and gun barrels either side of its middle (blocks) */
     static final int FLAMES=3;static final double TWIN=.35;
     private static final Map<BlockPos,Burn> BURNING=new HashMap<>();

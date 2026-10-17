@@ -5,7 +5,7 @@ Usage: python3 import_sfx.py <folder with the SFX-*.wav/mp3/flac files> <out_dir
 
 Every positional sound is made mono (Minecraft only places mono sounds in the world; a stereo file plays at full volume
 everywhere), resampled to 48 kHz, trimmed where noted below and limited to a -1 dBFS peak when it was hotter (the turning
-"done" clunk decodes at +8 dBFS). The cluster bomblet is then lowered 6 dB: the game plays many at once, and a volume
+"done" clunk decodes at +8 dBFS); a sound made louder (a positive gain below) keeps that peak through a look-ahead limiter. The cluster bomblet is then lowered 6 dB: the game plays many at once, and a volume
 above 1 in the code only makes a sound carry farther (Minecraft caps its loudness at 1), so a quieter sound has to be quieter in
 the file. The turning grind becomes a seamless loop (its end is crossfaded into its start). The
 attack alarm stays stereo: it is a warning played to the player, not a sound in the world (since 0.0.21 one 0.6 s double beep). Needs numpy and ffmpeg (libvorbis).
@@ -32,17 +32,22 @@ SOUNDS = [
     ("SFX-Beacon-Attacked.wav", "beacon_attacked", False, (0.0, 0.495), 0.02, 0.0, 0),
     # 0.0.34: the owner's war horn, sounded when a FOB is planted and when a FOB's raid starts; its 0.41 s of silence at the start cut
     ("War Horn Sound Effect.mp3", "war_horn", True, (0.40, None), 0.3, 0.0, 0),
-    # 1.1.19: the machine gun turret's shot (LMG_Eternal_Defense.mp3), its 0.83 s of silence cut, 30% quieter (-3.1 dB) as it plays so often
-    ("LMG_Eternal_Defense.mp3", "turret_lmg", True, (0.83, None), 0.15, 0.0, -3.1),
-    # 1.1.19: the flame turret (Flamethrower.mp3, first 4 s only): second 1 lights it, seconds 2-3 loop while it fires, second 4 puts it out
-    ("Flamethrower.mp3", "flame_start", True, (0.0, 1.0), 0.03, 0.0, 0),
-    ("Flamethrower.mp3", "flame_loop", True, (1.0, 3.0), 0.0, 0.10, 0),
-    ("Flamethrower.mp3", "flame_end", True, (3.0, 4.0), 0.25, 0.0, 0),
-    # 1.1.19: the shotgun turret's shot (M1014-4Suppressor.wav), 30% quieter, with a short room reverb (REVERB below)
-    ("M1014-4Suppressor.wav", "turret_shotgun", True, None, 0.0, 0.0, -3.1),
+    # 1.1.19: the machine gun turret's shot (LMG_Eternal_Defense.mp3), its 0.83 s of silence cut, 30% quieter as it plays so often;
+    # 1.1.20: every turret sound 20% louder, so 0.7 x 1.2 = 0.84 (-1.5 dB)
+    ("LMG_Eternal_Defense.mp3", "turret_lmg", True, (0.83, None), 0.15, 0.0, -1.5),
+    # 1.1.19: the flame turret (Flamethrower.mp3, first 4 s only): second 1 lights it, seconds 2-3 loop while it fires, second 4 puts it out;
+    # 1.1.20: 20% louder (+1.6 dB), the few peaks above -1 dBFS held there by the limiter (CEILING)
+    ("Flamethrower.mp3", "flame_start", True, (0.0, 1.0), 0.03, 0.0, 1.6),
+    ("Flamethrower.mp3", "flame_loop", True, (1.0, 3.0), 0.0, 0.10, 1.6),
+    ("Flamethrower.mp3", "flame_end", True, (3.0, 4.0), 0.25, 0.0, 1.6),
+    # 1.1.20: the shotgun turret's shot is M1014-3.wav (was M1014-4Suppressor.wav), still 30% quieter with a short room reverb
+    # (REVERB below), then 25% louder: 0.7 x 1.25 = 0.875 (-1.2 dB)
+    ("M1014-3.wav", "turret_shotgun", True, None, 0.0, 0.0, -1.2),
 ]
 # reverb added to a sound before the limit: (decay to -60 dB in seconds, wet level against the dry sound)
 REVERB = {"turret_shotgun": (0.8, 0.35)}
+# the highest peak a sound may reach, dBFS
+CEILING = -1
 # seconds of silence a sound is padded to (after the trim): the alarm is a 0.6 s clip (BeaconAlerts.ALARM_CLIP_SECONDS)
 PAD = {"beacon_attacked": 0.6}
 
@@ -87,10 +92,24 @@ def process(src, mono, span, fade, loop, gain, verb=None):
     if verb:
         x = reverb(x, *verb)
     peak = np.abs(x).max()
-    limit = 10 ** (-1 / 20)
+    limit = 10 ** (CEILING / 20)
     if peak > limit:
         x = x * (limit / peak)
-    return x * 10 ** (gain / 20)
+    x = x * 10 ** (gain / 20)
+    return ceiling(x) if np.abs(x).max() > limit else x
+
+
+def ceiling(x, attack=0.002, release=0.06):
+    """A look-ahead peak limiter: a raised sound keeps its loudness while the rare peaks above CEILING are pulled down to it."""
+    from scipy.ndimage import minimum_filter1d, uniform_filter1d
+    a, r = max(int(attack * RATE), 1), 1 / (release * RATE)
+    level = np.abs(x) if x.ndim == 1 else np.abs(x).max(axis=1)
+    need = np.minimum(1, 10 ** (CEILING / 20) / np.maximum(level, 1e-9))
+    g = minimum_filter1d(need, 2 * a + 1)
+    for i in range(1, len(g)):
+        g[i] = min(g[i], g[i - 1] + r)
+    g = np.minimum(uniform_filter1d(g, a + 1), need)
+    return (x.T * g).T
 
 
 def main():
