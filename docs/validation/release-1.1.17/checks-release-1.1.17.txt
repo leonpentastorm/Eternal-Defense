@@ -1,4 +1,4 @@
-Real client, QaRelease1117 run 5 (2026-10-17), QA_CREATE=1, Create, flat world, survival, 1280 x 720
+Real client, QaRelease1117 run 6 (2026-10-17) on the merged screen code (commit af2a233), QA_CREATE=1, Create, flat world, survival, 1280 x 720
 QA_NOTE TOP [cannon, supply, return, fire]
 QA_CHECK PASS the shop shows four full rows from the top [cannon, supply, return, fire]
 QA_CHECK PASS rows are 24 pixels tall, room for the name and the note 24

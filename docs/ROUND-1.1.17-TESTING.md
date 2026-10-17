@@ -6,25 +6,27 @@ The owner sent a picture of the Support Platform's Shop tab and asked: "Make thi
 
 * **Full rows.** The Shop tab shows four products at a time. Each row is 24 pixels tall again, with room for the name and the note.
 * **Scrolling.** Three ways, like the Exchange:
-  * the mouse wheel over the screen;
+  * the mouse wheel over the list;
   * dragging the scroll bar's thumb;
   * clicking the bar's track.
-* **The scroll line.** A line under the list says which products are shown: "Showing 1 to 4 of 6. Scroll for more."
+* **The scroll line.** A line under the list says which products are shown: "Products 1 to 4 of 6. Scroll or drag the bar for more."
 * **Unchanged.**
   * The pick follows the product, not the row, so it stays when the list scrolls.
   * The Buy button buys the picked product.
   * Hovering a row still shows the product's full text.
   * The Supply grid and Upgrade tabs do not scroll.
-* **Code.** `SupportScreen`: four row buttons that show the product at `scroll + row`; `visibleRows`, `maxScroll`, `scrollBy`, the bar (`barX`, `trackH`, `thumbH`, `scrollTo`) and the wheel, drag and release handlers. The bar and the scroll line are drawn only on the Shop tab. New text: `support.scroll`.
+* **Code.** The screen code is commit `af2a233` on `dev`, made in the owner's other session, which could not compile or run it. While this round was under way it reached `dev` first. A version written here in parallel (the same rows, bar and wheel) was dropped in its favour, and `af2a233` was merged, built, unit-tested and played here.
+  * `SupportScreen`: `ROW` 26, `VISIBLE` 4. One row button per visible slot shows and picks `scroll + slot`.
+  * The wheel works over the list, the bar has drag and track clicks, and hover text goes through `rowOf`.
+  * Rows narrow for the bar only when the list scrolls.
+  * New text: `support.scroll`.
 
 ## Unit tests
 
 `:eternal-defense:test` **514 pass, 0 fail**. The new `Release1117Test` has 2 tests:
 
-* **Rows and the scroll:** rows are 26 apart (24 tall), four are shown, and the scroll line fits above the Buy button. The list scrolls by 2, so every one of the 6 products can be reached.
-* **Wiring:** rows show and pick the product at the scroll position; the wheel, the thumb and the track; no shrinking rows; the scroll text has its three numbers.
-
-`Release111Test` now looks for the tooltip of the product at the scroll position.
+* **Rows and the scroll:** rows are 26 apart (24 tall), four are shown, the scroll line fits above the Buy button, and there are more products than rows.
+* **Wiring:** rows show and pick the product at the scroll position; the list scrolls by products minus rows, so every product can be reached; the wheel, the thumb and the track; no shrinking rows; the scroll text has its three numbers.
 
 `:eternal-defense-gun-guide:test` 8 pass. `:eternal-defense-displays:test` 7 pass.
 
@@ -43,13 +45,14 @@ The owner sent a picture of the Support Platform's Shop tab and asked: "Make thi
 * **Run 2: 10 of 10.** In the pictures a hover tooltip covered half the list, because the test's pointer rested on a row.
 * **Run 3: 10 of 10.** Moving the pointer through the window system did not take under the virtual display. The tooltip was still there.
 * **Run 4: 9 of 10.** The game's own pointer position was set instead, and the pictures were clean. The first check ran before the Shop tab had been drawn once: rows are shown on the first frame. A short wait was added before it (a harness timing fix).
-* **Run 5: 10 of 10.** The results below are from this run.
+* **Run 5: 10 of 10** on the version written here.
+* **Run 6: 10 of 10** on the merged code from `af2a233`. The harness was unchanged; the test still reads the same fields (`scroll`, `selected`, `rows`) and the wheel lands over the list. The results and pictures below are from this run.
 
 ### The checks
 
-* **The top:** four full rows (Support Cannon, Support Flare, Return Flare, Fire Support Flare), each 24 pixels tall. Picture `r1117_shop_top.png`: both lines of every row, the scroll bar at the top, and "Showing 1 to 4 of 6. Scroll for more."
+* **The top:** four full rows (Support Cannon, Support Flare, Return Flare, Fire Support Flare), each 24 pixels tall. Picture `r1117_shop_top.png`: both lines of every row, the scroll bar at the top, and "Products 1 to 4 of 6. Scroll or drag the bar for more." whole and clear of the Ardent balance.
 * **The wheel:** three notches down scroll to the end and stop there (Return Flare to Handheld Radio).
-* **Picking:** a click on the last row picks the Handheld Radio. Picture `r1117_shop_scrolled.png`: the radio picked, the thumb at the bottom, "Showing 3 to 6 of 6".
+* **Picking:** a click on the last row picks the Handheld Radio. Picture `r1117_shop_scrolled.png`: the radio picked, the thumb at the bottom, "Products 3 to 6 of 6".
 * **The bar:**
   * A click at the top of the bar goes back to the top, and the radio stays picked.
   * Dragging the thumb down goes to the end.
