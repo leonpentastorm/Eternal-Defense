@@ -13,9 +13,9 @@ final class RaidFixesTest {
         assertFalse(RaidSpawns.gateDue(1000,1000+RaidSpawns.GATE_AFTER_TICKS-1));
         assertTrue(RaidSpawns.gateDue(1000,1000+RaidSpawns.GATE_AFTER_TICKS),"after "+RaidSpawns.GATE_AFTER_TICKS/20+" seconds without");
         var rings=RaidSpawns.gateRings(8,100);
-        assertEquals(100,rings.get(0),"from the outer edge of the active chunks");
-        assertEquals(8+RaidSpawns.GATE_BEYOND_ZONE,rings.get(rings.size()-1),"in to the closest allowed, never inside the zone");
-        for(int i=1;i<rings.size();i++)assertTrue(rings.get(i)<rings.get(i-1));
+        assertEquals(8+RaidSpawns.GATE_BEYOND_ZONE,rings.get(0),"from the closest allowed, never inside the zone (1.1.22: nearest first)");
+        assertEquals(100,rings.get(rings.size()-1),"out to the edge of the active chunks");
+        for(int i=1;i<rings.size();i++)assertTrue(rings.get(i)>rings.get(i-1));
         assertEquals(List.of(20),RaidSpawns.gateRings(8,10),"active chunks smaller than the margin: only the closest ring");
         assertTrue(RaidSpawns.GATE_BEYOND_ZONE<RaidSpawns.CLEARANCE,"gates come closer than natural spawns");
     }

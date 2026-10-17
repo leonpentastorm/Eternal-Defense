@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.22 — Raiders reach the base sooner (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.21 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.22 (Part B, Raids); tests: `docs/ROUND-1.1.22-TESTING.md`.
+
+* **Raiders spawn closer.** A wave's raiders appear on the nearest good open ground about 32 blocks outside the zone (before: anywhere from 64 blocks out to the edge of the loaded area, often 120 to 170 blocks away, so they took 20 to 35 seconds to walk in).
+* **A base on a hill gets raiders too.** Spawn ground may be up to 20 blocks below the beacon from the start of a wave (30 after 30 seconds). Before, it had to be at or above the beacon for the first 30 seconds, which ruled out most of the ground around a beacon on a rise.
+* **Red gates** (used where there is no open ground) are also tried nearest first.
+* **Safety:** a raider never spawns within 16 blocks of a player.
+
 ## 1.1.21 — Every cleared wave adds 5 minutes to the raid clock (2026-10-17, `feature/power-defense`)
 
 The update after 1.1.20 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), no new item, block or menu. Rules: GDD 1.1.21 (Part B, Raids); tests: `docs/ROUND-1.1.21-TESTING.md`.

@@ -1,0 +1,20 @@
+QA_NOTE GROUND -30, 67, 0
+QA_NOTE BEACON ground at -30, 67, 0 (0 above the ground)
+QA_NOTE SPAWN ground #1 t=0.05s dist=101 dy=1 type=minecraft:zombie
+QA_NOTE SPAWN ground #2 t=1.05s dist=137 dy=3 type=minecraft:zombie
+QA_NOTE VISIBLE ground t=1.3s dist=101
+QA_NOTE SPAWN ground #3 t=2.05s dist=174 dy=5 type=minecraft:zombie
+QA_NOTE SPAWN ground #4 t=3.05s dist=122 dy=5 type=minecraft:zombie
+QA_NOTE SPAWN ground #5 t=4.05s dist=79 dy=2 type=minecraft:zombie
+QA_NOTE NEAR ground t=19.7s
+QA_NOTE RESULT ground firstSpawn=0.05 firstVisible=1.3s firstNear=19.7s spawned=5
+QA_NOTE BEACON floor at -30, 68, 0 (1 above the ground)
+QA_NOTE SPAWN floor #1 t=0.05s dist=101 dy=0 type=minecraft:zombie
+QA_NOTE SPAWN floor #2 t=1.05s dist=163 dy=4 type=minecraft:zombie
+QA_NOTE VISIBLE floor t=1.0s dist=101
+QA_NOTE SPAWN floor #3 t=2.05s dist=117 dy=7 type=minecraft:skeleton
+QA_NOTE SPAWN floor #4 t=3.05s dist=140 dy=2 type=minecraft:zombie
+QA_NOTE SPAWN floor #5 t=4.05s dist=127 dy=5 type=minecraft:zombie
+QA_NOTE NEAR floor t=33.75s
+QA_NOTE RESULT floor firstSpawn=0.05 firstVisible=1.0s firstNear=33.75s spawned=5
+QA_DONE pass=0 fail=0

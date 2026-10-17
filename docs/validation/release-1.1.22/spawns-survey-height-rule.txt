@@ -1,0 +1,46 @@
+QA_NOTE GROUND -38, 75, 2
+QA_NOTE BEACON ground at -38, 75, 2 (0 above the ground)
+QA_NOTE SPAWN ground #1 t=0.05s dist=154 ring=111 toPlayer=151 dy=3 type=minecraft:zombie
+QA_NOTE SURVEY ground ring 48: {below beacon=61, env (water/tree/roof/built)=11}
+QA_NOTE SURVEY ground ring 64: {OK=1, below beacon=65, env (water/tree/roof/built)=6}
+QA_NOTE SURVEY ground ring 80: {OK=1, below beacon=64, env (water/tree/roof/built)=6, not open ground=1}
+QA_NOTE SURVEY ground ring 96: {OK=3, below beacon=59, env (water/tree/roof/built)=8, not open ground=2}
+QA_NOTE SURVEY ground ring 112: {below beacon=64, env (water/tree/roof/built)=7, not open ground=1}
+QA_NOTE SURVEY ground ring 128: {OK=1, below beacon=59, env (water/tree/roof/built)=8, not open ground=3, too high=1}
+QA_NOTE SURVEY ground ring 144: {OK=1, below beacon=61, env (water/tree/roof/built)=4, not open ground=5, too high=1}
+QA_NOTE SURVEY ground ring 160: {below beacon=62, env (water/tree/roof/built)=4, not open ground=6}
+QA_NOTE SURVEY ground ring 176: {not ticking=72}
+QA_NOTE SPAWN ground #2 t=7.05s dist=161 ring=127 toPlayer=158 dy=3 type=minecraft:zombie
+QA_NOTE SPAWN ground #3 t=8.05s dist=94 ring=94 toPlayer=90 dy=2 type=minecraft:zombie
+QA_NOTE VISIBLE ground t=8.15s dist=90
+QA_NOTE SPAWN ground #4 t=9.05s dist=94 ring=93 toPlayer=90 dy=1 type=minecraft:skeleton
+QA_NOTE SPAWN ground #5 t=10.05s dist=63 ring=49 toPlayer=60 dy=0 type=minecraft:skeleton
+QA_NOTE NEAR ground t=17.8s
+QA_NOTE RESULT ground firstSpawn=0.05 firstVisible=8.15s firstNear=17.8s spawned=5
+QA_CHECK PASS ground: raiders spawned at once 
+QA_CHECK PASS ground: none closer to the zone than the clearance (32) 0 of 5
+QA_CHECK PASS ground: none within 16 blocks of the player 0 of 5
+QA_CHECK PASS ground: a raider within 32 blocks of the beacon 17.8 s
+QA_NOTE BEACON floor at -38, 76, 2 (1 above the ground)
+QA_NOTE SPAWN floor #1 t=0.05s dist=102 ring=102 toPlayer=98 dy=0 type=minecraft:skeleton
+QA_NOTE VISIBLE floor t=0.05s dist=98
+QA_NOTE SURVEY floor ring 48: {below beacon=68, env (water/tree/roof/built)=4}
+QA_NOTE SURVEY floor ring 64: {below beacon=67, env (water/tree/roof/built)=5}
+QA_NOTE SURVEY floor ring 80: {OK=1, below beacon=65, env (water/tree/roof/built)=6}
+QA_NOTE SURVEY floor ring 96: {OK=1, below beacon=62, env (water/tree/roof/built)=7, not open ground=2}
+QA_NOTE SURVEY floor ring 112: {below beacon=64, env (water/tree/roof/built)=7, not open ground=1}
+QA_NOTE SURVEY floor ring 128: {OK=1, below beacon=61, env (water/tree/roof/built)=7, not open ground=2, too high=1}
+QA_NOTE SURVEY floor ring 144: {below beacon=64, env (water/tree/roof/built)=4, not open ground=4}
+QA_NOTE SURVEY floor ring 160: {below beacon=62, env (water/tree/roof/built)=4, not open ground=6}
+QA_NOTE SURVEY floor ring 176: {below beacon=67, env (water/tree/roof/built)=3, not open ground=2}
+QA_NOTE SPAWN floor #2 t=1.05s dist=115 ring=99 toPlayer=113 dy=0 type=minecraft:zombie
+QA_NOTE SPAWN floor #3 t=2.05s dist=176 ring=134 toPlayer=173 dy=2 type=minecraft:skeleton
+QA_NOTE SPAWN floor #4 t=4.05s dist=87 ring=86 toPlayer=83 dy=2 type=minecraft:zombie
+QA_NOTE SPAWN floor #5 t=7.05s dist=94 ring=92 toPlayer=90 dy=1 type=minecraft:skeleton
+QA_NOTE NEAR floor t=22.55s
+QA_NOTE RESULT floor firstSpawn=0.05 firstVisible=0.05s firstNear=22.55s spawned=5
+QA_CHECK PASS floor: raiders spawned at once 
+QA_CHECK PASS floor: none closer to the zone than the clearance (32) 0 of 5
+QA_CHECK PASS floor: none within 16 blocks of the player 0 of 5
+QA_CHECK PASS floor: a raider within 32 blocks of the beacon 22.55 s
+QA_DONE pass=8 fail=0

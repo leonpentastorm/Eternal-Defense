@@ -1,0 +1,52 @@
+QA_NOTE GROUND -26, 79, 10
+QA_NOTE BEACON A-ground at -30, 67, 0 (0 above the ground)
+QA_NOTE SPAWN A-ground #1 t=0.05s dist=129 ring=120 toPlayer=131 dy=6 type=minecraft:zombie
+QA_NOTE SURVEY A-ground ring 80: {OK=3, below beacon=25, env (water/tree/roof/built)=30, not open ground=14} | good ground below the beacon, by blocks below: {1=2, 4=3}
+QA_NOTE SURVEY A-ground ring 96: {OK=10, below beacon=30, env (water/tree/roof/built)=20, not open ground=12} | good ground below the beacon, by blocks below: {1=1, 2=1}
+QA_NOTE SURVEY A-ground ring 112: {OK=3, below beacon=31, env (water/tree/roof/built)=19, not open ground=19} | good ground below the beacon, by blocks below: {}
+QA_NOTE SURVEY A-ground ring 128: {OK=11, below beacon=31, env (water/tree/roof/built)=16, not open ground=13, too high=1} | good ground below the beacon, by blocks below: {2=1, 3=1}
+QA_NOTE SURVEY A-ground ring 144: {OK=6, below beacon=28, env (water/tree/roof/built)=18, not open ground=17, too high=3} | good ground below the beacon, by blocks below: {4=1}
+QA_NOTE SURVEY A-ground ring 160: {below beacon=16, env (water/tree/roof/built)=6, not open ground=7, not ticking=43} | good ground below the beacon, by blocks below: {3=1}
+QA_NOTE SURVEY A-ground ring 176: {not ticking=72} | good ground below the beacon, by blocks below: {}
+QA_NOTE SPAWN A-ground #2 t=1.05s dist=125 ring=120 toPlayer=126 dy=1 type=minecraft:zombie
+QA_NOTE SPAWN A-ground #3 t=2.05s dist=123 ring=120 toPlayer=124 dy=1 type=minecraft:zombie
+QA_NOTE SPAWN A-ground #4 t=3.05s dist=139 ring=136 toPlayer=139 dy=3 type=minecraft:zombie
+QA_NOTE SPAWN A-ground #5 t=4.05s dist=124 ring=120 toPlayer=125 dy=1 type=minecraft:zombie
+QA_NOTE VISIBLE A-ground t=7.1s dist=101
+QA_NOTE NEAR A-ground t=33.4s
+QA_NOTE RESULT A-ground firstSpawn=0.05 firstVisible=7.1s firstNear=33.4s spawned=5
+QA_CHECK PASS A-ground: the first raider spawned within 2 seconds 
+QA_CHECK PASS A-ground: none closer to the zone than the clearance (64) 0 of 5
+QA_CHECK PASS A-ground: none within 16 blocks of the player 0 of 5
+QA_CHECK PASS A-ground: a raider within 32 blocks of the beacon 33.4 s
+QA_NOTE BEACON A-floor at -30, 68, 0 (1 above the ground)
+QA_TIMEOUT A-floor: wave 1 (for the survey)
+QA_NOTE SURVEY A-floor ring 80: {OK=5, below beacon=19, env (water/tree/roof/built)=32, not open ground=16} | good ground below the beacon, by blocks below: {1=1, 2=2, 5=3}
+QA_NOTE SURVEY A-floor ring 96: {OK=12, below beacon=16, env (water/tree/roof/built)=27, not open ground=17} | good ground below the beacon, by blocks below: {1=2, 2=1, 3=1}
+QA_NOTE SURVEY A-floor ring 112: {OK=3, below beacon=23, env (water/tree/roof/built)=21, not open ground=25} | good ground below the beacon, by blocks below: {1=1}
+QA_NOTE SURVEY A-floor ring 128: {OK=13, below beacon=20, env (water/tree/roof/built)=19, not open ground=19, too high=1} | good ground below the beacon, by blocks below: {1=1, 3=1, 4=1}
+QA_NOTE SURVEY A-floor ring 144: {OK=6, below beacon=22, env (water/tree/roof/built)=22, not open ground=19, too high=3} | good ground below the beacon, by blocks below: {5=1}
+QA_NOTE SURVEY A-floor ring 160: {OK=6, below beacon=25, env (water/tree/roof/built)=17, not open ground=23, too high=1} | good ground below the beacon, by blocks below: {3=1, 4=1, 5=2}
+QA_NOTE SURVEY A-floor ring 176: {OK=5, below beacon=32, env (water/tree/roof/built)=22, not open ground=13} | good ground below the beacon, by blocks below: {1=2, 2=1}
+QA_TIMEOUT A-floor: a raider within 32 blocks, or 90 s
+QA_NOTE RESULT A-floor firstSpawn=-0.05 firstVisible=-0.05s firstNear=-0.05s spawned=0
+QA_CHECK FAIL A-floor: the first raider spawned within 2 seconds 
+QA_CHECK PASS A-floor: none closer to the zone than the clearance (64) 0 of 0
+QA_CHECK PASS A-floor: none within 16 blocks of the player 0 of 0
+QA_CHECK FAIL A-floor: a raider within 32 blocks of the beacon -0.05 s
+QA_NOTE BEACON B-high at -39, 80, -6 (0 above the ground)
+QA_TIMEOUT B-high: wave 1 (for the survey)
+QA_NOTE SURVEY B-high ring 80: {below beacon=64, env (water/tree/roof/built)=8} | good ground below the beacon, by blocks below: {7=1, 10=1, 11=1, 12=1, 14=1}
+QA_NOTE SURVEY B-high ring 96: {OK=2, below beacon=59, env (water/tree/roof/built)=9, not open ground=2} | good ground below the beacon, by blocks below: {2=2, 5=1, 7=2, 11=1, 12=1, 17=2}
+QA_NOTE SURVEY B-high ring 112: {below beacon=62, env (water/tree/roof/built)=6, not open ground=4} | good ground below the beacon, by blocks below: {8=3, 10=1, 11=1, 12=1, 13=1, 16=2}
+QA_NOTE SURVEY B-high ring 128: {below beacon=60, env (water/tree/roof/built)=6, not open ground=6} | good ground below the beacon, by blocks below: {5=1, 7=1, 10=1, 12=1, 17=1}
+QA_NOTE SURVEY B-high ring 144: {below beacon=59, env (water/tree/roof/built)=7, not open ground=5, too high=1} | good ground below the beacon, by blocks below: {7=1, 8=5, 9=1, 11=1, 14=2, 16=2}
+QA_NOTE SURVEY B-high ring 160: {below beacon=60, env (water/tree/roof/built)=7, not open ground=5} | good ground below the beacon, by blocks below: {8=2, 13=1, 15=1, 16=1}
+QA_NOTE SURVEY B-high ring 176: {below beacon=65, env (water/tree/roof/built)=4, not open ground=3} | good ground below the beacon, by blocks below: {10=1, 13=1, 14=1, 17=1}
+QA_TIMEOUT B-high: a raider within 32 blocks, or 90 s
+QA_NOTE RESULT B-high firstSpawn=-0.05 firstVisible=-0.05s firstNear=-0.05s spawned=0
+QA_CHECK FAIL B-high: the first raider spawned within 2 seconds 
+QA_CHECK PASS B-high: none closer to the zone than the clearance (64) 0 of 0
+QA_CHECK PASS B-high: none within 16 blocks of the player 0 of 0
+QA_CHECK FAIL B-high: a raider within 32 blocks of the beacon -0.05 s
+QA_DONE pass=8 fail=4

@@ -1,0 +1,66 @@
+QA_NOTE GROUND -41, 70, 9
+QA_NOTE BEACON A-ground at -30, 67, 0 (0 above the ground)
+QA_NOTE SPAWN A-ground #1 t=0.05s dist=74 ring=72 toPlayer=73 dy=1 type=minecraft:skeleton
+QA_NOTE VISIBLE A-ground t=0.5s dist=73
+QA_NOTE SURVEY A-ground ring 80: {OK=7, below beacon=25, env (water/tree/roof/built)=23, not open ground=17} | good ground below the beacon, by blocks below: {1=2, 4=2}
+QA_NOTE SURVEY A-ground ring 96: {OK=10, below beacon=31, env (water/tree/roof/built)=21, not open ground=10} | good ground below the beacon, by blocks below: {1=1, 2=1}
+QA_NOTE SURVEY A-ground ring 112: {OK=5, below beacon=31, env (water/tree/roof/built)=18, not open ground=18} | good ground below the beacon, by blocks below: {}
+QA_NOTE SURVEY A-ground ring 128: {OK=10, below beacon=31, env (water/tree/roof/built)=17, not open ground=13, too high=1} | good ground below the beacon, by blocks below: {2=1, 3=1}
+QA_NOTE SURVEY A-ground ring 144: {OK=3, below beacon=28, env (water/tree/roof/built)=21, not open ground=17, too high=3} | good ground below the beacon, by blocks below: {4=1}
+QA_NOTE SURVEY A-ground ring 160: {below beacon=21, env (water/tree/roof/built)=3, not open ground=14, not ticking=33, too high=1} | good ground below the beacon, by blocks below: {3=1, 4=1}
+QA_NOTE SURVEY A-ground ring 176: {below beacon=4, not ticking=68} | good ground below the beacon, by blocks below: {}
+QA_NOTE SPAWN A-ground #2 t=1.05s dist=89 ring=88 toPlayer=90 dy=1 type=minecraft:skeleton
+QA_NOTE SPAWN A-ground #3 t=2.05s dist=132 ring=120 toPlayer=133 dy=5 type=minecraft:skeleton
+QA_NOTE SPAWN A-ground #4 t=3.05s dist=105 ring=104 toPlayer=105 dy=3 type=minecraft:zombie
+QA_NOTE SPAWN A-ground #5 t=4.05s dist=99 ring=72 toPlayer=102 dy=1 type=minecraft:skeleton
+QA_NOTE NEAR A-ground t=10.8s
+QA_NOTE RESULT A-ground firstSpawn=0.05 firstVisible=0.5s firstNear=10.8s spawned=5
+QA_CHECK PASS A-ground: the first raider spawned within 2 seconds 
+QA_CHECK PASS A-ground: none closer to the zone than the clearance (64) 0 of 5
+QA_CHECK PASS A-ground: none within 16 blocks of the player 0 of 5
+QA_CHECK PASS A-ground: a raider within 32 blocks of the beacon 10.8 s
+QA_NOTE DAMAGE 0 journal entries left by the raid
+QA_NOTE BEACON A-floor at -30, 68, 0 (1 above the ground)
+QA_NOTE SPAWN A-floor #1 t=0.05s dist=89 ring=88 toPlayer=89 dy=0 type=minecraft:zombie
+QA_NOTE SURVEY A-floor ring 80: {OK=6, below beacon=33, env (water/tree/roof/built)=21, not open ground=12} | good ground below the beacon, by blocks below: {1=1, 2=2, 5=2}
+QA_NOTE SURVEY A-floor ring 96: {OK=8, below beacon=35, env (water/tree/roof/built)=20, not open ground=9} | good ground below the beacon, by blocks below: {1=2, 2=1, 3=1}
+QA_NOTE SURVEY A-floor ring 112: {OK=4, below beacon=36, env (water/tree/roof/built)=18, not open ground=14} | good ground below the beacon, by blocks below: {1=1}
+QA_NOTE SURVEY A-floor ring 128: {OK=9, below beacon=32, env (water/tree/roof/built)=17, not open ground=13, too high=1} | good ground below the beacon, by blocks below: {1=1, 3=1, 4=1}
+QA_NOTE SURVEY A-floor ring 144: {OK=3, below beacon=31, env (water/tree/roof/built)=19, not open ground=16, too high=3} | good ground below the beacon, by blocks below: {5=1}
+QA_NOTE SURVEY A-floor ring 160: {OK=5, below beacon=35, env (water/tree/roof/built)=13, not open ground=18, too high=1} | good ground below the beacon, by blocks below: {3=1, 4=1, 5=2}
+QA_NOTE SURVEY A-floor ring 176: {OK=3, below beacon=43, env (water/tree/roof/built)=20, not open ground=6} | good ground below the beacon, by blocks below: {1=2}
+QA_NOTE VISIBLE A-floor t=0.2s dist=89
+QA_NOTE SPAWN A-floor #2 t=1.05s dist=74 ring=72 toPlayer=73 dy=0 type=minecraft:skeleton
+QA_NOTE SPAWN A-floor #3 t=2.05s dist=89 ring=88 toPlayer=90 dy=0 type=minecraft:skeleton
+QA_NOTE SPAWN A-floor #4 t=3.05s dist=88 ring=88 toPlayer=88 dy=0 type=minecraft:skeleton
+QA_NOTE SPAWN A-floor #5 t=4.05s dist=134 ring=120 toPlayer=132 dy=3 type=minecraft:zombie
+QA_NOTE NEAR A-floor t=13.2s
+QA_NOTE RESULT A-floor firstSpawn=0.05 firstVisible=0.2s firstNear=13.2s spawned=5
+QA_CHECK PASS A-floor: the first raider spawned within 2 seconds 
+QA_CHECK PASS A-floor: none closer to the zone than the clearance (64) 0 of 5
+QA_CHECK PASS A-floor: none within 16 blocks of the player 0 of 5
+QA_CHECK PASS A-floor: a raider within 32 blocks of the beacon 13.2 s
+QA_NOTE DAMAGE 0 journal entries left by the raid
+QA_NOTE BEACON B-high at -39, 73, -6 (0 above the ground)
+QA_NOTE SPAWN B-high #1 t=0.05s dist=81 ring=72 toPlayer=78 dy=2 type=minecraft:skeleton
+QA_NOTE VISIBLE B-high t=0.0s dist=78
+QA_NOTE SURVEY B-high ring 80: {OK=1, below beacon=58, env (water/tree/roof/built)=10, not open ground=3} | good ground below the beacon, by blocks below: {2=1, 3=2, 4=1, 5=1, 7=2}
+QA_NOTE SURVEY B-high ring 96: {OK=5, below beacon=51, env (water/tree/roof/built)=15, not open ground=1} | good ground below the beacon, by blocks below: {5=1, 10=2}
+QA_NOTE SURVEY B-high ring 112: {below beacon=56, env (water/tree/roof/built)=9, not open ground=7} | good ground below the beacon, by blocks below: {1=3, 3=2, 4=1, 5=1, 6=1, 9=2}
+QA_NOTE SURVEY B-high ring 128: {OK=1, below beacon=51, env (water/tree/roof/built)=13, not open ground=7} | good ground below the beacon, by blocks below: {1=1, 3=1, 4=1, 5=1, 8=1, 10=1}
+QA_NOTE SURVEY B-high ring 144: {OK=1, below beacon=50, env (water/tree/roof/built)=11, not open ground=9, too high=1} | good ground below the beacon, by blocks below: {1=2, 2=1, 4=1, 7=2, 9=2}
+QA_NOTE SURVEY B-high ring 160: {OK=1, below beacon=54, env (water/tree/roof/built)=9, not open ground=7, too high=1} | good ground below the beacon, by blocks below: {1=2, 6=1, 8=1, 9=1}
+QA_NOTE SURVEY B-high ring 176: {below beacon=60, env (water/tree/roof/built)=8, not open ground=4} | good ground below the beacon, by blocks below: {3=1, 6=1, 7=1, 10=1}
+QA_NOTE SPAWN B-high #2 t=1.05s dist=137 ring=136 toPlayer=138 dy=3 type=minecraft:zombie
+QA_NOTE SPAWN B-high #3 t=2.05s dist=104 ring=104 toPlayer=100 dy=4 type=minecraft:zombie
+QA_NOTE SPAWN B-high #4 t=3.05s dist=164 ring=136 toPlayer=161 dy=4 type=minecraft:skeleton
+QA_NOTE SPAWN B-high #5 t=5.05s dist=138 ring=136 toPlayer=142 dy=2 type=minecraft:zombie
+QA_NOTE SPAWN B-high #6 t=6.05s dist=132 ring=120 toPlayer=131 dy=0 type=minecraft:zombie
+QA_NOTE NEAR B-high t=17.7s
+QA_NOTE RESULT B-high firstSpawn=0.05 firstVisible=0.0s firstNear=17.7s spawned=6
+QA_CHECK PASS B-high: the first raider spawned within 2 seconds 
+QA_CHECK PASS B-high: none closer to the zone than the clearance (64) 0 of 6
+QA_CHECK PASS B-high: none within 16 blocks of the player 0 of 6
+QA_CHECK PASS B-high: a raider within 32 blocks of the beacon 17.7 s
+QA_NOTE DAMAGE 0 journal entries left by the raid
+QA_DONE pass=12 fail=0

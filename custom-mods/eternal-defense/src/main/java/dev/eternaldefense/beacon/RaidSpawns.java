@@ -8,7 +8,9 @@ import java.util.*;
 
 /** Exterior staging only: no closer fallback, no forced chunks, no roofs or interiors. */
 final class RaidSpawns {
-    static final int CLEARANCE=64,SPREAD=16;
+    static final int CLEARANCE=32,SPREAD=16;
+    /** A fresh raider never appears closer than this to a player */
+    static final int SPAWN_PLAYER_DISTANCE=16;
     /** Since when no natural spawn ground was found (per level; gone again once some is found). */
     private static final Map<ServerLevel,Long> FAILING=new WeakHashMap<>();
     /** The wave the players were last told about a gate spawn (or about no ground at all), per level. */
@@ -20,11 +22,11 @@ final class RaidSpawns {
         double cos=Math.cos(angle),sin=Math.sin(angle);double stretch=distance/Math.max(Math.abs(cos),Math.abs(sin));
         return new BlockPos(origin.getX()+(int)Math.round(cos*stretch),origin.getY(),origin.getZ()+(int)Math.round(sin*stretch));
     }
-    /** How far below the beacon a spawn may be: none at first */
-    static int allowedDrop(long waveTicks){return waveTicks>=1800?10:waveTicks>=600?4:0;}
+    /** How far below the beacon a spawn may be: 20 blocks at once, 30 after 30 seconds of a wave */
+    static int allowedDrop(long waveTicks){return waveTicks>=600?30:20;}
     static boolean safe(ServerLevel l,CampaignData d,BlockPos p){
         if(Math.max(Math.abs(p.getX()-d.beacon.getX()),Math.abs(p.getZ()-d.beacon.getZ()))<d.radius()+CLEARANCE||!l.hasChunkAt(p)||!l.isPositionEntityTicking(p)||!l.getWorldBorder().isWithinBounds(p))return false;
-        // Surface only, at or above the beacon's level
+        // Surface only, near the beacon's level
         if(p.getY()<d.beacon.getY()-allowedDrop(d.waveTicks)||p.getY()>d.beacon.getY()+24)return false;
         return environmentSafe(l,p)&&openGround(l,p);
     }
@@ -156,24 +158,33 @@ final class RaidSpawns {
         return TerrainProbe.probe(s,f,v,spacing);
     }
 
-    /** Where a reinforcement appears. */
+    /** Pure: the ring distances natural spawns are tried at, nearest first, out to the edge of the active chunks */
+    static List<Integer> spawnRings(int zoneRadius,int farthest){
+        int minimum=zoneRadius+CLEARANCE;var out=new ArrayList<Integer>();
+        for(int r=minimum;r<farthest;r+=SPREAD)out.add(r);
+        out.add(Math.max(minimum,farthest));return out;
+    }
+    /** Where a reinforcement appears: the nearest good ground beyond the clearance, away from players. */
     static BlockPos find(ServerLevel l,CampaignData d){
-        int minimum=d.radius()+CLEARANCE,farthest=farthest(l,d);
-        record Candidate(BlockPos column,Score score){}
-        List<Candidate> all=new ArrayList<>();
-        for(int distance=farthest;distance>=minimum;distance=Math.max(minimum,distance-16)){
+        record Candidate(BlockPos column,Score score,int ring){}
+        List<Candidate> all=new ArrayList<>();int index=0;
+        for(int ring:spawnRings(d.radius(),farthest(l,d))){
+            int at=index++;
             int first=l.random.nextInt(WEDGES);double jitter=l.random.nextDouble()*WEDGE;
             for(int i=0;i<WEDGES;i++){
+                int distance=ring+l.random.nextInt(SPREAD+1);
                 var column=ringAt(d.beacon,distance,((first+i)%WEDGES)*WEDGE+jitter);
-                all.add(new Candidate(column,corridor(l,d,wedgeOf(d.beacon,column)).score(distance)));
+                all.add(new Candidate(column,corridor(l,d,wedgeOf(d.beacon,column)).score(distance),at));
             }
-            if(distance==minimum||all.size()>=240)break;
+            if(all.size()>=240)break;
         }
-        var order=new ArrayList<>(all.stream().filter(c->c.score().clean()).toList());
-        order.addAll(all.stream().filter(c->!c.score().clean()).sorted(Comparator.comparingInt(c->c.score().violations())).toList());
+        // The nearest ring first; on a ring, the cleanest way in first
+        var order=all.stream().sorted(Comparator.comparingInt(Candidate::ring).thenComparingInt(c->c.score().violations())).toList();
+        var players=RaidRescue.players(l);
         for(var c:order){
             if(!l.hasChunkAt(c.column()))continue;
-            var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,c.column());if(safe(l,d,p)){FAILING.remove(l);return p;}
+            var p=l.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,c.column());
+            if(farFromPlayers(net.minecraft.world.phys.Vec3.atBottomCenterOf(p),players,SPAWN_PLAYER_DISTANCE)&&safe(l,d,p)){FAILING.remove(l);return p;}
         }
         FAILING.putIfAbsent(l,l.getGameTime());return null;
     }
@@ -187,11 +198,12 @@ final class RaidSpawns {
     record Place(BlockPos pos,boolean gate,boolean chute){}
     /** Pure: it is time for gates (failingSince: when natural ground was last missed, MIN_VALUE when it was not). */
     static boolean gateDue(long failingSince,long now){return failingSince!=Long.MIN_VALUE&&now-failingSince>=GATE_AFTER_TICKS;}
-    /** Pure: the ring distances a gate spot is tried at, from the outer edge of the active chunks in to the closest */
+    /** Pure: the ring distances a gate spot is tried at, from the closest allowed out to the edge of the active chunks */
     static List<Integer> gateRings(int zoneRadius,int farthest){
         int near=zoneRadius+GATE_BEYOND_ZONE;var out=new ArrayList<Integer>();
-        for(int r=Math.max(near,farthest);r>near;r-=GATE_RING_STEP)out.add(r);
-        out.add(near);return out;
+        for(int r=near;r<farthest;r+=GATE_RING_STEP)out.add(r);
+        if(out.isEmpty()||out.get(out.size()-1)<farthest)out.add(Math.max(near,farthest));
+        return out;
     }
     /** A reinforcement's place: natural ground (find) whenever there, else a gate closer in, else a parachute drop over the zone */
     static Place place(ServerLevel l,CampaignData d){

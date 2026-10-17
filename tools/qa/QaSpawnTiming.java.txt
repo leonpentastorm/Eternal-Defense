@@ -1,0 +1,173 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Measures when a wave's raiders spawn, how far out, and when the player can first see them, on generated terrain. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaSpawnTiming {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_spawn",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_spawn",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    static BlockPos B,G;static long waveStart=-1;static int waveSeen=0;static String label="";
+    static final Map<UUID,long[]> SEEN=new LinkedHashMap<>();static int firstVisible=-1,firstNear=-1,spawned=0,closeSpawns=0,nearPlayer=0;
+    static void places(){}
+    // Watches the raid from the server tick and the client view
+    @SubscribeEvent public static void serverStart(TickEvent.ServerTickEvent e){
+        if(e.phase!=TickEvent.Phase.START||server()==null||B==null)return;var d=cd();
+        if(!d.phase.equals("raid")||d.wave<1)return;
+        if(d.wave!=waveSeen){waveSeen=d.wave;waveStart=sl().getGameTime();note("WAVE {} {} start spawnRemaining={}",label,d.wave,d.spawnRemaining);}
+        for(var id:d.raiders)if(!SEEN.containsKey(id)&&sl().getEntity(id) instanceof Mob m){
+            long t=sl().getGameTime()-waveStart;double dist=Math.sqrt(Math.pow(m.getX()-B.getX()-.5,2)+Math.pow(m.getZ()-B.getZ()-.5,2));
+            SEEN.put(id,new long[]{t});spawned++;
+            int cheb=Math.max(Math.abs(m.blockPosition().getX()-B.getX()),Math.abs(m.blockPosition().getZ()-B.getZ()));double toPlayer=Math.sqrt(m.distanceToSqr(sp()));
+            if(cheb<d.radius()+RaidSpawns.CLEARANCE)closeSpawns++;if(toPlayer<RaidSpawns.SPAWN_PLAYER_DISTANCE)nearPlayer++;
+            note("SPAWN {} #{} t={}s dist={} ring={} toPlayer={} dy={} type={}",label,spawned,String.format(Locale.ROOT,"%.2f",t/20.0),Math.round(dist),cheb,Math.round(toPlayer),m.blockPosition().getY()-B.getY(),BuiltInRegistries.ENTITY_TYPE.getKey(m.getType()));
+        }
+        if(sl().getGameTime()%20==0){double min=1e9;for(var id:d.raiders)if(sl().getEntity(id) instanceof Mob m)min=Math.min(min,Math.sqrt(Math.pow(m.getX()-B.getX()-.5,2)+Math.pow(m.getZ()-B.getZ()-.5,2)));
+            long t=sl().getGameTime()-waveStart;if(min<=32&&firstNear<0){firstNear=(int)t;note("NEAR {} t={}s",label,t/20.0);}
+            note("TICK {} t={}s alive={} left={} nearest={}",label,t/20,d.raiders.size(),d.spawnRemaining,min>1e8?"-":Math.round(min));}
+    }
+    @SubscribeEvent public static void clientWatch(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||mc().level==null||mc().player==null||waveStart<0||firstVisible>=0||SEEN.isEmpty())return;
+        for(var en:mc().level.entitiesForRendering())if(en instanceof Mob m&&SEEN.containsKey(m.getUUID())&&m.shouldRenderAtSqrDistance(mc().player.distanceToSqr(m))){
+            firstVisible=(int)Math.max(0,mc().level.getGameTime()-waveStart);note("VISIBLE {} t={}s dist={}",label,firstVisible/20.0,Math.round(Math.sqrt(mc().player.distanceToSqr(m))));shot("spawn_"+label+"_first_visible");return;}
+    }
+    /** Why each ring spot is or is not a spawn: the same checks as RaidSpawns.safe, one by one */
+    static void survey(){
+        var l=sl();var d=cd();int far=RaidSpawns.farthest(l,d);
+        for(int ring:RaidSpawns.spawnRings(d.radius(),far)){
+            var why=new TreeMap<String,Integer>();var drops=new TreeMap<Integer,Integer>();
+            for(int i=0;i<72;i++){
+                var col=RaidSpawns.ringAt(d.beacon,ring+8,i*Math.PI*2/72);
+                if(!l.hasChunkAt(col)){why.merge("unloaded",1,Integer::sum);continue;}
+                var p=l.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,col);
+                String r;
+                if(l.isPositionEntityTicking(p)&&p.getY()<d.beacon.getY()&&p.getY()<=d.beacon.getY()+24&&RaidSpawns.environmentSafe(l,p)&&RaidSpawns.openGround(l,p))
+                    drops.merge(d.beacon.getY()-p.getY(),1,Integer::sum);
+                if(!l.isPositionEntityTicking(p))r="not ticking";
+                else if(p.getY()<d.beacon.getY()-RaidSpawns.allowedDrop(d.waveTicks))r="below beacon";
+                else if(p.getY()>d.beacon.getY()+24)r="too high";
+                else if(!RaidSpawns.environmentSafe(l,p))r="env (water/tree/roof/built)";
+                else if(!RaidSpawns.openGround(l,p))r="not open ground";
+                else r="OK";
+                why.merge(r,1,Integer::sum);
+            }
+            note("SURVEY {} ring {}: {} | good ground below the beacon, by blocks below: {}",label,ring+8,why,drops);
+        }
+    }
+    static void setup(BlockPos at,String name){label=name;B=at;SEEN.clear();firstVisible=-1;firstNear=-1;spawned=0;closeSpawns=0;nearPlayer=0;waveStart=-1;waveSeen=0;}
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(20,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            r.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());r.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());sl().setDayTime(14000);
+            G=sl().getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,new BlockPos(sx,0,sz));note("GROUND {}",G.toShortString());});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"night, the ground at spawn");
+        // Fixed sites, so runs on different code meet the same ground: a low spot (on the ground, then on a plank floor) and a hilltop
+        for(String[] site:new String[][]{{"A-ground","-30","0","0"},{"A-floor","-30","0","1"},{"B-high","-39","-6","0"}}){
+            String c=site[0];int x=Integer.parseInt(site[1]),z=Integer.parseInt(site[2]);boolean floor=site[3].equals("1");
+            step(5,()->srv(()->{var d=cd();
+                G=sl().getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,new BlockPos(x,0,z));
+                if(d.beacon!=null&&sl().getBlockState(d.beacon).is(EternalDefense.BEACON.get()))sl().setBlock(d.beacon,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
+                G=sl().getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,new BlockPos(x,0,z));
+                BlockPos at=floor?G.above():G;if(floor)for(var p:BlockPos.betweenClosed(G.offset(-4,0,-4),G.offset(4,0,4)))sl().setBlock(p,net.minecraft.world.level.block.Blocks.SPRUCE_PLANKS.defaultBlockState(),3);
+                d.phase="preparation";d.beacon=at;d.core=0;d.vertical=0;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.raiders.clear();d.setDirty();
+                sl().setBlock(at,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);setup(at,c);note("BEACON {} at {} ({} above the ground)",c,at.toShortString(),at.getY()-G.getY());}),c+": the beacon");
+            step(10,()->{var at=srvGet(()->cd().beacon);look(at.getX()+.5,at.getY()+1,at.getZ()+4.5,at.getX()+.5,at.getY()+30,at.getZ()-40);},"stand by the beacon, looking out");
+            step(5,()->srv(()->EternalDefense.begin(sl(),cd())),"start the raid");
+            until(c+": wave 1 (for the survey)",400,()->srvGet(()->cd().phase.equals("raid")&&cd().wave==1),()->srv(QaSpawnTiming::survey));
+            until(c+": a raider within 32 blocks, or 90 s",1800,()->firstNear>=0,()->{note("RESULT {} firstSpawn={} firstVisible={}s firstNear={}s spawned={}",label,SEEN.values().stream().mapToLong(v->v[0]).min().orElse(-1)/20.0,firstVisible/20.0,firstNear/20.0,spawned);
+                check(label+": the first raider spawned within 2 seconds",spawned>0&&SEEN.values().stream().mapToLong(v->v[0]).min().orElse(99)<=40,"");
+                check(label+": none closer to the zone than the clearance ("+RaidSpawns.CLEARANCE+")",closeSpawns==0,closeSpawns+" of "+spawned);
+                check(label+": none within "+RaidSpawns.SPAWN_PLAYER_DISTANCE+" blocks of the player",nearPlayer==0,nearPlayer+" of "+spawned);
+                check(label+": a raider within 32 blocks of the beacon",firstNear>=0,firstNear/20.0+" s");});
+            step(5,()->srv(()->{var d=cd();for(var id:d.raiders){var en=sl().getEntity(id);if(en!=null)en.discard();}d.raiders.clear();d.spawnRemaining=0;note("DAMAGE {} journal entries left by the raid",d.damage.size());d.damage.clear();d.destroyedTurrets.clear();d.phase="preparation";d.setDirty();RaidRescue.reset(sl());}),"end the measurement (the repair list is not under test)");
+        }
+    }
+
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+}
