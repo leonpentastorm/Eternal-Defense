@@ -5,7 +5,7 @@ import java.util.function.Function;
 /** Field-guide page assembly without any Minecraft types, so it can be unit tested. */
 final class GuideText {
     private GuideText(){}
-    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","hub","loadout","energy","support","tactical","fob","kitchen","mixes","drinks","mre","gear","coop","reference"};
+    static final String[] IDS={"start","zone","raids","control","upgrades","repair","stations","hub","loadout","energy","support","defense","tactical","fob","kitchen","mixes","drinks","mre","gear","coop","reference"};
     static final String REFERENCE="reference";
     /** The text of one part of a card (body, detail, title); lookup maps a key below gui.eternal_defense. */
     static String raw(String id,String part,Function<String,String> lookup){

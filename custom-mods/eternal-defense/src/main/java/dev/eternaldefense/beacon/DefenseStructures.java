@@ -27,7 +27,13 @@ final class DefenseStructures {
     static int mark(int core){return 1+Math.max(0,Math.min(3,core));}
     static int angle(Direction facing){return switch(facing){case EAST->90;case SOUTH->180;case WEST->270;default->0;};}
     static BlockPos second(BlockPos pos,BlockState state){return pos.relative(state.getValue(FACING).getClockWise());}
-    static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.is(EternalDefense.STRUCTURE_PART.get())?pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z)):pos;}
+    static BlockPos anchor(BlockGetter level,BlockPos pos){var s=level.getBlockState(pos);return s.getBlock() instanceof Part?pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z)):pos;}
+    /** An owner that names its own cells and outline; with ports its other cells pass item handlers to it */
+    interface Footprint {
+        List<BlockPos> extra(BlockPos root,BlockState state);
+        VoxelShape whole(BlockState state);
+        default boolean ports(){return false;}
+    }
     static boolean beacon(BlockGetter level,BlockPos pos){return level.getBlockState(anchor(level,pos)).is(EternalDefense.BEACON.get());}
     /** Owners with the full 3 x 3 x 2 footprint: the Mk-4 beacon and the Support Cannon. */
     static boolean big(BlockState state){return state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())||state.is(EternalDefense.BEACON.get())&&state.getValue(MK)==4;}
@@ -38,11 +44,12 @@ final class DefenseStructures {
     /** The Tactical Enchanting Table: 2 wide (clockwise of its facing) x 2 tall x 1 deep, like the weapon benches. */
     static boolean enchanting(BlockState state){return state.is(EternalDefense.ENCHANTING_TABLE.get());}
     /** Blocks that are broken as one piece and rebuild a damaged footprint. */
-    static boolean selfHealing(BlockState s){return s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(EternalDefense.SUPPORT_CANNON.get())||s.is(EternalDefense.SUPPLY_CATAPULT.get())||tallSupport(s)||table(s)||enchanting(s);}
+    static boolean selfHealing(BlockState s){return s.getBlock() instanceof Footprint||s.getBlock() instanceof KitchenBlock||s.getBlock() instanceof WeaponPlatform.Station||s.is(EternalDefense.SUPPORT_CANNON.get())||s.is(EternalDefense.SUPPLY_CATAPULT.get())||tallSupport(s)||table(s)||enchanting(s);}
     static boolean owns(BlockState owner){return owner.is(EternalDefense.BEACON.get())||selfHealing(owner);}
     static List<BlockPos> cells(BlockPos root,BlockState state){
         List<BlockPos> cells=new ArrayList<>();
         if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.cells(root,state);
+        if(state.getBlock() instanceof Footprint fp)return fp.extra(root,state);
         if(big(state)){for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)if(x!=0||y!=0||z!=0)cells.add(root.offset(x,y,z));}
         else if(tallSupport(state))cells.add(root.above());
         else if(enchanting(state)){var side=second(root,state);cells.add(side);cells.add(root.above());cells.add(side.above());}
@@ -53,18 +60,18 @@ final class DefenseStructures {
         for(var p:cells(root,wanted)){
             if(!level.isInWorldBounds(p)||!level.getWorldBorder().isWithinBounds(p)||!level.hasChunkAt(p))return false;
             var s=level.getBlockState(p);
-            if(s.is(EternalDefense.STRUCTURE_PART.get())&&anchor(level,p).equals(root))continue;
+            if(s.getBlock() instanceof Part&&anchor(level,p).equals(root))continue;
             if(!s.canBeReplaced()||level.getBlockEntity(p)!=null)return false;
             if(!level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,new AABB(p),e->!e.isSpectator()).isEmpty())return false;
         }return true;
     }
     static boolean install(Level level,BlockPos root,BlockState state){
         if(level.isClientSide||!available(level,root,state))return false;
-        for(var p:cells(root,state)){var s=EternalDefense.STRUCTURE_PART.get().defaultBlockState().setValue(X,1+p.getX()-root.getX()).setValue(Y,p.getY()-root.getY()).setValue(Z,1+p.getZ()-root.getZ());if(level.getBlockState(p)!=s)level.setBlock(p,s,3);}return true;
+        var part=state.getBlock() instanceof Footprint fp&&fp.ports()?EternalDefense.STRUCTURE_PORT.get():EternalDefense.STRUCTURE_PART.get();for(var p:cells(root,state)){var s=part.defaultBlockState().setValue(X,1+p.getX()-root.getX()).setValue(Y,p.getY()-root.getY()).setValue(Z,1+p.getZ()-root.getZ());if(level.getBlockState(p)!=s)level.setBlock(p,s,3);}return true;
     }
     static void remove(Level level,BlockPos root){
         if(level.isClientSide)return;
-        for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++){var p=root.offset(x,y,z);if(!p.equals(root)&&level.hasChunkAt(p)&&level.getBlockState(p).is(EternalDefense.STRUCTURE_PART.get())&&anchor(level,p).equals(root))level.setBlock(p,Blocks.AIR.defaultBlockState(),3);}
+        for(int y=0;y<=1;y++)for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++){var p=root.offset(x,y,z);if(!p.equals(root)&&level.hasChunkAt(p)&&level.getBlockState(p).getBlock() instanceof Part&&anchor(level,p).equals(root))level.setBlock(p,Blocks.AIR.defaultBlockState(),3);}
     }
     static boolean syncBeacon(ServerLevel level,CampaignData d){
         if(!d.installed()||!level.hasChunkAt(d.beacon))return false;var current=level.getBlockState(d.beacon);if(!current.is(EternalDefense.BEACON.get()))return false;
@@ -76,6 +83,7 @@ final class DefenseStructures {
     static int actualMark(BlockGetter level,BlockPos pos){var state=level.getBlockState(pos);return state.is(EternalDefense.BEACON.get())?state.getValue(MK):1;}
     static VoxelShape full(BlockState state){
         if(state.getBlock() instanceof KitchenBlock kitchen)return kitchen.full(state);
+        if(state.getBlock() instanceof Footprint fp)return fp.whole(state);
         // Collision is a simple installation envelope, independent of decorative mesh detail.
         if(state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get()))return Shapes.create(-1,0,-1,2,2,2);
         if(tallSupport(state))return Shapes.create(0,0,0,1,2,1);
@@ -88,8 +96,8 @@ final class DefenseStructures {
         boolean wide=state.getValue(WIDE),tall=state.getValue(TALL);Direction facing=state.getValue(FACING);String key=wide+":"+tall+":"+facing;
         return shapes.computeIfAbsent(key,k->{double height=tall?2:1;if(!wide)return Shapes.create(0,0,0,1,height,1);return switch(facing){case EAST->Shapes.create(0,0,0,1,height,2);case SOUTH->Shapes.create(-1,0,0,1,height,1);case WEST->Shapes.create(0,0,-1,1,height,1);default->Shapes.create(0,0,0,2,height,1);};});
     }
-    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.getBlock() instanceof KitchenBlock kitchen?"kitchen:"+kitchen.hall+":"+state.getValue(FACING):state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())?"cannon":tallSupport(state)?"tall":table(state)?"table:"+state.getValue(FACING):enchanting(state)?"enchanting:"+state.getValue(FACING):state.is(EternalDefense.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
-    public static final class Part extends Block {
+    static VoxelShape cell(BlockState state,int x,int y,int z){String key=(state.getBlock() instanceof Footprint?"fp:"+net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock())+":"+(state.hasProperty(FACING)?state.getValue(FACING):"-"):state.getBlock() instanceof KitchenBlock kitchen?"kitchen:"+kitchen.hall+":"+state.getValue(FACING):state.is(EternalDefense.SUPPORT_CANNON.get())||state.is(EternalDefense.SUPPLY_CATAPULT.get())?"cannon":tallSupport(state)?"tall":table(state)?"table:"+state.getValue(FACING):enchanting(state)?"enchanting:"+state.getValue(FACING):state.is(EternalDefense.BEACON.get())?"mk"+state.getValue(MK):state.getValue(WIDE)+":"+state.getValue(TALL)+":"+state.getValue(FACING))+":"+x+":"+y+":"+z;return clippedShapes.computeIfAbsent(key,k->Shapes.join(full(state),Shapes.create(x,y,z,x+1,y+1,z+1),BooleanOp.AND).move(-x,-y,-z));}
+    public static class Part extends Block {
         Part(){super(Properties.of().strength(3,6).noOcclusion().dynamicShape());registerDefaultState(stateDefinition.any().setValue(X,1).setValue(Y,0).setValue(Z,1));}
         @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b){b.add(X,Y,Z);}
         @Override public RenderShape getRenderShape(BlockState state){return RenderShape.INVISIBLE;}
@@ -103,5 +111,16 @@ final class DefenseStructures {
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){if(!l.isClientSide&&!next.is(this)){var root=pos.offset(1-s.getValue(X),-s.getValue(Y),1-s.getValue(Z));if(selfHealing(l.getBlockState(root)))l.scheduleTick(root,l.getBlockState(root).getBlock(),1);}super.onRemove(s,l,pos,next,moving);}
         @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){var root=anchor(l,pos);if(!l.hasChunkAt(root)){l.scheduleTick(pos,this,20);return;}var owner=l.getBlockState(root);if(!owns(owner)||!cells(root,owner).contains(pos))l.setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
         @Override public void neighborChanged(BlockState s,Level l,BlockPos pos,Block block,BlockPos from,boolean moving){if(!l.isClientSide)l.scheduleTick(pos,this,1);}
+    }
+    /** A part whose block entity passes item handlers on to its owner (a chute or funnel on a turret's upper cell) */
+    public static final class Port extends Part implements net.minecraft.world.level.block.EntityBlock {
+        @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new PortEntity(pos,state);}
+    }
+    static final class PortEntity extends net.minecraft.world.level.block.entity.BlockEntity {
+        PortEntity(BlockPos pos,BlockState state){super(EternalDefense.PORT_ENTITY.get(),pos,state);}
+        @Override public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> cap,@org.jetbrains.annotations.Nullable Direction side){
+            if(level!=null&&cap==net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER){var owner=level.getBlockEntity(anchor(level,worldPosition));if(owner!=null&&owner!=this)return owner.getCapability(cap,side);}
+            return super.getCapability(cap,side);
+        }
     }
 }

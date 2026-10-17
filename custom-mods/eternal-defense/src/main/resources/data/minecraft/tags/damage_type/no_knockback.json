@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "eternal_defense:turret_bullet",
+    "eternal_defense:turret_pellet",
+    "eternal_defense:turret_flame",
+    "eternal_defense:barbed_wire",
+    "eternal_defense:electric_shock"
+  ]
+}

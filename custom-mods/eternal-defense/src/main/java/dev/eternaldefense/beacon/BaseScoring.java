@@ -56,7 +56,7 @@ public final class BaseScoring {
         var block=s.getBlock();var known=KINDS.get(block);if(known!=null)return known;
         String id=BuiltInRegistries.BLOCK.getKey(block).toString();boolean station=block instanceof WeaponPlatform.Station,machine=false;
         if(!station&&!id.contains("turret"))for(Class<?> c=block.getClass();c!=null;c=c.getSuperclass())if(c.getSimpleName().contains("Kinetic")||c.getSimpleName().contains("Cannon")){machine=true;break;}
-        var kind=new Kind(id,block==EternalDefense.STRUCTURE_PART.get(),block==EternalDefense.BEACON.get(),terrain(id),furniture(id),!station&&(id.contains("turret")||machine),!station&&id.startsWith("create:"),detail(id,s),installation(id));
+        var kind=new Kind(id,block instanceof DefenseStructures.Part,block==EternalDefense.BEACON.get(),terrain(id),furniture(id),!station&&(id.contains("turret")||machine),!station&&id.startsWith("create:"),detail(id,s),installation(id));
         KINDS.put(block,kind);return kind;
     }
     /** How many of INSTALLATIONS stand among these blocks (each counted once). */

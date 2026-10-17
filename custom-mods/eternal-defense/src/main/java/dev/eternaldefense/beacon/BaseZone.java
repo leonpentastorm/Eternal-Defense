@@ -61,12 +61,14 @@ final class BaseZone {
         ZoneItem(Block block){super(block,new Item.Properties());}
         /** Extra rules of the subclass; a language key suffix under support. */
         String extra(BlockPlaceContext c){return null;}
+        /** Where it may stand: a language key suffix under support.zone, or null */
+        String zone(Level level,BlockPos pos){return problem(level,pos);}
         @Override public InteractionResult place(BlockPlaceContext c){
             // Anything in the way of any cell is refused on both sides (the preview is red)
             var state=getBlock().getStateForPlacement(c);
             if(PlacementGuard.blocked(c,state)){if(state!=null&&!c.getLevel().isClientSide)say(c.getPlayer(),"no_room");return PlacementGuard.refuse(c);}
             if(!c.getLevel().isClientSide){
-                String zone=problem(c.getLevel(),c.getClickedPos());
+                String zone=zone(c.getLevel(),c.getClickedPos());
                 if(zone!=null){say(c.getPlayer(),"zone."+zone);return PlacementGuard.refuse(c);}
                 // No cell of a bigger piece (the cannon's 3 x 3 x 2) may stand in a Support Platform's return zone
                 if(c.getLevel() instanceof net.minecraft.server.level.ServerLevel server)for(var cell:DefenseStructures.cells(c.getClickedPos(),state))if(ReturnZone.inside(server,cell)){say(c.getPlayer(),"keep_clear");return PlacementGuard.refuse(c);}

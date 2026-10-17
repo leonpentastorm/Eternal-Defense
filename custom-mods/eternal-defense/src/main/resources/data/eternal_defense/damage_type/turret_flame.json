@@ -1,0 +1,6 @@
+{
+  "message_id": "eternal_defense.turret_flame",
+  "exhaustion": 0.1,
+  "scaling": "never",
+  "effects": "burning"
+}

@@ -7,7 +7,7 @@ plugins {
     id 'net.minecraftforge.gradle' version '6.0.54'
 }
 apply plugin: 'org.spongepowered.mixin'
-version = '1.1.17'
+version = '1.1.18'
 group = 'dev.eternaldefense'
 base { archivesName = 'eternal-defense' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -35,7 +35,7 @@ repositories {
     mavenCentral(); maven { url = 'https://maven.blamejared.com' }
     maven { url = 'https://repo.spongepowered.org/repository/maven-public/'; content { includeGroup 'org.spongepowered' } }
     maven { url = 'https://www.cursemaven.com'; content { includeGroup 'curse.maven' } }
-    maven { url = 'https://maven.createmod.net'; content { includeGroup 'com.simibubi.create'; includeGroup 'net.createmod.ponder' } }
+    maven { url = 'https://maven.createmod.net'; content { includeGroup 'com.simibubi.create'; includeGroup 'net.createmod.ponder'; includeGroup 'dev.engine-room.flywheel' } }
 }
 dependencies {
     implementation project(":eternal-defense-displays")
@@ -50,6 +50,7 @@ dependencies {
     // Compile only, for the Create compat source set; never shaded
     createCompileOnly(fg.deobf('com.simibubi.create:create-1.20.1:6.0.8-291:slim')){ transitive = false }
     createCompileOnly('net.createmod.ponder:Ponder-Forge-1.20.1:1.0.91'){ transitive = false }   // Create's block entities implement a Ponder interface (a type name only: not remapped)
+    createCompileOnly(fg.deobf('dev.engine-room.flywheel:flywheel-forge-1.20.1:1.0.6')){ transitive = false }   // the dynamos' turning parts
 }
 sourceSets.create.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
 sourceSets.gametest.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath

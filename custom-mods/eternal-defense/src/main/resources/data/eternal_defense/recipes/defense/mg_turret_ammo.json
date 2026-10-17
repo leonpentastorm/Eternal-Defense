@@ -1,0 +1,31 @@
+{
+  "type": "create:compacting",
+  "ingredients": [
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:propellant"
+    },
+    {
+      "item": "eternal_defense:propellant"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:mg_turret_ammo"
+    }
+  ]
+}

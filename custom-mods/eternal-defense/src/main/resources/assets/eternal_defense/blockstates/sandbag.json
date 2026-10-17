@@ -1,0 +1,47 @@
+{
+ "multipart": [
+  {
+   "when": {
+    "up": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/sandbag_post"
+   }
+  },
+  {
+   "when": {
+    "north": "low|tall"
+   },
+   "apply": {
+    "model": "eternal_defense:block/sandbag_side"
+   }
+  },
+  {
+   "when": {
+    "east": "low|tall"
+   },
+   "apply": {
+    "model": "eternal_defense:block/sandbag_side",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "south": "low|tall"
+   },
+   "apply": {
+    "model": "eternal_defense:block/sandbag_side",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "west": "low|tall"
+   },
+   "apply": {
+    "model": "eternal_defense:block/sandbag_side",
+    "y": 270
+   }
+  }
+ ]
+}

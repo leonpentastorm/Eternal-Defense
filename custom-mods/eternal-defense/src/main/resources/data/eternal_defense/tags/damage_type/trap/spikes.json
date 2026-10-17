@@ -3,6 +3,7 @@
   "values": [
     "minecraft:cactus",
     "minecraft:sweet_berry_bush",
-    "minecraft:stalagmite"
+    "minecraft:stalagmite",
+    "eternal_defense:barbed_wire"
   ]
 }

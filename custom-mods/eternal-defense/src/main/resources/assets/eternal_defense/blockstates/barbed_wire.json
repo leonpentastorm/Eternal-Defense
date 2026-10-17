@@ -1,0 +1,91 @@
+{
+ "multipart": [
+  {
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_post"
+   }
+  },
+  {
+   "when": {
+    "powered": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_post_live"
+   }
+  },
+  {
+   "when": {
+    "north": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side"
+   }
+  },
+  {
+   "when": {
+    "north": "true",
+    "powered": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side_live"
+   }
+  },
+  {
+   "when": {
+    "east": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "east": "true",
+    "powered": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side_live",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "south": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "south": "true",
+    "powered": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side_live",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "west": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "west": "true",
+    "powered": "true"
+   },
+   "apply": {
+    "model": "eternal_defense:block/barbed_wire_side_live",
+    "y": 270
+   }
+  }
+ ]
+}

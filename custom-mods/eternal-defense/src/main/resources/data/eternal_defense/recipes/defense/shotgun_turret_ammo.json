@@ -1,0 +1,34 @@
+{
+  "type": "create:compacting",
+  "ingredients": [
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:cartridge_case"
+    },
+    {
+      "item": "eternal_defense:propellant"
+    },
+    {
+      "item": "eternal_defense:propellant"
+    },
+    {
+      "tag": "forge:nuggets/iron"
+    },
+    {
+      "tag": "forge:nuggets/iron"
+    },
+    {
+      "tag": "forge:nuggets/iron"
+    },
+    {
+      "item": "minecraft:paper"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:shotgun_turret_ammo"
+    }
+  ]
+}

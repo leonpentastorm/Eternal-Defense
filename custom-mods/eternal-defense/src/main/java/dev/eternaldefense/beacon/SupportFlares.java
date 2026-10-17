@@ -115,7 +115,7 @@ final class SupportFlares {
     }
     /** Blocks a Bunker Buster leaves alone: the beacon and the base's own blocks, and anything super hard */
     static boolean bunkerSpares(BlockState state){
-        return DefenseStructures.owns(state)||state.is(EternalDefense.STRUCTURE_PART.get())||state.is(EternalDefense.BEACON.get())
+        return DefenseStructures.owns(state)||state.getBlock() instanceof DefenseStructures.Part||state.is(EternalDefense.BEACON.get())
             ||state.is(net.minecraft.world.level.block.Blocks.OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN)||state.is(net.minecraft.world.level.block.Blocks.BEDROCK)
             ||state.getBlock().getExplosionResistance()>=HARD_RESISTANCE;
     }

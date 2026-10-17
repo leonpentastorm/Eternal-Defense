@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "eternal_defense:block/defense_depot"
+  },
+  "facing=east": {
+   "model": "eternal_defense:block/defense_depot",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "eternal_defense:block/defense_depot",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "eternal_defense:block/defense_depot",
+   "y": 270
+  }
+ }
+}

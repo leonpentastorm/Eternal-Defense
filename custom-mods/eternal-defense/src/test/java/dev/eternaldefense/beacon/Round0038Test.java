@@ -159,7 +159,7 @@ final class Round0038Test {
     @Test void theStationSitsEighthInTheKitchenGroup() throws Exception{
         var items=WorkshopFabrication.ITEMS;int kitchen=items.indexOf("mess_hall_mk1"),support=items.indexOf("support_platform");
         assertEquals(kitchen+7,items.indexOf("mre_maker"),"the 8th of the Kitchen group");assertEquals(items.indexOf("cup_dispenser")+1,items.indexOf("mre_maker"));assertEquals(support,items.indexOf("mre_maker")+1,"its last");
-        assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,12}"));
+        assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,12,"));
         assertEquals(4,Economy.MRE_STATION_KEY);assertEquals(8,Economy.MRE_STATION_IRON);
         var price=body(source("Economy.java"),"case \"mre_maker\"->","\n");
         assertTrue(price.contains("WeaponPlatform.cost(\"eternal_defense:reinforced_plating\",MRE_STATION_KEY)")&&price.contains("minecraft:smoker"),"the Mess Hall's style, plus a smoker");

@@ -1,0 +1,13 @@
+{
+ "variants": {
+  "axis=x": {
+   "model": "eternal_defense:block/shaft_dynamo"
+  },
+  "axis=y": {
+   "model": "eternal_defense:block/shaft_dynamo"
+  },
+  "axis=z": {
+   "model": "eternal_defense:block/shaft_dynamo"
+  }
+ }
+}

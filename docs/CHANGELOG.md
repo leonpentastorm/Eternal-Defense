@@ -1,5 +1,15 @@
 # Change log
 
+## 1.1.18 — Power, turrets, defenses and the Defense Depot (2026-10-17, `feature/power-defense`)
+
+Made from `dev` at 1.1.17 on the feature branch `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), but new blocks, items and a menu: client and server must both run 1.1.18. Rules: GDD 1.1.18 (Part M, section 5.14); tests: `docs/ROUND-1.1.18-TESTING.md`.
+
+* **Power from Create.** Shaft Dynamo (a Create shaft into any of its four sides) and Cog Dynamo (a Create cogwheel meshed with its cog); a Power Pole on top starts a power network; poles join with Electric Wire (spans up to 16 blocks). Turrets within 8 blocks of a powered pole work. Turrets and Shock Boxes put stress on the Create network that turns the dynamos; if one is overstressed, the whole power network goes down.
+* **Turrets.** Machine gun, shotgun and flamethrower, Mark I to III (the owner's models; Mark III is 2 x 2 x 2). They aim and fire by themselves at hostile and raid mobs and burn their own ammunition: Turret MG Ammo, Turret Shotgun Shells, Turret Flame Fuel (Create recipes, or the depot). Loaded by hand, a hopper, a Create chute, or a belt through a funnel.
+* **Defenses.** Sandbags (raiders' shots do a quarter), the Barricade (raiders' blows do 40 percent), Barbed Wire (slows; cuts hostile mobs; a raider hacking at it is cut). A Shock Box wired from a pole and to the wire makes it live (shock and Slowness III). Turret, wire and shock damage count as traps for raid adaptation.
+* **Defense Depot.** A 2 x 2 shop booth: turrets, ammo, walls, wire and the Shock Box for Universal Ammo Coins. The depot, the pole and both dynamos are in Workshop Fabrication's new **Defense & defense logistics** group. Every kit block stands only in the beacon zone or a FOB zone.
+* **Field Guide.** New page "Turrets & Power" with a card for every new block and item. All numbers are first proposals, unplaytested.
+
 ## 1.1.17 — The Support Platform's shop scrolls (2026-10-17, `dev`)
 
 After 1.1.16 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.17; tests: `docs/ROUND-1.1.17-TESTING.md`.

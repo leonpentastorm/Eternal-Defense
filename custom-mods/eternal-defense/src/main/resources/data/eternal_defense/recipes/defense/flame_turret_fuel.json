@@ -1,0 +1,23 @@
+{
+  "type": "create:mixing",
+  "heatRequirement": "heated",
+  "ingredients": [
+    {
+      "item": "minecraft:glass_bottle"
+    },
+    {
+      "tag": "minecraft:coals"
+    },
+    {
+      "tag": "minecraft:coals"
+    },
+    {
+      "item": "eternal_defense:propellant"
+    }
+  ],
+  "results": [
+    {
+      "item": "eternal_defense:flame_turret_fuel"
+    }
+  ]
+}

@@ -10,6 +10,8 @@ final class CreativeCatalog {
         "gun_platform","ammo_platform","attachment_platform","armor_platform","exchange_shop",
         "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","milk_bottle","prepared_sandwich","drink_mixer_mk1","drink_pot","cup_dispenser","drink_cup_empty","mre_maker","marines_fuel",
         "support_platform","support_cannon","supply_flare","return_flare","fire_support_flare","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","loadout_station","loadout_flare","handheld_radio","warlord_seal",
+        "defense_depot","shaft_dynamo","cog_dynamo","power_pole","electric_wire","shock_box","mg_turret_mk1","mg_turret_mk2","mg_turret_mk3","shotgun_turret_mk1","shotgun_turret_mk2","shotgun_turret_mk3",
+        "flame_turret_mk1","flame_turret_mk2","flame_turret_mk3","mg_turret_ammo","shotgun_turret_ammo","flame_turret_fuel","sandbag","barricade","barbed_wire",
         "ardent_energy","universal_ammo_coin","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
     /** The Age armor sets, Frontier to Exotic, helmet to boots */
     static final List<String> ARMOR=java.util.Arrays.stream(ArmorSetMaterials.values()).flatMap(m->java.util.stream.Stream.of("helmet","chestplate","leggings","boots").map(p->m.key()+"_"+p)).toList();

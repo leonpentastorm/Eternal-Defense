@@ -347,27 +347,28 @@ public final class BeaconClient {
                 else Ui.materialTooltip(g,font,fabItem.isEmpty()?List.of(Ui.t("tab.fabrication")):List.of(fabItem.getHoverName(),Ui.t("fabrication.desc."+id)),upgradeHoverCosts,mx,my);
             }
         }
-        /** Starter installations in three groups: the four tables, the kitchen, and support and trade. */
-        private static final int[] FAB_GROUP_START={0,4,12};
-        private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef};
-        private static final String[] FAB_GROUP={"tables","kitchen","support"};
+        /** Starter installations in groups: the four tables, the kitchen, support and trade, and the defense kit. */
+        private static final int[] FAB_GROUP_START={0,4,12,24};
+        private static final int[] FAB_ACCENT={Ui.BRASS,Ui.CYAN,0xff6cd4ef,0xffe08a4a};
+        private static final String[] FAB_GROUP={"tables","kitchen","support","defense"};
+        private static int fabGroup(int index){int g=FAB_GROUP_START.length-1;while(g>0&&index<FAB_GROUP_START[g])g--;return g;}
         private record FabCell(int x,int y,int w,int h){}
         /** Rows a group takes (two cells a row): the groups grow with their items. */
-        private static int groupRows(int group){int end=group==2?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
+        private static int groupRows(int group){int end=group==FAB_GROUP.length-1?WorkshopFabrication.ITEMS.size():FAB_GROUP_START[group+1];return (end-FAB_GROUP_START[group]+1)/2;}
         /** The list scrolls (the mouse wheel, or dragging its bar) instead of squeezing its rows */
         static final int FAB_ROW=28,FAB_HEADER=12,FAB_BAR=6;
         int fabScroll;private boolean fabDragging;
         private int fabricationRowHeight(){return FAB_ROW;}
         private int fabViewTop(){return contentTop();}
         private int fabViewBottom(){return top+ph-22;}
-        private int fabContentHeight(){int h=0;for(int g=0;g<3;g++)h+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return h;}
+        private int fabContentHeight(){int h=0;for(int g=0;g<FAB_GROUP.length;g++)h+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return h;}
         int fabMaxScroll(){return Math.max(0,fabContentHeight()-(fabViewBottom()-fabViewTop()));}
         private void scrollFabrication(int to){fabScroll=Math.max(0,Math.min(fabMaxScroll(),to));}
         /** The list's width: the scroll bar takes the right edge when the list is longer than the panel. */
         private int fabListWidth(int w){return fabMaxScroll()>0?w-FAB_BAR-4:w;}
         private int groupTop(int group){int y=contentTop()-fabScroll;for(int g=0;g<group;g++)y+=FAB_HEADER+groupRows(g)*(FAB_ROW+2);return y;}
         private FabCell fabricationCell(int index,int x,int w){
-            int group=index>=FAB_GROUP_START[2]?2:index>=FAB_GROUP_START[1]?1:0,inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
+            int group=fabGroup(index),inGroup=index-FAB_GROUP_START[group],rowH=fabricationRowHeight();
             int lw=fabListWidth(w),cw=(lw-6)/2,y=groupTop(group)+FAB_HEADER+(inGroup/2)*(rowH+2);
             return new FabCell(x+(inGroup%2)*(cw+6),y,cw,rowH);
         }
@@ -378,7 +379,7 @@ public final class BeaconClient {
             scrollFabrication(fabScroll);int lw=fabListWidth(w),viewTop=fabViewTop(),viewBottom=fabViewBottom();
             boolean inView=my>=viewTop&&my<viewBottom;
             g.enableScissor(x-2,viewTop,x+lw+2,viewBottom);
-            for(int group=0;group<3;group++){
+            for(int group=0;group<FAB_GROUP.length;group++){
                 int y=groupTop(group);var label=Ui.t("fabrication.group."+FAB_GROUP[group]);
                 Ui.text(g,font,label,x,y+1,FAB_ACCENT[group],lw/2);Ui.rule(g,x+font.width(label)+6,y+5,lw-font.width(label)-6);
             }
@@ -388,7 +389,7 @@ public final class BeaconClient {
                 button.visible=i<rows.size()&&fabShown(cell);if(i>=rows.size())continue;
                 var row=rows.getCompound(i);var id=row.getString("id");var item=ItemStack.of(row.getCompound("item"));var costs=row.getList("costs",net.minecraft.nbt.Tag.TAG_COMPOUND);
                 boolean empty=row.getBoolean("empty"),enough=!empty&&(on("creative")||costs.stream().allMatch(c->((net.minecraft.nbt.CompoundTag)c).getInt("have")>=((net.minecraft.nbt.CompoundTag)c).getInt("count")));
-                int group=i>=FAB_GROUP_START[2]?2:i>=FAB_GROUP_START[1]?1:0;
+                int group=fabGroup(i);
                 if(cell.y+cell.h<viewTop||cell.y>viewBottom)continue;
                 Ui.card(g,cell.x,cell.y,cell.w,cell.h,enough&&here?FAB_ACCENT[group]:Ui.EDGE);
                 g.renderItem(item,cell.x+7,cell.y+(cell.h-16)/2);
@@ -738,6 +739,7 @@ public final class BeaconClient {
                 case "stations"->EternalDefense.GUN_PLATFORM.get().asItem();
                 case "energy"->EternalDefense.ARDENT_ENERGY.get();
                 case "support"->EternalDefense.SUPPORT_CANNON_ITEM.get();
+                case "defense"->EternalDefense.TURRETS.get("mg_turret_mk2").get().asItem();
                 case "tactical"->EternalDefense.COMMAND_TABLE_ITEM.get();
                 case "fob"->EternalDefense.FOB_BEACON_ITEM.get();
                 case "kitchen"->EternalDefense.MESS_HALL_I.get().asItem();

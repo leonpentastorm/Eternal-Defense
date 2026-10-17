@@ -109,7 +109,7 @@ final class Release1111Test {
         assertTrue(combat.contains("if(!RaidDigging.inRing(mob.getBoundingBox(),target.getBoundingBox())){"),"melee attacks start in the ring");
         assertTrue(combat.contains("if(--swing<=0&&!(mob instanceof Creeper)){swing=RaidDigging.SWING_TICKS;RaidDigging.swing(l,mob);}"),"and the attack animation never stops while it hits");
         assertTrue(combat.contains("mob.goalSelector.addGoal(-1,new RaidDigging.WorkGoal(mob));"));
-        assertTrue(combat.contains("RaidDigging.hit(l,d,RaidTargets.base(state,hit.getBlockPos()),attacker,RaidDigging.SHOT)"),"arrows and bullets wear defenses down");
+        assertTrue(combat.contains("RaidDigging.hit(l,d,RaidTargets.base(state,hit.getBlockPos()),attacker,RaidDigging.SHOT,true)"),"arrows and bullets wear defenses down");
         assertTrue(combat.contains("arrow.shoot(dx,dy+lift(flat,dy,speed),dz,speed,0);"),"an arrow loosed at a defense flies straight at it");
         for(double flat:new double[]{4,7,11,16})for(double dy:new double[]{-2,-1.1,0,1.5}){
             double up=dy+BeaconCombat.lift(flat,dy,1.6);

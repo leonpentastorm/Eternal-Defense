@@ -1,0 +1,80 @@
+QA_NOTE DYNAMOS Block{eternal_defense:shaft_dynamo}[axis=y] capacity 524288.0 stress 0.0 over false speed 32.0 | Block{eternal_defense:cog_dynamo} capacity 524288.0 stress 0.0 over false speed 32.0
+QA_CHECK PASS the Shaft Dynamo stands and turns with the shaft (32 RPM) Block{eternal_defense:shaft_dynamo}[axis=y] capacity 524288.0 stress 0.0 over false speed 32.0 | Block{eternal_defense:cog_dynamo} capacity 524288.0 stress 0.0 over false speed 32.0
+QA_CHECK PASS the Cog Dynamo stands and turns, meshed with the cogwheel beside it Block{eternal_defense:shaft_dynamo}[axis=y] capacity 524288.0 stress 0.0 over false speed 32.0 | Block{eternal_defense:cog_dynamo} capacity 524288.0 stress 0.0 over false speed 32.0
+QA_CHECK PASS with no pole on them they put no stress on Create Block{eternal_defense:shaft_dynamo}[axis=y] capacity 524288.0 stress 0.0 over false speed 32.0 | Block{eternal_defense:cog_dynamo} capacity 524288.0 stress 0.0 over false speed 32.0
+QA_CHECK PASS both poles stand, two blocks tall 
+QA_CHECK PASS a pole on a turning dynamo feeds a running network Summary[dynamos=1, turning=1, rpm=32.0, demand=0.0, running=true, overstressed=false, turrets=0, boxes=0]
+QA_CHECK PASS one span joins the two poles [BlockPos{x=3, y=-59, z=6}] / []
+QA_CHECK PASS it used one wire 7
+QA_CHECK PASS now one network with both dynamos turning Summary[dynamos=2, turning=2, rpm=32.0, demand=0.0, running=true, overstressed=false, turrets=0, boxes=0]
+QA_SHOT r1118_shaft_dynamo
+QA_SHOT r1118_shaft_port_a
+QA_SHOT r1118_shaft_port_b
+QA_SHOT r1118_cog_dynamo
+QA_SHOT r1118_cog_a
+QA_SHOT r1118_cog_b
+QA_SHOT r1118_wire_span
+QA_CHECK PASS the box is fed by the pole and charged Block{eternal_defense:shock_box}[facing=south,powered=true]
+QA_CHECK PASS the wired Barbed Wire and the two joined to it are live true true true
+QA_CHECK PASS the wire posts join up like panes 
+QA_CHECK PASS the network counts the box Summary[dynamos=2, turning=2, rpm=32.0, demand=8.0, running=true, overstressed=false, turrets=0, boxes=1]
+QA_NOTE HUSK 55.08 true eternal_defense.electric_shock
+QA_CHECK PASS live wire shocks and slows it 55.08 true eternal_defense.electric_shock
+QA_CHECK PASS the damage is the shock 55.08 true eternal_defense.electric_shock
+QA_SHOT r1118_live_wire_night
+QA_CHECK PASS the turret stands, two blocks tall 
+QA_CHECK PASS both cans went in 2
+QA_CHECK PASS it is powered by the pole's reach 
+QA_CHECK PASS the network counts it Summary[dynamos=2, turning=2, rpm=32.0, demand=16.0, running=true, overstressed=false, turrets=1, boxes=1]
+QA_NOTE STRESS capacity 524288.0 stress 256.0 over false speed 32.0 | capacity 524288.0 stress 256.0 over false speed 32.0
+QA_SHOT r1118_mg_firing
+QA_CHECK PASS the machine gun turret killed both husks by itself 
+QA_NOTE MG used 42 rounds
+QA_CHECK PASS it spent its own ammunition 42 rounds
+QA_CHECK PASS the Twin Flame Turret fills 2 by 2 by 2 
+QA_CHECK PASS each took its own ammunition 2 2
+QA_CHECK PASS a turret refuses the wrong ammunition 
+QA_CHECK PASS both powered 
+QA_SHOT r1118_flame_firing
+QA_CHECK PASS both husks are dead 
+QA_NOTE SHOTGUN used 7 FLAME used 21
+QA_CHECK PASS the shotgun and the flamethrower both fired 7 21
+QA_CHECK PASS the flamethrower set its target on fire 
+QA_CHECK PASS the chute fed 3 cans into the turret 0 -> 3
+QA_CHECK PASS the belt and funnel loaded all 3 cans into the turret 3 cans, 192 shots
+QA_CHECK PASS nothing fell off the belt 
+QA_SHOT r1118_belt_funnel
+QA_NOTE CAPACITY creative motor 16384.0 -> 1.0
+QA_NOTE OVER capacity 32.0 stress 960.0 over true speed 0.0 | capacity 32.0 stress 960.0 over true speed 0.0
+QA_CHECK PASS Create reports the shaft dynamo's network overstressed capacity 32.0 stress 960.0 over true speed 0.0 | capacity 32.0 stress 960.0 over true speed 0.0
+QA_CHECK PASS so the whole power network is down, the cog side too Summary[dynamos=2, turning=2, rpm=32.0, demand=60.0, running=false, overstressed=true, turrets=4, boxes=1]
+QA_CHECK PASS every turret is unpowered 
+QA_NOTE STATUS Network down: the Create network is overstressed. Your defenses ask 60 stress per RPM. Add more Create power.
+QA_CHECK PASS the far pole says why Network down: the Create network is overstressed. Your defenses ask 60 stress per RPM. Add more Create power.
+QA_NOTE CAPACITY creative motor 1.0 -> 16384.0
+QA_CHECK PASS the network comes back by itself Summary[dynamos=2, turning=2, rpm=32.0, demand=60.0, running=true, overstressed=false, turrets=4, boxes=1]
+QA_CHECK PASS and the turrets with it 
+QA_NOTE STATUS Network running: 2 dynamo(s) at 32 RPM, 60 stress per RPM, 4 turret(s), 1 Shock Box(es).
+QA_NOTE WALLS Block{eternal_defense:sandbag}[east=low,north=none,south=none,up=false,waterlogged=false,west=low] | Block{eternal_defense:barricade}[east=low,north=none,south=none,up=false,waterlogged=false,west=low]
+QA_CHECK PASS sandbags join up like a wall Block{eternal_defense:sandbag}[east=low,north=none,south=none,up=false,waterlogged=false,west=low]
+QA_CHECK PASS so does the barricade Block{eternal_defense:barricade}[east=low,north=none,south=none,up=false,waterlogged=false,west=low]
+QA_CHECK PASS shots do a quarter to sandbags, blows 40% to the barricade 
+QA_SHOT r1118_walls
+QA_CHECK PASS the depot stands, 2 wide and 2 tall Block{eternal_defense:defense_depot}[facing=south]
+QA_CHECK PASS the screen shows the coins the player can spend 
+QA_SHOT r1118_depot_screen
+QA_CHECK PASS scrolled down, the MG ammo row is picked 4 9
+QA_CHECK PASS 4 cans bought for 8 coins 4 cans, 56 coins
+QA_SHOT r1118_depot_bought
+QA_SHOT r1118_depot
+QA_NOTE FAB Fabricated Power Pole. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS Workshop Fabrication makes a Power Pole for 6 iron and 8 copper Fabricated Power Pole. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS it says where it goes Fabricated Power Pole. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS the tab lists the four kit installations 28
+QA_SHOT r1118_workshop_defense
+QA_CHECK PASS outside the beacon zone and any FOB it is refused and kept 
+QA_SHOT r1118_lineup
+QA_SHOT r1118_power_plant
+QA_CHECK PASS the Field Guide has the Turrets & Power page 
+QA_SHOT r1118_guide
+QA_DONE pass=48 fail=0

@@ -1,0 +1,96 @@
+{
+ "credit": "Eternal Defense - defense kit",
+ "ambientocclusion": false,
+ "gui_light": "side",
+ "textures": {
+  "0": "eternal_defense:block/barbed_wire_post_live",
+  "particle": "eternal_defense:block/barbed_wire_post_live"
+ },
+ "elements": [
+  {
+   "name": "Arc_post",
+   "from": [
+    8.8,
+    2.0,
+    7.9
+   ],
+   "to": [
+    9.6,
+    13.0,
+    8.0
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      0.25,
+      0.25,
+      0.75,
+      5.75
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      1.25,
+      0.25,
+      1.75,
+      5.75
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "name": "Arc_clip",
+   "from": [
+    6.5,
+    15.25,
+    7.95
+   ],
+   "to": [
+    9.5,
+    16.25,
+    8.05
+   ],
+   "shade": false,
+   "forge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "neoforge_data": {
+    "block_light": 15,
+    "sky_light": 15
+   },
+   "faces": {
+    "north": {
+     "uv": [
+      2.25,
+      0.25,
+      3.75,
+      0.75
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      4.25,
+      0.25,
+      5.75,
+      0.75
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ],
+ "render_type": "minecraft:cutout"
+}

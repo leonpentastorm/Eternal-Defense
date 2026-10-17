@@ -50,10 +50,14 @@ final class RaidDigging {
     private static final Map<Long,Crack> CRACKS=new HashMap<>();
     static float done(BlockPos pos){var c=CRACKS.get(pos.asLong());return c==null?0:c.done;}
     /** One blow on a block (a swing, a shot, a hit on a defense); true when it broke */
-    static boolean hit(ServerLevel l,CampaignData d,BlockPos pos,Mob by,float amount){
+    static boolean hit(ServerLevel l,CampaignData d,BlockPos pos,Mob by,float amount){return hit(l,d,pos,by,amount,false);}
+    /** A blow (ranged: a shot) on a block: sandbags shrug off shots, the barricade blows, barbed wire bites back */
+    static boolean hit(ServerLevel l,CampaignData d,BlockPos pos,Mob by,float amount,boolean ranged){
         if(!d.phase.equals("raid")||!RaidBreaching.breakable(l,d,pos))return false;
         if(d.inside(pos)&&!d.snapshot.containsKey(DefenseStructures.anchor(l,pos).asLong()))return false;   // Only blocks of the saved base can be put back
         var state=l.getBlockState(pos);float hp=hp(state.getDestroySpeed(l,pos));if(hp<0)return false;
+        amount*=DefenseWalls.through(state,ranged);
+        if(!ranged&&by!=null&&state.getBlock() instanceof DefenseWalls.BarbedWire)DefenseWalls.cut(l,by,state.getValue(DefenseWalls.BarbedWire.POWERED));
         long now=l.getGameTime();
         var crack=CRACKS.computeIfAbsent(pos.asLong(),k->new Crack(crackId(k)));crack.done+=Math.max(0,amount);crack.last=now;
         if(by!=null){RaidMarch.breached(by,now);RaidTargets.worked(by,now);}

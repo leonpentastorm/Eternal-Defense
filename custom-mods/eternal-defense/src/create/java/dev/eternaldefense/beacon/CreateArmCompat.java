@@ -17,6 +17,7 @@ public final class CreateArmCompat {
         var types=DeferredRegister.create(CreateRegistries.ARM_INTERACTION_POINT_TYPE,EternalDefense.ID);
         types.register("logistics_hub",HubType::new);
         types.register(modBus);
+        CreatePower.register(modBus);   // The dynamos turn on Create's networks
     }
     static final class HubType extends ArmInteractionPointType {
         @Override public boolean canCreatePoint(Level level,BlockPos pos,BlockState state){return LogisticsHub.isHub(state);}

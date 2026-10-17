@@ -104,7 +104,7 @@ final class Round0035Test {
         assertTrue(WorkshopFabrication.ITEMS.containsAll(List.of("drink_mixer_mk1","drink_pot","cup_dispenser")));
         int kitchen=WorkshopFabrication.ITEMS.indexOf("mess_hall_mk1"),support=WorkshopFabrication.ITEMS.indexOf("support_platform");
         for(var id:List.of("drink_mixer_mk1","drink_pot","cup_dispenser")){int at=WorkshopFabrication.ITEMS.indexOf(id);assertTrue(at>kitchen&&at<support,id+" sits in the Kitchen group");}
-        assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,"+support+"}"),"the Kitchen group grew by three (and by the MRE Station in 0.0.38)");
+        assertTrue(source("BeaconClient.java").contains("FAB_GROUP_START={0,4,"+support+","),"the Kitchen group grew by three (and by the MRE Station in 0.0.38)");
         var recipe=Files.readString(Path.of(RES+"data/eternal_defense/recipes/drink_mixer_mk1.json"));assertTrue(recipe.contains("minecraft:brewing_stand"),"built around a brewing stand");
         var cup=Files.readString(Path.of(RES+"data/eternal_defense/recipes/drink_cup_empty.json"));assertTrue(cup.contains("minecraft:paper")&&cup.contains("\"count\": 4"),"paper makes four cups");
     }

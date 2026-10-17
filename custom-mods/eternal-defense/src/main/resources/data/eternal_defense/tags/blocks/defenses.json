@@ -1,4 +1,18 @@
 {
   "replace": false,
-  "values": []
+  "values": [
+    "eternal_defense:mg_turret_mk1",
+    "eternal_defense:mg_turret_mk2",
+    "eternal_defense:mg_turret_mk3",
+    "eternal_defense:shotgun_turret_mk1",
+    "eternal_defense:shotgun_turret_mk2",
+    "eternal_defense:shotgun_turret_mk3",
+    "eternal_defense:flame_turret_mk1",
+    "eternal_defense:flame_turret_mk2",
+    "eternal_defense:flame_turret_mk3",
+    "eternal_defense:sandbag",
+    "eternal_defense:barricade",
+    "eternal_defense:barbed_wire",
+    "eternal_defense:shock_box"
+  ]
 }

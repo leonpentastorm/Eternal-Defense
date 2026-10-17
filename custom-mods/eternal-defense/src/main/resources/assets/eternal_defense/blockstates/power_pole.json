@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "eternal_defense:block/power_pole"
+  },
+  "facing=east": {
+   "model": "eternal_defense:block/power_pole",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "eternal_defense:block/power_pole",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "eternal_defense:block/power_pole",
+   "y": 270
+  }
+ }
+}

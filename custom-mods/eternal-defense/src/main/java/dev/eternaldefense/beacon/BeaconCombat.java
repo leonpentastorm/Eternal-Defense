@@ -76,7 +76,7 @@ final class BeaconCombat {
         if(!DefenseStructures.beacon(l,hit.getBlockPos())){
             // A raider's arrow or bullet on a defense or a closed door wears it down
             var state=l.getBlockState(hit.getBlockPos());
-            if(d.phase.equals("raid")&&RaidTargets.target(l.getBlockState(RaidTargets.base(state,hit.getBlockPos()))))RaidDigging.hit(l,d,RaidTargets.base(state,hit.getBlockPos()),attacker,RaidDigging.SHOT);
+            if(d.phase.equals("raid")&&RaidTargets.target(l.getBlockState(RaidTargets.base(state,hit.getBlockPos()))))RaidDigging.hit(l,d,RaidTargets.base(state,hit.getBlockPos()),attacker,RaidDigging.SHOT,true);
             return;
         }
         var target=objectives.get(l);if(target==null||!DefenseStructures.anchor(l,hit.getBlockPos()).equals(d.beacon))return;

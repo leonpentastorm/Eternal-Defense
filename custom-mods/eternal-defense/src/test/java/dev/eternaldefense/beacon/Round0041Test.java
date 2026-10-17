@@ -134,7 +134,7 @@ final class Round0041Test {
         String registry=source("EternalDefense.java");
         for(String id:BaseScoring.INSTALLATIONS)assertTrue(registry.contains("\""+id)||registry.contains("platform(\""+id.replace("_platform","")+"\")"),id);
         var ignored=Set.of("raider_bridge","structure_part","gate_part","logistics_hub_part","supply_delivery_gate_left","supply_receiving_gate_left","defense_beacon","fob_beacon","supply_catapult","supply_delivery_gate",
-            "loadout_station","loadout_station_part","loadout_capsule","loadout_capsule_part");
+            "loadout_station","loadout_station_part","loadout_capsule","loadout_capsule_part","structure_port");
         var blocks=new TreeSet<String>();var m=java.util.regex.Pattern.compile("BLOCKS\\.register\\(\"([a-z0-9_]+)\"|kitchen\\(\"([a-z0-9_]+)\"|drinks\\(\"([a-z0-9_]+)\"").matcher(registry);
         while(m.find())for(int g=1;g<=3;g++)if(m.group(g)!=null)blocks.add(m.group(g));
         for(String id:blocks)assertTrue(ignored.contains(id)||BaseScoring.installation("eternal_defense:"+id)!=null,"a block of the mod that is neither an installation nor left out on purpose: "+id);

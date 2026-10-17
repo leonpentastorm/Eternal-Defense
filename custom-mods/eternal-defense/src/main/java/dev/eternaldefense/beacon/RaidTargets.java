@@ -229,7 +229,7 @@ final class RaidTargets {
         @Override public boolean isInvulnerableTo(DamageSource source){return !(source.getEntity() instanceof Mob attacker&&BeaconCombat.hostile(attacker));}
         @Override public boolean hurt(DamageSource source,float amount){
             if(!(level() instanceof ServerLevel l)||!(source.getEntity() instanceof Mob attacker)||!BeaconCombat.hostile(attacker)||source.is(DamageTypeTags.IS_EXPLOSION))return false;
-            RaidDigging.hit(l,CampaignData.get(l),block,attacker,Math.max(1,amount));return true;
+            RaidDigging.hit(l,CampaignData.get(l),block,attacker,Math.max(1,amount),source.is(DamageTypeTags.IS_PROJECTILE)||source.getDirectEntity()!=attacker);return true;
         }
     }
 }

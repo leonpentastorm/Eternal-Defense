@@ -49,6 +49,13 @@ final class Economy {
     static final int LOADOUT_FLARE_PRICE=5;
     /** The Handheld Radio at the Support Platform, in Ardent Energy. */
     static final int RADIO_PRICE=8;
+    /** The Defense Depot (unplaytested), in Universal Ammo Coins: turrets Mk I to III, then lots of ammunition and defenses */
+    static final int[] TURRET_PRICE={24,48,96},FLAME_TURRET_PRICE={32,64,128};
+    static final int DEPOT_MG_AMMO=8,DEPOT_SHELLS=8,DEPOT_FUEL=10,DEPOT_SANDBAGS=4,DEPOT_BARRICADE=4,DEPOT_BARBED=4,DEPOT_SHOCK_BOX=16,DEPOT_WIRE=4;
+    /** The defense kit's Workshop Fabrication (unplaytested): the depot, the pole and the two dynamos */
+    static final int DEPOT_IRON=16,DEPOT_COPPER=8,DEPOT_CHESTS=2,DEPOT_PLATING=2;
+    static final int POLE_IRON=6,POLE_COPPER=8;
+    static final int DYNAMO_COPPER=16,DYNAMO_IRON=8,DYNAMO_ALLOY=8,DYNAMO_REDSTONE=4;
     static List<WeaponPlatform.Cost> coinFee(){return List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",COIN_FEE_PLATING),WeaponPlatform.cost("eternal_defense:ardent_energy",COIN_FEE_ARDENT));}
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(EternalDefense.PLATING::get,DRINKS_PLATING[mk-1]);}
 
@@ -94,6 +101,12 @@ final class Economy {
             // The Loadout Station, the flagship next to the Hub
             case "loadout_station"->List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",LOADOUT_PLATING),WeaponPlatform.cost("eternal_defense:restoration_matrix",LOADOUT_MATRICES),
                 WeaponPlatform.cost("minecraft:iron_ingot",LOADOUT_IRON),WeaponPlatform.cost("minecraft:glass",LOADOUT_GLASS));
+            // The defense kit: the depot sells the rest for coins
+            case "defense_depot"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",DEPOT_IRON),WeaponPlatform.cost("minecraft:copper_ingot",DEPOT_COPPER),WeaponPlatform.cost("minecraft:chest",DEPOT_CHESTS),
+                WeaponPlatform.cost("eternal_defense:reinforced_plating",DEPOT_PLATING));
+            case "power_pole"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",POLE_IRON),WeaponPlatform.cost("minecraft:copper_ingot",POLE_COPPER));
+            case "shaft_dynamo","cog_dynamo"->List.of(WeaponPlatform.cost("minecraft:copper_ingot",DYNAMO_COPPER),WeaponPlatform.cost("minecraft:iron_ingot",DYNAMO_IRON),
+                WeaponPlatform.cost("create:andesite_alloy",DYNAMO_ALLOY),WeaponPlatform.cost("minecraft:redstone",DYNAMO_REDSTONE));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };

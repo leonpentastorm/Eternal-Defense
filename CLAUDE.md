@@ -10,6 +10,10 @@ The Mess Hall v6 work (`feature/messhall-ver-6`, project 0.0.7 to 0.0.11) was me
 
 At the owner's request `dev` was fast-forwarded to 1.1.7, taking in 1.1.0 to 1.1.7 from `feature/loadout-station`, `feature/display-tuner` and `feature/raid-control`; the owner deletes those branches. Work on `dev` again as the rules below say; `main` stays at 1.0.0 until the owner asks.
 
+## Branch note (2026-10-17)
+
+At the owner's request the power and defense feature (1.1.18: dynamos, poles, turrets, walls, Shock Box, Defense Depot) is on its own branch, `feature/power-defense`, made from `dev` at 1.1.17. It goes into `dev` only when the owner asks.
+
 ## Release 1.0.0 (2026-10-14)
 
 At the owner's request `dev` was merged into `main` as **1.0.0**: the project is named **Eternal Defense** everywhere (mod ids `eternal_defense`, `eternal_defense_gun_guide`, `eternal_defense_displays`; package `dev.eternaldefense`; command `/eternaldefense`); no reference to the project's earlier name remains in the code, assets, pack scripts or jars (the tools that migrate old exports name the old ids on purpose). The main mod ships in two builds, `eternal-defense-<version>.jar` (radio voice lines) and `eternal-defense-<version>-novoice.jar` (game sounds instead, `src/novoice/voice-replacements.json`).

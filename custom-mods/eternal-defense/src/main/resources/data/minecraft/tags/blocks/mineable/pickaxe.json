@@ -22,6 +22,22 @@
     "eternal_defense:logistics_hub",
     "eternal_defense:logistics_hub_part",
     "eternal_defense:loadout_station",
-    "eternal_defense:loadout_station_part"
+    "eternal_defense:loadout_station_part",
+    "eternal_defense:mg_turret_mk1",
+    "eternal_defense:mg_turret_mk2",
+    "eternal_defense:mg_turret_mk3",
+    "eternal_defense:shotgun_turret_mk1",
+    "eternal_defense:shotgun_turret_mk2",
+    "eternal_defense:shotgun_turret_mk3",
+    "eternal_defense:flame_turret_mk1",
+    "eternal_defense:flame_turret_mk2",
+    "eternal_defense:flame_turret_mk3",
+    "eternal_defense:power_pole",
+    "eternal_defense:shock_box",
+    "eternal_defense:sandbag",
+    "eternal_defense:barbed_wire",
+    "eternal_defense:shaft_dynamo",
+    "eternal_defense:cog_dynamo",
+    "eternal_defense:structure_port"
   ]
 }

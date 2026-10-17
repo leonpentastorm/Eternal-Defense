@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "eternal_defense:supply_catapult"
+    "eternal_defense:supply_catapult",
+    "eternal_defense:barricade",
+    "eternal_defense:defense_depot"
   ]
 }

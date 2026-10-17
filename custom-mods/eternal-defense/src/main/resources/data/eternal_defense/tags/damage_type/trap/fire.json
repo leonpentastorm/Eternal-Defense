@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "#minecraft:is_fire"
+    "#minecraft:is_fire",
+    "eternal_defense:turret_flame"
   ]
 }
