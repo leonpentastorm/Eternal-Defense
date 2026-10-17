@@ -412,6 +412,7 @@
   "gui.eternal_defense.support.grid": "Supply grid %1$s x %2$s",
   "gui.eternal_defense.support.inventory": "Inventory",
   "gui.eternal_defense.support.buy": "Buy selected",
+  "gui.eternal_defense.support.scroll": "Products %1$s to %2$s of %3$s. Scroll or drag the bar for more.",
   "gui.eternal_defense.support.upgrade": "Upgrade platform",
   "gui.eternal_defense.support.product.cannon": "Support Cannon",
   "gui.eternal_defense.support.product.cannon.note": "A 3 x 3 gun. Place it anywhere inside your beacon zone",

@@ -1,5 +1,11 @@
 # Change log
 
+## Unreleased — Support Platform shop scrolls (2026-10-17, `dev`)
+
+After 1.1.16 on `dev`; no version bump yet (the next release takes it in). **Network protocol 43** (no packet changed).
+
+* **Support Platform shop:** with six products the rows had been squeezed to 18 px, which cut each product's second line in half. Rows are back to full height (24 px); four show at once and the rest scroll with the mouse wheel or a drag on the bar beside the list, as on the Exchange. A line under the list says which products are shown.
+
 ## 1.1.16 — Damage attachments of the first two Ages back on the table (2026-10-17, `dev`)
 
 After 1.1.15 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.16; tests: `docs/ROUND-1.1.16-TESTING.md`.
