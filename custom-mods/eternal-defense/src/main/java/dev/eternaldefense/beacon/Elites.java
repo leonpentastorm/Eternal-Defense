@@ -70,8 +70,9 @@ final class Elites {
     static final float[] BADASS_SIZES={1.5f,2.2f,3.0f,4.0f,5.0f};
     /** From this size a Badass smashes the blocks its body runs into */
     static final float GIANT=2;
-    /** Badass: +100% health a level */
-    static double healthBonus(Kind kind,int level){return switch(kind){case BADASS->Math.max(1,level);case MATRIOSKA->-.5;case FLAK_ARMOR,BODY_ARMOR,VAMPIRIC,FROSTBITE,BERSERKER->.5;default->0;};}
+    /** Badass: +300% health a level */
+    static final int BADASS_HEALTH=3;
+    static double healthBonus(Kind kind,int level){return switch(kind){case BADASS->BADASS_HEALTH*Math.max(1,level);case MATRIOSKA->-.5;case FLAK_ARMOR,BODY_ARMOR,VAMPIRIC,FROSTBITE,BERSERKER->.5;default->0;};}
     static float scale(Kind kind,int level){return kind==Kind.BADASS?BADASS_SIZES[Math.max(1,Math.min(5,level))-1]:1;}
     /** Pure: extra step height of a mob this many times its size (a giant climbs what it could step over at its own size) */
     static double stride(float scale){return scale<=1?0:.6*(scale-1);}

@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "eternal_defense:sandbag",
+      "required": false
+    },
+    {
+      "id": "eternal_defense:barricade",
+      "required": false
+    }
+  ]
+}

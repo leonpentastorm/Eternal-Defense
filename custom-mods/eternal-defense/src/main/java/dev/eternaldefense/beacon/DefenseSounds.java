@@ -38,6 +38,8 @@ final class DefenseSounds {
     static final RegistryObject<SoundEvent> RADIO=of("radio.static");
     /** The war horn: a FOB planted, a FOB's raid starting (Fobs.horn). */
     static final RegistryObject<SoundEvent> WAR_HORN=of("fob.war_horn");
+    /** The machine gun and shotgun turrets' shots; the flame turret lighting, its roar looped while the jet burns, and going out */
+    static final RegistryObject<SoundEvent> MG_SHOT=of("turret.mg_shot"),SHOTGUN_SHOT=of("turret.shotgun_shot"),FLAME_START=of("turret.flame_start"),FLAME_TURRET=of("turret.flame"),FLAME_END=of("turret.flame_end");
     private static final List<RegistryObject<SoundEvent>> ORDER_CHATTER=java.util.stream.IntStream.rangeClosed(1,SupplyCatapult.ORDER_LINES).mapToObj(n->of("seller.order_chatter_"+n)).toList();
     /** One order line (1-based). */
     static SoundEvent orderChatter(int line){return ORDER_CHATTER.get(line-1).get();}

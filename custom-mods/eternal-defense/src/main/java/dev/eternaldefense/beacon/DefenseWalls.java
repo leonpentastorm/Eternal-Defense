@@ -60,6 +60,11 @@ final class DefenseWalls {
             living.makeStuckInBlock(s,new Vec3(WIRE_SLOW,.75,WIRE_SLOW));
             if(l instanceof ServerLevel server&&living instanceof Mob mob)cut(server,mob,s.getValue(POWERED));
         }
+        /** Live wire throws sparks now and then */
+        @Override public void animateTick(BlockState s,Level l,BlockPos pos,RandomSource r){
+            if(!s.getValue(POWERED))return;
+            for(int i=0;i<3;i++)if(r.nextInt(2)==0)l.addParticle(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,pos.getX()+.1+r.nextDouble()*.8,pos.getY()+.1+r.nextDouble()*.75,pos.getZ()+.1+r.nextDouble()*.8,(r.nextDouble()-.5)*.12,r.nextDouble()*.06,(r.nextDouble()-.5)*.12);
+        }
         /** A live wire nobody keeps live any more (after a restart) goes dark */
         @Override public void randomTick(BlockState s,ServerLevel l,BlockPos pos,RandomSource random){if(s.getValue(POWERED)&&!PowerGrid.liveNow(l,pos))l.setBlock(pos,s.setValue(POWERED,false),3);}
     }

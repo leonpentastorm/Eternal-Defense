@@ -93,7 +93,7 @@ final class Release114Test {
         assertTrue(Elites.pick(1,1,.99),"the last spawns are certain");assertFalse(Elites.pick(0,5,0));
     }
     @Test void eliteRulesFollowTheOwnersNumbers(){
-        for(int l=1;l<=5;l++)assertEquals(l,Elites.healthBonus(Elites.Kind.BADASS,l),"+100%% health a Badass level");
+        for(int l=1;l<=5;l++)assertEquals(3*l,Elites.healthBonus(Elites.Kind.BADASS,l),"+300%% health a Badass level (1.1.19, the owner tripled it)");
         assertEquals(-.5,Elites.healthBonus(Elites.Kind.MATRIOSKA,1));assertEquals(.5,Elites.healthBonus(Elites.Kind.FLAK_ARMOR,1));assertEquals(.5,Elites.healthBonus(Elites.Kind.BODY_ARMOR,1));
         assertEquals(1.5f,Elites.scale(Elites.Kind.BADASS,1),1e-6);assertEquals(5.0f,Elites.scale(Elites.Kind.BADASS,5),1e-6);assertEquals(1f,Elites.scale(Elites.Kind.HEALER,1));
         assertEquals(.4,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"explosion"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"bullet"));assertEquals(1.2,Elites.damageFactor(Elites.Kind.FLAK_ARMOR,"melee"));

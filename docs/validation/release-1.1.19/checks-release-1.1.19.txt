@@ -1,0 +1,88 @@
+QA_CHAT [Eternal Defense] Starter kit: a .22 Model 943 revolver and 64 rounds of .22 WMR. Reload with your reload key; it holds 8 rounds.
+QA_CHAT Welcome to Eternal Defense. Right-click your Field Guide to get started.
+QA_NOTE SHAFT west 32.0 dynamo 32.0 east 32.0 east2 32.0 north 32.0 south 32.0
+QA_CHECK PASS every side of the Shaft Dynamo turns with the input shaft: the same speed (and sign) on all four sides and the shaft beyond west 32.0 dynamo 32.0 east 32.0 east2 32.0 north 32.0 south 32.0
+QA_CHECK PASS the line through it does not reverse: the east shaft turns like the west shaft west 32.0 dynamo 32.0 east 32.0 east2 32.0 north 32.0 south 32.0
+QA_CHECK PASS the client has the same speeds west 32.0 dynamo 32.0 east 32.0
+QA_CHECK PASS the dynamo's east and west halves are drawn at the same angle as the shafts beside them 4.0922394 4.0922394 4.0922394
+QA_CHECK PASS and its north and south halves at the north shaft's angle 3.6995401 3.6995401
+QA_NOTE COG cogwheel -32.0 dynamo 32.0
+QA_CHECK PASS the cog dynamo turns the other way at the same speed, as meshed Create cogs do cogwheel -32.0 dynamo 32.0
+QA_NOTE COG ANGLES cogwheel -35.29223630942703 dynamo 57.79223864309387
+QA_NOTE NET capacity 524288.0 stress 256.0 over false speed 32.0 demand 8.0 su 256.0
+QA_CHECK PASS the Shaft Dynamo carries the turret's 8 stress per RPM, 256 su at 32 RPM demand 8.0 su 256.0
+QA_CHECK PASS Create's network sees that stress capacity 524288.0 stress 256.0 over false speed 32.0
+QA_CHECK PASS the Cog Dynamo's own network has nothing to power su 0.0 turrets 0
+QA_NOTE STATUS Network running: 1 dynamo(s) at 32 RPM, 256 su (8 su per RPM), 1 turret(s), 0 Shock Box(es).
+QA_CHECK PASS the pole's status gives the stress in su Network running: 1 dynamo(s) at 32 RPM, 256 su (8 su per RPM), 1 turret(s), 0 Shock Box(es).
+QA_CHAT Shaft Dynamo: working at 32 RPM.
+QA_CHAT This dynamo carries 256 su (8 su per RPM).
+QA_CHAT Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es).
+QA_CHAT Its Create network: 256 su used of 524,288 su.
+QA_NOTE READOUT Shaft Dynamo: working at 32 RPM. / This dynamo carries 256 su (8 su per RPM). / Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es). / Its Create network: 256 su used of 524,288 su.
+QA_CHECK PASS it says it works Shaft Dynamo: working at 32 RPM. / This dynamo carries 256 su (8 su per RPM). / Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es). / Its Create network: 256 su used of 524,288 su.
+QA_CHECK PASS its own stress Shaft Dynamo: working at 32 RPM. / This dynamo carries 256 su (8 su per RPM). / Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es). / Its Create network: 256 su used of 524,288 su.
+QA_CHECK PASS its power network's Shaft Dynamo: working at 32 RPM. / This dynamo carries 256 su (8 su per RPM). / Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es). / Its Create network: 256 su used of 524,288 su.
+QA_CHECK PASS its Create network's Shaft Dynamo: working at 32 RPM. / This dynamo carries 256 su (8 su per RPM). / Its power network asks 256 su in all, shared by 1 turning dynamo(s), for 1 turret(s) and 0 Shock Box(es). / Its Create network: 256 su used of 524,288 su.
+QA_CHAT Cog Dynamo: working at 32 RPM.
+QA_CHAT This dynamo carries 0 su (0 su per RPM).
+QA_CHAT Its power network asks 0 su in all, shared by 1 turning dynamo(s), for 0 turret(s) and 0 Shock Box(es).
+QA_CHAT Its Create network: 0 su used of 524,288 su.
+QA_NOTE READOUT Cog Dynamo: working at 32 RPM. / This dynamo carries 0 su (0 su per RPM). / Its power network asks 0 su in all, shared by 1 turning dynamo(s), for 0 turret(s) and 0 Shock Box(es). / Its Create network: 0 su used of 524,288 su.
+QA_CHECK PASS the Cog Dynamo says it works and carries nothing Cog Dynamo: working at 32 RPM. / This dynamo carries 0 su (0 su per RPM). / Its power network asks 0 su in all, shared by 1 turning dynamo(s), for 0 turret(s) and 0 Shock Box(es). / Its Create network: 0 su used of 524,288 su.
+QA_NOTE GOGGLES Kinetic Stats: / Kinetic Stress Impact: / 256su at current speed / Power network: / Working / This dynamo: 256 su / Whole network: 256 su / 1 dynamo(s) turning, 1 turret(s), 0 Shock Box(es)
+QA_CHECK PASS the goggles add the power network's lines Kinetic Stats: / Kinetic Stress Impact: / 256su at current speed / Power network: / Working / This dynamo: 256 su / Whole network: 256 su / 1 dynamo(s) turning, 1 turret(s), 0 Shock Box(es)
+QA_CHECK PASS defense gear in hand shows every pole's reach [BlockPos{x=3, y=-59, z=-4}, BlockPos{x=-7, y=-59, z=-4}]
+QA_CHECK PASS with empty hands nothing is shown 
+QA_CHAT This pole now shows its reach all the time. Sneak and right-click it with both hands empty to hide it again.
+QA_CHECK PASS the pole keeps its reach shown 
+QA_CHECK PASS and says so This pole now shows its reach all the time. Sneak and right-click it with both hands empty to hide it again.
+QA_CHECK PASS a pole in hand shows where its reach would be BlockPos{x=3, y=-60, z=-18}
+QA_CHAT This pole shows its reach only while you hold defense gear.
+QA_CHECK PASS the second time it hides the reach again This pole shows its reach only while you hold defense gear.
+QA_CHECK PASS the turret's screen opens with an empty hand 40
+QA_CHECK PASS 3 cans loaded by hand 3
+QA_CHECK PASS shift-click loads them too 5
+QA_CHECK PASS shells do not go into a machine gun turret 
+QA_CHECK PASS the screen shows it online with 320 shots 1 320
+QA_CHECK PASS the ammo comes back out by hand 0 in the turret, 5 in the pack
+QA_CHECK PASS and back in 5
+QA_CHECK PASS lamps: ready, empty, off ready empty off
+QA_NOTE HUD Light Gun Turret: ready, 320 shots loaded, range 18 blocks.
+QA_CHECK PASS the crosshair line says it is ready with its shots Light Gun Turret: ready, 320 shots loaded, range 18 blocks.
+QA_NOTE HUD Shotgun Turret: no power, 24 shots loaded. Place it within 8 blocks of a powered Power Pole.
+QA_CHECK PASS its upper block answers for it: no power Shotgun Turret: no power, 24 shots loaded. Place it within 8 blocks of a powered Power Pole.
+[13:55:13] [Server thread/INFO] [de.et.be.QaRelease1119/]: QA_NOTE CAPACITY creative motor 16384.0 -> 1.0
+QA_CHAT Shaft Dynamo: its Create network is overstressed, so the whole power network is down.
+QA_CHAT This dynamo carries 512 su (16 su per RPM).
+QA_CHAT Its power network asks 512 su in all, shared by 1 turning dynamo(s), for 2 turret(s) and 0 Shock Box(es).
+QA_CHAT Its Create network: 512 su used of 32 su.
+QA_NOTE READOUT Shaft Dynamo: its Create network is overstressed, so the whole power network is down. / This dynamo carries 512 su (16 su per RPM). / Its power network asks 512 su in all, shared by 1 turning dynamo(s), for 2 turret(s) and 0 Shock Box(es). / Its Create network: 512 su used of 32 su.
+QA_CHECK PASS it says its own Create network is overstressed Shaft Dynamo: its Create network is overstressed, so the whole power network is down. / This dynamo carries 512 su (16 su per RPM). / Its power network asks 512 su in all, shared by 1 turning dynamo(s), for 2 turret(s) and 0 Shock Box(es). / Its Create network: 512 su used of 32 su.
+QA_CHECK PASS and what it asks against what Create has Shaft Dynamo: its Create network is overstressed, so the whole power network is down. / This dynamo carries 512 su (16 su per RPM). / Its power network asks 512 su in all, shared by 1 turning dynamo(s), for 2 turret(s) and 0 Shock Box(es). / Its Create network: 512 su used of 32 su.
+QA_CHECK PASS the lamps go red off
+[13:55:16] [Server thread/INFO] [de.et.be.QaRelease1119/]: QA_NOTE CAPACITY creative motor 1.0 -> 16384.0
+QA_CHECK PASS it comes back by itself 
+QA_CHECK PASS the turret burns: its jet is lit on the client 
+QA_NOTE FLAMES 48
+QA_CHECK PASS its flames are drawn by the client 48
+QA_CHECK PASS the jet killed the husk in front 
+QA_CHECK PASS the husk behind the wall is untouched 60.0 fire false
+QA_NOTE HEARD [turret.flame_start, turret.flame, turret.flame_end]
+QA_CHECK PASS it lit, roared in a loop and went out: start, loop and end sounds [turret.flame_start, turret.flame, turret.flame_end]
+QA_NOTE CASINGS 3
+QA_CHECK PASS the machine gun throws spent cases out of its side 3
+QA_CHECK PASS a casing shows the cartridge case picture eternal_defense:item/cartridge_case
+QA_NOTE HEARD [turret.mg_shot, turret.shotgun_shot, turret.flame_start, turret.flame]
+QA_NOTE KNOCKS [0.1, 0.1, 0.1, 0.1]
+QA_CHECK PASS each shotgun shot knocks the husk back a quarter of a punch (0.1); the machine gun none [0.1, 0.1, 0.1, 0.1]
+QA_CHECK PASS the machine gun and shotgun turrets play their new shots [turret.mg_shot, turret.shotgun_shot, turret.flame_start, turret.flame]
+QA_CHAT Wire started. Right-click the other end.
+QA_CHAT Wired.
+QA_CHAT Wire started. Right-click the other end.
+QA_CHAT Wired.
+QA_NOTE LIVE 15
+QA_CHECK PASS one Shock Box makes exactly 15 of the 20 joined blocks live, the nearest first 15
+QA_NOTE BADASS max/base [240/60, 420/60, 600/60, 780/60, 960/60]
+QA_CHECK PASS Badass I to V: 4, 7, 10, 13 and 16 times the mob's own health (the world's tier scaling sets that base) [240/60, 420/60, 600/60, 780/60, 960/60]
+QA_DONE pass=47 fail=0

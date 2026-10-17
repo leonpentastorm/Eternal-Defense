@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.AllPartialModels;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import net.createmod.catnip.animation.AnimationTickHolder;
 import net.createmod.catnip.render.CachedBuffers;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -26,25 +25,14 @@ final class CreatePowerClient {
         });
     }
 
-    /** A shaft half on each of the four sides; the two halves of an axis turn opposite ways, like a gearbox */
+    /** A shaft half on each of the four sides, each turning exactly like a Create shaft on that axis */
     static final class ShaftRenderer implements BlockEntityRenderer<CreatePower.ShaftEntity> {
         @Override public void render(CreatePower.ShaftEntity be,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
-            var state=be.getBlockState();var pos=be.getBlockPos();
-            float time=AnimationTickHolder.getRenderTime(be.getLevel());
-            var out=buffers.getBuffer(RenderType.solid());
+            var state=be.getBlockState();var pos=be.getBlockPos();var out=buffers.getBuffer(RenderType.solid());
             for(var dir:Direction.Plane.HORIZONTAL){
                 var axis=dir.getAxis();
                 var shaft=CachedBuffers.partialFacing(AllPartialModels.SHAFT_HALF,state,dir);
-                float offset=KineticBlockEntityRenderer.getRotationOffsetForPosition(be,pos,axis);
-                float angle=(time*be.getSpeed()*3f/10)%360;
-                if(be.getSpeed()!=0&&be.hasSource()){
-                    var from=be.source.subtract(pos);
-                    var sourceFacing=Direction.getNearest(from.getX(),from.getY(),from.getZ());
-                    if(sourceFacing.getAxis()==axis)angle*=sourceFacing==dir?1:-1;
-                    else if(sourceFacing.getAxisDirection()==dir.getAxisDirection())angle*=-1;
-                }
-                angle=(float)((angle+offset)/180*Math.PI);
-                KineticBlockEntityRenderer.kineticRotationTransform(shaft,be,axis,angle,light).renderInto(pose,out);
+                KineticBlockEntityRenderer.kineticRotationTransform(shaft,be,axis,KineticBlockEntityRenderer.getAngleForBe(be,pos,axis),light).renderInto(pose,out);
             }
         }
     }

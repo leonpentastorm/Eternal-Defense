@@ -63,6 +63,10 @@ final class PowerPoles {
         }
         @Override public InteractionResult use(BlockState s,Level l,BlockPos pos,Player p,InteractionHand hand,BlockHitResult hit){
             if(p.getItemInHand(hand).getItem() instanceof WireItem)return InteractionResult.PASS;
+            if(p.isShiftKeyDown()&&p.getItemInHand(hand).isEmpty()){
+                if(p instanceof ServerPlayer sp&&l.getBlockEntity(pos) instanceof PoleEntity be){be.showReach=!be.showReach;be.sync();say(sp,be.showReach?"reach.shown":"reach.hidden");}
+                return InteractionResult.sidedSuccess(l.isClientSide);
+            }
             if(p instanceof ServerPlayer sp)sp.displayClientMessage(status(sp.serverLevel(),pos),true);
             return InteractionResult.sidedSuccess(l.isClientSide);
         }
@@ -73,18 +77,21 @@ final class PowerPoles {
         var s=PowerGrid.summary(l,pos);
         if(s==null||s.dynamos()==0)return Component.translatable("gui.eternal_defense.power.no_dynamo",PowerKit.AURA).withStyle(ChatFormatting.GOLD);
         if(s.turning()==0)return Component.translatable("gui.eternal_defense.power.still",PowerKit.MIN_RPM).withStyle(ChatFormatting.GOLD);
-        if(s.overstressed())return Component.translatable("gui.eternal_defense.power.overstressed",fmt(s.demand())).withStyle(ChatFormatting.RED);
-        return Component.translatable("gui.eternal_defense.power.running",s.turning(),fmt(s.rpm()),fmt(s.demand()),s.turrets(),s.boxes()).withStyle(ChatFormatting.AQUA);
+        if(s.overstressed())return Component.translatable("gui.eternal_defense.power.overstressed",su(s.su()),fmt(s.demand())).withStyle(ChatFormatting.RED);
+        return Component.translatable("gui.eternal_defense.power.running",s.turning(),fmt(s.rpm()),su(s.su()),fmt(s.demand()),s.turrets(),s.boxes()).withStyle(ChatFormatting.AQUA);
     }
+    /** Stress units as Create writes them: whole numbers with thousands separated */
+    static String su(double v){return String.format(java.util.Locale.ROOT,"%,d",Math.round(v));}
     static String fmt(float f){return Math.abs(f-Math.rint(f))<.05f?Integer.toString(Math.round(f)):String.format(java.util.Locale.ROOT,"%.1f",f);}
     /** Wire comes back when what holds it is taken down */
     static void refund(Level l,BlockPos pos,int wires){if(wires>0&&!l.isClientSide)Block.popResource(l,pos,new ItemStack(EternalDefense.ELECTRIC_WIRE.get(),wires));}
 
     static final class PoleEntity extends BlockEntity {
         final List<BlockPos> links=new ArrayList<>();
-        boolean live;
+        boolean live,showReach;
         PoleEntity(BlockPos pos,BlockState state){super(EternalDefense.POLE_ENTITY.get(),pos,state);}
-        @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel l)PowerGrid.joinPole(l,worldPosition);}
+        @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel l)PowerGrid.joinPole(l,worldPosition);else if(level!=null&&level.isClientSide)SEEN.add(worldPosition.immutable());}
+        @Override public void setRemoved(){super.setRemoved();if(level!=null&&level.isClientSide)SEEN.remove(worldPosition);}
         void live(boolean on){
             // A wire whose far end is gone comes back as an item
             if(level instanceof ServerLevel l){int lost=0;for(var it=links.iterator();it.hasNext();){var t=it.next();if(l.isLoaded(t)&&!endpoint(l.getBlockState(t))){it.remove();lost++;}}if(lost>0){refund(l,worldPosition,lost);sync();}}
@@ -92,11 +99,26 @@ final class PowerPoles {
         }
         boolean link(BlockPos to){if(links.contains(to)||links.size()>=MAX_LINKS)return false;links.add(to.immutable());sync();return true;}
         void sync(){setChanged();if(level!=null)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
-        @Override protected void saveAdditional(CompoundTag tag){super.saveAdditional(tag);tag.put("Links",save(links));tag.putBoolean("Live",live);}
-        @Override public void load(CompoundTag tag){super.load(tag);read(tag.getList("Links",Tag.TAG_COMPOUND),links);live=tag.getBoolean("Live");}
+        @Override protected void saveAdditional(CompoundTag tag){super.saveAdditional(tag);tag.put("Links",save(links));tag.putBoolean("Live",live);tag.putBoolean("ShowReach",showReach);}
+        @Override public void load(CompoundTag tag){super.load(tag);read(tag.getList("Links",Tag.TAG_COMPOUND),links);live=tag.getBoolean("Live");showReach=tag.getBoolean("ShowReach");}
         @Override public CompoundTag getUpdateTag(){var t=new CompoundTag();saveAdditional(t);return t;}
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
         @Override public AABB getRenderBoundingBox(){return reach(worldPosition,links);}
+    }
+    /** Poles the client has loaded, for drawing their reach */
+    static final java.util.Set<BlockPos> SEEN=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Pure: the edges of a pole's reach on one layer, as (x, z, along x) from the pole's column corner */
+    static final List<int[]> REACH_EDGES=reachEdges();
+    private static List<int[]> reachEdges(){
+        var out=new ArrayList<int[]>();int r=PowerKit.AURA;
+        for(int dx=-r;dx<=r;dx++)for(int dz=-r;dz<=r;dz++){
+            if(!PowerKit.inAura(dx,0,dz))continue;
+            if(!PowerKit.inAura(dx,0,dz-1))out.add(new int[]{dx,dz,1});
+            if(!PowerKit.inAura(dx,0,dz+1))out.add(new int[]{dx,dz+1,1});
+            if(!PowerKit.inAura(dx-1,0,dz))out.add(new int[]{dx,dz,0});
+            if(!PowerKit.inAura(dx+1,0,dz))out.add(new int[]{dx+1,dz,0});
+        }
+        return List.copyOf(out);
     }
     static ListTag save(List<BlockPos> list){var out=new ListTag();for(var p:list)out.add(NbtUtils.writeBlockPos(p));return out;}
     static void read(ListTag tags,List<BlockPos> into){into.clear();for(int i=0;i<tags.size();i++)into.add(NbtUtils.readBlockPos(tags.getCompound(i)));}

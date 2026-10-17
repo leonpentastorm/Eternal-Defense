@@ -1,5 +1,19 @@
 # Change log
 
+## 1.1.19 — Dynamo readouts, pole reach, turret screen and lamps, the flame jet, the owner's turret sounds (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.18 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed); a new menu type, so client and server must both run 1.1.19. Rules: GDD 1.1.19 (Part M, section 5.14); tests: `docs/ROUND-1.1.19-TESTING.md`.
+
+* **Dynamos.** The Shaft Dynamo turns all four sides with the Create shaft that drives it (same speed and direction, a shaft line runs straight through; it was a gearbox and turned the far side backwards); its halves are drawn at the shafts' angle. Right-click a dynamo with an empty hand, or look at it in Engineer's Goggles: working or why not, its stress units, its power network's total and its Create network's use and capacity. Pole status lines give stress units too.
+* **Pole reach.** While you hold defense gear, every pole near you shows its reach as an outline (blue powered, orange down); a pole in hand shows where its reach would be. Sneak and right-click a pole with both hands empty to keep its outline on.
+* **Turrets.** Right-click a turret with anything but its ammo to open its screen: online or why not, shots loaded, range, stress, and its four ammo slots, loaded and emptied by hand (shift-click works both ways). A lamp above every turret: green ready, orange out of ammo, red no power; looking at a turret says the same in words. Machine guns and shotguns throw spent cases out of their side.
+* **Balance.** Machine gun damage 20 percent down (8, 14 and 21.3 a second). Flamethrower stronger: 8, 10 and 12 blocks long, 12, 16 and 20 damage a second on every mob in the jet, 5, 6 and 7 seconds of fire. The flame is now one box along the aim (2, 2.5 and 3 blocks wide), cut short by walls: one sight check a burst instead of one per mob, and the flames are drawn by each player's game instead of sent over the network.
+* **Sounds (the owner's).** Machine gun turret shot (30 percent quieter), shotgun turret shot (M1014, 30 percent quieter, with reverb), flamethrower start, loop while it burns, and end.
+* **Barbed Wire.** Live wire's arcs are animated and throw sparks. One Shock Box makes at most 15 Barbed Wire blocks live, the nearest first (was 48 from each wired block).
+* **Shotgun turrets** push every mob they hit back a little (Mark III a quarter of a player's punch, Mark I and II less).
+* **Badass elites.** Three times the health bonus: +300 percent a level (4 times the health at I, 16 times at V; was 2 to 6 times).
+* **Fixes.** Sandbags and Barricades showed a missing model with Diagonal Walls installed (it placed its own copy of them): they are in its exclusion tag now; ones already placed must be broken and placed again. The placement preview of walls and Barbed Wire drew nothing; it shows them now. Turrets never showed their recoil (the shot never reached other players' games); it does now, with the casings.
+
 ## 1.1.18 — Power, turrets, defenses and the Defense Depot (2026-10-17, `feature/power-defense`)
 
 Made from `dev` at 1.1.17 on the feature branch `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet changed), but new blocks, items and a menu: client and server must both run 1.1.18. Rules: GDD 1.1.18 (Part M, section 5.14); tests: `docs/ROUND-1.1.18-TESTING.md`.

@@ -173,6 +173,7 @@ public final class EternalDefense {
         for(var line:Turrets.Line.values())for(int mk=1;mk<=3;mk++){int m=mk;String id=Turrets.id(line,mk);RegistryObject<Block> block=BLOCKS.register(id,()->new Turrets.TurretBlock(line,m));ITEMS.register(id,()->new Turrets.TurretItem(block.get(),line,m));out.put(id,block);}
         return java.util.Collections.unmodifiableMap(out);
     }
+    public static final RegistryObject<net.minecraft.world.inventory.MenuType<Turrets.TurretMenu>> TURRET_MENU=MENUS.register("turret",()->net.minecraftforge.common.extensions.IForgeMenuType.create(Turrets.TurretMenu::client));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<Turrets.TurretEntity>> TURRET_ENTITY=ENTITIES.register("turret",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(Turrets.TurretEntity::new,TURRETS.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
     public static final RegistryObject<Item> MG_AMMO=ITEMS.register("mg_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.MG)),SHOTGUN_AMMO=ITEMS.register("shotgun_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.SHOTGUN)),
         FLAME_FUEL=ITEMS.register("flame_turret_fuel",()->new Turrets.AmmoItem(Turrets.Line.FLAME));

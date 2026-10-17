@@ -19,7 +19,7 @@ final class PowerGrid {
         void power(boolean on);
     }
     /** What a network looked like the last time it was worked out (for a pole's status line) */
-    record Summary(int dynamos,int turning,float rpm,float demand,boolean running,boolean overstressed,int turrets,int boxes){}
+    record Summary(int dynamos,int turning,float rpm,float demand,boolean running,boolean overstressed,int turrets,int boxes,float su){}
 
     static final class Grid {
         final Set<BlockPos> poles=new HashSet<>(),turrets=new HashSet<>(),boxes=new HashSet<>();
@@ -61,7 +61,7 @@ final class PowerGrid {
             net.poles.add(e.getValue());
             if(l.getBlockEntity(e.getKey().below()) instanceof PowerKit.Dynamo dynamo){net.dynamos.add(dynamo);dynamos.add(e.getKey().below());}
         }
-        for(var p:g.dynamos)if(!dynamos.contains(p)&&l.isLoaded(p)&&l.getBlockEntity(p) instanceof PowerKit.Dynamo gone)gone.demand(0);
+        for(var p:g.dynamos)if(!dynamos.contains(p)&&l.isLoaded(p)&&l.getBlockEntity(p) instanceof PowerKit.Dynamo gone){gone.demand(0);gone.report(null);}
         g.dynamos=dynamos;
         var fed=new HashSet<BlockPos>();
         for(var e:poles.entrySet())for(var t:e.getValue().links)if(g.boxes.contains(t)&&l.isLoaded(t)&&l.getBlockEntity(t) instanceof ShockBoxes.BoxEntity box&&fed.add(t)){var net=nets.get(find(parent,e.getKey()));net.consumers.add(box);net.counts[1]++;}
@@ -81,25 +81,28 @@ final class PowerGrid {
             for(var dy:net.dynamos)dy.demand(turning.contains(dy)?share:0);
             for(var c:net.consumers)c.power(running);
             float rpm=(float)turning.stream().mapToDouble(PowerKit.Dynamo::rpm).max().orElse(0);
-            var summary=new Summary(net.dynamos.size(),turning.size(),rpm,demand,running,over,net.counts[0],net.counts[1]);
+            float su=PowerKit.su(share,turning.stream().mapToDouble(PowerKit.Dynamo::rpm).sum());
+            var summary=new Summary(net.dynamos.size(),turning.size(),rpm,demand,running,over,net.counts[0],net.counts[1],su);
+            for(var dy:net.dynamos)dy.report(summary);
             for(var pole:net.poles){pole.live(running);g.summaries.put(pole.getBlockPos(),summary);}
         }
         // Shock boxes with charge make the barbed wire they are wired to live
         var live=new HashSet<BlockPos>();
-        for(var p:g.boxes)if(l.getBlockEntity(p) instanceof ShockBoxes.BoxEntity box){box.drain(PowerKit.GRID_TICKS);if(box.charged())for(var start:box.links)run(l,start,live);}
+        for(var p:g.boxes)if(l.getBlockEntity(p) instanceof ShockBoxes.BoxEntity box){box.drain(PowerKit.GRID_TICKS);if(box.charged())live.addAll(spread(box.links,q->l.isLoaded(q)&&l.getBlockState(q).getBlock() instanceof DefenseWalls.BarbedWire,PowerKit.SHOCK_REACH));}
         for(var p:live)setLive(l,p,true);
         for(var p:g.live)if(!live.contains(p))setLive(l,p,false);
         g.live=live;
     }
-    /** The barbed wire joined to start, up to SHOCK_REACH blocks */
-    static void run(ServerLevel l,BlockPos start,Set<BlockPos> into){
-        var queue=new ArrayDeque<BlockPos>();queue.add(start);int count=0;var seen=new HashSet<BlockPos>();
-        while(!queue.isEmpty()&&count<PowerKit.SHOCK_REACH){
-            var p=queue.poll();if(!seen.add(p)||!l.isLoaded(p)||!(l.getBlockState(p).getBlock() instanceof DefenseWalls.BarbedWire))continue;
-            into.add(p);count++;
+    /** Pure: the wire one box makes live: from the blocks it is wired to, through joined wire, nearest first, at most max blocks */
+    static List<BlockPos> spread(Collection<BlockPos> starts,java.util.function.Predicate<BlockPos> wire,int max){
+        var queue=new ArrayDeque<BlockPos>(starts);var seen=new HashSet<BlockPos>();var out=new ArrayList<BlockPos>();
+        while(!queue.isEmpty()&&out.size()<max){
+            var p=queue.poll();if(!seen.add(p)||!wire.test(p))continue;
+            out.add(p);
             for(var dir:Direction.Plane.HORIZONTAL)queue.add(p.relative(dir));
             queue.add(p.above());queue.add(p.below());
         }
+        return out;
     }
     private static void setLive(ServerLevel l,BlockPos p,boolean on){
         if(!l.isLoaded(p))return;BlockState s=l.getBlockState(p);

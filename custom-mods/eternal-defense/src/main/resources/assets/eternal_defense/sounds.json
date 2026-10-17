@@ -346,5 +346,35 @@
       "eternal_defense:sfx/war_horn"
     ],
     "subtitle": "subtitles.eternal_defense.fob.war_horn"
+  },
+  "turret.mg_shot": {
+    "sounds": [
+      "eternal_defense:sfx/turret_lmg"
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.mg_shot"
+  },
+  "turret.flame_start": {
+    "sounds": [
+      "eternal_defense:sfx/flame_start"
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.flame_start"
+  },
+  "turret.flame": {
+    "sounds": [
+      "eternal_defense:sfx/flame_loop"
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.flame"
+  },
+  "turret.flame_end": {
+    "sounds": [
+      "eternal_defense:sfx/flame_end"
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.flame_end"
+  },
+  "turret.shotgun_shot": {
+    "sounds": [
+      "eternal_defense:sfx/turret_shotgun"
+    ],
+    "subtitle": "subtitles.eternal_defense.turret.shotgun_shot"
   }
 }

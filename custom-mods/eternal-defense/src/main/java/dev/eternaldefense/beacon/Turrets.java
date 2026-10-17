@@ -59,13 +59,13 @@ final class Turrets {
         MG("mg"),SHOTGUN("shotgun"),FLAME("flame");
         final String id;Line(String id){this.id=id;}
     }
-    /** Range in blocks, ticks between shots, damage a hit (a pellet, a burst), pellets a shot, spread or cone in degrees, stress per RPM, seconds of fire, block hardness */
+    /** Range in blocks, ticks between shots, damage a hit (a pellet, a burst), pellets a shot, spread in degrees (flame: the jet's width in blocks), stress per RPM, seconds of fire, block hardness */
     record Stats(int range,int cooldown,float damage,int pellets,float spread,int stress,int burn,float hardness){}
     static Stats stats(Line line,int mk){
         return switch(line){
-            case MG->switch(mk){case 1->new Stats(18,6,3,1,1.5f,8,0,6);case 2->new Stats(22,4,3.5f,1,1.5f,12,0,8);default->new Stats(26,3,4,1,2,20,0,10);};
+            case MG->switch(mk){case 1->new Stats(18,6,2.4f,1,1.5f,8,0,6);case 2->new Stats(22,4,2.8f,1,1.5f,12,0,8);default->new Stats(26,3,3.2f,1,2,20,0,10);};
             case SHOTGUN->switch(mk){case 1->new Stats(10,24,1.5f,6,12,8,0,6);case 2->new Stats(12,16,1.6f,7,11,12,0,8);default->new Stats(14,10,1.7f,8,12,20,0,10);};
-            case FLAME->switch(mk){case 1->new Stats(7,5,1.5f,1,25,12,4,6);case 2->new Stats(8,5,2,1,25,16,5,8);default->new Stats(10,5,2.5f,1,35,24,6,10);};
+            case FLAME->switch(mk){case 1->new Stats(8,5,3,1,2,12,5,6);case 2->new Stats(10,5,4,1,2.5f,16,6,8);default->new Stats(12,5,5,1,3,24,7,10);};
         };
     }
     /** Rounds one ammunition item loads: a can of belted rounds, a box of shells, a fuel bottle's bursts */
@@ -92,10 +92,14 @@ final class Turrets {
         @Override public PushReaction getPistonPushReaction(BlockState s){return PushReaction.BLOCK;}
         @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new TurretEntity(pos,state);}
         @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l,BlockState s,BlockEntityType<T> type){
-            return l.isClientSide||type!=EternalDefense.TURRET_ENTITY.get()?null:(level,pos,state,be)->((TurretEntity)be).serverTick();
+            if(type!=EternalDefense.TURRET_ENTITY.get())return null;
+            if(l.isClientSide)return line!=Line.FLAME?null:(level,pos,state,be)->net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->TurretEffectsClient.flame((TurretEntity)be));
+            return (level,pos,state,be)->((TurretEntity)be).serverTick();
         }
         @Override public void onPlace(BlockState s,Level l,BlockPos pos,BlockState old,boolean moving){super.onPlace(s,l,pos,old,moving);if(l instanceof ServerLevel)DefenseStructures.install(l,pos,s);}
         @Override public void tick(BlockState s,ServerLevel l,BlockPos pos,net.minecraft.util.RandomSource random){DefenseStructures.install(l,pos,s);}
+        /** A shot reaches the clients as a block event: recoil and casings */
+        @Override public boolean triggerEvent(BlockState s,Level l,BlockPos pos,int id,int param){super.triggerEvent(s,l,pos,id,param);var be=l.getBlockEntity(pos);return be!=null&&be.triggerEvent(id,param);}
         @Override public void onRemove(BlockState s,Level l,BlockPos pos,BlockState next,boolean moving){
             if(!s.is(next.getBlock())){if(l.getBlockEntity(pos) instanceof TurretEntity be)for(int i=0;i<SLOTS;i++)Containers.dropItemStack(l,pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5,be.ammo.getStackInSlot(i));DefenseStructures.remove(l,pos);}
             super.onRemove(s,l,pos,next,moving);
@@ -106,8 +110,9 @@ final class Turrets {
             if(p instanceof ServerPlayer sp){
                 var held=p.getItemInHand(hand);
                 if(held.is(ammo(line))){var rest=net.minecraftforge.items.ItemHandlerHelper.insertItem(be.ammo,held.copy(),false);int put=held.getCount()-rest.getCount();if(!p.isCreative())held.shrink(put);
-                    if(put>0)l.playSound(null,pos,SoundEvents.ARMOR_EQUIP_IRON,SoundSource.BLOCKS,.8f,1.2f);}
-                sp.displayClientMessage(be.status(),true);
+                    if(put>0)l.playSound(null,pos,SoundEvents.ARMOR_EQUIP_IRON,SoundSource.BLOCKS,.8f,1.2f);sp.displayClientMessage(be.status(),true);}
+                else net.minecraftforge.network.NetworkHooks.openScreen(sp,new net.minecraft.world.SimpleMenuProvider((id,inv,who)->new TurretMenu(id,inv,be.ammo,pos,be,line,mk),getName()),
+                    buf->{buf.writeBlockPos(pos);buf.writeByte(line.ordinal());buf.writeByte(mk);});
             }
             return InteractionResult.sidedSuccess(l.isClientSide);
         }
@@ -116,7 +121,7 @@ final class Turrets {
     static final class TurretEntity extends BlockEntity implements PowerGrid.Consumer {
         final ItemStackHandler ammo=new ItemStackHandler(SLOTS){
             @Override public boolean isItemValid(int slot,ItemStack stack){return stack.is(Turrets.ammo(block().line));}
-            @Override protected void onContentsChanged(int slot){setChanged();}
+            @Override protected void onContentsChanged(int slot){setChanged();shown=true;}
         };
         /** Belts, chutes and funnels load it; nothing takes the ammunition back out */
         private final IItemHandler loader=new IItemHandler(){
@@ -129,6 +134,12 @@ final class Turrets {
         };
         private LazyOptional<IItemHandler> loaderCap=LazyOptional.of(()->loader);
         int rounds,cooldown,targetId=-1;boolean powered;
+        /** A flame turret's jet is burning (kept for FLAME_HOLD ticks after the last burst, so its sound runs on between targets) */
+        boolean flaming;long lastFlame;
+        /** Shots loaded changed since the clients last heard (sent at most twice a second) */
+        boolean shown;
+        /** Client side: the shots loaded, for the status light and the line under the crosshair */
+        int loadedShown;
         /** Client side: the time of the last shot (for the recoil) and the aim drawn */
         long shotAt=-100;float drawYaw,drawPitch,drawnAt;
         TurretEntity(BlockPos pos,BlockState state){super(EternalDefense.TURRET_ENTITY.get(),pos,state);}
@@ -136,13 +147,16 @@ final class Turrets {
         Stats stats(){return Turrets.stats(block().line,block().mk);}
         @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel l)PowerGrid.joinTurret(l,worldPosition);}
         @Override public float stress(){return stats().stress();}
-        @Override public void power(boolean on){if(powered!=on){powered=on;if(!on)aimAt(null);sync();}}
+        @Override public void power(boolean on){if(powered!=on){powered=on;if(!on){aimAt(null);flaming=false;}sync();}}
+        void flaming(boolean on){if(flaming!=on){flaming=on;sync();}}
         int loaded(){int n=rounds;for(int i=0;i<SLOTS;i++)n+=ammo.getStackInSlot(i).getCount()*perItem(block().line);return n;}
-        Component status(){
+        Component status(){return status(loaded());}
+        /** How it stands, with the shots loaded the caller knows (the client only hears the count) */
+        Component status(int loaded){
             var name=block().getName();
-            if(!powered)return Component.translatable("gui.eternal_defense.turret.unpowered",name,loaded(),PowerKit.AURA).withStyle(ChatFormatting.GOLD);
-            if(loaded()==0)return Component.translatable("gui.eternal_defense.turret.empty",name,ammo(block().line).getDescription()).withStyle(ChatFormatting.GOLD);
-            return Component.translatable("gui.eternal_defense.turret.ready",name,loaded(),stats().range()).withStyle(ChatFormatting.AQUA);
+            if(!powered)return Component.translatable("gui.eternal_defense.turret.unpowered",name,loaded,PowerKit.AURA).withStyle(ChatFormatting.GOLD);
+            if(loaded==0)return Component.translatable("gui.eternal_defense.turret.empty",name,ammo(block().line).getDescription()).withStyle(ChatFormatting.GOLD);
+            return Component.translatable("gui.eternal_defense.turret.ready",name,loaded,stats().range()).withStyle(ChatFormatting.AQUA);
         }
         Vec3 muzzle(){return Vec3.atLowerCornerOf(worldPosition).add(middle(block().mk));}
         /** A mob it may shoot: a hostile or raid mob, alive, in range and in sight */
@@ -154,6 +168,8 @@ final class Turrets {
         static Vec3 aim(Mob m){return m.position().add(0,m.getBbHeight()*.55,0);}
         void serverTick(){
             if(!(level instanceof ServerLevel l))return;
+            if(shown&&l.getGameTime()%10==0){shown=false;sync();}
+            if(flaming&&l.getGameTime()-lastFlame>FLAME_HOLD)flaming(false);
             if(cooldown>0)cooldown--;
             if(!powered)return;
             var s=stats();var from=muzzle();
@@ -167,9 +183,9 @@ final class Turrets {
             aimAt(current);
             if(current==null||cooldown>0)return;
             if(rounds<=0&&!reload()){if(l.getGameTime()%40==0)l.playSound(null,worldPosition,SoundEvents.DISPENSER_FAIL,SoundSource.BLOCKS,.6f,1.4f);return;}
-            rounds--;cooldown=s.cooldown();setChanged();
+            rounds--;cooldown=s.cooldown();setChanged();shown=true;
             fire(l,from,current,s);
-            l.blockEvent(worldPosition,getBlockState().getBlock(),1,0);
+            if(block().line!=Line.FLAME)l.blockEvent(worldPosition,getBlockState().getBlock(),1,0);
         }
         private boolean reload(){for(int i=0;i<SLOTS;i++)if(!ammo.extractItem(i,1,false).isEmpty()){rounds+=perItem(block().line);return true;}return false;}
         private void aimAt(@Nullable Mob m){int id=m==null?-1:m.getId();if(id!=targetId){targetId=id;sync();}}
@@ -178,15 +194,14 @@ final class Turrets {
             var source=new DamageSource(type,null,null,from);var to=aim(target);var dir=to.subtract(from).normalize();
             switch(line){
                 case FLAME->{
-                    double cone=Math.cos(Math.toRadians(s.spread()/2));
-                    for(var m:l.getEntitiesOfClass(Mob.class,new AABB(from,from).inflate(s.range()),m->true)){
-                        var v=aim(m).subtract(from);double len=v.length();
-                        if(len>s.range()||len<1e-3||v.scale(1/len).dot(dir)<cone||!valid(m,from,s.range()))continue;
+                    // One box along the aim, cut short by the first wall: every foe it touches burns
+                    var jet=mount(dir);var stop=l.clip(new Sight(from,from.add(jet.scale(s.range())),worldPosition));
+                    double length=stop.getType()==HitResult.Type.MISS?s.range():stop.getLocation().distanceTo(from),half=s.spread()/2;
+                    for(var m:l.getEntitiesOfClass(Mob.class,new AABB(from,from.add(jet.scale(length))).inflate(half),Turrets::foe)){
+                        if(!inJet(m.getBoundingBox(),from,jet,length,half))continue;
                         m.invulnerableTime=0;if(m.hurt(source,s.damage()))m.setSecondsOnFire(s.burn());
                     }
-                    for(int i=0;i<10;i++){var jitter=dir.add(l.random.nextGaussian()*.12,l.random.nextGaussian()*.08,l.random.nextGaussian()*.12).normalize().scale(.35+l.random.nextDouble()*.35);
-                        l.sendParticles(ParticleTypes.FLAME,from.x+dir.x*.6,from.y+dir.y*.6,from.z+dir.z*.6,0,jitter.x,jitter.y,jitter.z,1);}
-                    if(l.getGameTime()%10==0)l.playSound(null,worldPosition,SoundEvents.FIRECHARGE_USE,SoundSource.BLOCKS,.5f,.8f+l.random.nextFloat()*.2f);
+                    lastFlame=l.getGameTime();flaming(true);
                 }
                 default->{
                     var hits=new HashMap<Mob,Float>();
@@ -200,10 +215,11 @@ final class Turrets {
                         if(hit!=null){hits.merge(hit,s.damage(),Float::sum);end=from.add(ray.scale(Math.sqrt(best)));}
                         tracer(l,from,end);
                     }
-                    for(var e:hits.entrySet()){e.getKey().invulnerableTime=0;e.getKey().hurt(source,e.getValue());}
+                    float push=knockback(line,block().mk);
+                    for(var e:hits.entrySet()){var m=e.getKey();m.invulnerableTime=0;if(m.hurt(source,e.getValue())&&push>0)m.knockback(push,-dir.x,-dir.z);}
                     l.sendParticles(ParticleTypes.SMOKE,from.x+dir.x*.7,from.y+dir.y*.7,from.z+dir.z*.7,2,.03,.03,.03,.01);
-                    if(line==Line.MG)l.playSound(null,worldPosition,SoundEvents.FIREWORK_ROCKET_BLAST,SoundSource.BLOCKS,.7f,1.3f+l.random.nextFloat()*.2f);
-                    else l.playSound(null,worldPosition,SoundEvents.GENERIC_EXPLODE,SoundSource.BLOCKS,.45f,1.7f+l.random.nextFloat()*.2f);
+                    if(line==Line.MG)l.playSound(null,worldPosition,DefenseSounds.MG_SHOT.get(),SoundSource.BLOCKS,1f,.95f+l.random.nextFloat()*.1f);
+                    else l.playSound(null,worldPosition,DefenseSounds.SHOTGUN_SHOT.get(),SoundSource.BLOCKS,1f,.95f+l.random.nextFloat()*.1f);
                 }
             }
         }
@@ -211,7 +227,10 @@ final class Turrets {
             double s=Math.toRadians(degrees)/2;return dir.add(r.nextGaussian()*s*.5,r.nextGaussian()*s*.5,r.nextGaussian()*s*.5).normalize();
         }
         private static void tracer(ServerLevel l,Vec3 from,Vec3 to){var v=to.subtract(from);int n=(int)Math.min(24,v.length()/1.5);for(int i=1;i<=n;i++){var p=from.add(v.scale(i/(double)n));l.sendParticles(ParticleTypes.CRIT,p.x,p.y,p.z,1,0,0,0,0);}}
-        @Override public boolean triggerEvent(int id,int arg){if(id==1){if(level!=null&&level.isClientSide)shotAt=level.getGameTime();return true;}return super.triggerEvent(id,arg);}
+        @Override public boolean triggerEvent(int id,int arg){
+            if(id==1){if(level!=null&&level.isClientSide){shotAt=level.getGameTime();net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->TurretEffectsClient.casing(this));}return true;}
+            return super.triggerEvent(id,arg);
+        }
         void sync(){setChanged();if(level!=null)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),3);}
         @Override public <T> LazyOptional<T> getCapability(Capability<T> cap,@Nullable Direction side){return cap==ForgeCapabilities.ITEM_HANDLER?loaderCap.cast():super.getCapability(cap,side);}
         @Override public void invalidateCaps(){super.invalidateCaps();loaderCap.invalidate();}
@@ -219,8 +238,10 @@ final class Turrets {
         @Override protected void saveAdditional(CompoundTag tag){super.saveAdditional(tag);tag.put("Ammo",ammo.serializeNBT());tag.putInt("Rounds",rounds);}
         @Override public void load(CompoundTag tag){super.load(tag);ammo.deserializeNBT(tag.getCompound("Ammo"));rounds=tag.getInt("Rounds");
             if(tag.contains("Target"))targetId=tag.getInt("Target");if(tag.contains("Powered"))powered=tag.getBoolean("Powered");}
-        @Override public CompoundTag getUpdateTag(){var t=new CompoundTag();t.putInt("Target",targetId);t.putBoolean("Powered",powered);t.putInt("Rounds",rounds);return t;}
-        @Override public void handleUpdateTag(CompoundTag tag){targetId=tag.getInt("Target");powered=tag.getBoolean("Powered");rounds=tag.getInt("Rounds");}
+        @Override public CompoundTag getUpdateTag(){var t=new CompoundTag();t.putInt("Target",targetId);t.putBoolean("Powered",powered);t.putInt("Rounds",rounds);t.putInt("Loaded",loaded());t.putBoolean("Flaming",flaming);return t;}
+        @Override public void handleUpdateTag(CompoundTag tag){targetId=tag.getInt("Target");powered=tag.getBoolean("Powered");rounds=tag.getInt("Rounds");loadedShown=tag.getInt("Loaded");flaming=tag.getBoolean("Flaming");}
+        /** Client side: the status light's key: ready, empty or off */
+        String light(){return lightOf(powered,loadedShown);}
         @Override public Packet<ClientGamePacketListener> getUpdatePacket(){return ClientboundBlockEntityDataPacket.create(this);}
         @Override public void onDataPacket(net.minecraft.network.Connection net,ClientboundBlockEntityDataPacket packet){if(packet.getTag()!=null)handleUpdateTag(packet.getTag());}
         @Override public AABB getRenderBoundingBox(){return new AABB(worldPosition).inflate(2);}
@@ -241,6 +262,47 @@ final class Turrets {
         final Line line;
         AmmoItem(Line line){super(new Properties());this.line=line;}
         @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){lines.add(Component.translatable("tooltip.eternal_defense."+line.id+"_turret_ammo",perItem(line)).withStyle(ChatFormatting.GRAY));}
+    }
+    /** A player's punch knocks back this hard; a Mark III shotgun turret pushes each mob it hits a quarter of that, Mark I and II less */
+    static final float PUNCH=.4f;
+    static float knockback(Line line,int mk){return line==Line.SHOTGUN?PUNCH*(mk+1)/16:0;}
+    /** Ticks a flame jet stays lit after its last burst */
+    static final int FLAME_HOLD=10;
+    /** Pure: a direction turned to the pitch the mount allows */
+    static Vec3 mount(Vec3 dir){
+        double flat=Math.sqrt(dir.x*dir.x+dir.z*dir.z),pitch=Math.toRadians(clampPitch((float)Math.toDegrees(Math.atan2(dir.y,flat)))),h=Math.cos(pitch);
+        return flat<1e-6?new Vec3(0,Math.sin(pitch),-h):new Vec3(dir.x/flat*h,Math.sin(pitch),dir.z/flat*h);
+    }
+    /** Pure: a box is in the flame jet when the jet's axis, at the point nearest the box's middle, lies within half the jet's width of it */
+    static boolean inJet(AABB box,Vec3 from,Vec3 dir,double length,double half){
+        var c=box.getCenter();double t=Mth.clamp(c.subtract(from).dot(dir),0,length);return box.inflate(half).contains(from.add(dir.scale(t)));
+    }
+    /** Pure: a turret's status light: off with no power, empty with no shots, else ready */
+    static String lightOf(boolean powered,int loaded){return !powered?"off":loaded<=0?"empty":"ready";}
+    /** A turret's screen: its four ammo slots, loaded and emptied by hand, and how it stands */
+    static final class TurretMenu extends net.minecraft.world.inventory.AbstractContainerMenu {
+        static final int AMMO_X=53,AMMO_Y=108,INV_Y=140;
+        final IItemHandler ammo;final BlockPos pos;final TurretEntity owner;final Line line;final int mk;
+        final net.minecraft.world.inventory.DataSlot powered=net.minecraft.world.inventory.DataSlot.standalone(),loaded=net.minecraft.world.inventory.DataSlot.standalone();
+        TurretMenu(int id,net.minecraft.world.entity.player.Inventory inv,IItemHandler ammo,BlockPos pos,TurretEntity owner,Line line,int mk){
+            super(EternalDefense.TURRET_MENU.get(),id);this.ammo=ammo;this.pos=pos;this.owner=owner;this.line=line;this.mk=mk;
+            for(int i=0;i<SLOTS;i++)addSlot(new net.minecraftforge.items.SlotItemHandler(ammo,i,AMMO_X+i*18,AMMO_Y){@Override public boolean mayPlace(ItemStack stack){return stack.is(Turrets.ammo(line));}});
+            for(int row=0;row<3;row++)for(int col=0;col<9;col++)addSlot(new net.minecraft.world.inventory.Slot(inv,9+row*9+col,8+col*18,INV_Y+row*18));
+            for(int col=0;col<9;col++)addSlot(new net.minecraft.world.inventory.Slot(inv,col,8+col*18,INV_Y+58));
+            addDataSlot(powered);addDataSlot(loaded);
+        }
+        static TurretMenu client(int id,net.minecraft.world.entity.player.Inventory inv,net.minecraft.network.FriendlyByteBuf buf){
+            var pos=buf.readBlockPos();var line=Line.values()[buf.readByte()];int mk=buf.readByte();return new TurretMenu(id,inv,new ItemStackHandler(SLOTS),pos,null,line,mk);
+        }
+        @Override public void broadcastChanges(){if(owner!=null){powered.set(owner.powered?1:0);loaded.set(Math.min(32767,owner.loaded()));}super.broadcastChanges();}
+        @Override public boolean stillValid(Player p){return !p.isSpectator()&&owner!=null&&p.level().getBlockEntity(pos)==owner&&p.distanceToSqr(Vec3.atCenterOf(pos))<=64;}
+        @Override public ItemStack quickMoveStack(Player p,int index){
+            if(index<0||index>=slots.size())return ItemStack.EMPTY;var slot=slots.get(index);if(!slot.hasItem())return ItemStack.EMPTY;
+            var stack=slot.getItem();var copy=stack.copy();
+            if(index<SLOTS){if(!moveItemStackTo(stack,SLOTS,slots.size(),true))return ItemStack.EMPTY;}
+            else if(!stack.is(Turrets.ammo(line))||!moveItemStackTo(stack,0,SLOTS,false))return ItemStack.EMPTY;
+            if(stack.isEmpty())slot.set(ItemStack.EMPTY);else slot.setChanged();slot.onTake(p,stack);return copy;
+        }
     }
     /** A sight line from the muzzle that the turret's own blocks do not stop */
     static final class Sight extends ClipContext {

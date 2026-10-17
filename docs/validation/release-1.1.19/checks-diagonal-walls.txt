@@ -1,0 +1,13 @@
+QA_NOTE DIAGONAL diagonalwalls:eternal_defense/sandbag -> fuzs.diagonalblocks.api.v2.impl.ForgeDiagonalWallBlock
+QA_NOTE DIAGONAL diagonalwalls:eternal_defense/barricade -> fuzs.diagonalblocks.api.v2.impl.ForgeDiagonalWallBlock
+QA_NOTE PREVIEW sandbag state Block{eternal_defense:sandbag}[east=none,north=none,south=none,up=true,waterlogged=false,west=none] missing false model MultiPartBakedModel quads translucent 0 all 28 types net.minecraftforge.client.ChunkRenderTypeSet@4b8a8527
+QA_CHECK PASS sandbag is placed as the mod's own block dev.eternaldefense.beacon.DefenseWalls$Wall eternal_defense:sandbag
+QA_CHECK PASS sandbag has its model on the client MultiPartBakedModel
+QA_NOTE PREVIEW barricade state Block{eternal_defense:barricade}[east=none,north=none,south=none,up=true,waterlogged=false,west=none] missing false model MultiPartBakedModel quads translucent 0 all 22 types net.minecraftforge.client.ChunkRenderTypeSet@d7527bc
+QA_CHECK PASS barricade is placed as the mod's own block dev.eternaldefense.beacon.DefenseWalls$Wall eternal_defense:barricade
+QA_CHECK PASS barricade has its model on the client MultiPartBakedModel
+QA_NOTE PREVIEW barbed_wire state Block{eternal_defense:barbed_wire}[east=false,north=false,powered=false,south=false,waterlogged=false,west=false] missing false model MultiPartBakedModel quads translucent 0 all 44 types net.minecraftforge.client.ChunkRenderTypeSet@38cb53b9
+QA_CHECK PASS barbed_wire is placed as the mod's own block dev.eternaldefense.beacon.DefenseWalls$BarbedWire eternal_defense:barbed_wire
+QA_CHECK PASS barbed_wire has its model on the client MultiPartBakedModel
+QA_NOTE COPY Block{diagonalwalls:eternal_defense/sandbag}[east=false,north=false,north_east=false,north_west=false,south=false,south_east=false,south_west=false,up=true,waterlogged=false,west=false] missing true
+QA_DONE pass=6 fail=0

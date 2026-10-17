@@ -32,7 +32,17 @@ SOUNDS = [
     ("SFX-Beacon-Attacked.wav", "beacon_attacked", False, (0.0, 0.495), 0.02, 0.0, 0),
     # 0.0.34: the owner's war horn, sounded when a FOB is planted and when a FOB's raid starts; its 0.41 s of silence at the start cut
     ("War Horn Sound Effect.mp3", "war_horn", True, (0.40, None), 0.3, 0.0, 0),
+    # 1.1.19: the machine gun turret's shot (LMG_Eternal_Defense.mp3), its 0.83 s of silence cut, 30% quieter (-3.1 dB) as it plays so often
+    ("LMG_Eternal_Defense.mp3", "turret_lmg", True, (0.83, None), 0.15, 0.0, -3.1),
+    # 1.1.19: the flame turret (Flamethrower.mp3, first 4 s only): second 1 lights it, seconds 2-3 loop while it fires, second 4 puts it out
+    ("Flamethrower.mp3", "flame_start", True, (0.0, 1.0), 0.03, 0.0, 0),
+    ("Flamethrower.mp3", "flame_loop", True, (1.0, 3.0), 0.0, 0.10, 0),
+    ("Flamethrower.mp3", "flame_end", True, (3.0, 4.0), 0.25, 0.0, 0),
+    # 1.1.19: the shotgun turret's shot (M1014-4Suppressor.wav), 30% quieter, with a short room reverb (REVERB below)
+    ("M1014-4Suppressor.wav", "turret_shotgun", True, None, 0.0, 0.0, -3.1),
 ]
+# reverb added to a sound before the limit: (decay to -60 dB in seconds, wet level against the dry sound)
+REVERB = {"turret_shotgun": (0.8, 0.35)}
 # seconds of silence a sound is padded to (after the trim): the alarm is a 0.6 s clip (BeaconAlerts.ALARM_CLIP_SECONDS)
 PAD = {"beacon_attacked": 0.6}
 
@@ -50,7 +60,18 @@ def write(path, x, mono):
                     "-c:a", "libvorbis", "-q:a", "5", path], input=data, check=True)
 
 
-def process(src, mono, span, fade, loop, gain):
+def reverb(x, rt60, wet):
+    """A small room: the synth tools' noise impulse response (mono), convolved and mixed under the dry sound, its tail kept."""
+    import synth
+    from scipy.signal import fftconvolve, resample_poly
+    ir = resample_poly(synth.reverb_ir(seconds=rt60 * 1.2, rt60=rt60, damp=0.5, early=True)[0], RATE, synth.SR)
+    tail = fftconvolve(x, ir)
+    out = np.concatenate([x, np.zeros(len(tail) - len(x))]) + wet * tail
+    end = np.where(np.abs(out) > 10 ** (-60 / 20))[0]
+    return out[:end[-1] + 1] if len(end) else out
+
+
+def process(src, mono, span, fade, loop, gain, verb=None):
     x = load(src, mono)
     if span:
         a = int(span[0] * RATE); b = len(x) if span[1] is None else int(span[1] * RATE)
@@ -63,6 +84,8 @@ def process(src, mono, span, fade, loop, gain):
         head, tail = x[:n].copy(), x[-n:].copy()
         x = x[:-n].copy()
         x[:n] = (head.T * fin + tail.T * (1 - fin)).T
+    if verb:
+        x = reverb(x, *verb)
     peak = np.abs(x).max()
     limit = 10 ** (-1 / 20)
     if peak > limit:
@@ -77,7 +100,7 @@ def main():
         if not os.path.exists(os.path.join(src, name)):
             print(f"{target:22s} not in this folder, skipped")
             continue
-        x = process(os.path.join(src, name), mono, span, fade, loop, gain)
+        x = process(os.path.join(src, name), mono, span, fade, loop, gain, REVERB.get(target))
         if target in PAD and len(x) < int(PAD[target] * RATE):
             x = np.concatenate([x, np.zeros((int(PAD[target] * RATE) - len(x),) + x.shape[1:])])
         write(os.path.join(out, target + ".ogg"), x, mono)

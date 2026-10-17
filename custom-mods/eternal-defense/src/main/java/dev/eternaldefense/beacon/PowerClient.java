@@ -32,7 +32,7 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The defense kit drawn: wire spans, turrets that aim and recoil, and the Defense Depot's screen */
+/** The defense kit drawn: wire spans, pole reach, turrets that aim, recoil and show a status light, and the turret and Defense Depot screens */
 @Mod.EventBusSubscriber(modid=EternalDefense.ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class PowerClient {
     private PowerClient(){}
@@ -43,7 +43,7 @@ public final class PowerClient {
         e.registerBlockEntityRenderer(EternalDefense.SHOCK_BOX_ENTITY.get(),BoxRenderer::new);
         e.registerBlockEntityRenderer(EternalDefense.TURRET_ENTITY.get(),TurretRenderer::new);
     }
-    @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(EternalDefense.DEPOT_MENU.get(),DepotScreen::new));}
+    @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->{MenuScreens.register(EternalDefense.DEPOT_MENU.get(),DepotScreen::new);MenuScreens.register(EternalDefense.TURRET_MENU.get(),TurretScreen::new);});}
     static ResourceLocation part(String id,String part){return new ResourceLocation(EternalDefense.ID,"block/"+id+"_"+part);}
 
     // Wire
@@ -107,7 +107,10 @@ public final class PowerClient {
     // Turrets
     /** Pivots (model pixels): the head turns about (x, z), the gun lifts about (y, z) */
     static float[] pivots(int mk){return mk>=3?new float[]{16,16,20,15}:new float[]{8,8,19,8.75f};}
-    static final float TURN=.25f,RECOIL_TICKS=3,RECOIL=.07f;
+    static final float TURN=.25f,RECOIL_TICKS=3,RECOIL=.07f,LAMP_Y=2.05f,LAMP_R=.075f;
+    /** Status light colours: green ready, orange out of ammo, red without power */
+    static final java.util.Map<String,Integer> LIGHT=java.util.Map.of("ready",0x6fe08a,"empty",0xffa36c,"off",0xed4a42);
+    static int argb(String state){return 0xff000000|LIGHT.get(state);}
     static final class TurretRenderer implements BlockEntityRenderer<Turrets.TurretEntity> {
         TurretRenderer(BlockEntityRendererProvider.Context c){}
         @Override public void render(Turrets.TurretEntity be,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
@@ -121,6 +124,22 @@ public final class PowerClient {
             if(block.line!=Turrets.Line.FLAME){float kick=Math.max(0,1-(now-be.shotAt)/RECOIL_TICKS);pose.translate(0,0,kick*RECOIL);}
             SupportClient.draw(pose,buffers,RenderType.cutout(),part(id,"gun"),light,overlay);
             pose.popPose();
+            lamp(pose,buffers,block.mk,be.light(),now);
+        }
+        /** A small diamond lamp above the gun: steady when ready, pulsing when out of ammo or without power */
+        static void lamp(PoseStack pose,MultiBufferSource buffers,int mk,String state,float now){
+            int rgb=LIGHT.get(state);float pulse=state.equals("ready")?1:.55f+.45f*Mth.sin(now*.2f),c=mk>=3?1:.5f,y=LAMP_Y+.03f*Mth.sin(now*.08f),r=LAMP_R,h=LAMP_R*1.4f;
+            float red=(rgb>>16&255)/255f*pulse,green=(rgb>>8&255)/255f*pulse,blue=(rgb&255)/255f*pulse;
+            var vc=buffers.getBuffer(RenderType.debugQuads());var m=pose.last().pose();
+            float[][] ring={{r,0},{0,r},{-r,0},{0,-r}};
+            for(int i=0;i<4;i++){
+                float[] a=ring[i],b=ring[(i+1)%4];
+                for(int up=0;up<2;up++){float tip=up==0?h:-h,shade=(up==0?1:.7f)*(i%2==0?1:.85f);
+                    vc.vertex(m,c,y+tip,c).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,c+a[0],y,c+a[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,c+b[0],y,c+b[1]).color(red*shade,green*shade,blue*shade,.95f).endVertex();
+                    vc.vertex(m,c,y+tip,c).color(red*shade,green*shade,blue*shade,.95f).endVertex();}
+            }
         }
         /** Swings toward the target the server named; an unpowered gun droops */
         private static void aim(Turrets.TurretEntity be,net.minecraft.world.level.Level level,float now,float[] p){
@@ -135,6 +154,111 @@ public final class PowerClient {
             be.drawPitch+=(pitch-be.drawPitch)*k;
         }
         @Override public boolean shouldRenderOffScreen(Turrets.TurretEntity be){return false;}
+    }
+
+    /** A pole's reach drawn as an outline: for every pole while defense gear is in hand, for a pole set to show it, and where a pole in hand would stand */
+    @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+    public static final class Reach {
+        private Reach(){}
+        private static final MultiBufferSource.BufferSource BUFFER=MultiBufferSource.immediate(new com.mojang.blaze3d.vertex.BufferBuilder(1<<16));
+        static final int[] LIVE={110,220,240},DOWN={255,150,60},PREVIEW={235,235,235};
+        static final double RANGE=64;
+        /** Defense gear in either hand */
+        static boolean holding(net.minecraft.world.entity.player.Player p){for(var s:new ItemStack[]{p.getMainHandItem(),p.getOffhandItem()})if(s.getItem() instanceof PowerKit.KitItem||s.getItem() instanceof PowerPoles.WireItem)return true;return false;}
+        /** Where a Power Pole in hand would stand */
+        static BlockPos target(Minecraft mc){
+            if(mc.player==null||!(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)||hit.getType()!=net.minecraft.world.phys.HitResult.Type.BLOCK)return null;
+            for(var hand:net.minecraft.world.InteractionHand.values()){var s=mc.player.getItemInHand(hand);if(s.is(EternalDefense.POWER_POLE.get().asItem()))return new net.minecraft.world.item.context.BlockPlaceContext(mc.player,hand,s,hit).getClickedPos();}
+            return null;
+        }
+        @SubscribeEvent public static void render(net.minecraftforge.client.event.RenderLevelStageEvent e){
+            if(e.getStage()!=net.minecraftforge.client.event.RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS)return;
+            var mc=Minecraft.getInstance();if(mc.level==null||mc.player==null)return;
+            boolean holding=holding(mc.player);var camera=e.getCamera().getPosition();
+            var shown=new ArrayList<PowerPoles.PoleEntity>();
+            for(var it=PowerPoles.SEEN.iterator();it.hasNext();){
+                var p=it.next();if(!(mc.level.getBlockEntity(p) instanceof PowerPoles.PoleEntity pole)){it.remove();continue;}
+                if((holding||pole.showReach)&&p.distToCenterSqr(camera)<RANGE*RANGE)shown.add(pole);
+            }
+            var preview=target(mc);
+            if(shown.isEmpty()&&preview==null)return;
+            var pose=e.getPoseStack();pose.pushPose();pose.translate(-camera.x,-camera.y,-camera.z);
+            VertexConsumer lines=BUFFER.getBuffer(RenderType.lines());
+            for(var pole:shown)outline(lines,pose.last(),pole.getBlockPos(),ground(mc.level,pole.getBlockPos()),pole.live?LIVE:DOWN,pole.showReach?220:170);
+            if(preview!=null)outline(lines,pose.last(),preview,ground(mc.level,preview),PREVIEW,200);
+            BUFFER.endBatch(RenderType.lines());
+            pose.popPose();
+        }
+        /** The floor a pole stands on: under its dynamo, or under the pole itself */
+        static int ground(net.minecraft.world.level.Level level,BlockPos pole){return level.getBlockEntity(pole.below()) instanceof PowerKit.Dynamo?pole.getY()-1:pole.getY();}
+        /** The reach's edge on the floor (bright), at its lowest and highest layer (faint), joined by uprights */
+        static void outline(VertexConsumer v,PoseStack.Pose p,BlockPos pole,int floor,int[] rgb,int alpha){
+            double ground=floor+.02,bottom=pole.getY()-PowerKit.AURA_DOWN+.02,top=pole.getY()+PowerKit.AURA_UP+.98;
+            for(var edge:PowerPoles.REACH_EDGES){
+                double x=pole.getX()+edge[0],z=pole.getZ()+edge[1],xx=x+(edge[2]==1?1:0),zz=z+(edge[2]==1?0:1);
+                line(v,p,x,ground,z,xx,ground,zz,rgb,alpha);line(v,p,x,bottom,z,xx,bottom,zz,rgb,alpha/3);line(v,p,x,top,z,xx,top,zz,rgb,alpha/3);
+            }
+            double cx=pole.getX()+.5,cz=pole.getZ()+.5,r=PowerKit.AURA+.5;
+            for(int i=0;i<8;i++){double a=i*Math.PI/4,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;line(v,p,x,bottom,z,x,top,z,rgb,alpha/3);}
+        }
+        private static void line(VertexConsumer v,PoseStack.Pose p,double x,double y,double z,double xx,double yy,double zz,int[] rgb,int alpha){
+            float dx=(float)(xx-x),dy=(float)(yy-y),dz=(float)(zz-z),length=(float)Math.sqrt(dx*dx+dy*dy+dz*dz);if(length==0)return;
+            v.vertex(p.pose(),(float)x,(float)y,(float)z).color(rgb[0],rgb[1],rgb[2],alpha).normal(p.normal(),dx/length,dy/length,dz/length).endVertex();
+            v.vertex(p.pose(),(float)xx,(float)yy,(float)zz).color(rgb[0],rgb[1],rgb[2],alpha).normal(p.normal(),dx/length,dy/length,dz/length).endVertex();
+        }
+        @SubscribeEvent public static void loggedOut(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut e){PowerPoles.SEEN.clear();}
+    }
+
+    /** A turret's line under the crosshair: ready with its shots, out of ammo, or without power */
+    @Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+    public static final class TurretHud {
+        private TurretHud(){}
+        static Turrets.TurretEntity looked(Minecraft mc){
+            if(mc.level==null||!(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)||hit.getType()!=net.minecraft.world.phys.HitResult.Type.BLOCK)return null;
+            return mc.level.getBlockEntity(DefenseStructures.anchor(mc.level,hit.getBlockPos())) instanceof Turrets.TurretEntity be&&be.getBlockState().getBlock() instanceof Turrets.TurretBlock?be:null;
+        }
+        @SubscribeEvent public static void hud(net.minecraftforge.client.event.RenderGuiOverlayEvent.Post e){
+            if(e.getOverlay()!=net.minecraftforge.client.gui.overlay.VanillaGuiOverlay.CROSSHAIR.type())return;
+            var mc=Minecraft.getInstance();if(mc.options.hideGui||mc.screen!=null||FobOutlineClient.line()!=null)return;
+            var be=looked(mc);if(be==null)return;
+            var text=be.status(be.loadedShown);var g=e.getGuiGraphics();var font=mc.font;int w=e.getWindow().getGuiScaledWidth(),h=e.getWindow().getGuiScaledHeight();
+            int tw=Math.min(font.width(text)+9,w-20),x=(w-tw)/2,y=h/2+14;
+            g.fill(x-4,y-3,x+tw+4,y+11,0xa0101820);g.fill(x,y+1,x+5,y+6,argb(be.light()));
+            Ui.text(g,font,text,x+9,y,Ui.INK,tw-9);
+        }
+    }
+
+    /** A turret's screen: whether it is online, its shots and numbers, and its four ammo slots loaded and emptied by hand */
+    static final class TurretScreen extends AbstractContainerScreen<Turrets.TurretMenu> {
+        static final int W=176,H=222,CARD_Y=32,CARD_H=60;
+        TurretScreen(Turrets.TurretMenu menu,Inventory inv,Component title){super(menu,inv,title);imageWidth=W;imageHeight=H;}
+        private String light(){return Turrets.lightOf(menu.powered.get()==1,menu.loaded.get());}
+        private ItemStack ammo(){return new ItemStack(Turrets.ammo(menu.line));}
+        @Override protected void renderBg(GuiGraphics g,float partial,int mx,int my){
+            var s=Turrets.stats(menu.line,menu.mk);var light=light();int accent=argb(light),loaded=menu.loaded.get(),x=leftPos+8,y=topPos+CARD_Y;
+            Ui.panel(g,leftPos,topPos,W,H);Ui.header(g,font,leftPos,topPos,W,title,Ui.t("turret.screen.subtitle",menu.mk));
+            Ui.card(g,x,y,160,CARD_H,accent);
+            switch(light){case "ready"->Ui.check(g,x+8,y+6,accent);case "empty"->Ui.alert(g,x+9,y+5,accent);default->Ui.cross(g,x+8,y+6,accent);}
+            Ui.text(g,font,Ui.t("turret.screen."+light),x+18,y+5,accent,138);
+            Ui.text(g,font,Ui.t("turret.screen.loaded"),x+8,y+17,Ui.INK,90);
+            Ui.right(g,font,Component.literal(String.format(java.util.Locale.ROOT,"%,d",loaded)),x+154,y+17,loaded>0?Ui.CYAN:Ui.ORANGE);
+            Ui.bar(g,x+8,y+28,146,5,loaded/(float)(Turrets.SLOTS*64*Turrets.perItem(menu.line)),loaded>0?Ui.CYAN_DIM:Ui.ORANGE);
+            Ui.text(g,font,Ui.t("turret.screen.range"),x+8,y+38,Ui.MUTED,80);Ui.right(g,font,Ui.t("turret.screen.blocks",s.range()),x+154,y+38,Ui.INK);
+            Ui.text(g,font,Ui.t("turret.screen.stress"),x+8,y+48,Ui.MUTED,80);Ui.right(g,font,Ui.t("turret.screen.per_rpm",s.stress()),x+154,y+48,Ui.INK);
+            Ui.text(g,font,Ui.t("turret.screen.ammo",ammo().getHoverName(),Turrets.perItem(menu.line)),leftPos+8,topPos+Turrets.TurretMenu.AMMO_Y-11,Ui.MUTED,160);
+            for(int i=0;i<Turrets.SLOTS;i++){
+                int sx=leftPos+Turrets.TurretMenu.AMMO_X+i*18,sy=topPos+Turrets.TurretMenu.AMMO_Y;Ui.slot(g,sx-1,sy-1,Ui.BRASS);
+                if(menu.getSlot(i).getItem().isEmpty())Ui.ghost(g,ammo(),sx,sy);
+            }
+            Ui.text(g,font,playerInventoryTitle,leftPos+8,topPos+Turrets.TurretMenu.INV_Y-12,Ui.MUTED,160);
+            Ui.inventory(g,leftPos+7,topPos+Turrets.TurretMenu.INV_Y-1);
+        }
+        @Override protected void renderLabels(GuiGraphics g,int mx,int my){}
+        @Override public void render(GuiGraphics g,int mx,int my,float partial){
+            renderBackground(g);super.render(g,mx,my,partial);renderTooltip(g,mx,my);
+            if(hoveredSlot==null&&Ui.inside(mx,my,leftPos+8,topPos+CARD_Y,160,CARD_H))g.renderTooltip(font,font.split(Ui.t("turret.screen.tip",PowerKit.AURA),180),mx,my);
+            else if(hoveredSlot instanceof net.minecraftforge.items.SlotItemHandler&&!hoveredSlot.hasItem())g.renderTooltip(font,font.split(Ui.t("turret.screen.slot_tip",ammo().getHoverName()),180),mx,my);
+        }
     }
 
     /** The Defense Depot: what it sells, for how many coins, and a Buy button */

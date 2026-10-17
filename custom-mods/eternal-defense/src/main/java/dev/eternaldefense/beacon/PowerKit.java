@@ -2,6 +2,7 @@ package dev.eternaldefense.beacon;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -23,8 +24,8 @@ final class PowerKit {
     static final int MIN_RPM=8;
     /** Stress a shock box asks for, per RPM of the dynamos */
     static final int SHOCK_STRESS=8;
-    /** Ticks a shock box keeps its wire live after the power is lost, and barbed wire blocks it reaches along a run */
-    static final int SHOCK_CHARGE=600,SHOCK_REACH=48;
+    /** Ticks a shock box keeps its wire live after the power is lost, and the most barbed wire blocks one box makes live */
+    static final int SHOCK_CHARGE=600,SHOCK_REACH=15;
     /** The grid is worked out again every this many ticks */
     static final int GRID_TICKS=10;
 
@@ -37,6 +38,8 @@ final class PowerKit {
     static float share(float demand,int turning){return turning<=0?0:demand/turning;}
     /** Pure: a network runs when a dynamo turns fast enough and none of them is overstressed */
     static boolean running(int turning,boolean anyOverstressed){return turning>0&&!anyOverstressed;}
+    /** Pure: stress units a network asks for: each turning dynamo's share times its speed */
+    static float su(float share,double rpmSum){return (float)(share*rpmSum);}
 
     /** The Create side: a dynamo under a pole */
     interface Dynamo {
@@ -45,6 +48,53 @@ final class PowerKit {
         boolean overstressed();
         /** The stress per RPM it puts on its Create network */
         void demand(float perRpm);
+        /** What its power network looked like this time, or null with no pole on it */
+        default void report(PowerGrid.Summary network){}
+    }
+
+    // What a dynamo shows
+    /** Pure: a dynamo's state, a language key suffix under power.dynamo */
+    static String dynamoState(boolean pole,float rpm,boolean networkDown,boolean ownOverstressed){
+        if(!pole)return "no_pole";if(rpm<MIN_RPM)return "still";if(networkDown)return ownOverstressed?"down_own":"down_other";return "working";
+    }
+    /** A dynamo's last report from its power network, kept on the dynamo and sent to the client */
+    static final class Readout {
+        boolean pole,running,over;int dynamos,turning,turrets,boxes;float su,perRpm;
+        /** Takes a network's summary (null: no pole on it); true when anything shown changed */
+        boolean take(PowerGrid.Summary s){
+            boolean p=s!=null,r=p&&s.running(),o=p&&s.overstressed();int d=p?s.dynamos():0,t=p?s.turning():0,tu=p?s.turrets():0,b=p?s.boxes():0;float u=p?s.su():0,pr=p?s.demand():0;
+            boolean changed=p!=pole||r!=running||o!=over||d!=dynamos||t!=turning||tu!=turrets||b!=boxes||Math.abs(u-su)>.5f||Math.abs(pr-perRpm)>1e-3f;
+            pole=p;running=r;over=o;dynamos=d;turning=t;turrets=tu;boxes=b;su=u;perRpm=pr;return changed;
+        }
+        void write(CompoundTag tag){var t=new CompoundTag();t.putBoolean("Pole",pole);t.putBoolean("Running",running);t.putBoolean("Over",over);t.putInt("Dynamos",dynamos);t.putInt("Turning",turning);
+            t.putInt("Turrets",turrets);t.putInt("Boxes",boxes);t.putFloat("Su",su);t.putFloat("PerRpm",perRpm);tag.put("Power",t);}
+        void read(CompoundTag tag){var t=tag.getCompound("Power");pole=t.getBoolean("Pole");running=t.getBoolean("Running");over=t.getBoolean("Over");dynamos=t.getInt("Dynamos");turning=t.getInt("Turning");
+            turrets=t.getInt("Turrets");boxes=t.getInt("Boxes");su=t.getFloat("Su");perRpm=t.getFloat("PerRpm");}
+        String state(float rpm,boolean ownOverstressed){return dynamoState(pole,rpm,over,ownOverstressed);}
+        /** The lines a right-click on the dynamo shows: its state, its own stress, its power network's, its Create network's */
+        List<Component> lines(Component name,float rpm,float ownPerRpm,boolean ownOverstressed,float used,float capacity,boolean createNetwork){
+            var out=new java.util.ArrayList<Component>();String state=state(rpm,ownOverstressed);
+            var color=switch(state){case "working"->ChatFormatting.AQUA;case "down_own","down_other"->ChatFormatting.RED;default->ChatFormatting.GOLD;};
+            out.add(Component.translatable(K+state,name,PowerPoles.fmt(rpm),MIN_RPM).withStyle(color));
+            if(pole){
+                out.add(Component.translatable(K+"own",PowerPoles.su(ownPerRpm*rpm),PowerPoles.fmt(ownPerRpm)).withStyle(ChatFormatting.GRAY));
+                out.add(Component.translatable(K+"network",PowerPoles.su(su),turning,turrets,boxes).withStyle(ChatFormatting.GRAY));
+            }
+            if(createNetwork)out.add(Component.translatable(K+"create",PowerPoles.su(used),PowerPoles.su(capacity)).withStyle(used>capacity?ChatFormatting.RED:ChatFormatting.GRAY));
+            return out;
+        }
+        /** The lines Engineer's Goggles show under Create's own */
+        void goggles(List<Component> out,float rpm,float ownPerRpm,boolean ownOverstressed){
+            String state=state(rpm,ownOverstressed);
+            out.add(Component.literal("    ").append(Component.translatable(G+"title").withStyle(ChatFormatting.GRAY)));
+            var color=switch(state){case "working"->ChatFormatting.AQUA;case "down_own","down_other"->ChatFormatting.RED;default->ChatFormatting.GOLD;};
+            out.add(Component.literal("     ").append(Component.translatable(G+state,MIN_RPM).withStyle(color)));
+            if(!pole)return;
+            out.add(Component.literal("     ").append(Component.translatable(G+"own",PowerPoles.su(ownPerRpm*rpm)).withStyle(ChatFormatting.GRAY)));
+            out.add(Component.literal("     ").append(Component.translatable(G+"network",PowerPoles.su(su)).withStyle(ChatFormatting.GRAY)));
+            out.add(Component.literal("     ").append(Component.translatable(G+"parts",turning,turrets,boxes).withStyle(ChatFormatting.DARK_GRAY)));
+        }
+        static final String K="gui.eternal_defense.power.dynamo.",G="gui.eternal_defense.power.goggles.";
     }
 
     // Placement: a beacon's zone or a FOB's zone
