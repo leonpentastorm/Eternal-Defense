@@ -177,7 +177,8 @@ public final class EternalDefense {
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<Turrets.TurretEntity>> TURRET_ENTITY=ENTITIES.register("turret",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(Turrets.TurretEntity::new,TURRETS.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
     public static final RegistryObject<Item> MG_AMMO=ITEMS.register("mg_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.MG)),SHOTGUN_AMMO=ITEMS.register("shotgun_turret_ammo",()->new Turrets.AmmoItem(Turrets.Line.SHOTGUN)),
         FLAME_FUEL=ITEMS.register("flame_turret_fuel",()->new Turrets.AmmoItem(Turrets.Line.FLAME)),CANNON_SHELLS=ITEMS.register("heavy_cannon_shell",()->new Turrets.AmmoItem(Turrets.Line.CANNON));
-    public static final RegistryObject<Block> PUNJI_TRAP=kit("punji_trap",PunjiTrap.TrapBlock::new),SPOTLIGHT=kit("spotlight",Spotlight.LightBlock::new);
+    public static final RegistryObject<Block> PUNJI_TRAP=kit("punji_trap",PunjiTrap.TrapBlock::new),SPOTLIGHT=kit("spotlight",Spotlight.LightBlock::new),
+        SPOTLIGHT_GLOW=BLOCKS.register("spotlight_glow",Spotlight.Glow::new);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PunjiTrap.TrapEntity>> PUNJI_ENTITY=ENTITIES.register("punji_trap",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(PunjiTrap.TrapEntity::new,PUNJI_TRAP.get()).build(null));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<Spotlight.LightEntity>> SPOTLIGHT_ENTITY=ENTITIES.register("spotlight",()->net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(Spotlight.LightEntity::new,SPOTLIGHT.get()).build(null));
     public static final RegistryObject<Block> DEFENSE_DEPOT=kit("defense_depot",DefenseDepot.DepotBlock::new);

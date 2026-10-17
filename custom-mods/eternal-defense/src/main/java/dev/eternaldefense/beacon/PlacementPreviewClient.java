@@ -107,6 +107,7 @@ public final class PlacementPreviewClient {
         for(int i=0;i<ghost.cells().size();i++){
             var at=ghost.cells().get(i);var state=ghost.states().get(i);
             pose.pushPose();pose.translate(at.getX(),at.getY(),at.getZ());
+            if(state.hasProperty(Spotlight.ROTATION))TowerClient.turn(pose,state.getValue(Spotlight.ROTATION));
             float[] rgb=ghostTint(ghost.blocked());
             // No render layer given: a multipart model (walls, wire) then draws every part, whatever its layer
             mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),consumer,state,mc.getBlockRenderer().getBlockModel(state),

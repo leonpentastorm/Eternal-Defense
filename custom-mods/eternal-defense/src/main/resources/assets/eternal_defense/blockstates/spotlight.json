@@ -1,34 +1,7 @@
 {
   "variants": {
-    "facing=north,lit=false": {
+    "": {
       "model": "eternal_defense:block/spotlight"
-    },
-    "facing=north,lit=true": {
-      "model": "eternal_defense:block/spotlight_on"
-    },
-    "facing=east,lit=false": {
-      "model": "eternal_defense:block/spotlight",
-      "y": 90
-    },
-    "facing=east,lit=true": {
-      "model": "eternal_defense:block/spotlight_on",
-      "y": 90
-    },
-    "facing=south,lit=false": {
-      "model": "eternal_defense:block/spotlight",
-      "y": 180
-    },
-    "facing=south,lit=true": {
-      "model": "eternal_defense:block/spotlight_on",
-      "y": 180
-    },
-    "facing=west,lit=false": {
-      "model": "eternal_defense:block/spotlight",
-      "y": 270
-    },
-    "facing=west,lit=true": {
-      "model": "eternal_defense:block/spotlight_on",
-      "y": 270
     }
   }
 }

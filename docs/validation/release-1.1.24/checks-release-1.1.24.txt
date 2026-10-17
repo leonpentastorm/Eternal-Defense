@@ -1,0 +1,53 @@
+QA_CHECK PASS the Defense Depot no longer sells it 
+QA_CHECK PASS Workshop Fabrication lists it with 4 materials {costs:[{count:6,have:6,item:{Count:1b,id:"minecraft:iron_ingot"},label:""},{count:2,have:2,item:{Count:1b,id:"minecraft:copper_ingot"},label:""},{count:2,have:2,item:{Count:1b,id:"minecraft:glass"},label:""},{count:2,have:2,item:{Count:1b,id:"minecraft:lantern"},label:""}],id:"spotlight",item:{Count:1b,id:"eternal_defense:spotlight"}}
+QA_NOTE FAB Fabricated Industrial Spotlight. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS it makes an Industrial Spotlight for 6 iron, 2 copper, 2 glass and 2 lanterns Fabricated Industrial Spotlight. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS and says where it goes Fabricated Industrial Spotlight. Place it inside your beacon zone or a FOB's zone.
+QA_CHECK PASS without the materials nothing is made Missing materials or inventory space. Nothing consumed.
+QA_CHECK PASS the tab has a button for every row, the spotlight last in the Defense group 29
+QA_CHECK PASS placed facing the way the player looked (east), 2 tall Block{eternal_defense:spotlight}[lit=true,rotation=2]
+QA_CHECK PASS 6 glows on the ground along the beam, 3 to 23 blocks east [BlockPos{x=10, y=-60, z=13}, BlockPos{x=26, y=-60, z=13}, BlockPos{x=14, y=-60, z=13}, BlockPos{x=18, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}, BlockPos{x=22, y=-60, z=13}] vs [BlockPos{x=10, y=-60, z=13}, BlockPos{x=26, y=-60, z=13}, BlockPos{x=14, y=-60, z=13}, BlockPos{x=18, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}, BlockPos{x=22, y=-60, z=13}]
+QA_NOTE LIGHT ahead23 15 ahead13 13 behind12 0 side12 0 beside 11
+QA_CHECK PASS light 15 at the beam's end, 23 blocks out 15
+QA_CHECK PASS bright all along the beam 13
+QA_CHECK PASS dark 12 blocks behind it and 12 to the side 0 0
+QA_CHECK PASS the lamp itself gives light 7 7
+QA_CHECK PASS the glow is invisible: no collision, no outline 
+QA_CHECK PASS the grid counts its 2 stress per RPM (and not as a turret) Summary[dynamos=1, turning=1, rpm=32.0, demand=2.0, running=true, overstressed=false, turrets=0, boxes=0, su=64.0]
+QA_CHECK PASS click 1: faces south-east, its glow moved with it 3 [BlockPos{x=5, y=-60, z=15}, BlockPos{x=14, y=-60, z=24}, BlockPos{x=8, y=-60, z=18}, BlockPos{x=16, y=-60, z=26}, BlockPos{x=11, y=-60, z=21}, BlockPos{x=19, y=-60, z=29}] all 6
+QA_CHECK PASS click 1: it says which way it faces Industrial Spotlight: on, facing south-east. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 2: faces south, its glow moved with it 4 [BlockPos{x=3, y=-60, z=20}, BlockPos{x=3, y=-60, z=36}, BlockPos{x=3, y=-60, z=24}, BlockPos{x=3, y=-60, z=28}, BlockPos{x=3, y=-60, z=16}, BlockPos{x=3, y=-60, z=32}] all 6
+QA_CHECK PASS click 2: it says which way it faces Industrial Spotlight: on, facing south. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 3: faces south-west, its glow moved with it 5 [BlockPos{x=1, y=-60, z=15}, BlockPos{x=-2, y=-60, z=18}, BlockPos{x=-5, y=-60, z=21}, BlockPos{x=-8, y=-60, z=24}, BlockPos{x=-10, y=-60, z=26}, BlockPos{x=-13, y=-60, z=29}] all 6
+QA_CHECK PASS click 3: it says which way it faces Industrial Spotlight: on, facing south-west. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 4: faces west, its glow moved with it 6 [BlockPos{x=-8, y=-60, z=13}, BlockPos{x=-4, y=-60, z=13}, BlockPos{x=-20, y=-60, z=13}, BlockPos{x=0, y=-60, z=13}, BlockPos{x=-16, y=-60, z=13}, BlockPos{x=-12, y=-60, z=13}] all 6
+QA_CHECK PASS click 4: it says which way it faces Industrial Spotlight: on, facing west. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 5: faces north-west, its glow moved with it 7 [BlockPos{x=-2, y=-60, z=8}, BlockPos{x=-13, y=-60, z=-3}, BlockPos{x=-8, y=-60, z=2}, BlockPos{x=1, y=-60, z=11}, BlockPos{x=-5, y=-60, z=5}, BlockPos{x=-10, y=-60, z=0}] all 6
+QA_CHECK PASS click 5: it says which way it faces Industrial Spotlight: on, facing north-west. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 6: faces north, its glow moved with it 0 [BlockPos{x=3, y=-60, z=2}, BlockPos{x=3, y=-60, z=-2}, BlockPos{x=3, y=-60, z=6}, BlockPos{x=3, y=-60, z=-6}, BlockPos{x=3, y=-60, z=10}, BlockPos{x=3, y=-60, z=-10}] all 6
+QA_CHECK PASS click 6: it says which way it faces Industrial Spotlight: on, facing north. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 7: faces north-east, its glow moved with it 1 [BlockPos{x=16, y=-60, z=0}, BlockPos{x=19, y=-60, z=-3}, BlockPos{x=5, y=-60, z=11}, BlockPos{x=8, y=-60, z=8}, BlockPos{x=11, y=-60, z=5}, BlockPos{x=14, y=-60, z=2}] all 6
+QA_CHECK PASS click 7: it says which way it faces Industrial Spotlight: on, facing north-east. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS click 8: faces east, its glow moved with it 2 [BlockPos{x=10, y=-60, z=13}, BlockPos{x=26, y=-60, z=13}, BlockPos{x=14, y=-60, z=13}, BlockPos{x=18, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}, BlockPos{x=22, y=-60, z=13}] all 6
+QA_CHECK PASS click 8: it says which way it faces Industrial Spotlight: on, facing east. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS a sneaking click turns it back (north-east) 1 Industrial Spotlight: on, facing north-east. Right-click to turn it, or sneak and right-click to turn it back.
+QA_CHECK PASS turned to south-east 
+QA_CHECK PASS east again 
+QA_CHECK PASS only the ground before the wall is lit (3 and 7 blocks out) [BlockPos{x=10, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}]
+QA_CHECK PASS dark behind the wall, 23 blocks out 0
+QA_CHECK PASS the beam reaches out again [BlockPos{x=10, y=-60, z=13}, BlockPos{x=26, y=-60, z=13}, BlockPos{x=14, y=-60, z=13}, BlockPos{x=18, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}, BlockPos{x=22, y=-60, z=13}]
+QA_CHECK PASS the stone takes the glow's place Block{minecraft:stone}
+QA_CHECK PASS and the beam lights the top of it [BlockPos{x=10, y=-59, z=13}, BlockPos{x=26, y=-60, z=13}, BlockPos{x=14, y=-60, z=13}, BlockPos{x=18, y=-60, z=13}, BlockPos{x=6, y=-60, z=13}, BlockPos{x=22, y=-60, z=13}]
+QA_CHECK PASS unpowered: no glow left, dark ahead 0 0
+QA_CHECK PASS it says it has no power and how to fix it Industrial Spotlight: off, no power, facing south-east. Place it within 8 blocks of a powered Power Pole.
+QA_CHECK PASS lit again, the beam is back [BlockPos{x=5, y=-60, z=15}, BlockPos{x=14, y=-60, z=24}, BlockPos{x=8, y=-60, z=18}, BlockPos{x=16, y=-60, z=26}, BlockPos{x=11, y=-60, z=21}, BlockPos{x=19, y=-60, z=29}]
+QA_CHECK PASS out of reach: dark, facing north, no glow Block{eternal_defense:spotlight}[lit=false,rotation=0]
+QA_CHECK PASS broken: every glow of its beam is gone 0
+QA_NOTE STRAY light before 1
+QA_CHECK PASS it lights its spot for now 15
+QA_CHECK PASS and goes out by itself at its next check, the light as it was Block{minecraft:air} 1
+QA_NOTE PREVIEW yaw -146.30994 rotation 1
+QA_CHECK PASS the preview's rotation follows the look (north-east) -146.30994
+QA_CHECK PASS placed north-east 
+QA_CHECK PASS every check heard nothing unexpected []
+QA_DONE pass=48 fail=0

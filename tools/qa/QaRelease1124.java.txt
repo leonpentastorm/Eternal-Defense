@@ -1,0 +1,338 @@
+package dev.eternaldefense.beacon;
+
+import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
+import com.simibubi.create.content.kinetics.belt.BeltBlockEntity;
+import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
+import com.simibubi.create.content.kinetics.motor.CreativeMotorBlockEntity;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.WallSide;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.24: the Industrial Spotlight made at Workshop Fabrication, facing 8 ways, its beam of light, walls in the way, power and clean-up. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1124 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){shot(name,true);}
+    static void shot(String name,boolean clearChat){mc().getToasts().clear();if(clearChat)mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+3;holding=true;}
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){CHAT.add(e.getMessage().getString());log("QA_CHAT {}",e.getMessage().getString());}
+    static final Set<String> HEARD=Collections.synchronizedSet(new LinkedHashSet<>());
+    @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){if(e.getSound()!=null&&e.getSound().getLocation().getNamespace().equals(EternalDefense.ID))HEARD.add(e.getSound().getLocation().getPath());}
+    static int casings(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o instanceof TurretEffectsClient.Casing)n++;return n;}
+    static int flames(){int n=0;for(var q:((Map<?,? extends Collection<?>>)field(mc().particleEngine,"particles")).values())for(var o:q)if(o.getClass().getSimpleName().contains("Flame"))n++;return n;}
+    static boolean flaming(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t&&t.flaming;}
+    static final List<Float> KNOCKS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void knock(net.minecraftforge.event.entity.living.LivingKnockBackEvent e){if(e.getEntity() instanceof net.minecraft.world.entity.monster.Husk)KNOCKS.add(e.getOriginalStrength());}
+    static int liveWire(BlockPos from,int length){int n=0;for(int i=0;i<length;i++)if(live(from.east(i)))n++;return n;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1124",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1124",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    /** Stand three blocks south of a block, looking at it */
+    static void near(BlockPos p){look(p.getX()+.5,sy,p.getZ()+3.5,p.getX()+.5,p.getY()+.5,p.getZ()+.5);}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static void hold(ItemStack s){srv(()->{var inv=sp().getInventory();inv.setItem(0,s);inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static void away(){for(String f:new String[]{"xpos","ypos"})try{var x=net.minecraft.client.MouseHandler.class.getDeclaredField(f);x.setAccessible(true);x.setDouble(mc().mouseHandler,4);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static Block ed(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Item edItem(String id){return BuiltInRegistries.ITEM.get(new ResourceLocation(EternalDefense.ID,id));}
+    static Block create(String id){return BuiltInRegistries.BLOCK.get(new ResourceLocation("create",id));}
+    @SuppressWarnings({"unchecked","rawtypes"})
+    static BlockState with(BlockState s,String property,Object value){
+        for(Property p:s.getProperties())if(p.getName().equals(property)){var v=p.getValue(value.toString().toLowerCase(Locale.ROOT));if(v.isPresent())return s.setValue(p,(Comparable)v.get());}
+        log("QA_NOTE no property {}={} on {}",property,value,s);return s;
+    }
+    static void put(BlockPos p,BlockState s){sl().setBlock(p,s,3);}
+    static IItemHandler handler(BlockPos p,Direction side){var be=sl().getBlockEntity(p);return be==null?null:be.getCapability(ForgeCapabilities.ITEM_HANDLER,side).resolve().orElse(null);}
+    static void insert(IItemHandler h,ItemStack s){if(h!=null){var rest=ItemHandlerHelper.insertItemStacked(h,s.copy(),false);if(!rest.isEmpty())log("QA_NOTE did not fit {}",rest);}else log("QA_NOTE no handler for {}",s);}
+    static void motor(BlockPos pos,Direction facing,int rpm){
+        put(pos,with(create("creative_motor").defaultBlockState(),"facing",facing.getName()));
+        if(sl().getBlockEntity(pos) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(rpm);else log("QA_NOTE no motor entity at {}",pos);
+    }
+    /** The creative motor's stress capacity per RPM (Create's server config), so the network can be overloaded on purpose */
+    @SuppressWarnings("unchecked")
+    static double ORIGINAL=-1;
+    static void motorCapacity(double v){
+        try{var stress=com.simibubi.create.infrastructure.config.AllConfigs.server().kinetics.stressValues;var f=com.simibubi.create.infrastructure.config.CStress.class.getDeclaredField("capacities");f.setAccessible(true);
+            var map=(Map<ResourceLocation,net.minecraftforge.common.ForgeConfigSpec.ConfigValue<Double>>)f.get(stress);var value=map.get(new ResourceLocation("create","creative_motor"));
+            if(value==null){note("CAPACITY keys {}",map.keySet());return;}note("CAPACITY creative motor {} -> {}",value.get(),v);if(ORIGINAL<0)ORIGINAL=value.get();value.set(v);}
+        catch(ReflectiveOperationException e){throw new IllegalStateException(e);}
+    }
+    static String network(BlockPos kinetic){return sl().getBlockEntity(kinetic) instanceof KineticBlockEntity k&&k.hasNetwork()?"capacity "+k.getOrCreateNetwork().calculateCapacity()+" stress "+k.getOrCreateNetwork().calculateStress()+" over "+k.isOverStressed()+" speed "+k.getSpeed():"no network";}
+    static Turrets.TurretEntity turret(BlockPos p){return sl().getBlockEntity(p) instanceof Turrets.TurretEntity t?t:null;}
+    static int ammo(BlockPos p){var t=turret(p);if(t==null)return -1;int n=0;for(int i=0;i<Turrets.SLOTS;i++)n+=t.ammo.getStackInSlot(i).getCount();return n;}
+    static int loaded(BlockPos p){var t=turret(p);return t==null?-1:t.loaded();}
+    static boolean powered(BlockPos p){var t=turret(p);return t!=null&&t.powered;}
+    static PowerGrid.Summary summary(BlockPos pole){return PowerGrid.summary(sl(),pole);}
+    static float rpm(BlockPos p){return sl().getBlockEntity(p) instanceof PowerKit.Dynamo d?d.rpm():-1;}
+    static Mob husk(BlockPos at){return husk(at,false);}
+    /** A husk (it never burns in daylight); one with its AI moves, so the blocks it stands in act on it */
+    static Mob husk(BlockPos at,boolean ai){var h=EntityType.HUSK.create(sl());h.moveTo(at.getX()+.5,at.getY(),at.getZ()+.5,0,0);h.setNoAi(!ai);h.setPersistenceRequired();sl().addFreshEntity(h);return h;}
+    static final List<UUID> HUSKS=new ArrayList<>();
+    static Mob mob(UUID id){return sl().getEntity(id) instanceof Mob m?m:null;}
+    static boolean dead(UUID id){var m=mob(id);return m==null||!m.isAlive();}
+    static boolean live(BlockPos p){var s=sl().getBlockState(p);return s.getBlock() instanceof DefenseWalls.BarbedWire&&s.getValue(DefenseWalls.BarbedWire.POWERED);}
+
+    static float speed(BlockPos p){return sl().getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float clientSpeed(BlockPos p){return mc().level.getBlockEntity(p) instanceof KineticBlockEntity k?k.getSpeed():Float.NaN;}
+    static float angle(BlockPos be,BlockPos at,Direction.Axis axis){return mc().level.getBlockEntity(be) instanceof KineticBlockEntity k?KineticBlockEntityRenderer.getAngleForBe(k,at,axis):Float.NaN;}
+    static PowerKit.Readout readout(BlockPos p){return (PowerKit.Readout)field(sl().getBlockEntity(p),"readout");}
+    static float demand(BlockPos p){return (Float)field(sl().getBlockEntity(p),"demand");}
+    static String light(BlockPos p){return mc().level.getBlockEntity(p) instanceof Turrets.TurretEntity t?t.light():"?";}
+    static Turrets.TurretMenu menu(){return mc().screen instanceof PowerClient.TurretScreen s?s.getMenu():null;}
+    static void slotClick(int slot,ClickType type){var m=menu();mc().gameMode.handleInventoryMouseClick(m.containerId,slot,0,type,mc().player);}
+    static String chat(){return String.join(" / ",CHAT);}
+    static boolean said(String part){synchronized(CHAT){for(var c:CHAT)if(c.contains(part))return true;}return false;}
+    static void sneak(boolean on){srv(()->sp().setShiftKeyDown(on));}
+    static boolean poleLive(BlockPos p){return mc().level.getBlockEntity(p) instanceof PowerPoles.PoleEntity pole&&pole.live;}
+    static DefenseDepot.DepotMenu depot(){return mc().screen instanceof PowerClient.DepotScreen s?s.getMenu():null;}
+
+
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static boolean keepRaid;
+    @SubscribeEvent public static void serverWatch(TickEvent.ServerTickEvent e){if(e.phase!=TickEvent.Phase.END||server()==null)return;var d=cd();if(keepRaid&&d.phase.equals("raid")){d.raidTicks=0;d.spawnCooldown=1_000_000;}}
+    /** A raid that never spawns or ends by itself: the checks bring their own raiders */
+    static void raidOn(int wave){srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.raidTier=0;d.wave=wave;d.spawnRemaining=1000;d.spawnCooldown=1_000_000;d.raidTicks=0;d.waveTicks=0;d.trapFirstWave.clear();d.setDirty();});keepRaid=true;}
+    static void raidOff(){keepRaid=false;srv(()->{var d=cd();for(var id:new ArrayList<>(d.raiders)){var e=sl().getEntity(id);if(e!=null)e.discard();}d.raiders.clear();d.phase="preparation";d.spawnRemaining=0;d.trapFirstWave.clear();d.setDirty();});}
+    /** A vindicator (no armor, so damage reads exactly) with 200 health; a raider of the running raid when asked */
+    static UUID vin(BlockPos at,boolean raider){return vin(at,raider,false);}
+    /** One that keeps its AI (held still) moves now and then, so the blocks it stands in act on it, as for a walking raider */
+    static UUID vin(BlockPos at,boolean raider,boolean ai){var v=EntityType.VINDICATOR.create(sl());v.moveTo(at.getX()+.5,at.getY()+.3,at.getZ()+.5,0,0);v.setNoAi(!ai);v.setPersistenceRequired();
+        if(ai)v.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,100000,9,false,false));
+        v.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);v.setHealth(200);
+        if(raider){v.getPersistentData().putBoolean("eternalRaider",true);cd().raiders.add(v.getUUID());cd().setDirty();}
+        sl().addFreshEntity(v);return v.getUUID();}
+    static UUID undead(BlockPos at){var h=husk(at);h.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);h.setHealth(200);return h.getUUID();}
+    static float hp(UUID id){var m=mob(id);return m==null?-1:m.getHealth();}
+    static float lost(UUID id){var m=mob(id);return m==null?-1:m.getMaxHealth()-m.getHealth();}
+    static void clearMobs(){srv(()->{for(var m:sl().getEntitiesOfClass(Mob.class,new AABB(sx-120,sy-20,sz-120,sx+120,sy+60,sz+120),m->!(m instanceof RaidTargets.Point)&&!(m instanceof BeaconCombat.Objective)))m.discard();});}
+    static void clear(BlockPos root,int size){srv(()->{for(int x=0;x<size;x++)for(int y=0;y<2;y++)for(int z=0;z<size;z++)put(root.offset(x,y,z),Blocks.AIR.defaultBlockState());});}
+    static BlockState state(BlockPos p){return sl().getBlockState(p);}
+    static boolean has(UUID id,net.minecraft.world.effect.MobEffect e){var m=mob(id);return m!=null&&m.hasEffect(e);}
+    static int amp(UUID id,net.minecraft.world.effect.MobEffect e){var m=mob(id);var i=m==null?null:m.getEffect(e);return i==null?-1:i.getAmplifier();}
+    static void place(String id,BlockPos at){hold(new ItemStack(edItem(id)));near(at);}
+    static int clientShells(){int n=0;for(var e:mc().level.entitiesForRendering())if(e instanceof CannonShell)n++;return n;}
+
+    // The spotlight
+    static boolean glowAt(BlockPos p){return sl().getBlockState(p).getBlock() instanceof Spotlight.Glow;}
+    static int glows(BlockPos around,int r){int n=0;for(var p:BlockPos.betweenClosed(around.offset(-r,-2,-r),around.offset(r,4,r)))if(glowAt(p))n++;return n;}
+    static int blockLight(BlockPos p){return sl().getBrightness(net.minecraft.world.level.LightLayer.BLOCK,p);}
+    static int rot(BlockPos p){var s=state(p);return s.hasProperty(Spotlight.ROTATION)?s.getValue(Spotlight.ROTATION):-1;}
+    static boolean lit(BlockPos p){var s=state(p);return s.hasProperty(Spotlight.LIT)&&s.getValue(Spotlight.LIT);}
+    static Spotlight.LightEntity lamp(BlockPos p){return sl().getBlockEntity(p) instanceof Spotlight.LightEntity e?e:null;}
+    /** The glow a lit spotlight on open flat ground should keep: one on the ground of each column of its beam */
+    static Set<BlockPos> expected(BlockPos stand,int rotation){return new HashSet<>(Spotlight.columns(stand,rotation));}
+    static Set<BlockPos> held(BlockPos p){var e=lamp(p);return e==null?Set.of():new HashSet<>(e.glow);}
+    /** Stand 3 blocks away on one side of a block, looking at it */
+    static void from(BlockPos p,Direction side){look(p.getX()+.5+side.getStepX()*3,sy,p.getZ()+.5+side.getStepZ()*3,p.getX()+.5,p.getY()+.5,p.getZ()+.5);}
+    static String last(){synchronized(CHAT){return CHAT.isEmpty()?"":CHAT.get(CHAT.size()-1);}}
+    static final String[] WAYS={"north","north-east","east","south-east","south","south-west","west","north-west"};
+    /** B beacon; P0 dynamo, M0 motor, A its pole; S the spotlight in reach, S2 one out of reach; O a spot for an orphan glow */
+    static BlockPos B,P0,M0,A,S,S2,O;static int O_LIGHT;
+    static void places(){
+        B=new BlockPos(sx-12,sy,sz-12);P0=new BlockPos(sx+4,sy,sz+6);M0=P0.west(2);A=P0.above();
+        S=P0.offset(3,0,6);S2=new BlockPos(sx+18,sy,sz-10);O=new BlockPos(sx-6,sy,sz-4);
+    }
+    static void script(){
+        step(40,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sl().setDayTime(6000);sp().getInventory().clearContent();
+            for(var slime:sl().getEntitiesOfClass(net.minecraft.world.entity.monster.Slime.class,new AABB(sx-300,sy-20,sz-300,sx+300,sy+40,sz+300)))slime.discard();
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            put(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1));});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon, noon, no natural mobs");
+        // 1. Workshop Fabrication makes it, in the Defense group; the Depot no longer sells it
+        step(5,()->{check("the Defense Depot no longer sells it",DefenseDepot.PRODUCTS.stream().noneMatch(p->p.id().equals("spotlight")),"");
+            var rows=srvGet(()->WorkshopFabrication.state(sp()));net.minecraft.nbt.CompoundTag row=null;for(int i=0;i<rows.size();i++)if(rows.getCompound(i).getString("id").equals("spotlight"))row=rows.getCompound(i);
+            check("Workshop Fabrication lists it with 4 materials",row!=null&&row.getList("costs",10).size()==4,""+row);
+            String r=srvGet(()->{sp().setGameMode(GameType.SURVIVAL);var inv=sp().getInventory();inv.clearContent();inv.setItem(1,new ItemStack(Items.IRON_INGOT,7));inv.setItem(2,new ItemStack(Items.COPPER_INGOT,2));inv.setItem(3,new ItemStack(Items.GLASS,2));inv.setItem(4,new ItemStack(Items.LANTERN,2));
+                sp().teleportTo(sl(),B.getX()+3.5,sy,B.getZ()+.5,0,0);return WorkshopFabrication.buy(sp(),"spotlight");});
+            note("FAB {}",r);
+            check("it makes an Industrial Spotlight for 6 iron, 2 copper, 2 glass and 2 lanterns",r.startsWith("Fabricated Industrial Spotlight")&&srvGet(()->inPack(EternalDefense.SPOTLIGHT.get().asItem())==1&&inPack(Items.IRON_INGOT)==1&&inPack(Items.COPPER_INGOT)==0&&inPack(Items.GLASS)==0&&inPack(Items.LANTERN)==0),r);
+            check("and says where it goes",r.contains("beacon zone"),r);
+            String again=srvGet(()->WorkshopFabrication.buy(sp(),"spotlight"));check("without the materials nothing is made",again.startsWith("Missing")&&srvGet(()->inPack(EternalDefense.SPOTLIGHT.get().asItem())==1),again);},"fabricate a spotlight");
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);BeaconNetwork.open(sp(),"menu","");}),"open the beacon");
+        until("beacon screen",60,()->mc().screen instanceof BeaconClient.ControlScreen,()->{});
+        step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;for(var c:s.children())if(c instanceof net.minecraft.client.gui.components.Button b&&b.getMessage().getString().equals(Ui.t("tab.fabrication").getString())){b.onPress();break;}},"the Workshop Fabrication tab");
+        step(10,()->{var s=(BeaconClient.ControlScreen)mc().screen;s.fabScroll=s.fabMaxScroll();away();
+            check("the tab has a button for every row, the spotlight last in the Defense group",s.fabricationButtons.size()==WorkshopFabrication.ITEMS.size()&&WorkshopFabrication.ITEMS.get(WorkshopFabrication.ITEMS.size()-1).equals("spotlight"),""+s.fabricationButtons.size());},"scrolled to the end");
+        step(10,()->shot("r1124_workshop_defense"),"picture: the Defense group");
+        step(5,()->mc().setScreen(null),"close");
+        // 2. Power for it
+        step(5,()->{hold(new ItemStack(edItem("shaft_dynamo")));near(P0);},"hold a Shaft Dynamo");
+        step(10,()->click(P0.below(),Direction.UP),"place it");
+        step(10,()->srv(()->{put(P0.west(),with(create("shaft").defaultBlockState(),"axis","x"));motor(M0,Direction.EAST,32);}),"a creative motor and a shaft into it");
+        step(5,()->{hold(new ItemStack(EternalDefense.POWER_POLE.get()));near(P0);},"hold a Power Pole");
+        step(10,()->click(P0,Direction.UP),"a pole on the dynamo");
+        until("the pole is live",200,()->srvGet(()->{var s=summary(A);return s!=null&&s.running();}),()->{});
+        // 3. Placed facing the way the player looks; lit by the pole; a beam of light ahead and dark behind
+        step(5,()->{hold(new ItemStack(EternalDefense.SPOTLIGHT.get()));from(S,Direction.WEST);},"west of the spot, looking east, a spotlight in hand");
+        step(10,()->click(S.below(),Direction.UP),"place it");
+        until("it lights",200,()->srvGet(()->lit(S)),()->{});
+        step(40,()->{check("placed facing the way the player looked (east), 2 tall",srvGet(()->rot(S)==2&&state(S.above()).getBlock() instanceof DefenseStructures.Part),""+srvGet(()->state(S)));
+            var want=expected(S,2);var got=srvGet(()->held(S));
+            check("6 glows on the ground along the beam, 3 to 23 blocks east",got.equals(want)&&srvGet(()->want.stream().allMatch(QaRelease1124::glowAt)),got+" vs "+want);
+            int ahead=srvGet(()->blockLight(S.east(23))),mid=srvGet(()->blockLight(S.east(13))),behind=srvGet(()->blockLight(S.west(12))),side=srvGet(()->blockLight(S.south(12))),stand=srvGet(()->blockLight(S.west()));
+            note("LIGHT ahead23 {} ahead13 {} behind12 {} side12 {} beside {}",ahead,mid,behind,side,stand);
+            check("light 15 at the beam's end, 23 blocks out",ahead==15,""+ahead);check("bright all along the beam",mid>=13,""+mid);
+            check("dark 12 blocks behind it and 12 to the side",behind==0&&side==0,behind+" "+side);
+            check("the lamp itself gives light 7",srvGet(()->state(S).getLightEmission(sl(),S))==Spotlight.LAMP_LIGHT,""+srvGet(()->state(S).getLightEmission(sl(),S)));
+            check("the glow is invisible: no collision, no outline",srvGet(()->sl().getBlockState(S.east(7)).getCollisionShape(sl(),S.east(7)).isEmpty()&&sl().getBlockState(S.east(7)).getShape(sl(),S.east(7)).isEmpty()),"");
+            check("the grid counts its 2 stress per RPM (and not as a turret)",srvGet(()->summary(A).demand()==Spotlight.STRESS&&summary(A).turrets()==0),""+srvGet(()->summary(A)));},"the beam");
+        // 4. Each right-click turns it 45 degrees; 8 clicks go all the way round; a sneaking click turns it back
+        step(5,()->{hold(ItemStack.EMPTY);CHAT.clear();from(S,Direction.NORTH);},"empty hand, north of it");
+        for(int i=1;i<=8;i++){int n=i;
+            step(5,()->click(S,Direction.NORTH),"right-click "+n);
+            step(6,()->{int want=(2+n)%8;var on=expected(S,want);
+                check("click "+n+": faces "+WAYS[want]+", its glow moved with it",srvGet(()->rot(S)==want&&held(S).equals(on)&&on.stream().allMatch(QaRelease1124::glowAt)&&glows(S,25)==on.size()),srvGet(()->rot(S)+" "+held(S)+" all "+glows(S,25)));
+                check("click "+n+": it says which way it faces",last().contains("on, facing "+WAYS[want]+"."),last());},"check "+n);
+        }
+        step(5,()->sneak(true),"sneak");
+        step(5,()->click(S,Direction.NORTH),"sneaking right-click");
+        step(6,()->{sneak(false);check("a sneaking click turns it back (north-east)",srvGet(()->rot(S))==1&&said("facing north-east"),srvGet(()->rot(S))+" "+last());},"turned back");
+        step(60,()->{srv(()->sl().setDayTime(18000));look(S.getX()-6.5,sy+4,S.getZ()+5.5,S.getX()+8,sy,S.getZ()-8);},"midnight, behind and beside it; 3 s for the night to reach the client");
+        step(20,()->shot("r1124_spotlight_northeast"),"picture: facing north-east at night");
+        step(5,()->from(S,Direction.NORTH),"back beside it (a click reaches only a few blocks)");
+        step(5,()->click(S,Direction.NORTH),"turn it to east");
+        step(5,()->click(S,Direction.NORTH),"and south-east");
+        step(40,()->{check("turned to south-east",srvGet(()->rot(S))==3,"");look(S.getX()-5.5,sy+5,S.getZ()-4.5,S.getX()+8,sy,S.getZ()+8);},"behind it");
+        step(20,()->shot("r1124_spotlight_southeast"),"picture: facing south-east at night");
+        step(5,()->from(S,Direction.NORTH),"back beside it");
+        step(5,()->sneak(true),"sneak");
+        step(5,()->click(S,Direction.NORTH),"back to east");
+        step(40,()->{sneak(false);check("east again",srvGet(()->rot(S))==2,"");look(S.getX()+9.5,sy+6,S.getZ()+11.5,S.getX()+11,sy,S.getZ());},"south of the beam");
+        step(20,()->shot("r1124_spotlight_east"),"picture: facing east at night, from the side");
+        // 5. A wall stops the beam; a block put in the beam takes the glow's place
+        step(5,()->srv(()->{for(int z=-2;z<=2;z++)for(int y=0;y<3;y++)put(S.offset(10,y,z),Blocks.STONE.defaultBlockState());}),"a stone wall 3 high, 10 blocks east");
+        step(100,()->{},"its next check");
+        step(5,()->{var got=srvGet(()->held(S));
+            check("only the ground before the wall is lit (3 and 7 blocks out)",got.equals(Set.of(S.east(3),S.east(7)))&&srvGet(()->glows(S,25))==2,""+got);
+            int past=srvGet(()->blockLight(S.east(23)));check("dark behind the wall, 23 blocks out",past==0,""+past);
+            look(S.getX()+4.5,sy+6,S.getZ()+9.5,S.getX()+9,sy,S.getZ());},"behind the wall");
+        step(20,()->shot("r1124_spotlight_wall"),"picture: the wall stops the beam");
+        step(5,()->srv(()->{for(int z=-2;z<=2;z++)for(int y=0;y<3;y++)put(S.offset(10,y,z),Blocks.AIR.defaultBlockState());}),"the wall comes down");
+        step(100,()->{},"its next check");
+        step(5,()->{check("the beam reaches out again",srvGet(()->held(S).equals(expected(S,2))),""+srvGet(()->held(S)));hold(new ItemStack(Items.STONE));from(S.east(7),Direction.SOUTH);},"a stone in hand, beside a glow");
+        step(10,()->click(S.east(7).below(),Direction.UP),"place it where the glow is");
+        step(60,()->{},"its next check");
+        step(5,()->{check("the stone takes the glow's place",srvGet(()->state(S.east(7)).is(Blocks.STONE)),""+srvGet(()->state(S.east(7))));
+            check("and the beam lights the top of it",srvGet(()->glowAt(S.east(7).above())&&held(S).contains(S.east(7).above())),""+srvGet(()->held(S)));
+            srv(()->put(S.east(7),Blocks.AIR.defaultBlockState()));hold(ItemStack.EMPTY);},"a block in the beam");
+        // 6. Without power it goes dark and its glow goes out; with power back it lights again
+        step(5,()->srv(()->{if(sl().getBlockEntity(M0) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(0);}),"the motor stops");
+        until("it goes dark",200,()->!srvGet(()->lit(S)),()->{});
+        step(10,()->{check("unpowered: no glow left, dark ahead",srvGet(()->glows(S,25)==0&&held(S).isEmpty()&&blockLight(S.east(13))==0),srvGet(()->glows(S,25)+" "+blockLight(S.east(13))));
+            from(S,Direction.NORTH);},"beside it");
+        step(5,()->{CHAT.clear();click(S,Direction.NORTH);},"right-click it");
+        step(6,()->check("it says it has no power and how to fix it",last().contains("off, no power, facing south-east. Place it within 8 blocks of a powered Power Pole."),last()),"the off line");
+        step(5,()->srv(()->{if(sl().getBlockEntity(M0) instanceof CreativeMotorBlockEntity m)m.generatedSpeed.setValue(32);}),"the motor turns again");
+        until("it lights again",200,()->srvGet(()->lit(S)),()->{});
+        step(10,()->check("lit again, the beam is back",srvGet(()->held(S).equals(expected(S,3))&&expected(S,3).stream().allMatch(QaRelease1124::glowAt)),""+srvGet(()->held(S))),"back on");
+        // 7. Out of a pole's reach it stays dark
+        step(5,()->{hold(new ItemStack(EternalDefense.SPOTLIGHT.get()));from(S2,Direction.SOUTH);},"a spotlight out of the pole's reach");
+        step(10,()->click(S2.below(),Direction.UP),"place it");
+        step(60,()->check("out of reach: dark, facing north, no glow",srvGet(()->state(S2).getBlock() instanceof Spotlight.LightBlock&&!lit(S2)&&rot(S2)==0&&held(S2).isEmpty()&&glows(S2.north(12),12)==0),""+srvGet(()->state(S2))),"out of reach");
+        // 8. Breaking it takes its glow with it; a glow nobody owns goes out by itself
+        step(5,()->srv(()->sl().destroyBlock(S,false)),"break the spotlight");
+        step(5,()->check("broken: every glow of its beam is gone",srvGet(()->glows(S,25))==0&&srvGet(()->state(S.above()).isAir()),""+srvGet(()->glows(S,25))),"gone");
+        step(5,()->{O_LIGHT=srvGet(()->blockLight(O));note("STRAY light before {}",O_LIGHT);srv(()->put(O,EternalDefense.SPOTLIGHT_GLOW.get().defaultBlockState()));},"a glow block nobody owns");
+        step(Spotlight.Glow.CHECK+20,()->check("it lights its spot for now",srvGet(()->blockLight(O))==15,""+srvGet(()->blockLight(O))),"stray glow; then its check");
+        step(5,()->check("and goes out by itself at its next check, the light as it was",srvGet(()->sl().getBlockState(O).isAir()&&blockLight(O)==O_LIGHT),srvGet(()->state(O)+" "+blockLight(O))),"stray glow gone");
+        // 9. The placement preview turns with the player; the model in daylight
+        step(5,()->{srv(()->sl().setDayTime(6000));hold(new ItemStack(EternalDefense.SPOTLIGHT.get()));look(S.getX()-1.5,sy+1,S.getZ()+3.5,S.getX()+.5,sy,S.getZ()+.5);},"noon; looking north-east at the empty spot with a spotlight in hand");
+        step(30,()->{float yaw=mc().player.getYRot();note("PREVIEW yaw {} rotation {}",yaw,Spotlight.rotationFor(yaw));check("the preview's rotation follows the look (north-east)",Spotlight.rotationFor(yaw)==1,""+yaw);shot("r1124_spotlight_preview");},"picture: the preview, turned");
+        step(10,()->click(S.below(),Direction.UP),"place it");
+        step(60,()->{check("placed north-east",srvGet(()->rot(S))==1,"");hold(ItemStack.EMPTY);look(S.getX()+.5,sy+1,S.getZ()+4.5,S.getX()+.5,sy+1.2,S.getZ()+.5);},"in front");
+        step(30,()->shot("r1124_spotlight_day"),"picture: lit in daylight, turned 45 degrees");
+        step(5,()->check("every check heard nothing unexpected",true,""+HEARD),"done");
+    }
+}

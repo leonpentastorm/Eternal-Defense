@@ -38,8 +38,8 @@ def blockstates():
         totem.append({'when': {'facing': f}, 'apply': rotated('curse_totem', f)})
         totem.append({'when': {'facing': f, 'active': 'true'}, 'apply': rotated('curse_totem_active', f)})
     states['curse_totem'] = {'multipart': totem}
-    states['spotlight'] = {'variants': {f'facing={f},lit={l}': rotated('spotlight_on' if l == 'true' else 'spotlight', f)
-                                        for f in FACINGS for l in ('false', 'true')}}
+    # The spotlight turns in steps of 45 degrees, so its block entity renderer draws it
+    states['spotlight'] = {'variants': {'': {'model': 'eternal_defense:block/spotlight'}}}
     return states
 
 def main():

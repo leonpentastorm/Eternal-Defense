@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.24 — The Industrial Spotlight: made at Workshop Fabrication, a beam one way, 8 directions (2026-10-17, `feature/power-defense`)
+
+The update after 1.1.23 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet of the mod's channel changed); a new block (the beam's light, no item), so 1.1.23 and 1.1.24 do not mix. Rules: GDD 1.1.24 (Part M, 5.14); tests: `docs/ROUND-1.1.24-TESTING.md`.
+
+* **Where it comes from.** Workshop Fabrication, in the Defense group (beacon screen, Fabrication tab), for 6 iron ingots, 2 copper ingots, 2 glass and 2 lanterns. The Defense Depot no longer sells it (it cost 24 coins there).
+* **A beam one way.** While a powered pole reaches it, it lights the ground 24 blocks out in the way its lamps face (light level 15 every 4 blocks from 3 blocks out), so hostile mobs cannot spawn there. Behind it and to the sides stays dark. A wall or hill in the way ends the beam. It still uses power (2 stress per RPM).
+* **8 directions.** It is placed facing the way you look. A right-click turns it 45 degrees clockwise, a sneaking right-click turns it back; the line above the hotbar says which way it faces. The model, the glowing lenses and two soft cones of light are drawn turned to any of the 8 ways, and the placement preview turns with you.
+* **Clean-up.** Its light blocks are invisible, have no collision and no drops, and anything placed there replaces them. They go when the spotlight loses power, turns or is broken; a stray one goes out by itself within 5 seconds. The base score does not count them.
+
 ## 1.1.23 — New towers: tesla coils, the Heavy Cannon, the Curse Gas Totem, punji traps and a spotlight (2026-10-17, `feature/power-defense`)
 
 The update after 1.1.22 on `feature/power-defense`; `dev` and `main` unchanged. **Network protocol 43** (no packet of the mod's channel changed); new blocks, items and an entity, so 1.1.22 and 1.1.23 do not mix. Rules: GDD 1.1.23 (Part M, 5.14); tests: `docs/ROUND-1.1.23-TESTING.md`. Art: the owner's "Defense Batch 2" models.

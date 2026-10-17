@@ -11,7 +11,7 @@ import java.util.*;
 final class WorkshopFabrication {
     static final List<String> ITEMS=List.of("gun_platform","ammo_platform","attachment_platform","armor_platform",
         "mess_hall_mk1","cook_pot","bowl_dispenser","milk_dispenser","drink_mixer_mk1","drink_pot","cup_dispenser","mre_maker","support_platform","support_cannon","exchange_shop","command_table","satellite_beacon","fob_beacon","supply_delivery_gate","supply_receiving_gate","tactical_enchanting_table","supply_catapult","logistics_hub","loadout_station",
-        "defense_depot","power_pole","shaft_dynamo","cog_dynamo");
+        "defense_depot","power_pole","shaft_dynamo","cog_dynamo","spotlight");
     static ListTag state(ServerPlayer p){
         var d=CampaignData.get(p.server.overworld());var w=Supply.at(p,d.installed()?d.beacon:p.blockPosition());
         var rows=new ListTag();for(String id:ITEMS){var row=new CompoundTag();row.putString("id",id);row.put("item",new ItemStack(item(id)).save(new CompoundTag()));row.put("costs",WeaponPlatform.costTags(w,Economy.fabrication(id)));if(empty(p,id))row.putBoolean("empty",true);rows.add(row);}return rows;
@@ -34,7 +34,7 @@ final class WorkshopFabrication {
             case "supply_delivery_gate"->". Use it on a straight rail in an ACTIVE FOB's village.";
             case "supply_receiving_gate"->". Use it on a straight rail inside your beacon zone.";
             case "supply_catapult"->". Place it in a FOB's village; it works once that FOB's research is at level "+CatapultRules.SELLER_LEVEL+".";
-            case "defense_depot","power_pole","shaft_dynamo","cog_dynamo"->". Place it inside your beacon zone or a FOB's zone.";
+            case "defense_depot","power_pole","shaft_dynamo","cog_dynamo","spotlight"->". Place it inside your beacon zone or a FOB's zone.";
             default->". Place it inside your beacon zone.";
         };
         return WeaponPlatform.transact(Supply.at(p,d.beacon),Economy.fabrication(id),new ItemStack(item(id)))?"Fabricated "+item(id).getDescription().getString()+where:"Missing materials or inventory space. Nothing consumed.";

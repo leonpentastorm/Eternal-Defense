@@ -52,11 +52,12 @@ final class Economy {
     /** The Defense Depot (unplaytested), in Universal Ammo Coins: every turret line Mk I to III, the Heavy Cannon (what a Twin Flame Turret cost before 1.1.23), the totem, then lots of ammunition and defenses */
     static final int[] TURRET_PRICE={96,192,384};
     static final int HEAVY_CANNON_PRICE=512,CURSE_TOTEM_PRICE=192;
-    static final int DEPOT_MG_AMMO=32,DEPOT_SHELLS=32,DEPOT_FUEL=40,DEPOT_CANNON_SHELLS=48,DEPOT_SANDBAGS=16,DEPOT_BARRICADE=16,DEPOT_BARBED=16,DEPOT_PUNJI=32,DEPOT_SHOCK_BOX=64,DEPOT_WIRE=16,DEPOT_SPOTLIGHT=24;
-    /** The defense kit's Workshop Fabrication (unplaytested): the depot, the pole and the two dynamos */
+    static final int DEPOT_MG_AMMO=32,DEPOT_SHELLS=32,DEPOT_FUEL=40,DEPOT_CANNON_SHELLS=48,DEPOT_SANDBAGS=16,DEPOT_BARRICADE=16,DEPOT_BARBED=16,DEPOT_PUNJI=32,DEPOT_SHOCK_BOX=64,DEPOT_WIRE=16;
+    /** The defense kit's Workshop Fabrication (unplaytested): the depot, the pole, the two dynamos and the spotlight */
     static final int DEPOT_IRON=16,DEPOT_COPPER=8,DEPOT_CHESTS=2,DEPOT_PLATING=2;
     static final int POLE_IRON=6,POLE_COPPER=8;
     static final int DYNAMO_COPPER=16,DYNAMO_IRON=8,DYNAMO_ALLOY=8,DYNAMO_REDSTONE=4;
+    static final int SPOTLIGHT_IRON=6,SPOTLIGHT_COPPER=2,SPOTLIGHT_GLASS=2,SPOTLIGHT_LANTERNS=2;
     static List<WeaponPlatform.Cost> coinFee(){return List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",COIN_FEE_PLATING),WeaponPlatform.cost("eternal_defense:ardent_energy",COIN_FEE_ARDENT));}
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(EternalDefense.PLATING::get,DRINKS_PLATING[mk-1]);}
 
@@ -108,6 +109,7 @@ final class Economy {
             case "power_pole"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",POLE_IRON),WeaponPlatform.cost("minecraft:copper_ingot",POLE_COPPER));
             case "shaft_dynamo","cog_dynamo"->List.of(WeaponPlatform.cost("minecraft:copper_ingot",DYNAMO_COPPER),WeaponPlatform.cost("minecraft:iron_ingot",DYNAMO_IRON),
                 WeaponPlatform.cost("create:andesite_alloy",DYNAMO_ALLOY),WeaponPlatform.cost("minecraft:redstone",DYNAMO_REDSTONE));
+            case "spotlight"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",SPOTLIGHT_IRON),WeaponPlatform.cost("minecraft:copper_ingot",SPOTLIGHT_COPPER),WeaponPlatform.cost("minecraft:glass",SPOTLIGHT_GLASS),WeaponPlatform.cost("minecraft:lantern",SPOTLIGHT_LANTERNS));
             case "bowl_dispenser"->List.of(WeaponPlatform.cost("minecraft:iron_ingot",8),WeaponPlatform.cost("minecraft:glass",4),new WeaponPlatform.Cost(Ingredient.of(net.minecraft.tags.ItemTags.PLANKS),4));
             default->List.of();
         };

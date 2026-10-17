@@ -35,7 +35,7 @@ final class Release1123Test {
         assertArrayEquals(new int[]{96,192,384},Economy.TURRET_PRICE);
         assertEquals(512,Economy.HEAVY_CANNON_PRICE,"what a Twin Flame Turret cost before");assertEquals(512,prices.get("heavy_cannon"));
         assertEquals(Economy.CURSE_TOTEM_PRICE,prices.get("curse_totem"));
-        for(var id:List.of("heavy_cannon_shell","punji_trap","spotlight"))assertTrue(prices.containsKey(id),id);
+        for(var id:List.of("heavy_cannon_shell","punji_trap"))assertTrue(prices.containsKey(id),id);
         assertEquals(prices.size(),DefenseDepot.PRODUCTS.size(),"no product twice");
     }
     @Test void aTeslaZapJumpsAndWeakens(){
@@ -123,7 +123,7 @@ final class Release1123Test {
         assertTrue(body.contains("hurts them for "+(int)curse.damage()+" damage a second. A cloud is "+(int)(2*curse.spread())+" blocks across and lasts "+curse.burn()+" seconds."));
         assertTrue(body.contains("At most "+Turrets.CLOUDS+" clouds")&&body.contains("for "+Economy.CURSE_TOTEM_PRICE+" Universal Ammo Coins. It has one Mark."));
         assertTrue(body.contains("for "+(int)PunjiTrap.DAMAGE+" damage")&&body.contains("Buy 4 for "+Economy.DEPOT_PUNJI+" Universal Ammo Coins"));
-        assertTrue(body.contains("Buy it at the Defense Depot for "+Economy.DEPOT_SPOTLIGHT+" Universal Ammo Coins")&&body.contains("It puts "+Spotlight.STRESS+" stress per RPM"));
+        assertTrue(body.contains("It puts "+Spotlight.STRESS+" stress per RPM"));
         assertTrue(detail.contains("tesla "+Turrets.stats(Turrets.Line.TESLA,1).stress()+", "+Turrets.stats(Turrets.Line.TESLA,2).stress()+" and "+Turrets.stats(Turrets.Line.TESLA,3).stress()+", Heavy Cannon "+cannon.stress()+", Curse Gas Totem "+curse.stress()+", Industrial Spotlight "+Spotlight.STRESS));
         assertTrue(detail.contains("Tesla "+PowerPoles.fmt(Turrets.dps(Turrets.Line.TESLA,1))+", "+PowerPoles.fmt(Turrets.dps(Turrets.Line.TESLA,2))+" and "+PowerPoles.fmt(Turrets.dps(Turrets.Line.TESLA,3))));
         assertTrue(detail.contains("Heavy Cannon "+PowerPoles.fmt(Turrets.dps(Turrets.Line.CANNON,1))+" (a shell every "+cannon.cooldown()/20+" seconds)"));

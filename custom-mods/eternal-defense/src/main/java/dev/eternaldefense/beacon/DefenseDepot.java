@@ -31,12 +31,12 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** The Defense Depot: towers, their ammunition, walls, traps and the spotlight, for Universal Ammo Coins */
+/** The Defense Depot: towers, their ammunition, walls, traps and power gear, for Universal Ammo Coins */
 final class DefenseDepot {
     private DefenseDepot(){}
     record Product(String id,Supplier<Item> item,int count,int price){}
     static final List<Product> PRODUCTS=products();
-    /** Every tower and its Marks, then the ammunition, the walls and traps, the power gear and the spotlight */
+    /** Every tower and its Marks, then the ammunition, the walls and traps and the power gear */
     private static List<Product> products(){
         var out=new java.util.ArrayList<Product>();
         for(var line:Turrets.Line.values())for(int mk=1;mk<=line.marks;mk++){var id=Turrets.id(line,mk);out.add(new Product(id,()->EternalDefense.TURRETS.get(id).get().asItem(),1,price(line,mk)));}
@@ -50,7 +50,6 @@ final class DefenseDepot {
         out.add(new Product("punji_trap",()->EternalDefense.PUNJI_TRAP.get().asItem(),4,Economy.DEPOT_PUNJI));
         out.add(new Product("shock_box",()->EternalDefense.SHOCK_BOX.get().asItem(),1,Economy.DEPOT_SHOCK_BOX));
         out.add(new Product("electric_wire",()->EternalDefense.ELECTRIC_WIRE.get(),8,Economy.DEPOT_WIRE));
-        out.add(new Product("spotlight",()->EternalDefense.SPOTLIGHT.get().asItem(),1,Economy.DEPOT_SPOTLIGHT));
         return List.copyOf(out);
     }
     /** Pure: what a tower costs: every three-Mark line the same, the Heavy Cannon and the totem their own */

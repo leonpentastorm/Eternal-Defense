@@ -46,6 +46,7 @@ public final class PowerClient {
         e.registerBlockEntityRenderer(EternalDefense.SHOCK_BOX_ENTITY.get(),BoxRenderer::new);
         e.registerBlockEntityRenderer(EternalDefense.TURRET_ENTITY.get(),TurretRenderer::new);
         e.registerBlockEntityRenderer(EternalDefense.PUNJI_ENTITY.get(),TowerClient.PunjiRenderer::new);
+        e.registerBlockEntityRenderer(EternalDefense.SPOTLIGHT_ENTITY.get(),TowerClient.SpotlightRenderer::new);
         e.registerEntityRenderer(EternalDefense.TURRET_SHELL.get(),TowerClient.ShellRenderer::new);
     }
     @SubscribeEvent public static void screens(FMLClientSetupEvent e){e.enqueueWork(()->{MenuScreens.register(EternalDefense.DEPOT_MENU.get(),DepotScreen::new);MenuScreens.register(EternalDefense.TURRET_MENU.get(),TurretScreen::new);});}

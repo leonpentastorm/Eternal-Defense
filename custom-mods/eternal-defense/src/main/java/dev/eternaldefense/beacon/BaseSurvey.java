@@ -22,7 +22,7 @@ final class BaseSurvey {
         for(int budget=0;budget<4096&&s.cursor<s.total();budget++,s.cursor++){
             int i=s.cursor;var p=s.origin.offset(i%width-s.radius,i/(width*width)-s.below,(i/width)%width-s.radius);
             if(p.getY()<l.getMinBuildHeight()||p.getY()>=l.getMaxBuildHeight())continue;
-            if(!l.hasChunkAt(p)){s.incomplete=true;continue;}var state=l.getBlockState(p);if(!state.isAir())s.blocks.put(p.asLong(),state);
+            if(!l.hasChunkAt(p)){s.incomplete=true;continue;}var state=l.getBlockState(p);if(!state.isAir()&&!(state.getBlock() instanceof Spotlight.Glow))s.blocks.put(p.asLong(),state);
         }
         if(s.cursor>=s.total()){s.score=BaseScoring.analyze(d,s.blocks,BaseScoring.Ledger.get(l).placed);s.scanning=false;s.blocks.clear();s.next=l.getGameTime()+400;}
     }
