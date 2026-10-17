@@ -216,7 +216,8 @@ final class LangKeysTest {
             Map.entry("mre_maker","MRE Station"),Map.entry("mre","MRE"),Map.entry("marines_fuel","Marines Fuel"),Map.entry("logistics_hub","Logistics Center Hub"),
             Map.entry("pressed_receiver","Factory parts"),Map.entry("brass_receiver","Factory parts"),Map.entry("hardened_receiver","Factory parts"),Map.entry("exotic_receiver","Factory parts"),
             Map.entry("incomplete_brass_receiver","Factory parts"),Map.entry("incomplete_hardened_receiver","Factory parts"),Map.entry("hardened_alloy","Factory parts"),Map.entry("cartridge_case","Factory parts"),Map.entry("propellant","Factory parts"),
-            Map.entry("loadout_station","Loadout Station"),Map.entry("loadout_coin","Loadout Coin"),Map.entry("loadout_flare","Loadout Flare"),Map.entry("loadout_capsule","Loadout Capsule"));
+            Map.entry("loadout_station","Loadout Station"),Map.entry("loadout_coin","Loadout Coin"),Map.entry("loadout_flare","Loadout Flare"),Map.entry("loadout_capsule","Loadout Capsule"),
+            Map.entry("handheld_radio","Handheld Radio"));
         var ignored=Set.of("raider_bridge","structure_part","gate_part","logistics_hub_part","loadout_station_part","loadout_capsule_part","supply_delivery_gate_left","supply_receiving_gate_left","mess_hall_mk2","mess_hall_mk3","mess_hall_mk4","drink_mixer_mk2","drink_mixer_mk3","drink_mixer_mk4","reinforced_plating","logistics_module","resonance_coil","restoration_matrix");
         String source=Files.readString(Path.of("src/main/java/dev/eternaldefense/beacon/EternalDefense.java"));
         var registered=new TreeSet<String>();

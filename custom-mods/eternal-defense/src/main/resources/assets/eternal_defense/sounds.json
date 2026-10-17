@@ -335,6 +335,12 @@
     ],
     "subtitle": "subtitles.eternal_defense.seller.radio_static"
   },
+  "radio.static": {
+    "sounds": [
+      "eternal_defense:sfx/radio_static"
+    ],
+    "subtitle": "subtitles.eternal_defense.radio.static"
+  },
   "fob.war_horn": {
     "sounds": [
       "eternal_defense:sfx/war_horn"

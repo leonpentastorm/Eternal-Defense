@@ -47,6 +47,8 @@ final class Economy {
     static final int COIN_FEE_PLATING=4,COIN_FEE_ARDENT=1;
     /** The Loadout Flare at the Support Platform, in Ardent Energy (unplaytested). */
     static final int LOADOUT_FLARE_PRICE=5;
+    /** The Handheld Radio at the Support Platform, in Ardent Energy. */
+    static final int RADIO_PRICE=8;
     static List<WeaponPlatform.Cost> coinFee(){return List.of(WeaponPlatform.cost("eternal_defense:reinforced_plating",COIN_FEE_PLATING),WeaponPlatform.cost("eternal_defense:ardent_energy",COIN_FEE_ARDENT));}
     static Price drinkStation(int mk){return mk<1||mk>=4?null:new Price(EternalDefense.PLATING::get,DRINKS_PLATING[mk-1]);}
 

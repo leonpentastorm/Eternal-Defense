@@ -45,7 +45,7 @@ public final class SupportClient {
         e.registerEntityRenderer(EternalDefense.RAIDER_GATE.get(),GateRenderer::new);
         e.registerEntityRenderer(EternalDefense.ORDNANCE.get(),OrdnanceRenderer::new);
     }
-    @SubscribeEvent public static void supportScreens(FMLClientSetupEvent e){e.enqueueWork(()->MenuScreens.register(EternalDefense.SUPPORT_MENU.get(),SupportScreen::new));}
+    @SubscribeEvent public static void supportScreens(FMLClientSetupEvent e){e.enqueueWork(()->{MenuScreens.register(EternalDefense.SUPPORT_MENU.get(),SupportScreen::new);MenuScreens.register(EternalDefense.RADIO_MENU.get(),RadioScreen::new);});}
 
     static void draw(PoseStack pose,MultiBufferSource buffer,RenderType type,ResourceLocation model,int light,int overlay){drawTinted(pose,buffer,type,model,light,overlay,1f,1f,1f);}
     /** Draws an additional block model; faces with a tint index take the colour */

@@ -1,0 +1,353 @@
+package dev.eternaldefense.beacon;
+
+import net.minecraft.client.CameraType;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.14: the Age armor sets (worn models, bonuses, the armor table) and the Handheld Radio. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1114 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    static final List<String> CHAT=Collections.synchronizedList(new ArrayList<>()),BAR=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void chat(net.minecraftforge.client.event.ClientChatReceivedEvent e){
+        var t=e.getMessage().getString();
+        if(e instanceof net.minecraftforge.client.event.ClientChatReceivedEvent.System s&&s.isOverlay()){BAR.add(t);log("QA_BAR {}",t);}else{CHAT.add(t);log("QA_CHAT {}",t);}
+    }
+    static String bars(){synchronized(BAR){return String.join(" | ",BAR);}}
+    static String chats(){synchronized(CHAT){return String.join(" | ",CHAT);}}
+    static boolean barHas(String s){synchronized(BAR){return BAR.stream().anyMatch(b->b.contains(s));}}
+    static void clearMessages(){BAR.clear();CHAT.clear();}
+    static final List<String> SOUNDS=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent public static void soundAt(net.minecraftforge.event.PlayLevelSoundEvent.AtPosition e){if(!e.getLevel().isClientSide()&&e.getSound()!=null)SOUNDS.add(e.getSound().get().getLocation().toString());}
+    @SubscribeEvent public static void soundOn(net.minecraftforge.event.PlayLevelSoundEvent.AtEntity e){if(!e.getLevel().isClientSide()&&e.getSound()!=null)SOUNDS.add(e.getSound().get().getLocation().toString());}
+    static boolean heard(String id){synchronized(SOUNDS){return SOUNDS.stream().anyMatch(x->x.startsWith(id));}}
+    /** The damage a hit on the player comes to after every handler (before armor) */
+    static final List<Float> HURT=Collections.synchronizedList(new ArrayList<>());
+    @SubscribeEvent(priority=EventPriority.LOWEST) public static void hurt(LivingHurtEvent e){if(e.getEntity() instanceof ServerPlayer)HURT.add(e.getAmount());}
+    static boolean recordFrame;static List<Ui.Drawn> lastFrame=List.of();
+    @SubscribeEvent public static void renderPre(net.minecraftforge.client.event.ScreenEvent.Render.Pre e){if(recordFrame)Ui.drawn=new ArrayList<>();}
+    @SubscribeEvent public static void renderPost(net.minecraftforge.client.event.ScreenEvent.Render.Post e){if(recordFrame&&Ui.drawn!=null){lastFrame=Ui.drawn;Ui.drawn=null;recordFrame=false;}}
+    static void layout(String name){
+        var texts=new ArrayList<>(new LinkedHashSet<>(lastFrame));var bad=new ArrayList<String>();
+        for(var a:texts){if(a.cut())bad.add("cut: '"+a.text()+"'");for(var b:texts)if(a!=b&&a.w()>0&&b.w()>0&&a.x()<b.x()+b.w()&&b.x()<a.x()+a.w()&&a.y()<b.y()+b.h()&&b.y()<a.y()+a.h()&&texts.indexOf(a)<texts.indexOf(b))bad.add("'"+a.text()+"' over '"+b.text()+"'");}
+        check(name+": "+texts.size()+" texts, none cut off or over another",bad.isEmpty()&&!texts.isEmpty(),String.join(" | ",bad));
+    }
+
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_1114",GameType.SURVIVAL,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_1114",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+
+    // Helpers
+    static Item item(String id){return BuiltInRegistries.ITEM.get(new net.minecraft.resources.ResourceLocation(id));}
+    static Item piece(String set,String p){return item("eternal_defense:"+set+"_"+p);}
+    static final String[] PIECES={"boots","leggings","chestplate","helmet"};
+    static final EquipmentSlot[] ARMOR={EquipmentSlot.FEET,EquipmentSlot.LEGS,EquipmentSlot.CHEST,EquipmentSlot.HEAD};
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{sp().teleportTo(sl(),x,y,z,yaw,pitch);sp().setDeltaMovement(Vec3.ZERO);});mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    /** The player wears this set (null: nothing); some pieces may be swapped for another set's */
+    static void wear(String set,String helmetFrom){srv(()->{var inv=sp().getInventory();for(int i=0;i<4;i++)inv.armor.set(i,set==null?ItemStack.EMPTY:new ItemStack(piece(i==3&&helmetFrom!=null?helmetFrom:set,PIECES[i])));inv.setChanged();});}
+    static double attr(net.minecraft.world.entity.ai.attributes.Attribute a){return srvGet(()->sp().getAttributeValue(a));}
+    static double reload(){return attr(MealGunBackend.reload());}
+    static double damage(){return attr(MealGunBackend.damage());}
+    static MobEffectInstance effect(net.minecraft.world.effect.MobEffect e){return srvGet(()->{var i=sp().getEffect(e);return i==null?null:new MobEffectInstance(i);});}
+    static boolean setEffect(MobEffectInstance i){return i!=null&&i.isInfiniteDuration()&&i.isAmbient();}
+    static void click(BlockPos pos,Direction face){mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false));}
+    static void use(){mc().gameMode.useItem(mc().player,InteractionHand.MAIN_HAND);}
+    static void sneakUse(){var p=mc().player;p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY));
+        p.input.shiftKeyDown=true;p.setShiftKeyDown(true);use();p.input.shiftKeyDown=false;p.setShiftKeyDown(false);
+        p.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p,net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.RELEASE_SHIFT_KEY));}
+    static void slotClick(int slot,int button,ClickType type){var p=mc().player;mc().gameMode.handleInventoryMouseClick(p.containerMenu.containerId,slot,button,type,p);}
+    static void closeAll(){mc().setScreen(null);srv(()->sp().closeContainer());}
+    static int inPack(Item item){int n=0;for(var s:sp().getInventory().items)if(s.is(item))n+=s.getCount();return n;}
+    static ItemStack radio(){return srvGet(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.RADIO.get()))return s.copy();return ItemStack.EMPTY;});}
+    static int stored(SupportCalls.Kind k){return HandheldRadio.count(radio(),k);}
+    static List<SupportFlares.FlareEntity> flaresNear(BlockPos at,double r){return srvGet(()->sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(at).inflate(r)));}
+    static void clearFlares(){srv(()->{for(var f:sl().getEntitiesOfClass(SupportFlares.FlareEntity.class,new AABB(B).inflate(200)))f.discard();});}
+    static void clearMobs(){for(var m:sl().getEntitiesOfClass(net.minecraft.world.entity.Mob.class,new AABB(B).inflate(160,64,160)))m.discard();}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static String costText(WeaponPlatform.Cost c){var items=c.ingredient().getItems();return (items.length==0?"?":BuiltInRegistries.ITEM.getKey(items[0].getItem()).getPath())+" x"+c.count();}
+    static List<String> costs(WeaponPlatform.Entry e){try{return ArmorPlatform.costs(e).stream().map(QaRelease1114::costText).toList();}catch(ReflectiveOperationException ex){return List.of();}}
+    /** A kit of KIT_SLOTS stacks: armor feet first, the off hand, then the hotbar */
+    static List<ItemStack> kit(ItemStack... first){var l=new ArrayList<ItemStack>(Arrays.asList(first));while(l.size()<LoadoutRules.KIT_SLOTS)l.add(ItemStack.EMPTY);return l;}
+    /** The radio menu's slot for inventory slot i (the four flare slots come first) */
+    static int menuSlot(int i){return i<9?4+27+i:4+i-9;}
+
+    /** B: the beacon; STANDS: the row of armor stands; T: the armor table; PLAT, CANNON, S: support blocks and the station; FIELD: where the radio marks */
+    static BlockPos B,STANDS,T,PLAT,CANNON,S,FIELD,WALL,ARENA;
+    static void places(){B=new BlockPos(sx-6,sy,sz-6);STANDS=B.offset(-14,0,14);T=B.offset(6,1,6);PLAT=B.offset(8,0,-8);CANNON=B.offset(12,0,-8);S=B.offset(0,1,10);FIELD=B.offset(-12,0,-40);WALL=B.offset(-36,0,-10);ARENA=B.offset(40,0,30);}
+
+    static void script(){
+        // 0. The base
+        step(40,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            r.getRule(GameRules.RULE_KEEPINVENTORY).set(true,server());r.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());r.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());r.getRule(GameRules.RULE_DOINSOMNIA).set(false,server());
+            sl().setDayTime(6000);clearMobs();
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
+            sp().getInventory().clearContent();sp().setGameMode(GameType.SURVIVAL);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon; survival");
+
+        // 1. The worn models on five armor stands, by day and by night
+        step(10,()->srv(()->{int i=0;for(String set:ArmorSetRules.SETS){var stand=new ArmorStand(EntityType.ARMOR_STAND,sl());stand.moveTo(STANDS.getX()+.5+i*2,sy,STANDS.getZ()+.5,180,0);
+            for(int k=0;k<4;k++)stand.setItemSlot(ARMOR[k],new ItemStack(piece(set,PIECES[k])));stand.setCustomName(net.minecraft.network.chat.Component.literal(set));sl().addFreshEntity(stand);i++;}}),"five armor stands, one set each");
+        step(20,()->{mc().options.hideGui=true;look(STANDS.getX()+4.5,sy,STANDS.getZ()-5.5,STANDS.getX()+4.5,sy+1,STANDS.getZ()+.5);},"stand in front of them");
+        step(30,()->{int n=0;for(String set:ArmorSetRules.SETS)for(var slot:new EquipmentSlot[]{EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})if(ArmorSetClient.model(set,slot,null) instanceof ArmorSetModel)n++;
+            check("20 worn models baked, one per set and slot",n==20,n+" models");
+            var stands=mc().level.getEntitiesOfClass(ArmorStand.class,new AABB(STANDS).inflate(14));check("the client sees the five stands in their armor",stands.size()==5&&stands.stream().allMatch(s->s.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof ArmorSetItem),stands.size()+"");
+            shot("r1114_sets_front_day");},"picture: the five sets by day");
+        step(10,()->look(STANDS.getX()+4.5,sy,STANDS.getZ()+6.5,STANDS.getX()+4.5,sy+1,STANDS.getZ()+.5),"go behind them");
+        step(30,()->shot("r1114_sets_back_day"),"picture: from behind");
+        step(10,()->{srv(()->sl().setDayTime(18000));look(STANDS.getX()+4.5,sy,STANDS.getZ()-5.5,STANDS.getX()+4.5,sy+1,STANDS.getZ()+.5);},"night, in front again");
+        step(40,()->shot("r1114_sets_front_night"),"picture: the glow of Advanced and Exotic at night");
+        step(10,()->look(STANDS.getX()+9,sy,STANDS.getZ()-2.5,STANDS.getX()+8.5,sy+1.4,STANDS.getZ()+.5),"close to the Exotic stand at night");
+        step(30,()->shot("r1114_exotic_close_night"),"picture: the Exotic set close");
+        step(10,()->{srv(()->sl().setDayTime(6000));},"day");
+
+        // 2. The player wearing a set, the items and their tooltips
+        step(10,()->{wear("frontier",null);tp(STANDS.getX()+4.5,sy,STANDS.getZ()-8.5,0,10);mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);},"wear the Ranger set; third person");
+        step(40,()->shot("r1114_player_frontier"),"picture: the Ranger set worn");
+        step(5,()->wear("advanced",null),"the Vanguard Exo set");
+        step(40,()->shot("r1114_player_advanced"),"picture: the Vanguard Exo set worn");
+        step(5,()->{mc().options.setCameraType(CameraType.FIRST_PERSON);mc().options.hideGui=false;wear(null,null);srv(()->{var inv=sp().getInventory();inv.clearContent();int i=9;
+            for(String set:ArmorSetRules.SETS)for(String p:PIECES)inv.setItem(i++,new ItemStack(piece(set,p)));inv.setItem(0,new ItemStack(EternalDefense.RADIO.get()));inv.setChanged();});},"every piece and the radio in the pack");
+        step(10,()->{int missing=0;var missingModel=mc().getModelManager().getMissingModel();
+            for(String set:ArmorSetRules.SETS)for(String p:PIECES)if(mc().getItemRenderer().getModel(new ItemStack(piece(set,p)),mc().level,mc().player,0)==missingModel)missing++;
+            if(mc().getItemRenderer().getModel(new ItemStack(EternalDefense.RADIO.get()),mc().level,mc().player,0)==missingModel)missing++;
+            check("all 21 item models load (no missing model)",missing==0,missing+" missing");
+            mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));},"open the inventory");
+        step(20,()->shot("r1114_inventory_items"),"picture: the pieces in the pack");
+        step(5,()->{mc().setScreen(null);wear("frontier","worldwars");},"three Ranger pieces and a Trench helmet");
+        step(25,()->{var lines=new ItemStack(piece("frontier","boots")).getTooltipLines(mc().player,TooltipFlag.NORMAL).stream().map(c->c.getString()).toList();note("TOOLTIP {}",lines);
+            check("the tooltip counts the pieces worn and names the bonus",lines.contains("Set bonus (3 of 4 worn): Quick Draw")&&lines.contains("Guns reload 15% faster.")&&lines.contains("Frontier Age armor. Wear all four pieces of the set for its bonus."),lines.toString());},"tooltip");
+
+        // 3. The bonuses
+        double[] base=new double[3];
+        step(5,()->wear(null,null),"nothing worn");
+        step(25,()->{base[0]=reload();base[1]=damage();base[2]=attr(Attributes.MAX_HEALTH);note("BASE reload {} damage {} health {}",base[0],base[1],base[2]);},"base values");
+        step(5,()->wear("frontier","worldwars"),"a mixed set");
+        step(25,()->check("a mixed set gives no bonus",reload()==base[0]&&damage()==base[1],reload()+" "+damage()),"mixed");
+        step(5,()->wear("frontier",null),"the full Ranger set");
+        step(25,()->{check("Quick Draw: reload speed x1.15",Math.abs(reload()-base[0]*1.15)<1e-6,reload()+" from "+base[0]);check("and no gun damage",damage()==base[1],""+damage());
+            check("Ranger protects like iron: 15 armor, no toughness",attr(Attributes.ARMOR)==15&&attr(Attributes.ARMOR_TOUGHNESS)==0,attr(Attributes.ARMOR)+" / "+attr(Attributes.ARMOR_TOUGHNESS));},"Quick Draw");
+        step(5,()->wear("worldwars",null),"the Trench set");
+        step(25,()->{check("Stormtrooper: gun damage x1.1, reload back to normal",Math.abs(damage()-base[1]*1.1)<1e-6&&reload()==base[0],damage()+" "+reload());
+            check("Trench: 16 armor, toughness 1 a piece (4 for the set)",attr(Attributes.ARMOR)==16&&attr(Attributes.ARMOR_TOUGHNESS)==4,attr(Attributes.ARMOR)+" / "+attr(Attributes.ARMOR_TOUGHNESS));
+            boolean added=srvGet(()->sp().addEffect(new MobEffectInstance(MobEffects.POISON,200)));check("Poison cannot touch the Trench set",!added&&effect(MobEffects.POISON)==null,""+added);},"Stormtrooper");
+        step(5,()->wear("modern",null),"the Operator set");
+        step(25,()->{var nv=effect(MobEffects.NIGHT_VISION);check("Night Operator: endless Night Vision",setEffect(nv),String.valueOf(nv));check("and gun damage x1.1",Math.abs(damage()-base[1]*1.1)<1e-6,""+damage());
+            check("Operator protects like diamond: 20 armor, toughness 2 a piece (8 for the set, as a diamond set)",attr(Attributes.ARMOR)==20&&attr(Attributes.ARMOR_TOUGHNESS)==8,attr(Attributes.ARMOR)+" / "+attr(Attributes.ARMOR_TOUGHNESS));
+            srv(()->sp().addEffect(new MobEffectInstance(MobEffects.POISON,200)));},"Night Operator");
+        step(5,()->{check("Poison works again without the Trench set",effect(MobEffects.POISON)!=null,"");srv(()->sp().removeEffect(MobEffects.POISON));wear("advanced",null);},"the Vanguard Exo set");
+        step(25,()->{check("Night Vision leaves with the Operator set",effect(MobEffects.NIGHT_VISION)==null,"");check("gun damage back to normal",damage()==base[1],""+damage());
+            check("Exo Bulwark: no knockback",attr(Attributes.KNOCKBACK_RESISTANCE)>=1,""+attr(Attributes.KNOCKBACK_RESISTANCE));
+            boolean added=srvGet(()->sp().addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,200,2)));check("Slowness cannot touch the Vanguard Exo set",!added&&effect(MobEffects.MOVEMENT_SLOWDOWN)==null,""+added);
+            HURT.clear();srv(()->{var p=sp();var arrow=new Arrow(sl(),p.getX(),p.getY()+5,p.getZ());p.invulnerableTime=0;p.hurt(sl().damageSources().arrow(arrow,null),8);
+                p.invulnerableTime=0;p.hurt(sl().damageSources().explosion(null,null),8);
+                var husk=new Husk(EntityType.HUSK,sl());husk.moveTo(p.getX()+1,p.getY(),p.getZ());p.invulnerableTime=0;p.hurt(sl().damageSources().mobAttack(husk),8);p.setHealth(p.getMaxHealth());});},"Exo Bulwark");
+        step(5,()->{List<Float> h;synchronized(HURT){h=new ArrayList<>(HURT);}note("HITS {}",h);
+            check("a bullet (projectile) hit: 8 comes to 6",h.size()>=3&&Math.abs(h.get(0)-6)<1e-4,h.toString());check("an explosion: 8 comes to 6",h.size()>=3&&Math.abs(h.get(1)-6)<1e-4,h.toString());check("a melee hit stays 8",h.size()>=3&&Math.abs(h.get(2)-8)<1e-4,h.toString());},"hits");
+        step(5,()->wear("exotic",null),"the Resonance set");
+        step(25,()->{check("Ardent Ward: 2 extra hearts (24 health)",attr(Attributes.MAX_HEALTH)==base[2]+4,""+attr(Attributes.MAX_HEALTH));check("no knockback",attr(Attributes.KNOCKBACK_RESISTANCE)>=1,"");
+            var regen=effect(MobEffects.REGENERATION);check("endless Regeneration I",setEffect(regen)&&regen.getAmplifier()==0,String.valueOf(regen));
+            check("Slowness works again without the Vanguard Exo set",srvGet(()->sp().addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,40))),"");},"Resonance");
+        double[] before=new double[2];
+        step(5,()->{clearMessages();srv(()->{clearMobs();sp().removeEffect(MobEffects.MOVEMENT_SLOWDOWN);sp().teleportTo(sl(),ARENA.getX()+.5,sy,ARENA.getZ()+.5,0,20);sp().setHealth(sp().getMaxHealth());
+            for(int i=0;i<2;i++){var h=new Husk(EntityType.HUSK,sl());h.moveTo(ARENA.getX()+.5+(i==0?2.5:-2.5),sy,ARENA.getZ()+.5);h.setPersistenceRequired();
+                h.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,-1,20));h.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,-1,10));sl().addFreshEntity(h);}});},"two harmless husks beside the player");
+        step(20,()->{var hs=srvGet(()->sl().getEntitiesOfClass(Husk.class,new AABB(ARENA).inflate(8)).stream().map(h->h.position().distanceTo(Vec3.atBottomCenterOf(ARENA))).toList());before[0]=hs.stream().mapToDouble(d->d).min().orElse(-1);note("HUSKS {}",hs);
+            srv(()->{var p=sp();p.invulnerableTime=0;p.hurt(sl().damageSources().magic(),18);});},"a hit leaves 6 of 24 health (under 30%)");
+        step(15,()->{double abs=srvGet(()->(double)sp().getAbsorptionAmount());var hs=srvGet(()->sl().getEntitiesOfClass(Husk.class,new AABB(ARENA).inflate(16)).stream().map(h->h.position().distanceTo(Vec3.atBottomCenterOf(ARENA))).toList());note("HUSKS AFTER {}",hs);
+            check("the pulse gives 4 extra hearts",abs>=8,""+abs);check("it throws the husks back",hs.stream().allMatch(d->d>before[0]+1.5),before[0]+" -> "+hs);
+            check("the action bar says so",barHas("Ardent Ward!"),bars());check("the pulse sounds",heard("minecraft:block.amethyst_block.resonate"),"");shot("r1114_ardent_ward");
+            srv(()->{var p=sp();p.setAbsorptionAmount(0);p.removeEffect(MobEffects.ABSORPTION);p.setHealth(p.getMaxHealth());});clearMessages();},"the pulse");
+        step(5,()->srv(()->{var p=sp();p.invulnerableTime=0;p.hurt(sl().damageSources().magic(),18);}),"a second low hit within the minute");
+        step(10,()->{check("no second pulse within the minute",srvGet(()->(double)sp().getAbsorptionAmount())==0&&!barHas("Ardent Ward!"),bars());srv(()->{sp().setHealth(sp().getMaxHealth());clearMobs();});},"cooldown");
+        step(5,()->wear(null,null),"take the set off");
+        step(25,()->{check("taking it off ends the bonus",attr(Attributes.MAX_HEALTH)==base[2]&&attr(Attributes.KNOCKBACK_RESISTANCE)==0&&effect(MobEffects.REGENERATION)==null,attr(Attributes.MAX_HEALTH)+" "+effect(MobEffects.REGENERATION));
+            srv(()->sp().addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,1200)));wear("modern",null);},"a Night Vision potion, then the Operator set");
+        step(25,()->{var nv=effect(MobEffects.NIGHT_VISION);check("a potion's Night Vision is left as it is",nv!=null&&!nv.isInfiniteDuration(),String.valueOf(nv));wear(null,null);},"potion kept");
+        step(25,()->{var nv=effect(MobEffects.NIGHT_VISION);check("and stays when the set comes off",nv!=null&&!nv.isInfiniteDuration(),String.valueOf(nv));srv(()->sp().removeEffect(MobEffects.NIGHT_VISION));},"potion still there");
+
+        // 4. The armor table with no armor mod
+        step(5,()->{var ours=ArmorPlatform.fabrications().stream().filter(e->e.gate().id().startsWith("eternal_defense:")).toList();
+            var ages=new TreeMap<String,Integer>();for(var e:ours)ages.put(e.gate().id(),e.gate().age());note("OURS {}",ages);
+            check("the armor table lists the 20 pieces",ours.size()==20,ours.size()+"");
+            boolean agesOk=true;for(String set:ArmorSetRules.SETS)for(String p:PIECES)agesOk&=Objects.equals(ages.get("eternal_defense:"+set+"_"+p),ArmorSetRules.age(set));check("each set at its own Age",agesOk,ages.toString());
+            var chest=ours.stream().filter(e->e.gate().id().equals("eternal_defense:frontier_chestplate")).findFirst().orElse(null);var c=chest==null?List.<String>of():costs(chest);note("FRONTIER CHEST {}",c);
+            check("a Ranger Duster costs a Frontier chest's share: 8 iron sheets, 5 leather, 3 wool",c.equals(List.of("iron_sheet x8","leather x5","white_wool x3")),c.toString());
+            for(String set:ArmorSetRules.SETS){var e=ours.stream().filter(x->x.gate().id().equals("eternal_defense:"+set+"_chestplate")).findFirst().orElse(null);note("CHEST {} {}",set,e==null?"-":costs(e));}
+            check("Workshop Fabrication sells the armor table with no armor mod installed",srvGet(()->!WorkshopFabrication.empty(sp(),"armor_platform")),"");
+            srv(()->{var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.ARMOR_PLATFORM.get()));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;},"the list");
+        step(5,()->look(T.getX()+.5,sy,T.getZ()-3.5,T.getX()+.5,sy-1,T.getZ()+.5),"in front of the table's spot");
+        step(10,()->click(T.below(),Direction.UP),"place the armor table (a real right-click)");
+        step(10,()->{BlockPos at=srvGet(()->{for(var p:BlockPos.betweenClosed(T.offset(-2,-1,-2),T.offset(2,3,2)))if(sl().getBlockState(p).getBlock() instanceof WeaponPlatform.Station)return DefenseStructures.anchor(sl(),p.immutable());return null;});
+            check("the armor table stands",at!=null,String.valueOf(at));if(at!=null)T=at;},"armor table");
+        step(5,()->{String r=srvGet(()->{var chest=ArmorPlatform.fabrications().stream().filter(e->e.gate().id().equals("eternal_defense:frontier_chestplate")).findFirst().orElse(null);if(chest==null)return "missing";
+                var inv=sp().getInventory();inv.clearContent();try{for(var c:ArmorPlatform.costs(chest)){var items=c.ingredient().getItems();inv.add(new ItemStack(items[0].getItem(),c.count()));}}catch(ReflectiveOperationException ex){return "unreadable";}
+                String said=WeaponPlatform.craft(sp(),T,chest.recipeId());int held=inv.countItem(piece("frontier","chestplate"));int left=0;for(int i=0;i<inv.getContainerSize();i++){var s=inv.getItem(i);if(!s.isEmpty()&&!s.is(piece("frontier","chestplate")))left+=s.getCount();}
+                var exo=ArmorPlatform.fabrications().stream().filter(e->e.gate().id().equals("eternal_defense:exotic_chestplate")).findFirst().orElse(null);String locked=exo==null?"missing":WeaponPlatform.craft(sp(),T,exo.recipeId());
+                return said+" | "+held+" "+left+" | "+locked;});note("CRAFT {}",r);
+            check("in Survival a Ranger Duster is made for exactly its price",r.startsWith("Crafted 1 item(s). | 1 0 |"),r);check("an Exotic piece is locked at a Frontier table",!r.endsWith("Crafted 1 item(s)."),r);},"craft");
+        step(5,()->srv(()->{sp().setGameMode(GameType.CREATIVE);WeaponPlatform.open(sp(),T);}),"open the armor table");
+        until("the table's screen",60,()->mc().screen instanceof PlatformScreen,()->{});
+        step(10,()->{var s=mc().screen;((net.minecraft.client.gui.components.EditBox)field(s,"search")).setValue("Ranger");
+            try{var m=PlatformScreen.class.getDeclaredMethod("browse",int.class);m.setAccessible(true);m.invoke(s,0);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}},"search for Ranger");
+        step(20,()->{var data=(CompoundTag)staticField(PlatformScreen.class,"data");var rows=data.getList("recipes",Tag.TAG_COMPOUND);var names=new ArrayList<String>();for(int i=0;i<rows.size();i++)names.add(rows.getCompound(i).getString("recipe"));note("ROWS {}",names);
+            check("the table shows the four Ranger pieces",names.stream().filter(n->n.contains("frontier_")).count()==4,names.toString());shot("r1114_table_ranger");},"Ranger rows");
+        step(5,()->{mc().setScreen(null);srv(()->sp().setGameMode(GameType.SURVIVAL));},"close");
+
+        // 5. The Handheld Radio
+        step(5,()->srv(()->{
+            sl().setBlock(CANNON,EternalDefense.SUPPORT_CANNON.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(CANNON) instanceof SupportCannon.CannonEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            sl().setBlock(PLAT,EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(PLAT) instanceof SupportPlatform.PlatformEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            var sd=SupportData.get(sl());sd.setCannon(sp().getUUID(),CANNON);sd.setPlatform(sp().getUUID(),PLAT);
+            var inv=sp().getInventory();inv.clearContent();inv.setItem(30,new ItemStack(EternalDefense.ARDENT_ENERGY.get(),Economy.RADIO_PRICE));inv.setChanged();sp().teleportTo(sl(),PLAT.getX()+.5,sy,PLAT.getZ()-2.5,0,10);}),"a Support Platform and Cannon; Ardent Energy for a radio");
+        step(10,()->srv(()->{var s=sl().getBlockState(PLAT);s.use(sl(),sp(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(PLAT),Direction.NORTH,PLAT,false));}),"open the platform");
+        step(10,()->{int idx=-1;for(int i=0;i<SupportShop.PRODUCTS.size();i++)if(SupportShop.PRODUCTS.get(i).id().equals("radio"))idx=i;int at=idx;srv(()->SupportShop.buy(sp(),at));},"buy the radio");
+        step(10,()->{check("the radio for "+Economy.RADIO_PRICE+" Ardent",srvGet(()->inPack(EternalDefense.RADIO.get())==1&&inPack(EternalDefense.ARDENT_ENERGY.get())==0),"");
+            if(mc().screen instanceof SupportScreen s)s.showTab(1);else note("no platform screen: {}",mc().screen);},"bought");
+        step(10,()->{shot("r1114_platform_shop");},"picture: the shop with the radio");
+        step(5,()->closeAll(),"close");
+        // A Loadout Station with coins in slots 1 and 3
+        step(5,()->{srv(()->{var inv=sp().getInventory();for(int i=0;i<inv.getContainerSize();i++)if(inv.getItem(i).is(EternalDefense.RADIO.get())){inv.setItem(i,ItemStack.EMPTY);}
+            inv.setItem(0,new ItemStack(EternalDefense.LOADOUT_STATION_ITEM.get()));inv.selected=0;inv.setChanged();});mc().player.getInventory().selected=0;tp(S.getX()+.5,sy,S.getZ()-4.5,0,30);},"hold a Loadout Station");
+        step(15,()->click(S.below(2),Direction.UP),"place it");
+        step(20,()->{boolean placed=srvGet(()->LoadoutStation.machine(sl(),S)!=null);check("the station stands",placed,"");
+            srv(()->{var m=LoadoutStation.machine(sl(),S);if(m==null)return;var a=LoadoutCoin.create(kit(new ItemStack(Items.IRON_BOOTS),new ItemStack(Items.IRON_LEGGINGS),new ItemStack(Items.IRON_CHESTPLATE),new ItemStack(Items.IRON_HELMET),ItemStack.EMPTY,new ItemStack(Items.IRON_SWORD)));
+                a.setCount(2);m.shelf.setItem(0,a);var b=LoadoutCoin.create(kit(new ItemStack(Items.DIAMOND_BOOTS),ItemStack.EMPTY,ItemStack.EMPTY,new ItemStack(Items.DIAMOND_HELMET),ItemStack.EMPTY,new ItemStack(Items.BOW)));b.setCount(1);m.shelf.setItem(2,b);
+                var d=LoadoutData.get(sl());d.players.setActive(sp().getUUID(),0);d.setDirty();
+                var inv=sp().getInventory();inv.clearContent();inv.setItem(0,new ItemStack(EternalDefense.RADIO.get()));inv.selected=0;
+                inv.setItem(10,new ItemStack(EternalDefense.FIRE_FLARE.get(),3));inv.setItem(11,new ItemStack(EternalDefense.SUPPLY_FLARE.get(),2));inv.setItem(12,new ItemStack(EternalDefense.LOADOUT_FLARE.get(),2));inv.setItem(13,new ItemStack(EternalDefense.RETURN_FLARE.get(),1));inv.setChanged();
+                var b2=SupportData.get(sl()).ensure(sp().getUUID());b2.up[CannonUpgrades.Upgrade.QUANTUM.ordinal()]=1;SupportData.get(sl()).setDirty();});
+            mc().player.getInventory().selected=0;},"coins in slots 1 and 3; the radio in hand and flares in the pack");
+        step(10,()->{SOUNDS.clear();tp(FIELD.getX()+.5,sy,FIELD.getZ()+12.5,180,10);},"out in the field");
+        step(10,()->sneakUse(),"sneak and use the radio");
+        until("the radio's screen",60,()->mc().screen instanceof RadioScreen,()->{});
+        step(10,()->{check("sneak and use opens the radio",mc().screen instanceof RadioScreen,String.valueOf(mc().screen));check("with a short burst of radio static",heard("eternal_defense:radio.static"),String.valueOf(SOUNDS));
+            var m=((RadioScreen)mc().screen).getMenu();check("the menu shows the station's coins",m.station&&m.coins[0].getCount()==2&&m.coins[2].getCount()==1&&m.active.get()==0,m.station+" "+m.coins[0]+" "+m.coins[2]+" "+m.active.get());recordFrame=true;},"radio menu");
+        step(5,()->{layout("the empty radio screen");shot("r1114_radio_empty");},"picture: the empty radio");
+        step(5,()->{for(int i:new int[]{10,11,12,13})slotClick(menuSlot(i),0,ClickType.QUICK_MOVE);},"shift-click the four flare stacks in");
+        step(10,()->{var m=((RadioScreen)mc().screen).getMenu();String in=m.flares.getItem(0)+" "+m.flares.getItem(1)+" "+m.flares.getItem(2)+" "+m.flares.getItem(3);note("RADIO SLOTS {}",in);
+            check("each flare goes to its own slot",m.flares.getItem(0).getCount()==2&&m.flares.getItem(1).getCount()==1&&m.flares.getItem(2).getCount()==3&&m.flares.getItem(3).getCount()==2,in);
+            slotClick(menuSlot(0),0,ClickType.QUICK_MOVE);slotClick(0,0,ClickType.SWAP);},"try to move the radio itself");
+        step(10,()->{check("the radio stays in the hand while its menu is open",srvGet(()->sp().getInventory().getItem(0).is(EternalDefense.RADIO.get())),"");
+            BeaconNetwork.menuButton(mc().player.containerMenu.containerId,SupportCalls.Kind.FIRE.ordinal());BeaconNetwork.menuButton(mc().player.containerMenu.containerId,HandheldRadio.RadioMenu.LOADOUT+2);},"pick Fire, and kit 3");
+        step(10,()->{var m=((RadioScreen)mc().screen).getMenu();check("Fire is chosen",m.kind.get()==SupportCalls.Kind.FIRE.ordinal(),""+m.kind.get());
+            check("kit 3 is the station's active slot now",srvGet(()->LoadoutData.get(sl()).players.active(sp().getUUID()))==2&&m.active.get()==2,""+m.active.get());recordFrame=true;},"choices");
+        step(5,()->{layout("the loaded radio screen");shot("r1114_radio_loaded");},"picture: the loaded radio");
+        step(5,()->closeAll(),"close it");
+        step(5,()->{check("the radio keeps the flares",stored(SupportCalls.Kind.FIRE)==3&&stored(SupportCalls.Kind.SUPPLY)==2&&stored(SupportCalls.Kind.LOADOUT)==2&&stored(SupportCalls.Kind.RETURN)==1,radio().getTag()+"");
+            check("and they left the pack",srvGet(()->inPack(EternalDefense.FIRE_FLARE.get())+inPack(EternalDefense.SUPPLY_FLARE.get())+inPack(EternalDefense.LOADOUT_FLARE.get())+inPack(EternalDefense.RETURN_FLARE.get()))==0,"");
+            var lines=radio().getTooltipLines(mc().player,TooltipFlag.NORMAL).stream().map(c->c.getString()).toList();note("RADIO TOOLTIP {}",lines);check("its tooltip shows what it holds",lines.contains("Plants: Fire Support Flare")&&lines.contains("Fire Support Flare: 3 of 16"),lines.toString());},"stored");
+        // Plant a Fire Support Flare where the player looks
+        step(5,()->{clearMessages();SOUNDS.clear();clearFlares();look(FIELD.getX()+.5,sy,FIELD.getZ()+12.5,FIELD.getX()+.5,sy,FIELD.getZ()+.5);},"look at the ground 12 blocks away");
+        step(5,()->use(),"use the radio");
+        step(10,()->{var f=flaresNear(FIELD,3);check("a Fire Support Flare lies where the player looked",f.size()==1&&f.get(0).landed()&&f.get(0).kind()==SupportCalls.Kind.FIRE&&f.get(0).position().distanceTo(Vec3.atBottomCenterOf(FIELD))<1.5,f.isEmpty()?"none":f.get(0).position()+" "+f.get(0).kind());
+            check("one flare used",stored(SupportCalls.Kind.FIRE)==2,""+stored(SupportCalls.Kind.FIRE));check("the radio crackles",heard("eternal_defense:radio.static"),String.valueOf(SOUNDS));mc().options.hideGui=false;shot("r1114_radio_marker");},"planted");
+        until("the cannon fires for it",900,()->heard("eternal_defense:cannon.fire"),()->check("the cannon answers the planted flare",heard("eternal_defense:cannon.fire"),String.valueOf(SOUNDS)));
+        until("the barrage ends",900,()->flaresNear(FIELD,3).isEmpty(),()->{});
+        // A wall: the flare goes on the ground in front of it
+        step(5,()->{srv(()->{for(int x=-2;x<=2;x++)for(int y=0;y<4;y++)sl().setBlock(WALL.offset(x,y,0),Blocks.STONE.defaultBlockState(),3);});clearFlares();look(WALL.getX()+.5,sy,WALL.getZ()+8.5,WALL.getX()+.5,sy+2.5,WALL.getZ()+1);},"look at a wall");
+        step(5,()->use(),"use the radio");
+        step(10,()->{var f=flaresNear(WALL,4);check("on a wall the flare lands on the ground in front of it",f.size()==1&&f.get(0).landed()&&Math.abs(f.get(0).getY()-sy)<.01&&f.get(0).getZ()>WALL.getZ()+1,f.isEmpty()?"none":f.get(0).position().toString());},"wall");
+        until("that barrage ends",900,()->flaresNear(WALL,4).isEmpty(),()->{});
+        // The sky and an empty radio
+        step(5,()->{clearMessages();tp(FIELD.getX()+.5,sy,FIELD.getZ()+12.5,180,-80);},"look at the sky");
+        step(5,()->use(),"use the radio");
+        step(10,()->check("no ground in sight: a hint, nothing used",barHas("Look at the ground within 48 blocks")&&stored(SupportCalls.Kind.FIRE)==1,bars()+" "+stored(SupportCalls.Kind.FIRE)),"sky");
+        // The Loadout call with the kit picked in the radio
+        step(5,()->{clearMessages();SOUNDS.clear();clearFlares();srv(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.RADIO.get()))HandheldRadio.call(s,SupportCalls.Kind.LOADOUT);});
+            look(FIELD.getX()+.5,sy,FIELD.getZ()+12.5,FIELD.getX()+.5,sy,FIELD.getZ()+.5);},"the radio set to Loadout");
+        step(5,()->use(),"use the radio");
+        until("a capsule stands",1500,()->srvGet(()->{for(var p:BlockPos.betweenClosed(FIELD.offset(-6,-2,-6),FIELD.offset(6,4,6)))if(sl().getBlockState(p).is(EternalDefense.LOADOUT_CAPSULE.get()))return true;return false;}),()->{
+            int left=srvGet(()->LoadoutStation.machine(sl(),S).coins[2].getCount());check("the kit picked in the radio (slot 3) is delivered",left==0&&srvGet(()->LoadoutStation.machine(sl(),S).coins[0].getCount())==2,"slot 3 has "+left);
+            check("one Loadout Flare used",stored(SupportCalls.Kind.LOADOUT)==1,""+stored(SupportCalls.Kind.LOADOUT));});
+        step(5,()->{clearMessages();srv(()->{for(var s:sp().getInventory().items)if(s.is(EternalDefense.RADIO.get())){HandheldRadio.count(s,SupportCalls.Kind.FIRE,0);HandheldRadio.call(s,SupportCalls.Kind.FIRE);}});},"no Fire Support Flare left");
+        step(5,()->use(),"use the radio");
+        step(10,()->check("an empty radio says so",barHas("No Fire Support Flare in the radio"),bars()),"empty");
+        step(10,()->{},"done");
+    }
+}

@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.14 — Age armor sets and the Handheld Radio (2026-10-17, `dev`)
+
+After 1.1.13 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed), but new items and a new menu type: 1.1.13 and 1.1.14 do not mix. Rules: GDD 1.1.14; tests: `docs/ROUND-1.1.14-TESTING.md`.
+
+* **Five Age armor sets** (the owner's art): Ranger (Frontier, protects like iron), Trench (World Wars, a little more), Operator, Vanguard Exo and Resonance (Modern, Advanced, Exotic: like diamond). Wearing all four pieces of one set gives its bonus: Quick Draw (guns reload 15% faster), Stormtrooper (+10% gun damage, no Poison), Night Operator (Night Vision, +10% gun damage), Exo Bulwark (no knockback, bullets and explosions 25% weaker, no Slowness), Ardent Ward (Regeneration, 2 extra hearts, no knockback; a pulse under 30% health throws enemies back and gives 4 hearts of Absorption for 10 seconds, once a minute). A piece's tooltip shows the bonus and how many pieces are worn.
+* **The armor table is never empty**: it always makes the five sets, at each set's Age and the Age's usual price; other armor mods' gear is listed too when installed.
+* **Handheld Radio** (8 Ardent at the Support Platform): carries up to 16 of each flare. Use it to plant the chosen flare on the ground you look at, up to 48 blocks away; sneak and use for its menu (load flares, pick the flare, pick the Loadout kit), with a short burst of radio static.
+
 ## 1.1.13 — Capsule armor shows at once (2026-10-16, `dev`)
 
 After 1.1.12 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed, no new block or entity). Rules: GDD 1.1.13; tests: `docs/ROUND-1.1.13-TESTING.md`.

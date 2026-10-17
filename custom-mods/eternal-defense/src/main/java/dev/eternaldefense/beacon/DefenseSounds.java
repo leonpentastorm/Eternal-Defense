@@ -34,6 +34,8 @@ final class DefenseSounds {
         TACTICAL_SCAN_DONE=of("tactical.scan_done"),TACTICAL_CONTACT=of("tactical.contact");
     /** The specialty seller's radio: static as the Command Table makes contact */
     static final RegistryObject<SoundEvent> SELLER_STATIC=of("seller.radio_static");
+    /** The Handheld Radio's short burst of static */
+    static final RegistryObject<SoundEvent> RADIO=of("radio.static");
     /** The war horn: a FOB planted, a FOB's raid starting (Fobs.horn). */
     static final RegistryObject<SoundEvent> WAR_HORN=of("fob.war_horn");
     private static final List<RegistryObject<SoundEvent>> ORDER_CHATTER=java.util.stream.IntStream.rangeClosed(1,SupplyCatapult.ORDER_LINES).mapToObj(n->of("seller.order_chatter_"+n)).toList();

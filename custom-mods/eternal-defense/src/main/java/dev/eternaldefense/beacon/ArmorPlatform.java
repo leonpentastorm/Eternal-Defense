@@ -42,6 +42,7 @@ public final class ArmorPlatform {
     }
     static boolean matches(String value,String... fragments){for(String s:fragments)if(value.contains(s))return true;return false;}
     static String type(ItemStack stack){
+        if(stack.getItem() instanceof ArmorSetItem a)return switch(a.getEquipmentSlot()){case HEAD->"head";case CHEST->"vest";case LEGS->"legs";default->"boots";};
         String id=key(stack.getItem());var n=stack.getOrCreateTag();
         if(!(stack.getItem() instanceof ArmorItem)&&matches(id,"armorplate","armor_plate","plate_","ceramic_tile","steel_plate"))return "plates";   // Worn pieces (a chestplate_ id, a plate carrier) are not plates
         if(stack.getItem().isEdible()||n.contains("ConsumableId")||matches(id,"medkit","bandage","antibiotic","syringe","medical","first_aid"))return "medical";
@@ -55,6 +56,7 @@ public final class ArmorPlatform {
     }
     static int age(ItemStack stack){
         Integer set=CraftBalance.override(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());if(set!=null)return set;   // A hand-set Age wins
+        if(stack.getItem() instanceof ArmorSetItem a)return a.set().age();
         String id=key(stack.getItem()),type=type(stack);
         if(matches(id,"exoskeleton","juggernaut","restorative","thermal","digital_vision"))return 5;
         if(matches(id,"heavy","defender","armored_chemical","reinforced","viper","redut","airstrike"))return 4;
@@ -94,10 +96,12 @@ public final class ArmorPlatform {
                 var output=new ItemStack(item);int age=age(output);String type=type(output),slot=ArmorBalance.slot(output);double score=slot==null?0:ArmorBalance.score(output);
                 pieces.add(new Piece(BuiltInRegistries.ITEM.getKey(item),output,age,type,slot,score));if(armor(output)&&slot!=null)scores.add(new double[]{age,score});
             }});
+            // The mod's own Age sets: always listed, at their Age's usual price, and left out of the medians
+            for(var set:EternalDefense.ARMOR_SETS){var output=new ItemStack(set.get());pieces.add(new Piece(set.getId(),output,age(output),type(output),ArmorBalance.slot(output),0));}
             var medians=ArmorBalance.medians(scores,CraftBalance.settings().minPeers());
             var all=new ArrayList<WeaponPlatform.Entry>();
             for(var p:pieces){
-                boolean gear=armor(p.output());Double median=medians.get(p.age());
+                boolean gear=armor(p.output());Double median=p.output().getItem() instanceof ArmorSetItem?null:medians.get(p.age());
                 var fabrication=gear?new Fabrication(ArmorBalance.costs(p.type(),p.slot(),p.age(),p.score(),median),p.type(),ArmorBalance.ratio(p.slot(),p.score(),median)):new Fabrication(materials(p.output(),p.age()),p.type(),1);
                 all.add(new WeaponPlatform.Entry(new ResourceLocation(EternalDefense.ID,"armor/"+p.id().getNamespace()+"/"+p.id().getPath()),fabrication,new WeaponPlatform.Gate(p.age(),gear?"armor":"supply",p.id().toString(),name(p.id(),p.output())),p.output()));
             }

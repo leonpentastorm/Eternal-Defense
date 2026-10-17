@@ -5,6 +5,8 @@ final class SupportRules {
     private SupportRules(){}
     // Ardent Energy prices of the gear bought at the Support Platform.
     static final int CANNON_PRICE=12,SUPPLY_FLARE_PRICE=3,RETURN_FLARE_PRICE=2,FIRE_FLARE_PRICE=6;
+    /** The Handheld Radio: how far it marks (blocks), how far a marker drops to the ground, flares of each kind it carries */
+    static final int RADIO_RANGE=48,RADIO_DROP=8,RADIO_FLARES=16;
     /** How close (blocks) a player must stand to a cannon to work its menu. */
     static final int CANNON_REACH=12;
     /** Players farther than this from their own cannon (or in another dimension) cannot see or hear */

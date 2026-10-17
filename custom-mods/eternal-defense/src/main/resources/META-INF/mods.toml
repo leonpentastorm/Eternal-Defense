@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT"
 [[mods]]
 modId="eternal_defense"
-version="1.1.13"
+version="1.1.14"
 displayName="Eternal Defense"
 logoFile="eternal_defense_logo.png"
 logoBlur=false

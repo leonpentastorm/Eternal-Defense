@@ -1,0 +1,67 @@
+Real client, QaRelease1114 run 2 (2026-10-17), QA_CREATE=1, no armor mods, flat world, 1280 x 720
+QA_CHECK PASS 20 worn models baked, one per set and slot 20 models
+QA_CHECK PASS the client sees the five stands in their armor 5
+QA_CHECK PASS all 21 item models load (no missing model) 0 missing
+QA_CHECK PASS the tooltip counts the pieces worn and names the bonus [Ranger Riding Boots, Frontier Age armor. Wear all four pieces of the set for its bonus., Set bonus (3 of 4 worn): Quick Draw, Guns reload 15% faster., , When on Feet:, +2 Armor]
+QA_CHECK PASS a mixed set gives no bonus 1.0 1.0
+QA_CHECK PASS Quick Draw: reload speed x1.15 1.15 from 1.0
+QA_CHECK PASS and no gun damage 1.0
+QA_CHECK PASS Ranger protects like iron: 15 armor, no toughness 15.0 / 0.0
+QA_CHECK PASS Stormtrooper: gun damage x1.1, reload back to normal 1.1 1.0
+QA_CHECK PASS Trench: 16 armor, toughness 1 a piece (4 for the set) 16.0 / 4.0
+QA_CHECK PASS Poison cannot touch the Trench set false
+QA_CHECK PASS Night Operator: endless Night Vision effect.minecraft.night_vision, Duration: infinite, Particles: false
+QA_CHECK PASS and gun damage x1.1 1.1
+QA_CHECK PASS Operator protects like diamond: 20 armor, toughness 2 a piece (8 for the set, as a diamond set) 20.0 / 8.0
+QA_CHECK PASS Poison works again without the Trench set 
+QA_CHECK PASS Night Vision leaves with the Operator set 
+QA_CHECK PASS gun damage back to normal 1.0
+QA_CHECK PASS Exo Bulwark: no knockback 1.0
+QA_CHECK PASS Slowness cannot touch the Vanguard Exo set false
+QA_CHECK PASS a bullet (projectile) hit: 8 comes to 6 [6.0, 6.0, 8.0]
+QA_CHECK PASS an explosion: 8 comes to 6 [6.0, 6.0, 8.0]
+QA_CHECK PASS a melee hit stays 8 [6.0, 6.0, 8.0]
+QA_CHECK PASS Ardent Ward: 2 extra hearts (24 health) 24.0
+QA_CHECK PASS no knockback 
+QA_CHECK PASS endless Regeneration I effect.minecraft.regeneration, Duration: infinite, Particles: false
+QA_CHECK PASS Slowness works again without the Vanguard Exo set 
+QA_CHECK PASS the pulse gives 4 extra hearts 8.0
+QA_CHECK PASS it throws the husks back 2.5 -> [9.736375346101681, 9.736375346101681]
+QA_CHECK PASS the action bar says so Ardent Ward! Enemies thrown back, 4 extra hearts for 10 seconds. Ready again in 60 seconds.
+QA_CHECK PASS the pulse sounds 
+QA_CHECK PASS no second pulse within the minute 
+QA_CHECK PASS taking it off ends the bonus 20.0 null
+QA_CHECK PASS a potion's Night Vision is left as it is effect.minecraft.night_vision, Duration: 1175
+QA_CHECK PASS and stays when the set comes off effect.minecraft.night_vision, Duration: 1148
+QA_CHECK PASS the armor table lists the 20 pieces 20
+QA_CHECK PASS each set at its own Age {eternal_defense:advanced_boots=4, eternal_defense:advanced_chestplate=4, eternal_defense:advanced_helmet=4, eternal_defense:advanced_leggings=4, eternal_defense:exotic_boots=5, eternal_defense:exotic_chestplate=5, eternal_defense:exotic_helmet=5, eternal_defense:exotic_leggings=5, eternal_defense:frontier_boots=1, eternal_defense:frontier_chestplate=1, eternal_defense:frontier_helmet=1, eternal_defense:frontier_leggings=1, eternal_defense:modern_boots=3, eternal_defense:modern_chestplate=3, eternal_defense:modern_helmet=3, eternal_defense:modern_leggings=3, eternal_defense:worldwars_boots=2, eternal_defense:worldwars_chestplate=2, eternal_defense:worldwars_helmet=2, eternal_defense:worldwars_leggings=2}
+QA_CHECK PASS a Ranger Duster costs a Frontier chest's share: 8 iron sheets, 5 leather, 3 wool [iron_sheet x8, leather x5, white_wool x3]
+QA_CHECK PASS Workshop Fabrication sells the armor table with no armor mod installed 
+QA_CHECK PASS the armor table stands BlockPos{x=6, y=-60, z=0}
+QA_CHECK PASS in Survival a Ranger Duster is made for exactly its price Crafted 1 item(s). | 1 0 | Requires Age 5: Exotic.
+QA_CHECK PASS an Exotic piece is locked at a Frontier table Crafted 1 item(s). | 1 0 | Requires Age 5: Exotic.
+QA_CHECK PASS the table shows the four Ranger pieces [eternal_defense:armor/eternal_defense/frontier_boots, eternal_defense:armor/eternal_defense/frontier_chestplate, eternal_defense:armor/eternal_defense/frontier_helmet, eternal_defense:armor/eternal_defense/frontier_leggings]
+QA_CHECK PASS the radio for 8 Ardent 
+QA_CHECK PASS the station stands 
+QA_CHECK PASS sneak and use opens the radio dev.eternaldefense.beacon.RadioScreen@52230682
+QA_CHECK PASS with a short burst of radio static [eternal_defense:radio.static]
+QA_CHECK PASS the menu shows the station's coins true 2 loadout_coin 1 loadout_coin 0
+QA_CHECK PASS the empty radio screen: 14 texts, none cut off or over another 
+QA_CHECK PASS each flare goes to its own slot 2 support_flare 1 return_flare 3 fire_support_flare 2 loadout_flare
+QA_CHECK PASS the radio stays in the hand while its menu is open 
+QA_CHECK PASS Fire is chosen 2
+QA_CHECK PASS kit 3 is the station's active slot now 2
+QA_CHECK PASS the loaded radio screen: 14 texts, none cut off or over another 
+QA_CHECK PASS the radio keeps the flares {Call:"fire",Flares:{fire:3,loadout:2,return:1,supply:2}}
+QA_CHECK PASS and they left the pack 
+QA_CHECK PASS its tooltip shows what it holds [Handheld Radio, Use: plant the chosen flare where you look. Sneak and use: load flares, pick the flare and your Loadout kit., Plants: Fire Support Flare, Support Flare: 2 of 16, Return Flare: 1 of 16, Fire Support Flare: 3 of 16, Loadout Flare: 2 of 16]
+QA_CHECK PASS a Fire Support Flare lies where the player looked (-11.499999999999998, -60.0, -45.50554955877018) FIRE
+QA_CHECK PASS one flare used 2
+QA_CHECK PASS the radio crackles [minecraft:entity.firework_rocket.blast, eternal_defense:radio.static, eternal_defense:flare.chatter_5]
+QA_CHECK PASS the cannon answers the planted flare [minecraft:entity.firework_rocket.blast, eternal_defense:radio.static, eternal_defense:flare.chatter_5, eternal_defense:cannon.turning_done, eternal_defense:cannon.fire]
+QA_CHECK PASS on a wall the flare lands on the ground in front of it (-35.5, -60.0, -14.5)
+QA_CHECK PASS no ground in sight: a hint, nothing used Look at the ground within 48 blocks to plant the flare. 1
+QA_CHECK PASS the kit picked in the radio (slot 3) is delivered slot 3 has 0
+QA_CHECK PASS one Loadout Flare used 1
+QA_CHECK PASS an empty radio says so No Fire Support Flare in the radio. Sneak and use it to load some.
+QA_DONE pass=65 fail=0

@@ -72,22 +72,7 @@ final class SupportFlares {
         @Override public InteractionResultHolder<ItemStack> use(Level level,Player player,InteractionHand hand){
             ItemStack stack=player.getItemInHand(hand);
             if(level.isClientSide)return InteractionResultHolder.success(stack);
-            if(!(player instanceof ServerPlayer sp))return InteractionResultHolder.fail(stack);
-            String problem=SupportCalls.problem(sp,kind);
-            if(problem!=null){SupportCalls.refuse(sp,problem);return InteractionResultHolder.fail(stack);}
-            // The call is always the THROWER's own: their upgrades and their chosen fire support
-            var base=SupportData.get(sp.serverLevel()).of(sp.getUUID());
-            var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],base!=null?base.type():CannonUpgrades.FireType.EXPLOSION);
-            ListTag cargo=kind==SupportCalls.Kind.SUPPLY?SupportCalls.takeGrid(sp):new ListTag();
-            var call=kind==SupportCalls.Kind.LOADOUT?LoadoutCall.reserve(sp):null;
-            SupportCalls.announce(sp,kind==SupportCalls.Kind.FIRE?cfg.type().callId():kind.id);
-            var flare=new FlareEntity(EternalDefense.FLARE.get(),level);
-            flare.setOwner(player);flare.setPos(player.getX(),player.getEyeY()-.1,player.getZ());
-            flare.configure(kind,cargo,cfg);
-            if(call!=null){flare.loadout=call;LoadoutCall.pending(sp.getUUID(),flare.getUUID());}
-            flare.shootFromRotation(player,player.getXRot(),player.getYRot(),0f,1.1f,1f);
-            level.addFreshEntity(flare);
-            level.playSound(null,player.getX(),player.getY(),player.getZ(),SoundEvents.FIREWORK_ROCKET_LAUNCH,SoundSource.PLAYERS,.8f,1.2f);
+            if(!(player instanceof ServerPlayer sp)||!call(sp,kind,null))return InteractionResultHolder.fail(stack);
             if(!player.getAbilities().instabuild)stack.shrink(1);
             return InteractionResultHolder.consume(stack);
         }
@@ -99,6 +84,27 @@ final class SupportFlares {
                 lines.add(Component.translatable("tooltip.eternal_defense.flare.yours").withStyle(ChatFormatting.GOLD));
             }
         }
+    }
+
+    /** Makes a call: thrown from the hand, or planted where a radio marks it; false when it is refused */
+    static boolean call(ServerPlayer sp,SupportCalls.Kind kind,Vec3 marker){
+        String problem=SupportCalls.problem(sp,kind);
+        if(problem!=null){SupportCalls.refuse(sp,problem);return false;}
+        // The call is always the THROWER's own: their upgrades and their chosen fire support
+        var base=SupportData.get(sp.serverLevel()).of(sp.getUUID());
+        var cfg=CannonUpgrades.Config.of(base!=null?base.up:new int[CannonUpgrades.Upgrade.values().length],base!=null?base.type():CannonUpgrades.FireType.EXPLOSION);
+        ListTag cargo=kind==SupportCalls.Kind.SUPPLY?SupportCalls.takeGrid(sp):new ListTag();
+        var call=kind==SupportCalls.Kind.LOADOUT?LoadoutCall.reserve(sp):null;
+        SupportCalls.announce(sp,kind==SupportCalls.Kind.FIRE?cfg.type().callId():kind.id);
+        var level=sp.serverLevel();var flare=new FlareEntity(EternalDefense.FLARE.get(),level);
+        flare.setOwner(sp);flare.configure(kind,cargo,cfg);
+        if(call!=null){flare.loadout=call;LoadoutCall.pending(sp.getUUID(),flare.getUUID());}
+        if(marker!=null){flare.setPos(marker.x,marker.y,marker.z);level.addFreshEntity(flare);flare.land(marker);return true;}
+        flare.setPos(sp.getX(),sp.getEyeY()-.1,sp.getZ());
+        flare.shootFromRotation(sp,sp.getXRot(),sp.getYRot(),0f,1.1f,1f);
+        level.addFreshEntity(flare);
+        level.playSound(null,sp.getX(),sp.getY(),sp.getZ(),SoundEvents.FIREWORK_ROCKET_LAUNCH,SoundSource.PLAYERS,.8f,1.2f);
+        return true;
     }
 
     /** Players are never hurt by a flare (its shells, bombs and bolts) except by a Bunker Buster */
@@ -169,12 +175,15 @@ final class SupportFlares {
         @Override protected void onHitBlock(BlockHitResult hit){
             if(landed())return;
             if(hit.getDirection()==Direction.UP){
-                // It comes to rest exactly where it touched the ground: everything the call does is measured from this point
-                Vec3 at=hit.getLocation();setPos(at.x,at.y,at.z);setDeltaMovement(Vec3.ZERO);setNoGravity(true);entityData.set(LANDED,true);
-                if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY,LOADOUT->1.1f;case RETURN->1f;case FIRE->.9f;});
+                land(hit.getLocation());
             }else{
                 Vec3 m=getDeltaMovement();setDeltaMovement(-m.x*.2,Math.min(m.y,0)*.5,-m.z*.2);   // Slides down walls and bounces off ceilings
             }
+        }
+        /** Comes to rest at this point: everything the call does is measured from here */
+        void land(Vec3 at){
+            setPos(at.x,at.y,at.z);setDeltaMovement(Vec3.ZERO);setNoGravity(true);entityData.set(LANDED,true);
+            if(level() instanceof ServerLevel server)Blasts.flareLanded(server,position(),switch(kind()){case SUPPLY,LOADOUT->1.1f;case RETURN->1f;case FIRE->.9f;});
         }
         @Override public AABB getBoundingBoxForCulling(){return landed()&&kind()==SupportCalls.Kind.FIRE?box().inflate(1):super.getBoundingBoxForCulling();}
         @Override public void remove(RemovalReason reason){
