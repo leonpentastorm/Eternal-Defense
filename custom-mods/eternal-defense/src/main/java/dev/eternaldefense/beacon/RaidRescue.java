@@ -34,8 +34,13 @@ final class RaidRescue {
         boolean busy=RaidMarch.busy(striking||RaidMarch.inMeleeReach(toTarget,reach,sees),RaidMarch.holdingRange(BeaconCombat.ranged(mob),toTarget,sees),
             RaidMarch.breachedRecently(RaidMarch.lastBreach(id),now),RaidMarch.fought(defender!=null&&RaidMarch.reachable(defender.getY()-mob.getY()),mob.getLastHurtByMob()!=null),!l.isPositionEntityTicking(mob.blockPosition()));
         var track=RaidMarch.observe(RaidMarch.track(id),distance,now,busy);RaidMarch.track(id,track);
-        if(!RaidMarch.stuck(track,now,busy))return false;
-        String reason="timer";
+        String reason=RaidMarch.stuck(track,now,busy)?"timer":null;
+        // Deep in water and far from land toward its target, or swimming for a while already: through a gate at once
+        long wet=RaidMarch.swimming(id,swimming(mob),now);
+        if(reason==null&&wet>=0&&!striking&&!RaidMarch.inMeleeReach(toTarget,reach,sees)&&RaidMarch.graceOver(track,now)){
+            if(RaidMarch.swumTooLong(wet,now)||RaidMarch.swimTooLong(RaidMarch.swimSeconds(RaidBridges.swim(l,mob,RaidBridges.goal(d,mob)),swimSpeed(mob))))reason="water";
+        }
+        if(reason==null)return false;
 
         var data=mob.getPersistentData();boolean boss=data.getBoolean("eternalBoss");int gates=data.getInt(RaidMarch.GATES);
         diagnose("TRIGGER",l,d,mob,track,gates,"-",reason,null);
@@ -54,6 +59,16 @@ final class RaidRescue {
         return true;
     }
 
+    /** In water with its head under, or off the ground: swimming (a mob at home in water never is) */
+    static boolean swimming(Mob mob){
+        if(mob instanceof net.minecraft.world.entity.monster.Drowned||mob.getMobType()==net.minecraft.world.entity.MobType.WATER)return false;
+        return mob.isInWater()&&(mob.isUnderWater()||!mob.onGround());
+    }
+    /** Its move speed times its swim speed */
+    static double swimSpeed(Mob mob){
+        double speed=mob.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        var swim=mob.getAttribute(net.minecraftforge.common.ForgeMod.SWIM_SPEED.get());return swim==null?speed:speed*swim.getValue();
+    }
     static double distanceToBeacon(CampaignData d,Mob mob){return Math.sqrt(mob.distanceToSqr(d.beacon.getX()+.5,d.beacon.getY()+1,d.beacon.getZ()+.5));}
     /** Positions of every player that could see a raider appear (spectators do not count). */
     static List<Vec3> players(ServerLevel l){var out=new ArrayList<Vec3>();for(var p:l.players())if(!p.isSpectator())out.add(p.position());return out;}

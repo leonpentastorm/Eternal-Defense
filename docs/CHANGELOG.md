@@ -1,5 +1,12 @@
 # Change log
 
+## 1.1.15 — Raiders share bridges; long swims go through a gate (2026-10-17, `dev`)
+
+After 1.1.14 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.15; tests: `docs/ROUND-1.1.15-TESTING.md`.
+
+* **Shared bridges:** a raider at water, lava or a chasm first uses a bridge of the raid that starts within 16 blocks and leads toward its target. It walks to the bridge, crosses the planks already down and lays more from the end when the bridge does not reach land yet. Only when there is none does it build a new bridge.
+* **Swimming raiders:** a raider swimming in deep water goes to a red gate at once when the swim to land toward its target would take more than 5 seconds at its best swimming speed, or after it has been in the water for 5 seconds. Drowned and water mobs swim on.
+
 ## 1.1.14 — Age armor sets and the Handheld Radio (2026-10-17, `dev`)
 
 After 1.1.13 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed), but new items and a new menu type: 1.1.13 and 1.1.14 do not mix. Rules: GDD 1.1.14; tests: `docs/ROUND-1.1.14-TESTING.md`.

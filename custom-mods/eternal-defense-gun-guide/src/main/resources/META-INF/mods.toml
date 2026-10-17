@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT"
 [[mods]]
 modId="eternal_defense_gun_guide"
-version="1.1.14"
+version="1.1.15"
 displayName="Eternal Defense: Gun Guide"
 logoFile="eternal_defense_gun_guide_logo.png"
 logoBlur=false

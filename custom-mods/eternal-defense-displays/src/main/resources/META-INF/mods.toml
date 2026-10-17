@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT (code); All Rights Reserved (artwork)"
 [[mods]]
 modId="eternal_defense_displays"
-version="1.1.14"
+version="1.1.15"
 displayName="Eternal Defense: Displays"
 logoFile="eternal_defense_displays_logo.png"
 logoBlur=false

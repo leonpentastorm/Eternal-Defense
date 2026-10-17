@@ -58,6 +58,22 @@ final class RaidMarch {
     static final int GATE_CAPACITY=8;
     static final long TICKS_PER_SECOND=20;
 
+    // Swimming
+    /** A raider in deep water that would swim longer than this to land toward its target opens a gate at once */
+    static final int SWIM_SECONDS=5;
+    /** Blocks of water looked at toward the target; no land within them counts as this many */
+    static final int SWIM_LOOK=32;
+    /** Vanilla water movement: 0.02 of the move speed a tick against 0.8 drag, so at best 1.6 blocks a second for each unit of speed */
+    static final double SWIM_PER_SPEED=1.6;
+    /** Pure: seconds to swim across this much water at this move speed (times the swim speed) */
+    static double swimSeconds(int water,double speed){return Math.max(0,water)/(Math.max(.01,speed)*SWIM_PER_SPEED);}
+    /** Pure: the swim is long enough to go through a gate at once */
+    static boolean swimTooLong(double seconds){return seconds>SWIM_SECONDS;}
+    /** Pure: in the water for longer than SWIM_SECONDS already (since the tick it was first seen swimming) */
+    static boolean swumTooLong(long since,long now){return since>=0&&now-since>SWIM_SECONDS*TICKS_PER_SECOND;}
+    /** Pure: a raider may be sent through a gate again (outside the grace window after its last one) */
+    static boolean graceOver(Track t,long now){return t==null||now>=t.graceUntil();}
+
     /** The tracker entry of one raider. */
     record Track(double best,long improvedAt,long graceUntil,int dry){}
 
@@ -111,7 +127,7 @@ final class RaidMarch {
     // State (server thread only; transient)
     private static final Map<UUID,Vec3> LAST=new HashMap<>();
     private static final Map<UUID,Track> TRACKS=new HashMap<>();
-    private static final Map<UUID,Long> BREACHES=new HashMap<>(),FALLBACKS=new HashMap<>();
+    private static final Map<UUID,Long> BREACHES=new HashMap<>(),FALLBACKS=new HashMap<>(),SWIMS=new HashMap<>();
     private static int dropped;
 
     /** Called once a second per raider: true when it hardly moved since the last call. */
@@ -130,15 +146,17 @@ final class RaidMarch {
     /** BeaconCombat.approach had no usable path and pushed the raider straight at its goal (the log tells when). */
     static void forcedMove(Mob mob,long now){if(mob.getPersistentData().getBoolean("eternalRaider"))FALLBACKS.put(mob.getUUID(),now);}
     static long lastForcedMove(UUID id){return FALLBACKS.getOrDefault(id,-1L);}
+    /** The tick a raider was first seen swimming this time (-1 when it is not swimming) */
+    static long swimming(UUID id,boolean now,long tick){if(!now){SWIMS.remove(id);return -1;}return SWIMS.computeIfAbsent(id,k->tick);}
     static void dropped(){dropped++;}
     /** The number of raiders that joined the parachute squadron since the last call (chat says so once a second at most). */
     static int takeDropped(){int n=dropped;dropped=0;return n;}
     /** Drops everything kept for raiders that are gone: dead, unloaded or removed. */
     static void prune(Collection<UUID> alive){
-        LAST.keySet().retainAll(alive);TRACKS.keySet().retainAll(alive);BREACHES.keySet().retainAll(alive);FALLBACKS.keySet().retainAll(alive);
+        LAST.keySet().retainAll(alive);TRACKS.keySet().retainAll(alive);BREACHES.keySet().retainAll(alive);FALLBACKS.keySet().retainAll(alive);SWIMS.keySet().retainAll(alive);
     }
     /** A raid starts or ends, the server stops, the campaign is packed up. */
-    static void forget(){LAST.clear();TRACKS.clear();BREACHES.clear();FALLBACKS.clear();dropped=0;}
+    static void forget(){LAST.clear();TRACKS.clear();BREACHES.clear();FALLBACKS.clear();SWIMS.clear();dropped=0;}
     /** For tests: how many entries are kept. */
-    static int kept(){return LAST.size()+TRACKS.size()+BREACHES.size()+FALLBACKS.size();}
+    static int kept(){return LAST.size()+TRACKS.size()+BREACHES.size()+FALLBACKS.size()+SWIMS.size();}
 }

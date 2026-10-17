@@ -19,7 +19,7 @@ import java.util.*;
 final class RaidDigging {
     private RaidDigging(){}
     /** A swing every this many ticks; a crack nobody hits for FORGET_TICKS heals; a job is dropped after JOB_TICKS */
-    static final int SWING_TICKS=10,FORGET_TICKS=160,JOB_TICKS=400;
+    static final int SWING_TICKS=10,FORGET_TICKS=160,JOB_TICKS=400,BRIDGE_JOB_TICKS=900;
     /** Share of the attack damage one swing does (two swings a second) */
     static final double SWING_SHARE=.5;
     /** The most damage any block can take, and what an arrow or bullet does to a defense */
@@ -79,17 +79,17 @@ final class RaidDigging {
 
     // Jobs: the block a raider is digging, or the bridge it is laying
     static final class Job {
-        final BlockPos dig;final RaidBridges.Plan bridge;final long started;long lastSwing=Long.MIN_VALUE,moved;int step=1;
-        Job(BlockPos dig,RaidBridges.Plan bridge,long started){this.dig=dig;this.bridge=bridge;this.started=started;this.moved=started;}
+        final BlockPos dig;final RaidBridges.Line bridge;final long started;long lastSwing=Long.MIN_VALUE,moved;int step=1,laid,target;double best=Double.MAX_VALUE;
+        Job(BlockPos dig,RaidBridges.Line bridge,long started){this.dig=dig;this.bridge=bridge;this.started=started;this.moved=started;}
     }
     private static final Map<Mob,Job> JOBS=new WeakHashMap<>();
     static Job job(Mob mob){return JOBS.get(mob);}
     static void dig(Mob mob,BlockPos pos,long now){var j=JOBS.get(mob);if(j!=null&&j.bridge==null&&pos.equals(j.dig))return;JOBS.put(mob,new Job(pos.immutable(),null,now));}
-    static void bridge(Mob mob,RaidBridges.Plan plan,long now){JOBS.put(mob,new Job(null,plan,now));}
+    static void bridge(Mob mob,RaidBridges.Line line,long now){JOBS.put(mob,new Job(null,line,now));}
     static void stop(Mob mob){JOBS.remove(mob);}
     /** A raid starts or ends: every crack heals and every job stops. */
     static void reset(ServerLevel l){for(var e:CRACKS.entrySet())l.destroyBlockProgress(e.getValue().id,BlockPos.of(e.getKey()),-1);reset();}
-    static void reset(){CRACKS.clear();JOBS.clear();}
+    static void reset(){CRACKS.clear();JOBS.clear();RaidBridges.forget();}
 
     /** The attack animation, for the mobs whose arms do not show a swing */
     static void swing(ServerLevel l,Mob mob){
@@ -111,8 +111,8 @@ final class RaidDigging {
     /** Water, lava or a chasm coming up: a bridge job (checked often while marching, so a walking raider stops at the edge) */
     static boolean bridgeAhead(ServerLevel l,CampaignData d,Mob mob){
         if(JOBS.containsKey(mob)||!d.phase.equals("raid")||RaidTypes.flyer(mob)||RaidTypes.glider(mob)||mob.getPersistentData().getBoolean("eternalChute")||RaiderGates.channel(mob.getUUID())!=null)return false;
-        var plan=RaidBridges.plan(l,d,mob);if(plan==null)return false;
-        bridge(mob,plan,l.getGameTime());return true;
+        var line=RaidBridges.plan(l,d,mob);if(line==null)return false;
+        bridge(mob,line,l.getGameTime());return true;
     }
     /** Works on the raider's job every tick; outranks its other goals while it has one (a gate channel stops it first) */
     static final class WorkGoal extends Goal {
@@ -126,7 +126,7 @@ final class RaidDigging {
         @Override public void tick(){
             var job=JOBS.get(mob);if(job==null||!(mob.level() instanceof ServerLevel l))return;
             var d=CampaignData.get(l);long now=l.getGameTime();
-            if(!d.phase.equals("raid")||now-job.started>JOB_TICKS||now<job.started){JOBS.remove(mob);return;}
+            if(!d.phase.equals("raid")||now-job.started>(job.bridge!=null?BRIDGE_JOB_TICKS:JOB_TICKS)||now<job.started){JOBS.remove(mob);return;}
             if(job.bridge!=null){if(!RaidBridges.work(l,d,mob,job,now))JOBS.remove(mob);return;}
             var pos=job.dig;
             if(!RaidBreaching.breakable(l,d,pos)||!reaches(mob.getBoundingBox(),new AABB(pos))){JOBS.remove(mob);return;}

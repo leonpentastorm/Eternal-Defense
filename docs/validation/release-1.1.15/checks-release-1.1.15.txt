@@ -1,0 +1,26 @@
+Real client, QaRelease1115 run 6 (2026-10-17), QA_CREATE=1, Create, flat world, 1280 x 720
+QA_CHECK PASS the first raider starts a bridge straight toward the beacon {0=4}
+QA_CHECK PASS b walks to a's bridge instead of laying its own (every plank in a's row) {0=10}
+QA_CHECK PASS and finishes it across the moat (10 planks) {0=10}
+QA_CHECK PASS b never went through a gate or swam b at 13.4 0.0 0.5 water=false gates=0 job=-
+QA_CHECK PASS c crosses on the same bridge and lays nothing {0=10}
+QA_CHECK PASS the bridge is recorded once (10 planks) 10
+QA_CHECK PASS sz swims no faster than the estimate (the estimate is the best case) 0.02 b/s measured, 0.37 estimated
+QA_CHECK PASS ss swims no faster than the estimate (the estimate is the best case) 0.00 b/s measured, 0.40 estimated
+QA_CHECK PASS a zombie raider far out in the water starts its gate at once (within 2 s), reason water 10 ticks
+QA_CHECK PASS so does a skeleton raider ws at 8.5 -1.3 50.5 water=true gates=1 job=-
+QA_CHECK PASS a raider one block from the shore gets no gate at first (the swim looks short) wn at 0.5 -2.1 40.5 water=true gates=0 job=bridge
+QA_CHECK PASS it climbs out, or after 5 s in the water it goes to a gate 111 ticks: wn at 0.5 -3.0 40.3 water=true gates=1 job=-
+QA_CHECK PASS after the channel both come out on land through the gate (1 gate each) wz at 85.5 0.0 87.5 water=false gates=1 job=- / ws at -85.5 0.0 -16.6 water=false gates=1 job=-
+QA_DONE pass=13 fail=0
+
+Notes from the same run:
+QA_NOTE A LAID {0=4} a at 21.8 0.0 0.5 water=false gates=0 job=bridge
+QA_NOTE B CROSSED {0=10} b at 13.4 0.0 0.5 water=false gates=0 job=-
+QA_NOTE C CROSSED {0=10} c at 13.3 0.0 0.5 water=false gates=0 job=-
+QA_NOTE SWIM sz 0.02 blocks/s (estimate 0.37 for speed 0.23000000417232513) in water true
+QA_NOTE SWIM ss 0.00 blocks/s (estimate 0.40 for speed 0.25) in water true
+QA_NOTE SWIM plain zombie 0.02 blocks/s
+QA_NOTE GATE after 10 ticks: wz at -7.5 -1.3 50.4 water=true gates=1 job=- / ws at 8.5 -1.3 50.5 water=true gates=1 job=-
+QA_NOTE NEAR after 111 ticks: wn at 0.5 -3.0 40.3 water=true gates=1 job=- reason water
+QA_NOTE OUT wz at 85.5 0.0 87.5 water=false gates=1 job=- / ws at -85.5 0.0 -16.6 water=false gates=1 job=-

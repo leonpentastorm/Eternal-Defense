@@ -1,0 +1,187 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.15: raiders walk and extend the bridges already laid, and a long swim sends a raider through a gate at once. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1115 {
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1115",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1115",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());places();script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // The raid never ends by itself; the swimmers measured are steered west every tick
+    static boolean keepRaid;static final Map<UUID,double[]> STEER=new HashMap<>();
+    @SubscribeEvent public static void serverWatch(TickEvent.ServerTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||server()==null)return;var d=cd();
+        if(keepRaid&&d.phase.equals("raid")){d.raidTicks=0;d.spawnCooldown=1_000_000;}
+        if(++watchTick%20==0)for(var k:WATCH){var m=get(k);if(m==null)continue;var j=RaidDigging.job(m);
+            note("WATCH {} zza={} vel={} wanted={} speed={} noAi={} {} nav={} target={} {}",where(k),String.format(Locale.ROOT,"%.3f",m.zza),m.getDeltaMovement(),m.getMoveControl().hasWanted(),m.getSpeed(),m.isNoAi(),
+                m.goalSelector.getRunningGoals().map(g->g.getGoal().getClass().getSimpleName()).toList(),m.getNavigation().getPath()==null?"none":m.getNavigation().getPath().getEndNode(),m.getTarget()==null?"-":m.getTarget().getClass().getSimpleName(),
+                j==null||j.bridge==null?"":String.format(Locale.ROOT,"step=%d laid=%d best=%.1f line=%s+%d landed=%s lines=%d",j.step,j.laid,j.best,j.bridge.entrance().toShortString(),j.bridge.length,j.bridge.landed,RaidBridges.lines().size()));}
+    }
+    static int watchTick;static final Set<String> WATCH=new HashSet<>();
+
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void clearMobs(){for(var e:sl().getEntitiesOfClass(Mob.class,new AABB(new BlockPos(sx,sy,sz)).inflate(260,64,260)))if(!(e instanceof BeaconCombat.Objective))e.discard();}
+    static void raidOn(){srv(()->{var d=cd();d.phase="raid";d.raidType="normal";d.raidTier=0;d.wave=1;d.spawnRemaining=1000;d.spawnCooldown=1_000_000;d.raidTicks=0;d.waveTicks=0;d.setDirty();});keepRaid=true;}
+    static Mob raider(EntityType<?> type,BlockPos at){var m=EternalDefense.raider(sl(),cd(),type,"grunt","normal",at);if(m!=null)m.removeEffect(MobEffects.MOVEMENT_SPEED);return m;}
+    static final Map<String,UUID> SUBJECTS=new HashMap<>();
+    static Mob get(String key){var id=SUBJECTS.get(key);return id!=null&&sl().getEntity(id) instanceof Mob m&&m.isAlive()?m:null;}
+    static void keep(String key,Mob m){if(m!=null){SUBJECTS.put(key,m.getUUID());note("SUBJECT {} {} at {}",key,BuiltInRegistries.ENTITY_TYPE.getKey(m.getType()),m.blockPosition().toShortString());}}
+    static net.minecraft.world.level.block.state.BlockState bs(net.minecraft.world.level.block.Block b){return b.defaultBlockState();}
+    static void fill(BlockPos a,BlockPos b,net.minecraft.world.level.block.state.BlockState s){for(var p:BlockPos.betweenClosed(a,b))sl().setBlock(p,s,2);}
+    static boolean plank(BlockPos p){return sl().getBlockState(p).is(EternalDefense.RAIDER_BRIDGE.get());}
+    /** Planks in the moat, by z row (relative to the beacon) */
+    static TreeMap<Integer,Integer> rows(){var out=new TreeMap<Integer,Integer>();for(var p:BlockPos.betweenClosed(B.offset(14,-1,-12),B.offset(23,-1,12)))if(plank(p))out.merge(p.getZ()-B.getZ(),1,Integer::sum);return out;}
+    static String where(String key){var m=get(key);return m==null?key+" gone":String.format(Locale.ROOT,"%s at %.1f %.1f %.1f water=%s gates=%d job=%s",key,m.getX()-B.getX(),m.getY()-sy,m.getZ()-B.getZ(),m.isInWater(),m.getPersistentData().getInt(RaidMarch.GATES),RaidDigging.job(m)==null?"-":"bridge");}
+    static String reason(Mob m){var c=m==null?null:RaiderGates.channel(m.getUUID());return c==null?null:c.reason;}
+
+    static BlockPos B,LAKE;
+    static void places(){B=new BlockPos(sx+12,sy,sz+12);LAKE=B.offset(0,0,46);}
+
+    static void script(){
+        until("in the world",200,()->mc().player!=null,()->{});
+        step(20,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            r.getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(false,server());r.getRule(GameRules.RULE_DO_PATROL_SPAWNING).set(false,server());sl().setDayTime(6000);clearMobs();
+            var d=cd();d.phase="preparation";d.beacon=B;d.core=0;d.vertical=0;d.showBeam=false;d.showBoundary=false;d.introCompleted=true;d.introRaid=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);
+            fill(B.offset(14,-2,-12),B.offset(23,-1,12),bs(net.minecraft.world.level.block.Blocks.WATER));
+            fill(LAKE.offset(-25,-3,-6),LAKE.offset(25,-1,6),bs(net.minecraft.world.level.block.Blocks.WATER));});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"a Mk I beacon; a moat east (10 wide, 2 deep, 25 long); a lake south (51 x 13, 3 deep)");
+
+        // 1. A raider stops half way across; the next one walks its bridge and finishes it
+        step(5,()->{raidOn();srv(()->keep("a",raider(EntityType.ZOMBIE,B.offset(30,0,0))));look(B.getX()+19.5,sy+12,B.getZ()-14.5,B.getX()+19.5,sy,B.getZ()+.5);},"zombie a east of the moat");
+        until("a has laid 4 planks",900,()->srvGet(()->rows().getOrDefault(0,0))>=4,()->{var r=srvGet(QaRelease1115::rows);note("A LAID {} {}",r,srvGet(()->where("a")));
+            check("the first raider starts a bridge straight toward the beacon",r.keySet().equals(Set.of(0)),r.toString());
+            srv(()->{var a=get("a");if(a!=null)a.discard();});});
+        step(10,()->{WATCH.add("b");WATCH.add("c");srv(()->keep("b",raider(EntityType.ZOMBIE,B.offset(30,0,8))));},"zombie b, 8 blocks to the side, after a is gone");
+        until("b crosses",1200,()->{var b=srvGet(()->get("b"));return b!=null&&b.getX()<B.getX()+13.5;},()->{var r=srvGet(QaRelease1115::rows);note("B CROSSED {} {}",r,srvGet(()->where("b")));
+            check("b walks to a's bridge instead of laying its own (every plank in a's row)",r.keySet().equals(Set.of(0)),r.toString());
+            check("and finishes it across the moat (10 planks)",r.getOrDefault(0,0)==10,r.toString());
+            check("b never went through a gate or swam",srvGet(()->{var b=get("b");return b!=null&&b.getPersistentData().getInt(RaidMarch.GATES)==0;}),srvGet(()->where("b")));});
+        step(5,()->srv(()->keep("c",raider(EntityType.ZOMBIE,B.offset(30,0,-10)))),"zombie c, 10 blocks to the other side");
+        until("c crosses",1200,()->{var c=srvGet(()->get("c"));return c!=null&&c.getX()<B.getX()+13.5;},()->{var r=srvGet(QaRelease1115::rows);note("C CROSSED {} {}",r,srvGet(()->where("c")));
+            check("c crosses on the same bridge and lays nothing",r.keySet().equals(Set.of(0))&&r.get(0)==10,r.toString());
+            check("the bridge is recorded once (10 planks)",srvGet(()->cd().bridges.size())==10,""+srvGet(()->cd().bridges.size()));look(B.getX()+28.5,sy+9,B.getZ()+9.5,B.getX()+18.5,sy,B.getZ()+.5);});
+        step(20,()->shot("r1115_one_bridge"),"picture: one bridge across the moat");
+        step(5,()->srv(()->{for(var k:List.of("b","c")){var m=get(k);if(m!=null)m.discard();}}),"clear");
+
+        // 2. How fast raiders swim: a zombie and a skeleton held out of the gate rule by its grace window
+        double[][] at=new double[2][];
+        step(5,()->{look(LAKE.getX()+.5,sy+14,LAKE.getZ()-12.5,LAKE.getX()+.5,sy,LAKE.getZ()+.5);srv(()->{int i=0;for(var type:List.of(EntityType.ZOMBIE,EntityType.SKELETON)){
+            var m=raider(type,LAKE.offset(-12+24*i,-1,5));keep(i==0?"sz":"ss",m);long now=sl().getGameTime();RaidMarch.track(m.getUUID(),new RaidMarch.Track(999,now,now+100000,0));i++;}
+            var plain=EntityType.ZOMBIE.create(sl());plain.moveTo(LAKE.getX()+.5,sy-1,LAKE.getZ()+5.5,0,0);plain.setPersistenceRequired();sl().addFreshEntity(plain);keep("pz",plain);
+            var villager=EntityType.VILLAGER.create(sl());villager.moveTo(LAKE.getX()+.5,sy,LAKE.getZ()-9.5,0,0);villager.setNoAi(true);sl().addFreshEntity(villager);plain.setTarget(villager);keep("pv",villager);});
+            WATCH.add("sz");WATCH.add("ss");WATCH.add("pz");},"a zombie and a skeleton raider in the lake, no gate for them");
+        double[] pz0=new double[2];
+        step(40,()->{var pz=srvGet(()->get("pz"));pz0[0]=pz.getX();pz0[1]=pz.getZ();at[0]=srvGet(()->{var m=get("sz");return new double[]{m.getX(),m.getZ()};});at[1]=srvGet(()->{var m=get("ss");return new double[]{m.getX(),m.getZ()};});},"after 2 s, start measuring");
+        step(100,()->{
+            for(int i=0;i<2;i++){String k=i==0?"sz":"ss";var m=srvGet(()->get(k));double dx=m.getX()-at[i][0],dz=m.getZ()-at[i][1];double speed=Math.sqrt(dx*dx+dz*dz)/5;double attr=srvGet(()->RaidRescue.swimSpeed(m));
+                note("SWIM {} {} blocks/s (estimate {} for speed {}) in water {}",k,String.format(Locale.ROOT,"%.2f",speed),String.format(Locale.ROOT,"%.2f",attr*RaidMarch.SWIM_PER_SPEED),attr,m.isInWater());
+                check(k+" swims no faster than the estimate (the estimate is the best case)",speed<=attr*RaidMarch.SWIM_PER_SPEED*1.05,String.format(Locale.ROOT,"%.2f b/s measured, %.2f estimated",speed,attr*RaidMarch.SWIM_PER_SPEED));}
+            var pz=srvGet(()->get("pz"));note("SWIM plain zombie {} blocks/s",String.format(Locale.ROOT,"%.2f",pz==null?-1:Math.hypot(pz.getX()-pz0[0],pz.getZ()-pz0[1])/5));
+            WATCH.clear();srv(()->{for(var k:List.of("sz","ss","pz","pv")){var m=get(k);if(m!=null)m.discard();}});},"5 s of swimming");
+
+        // 3. Raiders in the lake: a long swim goes through a gate at once, a short one climbs out
+        step(5,()->srv(()->{keep("wz",raider(EntityType.ZOMBIE,LAKE.offset(-8,-1,4)));keep("ws",raider(EntityType.SKELETON,LAKE.offset(8,-1,4)));keep("wn",raider(EntityType.ZOMBIE,LAKE.offset(0,-1,-6)));}),
+            "zombie and skeleton raiders 11 blocks from the north shore, a zombie raider 1 block from it");
+        long[] dropped={0};
+        step(1,()->dropped[0]=srvGet(()->sl().getGameTime()),"start");
+        until("both far swimmers are at a gate",100,()->srvGet(()->"water".equals(reason(get("wz")))&&"water".equals(reason(get("ws")))),()->{long t=srvGet(()->sl().getGameTime())-dropped[0];
+            note("GATE after {} ticks: {} / {}",t,srvGet(()->where("wz")),srvGet(()->where("ws")));
+            check("a zombie raider far out in the water starts its gate at once (within 2 s), reason water",srvGet(()->"water".equals(reason(get("wz"))))&&t<=40,t+" ticks");
+            check("so does a skeleton raider",srvGet(()->"water".equals(reason(get("ws")))),srvGet(()->where("ws")));
+            look(LAKE.getX()+.5,sy+10,LAKE.getZ()-8.5,LAKE.getX()+.5,sy-1,LAKE.getZ()+4.5);});
+        step(30,()->shot("r1115_lake_gates"),"picture: both swimmers at their red gates");
+        step(60,()->{var m=srvGet(()->get("wn"));check("a raider one block from the shore gets no gate at first (the swim looks short)",srvGet(()->RaiderGates.channel(m.getUUID())==null&&m.getPersistentData().getInt(RaidMarch.GATES)==0),srvGet(()->where("wn")));WATCH.add("wn");},"3 s later");
+        until("the near one is out or at a gate",300,()->srvGet(()->{var m=get("wn");return m!=null&&(!m.isInWater()||"water".equals(reason(m)));}),()->{long t=srvGet(()->sl().getGameTime())-dropped[0];var m=srvGet(()->get("wn"));
+            note("NEAR after {} ticks: {} reason {}",t,srvGet(()->where("wn")),srvGet(()->reason(m)));
+            check("it climbs out, or after 5 s in the water it goes to a gate",srvGet(()->!m.isInWater()&&m.getPersistentData().getInt(RaidMarch.GATES)==0)||"water".equals(srvGet(()->reason(m)))&&t>=100,t+" ticks: "+srvGet(()->where("wn")));});
+        until("both went through",400,()->srvGet(()->{var a=get("wz");var b=get("ws");return a!=null&&b!=null&&!a.isInWater()&&!b.isInWater()&&RaiderGates.channel(a.getUUID())==null&&RaiderGates.channel(b.getUUID())==null;}),()->{
+            note("OUT {} / {}",srvGet(()->where("wz")),srvGet(()->where("ws")));
+            check("after the channel both come out on land through the gate (1 gate each)",srvGet(()->{var a=get("wz");var b=get("ws");return a!=null&&b!=null&&a.getPersistentData().getInt(RaidMarch.GATES)==1&&b.getPersistentData().getInt(RaidMarch.GATES)==1&&a.getY()>=sy-.5&&b.getY()>=sy-.5;}),srvGet(()->where("wz"))+" / "+srvGet(()->where("ws")));});
+        step(10,()->{},"done");
+    }
+}
