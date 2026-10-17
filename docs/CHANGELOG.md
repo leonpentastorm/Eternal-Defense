@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.17 — The Support Platform's shop scrolls (2026-10-17, `dev`)
+
+After 1.1.16 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.17; tests: `docs/ROUND-1.1.17-TESTING.md`.
+
+* **Support Platform, Shop tab:** four products at a time in full rows, so every product's note can be read again. Scroll with the mouse wheel, or drag or click the scroll bar beside the list. A line under the list says which products are shown.
+
 ## 1.1.16 — Damage attachments of the first two Ages back on the table (2026-10-17, `dev`)
 
 After 1.1.15 on `dev`; `main` unchanged. **Network protocol 43** (no packet changed) and no new item, block or menu. Rules: GDD 1.1.16; tests: `docs/ROUND-1.1.16-TESTING.md`.

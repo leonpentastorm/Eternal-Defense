@@ -1,0 +1,14 @@
+Real client, QaRelease1117 run 5 (2026-10-17), QA_CREATE=1, Create, flat world, survival, 1280 x 720
+QA_NOTE TOP [cannon, supply, return, fire]
+QA_CHECK PASS the shop shows four full rows from the top [cannon, supply, return, fire]
+QA_CHECK PASS rows are 24 pixels tall, room for the name and the note 24
+QA_NOTE WHEEL 2 [return, fire, loadout, radio]
+QA_CHECK PASS the wheel scrolls to the end and stops there 2 [return, fire, loadout, radio]
+QA_CHECK PASS a click on the last row picks the Handheld Radio 5
+QA_CHECK PASS a click at the top of the bar goes back to the top 0
+QA_CHECK PASS and the pick stays the radio 5
+QA_CHECK PASS dragging the thumb down scrolls to the end 2
+QA_CHECK PASS the wheel on the supply grid tab leaves the shop alone 2
+QA_CHECK PASS the Buy button buys the product picked after scrolling (the Fire Support Flare, 6) 3
+QA_CHECK PASS one Fire Support Flare bought for 6 of the 9 Ardent 
+QA_DONE pass=10 fail=0

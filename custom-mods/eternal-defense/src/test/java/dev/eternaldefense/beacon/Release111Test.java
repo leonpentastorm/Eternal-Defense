@@ -32,7 +32,7 @@ final class Release111Test {
     }
     @Test void theSupportShopShowsAProductsWholeTextOnHover() throws Exception{
         String screen=source("SupportScreen.java");
-        assertTrue(screen.contains("productTip(i)")&&screen.contains("support.product.\"+product.id()+\".note"),"the note in full, then the item's own lines");
+        assertTrue(screen.contains("productTip(scroll+i)")&&screen.contains("support.product.\"+product.id()+\".note"),"the note in full, then the item's own lines");
     }
     @Test void everyFabricationCardHasANameAndADescription() throws Exception{
         var json=lang();

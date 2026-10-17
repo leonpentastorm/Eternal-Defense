@@ -1,0 +1,151 @@
+package dev.eternaldefense.beacon;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Supplier;
+
+/** Real-client checks of 1.1.17: the Support Platform shop list scrolls. */
+@Mod.EventBusSubscriber(modid=EternalDefense.ID,value=Dist.CLIENT)
+public final class QaRelease1117 {
+
+    static final Deque<Object[]> STEPS=new ArrayDeque<>();
+    static int wait,tick,pass,fail;static boolean created,built;static int sx,sy,sz;
+    static void step(int delay,Runnable r,String name){STEPS.add(new Object[]{delay,r,name});}
+    static void until(String name,int timeout,java.util.function.BooleanSupplier cond,Runnable then){STEPS.add(new Object[]{0,then,name,cond,new int[]{timeout}});}
+    static Minecraft mc(){return Minecraft.getInstance();}
+    static net.minecraft.server.MinecraftServer server(){return mc().getSingleplayerServer();}
+    static ServerPlayer sp(){return server().getPlayerList().getPlayers().get(0);}
+    static ServerLevel sl(){return server().overworld();}
+    static CampaignData cd(){return CampaignData.get(sl());}
+    static void srv(Runnable r){server().execute(r);}
+    static <T> T srvGet(Supplier<T> s){return server().submit(s).join();}
+    static void log(String f,Object... a){com.mojang.logging.LogUtils.getLogger().info(f,a);}
+    static void check(String name,boolean ok,String detail){if(ok)pass++;else fail++;log("QA_CHECK {} {} {}",ok?"PASS":"FAIL",name,detail);}
+    static void note(String f,Object... a){log("QA_NOTE "+f,a);}
+    static int frames,due;static boolean holding;static String pendingShot="";
+    static void shot(String name){mc().getToasts().clear();mc().gui.getChat().clearMessages(false);pendingShot=name;due=frames+2;holding=true;}
+    @SubscribeEvent public static void frame(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;frames++;
+        if(holding&&frames>=due){new File("shots").mkdirs();Screenshot.grab(new File("shots"),pendingShot+".png",mc().getMainRenderTarget(),m->{});log("QA_SHOT {}",pendingShot);holding=false;}
+    }
+    @SubscribeEvent public static void onTick(TickEvent.ClientTickEvent e){
+        if(e.phase!=TickEvent.Phase.END)return;var mc=mc();
+        if(!created){
+            if(mc.screen instanceof TitleScreen&&mc.getOverlay()==null&&++tick>60){
+                created=true;var settings=new LevelSettings("qa_r1117",GameType.CREATIVE,false,Difficulty.NORMAL,true,new GameRules(),WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel("qa_r1117",settings,new WorldOptions(42L,false,false),access->access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions());
+            }
+            return;
+        }
+        if(mc.player==null||mc.level==null||mc.getSingleplayerServer()==null)return;
+        if(!built){if(++tick<200)return;built=true;sx=(int)Math.floor(mc.player.getX());sy=(int)Math.floor(mc.player.getY());sz=(int)Math.floor(mc.player.getZ());script();}
+        if(holding)return;
+        if(wait>0){wait--;return;}
+        var head=STEPS.peek();
+        if(head!=null&&head.length>3){boolean ok;try{ok=((java.util.function.BooleanSupplier)head[3]).getAsBoolean();}catch(Throwable t){ok=false;log("QA_COND_ERROR {} {}",head[2],t.toString());}int[] rem=(int[])head[4];if(!ok&&rem[0]-->0){wait=0;return;}if(!ok)log("QA_TIMEOUT {}",head[2]);}
+        var step=STEPS.poll();
+        if(step==null){log("QA_DONE pass={} fail={}",pass,fail);mc.stop();return;}
+        log("QA_STEP {}",step[2]);
+        try{((Runnable)step[1]).run();}catch(Throwable t){fail++;com.mojang.logging.LogUtils.getLogger().error("QA_STEP_ERROR {}",step[2],t);}
+        wait=(int)step[0];
+    }
+    // Helpers
+    static void tp(double x,double y,double z,float yaw,float pitch){srv(()->{var p=sp();p.getAbilities().flying=true;p.onUpdateAbilities();p.teleportTo(sl(),x,y,z,yaw,pitch);p.setDeltaMovement(Vec3.ZERO);});mc().player.getAbilities().flying=true;mc().player.setYRot(yaw);mc().player.setXRot(pitch);}
+    static void look(double x,double y,double z,double tx,double ty,double tz){double dx=tx-x,dy=ty-(y+1.62),dz=tz-z;tp(x,y,z,(float)Math.toDegrees(Math.atan2(-dx,dz)),(float)-Math.toDegrees(Math.atan2(dy,Math.sqrt(dx*dx+dz*dz))));}
+    static void click(BlockPos pos,Direction face){
+        var hit=new BlockHitResult(Vec3.atCenterOf(pos).add(face.getStepX()*.5,face.getStepY()*.5,face.getStepZ()*.5),face,pos,false);
+        mc().gameMode.useItemOn(mc().player,InteractionHand.MAIN_HAND,hit);
+    }
+    static Object field(Object o,String name){for(Class<?> c=o.getClass();c!=null;c=c.getSuperclass())try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(o);}catch(NoSuchFieldException ignored){}catch(IllegalAccessException e){throw new IllegalStateException(e);}throw new IllegalStateException("no field "+name);}
+    static Object staticField(Class<?> c,String name){try{var f=c.getDeclaredField(name);f.setAccessible(true);return f.get(null);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static BlockPos PLAT;
+    /** The pointer to the window's corner, so no hover tooltip covers the picture */
+    static void away(){for(String f:new String[]{"xpos","ypos"})try{var x=net.minecraft.client.MouseHandler.class.getDeclaredField(f);x.setAccessible(true);x.setDouble(mc().mouseHandler,4);}catch(ReflectiveOperationException e){throw new IllegalStateException(e);}}
+    static SupportScreen screen(){return mc().screen instanceof SupportScreen s?s:null;}
+    static int scroll(){return (Integer)field(screen(),"scroll");}
+    static int selected(){return (Integer)field(screen(),"selected");}
+    @SuppressWarnings("unchecked") static List<Ui.UiButton> rows(){return (List<Ui.UiButton>)field(screen(),"rows");}
+    static int left(){return (Integer)field(screen(),"leftPos");}
+    static int top(){return (Integer)field(screen(),"topPos");}
+    static String shown(){var s=screen();var out=new ArrayList<String>();var r=rows();for(int i=0;i<r.size();i++)if(r.get(i).visible)out.add(SupportShop.PRODUCTS.get(scroll()+i).id());return out.toString();}
+
+    static void script(){
+        PLAT=new BlockPos(sx+4,sy,sz+4);var B=new BlockPos(sx-2,sy,sz+4);
+        step(40,()->{srv(()->{
+            var r=sl().getGameRules();r.getRule(GameRules.RULE_DAYLIGHT).set(false,server());r.getRule(GameRules.RULE_WEATHER_CYCLE).set(false,server());r.getRule(GameRules.RULE_DOMOBSPAWNING).set(false,server());
+            sl().setDayTime(6000);
+            var d=CampaignData.get(sl());d.phase="preparation";d.beacon=B;d.core=3;d.showBeam=false;d.showBoundary=false;d.health=d.maximumHealth();d.setDirty();
+            sl().setBlock(B,EternalDefense.BEACON.get().defaultBlockState().setValue(DefenseStructures.MK,1),3);});
+            mc().options.cloudStatus().set(CloudStatus.OFF);mc().options.pauseOnLostFocus=false;},"plant the beacon (the platform works inside the zone)");
+        step(5,()->srv(()->{
+            sl().setBlock(PLAT,EternalDefense.SUPPORT_PLATFORM.get().defaultBlockState(),3);
+            if(sl().getBlockEntity(PLAT) instanceof SupportPlatform.PlatformEntity be){be.owner=sp().getUUID();be.ownerName=sp().getGameProfile().getName();be.setChanged();}
+            SupportData.get(sl()).setPlatform(sp().getUUID(),PLAT);sp().setGameMode(GameType.SURVIVAL);
+            var inv=sp().getInventory();inv.clearContent();inv.setItem(30,new ItemStack(EternalDefense.ARDENT_ENERGY.get(),9));inv.setChanged();sp().teleportTo(sl(),PLAT.getX()+.5,sy,PLAT.getZ()-2.5,0,10);}),"a Support Platform; 9 Ardent Energy");
+        step(10,()->srv(()->{var s=sl().getBlockState(PLAT);s.use(sl(),sp(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(PLAT),Direction.NORTH,PLAT,false));}),"open the platform");
+        until("its screen",60,()->screen()!=null,()->screen().showTab(1));
+        step(10,()->{},"the shop tab drawn");
+        step(10,()->{note("TOP {}",shown());check("the shop shows four full rows from the top",scroll()==0&&shown().equals("[cannon, supply, return, fire]"),shown());
+            check("rows are 24 pixels tall, room for the name and the note",rows().stream().allMatch(r->r.getHeight()==24),String.valueOf(rows().get(0).getHeight()));},"the top of the list");
+        step(5,()->away(),"pointer aside");step(5,()->shot("r1117_shop_top"),"picture: the top of the list");
+        step(10,()->{var s=screen();double mx=left()+100,my=top()+90;s.mouseScrolled(mx,my,-1);s.mouseScrolled(mx,my,-1);s.mouseScrolled(mx,my,-1);
+            note("WHEEL {} {}",scroll(),shown());check("the wheel scrolls to the end and stops there",scroll()==2&&shown().equals("[return, fire, loadout, radio]"),scroll()+" "+shown());},"three wheel notches down");
+        step(5,()->{var r=rows().get(3);screen().mouseClicked(r.getX()+40,r.getY()+10,0);screen().mouseReleased(r.getX()+40,r.getY()+10,0);
+            check("a click on the last row picks the Handheld Radio",selected()==5,""+selected());},"click the last row");
+        step(5,()->away(),"pointer aside");step(10,()->shot("r1117_shop_scrolled"),"picture: scrolled to the end, the radio picked");
+        step(5,()->{var s=screen();int bx=left()+SupportScreen.W-12-SupportScreen.BAR+2,by=top()+SupportScreen.LIST_Y+2;s.mouseClicked(bx,by,0);s.mouseReleased(bx,by,0);
+            check("a click at the top of the bar goes back to the top",scroll()==0,""+scroll());check("and the pick stays the radio",selected()==5,""+selected());},"click the top of the bar");
+        step(5,()->{var s=screen();int bx=left()+SupportScreen.W-12-SupportScreen.BAR+2,by=top()+SupportScreen.LIST_Y+4;s.mouseClicked(bx,by,0);
+            s.mouseDragged(bx,by+60,0,0,60);s.mouseDragged(bx,by+200,0,0,140);s.mouseReleased(bx,by+200,0);
+            check("dragging the thumb down scrolls to the end",scroll()==2,""+scroll());},"drag the thumb");
+        step(5,()->{var s=screen();s.showTab(0);s.mouseScrolled(left()+100,top()+90,1);s.showTab(1);
+            check("the wheel on the supply grid tab leaves the shop alone",scroll()==2,""+scroll());},"the wheel on the other tab");
+        step(5,()->{var s=screen();var r=rows().get(1);double mx=r.getX()+40,my=r.getY()+10;screen().mouseClicked(mx,my,0);screen().mouseReleased(mx,my,0);
+            check("the Buy button buys the product picked after scrolling (the Fire Support Flare, 6)",selected()==3,""+selected());
+            var b=(Ui.UiButton)field(s,"buyButton");s.mouseClicked(b.getX()+10,b.getY()+8,0);s.mouseReleased(b.getX()+10,b.getY()+8,0);},"pick the Fire Support Flare and buy it");
+        step(20,()->{boolean ok=srvGet(()->{int flares=0,ardent=0;for(var st:sp().getInventory().items){if(st.is(EternalDefense.FIRE_FLARE.get()))flares+=st.getCount();if(st.is(EternalDefense.ARDENT_ENERGY.get()))ardent+=st.getCount();}return flares==1&&ardent==3;});
+            check("one Fire Support Flare bought for 6 of the 9 Ardent",ok,"");away();},"bought");
+        step(5,()->shot("r1117_shop_bought"),"picture: bought");
+        step(5,()->{mc().setScreen(null);srv(()->sp().closeContainer());},"close");
+    }
+}
